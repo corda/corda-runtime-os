@@ -15,6 +15,7 @@ interface ObjectsInJsonEndpoint : RpcOps {
 
     data class RequestWithJsonObject(val id: String, val obj: JsonObject)
     data class ResponseWithJsonObject(val id: String, val obj: JsonObject)
+    data class ResponseWithJsonObjectNullable(val id: String, val obj: JsonObject?)
 
     @HttpRpcPOST(path = "create-with-one-object")
     fun createWithOneObject(@HttpRpcRequestBodyParameter creationObject: RequestWithJsonObject): ResponseWithJsonObject
@@ -24,4 +25,10 @@ interface ObjectsInJsonEndpoint : RpcOps {
         @HttpRpcRequestBodyParameter id: String,
         @HttpRpcRequestBodyParameter obj: JsonObject
     ): ResponseWithJsonObject
+
+    @HttpRpcPOST(path = "nullable-json-object-in-request")
+    fun nullableJsonObjectInRequest(
+        @HttpRpcRequestBodyParameter id: String,
+        @HttpRpcRequestBodyParameter obj: JsonObject?
+    ): ResponseWithJsonObjectNullable
 }

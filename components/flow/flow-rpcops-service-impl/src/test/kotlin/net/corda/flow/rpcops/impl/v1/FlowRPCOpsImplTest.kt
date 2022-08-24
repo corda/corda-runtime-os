@@ -105,7 +105,7 @@ class FlowRPCOpsImplTest {
         verify(messageFactory, times(2)).createFlowStatusResponse(any())
     }
 
-    data class TestJsonObject(val value: String = "") : JsonObject
+    data class TestJsonObject(override val escapedJson: String = "") : JsonObject
 
     @Test
     fun `start flow event triggers successfully`() {

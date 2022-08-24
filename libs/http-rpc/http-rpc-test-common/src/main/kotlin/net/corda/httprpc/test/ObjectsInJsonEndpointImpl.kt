@@ -23,4 +23,9 @@ class ObjectsInJsonEndpointImpl : ObjectsInJsonEndpoint, PluggableRPCOps<Objects
         log.info("Create with individual params: id: $id object: $obj")
         return ObjectsInJsonEndpoint.ResponseWithJsonObject(id, obj)
     }
+
+    override fun nullableJsonObjectInRequest(id: String, obj: JsonObject?): ObjectsInJsonEndpoint.ResponseWithJsonObjectNullable {
+        log.info("Create with individual params: id: $id object: $obj")
+        return ObjectsInJsonEndpoint.ResponseWithJsonObjectNullable(id, obj)
+    }
 }

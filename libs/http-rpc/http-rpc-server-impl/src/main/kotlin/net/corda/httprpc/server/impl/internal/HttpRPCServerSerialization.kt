@@ -8,8 +8,6 @@ import com.fasterxml.jackson.databind.JsonDeserializer
 import com.fasterxml.jackson.databind.JsonSerializer
 import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.module.SimpleModule
-import com.fasterxml.jackson.databind.node.ArrayNode
-import com.fasterxml.jackson.databind.node.ObjectNode
 import com.fasterxml.jackson.databind.node.ValueNode
 import net.corda.common.json.serialization.jacksonObjectMapper
 import net.corda.httprpc.JsonObject
@@ -45,16 +43,10 @@ internal object JsonObjectSerializer : JsonSerializer<JsonObject>() {
 
 internal object JsonObjectDeserializer : JsonDeserializer<JsonObject>() {
     override fun deserialize(p: JsonParser, ctxt: DeserializationContext): JsonObject {
-        val treeNode = p.readValueAsTree<TreeNode>()
-        val str = if (treeNode.isObject) {
-            (treeNode as ObjectNode).toString()
-        } else if (treeNode.isValueNode) {
-            (treeNode as ValueNode).textValue()
-        } else if (treeNode.isArray) {
-            (treeNode as ArrayNode).toString()
-        } else {
-            treeNode.toString()
+        val jsonValue = p.readValueAsTree<TreeNode>().let {
+            if (it.isValueNode) (it as ValueNode).textValue()
+            else it.toString()
         }
-        return JsonObjectAsString(str)
+        return JsonObjectAsString(jsonValue)
     }
 }

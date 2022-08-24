@@ -1,6 +1,7 @@
 package net.corda.httprpc.server.impl.apigen.processing.openapi.schema
 
 import net.corda.httprpc.server.impl.apigen.models.EndpointParameter
+import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.builders.JsonSchemaBuilder
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.builders.SchemaBigDecimalBuilder
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.builders.SchemaBigIntegerBuilder
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.builders.SchemaBooleanBuilder
@@ -83,7 +84,8 @@ internal class DefaultSchemaModelProvider(private val schemaModelContextHolder: 
         StringSchemaModelBuilder(),
         SchemaPairBuilder(this),
         SchemaDurableReturnResultBuilder(this),
-        SchemaPositionedValueBuilder(this)
+        SchemaPositionedValueBuilder(this),
+        JsonSchemaBuilder()
     )
 
     override fun toSchemaModel(properties: List<EndpointParameter>, schemaModelName: String): SchemaModel {
