@@ -103,10 +103,10 @@ class FlowGlobalPostProcessorImpl @Activate constructor(
         return if (externalEventState == null) {
             listOf()
         } else {
-            externalEventManager.getEventToSend(context.checkpoint.flowId, externalEventState, now, config)
+            externalEventManager.getEventToSend(externalEventState, now, config)
                 .let { (updatedExternalEventState, record) ->
+                    context.checkpoint.externalEventState = updatedExternalEventState
                     if (record != null) {
-                        context.checkpoint.externalEventState = updatedExternalEventState
                         listOf(record)
                     } else {
                         listOf()

@@ -27,7 +27,6 @@ interface ExternalEventManager {
     fun getReceivedResponse(externalEventState: ExternalEventState, responseType: Class<*>): Any
 
     fun getEventToSend(
-        flowId: String,
         externalEventState: ExternalEventState,
         instant: Instant,
         config: SmartConfig

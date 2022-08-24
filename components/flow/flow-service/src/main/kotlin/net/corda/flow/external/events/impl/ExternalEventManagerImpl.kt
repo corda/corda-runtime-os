@@ -135,7 +135,6 @@ class ExternalEventManagerImpl(
     }
 
     override fun getEventToSend(
-        flowId: String,
         externalEventState: ExternalEventState,
         instant: Instant,
         config: SmartConfig

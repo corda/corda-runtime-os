@@ -356,7 +356,6 @@ class ExternalEventManagerImplTest {
         whenever(config.getLong(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW)).thenReturn(1.seconds.toMillis())
 
         val (updatedExternalEventState, record) = externalEventManager.getEventToSend(
-            FLOW_ID_1,
             externalEventState,
             now,
             config
@@ -392,7 +391,6 @@ class ExternalEventManagerImplTest {
         whenever(config.getLong(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW)).thenReturn(1.seconds.toMillis())
 
         val (updatedExternalEventState, record) = externalEventManager.getEventToSend(
-            FLOW_ID_1,
             externalEventState,
             now,
             config
@@ -428,7 +426,6 @@ class ExternalEventManagerImplTest {
         whenever(config.getLong(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW)).thenReturn(1.seconds.toMillis())
 
         val (updatedExternalEventState, record) = externalEventManager.getEventToSend(
-            FLOW_ID_1,
             externalEventState,
             now,
             config

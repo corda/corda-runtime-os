@@ -5,9 +5,12 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.event.mapper.ScheduleCleanup
+import net.corda.data.flow.state.external.ExternalEventState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
+import net.corda.flow.FLOW_ID_1
+import net.corda.flow.REQUEST_ID_1
 import net.corda.flow.external.events.impl.ExternalEventManager
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
@@ -69,6 +72,7 @@ class FlowGlobalPostProcessorImplTest {
     private val sessionRecord3 = Record("t", SESSION_ID_2, FlowMapperEvent(sessionEvent3))
     private val scheduleCleanupRecord1 = Record("t", SESSION_ID_1, FlowMapperEvent(ScheduleCleanup(1000)))
     private val scheduleCleanupRecord2 = Record("t", SESSION_ID_2, FlowMapperEvent(ScheduleCleanup(1000)))
+    private val externalEventRecord = Record("t", "key", byteArrayOf(1, 2, 3))
     private val sessionManager = mock<SessionManager>()
     private val externalEventManager = mock<ExternalEventManager>()
     private val flowRecordFactory = mock<FlowRecordFactory>()
@@ -86,7 +90,7 @@ class FlowGlobalPostProcessorImplTest {
     @BeforeEach
     fun setup() {
         whenever(checkpoint.sessions).thenReturn(listOf(sessionState1, sessionState2))
-        whenever(checkpoint.flowKey).thenReturn(FlowKey("flow id", ALICE_X500_HOLDING_IDENTITY))
+        whenever(checkpoint.flowKey).thenReturn(FlowKey(FLOW_ID_1, ALICE_X500_HOLDING_IDENTITY))
         whenever(checkpoint.doesExist).thenReturn(true)
         whenever(
             sessionManager.getMessagesToSend(
@@ -137,7 +141,7 @@ class FlowGlobalPostProcessorImplTest {
     }
 
     @Test
-    fun `Does not update sessions when the checkpoint has been delete`() {
+    fun `Does not update sessions when the checkpoint has been deleted`() {
         whenever(checkpoint.doesExist).thenReturn(false)
         flowGlobalPostProcessor.postProcess(testContext)
         verify(checkpoint, never()).putSessionState(sessionState1)
@@ -212,5 +216,46 @@ class FlowGlobalPostProcessorImplTest {
         flowGlobalPostProcessor.postProcess(testContext)
 
         verify(checkpoint).clearPendingPlatformError()
+    }
+
+    @Test
+    fun `Adds external event record when there is an external event to send`() {
+        val externalEventState = ExternalEventState()
+        val updatedExternalEventState = ExternalEventState().apply { REQUEST_ID_1 }
+
+        whenever(checkpoint.externalEventState).thenReturn(externalEventState)
+        whenever(externalEventManager.getEventToSend(eq(externalEventState), any(), eq(testContext.config)))
+            .thenReturn(updatedExternalEventState to externalEventRecord)
+
+        val outputContext = flowGlobalPostProcessor.postProcess(testContext)
+
+        assertThat(outputContext.outputRecords).contains(externalEventRecord)
+        verify(checkpoint).externalEventState = updatedExternalEventState
+    }
+
+    @Test
+    fun `Does not add an external event record when there is no external event to send`() {
+        val externalEventState = ExternalEventState()
+        val updatedExternalEventState = ExternalEventState().apply { REQUEST_ID_1 }
+
+        whenever(checkpoint.externalEventState).thenReturn(externalEventState)
+        whenever(externalEventManager.getEventToSend(eq(externalEventState), any(), eq(testContext.config)))
+            .thenReturn(updatedExternalEventState to null)
+
+        val outputContext = flowGlobalPostProcessor.postProcess(testContext)
+
+        assertThat(outputContext.outputRecords).doesNotContain(externalEventRecord)
+        verify(checkpoint).externalEventState = updatedExternalEventState
+    }
+
+    @Test
+    fun `Does not add an external event record when there is no external event state`() {
+        whenever(checkpoint.externalEventState).thenReturn(null)
+
+        val outputContext = flowGlobalPostProcessor.postProcess(testContext)
+
+        assertThat(outputContext.outputRecords).doesNotContain(externalEventRecord)
+        verify(externalEventManager, never()).getEventToSend(any(), any(), any())
+        verify(checkpoint, never()).externalEventState = any()
     }
 }
