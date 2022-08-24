@@ -17,6 +17,7 @@ import net.corda.libs.packaging.verify.verifyCpi
 import net.corda.membership.certificate.service.CertificatesService
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.utilities.time.Clock
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -95,6 +96,7 @@ class CpiValidatorImpl constructor(
         log.info("All nodes for Cpi ${cpi.metadata.cpiId}<${cpi.metadata.cpiId}> has been set to response")
         publisher.update(requestId, "Putting all virtual nodes into maintenance mode")
         val nodes = virtualNodeInfoReadService.getAll().filter { it.holdingIdentity.groupId == groupId }
+        val actor = fileInfo.actor ?: throw CordaRuntimeException("Actor is undefined for forceUpload operation $requestId")
         nodes.forEach {
             val maintenanceResponse = virtualNodeSender.sendAndReceive(
                 VirtualNodeManagementRequest(
@@ -102,8 +104,7 @@ class CpiValidatorImpl constructor(
                     VirtualNodeStateChangeRequest(
                         it.holdingIdentity.shortHash.value,
                         "IN_MAINTENANCE",
-                        // TODO: Change
-                        "ForceCpiUpload"
+                        actor
                         // TODO: It might make a lot of sense to have a "why field" here
                         //  - IE (endpoint, new cpi, etc.)
                         //  - ((audit))
@@ -123,8 +124,7 @@ class CpiValidatorImpl constructor(
                     clock.instant(),
                     VirtualNodeDBResetRequest(
                         it.holdingIdentity.shortHash.value,
-                        // TODO: Change
-                        "ForceCpiUpload"
+                        actor
                         // TODO: It might make a lot of sense to have a "why field" here
                         //  - IE (endpoint, new cpi, etc.)
                         //  - ((audit))
@@ -159,8 +159,7 @@ class CpiValidatorImpl constructor(
                     clock.instant(),
                     VirtualNodeDBResetRequest(
                         it.holdingIdentity.shortHash.value,
-                        // TODO: Change
-                        "ForceCpiUpload"
+                        actor
                         // TODO: It might make a lot of sense to have a "why field" here
                         //  - IE (endpoint, new cpi, etc.)
                         //  - ((audit))

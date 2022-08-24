@@ -19,4 +19,7 @@ data class FileInfo(val name: String, val path: Path, val checksum: SecureHash, 
     val resetDb: Boolean get() {
         return properties?.get(PropertyKeys.RESET_DB)?.let { java.lang.Boolean.parseBoolean(it) } ?: false
     }
+    val actor: String? get() {
+        return properties?.get(PropertyKeys.ACTOR)
+    }
 }
