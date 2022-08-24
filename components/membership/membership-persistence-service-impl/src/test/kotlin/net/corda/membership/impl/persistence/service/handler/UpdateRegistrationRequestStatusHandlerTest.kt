@@ -3,8 +3,8 @@ package net.corda.membership.impl.persistence.service.handler
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipRequestContext
-import net.corda.data.membership.db.request.command.RegistrationStatus
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
@@ -113,7 +113,9 @@ class UpdateRegistrationRequestStatusHandlerTest {
     @Test
     fun `invoke updates registration request status`() {
         val registrationId = "regId"
-        val registrationRequestEntity = mock<RegistrationRequestEntity>()
+        val registrationRequestEntity = mock<RegistrationRequestEntity> {
+            on { status } doReturn "NEW"
+        }
         whenever(entityManager.find(eq(RegistrationRequestEntity::class.java), eq(registrationId))).doReturn(registrationRequestEntity)
         val context = MembershipRequestContext(clock.instant(), "ID", ourHoldingIdentity.toAvro())
         val statusUpdate = UpdateRegistrationRequestStatus(registrationId, RegistrationStatus.PENDING_AUTO_APPROVAL)
@@ -123,5 +125,21 @@ class UpdateRegistrationRequestStatusHandlerTest {
         verify(registrationRequestEntity).status = RegistrationStatus.PENDING_AUTO_APPROVAL.name
         verify(registrationRequestEntity).lastModified = Instant.ofEpochMilli(500)
         verify(entityManager, times(1)).merge(registrationRequestEntity)
+    }
+
+    @Test
+    fun `invoke updates fails to downgrade status`() {
+        val registrationId = "regId"
+        val registrationRequestEntity = mock<RegistrationRequestEntity> {
+            on { status } doReturn "APPROVED"
+        }
+        whenever(entityManager.find(eq(RegistrationRequestEntity::class.java), eq(registrationId))).doReturn(registrationRequestEntity)
+        val context = MembershipRequestContext(clock.instant(), "ID", ourHoldingIdentity.toAvro())
+        val statusUpdate = UpdateRegistrationRequestStatus(registrationId, RegistrationStatus.PENDING_AUTO_APPROVAL)
+        clock.setTime(Instant.ofEpochMilli(500))
+
+        assertThrows<MembershipPersistenceException> {
+            updateRegistrationRequestStatusHandler.invoke(context, statusUpdate)
+        }
     }
 }

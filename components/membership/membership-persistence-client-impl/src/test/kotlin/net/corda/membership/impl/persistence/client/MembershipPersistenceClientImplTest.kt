@@ -6,11 +6,11 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.command.PersistGroupPolicy
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
-import net.corda.data.membership.db.request.command.RegistrationStatus
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToDeclined
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
@@ -148,7 +148,11 @@ class MembershipPersistenceClientImplTest {
     @BeforeEach
     fun setUp() {
         membershipPersistenceClient = MembershipPersistenceClientImpl(
-            coordinatorFactory, publisherFactory, configurationReadService, memberInfoFactory, clock
+            coordinatorFactory,
+            publisherFactory,
+            configurationReadService,
+            memberInfoFactory,
+            clock
         )
 
         verify(coordinatorFactory).createCoordinator(any(), lifecycleEventCaptor.capture())

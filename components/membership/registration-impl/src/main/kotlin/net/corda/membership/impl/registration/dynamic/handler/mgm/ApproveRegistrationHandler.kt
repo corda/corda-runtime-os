@@ -4,8 +4,10 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.DistributionType
 import net.corda.data.membership.p2p.MembershipPackage
+import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
@@ -114,9 +116,18 @@ internal class ApproveRegistrationHandler(
             )
         }
 
+        val persistApproveMessage = p2pRecordsFactory.createAuthenticatedMessageRecord(
+            source = approvedBy,
+            destination = approvedMember,
+            content = SetOwnRegistrationStatus(
+                registrationId,
+                RegistrationStatus.APPROVED
+            )
+        )
+
         return RegistrationHandlerResult(
             RegistrationState(registrationId, approvedMember, approvedBy),
-            memberToAllMembers + memberRecord + allMembersToNewMember
+            memberToAllMembers + memberRecord + allMembersToNewMember + persistApproveMessage
         )
     }
 

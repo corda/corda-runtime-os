@@ -12,6 +12,8 @@ import net.corda.data.membership.db.request.command.UpdateRegistrationRequestSta
 import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.data.membership.db.request.query.QueryMemberSignature
+import net.corda.data.membership.db.request.query.QueryRegistrationRequest
+import net.corda.data.membership.db.request.query.QueryRegistrationRequests
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
@@ -24,6 +26,8 @@ import net.corda.membership.impl.persistence.service.handler.PersistenceHandlerS
 import net.corda.membership.impl.persistence.service.handler.QueryGroupPolicyHandler
 import net.corda.membership.impl.persistence.service.handler.QueryMemberInfoHandler
 import net.corda.membership.impl.persistence.service.handler.QueryMemberSignatureHandler
+import net.corda.membership.impl.persistence.service.handler.QueryRegistrationRequestHandler
+import net.corda.membership.impl.persistence.service.handler.QueryRegistrationRequestsHandler
 import net.corda.membership.impl.persistence.service.handler.UpdateMemberAndRegistrationRequestToApprovedHandler
 import net.corda.membership.impl.persistence.service.handler.UpdateMemberAndRegistrationRequestToDeclinedHandler
 import net.corda.membership.impl.persistence.service.handler.UpdateRegistrationRequestStatusHandler
@@ -70,6 +74,8 @@ internal class MembershipPersistenceRPCProcessor(
             { UpdateMemberAndRegistrationRequestToDeclinedHandler(persistenceHandlerServices) },
         UpdateRegistrationRequestStatus::class.java to { UpdateRegistrationRequestStatusHandler(persistenceHandlerServices) },
         QueryGroupPolicy::class.java to { QueryGroupPolicyHandler(persistenceHandlerServices) },
+        QueryRegistrationRequest::class.java to { QueryRegistrationRequestHandler(persistenceHandlerServices) },
+        QueryRegistrationRequests::class.java to { QueryRegistrationRequestsHandler(persistenceHandlerServices) }
     )
 
     override fun onNext(
