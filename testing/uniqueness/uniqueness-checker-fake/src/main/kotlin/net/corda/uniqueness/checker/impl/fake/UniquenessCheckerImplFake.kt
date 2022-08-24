@@ -1,6 +1,14 @@
 package net.corda.uniqueness.checker.impl.fake
 
-import net.corda.data.uniqueness.*
+import net.corda.data.uniqueness.UniquenessCheckExternalRequest
+import net.corda.data.uniqueness.UniquenessCheckExternalResponse
+import net.corda.data.uniqueness.UniquenessCheckExternalResultInputStateConflict
+import net.corda.data.uniqueness.UniquenessCheckExternalResultInputStateUnknown
+import net.corda.data.uniqueness.UniquenessCheckExternalResultMalformedRequest
+import net.corda.data.uniqueness.UniquenessCheckExternalResultReferenceStateConflict
+import net.corda.data.uniqueness.UniquenessCheckExternalResultReferenceStateUnknown
+import net.corda.data.uniqueness.UniquenessCheckExternalResultSuccess
+import net.corda.data.uniqueness.UniquenessCheckExternalResultTimeWindowOutOfBounds
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent

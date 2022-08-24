@@ -1,6 +1,9 @@
 package net.corda.uniqueness.checker.impl
 
-import net.corda.data.uniqueness.*
+import net.corda.data.uniqueness.UniquenessCheckExternalRequest
+import net.corda.data.uniqueness.UniquenessCheckExternalResponse
+import net.corda.data.uniqueness.UniquenessCheckExternalResultMalformedRequest
+import net.corda.data.uniqueness.UniquenessCheckExternalResultSuccess
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -14,7 +17,11 @@ import net.corda.uniqueness.checker.UniquenessChecker
 import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalRequest
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
-import net.corda.v5.application.uniqueness.model.*
+import net.corda.v5.application.uniqueness.model.UniquenessCheckError
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
+import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
+import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
+import net.corda.v5.application.uniqueness.model.UniquenessCheckTransactionDetails
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate

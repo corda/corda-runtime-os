@@ -1,6 +1,7 @@
 package net.corda.uniqueness.client.impl
 
-import net.corda.data.uniqueness.*
+import net.corda.data.uniqueness.UniquenessCheckExternalRequest
+import net.corda.data.uniqueness.UniquenessCheckExternalResultSuccess
 import net.corda.uniqueness.checker.UniquenessChecker
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
@@ -11,8 +12,13 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckResponse
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.crypto.*
-import net.corda.v5.crypto.merkle.*
+import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.DigestService
+import net.corda.v5.crypto.SecureHash
+import net.corda.v5.crypto.SignatureSpec
+import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_DEFAULT_NAME
+import net.corda.v5.crypto.merkle.MerkleTree
+import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -149,7 +155,8 @@ class UniquenessCheckerClientServiceImpl @Activate constructor(
 
 data class BatchSignature(
     val rootSignature: DigitalSignatureAndMetadata,
-    val fullMerkleTree: MerkleTree) {
+    val fullMerkleTree: MerkleTree
+) {
 
     /** Extracts a signature with a partial Merkle tree for the specified leaf in the batch signature. */
     // TODO CORE-6243 how to do this without partial merkle trees?
