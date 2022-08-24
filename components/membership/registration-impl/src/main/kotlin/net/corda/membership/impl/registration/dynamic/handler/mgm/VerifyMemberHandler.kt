@@ -4,7 +4,7 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.command.registration.mgm.VerifyMember
-import net.corda.data.membership.db.request.command.RegistrationStatus
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.VerificationRequest
 import net.corda.data.membership.state.RegistrationState
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
@@ -27,7 +27,7 @@ class VerifyMemberHandler(
     override val commandType = VerifyMember::class.java
 
     override fun invoke(state: RegistrationState?, key: String, command: VerifyMember): RegistrationHandlerResult {
-        if(state == null) throw MissingRegistrationStateException
+        if (state == null) throw MissingRegistrationStateException
         val mgm = state.mgm
         val member = state.registeringMember
         val registrationId = state.registrationId

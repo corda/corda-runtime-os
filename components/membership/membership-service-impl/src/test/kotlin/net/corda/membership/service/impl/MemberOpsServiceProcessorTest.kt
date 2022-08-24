@@ -1,16 +1,21 @@
 package net.corda.membership.service.impl
 
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequestContext
 import net.corda.data.membership.rpc.request.RegistrationRpcAction
 import net.corda.data.membership.rpc.request.RegistrationRpcRequest
+import net.corda.data.membership.rpc.request.RegistrationStatusRpcRequest
+import net.corda.data.membership.rpc.request.RegistrationStatusSpecificRpcRequest
 import net.corda.data.membership.rpc.response.MGMGroupPolicyResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
 import net.corda.data.membership.rpc.response.RegistrationRpcResponse
 import net.corda.data.membership.rpc.response.RegistrationRpcStatus
+import net.corda.data.membership.rpc.response.RegistrationStatusResponse
+import net.corda.data.membership.rpc.response.RegistrationsStatusResponse
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
@@ -32,6 +37,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PropertyKeys
 import net.corda.membership.lib.impl.MGMContextImpl
 import net.corda.membership.lib.impl.MemberContextImpl
+import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.membership.read.MembershipGroupReader
@@ -50,12 +56,14 @@ import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.*
 import java.util.concurrent.CompletableFuture
@@ -73,11 +81,12 @@ class MemberOpsServiceProcessorTest {
             MGM_GROUP_ID
         )
 
-        private val clock = TestClock(Instant.ofEpochSecond(100))
+        private val now = Instant.ofEpochSecond(300)
+        private val clock = TestClock(now)
     }
 
     private var registrationProxy: RegistrationProxy = mock {
-        on { register(eq(mgmHoldingIdentity), any()) } doReturn (MembershipRequestRegistrationResult(
+        on { register(any(), eq(mgmHoldingIdentity), any()) } doReturn (MembershipRequestRegistrationResult(
             MembershipRequestRegistrationOutcome.SUBMITTED
         ))
     }
@@ -87,7 +96,7 @@ class MemberOpsServiceProcessorTest {
             mgmHoldingIdentity,
             CpiIdentifier("test", "test", SecureHash("algorithm", "1234".toByteArray())),
             null, UUID.randomUUID(), null, UUID.randomUUID(),
-            timestamp = Instant.now()
+            timestamp = now
         )
     }
 
@@ -139,22 +148,22 @@ class MemberOpsServiceProcessorTest {
         registrationProxy,
         virtualNodeInfoReadService,
         membershipGroupReaderProvider,
-        membershipQueryClient
-    )
+        membershipQueryClient,
+        clock
+    ) { UUID(3, 5) }
 
     private fun assertResponseContext(expected: MembershipRpcRequestContext, actual: MembershipRpcResponseContext) {
         assertEquals(expected.requestId, actual.requestId)
         assertEquals(expected.requestTimestamp, actual.requestTimestamp)
-        val now = TestClock(Instant.now()).instant()
         assertThat(actual.responseTimestamp.epochSecond).isGreaterThanOrEqualTo(expected.requestTimestamp.epochSecond)
         assertThat(actual.responseTimestamp.epochSecond).isLessThanOrEqualTo(now.epochSecond)
     }
 
     @Test
     fun `should successfully submit registration request`() {
-        val requestTimestamp = TestClock(Instant.now()).instant()
+        val requestTimestamp = now
         val requestContext = MembershipRpcRequestContext(
-            UUID.randomUUID().toString(),
+            UUID(0, 1).toString(),
             requestTimestamp
         )
         val request = MembershipRpcRequest(
@@ -169,6 +178,7 @@ class MemberOpsServiceProcessorTest {
         processor.onNext(request, future)
         val result = future.get()
         val expectedResponse = RegistrationRpcResponse(
+            UUID(3, 5).toString(),
             requestTimestamp,
             RegistrationRpcStatus.SUBMITTED,
             1,
@@ -200,7 +210,7 @@ class MemberOpsServiceProcessorTest {
     @Suppress("MaxLineLength")
     @Test
     fun `should successfully submit generate group policy request`() {
-        val requestTimestamp = TestClock(Instant.now()).instant()
+        val requestTimestamp = now
         val requestContext = MembershipRpcRequestContext(
             UUID.randomUUID().toString(),
             requestTimestamp
@@ -234,6 +244,168 @@ class MemberOpsServiceProcessorTest {
             it.assertThat(groupPolicy).contains("\"$MGM_INFO\"")
             it.assertThat(groupPolicy).contains("\"corda.groupId\":\"$MGM_GROUP_ID\"")
             it.assertThat(groupPolicy).contains("\"$CIPHER_SUITE\"")
+        }
+    }
+
+    @Nested
+    inner class RegistrationStatusSpecificRpcRequestTests {
+        @Test
+        fun `should handle request for specific status when value exists`() {
+            val requestTimestamp = now
+            val registrationId = "id1"
+            val requestContext = MembershipRpcRequestContext(
+                UUID(0, 1).toString(),
+                requestTimestamp
+            )
+            val request = MembershipRpcRequest(
+                requestContext,
+                RegistrationStatusSpecificRpcRequest(
+                    mgmHoldingIdentity.shortHash.value,
+                    registrationId
+                )
+            )
+            val status = RegistrationRequestStatus(
+                status = RegistrationStatus.APPROVED,
+                registrationId = registrationId,
+                memberContext = KeyValuePairList(emptyList()),
+                protocolVersion = 3,
+                registrationSent = clock.instant(),
+                registrationLastModified = clock.instant()
+            )
+            val future = CompletableFuture<MembershipRpcResponse>()
+            whenever(
+                membershipQueryClient.queryRegistrationRequestStatus(
+                    mgmHoldingIdentity,
+                    registrationId
+                )
+            ).doReturn(MembershipQueryResult.Success(status))
+
+            processor.onNext(request, future)
+
+            val result = (future.get().response as? RegistrationStatusResponse)?.status
+            assertSoftly { softly ->
+                softly.assertThat(result?.registrationId).isEqualTo(registrationId)
+                softly.assertThat(result?.registrationSent).isEqualTo(clock.instant())
+                softly.assertThat(result?.registrationLastModified).isEqualTo(clock.instant())
+                softly.assertThat(result?.registrationStatus).isEqualTo(RegistrationStatus.APPROVED)
+                softly.assertThat(result?.registrationProtocolVersion).isEqualTo(3)
+                softly.assertThat(result?.memberProvidedContext?.items).isEmpty()
+            }
+        }
+
+        @Test
+        fun `should handle request for specific status when value is missing`() {
+            val requestTimestamp = now
+            val registrationId = "id1"
+            val requestContext = MembershipRpcRequestContext(
+                UUID(0, 1).toString(),
+                requestTimestamp
+            )
+            val request = MembershipRpcRequest(
+                requestContext,
+                RegistrationStatusSpecificRpcRequest(
+                    mgmHoldingIdentity.shortHash.value,
+                    registrationId
+                )
+            )
+            val future = CompletableFuture<MembershipRpcResponse>()
+            whenever(
+                membershipQueryClient.queryRegistrationRequestStatus(
+                    mgmHoldingIdentity,
+                    registrationId
+                )
+            ).doReturn(MembershipQueryResult.Success(null))
+
+            processor.onNext(request, future)
+
+            val result = (future.get().response as? RegistrationStatusResponse)?.status
+            assertThat(result).isNull()
+        }
+
+        @Test
+        fun `should handle request for specific status when id is unknown`() {
+            whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(mgmHoldingIdentity.shortHash)).doReturn(null)
+            val requestTimestamp = now
+            val registrationId = "id1"
+            val requestContext = MembershipRpcRequestContext(
+                UUID(0, 1).toString(),
+                requestTimestamp
+            )
+            val request = MembershipRpcRequest(
+                requestContext,
+                RegistrationStatusSpecificRpcRequest(
+                    mgmHoldingIdentity.shortHash.value,
+                    registrationId
+                )
+            )
+            val future = CompletableFuture<MembershipRpcResponse>()
+
+            processor.onNext(request, future)
+
+            assertThat(future).isCompletedExceptionally
+        }
+    }
+
+
+    @Nested
+    inner class RegistrationStatusRpcRequestTest {
+        @Test
+        fun `should handle request correctly`() {
+            val requestTimestamp = now
+            val requestContext = MembershipRpcRequestContext(
+                UUID(0, 1).toString(),
+                requestTimestamp
+            )
+            val request = MembershipRpcRequest(
+                requestContext,
+                RegistrationStatusRpcRequest(
+                    mgmHoldingIdentity.shortHash.value,
+                )
+            )
+            val statuses = (1..4).map {
+                RegistrationRequestStatus(
+                    status = RegistrationStatus.APPROVED,
+                    registrationId = "id-$it",
+                    memberContext = KeyValuePairList(emptyList()),
+                    protocolVersion = 3,
+                    registrationSent = clock.instant().plusSeconds(it.toLong()),
+                    registrationLastModified = clock.instant().plusSeconds(2L*it.toLong())
+                )
+            }
+
+            val future = CompletableFuture<MembershipRpcResponse>()
+            whenever(
+                membershipQueryClient.queryRegistrationRequestsStatus(
+                    mgmHoldingIdentity,
+                )
+            ).doReturn(MembershipQueryResult.Success(statuses))
+
+            processor.onNext(request, future)
+
+            val result = (future.get().response as? RegistrationsStatusResponse)?.requests
+            assertThat(result?.map { it.registrationId })
+                .containsAll(statuses.map { it.registrationId })
+        }
+
+        @Test
+        fun `should handle request for statuses when id is unknown`() {
+            whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(mgmHoldingIdentity.shortHash)).doReturn(null)
+            val requestTimestamp = now
+            val requestContext = MembershipRpcRequestContext(
+                UUID(0, 1).toString(),
+                requestTimestamp
+            )
+            val request = MembershipRpcRequest(
+                requestContext,
+                RegistrationStatusRpcRequest(
+                    mgmHoldingIdentity.shortHash.value,
+                )
+            )
+            val future = CompletableFuture<MembershipRpcResponse>()
+
+            processor.onNext(request, future)
+
+            assertThat(future).isCompletedExceptionally
         }
     }
 }

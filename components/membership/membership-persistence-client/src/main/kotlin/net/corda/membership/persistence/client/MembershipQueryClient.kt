@@ -2,7 +2,7 @@ package net.corda.membership.persistence.client
 
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.lifecycle.Lifecycle
-import net.corda.membership.lib.registration.RegistrationRequest
+import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -40,10 +40,21 @@ interface MembershipQueryClient : Lifecycle {
      *
      * @return a query result with a matching registration request if the query executed successfully.
      */
-    fun queryRegistrationRequest(
+    fun queryRegistrationRequestStatus(
         viewOwningIdentity: HoldingIdentity,
         registrationId: String
-    ): MembershipQueryResult<RegistrationRequest>
+    ): MembershipQueryResult<RegistrationRequestStatus?>
+
+    /**
+     * Query for all the registration requests for a specific holding identity.
+     *
+     * @param viewOwningIdentity The holding identity whose view is being requested.
+     *
+     * @return a query result with a matching registration request if the query executed successfully.
+     */
+    fun queryRegistrationRequestsStatus(
+        viewOwningIdentity: HoldingIdentity
+    ): MembershipQueryResult<List<RegistrationRequestStatus>>
 
     /**
      * Query for members signatures.

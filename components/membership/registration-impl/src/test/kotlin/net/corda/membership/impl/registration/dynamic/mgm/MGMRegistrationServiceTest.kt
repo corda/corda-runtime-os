@@ -6,8 +6,12 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.crypto.impl.converter.PublicKeyHashConverter
+import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.CordaAvroSerializer
+import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
 import net.corda.libs.configuration.SmartConfigFactory
@@ -39,6 +43,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
+import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
@@ -73,6 +78,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.PublicKey
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
 class MGMRegistrationServiceTest {
@@ -85,6 +91,7 @@ class MGMRegistrationServiceTest {
     }
 
     private val groupId = "43b5b6e6-4f2d-498f-8b41-5e2f8f97e7e8"
+    private val registrationRequest = UUID(1L, 2L)
     private val mgmName = MemberX500Name("Corda MGM", "London", "GB")
     private val mgm = HoldingIdentity(mgmName, groupId)
     private val mgmId = mgm.shortHash
@@ -156,9 +163,17 @@ class MGMRegistrationServiceTest {
         listOf(EndpointInfoConverter(), PublicKeyConverter(keyEncodingService), PublicKeyHashConverter())
     )
     private val memberInfoFactory: MemberInfoFactory = MemberInfoFactoryImpl(layeredPropertyMapFactory)
+    private val statusUpdate = argumentCaptor<RegistrationRequest>()
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.Success(Unit)
         on { persistGroupPolicy(any(), any()) } doReturn MembershipPersistenceResult.Success(2)
+        on { persistRegistrationRequest(eq(mgm), statusUpdate.capture()) } doReturn MembershipPersistenceResult.success()
+    }
+    private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> = mock {
+        on { serialize(any()) } doReturn byteArrayOf(1, 2, 3)
+    }
+    private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
+        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
     }
     private val registrationService = MGMRegistrationService(
         publisherFactory,
@@ -169,6 +184,7 @@ class MGMRegistrationServiceTest {
         memberInfoFactory,
         membershipPersistenceClient,
         layeredPropertyMapFactory,
+        cordaAvroSerializationFactory,
     )
 
     private val properties = mapOf(
@@ -241,7 +257,7 @@ class MGMRegistrationServiceTest {
         registrationService.start()
         val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
 
-        val result = registrationService.register(mgm, properties)
+        val result = registrationService.register(registrationRequest, mgm, properties)
 
         verify(mockPublisher, times(1)).publish(capturedPublishedList.capture())
         val publishedMgmInfoList = capturedPublishedList.firstValue
@@ -295,6 +311,8 @@ class MGMRegistrationServiceTest {
             it.assertThat(getProperty(GROUP_ID)).isEqualTo(groupId)
             it.assertThat(getProperty(STATUS)).isEqualTo(MEMBER_STATUS_ACTIVE)
             it.assertThat(getProperty(IS_MGM)).isEqualTo("true")
+            it.assertThat(statusUpdate.firstValue.status).isEqualTo(RegistrationStatus.APPROVED)
+            it.assertThat(statusUpdate.firstValue.registrationId).isEqualTo(registrationRequest.toString())
         }
         registrationService.stop()
     }
@@ -312,7 +330,7 @@ class MGMRegistrationServiceTest {
                 )
         ).thenReturn(MembershipPersistenceResult.Success(3))
 
-        registrationService.register(mgm, properties)
+        registrationService.register(registrationRequest, mgm, properties)
 
         assertThat(groupProperties.firstValue.entries)
             .containsExactlyInAnyOrderElementsOf(
@@ -335,7 +353,7 @@ class MGMRegistrationServiceTest {
         postConfigChangedEvent()
         registrationService.start()
 
-        registrationService.register(mgm, properties)
+        registrationService.register(registrationRequest, mgm, properties)
 
         verify(membershipPersistenceClient).persistMemberInfo(
             eq(mgm),
@@ -354,7 +372,7 @@ class MGMRegistrationServiceTest {
         whenever(membershipPersistenceClient.persistMemberInfo(eq(mgm), any()))
             .doReturn(MembershipPersistenceResult.Failure("Nop"))
 
-        val result = registrationService.register(mgm, properties)
+        val result = registrationService.register(registrationRequest, mgm, properties)
 
         assertSoftly {
             it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
@@ -364,7 +382,7 @@ class MGMRegistrationServiceTest {
 
     @Test
     fun `registration fails when coordinator is not running`() {
-        val registrationResult = registrationService.register(mgm, mock())
+        val registrationResult = registrationService.register(registrationRequest, mgm, mock())
         assertThat(registrationResult).isEqualTo(
             MembershipRequestRegistrationResult(
                 MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
@@ -380,7 +398,7 @@ class MGMRegistrationServiceTest {
         registrationService.start()
         properties.entries.apply {
             for (index in indices) {
-                val result = registrationService.register(mgm, testProperties)
+                val result = registrationService.register(registrationRequest, mgm, testProperties)
                 assertSoftly {
                     it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
                 }
@@ -399,7 +417,7 @@ class MGMRegistrationServiceTest {
                     "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----"
             )
         registrationService.start()
-        val result = registrationService.register(mgm, testProperties)
+        val result = registrationService.register(registrationRequest, mgm, testProperties)
         assertSoftly {
             it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
             it.assertThat(result.message)
@@ -415,7 +433,7 @@ class MGMRegistrationServiceTest {
         testProperties["corda.group.pki.session"] = "NoPKI"
         testProperties.remove("corda.group.truststore.session.0")
         registrationService.start()
-        val result = registrationService.register(mgm, testProperties)
+        val result = registrationService.register(registrationRequest, mgm, testProperties)
         assertSoftly {
             it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.SUBMITTED)
         }
