@@ -7,7 +7,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
-import net.corda.membership.lib.registration.RegistrationRequest
+import net.corda.membership.lib.registration.RegistrationRequestStatus
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.v5.base.types.LayeredPropertyMap
@@ -61,10 +61,17 @@ class TestMembershipQueryClientImpl @Activate constructor(
         }
     }
 
-    override fun queryRegistrationRequest(
+    override fun queryRegistrationRequestStatus(
         viewOwningIdentity: HoldingIdentity,
         registrationId: String
-    ): MembershipQueryResult<RegistrationRequest> {
+    ): MembershipQueryResult<RegistrationRequestStatus?> {
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
+    }
+
+    override fun queryRegistrationRequestsStatus(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<List<RegistrationRequestStatus>> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
