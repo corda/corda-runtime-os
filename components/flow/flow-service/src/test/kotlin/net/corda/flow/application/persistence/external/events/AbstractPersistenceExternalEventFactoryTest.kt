@@ -16,10 +16,6 @@ import org.mockito.kotlin.whenever
 
 class AbstractPersistenceExternalEventFactoryTest {
 
-    private companion object {
-        const val PAYLOAD = "payload"
-    }
-
     private val abstractPersistenceExternalEventFactory = object : AbstractPersistenceExternalEventFactory<String>() {
         override fun createRequest(parameters: String): Any {
             return parameters
@@ -34,6 +30,7 @@ class AbstractPersistenceExternalEventFactoryTest {
     @Test
     fun `creates an external event record containing an EntityRequest`() {
         val checkpoint = mock<FlowCheckpoint>()
+        val payload = "payload"
         val externalEventContext = ExternalEventContext("request id", "flow id")
 
         whenever(checkpoint.holdingIdentity).thenReturn(ALICE_X500_HOLDING_IDENTITY.toCorda())
@@ -41,14 +38,14 @@ class AbstractPersistenceExternalEventFactoryTest {
         val externalEventRecord = abstractPersistenceExternalEventFactory.createExternalEvent(
             checkpoint,
             externalEventContext,
-            PAYLOAD
+            payload
         )
         assertEquals(Schemas.VirtualNode.ENTITY_PROCESSOR, externalEventRecord.topic)
         assertNull(externalEventRecord.key)
         assertEquals(
             EntityRequest(
                 ALICE_X500_HOLDING_IDENTITY,
-                PAYLOAD,
+                payload,
                 externalEventContext
             ),
             externalEventRecord.payload
