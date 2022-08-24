@@ -31,7 +31,7 @@ class CpkChunksKafkaReaderTest {
 
     @Test
     fun `on writing CPK chunks writes them to disk cache`() {
-        val checksum = SecureHash.create(DUMMY_HASH)
+        val checksum = SecureHash.parse(DUMMY_HASH)
         val cpkChunksKafkaReader = CpkChunksKafkaReader(mock(), cpkChunksFileManager, mock())
 
         val (cpkChunkId0, chunk0) =
@@ -50,7 +50,7 @@ class CpkChunksKafkaReaderTest {
 
     @Test
     fun `on receiving all CPK chunks assembles CPK and clears received chunks cache for that CPK`() {
-        val checksum = SecureHash.create(DUMMY_HASH)
+        val checksum = SecureHash.parse(DUMMY_HASH)
         val cpkChunksKafkaReader = CpkChunksKafkaReader(mock(), cpkChunksFileManager, mock())
 
         val (cpkChunkId0, chunk0) =

@@ -29,7 +29,7 @@ private fun id(name: String,
 private fun ids(vararg ids : CpkIdentifier) = ids.toCollection(TreeSet())
 
 private fun signers(vararg publicKey : String) =
-    publicKey.mapTo(TreeSet(secureHashComparator)) { SecureHash.create("SHA256:$it") } as NavigableSet<SecureHash>
+    publicKey.mapTo(TreeSet(secureHashComparator)) { SecureHash.parse("SHA256:$it") } as NavigableSet<SecureHash>
 
 private fun dependencyMap(vararg pairs : Pair<CpkIdentifier, NavigableSet<CpkIdentifier>>) =
         pairs.associateByTo(TreeMap(),
