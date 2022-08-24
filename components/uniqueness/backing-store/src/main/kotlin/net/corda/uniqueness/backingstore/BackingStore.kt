@@ -2,6 +2,7 @@ package net.corda.uniqueness.backingstore
 
 import net.corda.lifecycle.Lifecycle
 import net.corda.uniqueness.backingstore.BackingStore.Session
+import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalRequest
 import net.corda.v5.application.uniqueness.model.*
 import net.corda.v5.crypto.SecureHash
 
@@ -115,7 +116,7 @@ interface BackingStore : Lifecycle {
              */
             fun commitTransactions(
                 transactionDetails: Collection<Pair<
-                        UniquenessCheckRequest, UniquenessCheckResult>>
+                        UniquenessCheckInternalRequest, UniquenessCheckResult>>
             )
         }
     }

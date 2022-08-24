@@ -21,6 +21,7 @@ import net.corda.uniqueness.backingstore.jpa.datamodel.JPABackingStoreEntities
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessRejectedTransactionEntity
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessStateDetailEntity
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTransactionDetailEntity
+import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalRequest
 import net.corda.v5.application.uniqueness.model.*
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult.Companion.RESULT_ACCEPTED_REPRESENTATION
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult.Companion.RESULT_REJECTED_REPRESENTATION
@@ -304,7 +305,7 @@ open class JPABackingStoreImpl @Activate constructor(
 
             override fun commitTransactions(
                 transactionDetails: Collection<Pair<
-                        UniquenessCheckRequest, UniquenessCheckResult>>
+                        UniquenessCheckInternalRequest, UniquenessCheckResult>>
             ) {
                 transactionDetails.forEach { (request, result) ->
                     entityManager.persist(

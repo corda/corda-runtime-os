@@ -11,6 +11,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.uniqueness.backingstore.BackingStore
 import net.corda.uniqueness.checker.UniquenessChecker
+import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalRequest
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.application.uniqueness.model.*
@@ -88,7 +89,7 @@ class BatchedUniquenessCheckerImpl(
         // the tx id)
         val requestsToProcess = requests.mapNotNull {
             try {
-                UniquenessCheckRequest.create(it)
+                UniquenessCheckInternalRequest.create(it)
             } catch (e: IllegalArgumentException) {
                 results.add(
                     UniquenessCheckExternalResponse(
@@ -121,11 +122,11 @@ class BatchedUniquenessCheckerImpl(
 
     @Suppress("ComplexMethod", "LongMethod")
     private fun processBatch(
-        batch: List<UniquenessCheckRequest>
-    ): List<Pair<UniquenessCheckRequest, UniquenessCheckResult>> {
+        batch: List<UniquenessCheckInternalRequest>
+    ): List<Pair<UniquenessCheckInternalRequest, UniquenessCheckResult>> {
 
         val resultsToRespondWith =
-            mutableListOf<Pair<UniquenessCheckRequest, UniquenessCheckResult>>()
+            mutableListOf<Pair<UniquenessCheckInternalRequest, UniquenessCheckResult>>()
 
         // DB operations are retried, removing conflicts from the batch on each attempt.
         backingStore.transactionSession { session, transactionOps ->
@@ -148,7 +149,7 @@ class BatchedUniquenessCheckerImpl(
             //    subset of resultsToRespondWith and reflects only those results that need to be
             //    written to the backing store
             val resultsToCommit = LinkedList<Pair<
-                    UniquenessCheckRequest, UniquenessCheckResult>>()
+                    UniquenessCheckInternalRequest, UniquenessCheckResult>>()
 
             batch.forEach { request ->
                 // Already processed -> Return same result as in DB (idempotency) but no need to
@@ -237,9 +238,9 @@ class BatchedUniquenessCheckerImpl(
     }
 
     private fun handleRejectedRequest(
-        request: UniquenessCheckRequest,
+        request: UniquenessCheckInternalRequest,
         error: UniquenessCheckError
-    ): Pair<UniquenessCheckRequest, UniquenessCheckResult> {
+    ): Pair<UniquenessCheckInternalRequest, UniquenessCheckResult> {
 
         val rejectedResult = UniquenessCheckResult.Failure(clock.instant(), error)
 
@@ -252,8 +253,8 @@ class BatchedUniquenessCheckerImpl(
     }
 
     private fun handleSuccessfulRequest(
-        request: UniquenessCheckRequest
-    ): Pair<UniquenessCheckRequest, UniquenessCheckResult> {
+        request: UniquenessCheckInternalRequest
+    ): Pair<UniquenessCheckInternalRequest, UniquenessCheckResult> {
 
         val txDetails = UniquenessCheckTransactionDetails(
             request.txId,
@@ -286,7 +287,7 @@ class BatchedUniquenessCheckerImpl(
      */
     private fun commitResults(
         txOps: BackingStore.Session.TransactionOps,
-        results: List<Pair<UniquenessCheckRequest, UniquenessCheckResult>>
+        results: List<Pair<UniquenessCheckInternalRequest, UniquenessCheckResult>>
     ) {
         txOps.commitTransactions(results)
 
