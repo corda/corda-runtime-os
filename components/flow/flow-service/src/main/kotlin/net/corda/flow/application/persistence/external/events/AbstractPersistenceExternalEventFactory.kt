@@ -1,5 +1,6 @@
 package net.corda.flow.application.persistence.external.events
 
+import java.nio.ByteBuffer
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.EntityResponse
@@ -10,7 +11,7 @@ import net.corda.schema.Schemas
 import net.corda.virtualnode.toAvro
 
 abstract class AbstractPersistenceExternalEventFactory<PARAMETERS : Any> :
-    ExternalEventFactory<PARAMETERS, EntityResponse, ByteArray?> {
+    ExternalEventFactory<PARAMETERS, EntityResponse, List<ByteBuffer>> {
 
     abstract fun createRequest(parameters: PARAMETERS): Any
 
@@ -31,7 +32,7 @@ abstract class AbstractPersistenceExternalEventFactory<PARAMETERS : Any> :
         )
     }
 
-    override fun resumeWith(checkpoint: FlowCheckpoint, response: EntityResponse): ByteArray? {
-        return response.result?.array()
+    override fun resumeWith(checkpoint: FlowCheckpoint, response: EntityResponse): List<ByteBuffer> {
+        return response.results
     }
 }

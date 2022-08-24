@@ -398,7 +398,7 @@ class PersistenceServiceInternalTests {
 
         val flowEvent = responses.first().value as FlowEvent
         val entityResponse = deserializer.deserialize((flowEvent.payload as ExternalEventResponse).payload.array())
-        val bytes = entityResponse?.result as List<ByteBuffer>
+        val bytes = entityResponse?.results as List<ByteBuffer>
         val responseEntity = ctx.deserialize(bytes.first())
         assertThat(responseEntity).isEqualTo(bellaTheDog)
 
@@ -905,7 +905,7 @@ class PersistenceServiceInternalTests {
             val entityResponse = deserializer.deserialize(
                 (flowEvent.payload as ExternalEventResponse).payload.array()
             )!!
-            return ctx.deserialize(entityResponse.result as ByteBuffer)
+            return entityResponse.results.map { ctx.deserialize(it) }
         }
     }
     /** Delete entity and assert

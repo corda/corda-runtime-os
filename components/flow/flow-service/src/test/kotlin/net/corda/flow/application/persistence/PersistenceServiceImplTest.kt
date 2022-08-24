@@ -58,7 +58,7 @@ class PersistenceServiceImplTest {
                 argumentCaptor.capture(),
                 any()
             )
-        ).thenReturn(byteBuffer.array())
+        ).thenReturn(listOf(byteBuffer))
     }
 
     @Test
@@ -71,7 +71,12 @@ class PersistenceServiceImplTest {
 
     @Test
     fun `merge executes successfully`() {
-        whenever(flowFiber.suspend<ByteBuffer?>(any())).thenReturn(byteBuffer)
+        whenever(
+            externalEventExecutor.execute(
+                argumentCaptor.capture(),
+                any()
+            )
+        ).thenReturn(listOf(byteBuffer))
         whenever(serializationService.deserialize<TestObject>(any<ByteArray>(), any())).thenReturn(TestObject())
 
         persistenceService.merge(TestObject())
@@ -83,7 +88,12 @@ class PersistenceServiceImplTest {
 
     @Test
     fun `merge fails when deserializes to wrong type`() {
-        whenever(flowFiber.suspend<ByteBuffer?>(any())).thenReturn(byteBuffer)
+        whenever(
+            externalEventExecutor.execute(
+                argumentCaptor.capture(),
+                any()
+            )
+        ).thenReturn(listOf(byteBuffer))
         whenever(serializationService.deserialize<Any>(any<ByteArray>(), any())).thenReturn(FailTestObject())
 
         assertThrows<CordaRuntimeException> { persistenceService.merge(TestObject()) }
@@ -95,7 +105,12 @@ class PersistenceServiceImplTest {
 
     @Test
     fun `remove executes successfully`() {
-        whenever(flowFiber.suspend<ByteBuffer?>(any())).thenReturn(byteBuffer)
+        whenever(
+            externalEventExecutor.execute(
+                argumentCaptor.capture(),
+                any()
+            )
+        ).thenReturn(listOf(byteBuffer))
         whenever(serializationService.deserialize<TestObject>(any<ByteArray>(), any())).thenReturn(TestObject())
 
         persistenceService.remove(TestObject())
@@ -108,7 +123,12 @@ class PersistenceServiceImplTest {
     @Test
     fun `find executes successfully`() {
         val expectedObj = TestObject()
-        whenever(flowFiber.suspend<ByteBuffer?>(any())).thenReturn(byteBuffer)
+        whenever(
+            externalEventExecutor.execute(
+                argumentCaptor.capture(),
+                any()
+            )
+        ).thenReturn(listOf(byteBuffer))
         whenever(serializationService.deserialize<TestObject>(any<ByteArray>(), any())).thenReturn(expectedObj)
 
         assertThat(persistenceService.find(TestObject::class.java, "key")).isEqualTo(expectedObj)
@@ -120,7 +140,12 @@ class PersistenceServiceImplTest {
 
     @Test
     fun `find fails when deserializes to wrong type`() {
-        whenever(flowFiber.suspend<ByteBuffer?>(any())).thenReturn(byteBuffer)
+        whenever(
+            externalEventExecutor.execute(
+                argumentCaptor.capture(),
+                any()
+            )
+        ).thenReturn(listOf(byteBuffer))
         whenever(serializationService.deserialize<Any>(any<ByteArray>(), any())).thenReturn(FailTestObject())
 
         assertThrows<CordaRuntimeException> { persistenceService.find(TestObject::class.java, "key") }
@@ -134,7 +159,13 @@ class PersistenceServiceImplTest {
     fun `find all executes successfully`() {
         val singleItem = TestObject()
         val expectedList = listOf(singleItem, singleItem)
-        whenever(flowFiber.suspend<List<ByteBuffer>>(any())).thenReturn(listOf(byteBuffer, byteBuffer))
+
+        whenever(
+            externalEventExecutor.execute(
+                argumentCaptor.capture(),
+                any()
+            )
+        ).thenReturn(listOf(byteBuffer, byteBuffer))
         whenever(serializationService.deserialize<TestObject>(any<ByteArray>(), any())).thenReturn(singleItem)
 
         val r = persistenceService.findAll(TestObject::class.java).execute()
@@ -147,7 +178,12 @@ class PersistenceServiceImplTest {
 
     @Test
     fun `find all fails when deserializes to wrong type`() {
-        whenever(flowFiber.suspend<List<ByteBuffer>>(any())).thenReturn(listOf(byteBuffer))
+        whenever(
+            externalEventExecutor.execute(
+                argumentCaptor.capture(),
+                any()
+            )
+        ).thenReturn(listOf(byteBuffer))
         whenever(serializationService.deserialize<FailTestObject>(any<ByteArray>(), any())).thenReturn(FailTestObject())
 
         assertThrows<CordaRuntimeException> { persistenceService.findAll(TestObject::class.java).execute() }

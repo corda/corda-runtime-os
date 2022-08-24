@@ -282,6 +282,8 @@ class ExternalEventManagerImplTest {
             response = externalEventResponse
         }
 
+        whenever(stringDeserializer.deserialize(BYTES)).thenReturn("im a string")
+
         externalEventManager.getReceivedResponse(externalEventState, String::class.java)
         verify(stringDeserializer).deserialize(BYTES)
         verifyNoInteractions(byteArrayDeserializer)
@@ -299,6 +301,8 @@ class ExternalEventManagerImplTest {
             response = externalEventResponse
         }
 
+        whenever(byteArrayDeserializer.deserialize(BYTES)).thenReturn(BYTES)
+
         externalEventManager.getReceivedResponse(externalEventState, ByteArray::class.java)
         verify(byteArrayDeserializer).deserialize(BYTES)
         verifyNoInteractions(stringDeserializer)
@@ -315,6 +319,8 @@ class ExternalEventManagerImplTest {
             requestId = REQUEST_ID_1
             response = externalEventResponse
         }
+
+        whenever(anyDeserializer.deserialize(BYTES)).thenReturn(Object())
 
         externalEventManager.getReceivedResponse(externalEventState, FlowOpsResponse::class.java)
         verify(anyDeserializer).deserialize(BYTES)

@@ -52,7 +52,7 @@ class PersistenceServiceImpl @Activate constructor(
                 FindExternalEventFactory::class.java,
                 FindParameters(entityClass, serialize(primaryKey))
             )
-        }?.let { deserializeReceivedPayload(it.array(), entityClass) }
+        }.firstOrNull()?.let { deserializeReceivedPayload(it.array(), entityClass) }
     }
 
     @Suspendable
@@ -71,7 +71,7 @@ class PersistenceServiceImpl @Activate constructor(
                         FindAllExternalEventFactory::class.java,
                         FindAllParameters(entityClass, 0, Int.MAX_VALUE)
                     )
-                }.map { deserializeReceivedPayload(it, List::class.java) }
+                }.map { deserializeReceivedPayload(it.array(), entityClass) }
             }
 
             override fun setLimit(limit: Int): PagedQuery<R> {
@@ -87,12 +87,11 @@ class PersistenceServiceImpl @Activate constructor(
     @Suspendable
     override fun <R : Any> merge(entity: R): R? {
         return wrapResumedException {
-            val merged = externalEventExecutor.execute(
+            externalEventExecutor.execute(
                 MergeExternalEventFactory::class.java,
                 MergeParameters(serialize(entity))
             )
-            deserializeReceivedPayload(merged.array(), entity::class.java)
-        }
+        }.firstOrNull()?.let { deserializeReceivedPayload(it.array(), entity::class.java) }
     }
 
     @Suspendable

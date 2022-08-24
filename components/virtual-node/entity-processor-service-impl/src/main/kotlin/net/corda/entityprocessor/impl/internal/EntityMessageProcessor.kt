@@ -122,17 +122,22 @@ class EntityMessageProcessor(
         val response = try {
             entityManagerFactory.createEntityManager().transaction {
                 when (val entityRequest = request.request) {
-                    is PersistEntity -> successResponse(
+                    is PersistEntities -> successResponse(
                         request.flowExternalEventContext,
                         persistenceServiceInternal.persist(serializationService, it, entityRequest)
                     )
                     is DeleteEntities -> successResponse(
                         request.flowExternalEventContext,
-                        persistenceServiceInternal.remove(serializationService, it, entityRequest)
+                        persistenceServiceInternal.deleteEntities(serializationService, it, entityRequest)
                     )
                     is DeleteEntitiesById -> successResponse(
                         request.flowExternalEventContext,
-                        persistenceServiceInternal.removeById(serializationService, it, entityRequest, holdingIdentity)
+                        persistenceServiceInternal.deleteEntitiesByIds(
+                            serializationService,
+                            it,
+                            entityRequest,
+                            holdingIdentity
+                        )
                     )
                     is MergeEntities -> successResponse(
                         request.flowExternalEventContext,
