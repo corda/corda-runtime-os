@@ -1,4 +1,4 @@
-package net.corda.cipher.suite.impl
+package net.corda.crypto.impl
 
 import net.corda.v5.cipher.suite.CustomSignatureSpec
 import net.corda.v5.cipher.suite.DigestService

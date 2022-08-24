@@ -1,6 +1,6 @@
 package net.corda.crypto.tck.testing.hsms
 
-import net.corda.cipher.suite.impl.getSigningData
+import net.corda.crypto.impl.getSigningData
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.impl.SignatureInstances
 import net.corda.v5.cipher.suite.CipherSchemeMetadata

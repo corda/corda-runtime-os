@@ -1,6 +1,7 @@
 package net.corda.cipher.suite.impl
 
 import net.corda.crypto.impl.SignatureInstances
+import net.corda.crypto.impl.getSigningData
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CipherSchemeMetadata

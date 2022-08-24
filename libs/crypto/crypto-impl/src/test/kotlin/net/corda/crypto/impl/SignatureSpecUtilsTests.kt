@@ -1,14 +1,16 @@
-package net.corda.cipher.suite.impl
+package net.corda.crypto.impl
 
 import net.corda.v5.cipher.suite.CustomSignatureSpec
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.ParameterizedSignatureSpec
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec.Companion.ECDSA_SHA256
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
+import java.io.InputStream
 import java.security.MessageDigest
 import java.security.spec.MGF1ParameterSpec
 import java.security.spec.PSSParameterSpec
@@ -21,7 +23,7 @@ class SignatureSpecUtilsTests {
         @BeforeAll
         @JvmStatic
         fun setup() {
-            digestService = DigestServiceImpl(CipherSchemeMetadataImpl(), null)
+            digestService = DigestServiceMock()
         }
     }
 
@@ -69,5 +71,24 @@ class SignatureSpecUtilsTests {
         )
         val data = UUID.randomUUID().toString().toByteArray()
         assertArrayEquals(data, spec.getSigningData(digestService, data))
+    }
+
+    class DigestServiceMock : DigestService {
+        override fun hash(bytes: ByteArray, digestAlgorithmName: DigestAlgorithmName): SecureHash =
+            SecureHash(digestAlgorithmName.name, MessageDigest.getInstance(digestAlgorithmName.name).digest(bytes))
+
+        override fun hash(inputStream: InputStream, digestAlgorithmName: DigestAlgorithmName): SecureHash {
+            val messageDigest = MessageDigest.getInstance(digestAlgorithmName.name)
+            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+            while(true) {
+                val read = inputStream.read(buffer)
+                if(read <= 0) break
+                messageDigest.update(buffer, 0, read)
+            }
+            return SecureHash(digestAlgorithmName.name, messageDigest.digest())
+        }
+
+        override fun digestLength(digestAlgorithmName: DigestAlgorithmName): Int =
+            MessageDigest.getInstance(digestAlgorithmName.name).digestLength
     }
 }
