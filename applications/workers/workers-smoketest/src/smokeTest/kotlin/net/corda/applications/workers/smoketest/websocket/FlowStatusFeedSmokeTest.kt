@@ -67,7 +67,7 @@ class FlowStatusFeedSmokeTest {
             startFlow(clientRequestId)
 
             eventually(Duration.ofSeconds(300)) {
-                assertThat(wsHandler.messageQueueSnapshot.size).isEqualTo(3)
+                assertThat(wsHandler.messageQueueSnapshot).hasSize(3)
             }
             eventually {
                 val messageQueue = wsHandler.messageQueueSnapshot
@@ -89,8 +89,8 @@ class FlowStatusFeedSmokeTest {
                 startFlow(clientRequestId)
 
                 eventually(Duration.ofSeconds(300)) {
-                    assertThat(wsHandler1.messageQueueSnapshot.size).isEqualTo(3)
-                    assertThat(wsHandler2.messageQueueSnapshot.size).isEqualTo(3)
+                    assertThat(wsHandler1.messageQueueSnapshot).hasSize(3)
+                    assertThat(wsHandler2.messageQueueSnapshot).hasSize(3)
                 }
                 eventually {
                     val messageQueue1 = wsHandler1.messageQueueSnapshot
@@ -129,8 +129,8 @@ class FlowStatusFeedSmokeTest {
                 startFlow(clientRequestId2)
 
                 eventually(Duration.ofSeconds(300)) {
-                    assertThat(wsHandler1.messageQueueSnapshot.size).isEqualTo(3)
-                    assertThat(wsHandler2.messageQueueSnapshot.size).isEqualTo(3)
+                    assertThat(wsHandler1.messageQueueSnapshot).hasSize(3)
+                    assertThat(wsHandler2.messageQueueSnapshot).hasSize(3)
                 }
 
                 eventually {
@@ -159,7 +159,7 @@ class FlowStatusFeedSmokeTest {
 
         client.use {
             eventually {
-                assertThat(wsHandler.messageQueueSnapshot.size).isEqualTo(1)
+                assertThat(wsHandler.messageQueueSnapshot).hasSize(1)
             }
             eventually {
                 assertThat(wsHandler.messageQueueSnapshot[0]).contains(FlowStates.COMPLETED.name)
