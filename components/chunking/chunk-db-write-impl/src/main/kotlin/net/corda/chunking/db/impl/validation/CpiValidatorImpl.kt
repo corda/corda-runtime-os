@@ -21,12 +21,10 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.rpcops.common.VirtualNodeSender
-import java.io.FileNotFoundException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
-
 
 @Suppress("LongParameterList")
 class CpiValidatorImpl constructor(
@@ -47,6 +45,7 @@ class CpiValidatorImpl constructor(
         private const val CERTIFICATE_TYPE = "codesigner"
     }
 
+    @Suppress("ForbiddenComment")
     override fun validate(requestId: RequestId): SecureHash {
         //  Each function may throw a [ValidationException]
         log.debug("Validating $requestId")

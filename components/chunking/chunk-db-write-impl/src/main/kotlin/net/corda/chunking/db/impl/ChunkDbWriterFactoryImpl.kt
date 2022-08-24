@@ -46,7 +46,7 @@ class ChunkDbWriterFactoryImpl(
         @Reference(service = PublisherFactory::class)
         publisherFactory: PublisherFactory,
         @Reference(service = CertificatesService::class)
-        certificatesService: CertificatesService
+        certificatesService: CertificatesService,
         @Reference(service = VirtualNodeInfoReadService::class)
         virtualNodeInfoReadService: VirtualNodeInfoReadService,
     ) : this(subscriptionFactory, publisherFactory, certificatesService, virtualNodeInfoReadService, TempPathProvider())
