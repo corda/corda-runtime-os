@@ -13,6 +13,7 @@ quasar {
         'co.paralleluniverse**',
         'com.esotericsoftware.**',
         'io.opentelemetry.**',
+        'kotlin**',
         'org.apache.**',
         'org.objectweb.asm',
         'org.objenesis**',
@@ -76,6 +77,9 @@ osgiRun {
         [ 'co.paralleluniverse.quasar.check': it.toString() ]
     }.orElse([:])
 
+    // Required by Quasar, Kryo and Kryo serializers.
+    // Discovered using:
+    //     $ java --illegal-access=warn -jar <application.jar>
     addOpensAttribute.addAll 'java.base/java.lang', 'java.base/java.lang.invoke', 'java.base/java.nio', 'java.base/java.util'
 }
 

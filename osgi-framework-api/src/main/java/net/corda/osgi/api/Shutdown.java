@@ -1,16 +1,16 @@
-package net.corda.osgi.api
+package net.corda.osgi.api;
 
-import org.osgi.framework.Bundle
+import org.jetbrains.annotations.NotNull;
+import org.osgi.framework.Bundle;
 
 /**
- * Get this service to ask to the `osgi-framework-bootstrap` to stop the OSGi framework running the current
+ * Get this service to ask the {@code osgi-framework-bootstrap} to stop the OSGi framework running the current
  * application.
  *
- * [Application.shutdown] method will be called after [shutdown] is called and before the OSGi framework stops.
- *
+ * {@link Application#shutdown} method will be called after {@link #shutdown} is called and before the OSGi framework stops.
+ *<pre>{@code
  * **EXAMPLE**
  *
- * ``` kotlin
  * class App: Application {
  *
  *   override fun startup(args: Array<String>) {
@@ -37,16 +37,16 @@ import org.osgi.framework.Bundle
  *  }
  *
  * }
- * ```
+ * }</pre>
  */
-interface Shutdown {
+public interface Shutdown {
 
     /**
-     * Call this method to ask to `osgi-framework-bootstrap` to stop the application implementing this interface
+     * Call this method to ask to {@code osgi-framework-bootstrap} to stop the application implementing this interface
      * and the OSGi framework.
      *
-     * @param bundle where is this application asking to shutdown.
+     * @param bundle which is asking this application to shut down.
      */
-    fun shutdown(bundle: Bundle)
+    void shutdown(@NotNull Bundle bundle);
 
 }
