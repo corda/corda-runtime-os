@@ -20,9 +20,9 @@ class TestFlowFiberServiceWithSerialization : FlowFiberService, SingletonSeriali
 
     init{
         val membershipGroupReader: MembershipGroupReader = mock(MembershipGroupReader::class.java)
-        val BOB_X500 = "CN=Bob, O=Bob Corp, L=LDN, C=GB"
-        val BOB_X500_NAME = MemberX500Name.parse(BOB_X500)
-        val holdingIdentity =  HoldingIdentity(BOB_X500_NAME,"group1")
+        val bobX500 = "CN=Bob, O=Bob Corp, L=LDN, C=GB"
+        val bobX500Name = MemberX500Name.parse(bobX500)
+        val holdingIdentity =  HoldingIdentity(bobX500Name,"group1")
         val flowFiberExecutionContext = FlowFiberExecutionContext(
             mock(FlowCheckpoint::class.java),
             mockFlowSandboxGroupContext,
