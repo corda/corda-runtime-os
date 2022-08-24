@@ -15,6 +15,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.uniqueness.backingstore.BackingStore
+import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalRequest
 import net.corda.v5.application.uniqueness.model.*
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
@@ -144,7 +145,7 @@ open class BackingStoreImplFake @Activate constructor(
             @Synchronized
             override fun commitTransactions(
                 transactionDetails: Collection<Pair<
-                        UniquenessCheckRequest, UniquenessCheckResult>>
+                        UniquenessCheckInternalRequest, UniquenessCheckResult>>
             ) {
                 sessionTxnData.putAll(
                     transactionDetails.map {
