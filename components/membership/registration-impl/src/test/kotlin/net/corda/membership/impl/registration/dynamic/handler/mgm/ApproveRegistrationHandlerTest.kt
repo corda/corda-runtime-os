@@ -7,7 +7,9 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.MembershipPackage
+import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.helpers.MembershipPackageFactory
@@ -241,6 +243,26 @@ class ApproveRegistrationHandlerTest {
         val reply = handler.invoke(state, key, command)
 
         assertThat(reply.outputStates).containsAll(membersRecord)
+    }
+
+
+    @Test
+    fun `invoke sends the approved state to the member over P2P`() {
+        val record = mock<Record<String, AppMessage>>()
+        whenever(
+            p2pRecordsFactory.createAuthenticatedMessageRecord(
+                owner.toAvro(),
+                member.toAvro(),
+                SetOwnRegistrationStatus(
+                    registrationId,
+                    RegistrationStatus.APPROVED
+                )
+            )
+        ).doReturn(record)
+
+        val reply = handler.invoke(state, key, command)
+
+        assertThat(reply.outputStates).contains(record)
     }
 
     @Test
