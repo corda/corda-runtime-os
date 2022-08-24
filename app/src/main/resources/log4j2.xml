@@ -1,25 +1,24 @@
 <?xml version='1.0' encoding='UTF-8' ?>
 
 <configuration>
-    <Appenders>
-        <Console name="LogToConsole" target="SYSTEM_OUT">
-            <PatternLayout>
-                <Pattern>%d{yyyy-MM-dd HH:mm:ss}  [%level] [%t] [%c] - %m%n</Pattern>
-            </PatternLayout>
-        </Console>
 
+    <Appenders>
+        <!-- Logs the redirected stdOut and stdErr to the console -->
+        <Console name="LogToConsole" target="SYSTEM_OUT"/>
+
+        <!-- Main log file, gets all of stdout and stderr as well as all other loggers -->
         <RollingFile name="LogToRollingFile" fileName="${sys:user.home}/.corda/cli/logs/corda-cli.log"
                      filePattern="logs/$${date:yyyy-MM}/app-%d{MM-dd-yyyy}-%i.log.gz">
             <PatternLayout>
-                <Pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %level [%t] [%c] [%l] - %msg%n</Pattern>
+                <Pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %level [%t] [%c] - %msg%n</Pattern>
             </PatternLayout>
             <Policies>
-                <TimeBasedTriggeringPolicy />
+                <TimeBasedTriggeringPolicy/>
                 <SizeBasedTriggeringPolicy size="10 MB"/>
             </Policies>
         </RollingFile>
-
     </Appenders>
+
     <Loggers>
         <!-- avoid duplicated logs with additivity=false -->
         <Logger name="org.pf4j" level="info" additivity="false">
