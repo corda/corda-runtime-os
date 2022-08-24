@@ -23,8 +23,6 @@ import org.slf4j.LoggerFactory
 import org.slf4j.MDC
 import java.lang.IllegalArgumentException
 import javax.security.auth.login.FailedLoginException
-import net.corda.httprpc.ResponseCode
-import net.corda.httprpc.response.HttpResponse
 
 internal object ContextUtils {
 
@@ -101,7 +99,7 @@ internal object ContextUtils {
                 @Suppress("SpreadOperator")
                 val result = invokeDelegatedMethod(*paramValues.toTypedArray())
 
-                buildJsonResult(result, ctx, this)
+                ctx.buildJsonResult(result, this.method.method.returnType)
 
                 ctx.header(Header.CACHE_CONTROL, "no-cache")
                 log.debug { "Invoke method \"${this.method.method.name}\" for route info completed." }
@@ -136,30 +134,6 @@ internal object ContextUtils {
                 part.delete()
             } catch (e: Exception) {
                 log.warn("Could not delete part: ${part.name}", e)
-            }
-        }
-    }
-
-    private fun buildJsonResult(result: Any?, ctx: Context, routeInfo: RouteInfo) {
-        when {
-            (result as? String) != null ->
-                ctx.contentType(contentTypeApplicationJson).result(result).status(ResponseCode.OK.statusCode)
-            result is HttpResponse<*> -> {
-                // if the responseBody is null, we return null json
-                ctx.json(result.responseBody ?: "null").status(result.responseCode.statusCode)
-            }
-            result != null -> {
-                // If the return type does not specify a response code (is not a HttpResponse) we default the status to 200 - OK.
-                ctx.json(result).status(ResponseCode.OK.statusCode)
-            }
-            else -> {
-                if (routeInfo.method.method.returnType != Void.TYPE) {
-                    // if the method has no return type we return a status code 200 - OK with null payload
-                    ctx.result("null").status(ResponseCode.OK.statusCode)
-                } else {
-                    // if the method has no return type we return a status code 204 - No Content.
-                    ctx.status(ResponseCode.NO_CONTENT.statusCode)
-                }
             }
         }
     }
