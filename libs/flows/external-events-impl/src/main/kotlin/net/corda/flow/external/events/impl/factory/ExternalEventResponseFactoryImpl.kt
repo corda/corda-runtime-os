@@ -46,7 +46,7 @@ class ExternalEventResponseFactoryImpl(
     ): Record<String, FlowEvent> {
         return retriable(
             flowExternalEventContext,
-            ExceptionEnvelope(throwable::class.java.simpleName, throwable.message)
+            ExceptionEnvelope(throwable::class.java.name, throwable.message)
         )
     }
 
@@ -63,7 +63,7 @@ class ExternalEventResponseFactoryImpl(
     ): Record<String, FlowEvent> {
         return platformError(
             flowExternalEventContext,
-            ExceptionEnvelope(throwable::class.java.simpleName, throwable.message)
+            ExceptionEnvelope(throwable::class.java.name, throwable.message)
         )
     }
 
@@ -80,7 +80,7 @@ class ExternalEventResponseFactoryImpl(
     ): Record<String, FlowEvent> {
         return fatalError(
             flowExternalEventContext,
-            ExceptionEnvelope(throwable::class.java.simpleName, throwable.message)
+            ExceptionEnvelope(throwable::class.java.name, throwable.message)
         )
     }
 
