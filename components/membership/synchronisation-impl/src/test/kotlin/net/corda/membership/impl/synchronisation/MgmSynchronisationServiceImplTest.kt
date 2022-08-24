@@ -178,7 +178,9 @@ class MgmSynchronisationServiceImplTest {
         on { generateTree(argThat { contains(aliceInfo) && size == 1 }) } doReturn matchingMerkleTree
         on { generateTree(argThat { contains(bobInfo) && size == 1 }) } doReturn nonMatchingMerkleTree
         on { generateTree(argThat { contains(daisyInfo) && size == 1 }) } doReturn nonMatchingMerkleTree
-        on { generateTree(argThat { containsAll(memberInfosWithoutMgm) && size == memberInfosWithoutMgm.size }) } doReturn matchingMerkleTree
+        on { generateTree(
+            argThat { containsAll(memberInfosWithoutMgm) && size == memberInfosWithoutMgm.size }
+        ) } doReturn matchingMerkleTree
     }
     private val signatures = createSignatures(memberInfosWithoutMgm)
     private val signature = createSignatures(listOf(bobInfo))
