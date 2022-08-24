@@ -106,11 +106,9 @@ class VirtualNodeDb(
             val user = connection.getUser()
                 ?: throw DBConfigurationException("DB user not known for connection ${connection.description}")
             val dbSchema = dbType.getSchemaName(holdingIdentityShortHash)
-            // This covers scenario when previous virtual node on-boarding request failed after user was created
-            // Since connections are persisted at later point, user's password is lost, so user is re-created
-            log.info("User for connection ${connection.description} already exists in DB, schema will be deleted")
+            log.info("Schema will be deleted for ${connection.description}")
             dbAdmin.deleteSchema(dbSchema)
-            log.info("User for connection ${connection.description} already exists in DB, it will be re-created")
+            log.info("User will be deleted for ${connection.description}")
             dbAdmin.deleteUser(user)
         }
     }

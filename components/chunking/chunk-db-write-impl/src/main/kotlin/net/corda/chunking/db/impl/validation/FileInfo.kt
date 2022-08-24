@@ -17,6 +17,6 @@ data class FileInfo(val name: String, val path: Path, val checksum: SecureHash, 
         return properties?.get(PropertyKeys.FORCE_UPLOAD)?.let { java.lang.Boolean.parseBoolean(it) } ?: false
     }
     val resetDb: Boolean get() {
-        return properties?.get(/*PropertyKeys.RESET_DB*/ "resetDb")?.let { java.lang.Boolean.parseBoolean(it) } ?: false
+        return properties?.get(PropertyKeys.RESET_DB)?.let { java.lang.Boolean.parseBoolean(it) } ?: false
     }
 }

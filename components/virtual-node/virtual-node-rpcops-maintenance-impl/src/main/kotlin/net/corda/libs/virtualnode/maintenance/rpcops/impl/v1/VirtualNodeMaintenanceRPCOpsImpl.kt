@@ -132,7 +132,7 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
             upload.fileName, upload.content,
             mapOf(
                 PropertyKeys.FORCE_UPLOAD to true.toString(),
-                /*PropertyKeys.RESET_DB*/"resetDb" to resetDb.toString()
+                PropertyKeys.RESET_DB to resetDb.toString()
             )
         )
         return CpiUploadRPCOps.CpiUploadResponse(cpiUploadRequestId.requestId)

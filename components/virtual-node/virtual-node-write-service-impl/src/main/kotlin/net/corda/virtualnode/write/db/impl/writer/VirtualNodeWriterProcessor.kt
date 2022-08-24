@@ -147,7 +147,6 @@ internal class VirtualNodeWriterProcessor(
         virtualNodeDBResetRequest: VirtualNodeDBResetRequest,
         respFuture: CompletableFuture<VirtualNodeManagementResponse>
     ) {
-//        val holdingId = virtualNodeDBResetRequest.holdingIdentityShortHash
         val em = dbConnectionManager.getClusterEntityManagerFactory().createEntityManager()
         val shortHash = ShortHash.Companion.of(virtualNodeDBResetRequest.holdingIdentityShortHash)
         val holdingIdentityEntity = em.use {
@@ -347,10 +346,7 @@ internal class VirtualNodeWriterProcessor(
     private fun createSchemasAndUsers(holdingIdentity: HoldingIdentity, vNodeDbs: Collection<VirtualNodeDb>) {
         try {
             logger.info("Creating for ${holdingIdentity.shortHash}")
-            vNodeDbs.filter {
-                logger.info("is cluster db: ${it.isClusterDb}")
-                it.isClusterDb
-            }.forEach { it.createSchemasAndUsers() }
+            vNodeDbs.filter { it.isClusterDb }.forEach { it.createSchemasAndUsers() }
         } catch (e: Exception) {
             throw VirtualNodeWriteServiceException(
                 "Error creating virtual node DB schemas and users for holding identity $holdingIdentity", e
