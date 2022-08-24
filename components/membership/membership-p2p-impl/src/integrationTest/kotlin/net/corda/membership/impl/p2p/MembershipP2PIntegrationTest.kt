@@ -475,8 +475,8 @@ class MembershipP2PIntegrationTest {
 
         assertThat(result).isNotNull
         with(result.command as ProcessSyncRequest) {
-            assertThat(this.mgm).isEqualTo(destination.toAvro())
-            assertThat(this.requester).isEqualTo(source.toAvro())
+            assertThat(this.synchronisationMetaData.mgm).isEqualTo(destination.toAvro())
+            assertThat(this.synchronisationMetaData.member).isEqualTo(source.toAvro())
             assertThat(this.syncRequest).isEqualTo(syncRequest)
         }
     }

@@ -1,6 +1,7 @@
 package net.corda.membership.impl.p2p.handler
 
 import net.corda.data.membership.command.synchronisation.SynchronisationCommand
+import net.corda.data.membership.command.synchronisation.SynchronisationMetaData
 import net.corda.data.membership.command.synchronisation.mgm.ProcessSyncRequest
 import net.corda.data.membership.p2p.MembershipSyncRequest
 import net.corda.messaging.api.records.Record
@@ -30,7 +31,15 @@ internal class MembershipSyncRequestHandler(
         return Record(
             SYNCHRONISATION_TOPIC,
             "${metadata.syncId}-${header.source.toCorda().shortHash}",
-            SynchronisationCommand(header.destination, ProcessSyncRequest(header.destination, header.source, request))
+            SynchronisationCommand(
+                ProcessSyncRequest(
+                    SynchronisationMetaData(
+                        header.destination,
+                        header.source
+                    ),
+                    request
+                )
+            )
         )
     }
 }

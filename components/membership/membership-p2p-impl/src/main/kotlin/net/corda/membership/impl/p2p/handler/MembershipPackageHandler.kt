@@ -1,6 +1,7 @@
 package net.corda.membership.impl.p2p.handler
 
 import net.corda.data.membership.command.synchronisation.SynchronisationCommand
+import net.corda.data.membership.command.synchronisation.SynchronisationMetaData
 import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AuthenticatedMessageHeader
@@ -27,10 +28,11 @@ internal class MembershipPackageHandler(
             SYNCHRONISATION_TOPIC,
             header.destination.toCorda().shortHash.value,
             SynchronisationCommand(
-                header.destination,
                 ProcessMembershipUpdates(
-                    header.destination,
-                    header.source,
+                    SynchronisationMetaData(
+                        header.source,
+                        header.destination
+                    ),
                     avroSchemaRegistry.deserialize(payload)
                 )
             )

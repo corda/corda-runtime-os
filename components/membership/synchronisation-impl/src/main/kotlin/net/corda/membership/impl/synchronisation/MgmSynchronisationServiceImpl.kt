@@ -199,8 +199,8 @@ class MgmSynchronisationServiceImpl internal constructor(
     private inner class ActiveImpl : InnerSynchronisationService {
         override fun processSyncRequest(request: ProcessSyncRequest) {
             val memberHashFromTheReq = request.syncRequest.membersHash
-            val mgm = request.mgm
-            val requester = request.requester
+            val mgm = request.synchronisationMetaData.mgm
+            val requester = request.synchronisationMetaData.member
             val allMembers = membershipGroupReaderProvider.getGroupReader(mgm.toCorda()).lookup()
             val mgmInfo = allMembers.firstOrNull {
                 it.holdingIdentity == mgm.toCorda()

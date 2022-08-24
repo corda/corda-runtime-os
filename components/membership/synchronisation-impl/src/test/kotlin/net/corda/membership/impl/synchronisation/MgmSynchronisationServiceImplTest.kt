@@ -11,6 +11,7 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHash
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
+import net.corda.data.membership.command.synchronisation.SynchronisationMetaData
 import net.corda.data.membership.command.synchronisation.mgm.ProcessSyncRequest
 import net.corda.data.membership.p2p.DistributionMetaData
 import net.corda.data.membership.p2p.MembershipPackage
@@ -258,8 +259,10 @@ class MgmSynchronisationServiceImplTest {
     private fun createSecureHash(algorithm: String) = SecureHash(algorithm, byteBuffer)
 
     private fun createRequest(member: HoldingIdentity) = ProcessSyncRequest(
-        mgm,
-        member,
+        SynchronisationMetaData(
+            mgm,
+            member
+        ),
         MembershipSyncRequest(
             DistributionMetaData(
                 syncId,

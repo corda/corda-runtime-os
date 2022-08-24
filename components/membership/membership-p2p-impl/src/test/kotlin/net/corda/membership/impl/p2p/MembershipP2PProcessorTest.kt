@@ -261,10 +261,9 @@ class MembershipP2PProcessorTest {
                 it.assertThat(this.first().value).isInstanceOf(SynchronisationCommand::class.java)
                 val command = this.first().value as SynchronisationCommand
                 it.assertThat(command.command).isInstanceOf(ProcessSyncRequest::class.java)
-                it.assertThat(command.viewOwningMember).isEqualTo(mgm)
                 val request = command.command as ProcessSyncRequest
-                it.assertThat(request.mgm).isEqualTo(mgm)
-                it.assertThat(request.requester).isEqualTo(member)
+                it.assertThat(request.synchronisationMetaData.mgm).isEqualTo(mgm)
+                it.assertThat(request.synchronisationMetaData.member).isEqualTo(member)
                 it.assertThat(request.syncRequest).isEqualTo(syncRequest)
                 it.assertThat(this.first().key).isEqualTo("$syncId-${member.toCorda().shortHash}")
             }

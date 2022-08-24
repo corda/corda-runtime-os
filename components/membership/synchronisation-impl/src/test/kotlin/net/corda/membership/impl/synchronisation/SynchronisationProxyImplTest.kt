@@ -4,10 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.membership.command.synchronisation.SynchronisationCommand
+import net.corda.data.membership.command.synchronisation.SynchronisationMetaData
 import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
 import net.corda.data.membership.command.synchronisation.mgm.ProcessSyncRequest
 import net.corda.data.membership.p2p.MembershipPackage
+import net.corda.data.membership.p2p.MembershipSyncRequest
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -20,6 +21,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.exceptions.SynchronisationProtocolSelectionException
+import net.corda.membership.lib.exceptions.SynchronisationProtocolTypeException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.PROTOCOL_MODE
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.P2PParameters.SESSION_PKI
@@ -56,7 +58,6 @@ import org.apache.commons.text.StringEscapeUtils
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -132,19 +133,19 @@ class SynchronisationProxyImplTest {
         on { getGroupPolicy(any()) } doReturn mock()
     }
     private val membershipPackage: MembershipPackage = mock()
+    private val synchronisationMetadata: SynchronisationMetaData = mock {
+        on { mgm } doReturn createHoldingIdentity().toAvro()
+        on { member } doReturn createHoldingIdentity().toAvro()
+    }
     private val updates: ProcessMembershipUpdates = mock {
-        on { destination } doReturn createHoldingIdentity().toAvro()
+        on { synchronisationMetaData } doReturn synchronisationMetadata
         on { membershipPackage } doReturn membershipPackage
     }
-
-    private val syncCommandForUpdates = SynchronisationCommand(
-        createHoldingIdentity().toAvro(),
-        updates
-    )
-    private val syncCommandForRequestProcessing = SynchronisationCommand(
-        createHoldingIdentity().toAvro(),
-        ProcessSyncRequest()
-    )
+    private val syncRequest: MembershipSyncRequest = mock()
+    private val request: ProcessSyncRequest = mock {
+        on { synchronisationMetaData } doReturn synchronisationMetadata
+        on { syncRequest } doReturn syncRequest
+    }
     private lateinit var synchronisationProxy: SynchronisationProxy
 
     private fun createHoldingIdentity() = createTestHoldingIdentity("O=Alice, L=London, C=GB", DUMMY_GROUP_ID)
@@ -240,21 +241,21 @@ class SynchronisationProxyImplTest {
         val identity1 = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(MemberSyncProtocol1::class.java.name), identity1)
         val ex1 = assertFailsWith<SynchronisationException> {
-            synchronisationProxy.handleCommand(syncCommandForUpdates)
+            synchronisationProxy.processMembershipUpdates(updates)
         }
         assertThat(ex1.message).isEqualTo("MemberSyncProtocol1 called")
 
         val identity2 = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(MemberSyncProtocol2::class.java.name), identity2)
         val ex2 = assertFailsWith<SynchronisationException> {
-            synchronisationProxy.handleCommand(syncCommandForUpdates)
+            synchronisationProxy.processMembershipUpdates(updates)
         }
         assertThat(ex2.message).isEqualTo("MemberSyncProtocol2 called")
 
         val identity3 = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(MgmSyncProtocol1::class.java.name), identity3)
         val ex3 = assertFailsWith<SynchronisationException> {
-            synchronisationProxy.handleCommand(syncCommandForRequestProcessing)
+            synchronisationProxy.processSyncRequest(request)
         }
         assertThat(ex3.message).isEqualTo("MgmSyncProtocol1 called")
     }
@@ -266,9 +267,10 @@ class SynchronisationProxyImplTest {
         synchronisationProxy.start()
         val identity = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(MgmSyncProtocol1::class.java.name), identity)
-        assertDoesNotThrow {
-            synchronisationProxy.handleCommand(syncCommandForUpdates)
+        val ex = assertFailsWith<SynchronisationProtocolTypeException> {
+            synchronisationProxy.processMembershipUpdates(updates)
         }
+        assertThat(ex.message).isEqualTo("Wrong synchronisation service type was configured in group policy file.")
     }
 
     @Test
@@ -278,10 +280,10 @@ class SynchronisationProxyImplTest {
         synchronisationProxy.start()
         val identity = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(AbstractSyncProtocol::class.java.name), identity)
-        val ex = assertFailsWith<SynchronisationProtocolSelectionException> {
-            synchronisationProxy.handleCommand(syncCommandForUpdates)
+        val ex = assertFailsWith<SynchronisationProtocolTypeException> {
+            synchronisationProxy.processMembershipUpdates(updates)
         }
-        assertThat(ex.message).contains("Protocol should be either MGM or member sync service.")
+        assertThat(ex.message).isEqualTo("Wrong synchronisation service type was configured in group policy file.")
     }
 
     @Test
@@ -292,7 +294,7 @@ class SynchronisationProxyImplTest {
         val identity = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(String::class.java.name), identity)
         assertFailsWith<SynchronisationProtocolSelectionException> {
-            synchronisationProxy.handleCommand(syncCommandForUpdates)
+            synchronisationProxy.processMembershipUpdates(updates)
         }
     }
 
@@ -304,7 +306,7 @@ class SynchronisationProxyImplTest {
         val identity = createHoldingIdentity()
         mockGroupPolicy(null, identity)
         val ex = assertFailsWith<SynchronisationProtocolSelectionException> {
-            synchronisationProxy.handleCommand(syncCommandForUpdates)
+            synchronisationProxy.processMembershipUpdates(updates)
         }
         assertThat(ex.message).contains("Could not find group policy file for holding identity")
     }
@@ -326,7 +328,7 @@ class SynchronisationProxyImplTest {
         doReturn(false).whenever(coordinator).isRunning
         val identity = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(MemberSyncProtocol1::class.java.name), identity)
-        assertFailsWith<IllegalStateException> { synchronisationProxy.handleCommand(mock()) }
+        assertFailsWith<IllegalStateException> { synchronisationProxy.processMembershipUpdates(mock()) }
     }
 
     @Test
@@ -335,7 +337,7 @@ class SynchronisationProxyImplTest {
         doReturn(LifecycleStatus.ERROR).whenever(coordinator).status
         val identity = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(MemberSyncProtocol1::class.java.name), identity)
-        assertFailsWith<IllegalStateException> { synchronisationProxy.handleCommand(mock()) }
+        assertFailsWith<IllegalStateException> { synchronisationProxy.processMembershipUpdates(mock()) }
     }
 
     @Test

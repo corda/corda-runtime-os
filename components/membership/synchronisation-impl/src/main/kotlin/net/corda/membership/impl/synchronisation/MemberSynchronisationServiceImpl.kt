@@ -124,7 +124,7 @@ class MemberSynchronisationServiceImpl @Activate constructor(
             }, KeyValuePairList::class.java)
 
         override fun processMembershipUpdates(updates: ProcessMembershipUpdates) {
-            val viewOwningMember = updates.destination.toCorda()
+            val viewOwningMember = updates.synchronisationMetaData.member.toCorda()
             try {
                 val records = updates.membershipPackage.memberships.memberships.map { update ->
                     // TODO - CORE-5811 - verify signatures in signed member infos.
