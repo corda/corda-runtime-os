@@ -86,7 +86,7 @@ class DigestServiceTests {
         assertEquals(32, hash.size)
         assertEquals(32, digestService.digestLength(SHA2_256))
         assertEquals(
-            SecureHash.create("SHA-256:6D1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581F"),
+            SecureHash.parse("SHA-256:6D1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581F"),
             hash
         )
         assertEquals("SHA-256:6D1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581F", hash.toString())
@@ -98,7 +98,7 @@ class DigestServiceTests {
         assertEquals(48, hash.size)
         assertEquals(48, digestService.digestLength(SHA2_384))
         assertEquals(
-            SecureHash.create(
+            SecureHash.parse(
             "SHA-384:5E3DBD33BEC467F625E28D4C5DF90CAACEA722F2DBB2AE9EF9C59EF4FB0FA31A070F5911156713F6AA0FCB09186B78FF"),
             hash
         )
@@ -113,7 +113,7 @@ class DigestServiceTests {
         assertEquals(64, hash.size)
         assertEquals(64, digestService.digestLength(SHA2_512))
         assertEquals(
-            SecureHash.create(
+            SecureHash.parse(
             "SHA-512:A0F54F81E7FC7387989E1582E83F3A9051151E380F67E0F71D5CEE266B582F4105E08E8707A554FC9D3A6B3BEA1ECA" +
                     "8CC4E6BA1CF4DE78D8822B3EA724DE9D6C"),
             hash)
@@ -128,7 +128,7 @@ class DigestServiceTests {
         assertEquals(32, hash.size)
         assertEquals(32, digestService.digestLength(SHA3_256))
         assertEquals(
-            SecureHash.create(
+            SecureHash.parse(
             "SHA3-256:A243D53F7273F4C92ED901A14F11B372FDF6FF69583149AFD4AFA24BF17A8880"),
             hash
         )
@@ -144,7 +144,7 @@ class DigestServiceTests {
         assertEquals(48, hash.size)
         assertEquals(48, digestService.digestLength(SHA3_384))
         assertEquals(
-            SecureHash.create("SHA3-384:AB698010362BFEDB89BCC8800F7E1410A92D83D5B80B99969A079D1FF1BC0" +
+            SecureHash.parse("SHA3-384:AB698010362BFEDB89BCC8800F7E1410A92D83D5B80B99969A079D1FF1BC0" +
                 "7CF817998E855B6D3A56797F1182AC24307"),
             hash
         )
@@ -161,7 +161,7 @@ class DigestServiceTests {
         assertEquals(64, hash.size)
         assertEquals(64, digestService.digestLength(SHA3_512))
         assertEquals(
-            SecureHash.create("SHA3-512:20FDD4FAB7B85E6C9227C679588E1E62A781217C455AEC5792DA155736C2" +
+            SecureHash.parse("SHA3-512:20FDD4FAB7B85E6C9227C679588E1E62A781217C455AEC5792DA155736C2" +
                 "7CAFC5989ECC6E6D7590BDBB57F9E4C945B16DB60E2D09C4F72C8D826A34A2D03C4E"),
             hash
         )
@@ -177,7 +177,7 @@ class DigestServiceTests {
         assertEquals(32, hash.size)
         assertEquals(32, digestService.digestLength(CUSTOM_DIGEST))
         assertEquals(
-            SecureHash.create(
+            SecureHash.parse(
                 "SHA-256D:CB2A6BC131E59DC17DF10769ACBDFEC06965F0AFEAF1C3359E69CB915873E051"
             ),
             hash
