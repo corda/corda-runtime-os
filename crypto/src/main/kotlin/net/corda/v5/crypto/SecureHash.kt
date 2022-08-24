@@ -19,13 +19,13 @@ class SecureHash(val algorithm: String, bytes: ByteArray) : OpaqueBytes(bytes) {
         /**
          * Creates a [SecureHash].
          *
-         * This function does not validate the length of the created digest. Prefer using [DigestService.create] for a safer mechanism
-         * for creating [SecureHash]es.
+         * This function does not validate the length of the created digest. Prefer using
+         * [net.corda.v5.application.crypto.HashingService.parse] for a safer mechanism for creating [SecureHash]es.
          *
-         * @see DigestService.create
+         * @see net.corda.v5.application.crypto.HashingService.parse
          */
         @JvmStatic
-        fun create(str: String): SecureHash {
+        fun parse(str: String): SecureHash {
             val idx = str.indexOf(DELIMITER)
             return if (idx == -1) {
                 throw IllegalArgumentException("Provided string: $str should be of format algorithm:hexadecimal")

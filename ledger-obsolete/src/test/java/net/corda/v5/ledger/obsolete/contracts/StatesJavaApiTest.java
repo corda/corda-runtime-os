@@ -19,7 +19,7 @@ public class StatesJavaApiTest {
     private final CommandData commandData = mock(CommandData.class);
     private final OwnableState ownableState = mock(OwnableState.class);
     private final SecureHash secureHash =
-            SecureHash.create("SHA-256:6A1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581A");
+            SecureHash.parse("SHA-256:6A1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581A");
     private final StateRef stateRef = new StateRef(secureHash, 5);
     private final CPKConstraint cpkConstraint = mock(CPKConstraint.class);
     private final Party notary = mock(Party.class);

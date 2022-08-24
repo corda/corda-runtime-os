@@ -1,11 +1,10 @@
 package net.corda.v5.ledger.obsolete.merkle
 
+import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.create
-import net.corda.v5.crypto.getZeroHash
 import net.corda.v5.ledger.obsolete.mocks.DigestServiceMock
+import net.corda.v5.ledger.obsolete.mocks.getZeroHash
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -94,7 +93,7 @@ class MerkleTreeTests {
         assertTrue(merkle.right is MerkleTree.Leaf)
         assertEquals(merkle.left.hash, leaf1Hash(DigestAlgorithmName.SHA2_256))
         assertEquals(merkle.right.hash, digestService.getZeroHash(DigestAlgorithmName.SHA2_256))
-        assertEquals(digestService.create("SHA-256:2D1CEDB13469F32862568007BBCE1930A4924E1F68AE0B29A5B0B8056F79061E"), merkle.hash)
+        assertEquals(SecureHash.parse("SHA-256:2D1CEDB13469F32862568007BBCE1930A4924E1F68AE0B29A5B0B8056F79061E"), merkle.hash)
     }
 
     @Test
@@ -107,7 +106,7 @@ class MerkleTreeTests {
         assertTrue(merkle.right is MerkleTree.Leaf)
         assertEquals(merkle.left.hash, leaf1Hash(DigestAlgorithmName.SHA2_384))
         assertEquals(merkle.right.hash, digestService.getZeroHash(DigestAlgorithmName.SHA2_384))
-        assertEquals(digestService.create("SHA-256:5663FAC30716082F371BAD754F174EA7745A88860D998513365699E2674D923C"), merkle.hash)
+        assertEquals(SecureHash.parse("SHA-256:5663FAC30716082F371BAD754F174EA7745A88860D998513365699E2674D923C"), merkle.hash)
     }
 
     @Test
@@ -121,7 +120,7 @@ class MerkleTreeTests {
         assertEquals(merkle.left.hash, leaf1Hash(DigestAlgorithmName.SHA2_256))
         assertEquals(merkle.right.hash, digestService.getZeroHash(DigestAlgorithmName.SHA2_256))
         assertEquals(
-            digestService.create("SHA-384:16D25072B2671729D36B3E637181EDA825D58E48B3DD3273251F742EE3225A461CC9D5884CA9E471B900259F74AA60B4"),
+            SecureHash.parse("SHA-384:16D25072B2671729D36B3E637181EDA825D58E48B3DD3273251F742EE3225A461CC9D5884CA9E471B900259F74AA60B4"),
             merkle.hash
         )
     }
@@ -136,7 +135,7 @@ class MerkleTreeTests {
         assertTrue(merkle.right is MerkleTree.Leaf)
         assertEquals(merkle.left.hash, leaf1Hash(DigestAlgorithmName.SHA2_256))
         assertEquals(merkle.right.hash, leaf2Hash(DigestAlgorithmName.SHA2_256))
-        assertEquals(digestService.create("SHA-256:CEA713A5636F023630CDE24D4F4FFD9CD2B5417D60AF79304C6BA7427DFDBEE1"), merkle.hash)
+        assertEquals(SecureHash.parse("SHA-256:CEA713A5636F023630CDE24D4F4FFD9CD2B5417D60AF79304C6BA7427DFDBEE1"), merkle.hash)
     }
 
     @Test
@@ -149,7 +148,7 @@ class MerkleTreeTests {
         assertTrue(merkle.right is MerkleTree.Leaf)
         assertEquals(merkle.left.hash, leaf1Hash(DigestAlgorithmName.SHA2_384))
         assertEquals(merkle.right.hash, leaf2Hash(DigestAlgorithmName.SHA2_384))
-        assertEquals(digestService.create("SHA-256:45E1BF863D04D01A5CDDAE9754CBC7D9B9F9D892437F496EC6B4100C366A3848"), merkle.hash)
+        assertEquals(SecureHash.parse("SHA-256:45E1BF863D04D01A5CDDAE9754CBC7D9B9F9D892437F496EC6B4100C366A3848"), merkle.hash)
     }
 
     @Test
@@ -163,7 +162,7 @@ class MerkleTreeTests {
         assertEquals(merkle.left.hash, leaf1Hash(DigestAlgorithmName.SHA2_256))
         assertEquals(merkle.right.hash, leaf2Hash(DigestAlgorithmName.SHA2_256))
         assertEquals(
-            digestService.create("SHA-384:D8735F176D4979F1C397D3F461B48527943C58B9A89E8DDDBC5C9909F65631FBFB6BD01F07A66AD351F22FE7A4E350FD"),
+            SecureHash.parse("SHA-384:D8735F176D4979F1C397D3F461B48527943C58B9A89E8DDDBC5C9909F65631FBFB6BD01F07A66AD351F22FE7A4E350FD"),
             merkle.hash
         )
     }
@@ -176,15 +175,15 @@ class MerkleTreeTests {
         assertTrue(merkle is MerkleTree.Node)
         assertTrue((merkle as MerkleTree.Node).left is MerkleTree.Node)
         assertTrue(merkle.right is MerkleTree.Node)
-        assertEquals(digestService.create("SHA-256:CEA713A5636F023630CDE24D4F4FFD9CD2B5417D60AF79304C6BA7427DFDBEE1"), merkle.left.hash)
-        assertEquals(digestService.create("SHA-256:D21583D92245DFEDF8117FB1C4A469BA101F5F06E6CFDD80399AC26628D90B26"), merkle.right.hash)
+        assertEquals(SecureHash.parse("SHA-256:CEA713A5636F023630CDE24D4F4FFD9CD2B5417D60AF79304C6BA7427DFDBEE1"), merkle.left.hash)
+        assertEquals(SecureHash.parse("SHA-256:D21583D92245DFEDF8117FB1C4A469BA101F5F06E6CFDD80399AC26628D90B26"), merkle.right.hash)
         assertTrue((merkle.left as MerkleTree.Node).left is MerkleTree.Leaf)
         assertTrue((merkle.left as MerkleTree.Node).right is MerkleTree.Leaf)
         assertEquals((merkle.left as MerkleTree.Node).left.hash, leaf1Hash(DigestAlgorithmName.SHA2_256))
         assertEquals((merkle.left as MerkleTree.Node).right.hash, leaf2Hash(DigestAlgorithmName.SHA2_256))
         assertEquals((merkle.right as MerkleTree.Node).left.hash, leaf3Hash(DigestAlgorithmName.SHA2_256))
         assertEquals((merkle.right as MerkleTree.Node).right.hash, digestService.getZeroHash(DigestAlgorithmName.SHA2_256))
-        assertEquals(digestService.create("SHA-256:7FBDF4A5C78C3225E796DDE965D8DC05B8957496544E65A860B8069C2A0CB4C2"), merkle.hash)
+        assertEquals(SecureHash.parse("SHA-256:7FBDF4A5C78C3225E796DDE965D8DC05B8957496544E65A860B8069C2A0CB4C2"), merkle.hash)
     }
 
     @Test
@@ -195,15 +194,15 @@ class MerkleTreeTests {
         assertTrue(merkle is MerkleTree.Node)
         assertTrue((merkle as MerkleTree.Node).left is MerkleTree.Node)
         assertTrue(merkle.right is MerkleTree.Node)
-        assertEquals(digestService.create("SHA-256:45E1BF863D04D01A5CDDAE9754CBC7D9B9F9D892437F496EC6B4100C366A3848"), merkle.left.hash)
-        assertEquals(digestService.create("SHA-256:129BF4367C9A51F1A41832618C1FD44B9E66FFC39D0244F10DC4B9B1BD4A831D"), merkle.right.hash)
+        assertEquals(SecureHash.parse("SHA-256:45E1BF863D04D01A5CDDAE9754CBC7D9B9F9D892437F496EC6B4100C366A3848"), merkle.left.hash)
+        assertEquals(SecureHash.parse("SHA-256:129BF4367C9A51F1A41832618C1FD44B9E66FFC39D0244F10DC4B9B1BD4A831D"), merkle.right.hash)
         assertTrue((merkle.left as MerkleTree.Node).left is MerkleTree.Leaf)
         assertTrue((merkle.left as MerkleTree.Node).right is MerkleTree.Leaf)
         assertEquals((merkle.left as MerkleTree.Node).left.hash, leaf1Hash(DigestAlgorithmName.SHA2_384))
         assertEquals((merkle.left as MerkleTree.Node).right.hash, leaf2Hash(DigestAlgorithmName.SHA2_384))
         assertEquals((merkle.right as MerkleTree.Node).left.hash, leaf3Hash(DigestAlgorithmName.SHA2_384))
         assertEquals((merkle.right as MerkleTree.Node).right.hash, digestService.getZeroHash(DigestAlgorithmName.SHA2_384))
-        assertEquals(digestService.create("SHA-256:671659139296E432EF4EA2ABB402C5D45AEABC1FCF8E621B8317EF83602B76F3"), merkle.hash)
+        assertEquals(SecureHash.parse("SHA-256:671659139296E432EF4EA2ABB402C5D45AEABC1FCF8E621B8317EF83602B76F3"), merkle.hash)
     }
 
     @Test
@@ -215,11 +214,11 @@ class MerkleTreeTests {
         assertTrue((merkle as MerkleTree.Node).left is MerkleTree.Node)
         assertTrue(merkle.right is MerkleTree.Node)
         assertEquals(
-            digestService.create("SHA-384:D8735F176D4979F1C397D3F461B48527943C58B9A89E8DDDBC5C9909F65631FBFB6BD01F07A66AD351F22FE7A4E350FD"),
+            SecureHash.parse("SHA-384:D8735F176D4979F1C397D3F461B48527943C58B9A89E8DDDBC5C9909F65631FBFB6BD01F07A66AD351F22FE7A4E350FD"),
             merkle.left.hash
         )
         assertEquals(
-            digestService.create("SHA-384:90E5730F61EC2D68D983E11F6A4A768167D6D6412D4A80B95CE1F5CC9984E8B2EBA3A36C6DF690D1F63CCDF3619B5055"),
+            SecureHash.parse("SHA-384:90E5730F61EC2D68D983E11F6A4A768167D6D6412D4A80B95CE1F5CC9984E8B2EBA3A36C6DF690D1F63CCDF3619B5055"),
             merkle.right.hash
         )
         assertTrue((merkle.left as MerkleTree.Node).left is MerkleTree.Leaf)
@@ -229,7 +228,7 @@ class MerkleTreeTests {
         assertEquals((merkle.right as MerkleTree.Node).left.hash, leaf3Hash(DigestAlgorithmName.SHA2_256))
         assertEquals((merkle.right as MerkleTree.Node).right.hash, digestService.getZeroHash(DigestAlgorithmName.SHA2_256))
         assertEquals(
-            digestService.create("SHA-384:AFA6D7049EF4051202F3A7975DC54CB0085B2928453AFE4E23FBC9496C7A852679866115D360970F43BEC517D492B9F2"),
+            SecureHash.parse("SHA-384:AFA6D7049EF4051202F3A7975DC54CB0085B2928453AFE4E23FBC9496C7A852679866115D360970F43BEC517D492B9F2"),
             merkle.hash
         )
     }

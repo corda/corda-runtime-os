@@ -34,7 +34,7 @@ public class BaseTransactionJavaApiTest {
     private final List<Integer> dummyInteger = List.of(1, 2, 3, 4, 5);
     private final ClassInfo classInfo = new ClassInfo("abundle", "1.0.0", "aClassName");
     private final List<ClassInfo> classInfos = List.of(classInfo);
-    private final SecureHash secureHashA = SecureHash.create("SHA-256:6A1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581A");
+    private final SecureHash secureHashA = SecureHash.parse("SHA-256:6A1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581A");
     private final TestContractState testContractState = new TestContractState();
     private final List<TestContractState> testContractStateList = List.of(testContractState);
     private final TransactionState<TestContractState> transactionState = new TransactionState<>(testContractState, party);
@@ -95,7 +95,7 @@ public class BaseTransactionJavaApiTest {
 
     @Test
     public void getPackages() {
-        final SecureHash secureHashB = SecureHash.create("SHA-256:6B1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581B");
+        final SecureHash secureHashB = SecureHash.parse("SHA-256:6B1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581B");
         List<PackageIdWithDependencies> dependencies = List.of(new PackageIdWithDependencies(secureHashA, List.of(secureHashB)));
         doReturn(dependencies).when(baseTransaction).getPackages();
 

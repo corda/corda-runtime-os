@@ -19,7 +19,7 @@ public class SignaturesMissingExceptionJavaApiTest {
     }
     private final Set<PublicKey> publicKeys = Set.of(publicKey);
     private final List<String> descriptions = List.of("some descriptions");
-    private final SecureHash secureHash = SecureHash.create("SHA-256:6A1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581A");
+    private final SecureHash secureHash = SecureHash.parse("SHA-256:6A1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581A");
     private final SignaturesMissingException exception = new SignaturesMissingException(publicKeys, descriptions, secureHash);
 
     @Test

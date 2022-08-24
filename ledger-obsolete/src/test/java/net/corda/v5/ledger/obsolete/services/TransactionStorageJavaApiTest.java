@@ -14,7 +14,7 @@ public class TransactionStorageJavaApiTest {
 
     @Test
     public void getTransaction() {
-        SecureHash secureHash = SecureHash.create("SHA-256:6A1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581A");
+        SecureHash secureHash = SecureHash.parse("SHA-256:6A1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581A");
         when(transactionStorage.getTransaction(secureHash)).thenReturn(signedTransaction);
 
         SignedTransaction result = transactionStorage.getTransaction(secureHash);

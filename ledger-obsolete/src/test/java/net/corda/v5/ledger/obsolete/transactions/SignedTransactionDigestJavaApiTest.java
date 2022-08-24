@@ -16,7 +16,7 @@ import static org.mockito.Mockito.mock;
 
 public class SignedTransactionDigestJavaApiTest {
 
-    private final SecureHash secureHash = SecureHash.create("SHA-256:6A1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581A");
+    private final SecureHash secureHash = SecureHash.parse("SHA-256:6A1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581A");
     private final List<String> stringListA = List.of("Some strings");
     private final List<String> stringListB = List.of("Other strings");
     private final PublicKey publicKey = mock(PublicKey.class);

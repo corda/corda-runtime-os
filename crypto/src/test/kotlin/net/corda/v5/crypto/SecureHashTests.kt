@@ -55,7 +55,7 @@ class SecureHashTests {
             -65, -41, 108, 14, -69, -48, 6, -2, -27, -125, 65, 5, 71, -63, -120, 123, 2, -110, -66, 118, -43, -126, -39, 108,
             36, 45, 42, 121, 39, 35, -29, -3, 111, -48, 97, -7, -43, -49, -47, 59, -113, -106, 19, 88, -26, -83, -70, 74
         )
-        val cut = SecureHash.create(str)
+        val cut = SecureHash.parse(str)
         assertEquals(DigestAlgorithmName.SHA2_384.name, cut.algorithm)
         assertArrayEquals(expectedBytes, cut.bytes)
     }
@@ -64,7 +64,7 @@ class SecureHashTests {
     fun `Should throw IllegalArgumentException when create does not have input with correct delimiter`() {
         val str = "SHA-384!BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FD6FD061F9D5CFD13B8F961358E6ADBA4A"
         assertFailsWith(IllegalArgumentException::class) {
-            SecureHash.create(str)
+            SecureHash.parse(str)
         }
     }
 

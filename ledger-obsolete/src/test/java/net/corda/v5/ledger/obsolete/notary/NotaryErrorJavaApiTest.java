@@ -13,7 +13,7 @@ import java.util.Map;
 import static org.mockito.Mockito.mock;
 
 public class NotaryErrorJavaApiTest {
-    private final SecureHash secureHash = SecureHash.create("SHA-256:6A1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581A");
+    private final SecureHash secureHash = SecureHash.parse("SHA-256:6A1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581A");
     private final StateConsumptionDetails stateConsumptionDetails = new StateConsumptionDetails(
             secureHash, StateConsumptionDetails.ConsumedStateType.INPUT_STATE
     );
@@ -156,7 +156,7 @@ public class NotaryErrorJavaApiTest {
 
         @Test
         public void copy() {
-            final SecureHash newSecureHash = SecureHash.create("SHA-256:7A1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581B");
+            final SecureHash newSecureHash = SecureHash.parse("SHA-256:7A1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581B");
             StateConsumptionDetails result = stateConsumptionDetails.copy(newSecureHash);
 
             Assertions.assertThat(result).isNotNull();

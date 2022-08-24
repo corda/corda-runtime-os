@@ -24,7 +24,7 @@ public class FullTransactionJavaApiTest {
     private final FullTransaction fullTransaction = mock(FullTransaction.class);
     private final GroupParameters groupParameters = mock(GroupParameters.class);
     private final Party party = mock(Party.class);
-    private final SecureHash secureHash = SecureHash.create("SHA-256:6A1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581A");
+    private final SecureHash secureHash = SecureHash.parse("SHA-256:6A1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581A");
     private final TestContractState testContractState = new TestContractState();
     private final TransactionState<TestContractState> transactionState = new TransactionState<>(testContractState, party);
     private final StateRef stateRef = new StateRef(secureHash, 1);

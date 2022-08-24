@@ -1,7 +1,7 @@
 package net.corda.v5.ledger.obsolete.merkle
 
+import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SecureHash
 
 /**

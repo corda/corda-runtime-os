@@ -29,7 +29,7 @@ public class WireTransactionJavaApiTest {
 
     private final WireTransaction wireTransaction = mock(WireTransaction.class);
     private final PublicKey publicKey = mock(PublicKey.class);
-    private final SecureHash secureHash = SecureHash.create("SHA-256:6A1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581A");
+    private final SecureHash secureHash = SecureHash.parse("SHA-256:6A1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581A");
     private final List<SecureHash> secureHashes = List.of(secureHash);
     private final Map<Integer, List<SecureHash>> availableComponent = Map.of(1, secureHashes);
 

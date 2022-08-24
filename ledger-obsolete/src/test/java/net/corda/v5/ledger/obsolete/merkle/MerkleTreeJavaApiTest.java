@@ -1,10 +1,10 @@
 package net.corda.v5.ledger.obsolete.merkle;
 
+import net.corda.v5.cipher.suite.DigestService;
 import net.corda.v5.crypto.DigestAlgorithmName;
-import net.corda.v5.crypto.DigestService;
-import net.corda.v5.crypto.DigestServiceUtils;
 import net.corda.v5.crypto.SecureHash;
 import net.corda.v5.ledger.obsolete.mocks.DigestServiceMock;
+import net.corda.v5.ledger.obsolete.mocks.DigestServiceMockUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -41,10 +41,10 @@ public class MerkleTreeJavaApiTest {
         assertEquals(((MerkleTree.Node) merkle).getLeft().getHash(), leaf1Hash(DigestAlgorithmName.SHA2_256));
         assertEquals(
             ((MerkleTree.Node) merkle).getRight().getHash(),
-            DigestServiceUtils.getZeroHash(digestService, DigestAlgorithmName.SHA2_256)
+            DigestServiceMockUtils.getZeroHash(digestService, DigestAlgorithmName.SHA2_256)
         );
         assertEquals(
-            DigestServiceUtils.create(digestService, "SHA-256:2D1CEDB13469F32862568007BBCE1930A4924E1F68AE0B29A5B0B8056F79061E"),
+            SecureHash.parse("SHA-256:2D1CEDB13469F32862568007BBCE1930A4924E1F68AE0B29A5B0B8056F79061E"),
             merkle.getHash()
         );
     }

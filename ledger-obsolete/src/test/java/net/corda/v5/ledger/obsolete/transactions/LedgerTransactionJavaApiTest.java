@@ -35,7 +35,7 @@ public class LedgerTransactionJavaApiTest {
     private final LedgerTransaction ledgerTransaction = mock(LedgerTransaction.class);
     private final Party party = mock(Party.class);
     private final StatePredicate statePredicate = new StatePredicate();
-    private final SecureHash secureHash = SecureHash.create("SHA-256:6A1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581A");
+    private final SecureHash secureHash = SecureHash.parse("SHA-256:6A1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581A");
     private final PublicKey publicKey = mock(PublicKey.class);
     private final Attachment attachment = mock(Attachment.class);
     private final TestContractState testContractStateA = new TestContractState();

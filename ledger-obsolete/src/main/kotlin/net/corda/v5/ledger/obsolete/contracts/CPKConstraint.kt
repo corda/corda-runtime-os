@@ -2,7 +2,7 @@ package net.corda.v5.ledger.obsolete.contracts
 
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.DoNotImplement
-import net.corda.v5.crypto.DigestService
+import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.SecureHash
 
 /** Constrain which contract-code-containing CPK can be used with a [Contract]. */

@@ -22,7 +22,7 @@ public class TraversableTransactionJavaApiTest {
     private final TraversableTransaction traversableTransaction = mock(TraversableTransaction.class);
     private final List<ComponentGroup> componentGroups = List.of(new ComponentGroup(4, List.of(new OpaqueBytes("test".getBytes()))));
     private final TransactionDigestAlgorithmNames transactionDigestAlgorithmNames = new TransactionDigestAlgorithmNames();
-    private final List<SecureHash> secureHashes = List.of(SecureHash.create("SHA-256:6A1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581A"));
+    private final List<SecureHash> secureHashes = List.of(SecureHash.parse("SHA-256:6A1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581A"));
     private final PublicKey publicKey = mock(PublicKey.class);
     private final List<Command<TestContract.Create>> commands = List.of(new Command<>(new TestContract.Create(), publicKey));
     private final TimeWindow timeWindow = mock(TimeWindow.class);

@@ -21,6 +21,7 @@ dependencies {
 
     api project(":application")
     api project(":crypto")
+    implementation project(":cipher-suite")
     implementation project(":membership")
     implementation project(":serialization")
     implementation project(":ledger:ledger-common")

@@ -170,10 +170,5 @@ open class SignatureSpec(
         require(signatureName.isNotBlank()) { "The signatureName must not be blank." }
     }
 
-    /**
-     * Returns signing data, does hashing of required
-     */
-    open fun getSigningData(hashingService: DigestService, data: ByteArray): ByteArray = data
-
     override fun toString(): String = signatureName
 }

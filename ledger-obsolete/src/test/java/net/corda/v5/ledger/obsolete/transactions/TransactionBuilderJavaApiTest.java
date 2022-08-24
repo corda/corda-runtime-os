@@ -35,7 +35,7 @@ public class TransactionBuilderJavaApiTest {
 
     private final TransactionBuilder builderA = mock(TransactionBuilder.class);
     private final TransactionBuilder builderB = mock(TransactionBuilder.class);
-    private final SecureHash secureHash = SecureHash.create("SHA-256:6A1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581A");
+    private final SecureHash secureHash = SecureHash.parse("SHA-256:6A1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581A");
     private final StateRef stateRef = new StateRef(secureHash, 1);
     private final List<StateRef> stateRefs = List.of(stateRef);
     private final PublicKey publicKey = mock(PublicKey.class);
