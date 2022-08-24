@@ -24,7 +24,7 @@ class TestFlowFiberServiceWithSerializationProxy @Activate constructor(
     override fun getExecutingFiber(): FlowFiber {
         val testFlowFiberServiceWithSerialization = TestFlowFiberServiceWithSerialization()
         testFlowFiberServiceWithSerialization.configureSerializer ({
-        /* Not visible for some reason. Since serialization is not used in the current tests, not a big problem.*/
+        /* Not visible for some reasons. Since serialization is not used in the current tests, not a problem.*/
 //            it.register(PartySerializer(), it)
         }, schemeMetadata)
         return testFlowFiberServiceWithSerialization.getExecutingFiber()
