@@ -6,6 +6,7 @@ plugins {
 description 'Test serialization service'
 
 dependencies {
+    compileOnly 'org.osgi:osgi.core'
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
