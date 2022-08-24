@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "QueryRegistrationRequest",
+  "namespace": "net.corda.data.membership.db.request.query",
+  "doc": "Query for specific registration request",
+  "fields": [
+    {
+      "name": "registrationRequestId",
+      "doc": "The ID of the registration request.",
+      "type": "string"
+    }
+  ]
+}

@@ -15,7 +15,7 @@
     {
       "name": "registrationStatus",
       "doc": "The new status for this registration request.",
-      "type": "net.corda.data.membership.db.request.command.RegistrationStatus"
+      "type": "net.corda.data.membership.common.RegistrationStatus"
     }
   ]
 }

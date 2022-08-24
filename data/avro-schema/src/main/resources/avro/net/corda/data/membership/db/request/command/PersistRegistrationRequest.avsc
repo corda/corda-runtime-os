@@ -7,19 +7,7 @@
     {
       "name": "status",
       "doc": "Indicator of the current status of the request.",
-      "type": {
-        "type": "enum",
-        "name": "RegistrationStatus",
-        "symbols": [
-          "NEW",
-          "PENDING_MEMBER_VERIFICATION",
-          "PENDING_APPROVAL_FLOW",
-          "PENDING_MANUAL_APPROVAL",
-          "PENDING_AUTO_APPROVAL",
-          "DECLINED",
-          "APPROVED"
-        ]
-      }
+      "type": "net.corda.data.membership.common.RegistrationStatus"
     },
     {
       "name": "registeringHoldingIdentity",

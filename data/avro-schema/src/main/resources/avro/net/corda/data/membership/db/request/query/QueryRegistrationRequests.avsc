@@ -1,0 +1,7 @@
+{
+  "type": "record",
+  "name": "QueryRegistrationRequests",
+  "namespace": "net.corda.data.membership.db.request.query",
+  "doc": "Query for one or more registration request status",
+  "fields": []
+}

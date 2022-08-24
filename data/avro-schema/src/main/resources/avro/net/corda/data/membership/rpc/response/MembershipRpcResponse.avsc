@@ -14,7 +14,9 @@
       "doc": "Response's payload, depends on the requested operation.",
       "type": [
         "RegistrationRpcResponse",
-        "MGMGroupPolicyResponse"
+        "MGMGroupPolicyResponse",
+        "RegistrationStatusResponse",
+        "RegistrationsStatusResponse"
       ]
     }
   ]

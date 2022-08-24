@@ -7,7 +7,7 @@
     {
       "name": "registrationRequest",
       "type": [
-        "net.corda.data.membership.p2p.MembershipRegistrationRequest",
+        "net.corda.data.membership.common.RegistrationStatusDetails",
         "null"
       ],
       "doc": "The registration request queried for or null if the query executed correctly but there were no matches."

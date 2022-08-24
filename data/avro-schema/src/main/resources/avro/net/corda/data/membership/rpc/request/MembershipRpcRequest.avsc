@@ -15,7 +15,8 @@
       "type": [
         "RegistrationRpcRequest",
         "RegistrationStatusRpcRequest",
-        "MGMGroupPolicyRequest"
+        "MGMGroupPolicyRequest",
+        "RegistrationStatusSpecificRpcRequest"
       ]
     }
   ]

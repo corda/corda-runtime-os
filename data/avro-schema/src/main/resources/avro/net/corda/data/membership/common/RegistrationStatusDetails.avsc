@@ -1,0 +1,44 @@
+{
+  "type": "record",
+  "name": "RegistrationStatusDetails",
+  "namespace": "net.corda.data.membership.common",
+  "doc": "Registration status.",
+  "fields": [
+    {
+      "name": "registrationSent",
+      "doc": "Time ([Instant]) in milliseconds when the registration request was sent.",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    },
+    {
+      "name": "registrationLastModified",
+      "doc": "Time ([Instant]) in milliseconds when the registration request was modified.",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    },
+    {
+      "name": "registrationStatus",
+      "doc": "Status of the registration request.",
+      "type": "RegistrationStatus"
+    },
+    {
+      "name": "registrationId",
+      "doc": "ID of the registration request.",
+      "type": "string"
+    },
+    {
+      "name": "registrationProtocolVersion",
+      "doc": "Registration protocol number.",
+      "type": "int"
+    },
+    {
+      "name": "memberProvidedContext",
+      "doc": "Member provided context submitted for registration.",
+      "type": "net.corda.data.KeyValuePairList"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "RegistrationRequestsQueryResponse",
+  "namespace": "net.corda.data.membership.db.response.query",
+  "doc": "Response to a query for a registration requests",
+  "fields": [
+    {
+      "name": "registrationRequests",
+      "type": {
+        "type": "array",
+        "items": "net.corda.data.membership.common.RegistrationStatusDetails"
+      },
+      "doc": "All the registration requests for the holding identity."
+    }
+  ]
+}

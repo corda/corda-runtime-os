@@ -5,6 +5,11 @@
   "doc": "Registration response to submitting the registration request.",
   "fields": [
     {
+      "name": "registrationId",
+      "doc": "ID of the registration request.",
+      "type": "string"
+    },
+    {
       "name": "registrationSent",
       "doc": "Time ([Instant]) in milliseconds when the registration request was sent.",
       "type": {

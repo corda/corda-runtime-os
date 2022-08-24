@@ -20,7 +20,9 @@
         "net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus",
         "net.corda.data.membership.db.request.query.QueryGroupPolicy",
         "net.corda.data.membership.db.request.query.QueryMemberInfo",
-        "net.corda.data.membership.db.request.query.QueryMemberSignature"
+        "net.corda.data.membership.db.request.query.QueryMemberSignature",
+        "net.corda.data.membership.db.request.query.QueryRegistrationRequest",
+        "net.corda.data.membership.db.request.query.QueryRegistrationRequests"
       ],
       "doc": "Request's payload, depends on the requested operation."
     }
