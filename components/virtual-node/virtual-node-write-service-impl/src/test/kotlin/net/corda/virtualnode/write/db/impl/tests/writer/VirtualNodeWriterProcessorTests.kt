@@ -91,7 +91,7 @@ class VirtualNodeWriterProcessorTests {
         ByteBuffer.wrap("\u0000\u0000\u0000\u0000\u0000\u0000\u0000\u0000".toByteArray())
     )
     private val cpiIdentifier = CpiIdentifier("dummy_name", "dummy_version", secureHash)
-    val summaryHash = net.corda.v5.crypto.SecureHash.create("SHA-256:0000000000000000")
+    val summaryHash = net.corda.v5.crypto.SecureHash.parse("SHA-256:0000000000000000")
     private val cpiId = net.corda.libs.packaging.core.CpiIdentifier("dummy_name", "dummy_version", summaryHash)
     private val cpiMetaData =
         CpiMetadataLite(cpiId, CPI_ID_SHORT_HASH, groupId, dummyGroupPolicy)

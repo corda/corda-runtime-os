@@ -20,7 +20,7 @@ class ChunkWriteToDbProcessorSimpleTest {
     companion object {
         private const val topic = "unused"
         private const val fileName = "unused.txt"
-        val validator = { _: RequestId -> SecureHash.create("SHA-256:1234567890") }
+        val validator = { _: RequestId -> SecureHash.parse("SHA-256:1234567890") }
     }
 
     @Test
