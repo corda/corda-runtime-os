@@ -139,7 +139,6 @@ class EntitySandboxServiceImpl @Activate constructor(
         val entityClasses = EntityExtractor.getEntityClassNames(cpks).map {
             try {
                 ctx.sandboxGroup.loadClassFromMainBundles(it)
-                    ?: throw ClassNotFoundException("$it not found")
             } catch (e: SandboxException) {
                 throw e
             }

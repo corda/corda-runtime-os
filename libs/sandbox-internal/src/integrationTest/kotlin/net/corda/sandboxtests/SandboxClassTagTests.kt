@@ -79,7 +79,7 @@ class SandboxClassTagTests {
 
     @Test
     fun `can create class tags for a CPK main bundle class and use them to retrieve the class`() {
-        val cpkClass = sandboxFactory.group1.loadClassFromMainBundles(SERVICES_FLOW_CPK_1)!!
+        val cpkClass = sandboxFactory.group1.loadClassFromMainBundles(SERVICES_FLOW_CPK_1)
         val staticTag = sandboxFactory.group1.getStaticTag(cpkClass)
         val evolvableTag = sandboxFactory.group1.getEvolvableTag(cpkClass)
 
