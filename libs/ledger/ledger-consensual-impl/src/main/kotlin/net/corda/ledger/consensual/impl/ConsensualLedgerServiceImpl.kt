@@ -4,7 +4,7 @@ import net.corda.flow.fiber.FlowFiberService
 import net.corda.ledger.consensual.impl.transaction.ConsensualTransactionBuilderImpl
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.crypto.DigestService
+import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder

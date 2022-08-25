@@ -9,7 +9,7 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.crypto.DigestService
+import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.ledger.consensual.ConsensualState
