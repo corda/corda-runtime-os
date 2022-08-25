@@ -19,7 +19,7 @@ val getAllCpiInfoDBVersionedRecords: (EntityManager) -> Stream<VersionedRecord<C
             cpiMetadataEntity.name,
             cpiMetadataEntity.version,
             if (cpiMetadataEntity.signerSummaryHash != "")
-                SecureHash.create(cpiMetadataEntity.signerSummaryHash)
+                SecureHash.parse(cpiMetadataEntity.signerSummaryHash)
             else
                 null
         )
@@ -30,7 +30,7 @@ val getAllCpiInfoDBVersionedRecords: (EntityManager) -> Stream<VersionedRecord<C
             override val value by lazy {
                 CpiMetadata(
                     cpiId = cpiId,
-                    fileChecksum = SecureHash.create(cpiMetadataEntity.fileChecksum),
+                    fileChecksum = SecureHash.parse(cpiMetadataEntity.fileChecksum),
                     cpksMetadata = cpiMetadataEntity.cpks.map {
                         CpkMetadata.fromJsonAvro(it.metadata.serializedMetadata)
                     },

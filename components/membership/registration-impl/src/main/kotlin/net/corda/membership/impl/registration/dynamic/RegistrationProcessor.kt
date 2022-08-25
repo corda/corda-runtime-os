@@ -3,6 +3,7 @@ package net.corda.membership.impl.registration.dynamic
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.command.registration.RegistrationCommand
+import net.corda.data.membership.command.registration.member.PersistMemberRegistrationState
 import net.corda.data.membership.command.registration.member.ProcessMemberVerificationRequest
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
@@ -10,14 +11,16 @@ import net.corda.data.membership.command.registration.mgm.ProcessMemberVerificat
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.state.RegistrationState
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
-import net.corda.membership.impl.registration.dynamic.handler.member.VerificationRequestHandler
+import net.corda.membership.impl.registration.dynamic.handler.member.PersistMemberRegistrationStateHandler
+import net.corda.membership.impl.registration.dynamic.handler.member.ProcessMemberVerificationRequestHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.ApproveRegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.DeclineRegistrationHandler
+import net.corda.membership.impl.registration.dynamic.handler.mgm.ProcessMemberVerificationResponseHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.StartRegistrationHandler
-import net.corda.membership.impl.registration.dynamic.handler.mgm.VerificationResponseHandler
 import net.corda.membership.impl.registration.dynamic.handler.mgm.VerifyMemberHandler
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -41,6 +44,7 @@ class RegistrationProcessor(
     membershipQueryClient: MembershipQueryClient,
     cryptoOpsClient: CryptoOpsClient,
     cipherSchemeMetadata: CipherSchemeMetadata,
+    layeredPropertyMapFactory: LayeredPropertyMapFactory,
     merkleTreeFactory: MerkleTreeFactory,
 ) : StateAndEventProcessor<String, RegistrationState, RegistrationCommand> {
 
@@ -59,7 +63,8 @@ class RegistrationProcessor(
             membershipGroupReaderProvider,
             membershipPersistenceClient,
             membershipQueryClient,
-            cordaAvroSerializationFactory
+            cordaAvroSerializationFactory,
+            layeredPropertyMapFactory,
         ),
         ApproveRegistration::class.java to ApproveRegistrationHandler(
             membershipPersistenceClient,
@@ -70,11 +75,20 @@ class RegistrationProcessor(
             cordaAvroSerializationFactory,
             merkleTreeFactory
         ),
-        DeclineRegistration::class.java to DeclineRegistrationHandler(membershipPersistenceClient),
+        DeclineRegistration::class.java to DeclineRegistrationHandler(membershipPersistenceClient, clock, cordaAvroSerializationFactory),
 
-        ProcessMemberVerificationRequest::class.java to VerificationRequestHandler(clock, cordaAvroSerializationFactory),
+        ProcessMemberVerificationRequest::class.java to ProcessMemberVerificationRequestHandler(
+            clock,
+            cordaAvroSerializationFactory,
+            membershipPersistenceClient
+        ),
         VerifyMember::class.java to VerifyMemberHandler(clock, cordaAvroSerializationFactory, membershipPersistenceClient),
-        ProcessMemberVerificationResponse::class.java to VerificationResponseHandler(membershipPersistenceClient)
+        ProcessMemberVerificationResponse::class.java to ProcessMemberVerificationResponseHandler(
+            membershipPersistenceClient,
+            clock,
+            cordaAvroSerializationFactory
+        ),
+        PersistMemberRegistrationState::class.java to PersistMemberRegistrationStateHandler(membershipPersistenceClient),
     )
 
     @Suppress("ComplexMethod")
@@ -110,12 +124,16 @@ class RegistrationProcessor(
                     logger.info("Received process member verification request during registration command.")
                     handlers[ProcessMemberVerificationRequest::class.java]?.invoke(state, event)
                 }
+                is PersistMemberRegistrationState -> {
+                    logger.info("Received persist member registration state command.")
+                    handlers[PersistMemberRegistrationState::class.java]?.invoke(state, event)
+                }
                 else -> {
                     logger.warn("Unhandled registration command received.")
                     createEmptyResult(state)
                 }
             }
-        } catch(e: MissingRegistrationStateException) {
+        } catch (e: MissingRegistrationStateException) {
             logger.error("RegistrationState was null during dynamic registration.", e)
             createEmptyResult()
         } catch (e: CordaRuntimeException) {

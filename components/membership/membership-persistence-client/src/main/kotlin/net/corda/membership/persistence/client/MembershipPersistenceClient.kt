@@ -1,6 +1,6 @@
 package net.corda.membership.persistence.client
 
-import net.corda.data.membership.db.request.command.RegistrationStatus
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.v5.base.types.LayeredPropertyMap

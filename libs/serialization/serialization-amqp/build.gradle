@@ -38,6 +38,7 @@ dependencies {
     implementation "org.apache.qpid:proton-j:$protonjVersion"
     implementation 'org.slf4j:slf4j-api'
 
+    testImplementation project(':testing:test-serialization')
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"

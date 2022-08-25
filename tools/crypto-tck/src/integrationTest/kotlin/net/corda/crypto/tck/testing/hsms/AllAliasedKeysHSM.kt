@@ -5,6 +5,7 @@ import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceExtensions
+import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.GeneratedPublicKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
@@ -14,7 +15,6 @@ import net.corda.v5.cipher.suite.SigningSpec
 import net.corda.v5.cipher.suite.SigningWrappedSpec
 import net.corda.v5.cipher.suite.computeHSMAlias
 import net.corda.v5.cipher.suite.schemes.KeyScheme
-import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SignatureSpec
 import java.security.KeyPair
 import java.security.KeyPairGenerator

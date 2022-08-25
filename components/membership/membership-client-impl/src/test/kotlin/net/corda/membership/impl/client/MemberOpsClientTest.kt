@@ -1,21 +1,21 @@
 package net.corda.membership.impl.client
 
-import java.util.concurrent.CompletableFuture
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.common.RegistrationStatusDetails
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.request.RegistrationRpcRequest
 import net.corda.data.membership.rpc.request.RegistrationStatusRpcRequest
+import net.corda.data.membership.rpc.request.RegistrationStatusSpecificRpcRequest
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
 import net.corda.data.membership.rpc.response.RegistrationRpcResponse
 import net.corda.data.membership.rpc.response.RegistrationRpcStatus
+import net.corda.data.membership.rpc.response.RegistrationStatusResponse
+import net.corda.data.membership.rpc.response.RegistrationsStatusResponse
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -26,18 +26,25 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.client.dto.MemberInfoSubmittedDto
 import net.corda.membership.client.dto.MemberRegistrationRequestDto
 import net.corda.membership.client.dto.RegistrationActionDto
+import net.corda.membership.client.dto.RegistrationRequestStatusDto
+import net.corda.membership.client.dto.RegistrationStatusDto
 import net.corda.membership.lib.toMap
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import org.junit.jupiter.api.BeforeEach
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -45,9 +52,12 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import net.corda.test.util.time.TestClock
-import org.assertj.core.api.Assertions.assertThat
 import java.time.Instant
+import java.util.concurrent.CompletableFuture
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class MemberOpsClientTest {
     companion object {
@@ -75,17 +85,26 @@ class MemberOpsClientTest {
         }
     }
 
-    private var rpcRequest: MembershipRpcRequest? = null
+    private val rpcSender = mock<RPCSender<MembershipRpcRequest, MembershipRpcResponse>>()
 
-    private lateinit var rpcSender: RPCSender<MembershipRpcRequest, MembershipRpcResponse>
-
-    private lateinit var publisherFactory: PublisherFactory
+    private val publisherFactory = mock<PublisherFactory> {
+        on {
+            createRPCSender(
+                any<RPCConfig<MembershipRpcRequest, MembershipRpcResponse>>(),
+                any()
+            )
+        } doReturn rpcSender
+    }
 
     private val configurationReadService: ConfigurationReadService = mock {
         on { registerComponentForUpdates(any(), any()) } doReturn configHandle
     }
 
-    private lateinit var memberOpsClient: MemberOpsClientImpl
+    private val memberOpsClient = MemberOpsClientImpl(
+        lifecycleCoordinatorFactory,
+        publisherFactory,
+        configurationReadService
+    )
 
     private val messagingConfig: SmartConfig = mock()
     private val bootConfig: SmartConfig = mock ()
@@ -95,21 +114,18 @@ class MemberOpsClientTest {
         ConfigKeys.MESSAGING_CONFIG to messagingConfig
     )
 
-    fun startComponent() = lifecycleHandler?.processEvent(StartEvent(), coordinator)
-    fun stopComponent() = lifecycleHandler?.processEvent(StopEvent(), coordinator)
-    fun changeRegistrationStatus(status: LifecycleStatus) = lifecycleHandler?.processEvent(
+    private fun startComponent() = lifecycleHandler?.processEvent(StartEvent(), coordinator)
+    private fun stopComponent() = lifecycleHandler?.processEvent(StopEvent(), coordinator)
+    private fun changeRegistrationStatus(status: LifecycleStatus) = lifecycleHandler?.processEvent(
         RegistrationStatusChangeEvent(mock(), status), coordinator
     )
 
-    fun changeConfig() = lifecycleHandler?.processEvent(
+    private fun changeConfig() = lifecycleHandler?.processEvent(
         ConfigChangedEvent(setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG), configs),
         coordinator
     )
 
-    @Suppress("UNCHECKED_CAST")
     private fun setUpRpcSender() {
-        // re-sets the rpc request
-        rpcRequest = null
         // kicks off the MessagingConfigurationReceived event to be able to mock the rpc sender
         changeConfig()
     }
@@ -120,45 +136,6 @@ class MemberOpsClientTest {
         mapOf("property" to "test"),
     )
 
-    @BeforeEach
-    fun setUp() {
-        rpcSender = mock {
-            on { sendRequest(any()) } doAnswer {
-                rpcRequest = it.arguments.first() as MembershipRpcRequest
-                CompletableFuture.completedFuture(
-                    MembershipRpcResponse(
-                        MembershipRpcResponseContext(
-                            rpcRequest!!.requestContext.requestId,
-                            rpcRequest!!.requestContext.requestTimestamp,
-                            clock.instant()
-                        ),
-                        RegistrationRpcResponse(
-                            clock.instant(),
-                            RegistrationRpcStatus.SUBMITTED,
-                            1,
-                            KeyValuePairList(listOf(KeyValuePair("key", "value"))),
-                            KeyValuePairList(emptyList())
-                        )
-                    )
-                )
-            }
-        }
-
-        publisherFactory = mock {
-            on {
-                createRPCSender(
-                    any<RPCConfig<MembershipRpcRequest, MembershipRpcResponse>>(),
-                    any()
-                )
-            } doReturn rpcSender
-        }
-
-        memberOpsClient = MemberOpsClientImpl(
-            lifecycleCoordinatorFactory,
-            publisherFactory,
-            configurationReadService
-        )
-    }
 
     @Test
     fun `starting and stopping the service succeeds`() {
@@ -170,12 +147,34 @@ class MemberOpsClientTest {
 
     @Test
     fun `rpc sender sends the expected request - starting registration process`() {
+        val rpcRequest = argumentCaptor<MembershipRpcRequest>()
+        val response = RegistrationRpcResponse(
+            "Registration-ID",
+            clock.instant(),
+            RegistrationRpcStatus.SUBMITTED,
+            1,
+            KeyValuePairList(listOf(KeyValuePair("key", "value"))),
+            KeyValuePairList(emptyList())
+        )
+        whenever(rpcSender.sendRequest(rpcRequest.capture())).then {
+            val requestContext = it.getArgument<MembershipRpcRequest>(0).requestContext
+            CompletableFuture.completedFuture(
+                MembershipRpcResponse(
+                    MembershipRpcResponseContext(
+                        requestContext.requestId,
+                        requestContext.requestTimestamp,
+                        clock.instant()
+                    ),
+                    response,
+                )
+            )
+        }
         memberOpsClient.start()
         setUpRpcSender()
         memberOpsClient.startRegistration(request)
         memberOpsClient.stop()
 
-        val requestSent = rpcRequest?.request as RegistrationRpcRequest
+        val requestSent = rpcRequest.firstValue.request as RegistrationRpcRequest
 
         assertThat(requestSent.holdingIdentityId).isEqualTo(request.holdingIdentityShortHash)
         assertThat(requestSent.registrationAction.name).isEqualTo(request.action.name)
@@ -184,12 +183,29 @@ class MemberOpsClientTest {
 
     @Test
     fun `rpc sender sends the expected request - checking registration progress`() {
+        val rpcRequest = argumentCaptor<MembershipRpcRequest>()
+        val response = RegistrationsStatusResponse(
+            emptyList()
+        )
+        whenever(rpcSender.sendRequest(rpcRequest.capture())).then {
+            val requestContext = it.getArgument<MembershipRpcRequest>(0).requestContext
+            CompletableFuture.completedFuture(
+                MembershipRpcResponse(
+                    MembershipRpcResponseContext(
+                        requestContext.requestId,
+                        requestContext.requestTimestamp,
+                        clock.instant()
+                    ),
+                    response,
+                )
+            )
+        }
         memberOpsClient.start()
         setUpRpcSender()
         memberOpsClient.checkRegistrationProgress(request.holdingIdentityShortHash)
         memberOpsClient.stop()
 
-        val requestSent = rpcRequest?.request as RegistrationStatusRpcRequest
+        val requestSent = rpcRequest.firstValue.request as RegistrationStatusRpcRequest
 
         assertEquals(request.holdingIdentityShortHash, requestSent.holdingIdentityId)
     }
@@ -205,11 +221,19 @@ class MemberOpsClientTest {
     }
 
     @Test
-    fun `should fail when service is not running`() {
+    fun `checkRegistrationProgress should fail when service is not running`() {
         val ex = assertFailsWith<IllegalStateException> {
             memberOpsClient.checkRegistrationProgress(request.holdingIdentityShortHash)
         }
-        assertTrue { ex.message!!.contains("incorrect state") }
+        assertThat(ex).hasMessageContaining("incorrect state")
+    }
+
+    @Test
+    fun `checkSpecificRegistrationProgress should fail when service is not running`() {
+        val ex = assertFailsWith<IllegalStateException> {
+            memberOpsClient.checkSpecificRegistrationProgress(request.holdingIdentityShortHash, "")
+        }
+        assertThat(ex).hasMessageContaining("incorrect state")
     }
 
     @Test
@@ -231,12 +255,12 @@ class MemberOpsClientTest {
         setUpRpcSender()
 
         whenever(rpcSender.sendRequest(any())).then {
-            rpcRequest = it.arguments.first() as MembershipRpcRequest
+            val rpcRequest = it.arguments.first() as MembershipRpcRequest
             CompletableFuture.completedFuture(
                 MembershipRpcResponse(
                     MembershipRpcResponseContext(
-                        rpcRequest!!.requestContext.requestId,
-                        rpcRequest!!.requestContext.requestTimestamp,
+                        rpcRequest.requestContext.requestId,
+                        rpcRequest.requestContext.requestTimestamp,
                         clock.instant()
                     ),
                     null
@@ -257,15 +281,17 @@ class MemberOpsClientTest {
         setUpRpcSender()
 
         whenever(rpcSender.sendRequest(any())).then {
-            rpcRequest = it.arguments.first() as MembershipRpcRequest
+            val rpcRequest = it.arguments.first() as MembershipRpcRequest
+
             CompletableFuture.completedFuture(
                 MembershipRpcResponse(
                     MembershipRpcResponseContext(
                         "wrongId",
-                        rpcRequest!!.requestContext.requestTimestamp,
+                        rpcRequest.requestContext.requestTimestamp,
                         clock.instant()
                     ),
                     RegistrationRpcResponse(
+                        "RegistrationID",
                         clock.instant(),
                         RegistrationRpcStatus.SUBMITTED,
                         1,
@@ -289,15 +315,16 @@ class MemberOpsClientTest {
         setUpRpcSender()
 
         whenever(rpcSender.sendRequest(any())).then {
-            rpcRequest = it.arguments.first() as MembershipRpcRequest
+            val rpcRequest = it.arguments.first() as MembershipRpcRequest
             CompletableFuture.completedFuture(
                 MembershipRpcResponse(
                     MembershipRpcResponseContext(
-                        rpcRequest!!.requestContext.requestId,
+                        rpcRequest.requestContext.requestId,
                         clock.instant().plusMillis(10000000),
                         clock.instant()
                     ),
                     RegistrationRpcResponse(
+                        "RegistrationID",
                         clock.instant(),
                         RegistrationRpcStatus.SUBMITTED,
                         1,
@@ -321,12 +348,12 @@ class MemberOpsClientTest {
         setUpRpcSender()
 
         whenever(rpcSender.sendRequest(any())).then {
-            rpcRequest = it.arguments.first() as MembershipRpcRequest
+            val rpcRequest = it.arguments.first() as MembershipRpcRequest
             CompletableFuture.completedFuture(
                 MembershipRpcResponse(
                     MembershipRpcResponseContext(
-                        rpcRequest!!.requestContext.requestId,
-                        rpcRequest!!.requestContext.requestTimestamp,
+                        rpcRequest.requestContext.requestId,
+                        rpcRequest.requestContext.requestTimestamp,
                         clock.instant()
                     ),
                     "WRONG RESPONSE TYPE"
@@ -445,6 +472,197 @@ class MemberOpsClientTest {
         verify(publisherFactory).createRPCSender(any<RPCConfig<MembershipRpcRequest, MembershipRpcResponse>>(), any())
         verify(rpcSender).start()
         verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
+    }
+
+    @Test
+    fun `checkRegistrationProgress return correct data`() {
+        val response = RegistrationsStatusResponse(
+            listOf(
+                RegistrationStatusDetails(
+                    clock.instant().plusSeconds(3),
+                    clock.instant().plusSeconds(7),
+                    RegistrationStatus.APPROVED,
+                    "registration id",
+                    1,
+                    KeyValuePairList(listOf(KeyValuePair("key", "value"))),
+                ),
+                RegistrationStatusDetails(
+                    clock.instant().plusSeconds(10),
+                    clock.instant().plusSeconds(20),
+                    RegistrationStatus.NEW,
+                    "registration id 2",
+                    1,
+                    KeyValuePairList(listOf(KeyValuePair("key 2", "value 2"))),
+                ),
+                RegistrationStatusDetails(
+                    clock.instant().plusSeconds(30),
+                    clock.instant().plusSeconds(70),
+                    RegistrationStatus.DECLINED,
+                    "registration id 3",
+                    1,
+                    KeyValuePairList(listOf(KeyValuePair("key 3", "value 3"))),
+                ),
+            )
+        )
+        whenever(rpcSender.sendRequest(any())).then {
+            val requestContext = it.getArgument<MembershipRpcRequest>(0).requestContext
+            CompletableFuture.completedFuture(
+                MembershipRpcResponse(
+                    MembershipRpcResponseContext(
+                        requestContext.requestId,
+                        requestContext.requestTimestamp,
+                        clock.instant()
+                    ),
+                    response,
+                )
+            )
+        }
+        memberOpsClient.start()
+        setUpRpcSender()
+
+        val statuses = memberOpsClient.checkRegistrationProgress(request.holdingIdentityShortHash)
+
+        assertThat(statuses).hasSize(3)
+            .contains(
+                RegistrationRequestStatusDto(
+                    registrationId = "registration id",
+                    registrationSent = clock.instant().plusSeconds(3),
+                    registrationUpdated = clock.instant().plusSeconds(7),
+                    registrationStatus = RegistrationStatusDto.APPROVED,
+                    memberInfoSubmitted = MemberInfoSubmittedDto(
+                        mapOf(
+                            "registrationProtocolVersion" to "1",
+                            "key" to "value"
+                        )
+                    )
+                ),
+                RegistrationRequestStatusDto(
+                    registrationId = "registration id 2",
+                    registrationSent = clock.instant().plusSeconds(10),
+                    registrationUpdated = clock.instant().plusSeconds(20),
+                    registrationStatus = RegistrationStatusDto.NEW,
+                    memberInfoSubmitted = MemberInfoSubmittedDto(
+                        mapOf(
+                            "registrationProtocolVersion" to "1",
+                            "key 2" to "value 2"
+                        )
+                    )
+                ),
+                RegistrationRequestStatusDto(
+                    registrationId = "registration id 3",
+                    registrationSent = clock.instant().plusSeconds(30),
+                    registrationUpdated = clock.instant().plusSeconds(70),
+                    registrationStatus = RegistrationStatusDto.DECLINED,
+                    memberInfoSubmitted = MemberInfoSubmittedDto(
+                        mapOf(
+                            "registrationProtocolVersion" to "1",
+                            "key 3" to "value 3"
+                        )
+                    )
+                ),
+            )
+    }
+
+    @ParameterizedTest
+    @EnumSource(RegistrationStatus::class)
+    fun `checkSpecificRegistrationProgress return correct data when response is not null`(status: RegistrationStatus) {
+        val response = RegistrationStatusResponse(
+            RegistrationStatusDetails(
+                clock.instant().plusSeconds(1),
+                clock.instant().plusSeconds(2),
+                status,
+                "registration id",
+                1,
+                KeyValuePairList(listOf(KeyValuePair("key", "value"))),
+            ),
+        )
+        whenever(rpcSender.sendRequest(any())).then {
+            val requestContext = it.getArgument<MembershipRpcRequest>(0).requestContext
+            CompletableFuture.completedFuture(
+                MembershipRpcResponse(
+                    MembershipRpcResponseContext(
+                        requestContext.requestId,
+                        requestContext.requestTimestamp,
+                        clock.instant()
+                    ),
+                    response,
+                )
+            )
+        }
+        memberOpsClient.start()
+        setUpRpcSender()
+
+        val result = memberOpsClient.checkSpecificRegistrationProgress(request.holdingIdentityShortHash, "registration id")
+
+        assertThat(result).isNotNull
+            .isEqualTo(
+                RegistrationRequestStatusDto(
+                    registrationId = "registration id",
+                    registrationSent = clock.instant().plusSeconds(1),
+                    registrationUpdated = clock.instant().plusSeconds(2),
+                    registrationStatus = RegistrationStatusDto.valueOf(status.name),
+                    memberInfoSubmitted = MemberInfoSubmittedDto(
+                        mapOf(
+                            "registrationProtocolVersion" to "1",
+                            "key" to "value"
+                        )
+                    )
+                )
+            )
+    }
+
+    @Test
+    fun `checkSpecificRegistrationProgress return correct data when response is null`() {
+        whenever(rpcSender.sendRequest(any())).then {
+            val requestContext = it.getArgument<MembershipRpcRequest>(0).requestContext
+            CompletableFuture.completedFuture(
+                MembershipRpcResponse(
+                    MembershipRpcResponseContext(
+                        requestContext.requestId,
+                        requestContext.requestTimestamp,
+                        clock.instant()
+                    ),
+                    RegistrationStatusResponse(null),
+                )
+            )
+        }
+        memberOpsClient.start()
+        setUpRpcSender()
+
+        val status = memberOpsClient.checkSpecificRegistrationProgress(request.holdingIdentityShortHash, "registration id")
+
+        assertThat(status).isNull()
+    }
+
+
+    @Test
+    fun `checkSpecificRegistrationProgress sends the correct data`() {
+        val requestCapture = argumentCaptor<MembershipRpcRequest>()
+        whenever(rpcSender.sendRequest(requestCapture.capture())).then {
+            val requestContext = it.getArgument<MembershipRpcRequest>(0).requestContext
+            CompletableFuture.completedFuture(
+                MembershipRpcResponse(
+                    MembershipRpcResponseContext(
+                        requestContext.requestId,
+                        requestContext.requestTimestamp,
+                        clock.instant()
+                    ),
+                    RegistrationStatusResponse(null),
+                )
+            )
+        }
+        memberOpsClient.start()
+        setUpRpcSender()
+
+        memberOpsClient.checkSpecificRegistrationProgress(request.holdingIdentityShortHash, "registration id")
+
+        assertThat(requestCapture.firstValue.request as? RegistrationStatusSpecificRpcRequest)
+            .isNotNull
+            .isEqualTo(
+                RegistrationStatusSpecificRpcRequest(
+                    request.holdingIdentityShortHash, "registration id"
+                )
+            )
     }
 
 }
