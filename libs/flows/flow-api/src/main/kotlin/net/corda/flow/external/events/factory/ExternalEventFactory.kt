@@ -21,6 +21,9 @@ import net.corda.flow.state.FlowCheckpoint
  */
 interface ExternalEventFactory<PARAMETERS : Any, RESPONSE: Any, RESUME> {
 
+    /**
+     * The [RESPONSE] type that the factory receives from the external processor.
+     */
     val responseType: Class<RESPONSE>
 
     /**
