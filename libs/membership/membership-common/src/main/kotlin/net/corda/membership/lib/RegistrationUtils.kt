@@ -2,6 +2,7 @@ package net.corda.membership.lib
 
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.v5.base.types.LayeredPropertyMap
 
 /**
  * Transforms [KeyValuePairList] into map.
@@ -18,3 +19,15 @@ fun Map<String, String>.toWire(): KeyValuePairList {
         }
     )
 }
+
+/**
+ * Transforms LayeredPropertyMap into [KeyValuePairList].
+ */
+fun LayeredPropertyMap.toWire(): KeyValuePairList {
+    return KeyValuePairList(
+        entries.map {
+            KeyValuePair(it.key, it.value)
+        }
+    )
+}
+
