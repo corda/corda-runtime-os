@@ -1543,7 +1543,7 @@ class SessionManagerTest {
         sessionManager.stop()
         resourcesHolder.close()
     }
-
+//TODO - a better name
     @Test
     fun `DRAFT`() {
         val someSessionId = "some-session"
