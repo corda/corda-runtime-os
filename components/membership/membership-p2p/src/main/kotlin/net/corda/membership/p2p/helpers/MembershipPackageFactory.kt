@@ -1,4 +1,4 @@
-package net.corda.membership.impl.registration.dynamic.handler.helpers
+package net.corda.membership.p2p.helpers
 
 import net.corda.chunking.toAvro
 import net.corda.data.CordaAvroSerializationFactory
@@ -24,7 +24,7 @@ import net.corda.virtualnode.HoldingIdentity
 import java.nio.ByteBuffer
 
 @Suppress("LongParameterList")
-internal class MembershipPackageFactory(
+class MembershipPackageFactory(
     private val clock: Clock,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val cipherSchemeMetadata: CipherSchemeMetadata,
