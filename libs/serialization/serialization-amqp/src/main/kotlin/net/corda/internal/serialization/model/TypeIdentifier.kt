@@ -168,7 +168,9 @@ sealed class TypeIdentifier {
         val isPrimitive get() = name in primitives
 
         override fun getLocalType(sandboxGroup: SandboxGroup): Type =
-            primitives[name] ?: sandboxGroup.loadClassFromMainBundles(name)
+            primitives[name]
+                ?: sandboxGroup.loadClassFromPublicBundles(name)
+                ?: sandboxGroup.loadClassFromMainBundles(name)
         override fun getLocalType(sandboxGroup: SandboxGroup, metadata: Metadata): Type {
             return primitives[name] ?: loadTypeFromMetadata(sandboxGroup, metadata)
         }
@@ -182,7 +184,9 @@ sealed class TypeIdentifier {
     data class Erased(override val name: String, val erasedParameterCount: Int) : TypeIdentifier() {
 
         override fun getLocalType(sandboxGroup: SandboxGroup): Type =
-            sandboxGroup.loadClassFromMainBundles(name)
+            sandboxGroup.loadClassFromPublicBundles(name)
+                ?: sandboxGroup.loadClassFromMainBundles(name)
+
         override fun getLocalType(sandboxGroup: SandboxGroup, metadata: Metadata): Type =
             loadTypeFromMetadata(sandboxGroup, metadata)
 
@@ -242,7 +246,9 @@ sealed class TypeIdentifier {
         override val erased: TypeIdentifier get() = Erased(name, parameters.size)
 
         override fun getLocalType(sandboxGroup: SandboxGroup): Type {
-            val rawType = sandboxGroup.loadClassFromMainBundles(name)
+            val rawType = sandboxGroup.loadClassFromPublicBundles(name)
+                ?: sandboxGroup.loadClassFromMainBundles(name)
+
             if (rawType.typeParameters.size != parameters.size) {
                 throw IncompatibleTypeIdentifierException(
                         "Class $rawType expects ${rawType.typeParameters.size} type arguments, " +
@@ -280,7 +286,8 @@ sealed class TypeIdentifier {
             }
         } else {
             // Must be a Platform type as these are not attached to the metadata
-            sandboxGroup.loadClassFromMainBundles(name)
+            sandboxGroup.loadClassFromPublicBundles(name)
+                ?: sandboxGroup.loadClassFromMainBundles(name)
         }
     }
 }
