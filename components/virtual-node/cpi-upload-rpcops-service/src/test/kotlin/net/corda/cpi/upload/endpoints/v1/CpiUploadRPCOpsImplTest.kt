@@ -21,7 +21,10 @@ import java.io.ByteArrayInputStream
 import java.util.UUID
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.exception.InvalidInputDataException
+import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
+import net.corda.httprpc.security.RpcAuthContext
 import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.assertThrows
 
 class CpiUploadRPCOpsImplTest {
@@ -35,6 +38,17 @@ class CpiUploadRPCOpsImplTest {
         const val DUMMY_FILE_NAME = "dummyFileName"
         const val UNKNOWN_REQUEST = "UNKNOWN_REQUEST"
         const val EXPECTED_MESSAGE = "EXPECTED_MESSAGE"
+        private const val actor = "test_principal"
+
+        @Suppress("Unused")
+        @JvmStatic
+        @BeforeAll
+        fun setRPCContext() {
+            val rpcAuthContext = mock<RpcAuthContext>().apply {
+                whenever(principal).thenReturn(actor)
+            }
+            CURRENT_RPC_CONTEXT.set(rpcAuthContext)
+        }
     }
 
     @BeforeEach
@@ -63,7 +77,7 @@ class CpiUploadRPCOpsImplTest {
         val cpiUploadRequestId = ChunkWriter.Request(UUID.randomUUID().toString(),
             SecureHash.parse("FOO:123456789012"))
 
-        whenever(cpiUploadManager.uploadCpi(any(), eq(cpiContent), eq(null))).thenReturn(cpiUploadRequestId)
+        whenever(cpiUploadManager.uploadCpi(any(), eq(cpiContent), any())).thenReturn(cpiUploadRequestId)
 
         val httpResponse = cpiUploadRPCOpsImpl.cpi(HttpFileUpload(cpiContent, DUMMY_FILE_NAME))
         assertNotNull(httpResponse)
