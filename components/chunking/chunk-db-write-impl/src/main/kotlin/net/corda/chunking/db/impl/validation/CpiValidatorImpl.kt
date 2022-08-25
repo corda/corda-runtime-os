@@ -177,8 +177,7 @@ class CpiValidatorImpl constructor(
                     VirtualNodeStateChangeRequest(
                         it.holdingIdentity.shortHash.value,
                         "ACTIVE",
-                        // TODO: Change
-                        "ForceCpiUpload"
+                        actor
                         // TODO: It might make a lot of sense to have a "why field" here
                         //  - IE (endpoint, new cpi, etc.)
                         //  - ((audit))
