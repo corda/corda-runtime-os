@@ -2,8 +2,8 @@ package net.corda.internal.serialization.amqp.custom
 
 import net.corda.internal.serialization.amqp.IllegalCustomSerializerException
 import net.corda.internal.serialization.amqp.SerializationOutput
+import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
-import net.corda.internal.serialization.amqp.testutils.testSerializationContext
 import net.corda.v5.serialization.SerializationCustomSerializer
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
