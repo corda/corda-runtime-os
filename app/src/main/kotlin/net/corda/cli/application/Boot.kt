@@ -46,7 +46,7 @@ object Boot {
         // Create additional logger if logFile env is available
         if (!System.getProperty("logFile").isNullOrEmpty()) {
             val path = File(System.getProperty("logFile"))
-            val level = System.getProperty("logLevel")
+            val level = System.getProperty("logLevel", "INFO")
             LogToFileAppender.enableLogToFile(path, level)
         }
 

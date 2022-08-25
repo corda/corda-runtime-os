@@ -10,7 +10,7 @@ import java.io.File
 
 class LogToFileAppender {
     companion object {
-        fun enableLogToFile(filePath: File, level: String?) {
+        fun enableLogToFile(filePath: File, level: String) {
             val ctx = LogManager.getContext(false) as LoggerContext
             val config = ctx.configuration
 
@@ -27,10 +27,8 @@ class LogToFileAppender {
 
             logToFileAppender.start()
 
-            val logLevel = if(level.isNullOrEmpty()) Level.INFO else Level.getLevel(level)
-
             config.addAppender(logToFileAppender)
-            config.rootLogger.addAppender(logToFileAppender, logLevel, null)
+            config.rootLogger.addAppender(logToFileAppender, Level.toLevel(level, Level.INFO), null)
             ctx.updateLoggers()
         }
     }
