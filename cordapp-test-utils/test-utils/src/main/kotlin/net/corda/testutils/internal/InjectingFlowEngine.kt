@@ -6,7 +6,6 @@ import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.base.types.MemberX500Name
-import java.time.Duration
 import java.util.UUID
 
 /**
@@ -33,10 +32,6 @@ class InjectingFlowEngine(
     override val flowId: UUID
         get() = TODO("Not yet implemented")
 
-    override fun sleep(duration: Duration) {
-        TODO("Not yet implemented")
-    }
-
     override val flowContextProperties: FlowContextProperties
         get() = TODO("Not yet implemented")
 
@@ -45,5 +40,4 @@ class InjectingFlowEngine(
         injector.injectServices(subFlow, virtualNodeName, fiber)
         return subFlow.call()
     }
-
 }
