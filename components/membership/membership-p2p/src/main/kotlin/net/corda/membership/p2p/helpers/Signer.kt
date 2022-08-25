@@ -1,4 +1,4 @@
-package net.corda.membership.impl.registration.dynamic.handler.helpers
+package net.corda.membership.p2p.helpers
 
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -13,7 +13,7 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.publicKeyId
 import java.security.PublicKey
 
-internal class Signer(
+class Signer(
     private val tenantId: String,
     private val publicKey: PublicKey,
     private val cryptoOpsClient: CryptoOpsClient,
