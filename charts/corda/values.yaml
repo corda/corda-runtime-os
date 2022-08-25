@@ -38,6 +38,9 @@ logging:
 # Dump host path configuration
 dumpHostPath: ""
 
+# Enables capturing JVM heap memory dump from unexpectedly terminated pods
+heapDumpOnOutOfMemoryError: false
+
 # Open Telemetry configuration
 openTelemetry:
   # -- enables the Open Telemetry Java agent for the Corda workers
