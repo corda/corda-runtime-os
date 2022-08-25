@@ -20,6 +20,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.synchronisation.MemberSynchronisationService
+import net.corda.membership.synchronisation.SynchronisationService
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -35,7 +36,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.concurrent.TimeUnit
 
-@Component(service = [MemberSynchronisationService::class])
+@Component(service = [SynchronisationService::class])
 class MemberSynchronisationServiceImpl @Activate constructor(
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
@@ -123,7 +124,7 @@ class MemberSynchronisationServiceImpl @Activate constructor(
             }, KeyValuePairList::class.java)
 
         override fun processMembershipUpdates(updates: ProcessMembershipUpdates) {
-            val viewOwningMember = updates.destination.toCorda()
+            val viewOwningMember = updates.synchronisationMetaData.member.toCorda()
             try {
                 val records = updates.membershipPackage.memberships.memberships.map { update ->
                     // TODO - CORE-5811 - verify signatures in signed member infos.

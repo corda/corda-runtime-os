@@ -1,8 +1,6 @@
-package net.corda.membership.impl.registration.dynamic.handler.mgm.helpers
+package net.corda.membership.p2p.helpers
 
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.membership.impl.registration.dynamic.handler.helpers.Signer
-import net.corda.membership.impl.registration.dynamic.handler.helpers.SignerFactory
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MemberContext
