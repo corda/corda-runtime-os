@@ -4,7 +4,6 @@ import net.corda.testutils.flows.PingAckFlow
 import net.corda.testutils.flows.PingAckMessage
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.unwrap
 import net.corda.v5.base.types.MemberX500Name
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`

@@ -5,7 +5,6 @@ import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.UntrustworthyData
 import net.corda.v5.application.messaging.receive
-import net.corda.v5.application.messaging.unwrap
 
 /**
  * An instance of this responder can be uploaded to CordaSim to respond to a given protocol.
