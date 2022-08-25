@@ -3,7 +3,6 @@ package net.corda.v5.application.flows;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.time.Duration;
 import java.util.UUID;
 
 import static org.mockito.Mockito.doReturn;
@@ -39,11 +38,5 @@ public class FlowEngineJavaApiTest {
         Assertions.assertThat(result).isEqualTo(Object.class);
         verify(flowEngine, times(1)).subFlow(flow);
     }
-
-    @Test
-    public void sleep() {
-        Duration duration = Duration.ZERO;
-        flowEngine.sleep(duration);
-        verify(flowEngine, times(1)).sleep(duration);
-    }
 }
+
