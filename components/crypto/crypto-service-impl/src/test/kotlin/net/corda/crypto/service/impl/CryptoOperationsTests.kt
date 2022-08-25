@@ -26,7 +26,7 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.failures.CryptoSignatureException
+import net.corda.v5.crypto.faiexceptionslures.CryptoSignatureException
 import net.corda.v5.crypto.publicKeyId
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jcajce.provider.util.DigestFactory

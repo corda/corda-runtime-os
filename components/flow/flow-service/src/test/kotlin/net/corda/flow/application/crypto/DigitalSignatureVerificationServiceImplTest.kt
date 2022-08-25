@@ -2,7 +2,7 @@ package net.corda.flow.application.crypto
 
 import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.failures.CryptoSignatureException
+import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
