@@ -40,7 +40,7 @@ dependencies {
     runtimeOnly project(":components:virtual-node:cpk-read-service-impl")
     runtimeOnly project(":libs:application:application-impl")
     runtimeOnly project(':libs:crypto:cipher-suite-impl')
-    runtimeOnly project(":libs:flows:flows")
+    runtimeOnly project(":libs:flows:flow-api")
     runtimeOnly project(":libs:flows:flow-mapper-impl")
     runtimeOnly project(":libs:flows:session-manager-impl")
     runtimeOnly project(":libs:messaging:messaging-impl")
