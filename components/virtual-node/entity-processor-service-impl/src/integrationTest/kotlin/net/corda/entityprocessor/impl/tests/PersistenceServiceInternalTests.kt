@@ -281,7 +281,7 @@ class PersistenceServiceInternalTests {
         assertThat(response.error).isNotNull
         // The failure is correctly categorised - serialization fails within the database path of the code.
         // It can never succeed on retry, therefore, it's fatal.
-        assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.PLATFORM_ERROR)
+        assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.PLATFORM)
         // The failure also captures the exception name.
         assertThat(response.error.exception.errorType).contains("NotSerializableException")
     }

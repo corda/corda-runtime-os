@@ -119,7 +119,7 @@ class PersistenceExceptionTests {
         val response = flowEvent.payload as ExternalEventResponse
         assertThat(response.error).isNotNull()
         // The failure is correctly categorised.
-        assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.RETRY)
+        assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.TRANSIENT)
         // The failure also captures the exception name.
         assertThat(response.error.exception.errorType).isEqualTo("NotReadyException")
     }
@@ -156,7 +156,7 @@ class PersistenceExceptionTests {
         val response = flowEvent.payload as ExternalEventResponse
         assertThat(response.error).isNotNull()
         // The failure is correctly categorised.
-        assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.RETRY)
+        assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.TRANSIENT)
         // The failure also captures the exception name.
         assertThat(response.error.exception.errorType).isEqualTo("VirtualNodeException")
     }
@@ -188,7 +188,7 @@ class PersistenceExceptionTests {
         val response = flowEvent.payload as ExternalEventResponse
         assertThat(response.error).isNotNull()
         // The failure is correctly categorised.
-        assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.FATAL_ERROR)
+        assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.FATAL)
         // The failure also captures the exception name.
         assertThat(response.error.exception.errorType).isEqualTo("CordaRuntimeException")
     }
