@@ -7,10 +7,10 @@ import java.util.concurrent.CountDownLatch;
 
 /**
  * Description of bundles handled by {@link OSGiFrameworkWrap}.
- *
+ * <p/>
  * The class describes the {@link #bundle} and its property needed for a synchronization of
  * bundle state.
- *
+ * <p/>
  * The {@link #active} latch is decremented once: the first time the bundle results
  * activated. OSGi framework can notify bundle states more than once.
  */
