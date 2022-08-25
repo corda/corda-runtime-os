@@ -105,9 +105,10 @@ pipeline {
         stage('start combined worker') {       
             environment {
                 JAR_PATH = "${env.WORKSPACE}/applications/workers/release/combined-worker/build/bin/corda-combined-worker-5.0.0.0-SNAPSHOT.jar"
+                JDBC_PATH = "${env.WORKSPACE}/applications/workers/release/combined-worker/drivers"
                 VM_PARAMETERS = "-Dco.paralleluniverse.fibers.verifyInstrumentation=true"
                 LOG4J_PARAMETERS = "-Dlog4j2.debug=-false -Dlog4j.configurationFile=log4j2-console.xml"
-                PROGRAM_PARAMETERS = "--instanceId=0 -mbus.busType=DATABASE -spassphrase=password -ssalt=salt -ddatabase.user=u${postgresDb} -ddatabase.pass=password -ddatabase.jdbc.url=jdbc:postgresql://${postgresHost}:${postgresPort}/${postgresDb}"
+                PROGRAM_PARAMETERS = "--instanceId=0 -mbus.busType=DATABASE -spassphrase=password -ssalt=salt -ddatabase.user=u${postgresDb} -ddatabase.pass=password -ddatabase.jdbc.url=jdbc:postgresql://${postgresHost}:${postgresPort}/${postgresDb} -ddatabase.jdbc.directory=${JDBC_PATH}"
                 WORKING_DIRECTORY = "${env.WORKSPACE}"
             }
             steps {
@@ -118,13 +119,20 @@ pipeline {
             }            
         }
         stage('connect to worker') {
-            options {
-                timeout(time: 3, unit: 'MINUTES')
-            }  
             steps {
-                checkConnection()
+                script{
+                    try {
+                       timeout(time: 3, unit: 'MINUTES') {
+                            checkConnection()
+                       }
+                    } catch(err) {
+                        // If a timeout is reached fail the build as we want the calling job to result in a failure
+                        // without this the calling job will result in a aborted status
+                        error 'Could not connect to the Combined Worker in a 3 minute window'
+                    }
+                }
             }
-        } 
+        }
         stage('smoketests') {
             options {
                 timeout(time: 15, unit: 'MINUTES')

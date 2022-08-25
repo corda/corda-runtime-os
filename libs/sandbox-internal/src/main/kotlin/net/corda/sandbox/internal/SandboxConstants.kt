@@ -30,7 +30,7 @@ internal object ClassTagV1 {
 
     // Used as placeholders when generating class tags for public sandbox classes.
     internal const val PLACEHOLDER_STRING = "PLACEHOLDER"
-    internal val PLACEHOLDER_HASH = SecureHash.create("SHA-256:0000000000000000")
+    internal val PLACEHOLDER_HASH = SecureHash.parse("SHA-256:0000000000000000")
 }
 
 // The symbolic name of the `sandbox-hooks` bundle.

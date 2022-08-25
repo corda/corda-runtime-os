@@ -8,7 +8,7 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.EntityResponseSuccess
-import net.corda.data.persistence.PersistEntity
+import net.corda.data.persistence.PersistEntities
 import net.corda.flow.persistence.manager.impl.PersistenceManagerImpl
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
@@ -26,7 +26,7 @@ class PersistenceManagerImplTest {
             .withValue(FlowConfig.PERSISTENCE_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(resendWindow))
 
         val persistRequest: EntityRequest = EntityRequest.newBuilder()
-            .setRequest(PersistEntity(ByteBuffer.wrap("bytes".toByteArray())))
+            .setRequest(PersistEntities(listOf(ByteBuffer.wrap("bytes".toByteArray()))))
             .setTimestamp(Instant.ofEpochMilli(persistTimeStampMilli))
             .setFlowId("flowId")
             .setHoldingIdentity(HoldingIdentity("Alice", "Group1"))

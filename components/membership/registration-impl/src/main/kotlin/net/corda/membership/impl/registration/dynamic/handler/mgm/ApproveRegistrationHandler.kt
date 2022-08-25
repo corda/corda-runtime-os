@@ -4,15 +4,17 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.DistributionType
 import net.corda.data.membership.p2p.MembershipPackage
+import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.impl.registration.dynamic.handler.helpers.MembershipPackageFactory
-import net.corda.membership.impl.registration.dynamic.handler.helpers.MerkleTreeFactory
+import net.corda.membership.impl.registration.dynamic.handler.helpers.MerkleTreeGenerator
 import net.corda.membership.impl.registration.dynamic.handler.helpers.P2pRecordsFactory
 import net.corda.membership.impl.registration.dynamic.handler.helpers.SignerFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
@@ -26,7 +28,7 @@ import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.crypto.DigestService
+import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
@@ -38,31 +40,32 @@ internal class ApproveRegistrationHandler(
     private val membershipPersistenceClient: MembershipPersistenceClient,
     private val membershipQueryClient: MembershipQueryClient,
     cipherSchemeMetadata: CipherSchemeMetadata,
-    hashingService: DigestService,
     clock: Clock,
     cryptoOpsClient: CryptoOpsClient,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    merkleTreeFactory: MerkleTreeFactory,
     private val signerFactory: SignerFactory = SignerFactory(cryptoOpsClient),
+    private val merkleTreeGenerator: MerkleTreeGenerator = MerkleTreeGenerator(
+        merkleTreeFactory,
+        cordaAvroSerializationFactory
+    ),
     private val p2pRecordsFactory: P2pRecordsFactory = P2pRecordsFactory(
         cordaAvroSerializationFactory,
         clock,
-    ),
-    private val merkleTreeFactory: MerkleTreeFactory = MerkleTreeFactory(
-        cordaAvroSerializationFactory,
-        hashingService,
     ),
     private val membershipPackageFactory: MembershipPackageFactory = MembershipPackageFactory(
         clock,
         cordaAvroSerializationFactory,
         cipherSchemeMetadata,
         DistributionType.STANDARD,
-        merkleTreeFactory,
+        merkleTreeGenerator,
     ) { UUID.randomUUID().toString() }
 ) : RegistrationHandler<ApproveRegistration> {
 
     override val commandType = ApproveRegistration::class.java
+
     override fun invoke(state: RegistrationState?, key: String, command: ApproveRegistration): RegistrationHandlerResult {
-        if(state == null) throw MissingRegistrationStateException
+        if (state == null) throw MissingRegistrationStateException
         // Update the state of the request and member
         val approvedBy = state.mgm
         val approvedMember = state.registeringMember
@@ -113,9 +116,18 @@ internal class ApproveRegistrationHandler(
             )
         }
 
+        val persistApproveMessage = p2pRecordsFactory.createAuthenticatedMessageRecord(
+            source = approvedBy,
+            destination = approvedMember,
+            content = SetOwnRegistrationStatus(
+                registrationId,
+                RegistrationStatus.APPROVED
+            )
+        )
+
         return RegistrationHandlerResult(
             RegistrationState(registrationId, approvedMember, approvedBy),
-            memberToAllMembers + memberRecord + allMembersToNewMember
+            memberToAllMembers + memberRecord + allMembersToNewMember + persistApproveMessage
         )
     }
 
@@ -131,7 +143,7 @@ internal class ApproveRegistrationHandler(
                     it.holdingIdentity
                 }
             ).getOrThrow()
-        val membersTree = merkleTreeFactory.buildTree(members)
+        val membersTree = merkleTreeGenerator.generateTree(members)
 
         return {
             membershipPackageFactory.createMembershipPackage(

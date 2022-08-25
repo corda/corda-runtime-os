@@ -10,6 +10,7 @@ import net.corda.membership.client.MemberOpsClient
 import net.corda.membership.httprpc.v1.MemberRegistrationRpcOps
 import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgress
+import net.corda.membership.httprpc.v1.types.response.RegistrationRequestStatus
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
@@ -34,7 +35,11 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
             memberRegistrationRequest: MemberRegistrationRequest,
         ): RegistrationRequestProgress
 
-        fun checkRegistrationProgress(holdingIdentityShortHash: String): RegistrationRequestProgress
+        fun checkRegistrationProgress(holdingIdentityShortHash: String): List<RegistrationRequestStatus>
+        fun checkSpecificRegistrationProgress(
+            holdingIdentityShortHash: String,
+            registrationRequestId: String
+        ): RegistrationRequestStatus?
     }
 
     private val className = this::class.java.simpleName
@@ -75,10 +80,14 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
         memberRegistrationRequest: MemberRegistrationRequest
     ) = impl.startRegistration(holdingIdentityShortHash, memberRegistrationRequest)
 
+    override fun checkRegistrationProgress(
+        holdingIdentityShortHash: String
+    ) = impl.checkRegistrationProgress(holdingIdentityShortHash)
 
-//    TODO Registration status endpoint will be implemented in CORE-5957.
-//    override fun checkRegistrationProgress(holdingIdentityShortHash: String) =
-//        impl.checkRegistrationProgress(holdingIdentityShortHash)
+    override fun checkSpecificRegistrationProgress(
+        holdingIdentityShortHash: String,
+        registrationRequestId: String,
+    ) = impl.checkSpecificRegistrationProgress(holdingIdentityShortHash, registrationRequestId)
 
     fun activate(reason: String) {
         impl = ActiveImpl()
@@ -99,7 +108,15 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
                 "${MemberRegistrationRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
             )
 
-        override fun checkRegistrationProgress(holdingIdentityShortHash: String) =
+        override fun checkRegistrationProgress(holdingIdentityShortHash: String): List<RegistrationRequestStatus> =
+            throw ServiceUnavailableException(
+                "${MemberRegistrationRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
+            )
+
+        override fun checkSpecificRegistrationProgress(
+            holdingIdentityShortHash: String,
+            registrationRequestId: String,
+        ) =
             throw ServiceUnavailableException(
                 "${MemberRegistrationRpcOpsImpl::class.java.simpleName} is not running. Operation cannot be fulfilled."
             )
@@ -113,8 +130,18 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
             return memberOpsClient.startRegistration(memberRegistrationRequest.toDto(holdingIdentityShortHash)).fromDto()
         }
 
-        override fun checkRegistrationProgress(holdingIdentityShortHash: String): RegistrationRequestProgress {
-            return memberOpsClient.checkRegistrationProgress(holdingIdentityShortHash).fromDto()
+        override fun checkRegistrationProgress(holdingIdentityShortHash: String): List<RegistrationRequestStatus> {
+            return memberOpsClient.checkRegistrationProgress(holdingIdentityShortHash).map { it.fromDto() }
+        }
+
+        override fun checkSpecificRegistrationProgress(
+            holdingIdentityShortHash: String,
+            registrationRequestId: String,
+        ): RegistrationRequestStatus? {
+            return memberOpsClient.checkSpecificRegistrationProgress(
+                holdingIdentityShortHash,
+                registrationRequestId
+            )?.fromDto()
         }
     }
 }

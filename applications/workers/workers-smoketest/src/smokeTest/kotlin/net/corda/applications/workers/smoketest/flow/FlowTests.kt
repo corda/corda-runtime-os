@@ -41,13 +41,13 @@ class FlowTests {
         var davidHoldingId: String = getHoldingIdShortHash(X500_DAVID, GROUP_ID)
 
         val expectedFlows = listOf(
-            "net.cordapp.flowworker.development.flows.MessagingFlow",
-            "net.cordapp.flowworker.development.flows.PersistenceFlow",
-            "net.cordapp.flowworker.development.flows.ReturnAStringFlow",
-            "net.cordapp.flowworker.development.flows.RpcSmokeTestFlow",
-            "net.cordapp.flowworker.development.flows.TestFlow",
-            "net.cordapp.flowworker.development.errors.BrokenProtocolFlow",
-            "net.cordapp.flowworker.development.errors.NoValidConstructorFlow"
+            "net.cordapp.flowworker.development.smoketests.virtualnode.ReturnAStringFlow",
+            "net.cordapp.flowworker.development.smoketests.flow.RpcSmokeTestFlow",
+            "net.cordapp.flowworker.development.smoketests.flow.errors.NoValidConstructorFlow",
+            "net.cordapp.flowworker.development.testflows.TestFlow",
+            "net.cordapp.flowworker.development.testflows.BrokenProtocolFlow",
+            "net.cordapp.flowworker.development.testflows.MessagingFlow",
+            "net.cordapp.flowworker.development.testflows.PersistenceFlow"
         )
 
         /*
@@ -183,7 +183,12 @@ class FlowTests {
 
     @Test
     fun `Pipeline error results in flow marked as failed`() {
-        val requestID = startRpcFlow(bobHoldingId, mapOf(), "net.cordapp.flowworker.development.errors.NoValidConstructorFlow")
+        val requestID =
+            startRpcFlow(
+                bobHoldingId,
+                mapOf(),
+                "net.cordapp.flowworker.development.smoketests.flow.errors.NoValidConstructorFlow"
+            )
         val result = awaitRpcFlowFinished(bobHoldingId, requestID)
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
     }
@@ -386,5 +391,56 @@ class FlowTests {
         assertThat(result.flowError).isNull()
         assertThat(flowResult.command).isEqualTo("crypto_verify_invalid_signature")
         assertThat(flowResult.result).isEqualTo(true.toString())
+    }
+
+    @Test
+    fun `Context is propagated to initiated and sub flows`() {
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "context_propagation"
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        val flowResult = result.getRpcFlowResult()
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(result.flowResult).isNotNull
+        assertThat(result.flowError).isNull()
+        assertThat(flowResult.command).isEqualTo("context_propagation")
+
+        val CONTEXT_JSON =
+            """
+            {
+              "rpcFlow": {
+                "platform": "account-zero",
+                "user1": "user1-set",
+                "user2": "null"
+              },
+              "rpcSubFlow": {
+                "platform": "account-zero",
+                "user1": "user1-set",
+                "user2": "user2-set"
+              },
+              "initiatedFlow": {
+                "platform": "account-zero",
+                "user1": "user1-set",
+                "user2": "user2-set"
+              },
+              "initiatedSubFlow": {
+                "platform": "account-zero",
+                "user1": "user1-set",
+                "user2": "user2-set-ContextPropagationInitiatedFlow"
+              },
+              "rpcFlowAtComplete": {
+                "platform": "account-zero",
+                "user1": "user1-set",
+                "user2": "null"
+              }
+            }
+            """.filter { !it.isWhitespace() }
+
+        assertThat(flowResult.result)
+            .isEqualTo(CONTEXT_JSON)
     }
 }

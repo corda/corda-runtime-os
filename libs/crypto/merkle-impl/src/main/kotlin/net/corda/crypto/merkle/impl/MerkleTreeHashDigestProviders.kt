@@ -2,8 +2,8 @@ package net.corda.crypto.merkle.impl
 
 import net.corda.crypto.core.concatByteArrays
 import net.corda.crypto.core.toByteArray
+import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
 import net.corda.v5.crypto.merkle.MerkleProof

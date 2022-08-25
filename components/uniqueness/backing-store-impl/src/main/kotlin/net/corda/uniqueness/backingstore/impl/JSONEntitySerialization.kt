@@ -34,6 +34,6 @@ internal object SecureHashSerializer : JsonSerializer<SecureHash>() {
 
 internal object SecureHashDeserializer : JsonDeserializer<SecureHash>() {
     override fun deserialize(parser: JsonParser, ctxt: DeserializationContext): SecureHash {
-        return SecureHash.create(parser.text)
+        return SecureHash.parse(parser.text)
     }
 }

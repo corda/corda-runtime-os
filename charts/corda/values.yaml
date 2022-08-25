@@ -341,7 +341,7 @@ workers:
       # -- p2p-link-manager worker image registry, defaults to image.registry
       registry: ""
       # -- p2p-link-manager worker image repository
-      repository: "corda-os-p2p-link-manager"
+      repository: "corda-os-p2p-link-manager-worker"
       # -- p2p-link-manager worker image tag, defaults to image.tag
       tag: ""
     # -- p2p-link-manager worker replica count
@@ -375,7 +375,7 @@ workers:
       # -- p2p-gateway worker image registry, defaults to image.registry
       registry: ""
       # -- p2p-gateway worker image repository
-      repository: "corda-os-p2p-gateway"
+      repository: "corda-os-p2p-gateway-worker"
       # -- p2p-gateway worker image tag, defaults to image.tag
       tag: ""
     # -- p2p-gateway worker replica count

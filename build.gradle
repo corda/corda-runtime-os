@@ -27,7 +27,7 @@ plugins {
     id 'com.github.ben-manes.versions' // discover possible dependency version upgrades
 }
 
-wrapper {
+tasks.named("wrapper") {
     gradleVersion = '7.4.2'
     distributionType = Wrapper.DistributionType.BIN
 }
@@ -347,8 +347,8 @@ subprojects {
         detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:$detektPluginVersion"
     }
 
-    task allDependencyInsight(type: DependencyInsightReportTask) {}
-    task allDependencies(type: DependencyReportTask) {}
+    tasks.register("allDependencyInsight", DependencyInsightReportTask) {}
+    tasks.register("allDependencies", DependencyReportTask) {}
 
     configurations {
         all {

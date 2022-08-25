@@ -35,7 +35,7 @@ internal data class StaticTagImplV1(
 
             val cpkFileHashString = classTagEntries[CPK_FILE_HASH_IDX]
             val cpkFileHash = try {
-                SecureHash.create(cpkFileHashString)
+                SecureHash.parse(cpkFileHashString)
             } catch (e: IllegalArgumentException) {
                 throw SandboxException("Couldn't parse hash $cpkFileHashString in serialised static class tag.", e)
             }

@@ -31,7 +31,7 @@ class HttpRpcClientAadIntegrationTest : HttpRpcIntegrationTestBase() {
         )
         server = HttpRpcServerImpl(
             listOf(TestHealthCheckAPIImpl()),
-            securityManager,
+            ::securityManager,
             httpRpcSettings,
             multipartDir,
             true

@@ -1,0 +1,24 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Test serialization service'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.core'
+    compileOnly "org.osgi:osgi.annotation"
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    api "net.corda:corda-application"
+    implementation project(":libs:serialization:serialization-amqp")
+    implementation project(":libs:sandbox")
+    implementation project(":libs:serialization:serialization-internal")
+    implementation project(":libs:crypto:crypto-serialization-impl")
+    implementation project(':components:flow:flow-service')
+    implementation project(':components:membership:membership-group-read')
+    implementation project(":libs:virtual-node:sandbox-group-context")
+
+    implementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}

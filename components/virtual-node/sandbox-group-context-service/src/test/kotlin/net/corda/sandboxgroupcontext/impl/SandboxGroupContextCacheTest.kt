@@ -119,14 +119,14 @@ class SandboxGroupContextCacheTest {
 
         val vnodeContext1 = VirtualNodeContext(
             createTestHoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group"),
-            setOf(SecureHash.create("DUMMY:1234567890abcdef")),
+            setOf(SecureHash.parse("DUMMY:1234567890abcdef")),
             SandboxGroupType.FLOW,
             SingletonSerializeAsToken::class.java,
             "filter")
 
         val equalVnodeContext1 = VirtualNodeContext(
             createTestHoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group"),
-            setOf(SecureHash.create("DUMMY:1234567890abcdef")),
+            setOf(SecureHash.parse("DUMMY:1234567890abcdef")),
             SandboxGroupType.FLOW,
             SingletonSerializeAsToken::class.java,
             "filter")

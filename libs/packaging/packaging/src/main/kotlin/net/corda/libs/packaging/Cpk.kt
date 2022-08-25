@@ -1,6 +1,7 @@
 package net.corda.libs.packaging
 
 import net.corda.libs.packaging.core.CpkMetadata
+import java.io.FileNotFoundException
 import java.io.IOException
 import java.io.InputStream
 import java.nio.file.Path
@@ -22,6 +23,15 @@ interface Cpk {
 
     /** File name of cpk, if known */
     val originalFileName : String? get() = null
+
+    /**
+     * Returns an [InputStream] with the content of the Cpk archive
+     *
+     * @return an [InputStream] reading from the Cpk file
+     * @throws [FileNotFoundException] if Cpk file cannot be opened for reading.
+     */
+    @Throws(FileNotFoundException::class)
+    fun getInputStream() : InputStream
 
     /**
      * Returns an [InputStream] with the content of the associated resource inside the Cpk archive

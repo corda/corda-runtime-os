@@ -35,7 +35,14 @@ import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.crypto.impl.converter.PublicKeyHashConverter
+import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.CordaAvroSerializer
+import net.corda.data.KeyValuePairList
+import net.corda.data.membership.common.RegistrationStatus
+import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.toSortedMap
+import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.NOT_SUBMITTED
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SUBMITTED
 import net.corda.membership.registration.MembershipRequestRegistrationResult
@@ -50,6 +57,7 @@ import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.calculateHash
 import net.corda.virtualnode.HoldingIdentity
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.any
@@ -59,7 +67,9 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
+import org.mockito.kotlin.whenever
 import java.security.PublicKey
+import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -84,6 +94,7 @@ class StaticMemberRegistrationServiceTest {
     private val bobId = bob.shortHash
     private val charlieId = charlie.shortHash
 
+    private val registrationId = UUID(10, 20)
     private val defaultKey: PublicKey = mock {
         on { encoded } doReturn DEFAULT_KEY.toByteArray()
     }
@@ -105,7 +116,6 @@ class StaticMemberRegistrationServiceTest {
         on { getGroupPolicy(eric) } doReturn groupPolicyWithEmptyStaticNetwork
     }
 
-    @Suppress("UNCHECKED_CAST")
     private val mockPublisher: Publisher = mock()
 
     private val publisherFactory: PublisherFactory = mock {
@@ -166,6 +176,13 @@ class StaticMemberRegistrationServiceTest {
     private val mockContext: Map<String, String> = mock {
         on { get(KEY_SCHEME) } doReturn ECDSA_SECP256R1_CODE_NAME
     }
+    private val persistenceClient = mock<MembershipPersistenceClient>()
+    private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> = mock {
+        on { serialize(any()) } doReturn byteArrayOf(1, 2, 3)
+    }
+    private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
+        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
+    }
 
     private val registrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
@@ -175,10 +192,11 @@ class StaticMemberRegistrationServiceTest {
         configurationReadService,
         lifecycleCoordinatorFactory,
         hsmRegistrationClient,
-        memberInfoFactory
+        memberInfoFactory,
+        persistenceClient,
+        cordaAvroSerializationFactory,
     )
 
-    @Suppress("UNCHECKED_CAST")
     private fun setUpPublisher() {
         // kicks off the MessagingConfigurationReceived event to be able to mock the Publisher
         registrationServiceLifecycleHandler?.processEvent(
@@ -200,7 +218,7 @@ class StaticMemberRegistrationServiceTest {
         setUpPublisher()
         registrationService.start()
         val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
-        val registrationResult = registrationService.register(alice, mockContext)
+        val registrationResult = registrationService.register(registrationId, alice, mockContext)
         Mockito.verify(mockPublisher, times(2)).publish(capturedPublishedList.capture())
         CryptoConsts.Categories.all.forEach {
             Mockito.verify(hsmRegistrationClient, times(1)).findHSM(aliceId.value, it)
@@ -253,10 +271,25 @@ class StaticMemberRegistrationServiceTest {
     }
 
     @Test
+    fun `registration persist the status`() {
+        val status = argumentCaptor<RegistrationRequest>()
+        whenever(persistenceClient.persistRegistrationRequest(
+            eq(alice),
+            status.capture()
+        )).doReturn(MembershipPersistenceResult.success())
+        setUpPublisher()
+        registrationService.start()
+
+        registrationService.register(registrationId, alice, mockContext)
+
+        assertThat(status.firstValue.status).isEqualTo(RegistrationStatus.APPROVED)
+    }
+
+    @Test
     fun `registration fails when name field is empty in the GroupPolicy file`() {
         setUpPublisher()
         registrationService.start()
-        val registrationResult = registrationService.register(bob, mockContext)
+        val registrationResult = registrationService.register(registrationId, bob, mockContext)
         assertEquals(
             MembershipRequestRegistrationResult(
                 NOT_SUBMITTED,
@@ -271,7 +304,7 @@ class StaticMemberRegistrationServiceTest {
     fun `registration fails when static network is missing`() {
         setUpPublisher()
         registrationService.start()
-        val registrationResult = registrationService.register(charlie, mockContext)
+        val registrationResult = registrationService.register(registrationId, charlie, mockContext)
         assertEquals(
             MembershipRequestRegistrationResult(
                 NOT_SUBMITTED,
@@ -286,7 +319,7 @@ class StaticMemberRegistrationServiceTest {
     fun `registration fails when static network is empty`() {
         setUpPublisher()
         registrationService.start()
-        val registrationResult = registrationService.register(eric, mockContext)
+        val registrationResult = registrationService.register(registrationId, eric, mockContext)
         assertEquals(
             MembershipRequestRegistrationResult(
                 NOT_SUBMITTED,
@@ -300,7 +333,7 @@ class StaticMemberRegistrationServiceTest {
     @Test
     fun `registration fails when coordinator is not running`() {
         setUpPublisher()
-        val registrationResult = registrationService.register(alice, mockContext)
+        val registrationResult = registrationService.register(registrationId, alice, mockContext)
         assertEquals(
             MembershipRequestRegistrationResult(
                 NOT_SUBMITTED,
@@ -314,7 +347,7 @@ class StaticMemberRegistrationServiceTest {
     fun `registration fails when registering member is not in the static member list`() {
         setUpPublisher()
         registrationService.start()
-        val registrationResult = registrationService.register(daisy, mockContext)
+        val registrationResult = registrationService.register(registrationId, daisy, mockContext)
         assertEquals(
             MembershipRequestRegistrationResult(
                 NOT_SUBMITTED,
@@ -329,7 +362,7 @@ class StaticMemberRegistrationServiceTest {
     fun `registration fails when key scheme is not provided in context`() {
         setUpPublisher()
         registrationService.start()
-        val registrationResult = registrationService.register(alice, mock())
+        val registrationResult = registrationService.register(registrationId, alice, mock())
         assertEquals(
             MembershipRequestRegistrationResult(
                 NOT_SUBMITTED,

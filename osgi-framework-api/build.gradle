@@ -1,10 +1,9 @@
 plugins {
-    id 'org.jetbrains.kotlin.jvm'
+    id 'java-library'
 }
 
 dependencies {
+    compileOnly platform("net.corda:corda-api:$cordaApiVersion")
     compileOnly 'org.osgi:osgi.core'
-
-    implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    compileOnly "org.jetbrains:annotations:$jetbrainsAnnotationsVersion"
 }
