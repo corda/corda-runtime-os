@@ -55,8 +55,8 @@ internal class SandboxGroupImpl(
     }
 
 
-    override fun loadClassFromMainBundles(className: String): Class<*>? {
-        val clazz = cpkSandboxes.mapNotNullTo(HashSet()) { sandbox ->
+    override fun loadClassFromMainBundles(className: String): Class<*> {
+        return cpkSandboxes.mapNotNullTo(HashSet()) { sandbox ->
             try {
                 sandbox.loadClassFromMainBundle(className)
             } catch (e: SandboxException) {
@@ -64,15 +64,11 @@ internal class SandboxGroupImpl(
                 null
             }
         }.singleOrNull()
-        if (clazz == null) {
-            logger.warn("Class $className was not found in any sandbox in the sandbox group.")
-        }
-        return clazz
+            ?: throw SandboxException("Class $className was not found in any sandbox in the sandbox group.")
     }
 
     override fun <T : Any> loadClassFromMainBundles(className: String, type: Class<T>): Class<out T> {
         val klass = loadClassFromMainBundles(className)
-            ?: throw SandboxException("Class $className was not found in any sandbox in the sandbox group.")
         return try {
             klass.asSubclass(type)
         } catch (e: ClassCastException) {
