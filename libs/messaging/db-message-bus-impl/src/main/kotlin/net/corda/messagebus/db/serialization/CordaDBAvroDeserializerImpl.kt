@@ -4,10 +4,11 @@ import net.corda.data.CordaAvroDeserializer
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.util.contextLogger
 import java.nio.ByteBuffer
+import java.util.function.Consumer
 
 class CordaDBAvroDeserializerImpl<T : Any>(
     private val schemaRegistry: AvroSchemaRegistry,
-    private val onError: (ByteArray) -> Unit,
+    private val onError: Consumer<ByteArray>,
     private val expectedClass: Class<T>
 ) : CordaAvroDeserializer<T> {
 
@@ -34,7 +35,7 @@ class CordaDBAvroDeserializerImpl<T : Any>(
                     // We don't want to throw back as that would mean the entire poll (with possibly
                     // many records) would fail, and keep failing.  So we'll just callback to note the bad deserialize
                     // and return a null.  This will mean the record gets treated as 'deleted' in the processors
-                    onError.invoke(data)
+                    onError.accept(data)
                     null
                 }
             }
