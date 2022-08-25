@@ -5,21 +5,20 @@ import org.jetbrains.annotations.NotNull;
 /**
  * The {@code osgi-framework-bootstrap} module calls {@link #startup} of the class implementing this interface
  * as entry point of the application and {@link #shutdown} before to stop the OSGi framework.
- *
- * **NOTE:**
- * *To distribute an application as a bootable JAR built with the {@code corda.common.app} plugin,
- * only one class must implement this interface because that class is the entry point of the application.*
- *
+ * <p/>
+ * <b>NOTE:</b>
+ * <i>To distribute an application as a bootable JAR built with the {@code corda.common.app} plugin,
+ * only one class must implement this interface because that class is the entry point of the application.</i>
+ * <p/>
  * The class implementing this interface must define an OSGi component and register as an OSGi service.
- *
- * **EXAMPLE**
- *
+ * <p/>
+ * <b>EXAMPLE</b>
+ * <br/>
  * The code shows how to implement the {@link Application} interface and inject an OSGi service/component
  * annotated with {@code @Reference} into the constructor.
- *
+ * <p/>
  * See the {@code README.md} file of the {@code buildSrc} module for the {@code common-app} plugin for more info.
- *
- * <pre>
+ * <p/><pre>
  * import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
  * import net.corda.osgi.api.Application
  * import org.osgi.service.component.annotations.Activate
@@ -27,7 +26,7 @@ import org.jetbrains.annotations.NotNull;
  * import org.osgi.service.component.annotations.Reference
  *
  * &#64;Component(immediate = true)
- * class App @Activate constructor(
+ * class App &#64;Activate constructor(
  *     &#64;Reference(service = KafkaTopicAdmin::class)
  *     private var kafkaTopicAdmin: KafkaTopicAdmin,
  * ): Application {
@@ -63,11 +62,11 @@ public interface Application extends AutoCloseable {
 
     /**
      * The {@code osgi-framework-bootstrap} module calls this method before to stop the OSGi framework.
-     *
-     * *WARNING! Do not call {@link Shutdown} service from here because it calls this method
+     * <p/>
+     * <b>WARNING!</b> Do not call {@link Shutdown} service from here because it calls this method
      * resulting in an infinite recursive loop.
-     *
-     * *NOTE. The module {@code osgi-framework-bootstrap} implements an experimental solution to avoid shutdown loops'.
+     * <p/>
+     * <b>NOTE:</b> The module {@code osgi-framework-bootstrap} implements an experimental solution to avoid shutdown loops'.
      */
     void shutdown();
 
