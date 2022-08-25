@@ -1,9 +1,9 @@
 package net.corda.internal.serialization.amqp
 
+import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.serialize
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
-import net.corda.internal.serialization.amqp.testutils.testSerializationContext
 import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.serialization.SerializationContext
 import kotlin.test.assertEquals
