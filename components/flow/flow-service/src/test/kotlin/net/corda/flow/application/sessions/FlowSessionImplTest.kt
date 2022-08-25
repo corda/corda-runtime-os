@@ -3,7 +3,6 @@ package net.corda.flow.application.sessions
 import net.corda.flow.ALICE_X500_NAME
 import net.corda.flow.application.services.MockFlowFiberService
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.v5.application.messaging.unwrap
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.serialization.SerializedBytes

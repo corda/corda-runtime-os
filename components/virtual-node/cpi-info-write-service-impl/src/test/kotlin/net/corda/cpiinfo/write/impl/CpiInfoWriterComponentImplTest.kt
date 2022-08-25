@@ -89,10 +89,10 @@ internal class CpiInfoWriterComponentImplTest {
         writer.processEvent(event, coordinator)
         verify(coordinator).updateStatus(LifecycleStatus.UP)
 
-        val cpiIdentifier = CpiIdentifier("test", "1.0", SecureHash.create("ALGO:1234567890"))
+        val cpiIdentifier = CpiIdentifier("test", "1.0", SecureHash.parse("ALGO:1234567890"))
         val cpiMetadata = CpiMetadata(
             cpiIdentifier,
-            SecureHash.create("ALGO:0987654321"),
+            SecureHash.parse("ALGO:0987654321"),
             emptyList(),
             "",
             0,

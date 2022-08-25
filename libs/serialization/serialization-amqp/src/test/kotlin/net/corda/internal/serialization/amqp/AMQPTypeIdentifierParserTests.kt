@@ -2,7 +2,7 @@ package net.corda.internal.serialization.amqp
 
 import com.google.common.reflect.TypeToken
 import net.corda.internal.serialization.MAX_TYPE_PARAM_DEPTH
-import net.corda.internal.serialization.amqp.testutils.testSerializationContext
+import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.internal.serialization.model.TypeIdentifier
 import org.apache.qpid.proton.amqp.UnsignedShort
 import org.junit.jupiter.api.Test
@@ -41,7 +41,10 @@ class AMQPTypeIdentifierParserTests {
 
         // We set a limit to the depth of arrays-of-arrays-of-arrays...
         assertFailsWith<IllegalTypeNameParserStateException> {
-            AMQPTypeIdentifierParser.parse("string" + "[]".repeat(33), testSerializationContext.currentSandboxGroup())
+            AMQPTypeIdentifierParser.parse(
+                "string" + "[]".repeat(33),
+                testSerializationContext.currentSandboxGroup()
+            )
         }
     }
 
@@ -221,7 +224,10 @@ class AMQPTypeIdentifierParserTests {
 
     private fun assertParsesTo(type: Type, expectedIdentifierPrettyPrint: String) {
         val nameForType = AMQPTypeIdentifiers.nameForType(type)
-        val parsedIdentifier = AMQPTypeIdentifierParser.parse(nameForType, testSerializationContext.currentSandboxGroup())
+        val parsedIdentifier = AMQPTypeIdentifierParser.parse(
+            nameForType,
+            testSerializationContext.currentSandboxGroup()
+        )
         assertEquals(expectedIdentifierPrettyPrint, parsedIdentifier.prettyPrint())
     }
 

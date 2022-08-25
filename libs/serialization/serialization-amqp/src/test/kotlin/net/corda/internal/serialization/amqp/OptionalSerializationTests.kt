@@ -1,10 +1,10 @@
 package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.amqp.custom.OptionalSerializer
+import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.internal.serialization.amqp.testutils.TestSerializationOutput
 import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
-import net.corda.internal.serialization.amqp.testutils.testSerializationContext
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout

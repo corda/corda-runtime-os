@@ -1,6 +1,6 @@
 1. Extract the credentials for the initial admin user:
-kubectl get secret {{ include "corda.initialAdminUserSecretName" . }} -o jsonpath='{ .data.{{ include "corda.initialAdminUserSecretUsernameKey" . }} }' | base64 --decode
-kubectl get secret {{ include "corda.initialAdminUserSecretName" . }} -o jsonpath='{ .data.{{ include "corda.initialAdminUserSecretPasswordKey" . }} }' | base64 --decode
+kubectl get secret {{ include "corda.initialAdminUserSecretName" . }} -o go-template='{{ `{{` }} .data.{{ include "corda.initialAdminUserSecretUsernameKey" . }} | base64decode {{ `}}` }}'
+kubectl get secret {{ include "corda.initialAdminUserSecretName" . }} -o go-template='{{ `{{` }} .data.{{ include "corda.initialAdminUserSecretPasswordKey" . }} | base64decode {{ `}}` }}'
 
 2. Expose the APC endpoint on localhost by running this command:
 kubectl port-forward --namespace {{ .Release.Namespace }} deployment/{{ include "corda.fullname" . }}-rpc-worker 8888 &

@@ -79,10 +79,14 @@ class VirtualNodeDb(
                 ClassloaderChangeLog.ChangeLogResourceFiles(klass.packageName, dbChangeFiles, klass.classLoader)
             }
             val dbChange = ClassloaderChangeLog(changeLogResourceFiles)
-            val dbSchema = dbType.getSchemaName(holdingIdentityShortHash)
 
             dataSource.connection.use { connection ->
-                schemaMigrator.updateDb(connection, dbChange, dbSchema)
+                if (isClusterDb) {
+                    val dbSchema = dbType.getSchemaName(holdingIdentityShortHash)
+                    schemaMigrator.updateDb(connection, dbChange, dbSchema)
+                } else {
+                    schemaMigrator.updateDb(connection, dbChange)
+                }
             }
         }
     }

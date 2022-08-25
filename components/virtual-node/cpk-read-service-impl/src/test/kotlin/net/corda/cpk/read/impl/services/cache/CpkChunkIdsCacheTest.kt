@@ -25,7 +25,7 @@ class CpkChunkIdsCacheTest {
 
     @Test
     fun `on non zero CPK chunk adds its chunk Id it to cache`() {
-        val checksum = SecureHash.create(DUMMY_HASH)
+        val checksum = SecureHash.parse(DUMMY_HASH)
 
         val (cpkChunkId0, chunk0) =
             Helpers.dummyCpkChunkIdToChunk(checksum, 0, checksum, byteArrayOf(0x01, 0x02))
@@ -41,7 +41,7 @@ class CpkChunkIdsCacheTest {
 
     @Test
     fun `on zero CPK chunk sets expected chunks count`() {
-        val checksum = SecureHash.create(DUMMY_HASH)
+        val checksum = SecureHash.parse(DUMMY_HASH)
 
         val (cpkChunkId0, chunk0) =
             Helpers.dummyCpkChunkIdToChunk(checksum, 0, checksum, byteArrayOf(0x01, 0x02))

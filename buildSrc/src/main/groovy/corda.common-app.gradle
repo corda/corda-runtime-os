@@ -69,9 +69,6 @@ dependencies {
     bootstrapClasspath project(":osgi-framework-bootstrap")
 
     systemPackages "org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec:$jbossTransactionApiSpecVersion"
-    systemPackages "org.jetbrains.kotlin:kotlin-osgi-bundle:$kotlinVersion"
-    systemPackages "net.corda.kotlin:kotlin-stdlib-jdk7-osgi:$kotlinVersion"
-    systemPackages "net.corda.kotlin:kotlin-stdlib-jdk8-osgi:$kotlinVersion"
     systemPackages "org.slf4j:slf4j-api:$slf4jVersion"
     systemPackages project(":osgi-framework-api")
 }

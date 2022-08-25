@@ -54,10 +54,10 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
         } ?: return null
 
         val signerSummaryHash = cpiMetadataEntity.signerSummaryHash.let {
-            if (it == "") null else SecureHash.create(it)
+            if (it == "") null else SecureHash.parse(it)
         }
         val cpiId = CpiIdentifier(cpiMetadataEntity.name, cpiMetadataEntity.version, signerSummaryHash)
-        val fileChecksum = SecureHash.create(cpiMetadataEntity.fileChecksum).toHexString()
+        val fileChecksum = SecureHash.parse(cpiMetadataEntity.fileChecksum).toHexString()
         return CpiMetadataLite(cpiId, fileChecksum, cpiMetadataEntity.groupId, cpiMetadataEntity.groupPolicy)
     }
 
@@ -78,10 +78,10 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
         }
 
         val signerSummaryHash = cpiMetadataEntity.signerSummaryHash.let {
-            if (it.isBlank()) null else SecureHash.create(it)
+            if (it.isBlank()) null else SecureHash.parse(it)
         }
         val cpiId = CpiIdentifier(cpiMetadataEntity.name, cpiMetadataEntity.version, signerSummaryHash)
-        val fileChecksum = SecureHash.create(cpiMetadataEntity.fileChecksum).toHexString()
+        val fileChecksum = SecureHash.parse(cpiMetadataEntity.fileChecksum).toHexString()
         return CpiMetadataLite(cpiId, fileChecksum, cpiMetadataEntity.groupId, cpiMetadataEntity.groupPolicy)
     }
 
