@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "ProcessSyncRequest",
+  "namespace": "net.corda.data.membership.command.synchronisation.mgm",
+  "doc": "Command issued for an mgm to process the sync request sent by a member.",
+  "fields": [
+    {
+      "name": "synchronisationMetaData",
+      "doc": "Data used for processing synchronisation commands.",
+      "type": "net.corda.data.membership.command.synchronisation.SynchronisationMetaData"
+    },
+    {
+      "name": "syncRequest",
+      "doc" : "Sync request sent by the member.",
+      "type": "net.corda.data.membership.p2p.MembershipSyncRequest"
+    }
+  ]
+}

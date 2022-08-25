@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "SynchronisationMetaData",
+  "namespace": "net.corda.data.membership.command.synchronisation",
+  "doc": "Data used for processing synchronisation commands.",
+  "fields": [
+    {
+      "name": "mgm",
+      "doc": "Holding identity of the MGM.",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    },
+    {
+      "name": "member",
+      "doc": "Holding identity of the member receiving the membership updates",
+      "type": "net.corda.data.identity.HoldingIdentity"
+    }
+  ]
+}
