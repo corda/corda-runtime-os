@@ -51,7 +51,7 @@ class CpiUploadRPCOpsImpl @Activate constructor(
 
     override fun start() = coordinator.start()
 
-    override fun stop() = coordinator.close()
+    override fun stop() = coordinator.stop()
 
     override fun cpi(upload: HttpFileUpload): CpiUploadRPCOps.CpiUploadResponse {
         logger.info("Uploading CPI: ${upload.fileName}")

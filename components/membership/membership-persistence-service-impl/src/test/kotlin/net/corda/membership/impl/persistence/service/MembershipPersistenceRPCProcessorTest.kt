@@ -5,11 +5,11 @@ import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
-import net.corda.data.membership.db.request.command.RegistrationStatus
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
 import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.data.membership.db.request.query.QueryMemberInfo
@@ -19,8 +19,6 @@ import net.corda.data.membership.db.response.query.MemberInfoQueryResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.db.connection.manager.VirtualNodeDbType
-import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.datamodel.GroupPolicyEntity
@@ -66,12 +64,13 @@ class MembershipPersistenceRPCProcessorTest {
     private val ourRegistrationId = UUID.randomUUID().toString()
     private val ourHoldingIdentity = createTestHoldingIdentity(ourX500Name, ourGroupId)
     private val context = "context".toByteArray()
+    private val vaultDmlConnectionId = UUID(30, 0)
 
     private val virtualNodeInfo = VirtualNodeInfo(
         ourHoldingIdentity,
         CpiIdentifier("TEST_CPI", "1.0", null),
         timestamp = clock.instant(),
-        vaultDmlConnectionId = UUID(0, 0),
+        vaultDmlConnectionId = vaultDmlConnectionId,
         cryptoDmlConnectionId = UUID(0, 0),
     )
 
@@ -100,9 +99,8 @@ class MembershipPersistenceRPCProcessorTest {
 
     private val dbConnectionManager: DbConnectionManager = mock {
         on {
-            getOrCreateEntityManagerFactory(
-                eq(VirtualNodeDbType.VAULT.getConnectionName(ourHoldingIdentity.shortHash)),
-                eq(DbPrivilege.DML),
+            createEntityManagerFactory(
+                eq(vaultDmlConnectionId),
                 any()
             )
         } doReturn entityManagerFactory
@@ -176,7 +174,7 @@ class MembershipPersistenceRPCProcessorTest {
                 ourHoldingIdentity.toAvro(),
                 MembershipRegistrationRequest(
                     ourRegistrationId,
-                    ByteBuffer.wrap(context),
+                    ByteBuffer.wrap("8".toByteArray()),
                     CryptoSignatureWithKey(
                         ByteBuffer.wrap("123".toByteArray()),
                         ByteBuffer.wrap("456".toByteArray()),
@@ -273,7 +271,7 @@ class MembershipPersistenceRPCProcessorTest {
                 ourHoldingIdentity.toAvro(),
                 MembershipRegistrationRequest(
                     ourRegistrationId,
-                    ByteBuffer.wrap(context),
+                    ByteBuffer.wrap("8".toByteArray()),
                     CryptoSignatureWithKey(
                         ByteBuffer.wrap("123".toByteArray()),
                         ByteBuffer.wrap("456".toByteArray()),

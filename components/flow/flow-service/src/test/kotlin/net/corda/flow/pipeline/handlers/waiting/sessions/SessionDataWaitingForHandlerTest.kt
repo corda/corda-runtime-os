@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.handlers.waiting.sessions
 
+import java.nio.ByteBuffer
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
@@ -19,7 +20,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.nio.ByteBuffer
 
 @Suppress("MaxLineLength")
 class SessionDataWaitingForHandlerTest {
@@ -121,7 +121,7 @@ class SessionDataWaitingForHandlerTest {
 
         whenever(flowSessionManager.getSessionsWithStatus(checkpoint, listOf(SESSION_ID_2, SESSION_ID_3), SessionStateType.ERROR))
             .thenReturn(listOf(sessionStateTwo))
-        whenever(flowSessionManager.getSessionsWithStatus(checkpoint, listOf(SESSION_ID_2, SESSION_ID_3), SessionStateType.CLOSING))
+        whenever(flowSessionManager.getSessionsWithNextMessageClose(checkpoint, listOf(SESSION_ID_2, SESSION_ID_3)))
             .thenReturn(listOf(sessionStateThree))
 
         val inputContext = buildFlowEventContext(
@@ -211,7 +211,7 @@ class SessionDataWaitingForHandlerTest {
 
         assertEquals(FlowContinuation.Run(mapOf(SESSION_ID to DATA)), continuation)
         verify(flowSessionManager).getSessionsWithStatus(checkpoint, emptyList(), SessionStateType.ERROR)
-        verify(flowSessionManager).getSessionsWithStatus(checkpoint, emptyList(), SessionStateType.CLOSING)
+        verify(flowSessionManager).getSessionsWithNextMessageClose(checkpoint, emptyList())
     }
 
     @Test
@@ -259,7 +259,7 @@ class SessionDataWaitingForHandlerTest {
         whenever(flowSessionManager.getReceivedEvents(checkpoint, sessions)).thenReturn(receivedEvents)
         whenever(flowSessionManager.getSessionsWithStatus(checkpoint, listOf(SESSION_ID_2, SESSION_ID_3), SessionStateType.ERROR))
             .thenReturn(listOf(sessionStateTwo))
-        whenever(flowSessionManager.getSessionsWithStatus(checkpoint, listOf(SESSION_ID_2, SESSION_ID_3), SessionStateType.CLOSING))
+        whenever(flowSessionManager.getSessionsWithNextMessageClose(checkpoint,  listOf(SESSION_ID_2, SESSION_ID_3)))
             .thenReturn(listOf(sessionStateThree))
 
         val inputContext = buildFlowEventContext(

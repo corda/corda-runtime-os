@@ -6,7 +6,6 @@ import net.corda.crypto.config.impl.PrivateKeyPolicy
 import net.corda.crypto.config.impl.cryptoConnectionFactory
 import net.corda.crypto.config.impl.flowBusProcessor
 import net.corda.crypto.config.impl.hsm
-import net.corda.crypto.config.impl.hsmConfigBusProcessor
 import net.corda.crypto.config.impl.hsmId
 import net.corda.crypto.config.impl.hsmMap
 import net.corda.crypto.config.impl.hsmRegistrationBusProcessor
@@ -58,10 +57,8 @@ class CryptoWorkerTests {
         assertEquals(3, connectionFactory.maximumSize)
         val signingService = config.signingService()
         assertEquals(60, signingService.cache.expireAfterAccessMins)
-        assertEquals(1000, signingService.cache.maximumSize)
+        assertEquals(10000, signingService.cache.maximumSize)
         val hsmService = config.hsmService()
-        assertEquals(5, hsmService.cache.expireAfterAccessMins)
-        assertEquals(10, hsmService.cache.maximumSize)
         assertEquals(3, hsmService.downstreamMaxAttempts)
         assertEquals(CryptoConsts.SOFT_HSM_ID, config.hsmId())
         Assertions.assertThat(config.hsmMap()).hasSize(1)
@@ -99,7 +96,7 @@ class CryptoWorkerTests {
             )
         )
         assertEquals(60, hsmCfg.getLong("wrappingKeyMap.cache.expireAfterAccessMins"))
-        assertEquals(100, hsmCfg.getLong("wrappingKeyMap.cache.maximumSize"))
+        assertEquals(1000, hsmCfg.getLong("wrappingKeyMap.cache.maximumSize"))
         assertEquals("DEFAULT", hsmCfg.getString("wrapping.name"))
         val opsBusProcessor = config.opsBusProcessor()
         assertEquals(3, opsBusProcessor.maxAttempts)
@@ -109,10 +106,6 @@ class CryptoWorkerTests {
         assertEquals(3, flowBusProcessor.maxAttempts)
         assertEquals(1, flowBusProcessor.waitBetweenMills.size)
         assertEquals(200L, flowBusProcessor.waitBetweenMills[0])
-        val hsmConfigBusProcessor = config.hsmConfigBusProcessor()
-        assertEquals(3, hsmConfigBusProcessor.maxAttempts)
-        assertEquals(1, hsmConfigBusProcessor.waitBetweenMills.size)
-        assertEquals(200L, hsmConfigBusProcessor.waitBetweenMills[0])
         val hsmRegistrationBusProcessor = config.hsmRegistrationBusProcessor()
         assertEquals(3, hsmRegistrationBusProcessor.maxAttempts)
         assertEquals(1, hsmRegistrationBusProcessor.waitBetweenMills.size)

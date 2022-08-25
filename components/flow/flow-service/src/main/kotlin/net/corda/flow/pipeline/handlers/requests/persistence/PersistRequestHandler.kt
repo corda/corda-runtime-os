@@ -5,7 +5,7 @@ import java.time.Instant
 import net.corda.data.flow.state.waiting.EntityResponse
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.data.persistence.EntityRequest
-import net.corda.data.persistence.PersistEntity
+import net.corda.data.persistence.PersistEntities
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.persistence.manager.PersistenceManager
 import net.corda.flow.pipeline.FlowEventContext
@@ -28,7 +28,7 @@ class PersistRequestHandler @Activate constructor(
     }
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.Persist): FlowEventContext<Any> {
-        val persistRequest = PersistEntity(ByteBuffer.wrap(request.obj))
+        val persistRequest = PersistEntities(listOf(ByteBuffer.wrap(request.obj) ))
         val checkpoint = context.checkpoint
         val entityRequest = EntityRequest(Instant.now(), checkpoint.flowId, checkpoint.holdingIdentity.toAvro(), persistRequest)
         return context.apply { checkpoint.persistenceState = persistenceManager.processMessageToSend(request.requestId, entityRequest) }

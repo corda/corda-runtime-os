@@ -5,14 +5,15 @@ import com.typesafe.config.ConfigRenderOptions
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.core.DbPrivilege
+import net.corda.db.core.OSGiDataSourceFactory
 import net.corda.db.schema.DbSchema
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceImpl
 import net.corda.libs.configuration.secret.SecretsCreateService
 import net.corda.v5.base.util.contextLogger
-import java.sql.DriverManager
 import java.time.Instant
 import java.util.UUID
+
 
 // TODO This class bootstraps database, duplicating functionality available via CLI
 // As it duplicates some classes from tools/plugins/initial-config/src/main/kotlin/net/corda/cli/plugin/, it requires
@@ -54,9 +55,6 @@ class PostgresDbSetup(
     }
 
     override fun run() {
-        log.info("Bootstrap Postgres DB.")
-        Class.forName(DB_DRIVER)
-
         if (!dbInitialised()) {
             log.info("Initialising DB.")
             initDb()
@@ -70,25 +68,30 @@ class PostgresDbSetup(
         }
     }
 
+    private fun superUserConnection() =
+        OSGiDataSourceFactory.create(DB_DRIVER, dbSuperUserUrl, superUser, superUserPassword).connection
+
+    private fun adminConnection() =
+        OSGiDataSourceFactory.create(DB_DRIVER, dbAdminUrl, dbAdmin, dbAdminPassword).connection
+
     private fun dbInitialised(): Boolean {
-        DriverManager
-            .getConnection(dbSuperUserUrl)
+        superUserConnection()
             .use { connection ->
                 connection.createStatement().executeQuery(
-                    "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'config' AND tablename = 'config');")
-                .use {
-                    if (it.next()) {
-                        return it.getBoolean(1)
+                    "SELECT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'config' AND tablename = 'config');"
+                )
+                    .use {
+                        if (it.next()) {
+                            return it.getBoolean(1)
+                        }
                     }
-                }
             }
         return false
     }
 
     private fun initDb() {
         log.info("Create user $dbAdmin in $dbName in $dbSuperUserUrl.")
-        DriverManager
-            .getConnection(dbSuperUserUrl)
+        superUserConnection()
             .use { connection ->
                 connection.createStatement().execute(
                     // NOTE: this is different to the cli as this is set up to be using the official postgres image
@@ -104,8 +107,7 @@ class PostgresDbSetup(
 
     private fun runDbMigration() {
         log.info("Run DB migrations in $dbAdminUrl.")
-        DriverManager
-            .getConnection(dbAdminUrl)
+        adminConnection()
             .use { connection ->
                 changelogFiles.forEach { (file, schema) ->
                     val changeLogResourceFiles = setOf(DbSchema::class.java).mapTo(LinkedHashSet()) { klass ->
@@ -130,8 +132,7 @@ class PostgresDbSetup(
 
     private fun createDbSchema(schema: String) {
         log.info("Create SCHEMA $schema.")
-        DriverManager
-            .getConnection(dbAdminUrl)
+        adminConnection()
             .use { connection ->
                 connection.createStatement().execute("CREATE SCHEMA IF NOT EXISTS $schema;")
             }
@@ -151,8 +152,7 @@ class PostgresDbSetup(
             config = createDbConfig(jdbcUrl, username, password, secretsService)
         ).also { it.version = 0 }
 
-        DriverManager
-            .getConnection(dbAdminUrl)
+        adminConnection()
             .use { connection ->
                 connection.createStatement().execute(dbConnectionConfig.toInsertStatement())
             }
@@ -160,8 +160,7 @@ class PostgresDbSetup(
 
     private fun createUserConfig(user: String, password: String) {
         log.info("Create user config for $user")
-        DriverManager
-            .getConnection(dbAdminUrl)
+        adminConnection()
             .use { connection ->
                 connection.createStatement().execute(buildRbacConfigSql(user, password, "Setup Script"))
             }
@@ -179,14 +178,18 @@ class PostgresDbSetup(
             GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA CRYPTO to crypto_user_$dbName;
         """.trimIndent()
 
-        DriverManager
-            .getConnection(dbAdminUrl)
+        adminConnection()
             .use { connection ->
                 connection.createStatement().execute(sql)
             }
     }
 
-    private fun createDbConfig(jdbcUrl: String, username: String, password: String, secretsService: SecretsCreateService): String {
+    private fun createDbConfig(
+        jdbcUrl: String,
+        username: String,
+        password: String,
+        secretsService: SecretsCreateService
+    ): String {
         return "{\"database\":{" +
                 "\"jdbc\":" +
                 "{\"url\":\"$jdbcUrl\"}," +

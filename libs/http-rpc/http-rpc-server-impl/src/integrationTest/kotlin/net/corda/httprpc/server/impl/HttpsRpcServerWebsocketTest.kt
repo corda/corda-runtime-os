@@ -46,7 +46,7 @@ class HttpsRpcServerWebsocketTest : AbstractWebsocketTest() {
                 listOf(
                     TestHealthCheckAPIImpl()
                 ),
-                securityManager,
+                ::securityManager,
                 httpRpcSettings,
                 multipartDir,
                 true

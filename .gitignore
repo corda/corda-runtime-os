@@ -124,6 +124,7 @@ node_modules/
 
 # testing
 /applications/workers/release/deploy/schemas/*
+/applications/workers/release/combined-worker/drivers/*
 
 /testing/soak/.vscode
 /testing/soak/.venv/

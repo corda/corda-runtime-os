@@ -13,8 +13,11 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
 
+/**
+ * Created for mocking and simplifying group policy functionalities used by the membership services.
+ */
 interface TestGroupPolicyProvider : GroupPolicyProvider {
-    fun putGroupPolicy(groupPolicy: GroupPolicy)
+    fun putGroupPolicy(holdingIdentity: HoldingIdentity, groupPolicy: GroupPolicy)
 }
 
 @ServiceRanking(Int.MAX_VALUE)
@@ -35,13 +38,13 @@ class TestGroupPolicyProviderImpl @Activate constructor(
             }
         }
 
-    private lateinit var policy: GroupPolicy
+    private val policies = mutableMapOf<HoldingIdentity, GroupPolicy>()
 
-    override fun putGroupPolicy(groupPolicy: GroupPolicy) {
-        policy = groupPolicy
+    override fun putGroupPolicy(holdingIdentity: HoldingIdentity, groupPolicy: GroupPolicy) {
+        policies.put(holdingIdentity, groupPolicy)
     }
 
-    override fun getGroupPolicy(holdingIdentity: HoldingIdentity) = policy
+    override fun getGroupPolicy(holdingIdentity: HoldingIdentity) = policies.get(holdingIdentity)
 
     override fun registerListener(callback: (HoldingIdentity, GroupPolicy) -> Unit) {
         with(UNIMPLEMENTED_FUNCTION) {
@@ -65,7 +68,7 @@ class TestGroupPolicyProviderImpl @Activate constructor(
 
 }
 
-class TestGroupPolicy : GroupPolicy {
+class MemberTestGroupPolicy : GroupPolicy {
     companion object {
         private const val UNIMPLEMENTED_FUNCTION = "Called unimplemented function for test service."
     }
@@ -77,6 +80,29 @@ class TestGroupPolicy : GroupPolicy {
         get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
     override val synchronisationProtocol: String
         get() = "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl"
+    override val protocolParameters: GroupPolicy.ProtocolParameters
+        get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
+    override val p2pParameters: GroupPolicy.P2PParameters
+        get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
+    override val mgmInfo: GroupPolicy.MGMInfo
+        get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
+    override val cipherSuite: GroupPolicy.CipherSuite
+        get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
+
+}
+
+class MgmTestGroupPolicy : GroupPolicy{
+    companion object {
+        private const val UNIMPLEMENTED_FUNCTION = "Called unimplemented function for test service."
+    }
+    override val fileFormatVersion: Int
+        get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
+    override val groupId: String
+        get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
+    override val registrationProtocol: String
+        get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
+    override val synchronisationProtocol: String
+        get() = "net.corda.membership.impl.synchronisation.MgmSynchronisationServiceImpl"
     override val protocolParameters: GroupPolicy.ProtocolParameters
         get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
     override val p2pParameters: GroupPolicy.P2PParameters

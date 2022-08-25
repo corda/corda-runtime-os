@@ -78,7 +78,7 @@ internal class VirtualNodeEntityRepositoryTest {
         val hexFileChecksum = "123456ABCDEF123456"
         val fileChecksum = "TEST:$hexFileChecksum"
         val signerSummaryHash = "TEST:121212121212"
-        val cpiId = CpiIdentifier("Test CPI", "1.0", SecureHash.create(signerSummaryHash))
+        val cpiId = CpiIdentifier("Test CPI", "1.0", SecureHash.parse(signerSummaryHash))
         val expectedCpiMetadata = CpiMetadataLite(cpiId, hexFileChecksum, "Test Group ID", "Test Group Policy")
 
         val cpiMetadataEntity = with(expectedCpiMetadata) {
@@ -135,7 +135,7 @@ internal class VirtualNodeEntityRepositoryTest {
         val hexFileChecksum = "123456789012"
         val fileChecksum = "TEST:$hexFileChecksum"
         val signerSummaryHash = "TEST:121212121212"
-        val cpiId = CpiIdentifier("Test CPI 2", "2.0", SecureHash.create(signerSummaryHash))
+        val cpiId = CpiIdentifier("Test CPI 2", "2.0", SecureHash.parse(signerSummaryHash))
         val mgmGroupId = "Test Group ID 2"
         val groupPolicy = "Test Group Policy 2"
         val expectedCpiMetadata = CpiMetadataLite(cpiId, hexFileChecksum, mgmGroupId, groupPolicy)
@@ -321,7 +321,7 @@ internal class VirtualNodeEntityRepositoryTest {
         val hexFileChecksum = "789012ABCDEF"
         val fileChecksum = "TEST:$hexFileChecksum"
         val signerSummaryHash = "TEST:121212121212"
-        val cpiId = CpiIdentifier("Test CPI 2", "1.0", SecureHash.create(signerSummaryHash))
+        val cpiId = CpiIdentifier("Test CPI 2", "1.0", SecureHash.parse(signerSummaryHash))
         val cpiMetadata = CpiMetadataLite(cpiId, hexFileChecksum, "Test Group ID", "Test Group Policy")
         val holdingIdentity = createTestHoldingIdentity("CN=Bob-4, O=Bob Corp, L=LDN, C=GB", "Group ID")
 
@@ -356,7 +356,7 @@ internal class VirtualNodeEntityRepositoryTest {
         Assertions.assertThat(repository.virtualNodeExists(holdingIdentity, cpiId)).isTrue
 
         val nonExistingCpiId =
-            CpiIdentifier("Non existing CPI", "1.0", SecureHash.create(signerSummaryHash))
+            CpiIdentifier("Non existing CPI", "1.0", SecureHash.parse(signerSummaryHash))
         Assertions.assertThat(repository.virtualNodeExists(holdingIdentity, nonExistingCpiId)).isFalse
     }
 
@@ -365,7 +365,7 @@ internal class VirtualNodeEntityRepositoryTest {
         val hexFileChecksum = "789012FEDCBA"
         val fileChecksum = "TEST:$hexFileChecksum"
         val signerSummaryHash = "TEST:121212121212"
-        val cpiId = CpiIdentifier("Test CPI 3", "1.0", SecureHash.create(signerSummaryHash))
+        val cpiId = CpiIdentifier("Test CPI 3", "1.0", SecureHash.parse(signerSummaryHash))
         val cpiMetadata = CpiMetadataLite(cpiId, hexFileChecksum, "Test Group ID", "Test Group Policy")
         val holdingIdentity = createTestHoldingIdentity("CN=Bob-5, O=Bob Corp, L=LDN, C=GB", "Group ID")
 

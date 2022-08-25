@@ -10,7 +10,6 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.marshalling.parse
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.unwrap
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 
