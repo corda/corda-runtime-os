@@ -54,6 +54,7 @@ import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.test.util.MockTimeFacilitiesProvider
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.base.util.millis
+import net.corda.v5.base.util.minutes
 import net.corda.v5.base.util.toBase64
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.virtualnode.HoldingIdentity
@@ -1541,6 +1542,37 @@ class SessionManagerTest {
         loggingInterceptor.assertSingleWarningContains("An exception was thrown when sending a heartbeat message.")
         sessionManager.stop()
         resourcesHolder.close()
+    }
+
+    @Test
+    fun `DRAFT`() {
+        val someSessionId = "some-session"
+        whenever(outboundSessionPool.constructed().first().getSession(someSessionId)).thenReturn(
+            OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
+        )
+
+        whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), any())).thenReturn(mock())
+        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, someSessionId, 4, Instant.now().toEpochMilli())
+        val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
+        sessionManager.processSessionMessage(LinkInMessage(responderHello))
+
+        val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
+        val session = mock<Session> {
+            on { sessionId } doReturn someSessionId
+        }
+        whenever(protocolInitiator.getSession()).thenReturn(session)
+        assertThat(sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))).isNull()
+        mockTimeFacilitiesProvider.advanceTime(3.minutes)
+        loggingInterceptor.assertInfoContains("Outbound session some-session" +
+                " (local=HoldingIdentity(x500Name=CN=Alice, O=Alice Corp, L=LDN, C=GB, groupId=myGroup)," +
+                " remote=HoldingIdentity(x500Name=CN=Bob, O=Bob Corp, L=LDN, C=GB, groupId=myGroup))" +
+                " timed out to refresh ephemeral keys and it will be cleaned up."
+        )
+        verify(sessionReplayer, times(2)).removeMessageFromReplay(
+            "${someSessionId}_${InitiatorHandshakeMessage::class.java.simpleName}",
+            SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY)
+        )
+
     }
 
 }

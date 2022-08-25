@@ -131,8 +131,8 @@ internal class SessionManagerImpl(
         executorServiceFactory
     )
     private val outboundSessionPool = OutboundSessionPool(heartbeatManager::calculateWeightForSession)
-
-    private val fiveDaysInMilliseconds = 120000L //432000000L
+//TODO - change to 5 days once testing complete
+    private val fiveDaysInMilliseconds = 2*60*1000L //432000000L
 
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
@@ -563,7 +563,7 @@ internal class SessionManagerImpl(
             "Outbound session $sessionId (local=${sessionCounterparties.ourId}, remote=${sessionCounterparties.counterpartyId}) timed " +
                     "out to refresh ephemeral keys and it will be cleaned up."
         )
-        refreshOutboundSession(sessionCounterparties, sessionId)
+        refreshOutboundSession(sessionCounterparties, sessionId) 
         heartbeatManager.stopTrackingSpecifiedSession(sessionId)
     }
 
