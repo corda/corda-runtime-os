@@ -10,7 +10,7 @@ import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.httprpc.annotations.HttpRpcWS
-import net.corda.httprpc.response.HttpResponse
+import net.corda.httprpc.response.ResponseEntity
 import net.corda.httprpc.ws.DuplexChannel
 import net.corda.libs.configuration.SmartConfig
 
@@ -40,7 +40,7 @@ interface FlowRpcOps : RpcOps {
         holdingIdentityShortHash: String,
         @HttpRpcRequestBodyParameter(description = "Information required to start a flow for this holdingId", required = true)
         startFlow: StartFlowParameters
-    ): HttpResponse<FlowStatusResponse>
+    ): ResponseEntity<FlowStatusResponse>
 
     @HttpRpcGET(
         path = "{holdingIdentityShortHash}/{clientRequestId}",

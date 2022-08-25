@@ -46,7 +46,7 @@ class CreateRoleE2eTest {
 
             val roleId = with(proxy.createRole(createRoleType)) {
                 assertSoftly {
-                    it.assertThat(this.responseCode.statusCode).isEqualTo(200)
+                    it.assertThat(this.responseCode.statusCode).isEqualTo(201)
                     it.assertThat(this.responseBody).isNotNull
                     it.assertThat(this.responseBody!!.roleName).isEqualTo(name)
                     it.assertThat(this.responseBody!!.version).isEqualTo(0L)

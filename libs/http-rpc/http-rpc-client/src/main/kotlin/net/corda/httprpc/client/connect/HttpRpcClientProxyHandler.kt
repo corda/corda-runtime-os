@@ -23,6 +23,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Method
+import net.corda.httprpc.response.ResponseEntity
 
 /**
  * [HttpRpcClientProxyHandler] is responsible for converting method invocations to web requests that are called against the server,

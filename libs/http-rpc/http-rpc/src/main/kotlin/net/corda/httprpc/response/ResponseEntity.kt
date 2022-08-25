@@ -12,7 +12,7 @@ import net.corda.httprpc.RpcOps
  *
  * Use the static helper methods to create the appropriate http response.
  *
- * If an [RpcOps] endpoint function doesn't wrap its return type in a [HttpResponse], it will set the response's status code to
+ * If an [RpcOps] endpoint function doesn't wrap its return type in a [ResponseEntity], it will set the response's status code to
  * [ResponseCode.OK] (200) unless an exception is thrown.
  *
  * If an [RpcOps] endpoint has no return type at all, it will return a response with no body and a status code of [ResponseCode.NO_CONTENT]
@@ -22,28 +22,28 @@ import net.corda.httprpc.RpcOps
  * @param responseCode the status code of the response.
  * @param responseBody the payload of the response. If null, the response payload will be "null".
  */
-class HttpResponse<T : Any>(
+class ResponseEntity<T : Any>(
     val responseCode: ResponseCode,
     val responseBody: T?,
 ) {
     companion object {
-        fun <T : Any> ok(responseBody: T): HttpResponse<T> {
-            return HttpResponse(ResponseCode.OK, responseBody)
+        fun <T : Any> ok(responseBody: T): ResponseEntity<T> {
+            return ResponseEntity(ResponseCode.OK, responseBody)
         }
-        fun <T : Any> resourceUpdated(responseBody: T): HttpResponse<T> {
-            return HttpResponse(ResponseCode.OK, responseBody)
+        fun <T : Any> updated(responseBody: T): ResponseEntity<T> {
+            return ResponseEntity(ResponseCode.OK, responseBody)
         }
-        fun <T : Any> resourceCreated(responseBody: T): HttpResponse<T> {
-            return HttpResponse(ResponseCode.CREATED, responseBody)
+        fun <T : Any> created(responseBody: T): ResponseEntity<T> {
+            return ResponseEntity(ResponseCode.CREATED, responseBody)
         }
-        fun <T : Any> resourceDeleted(responseBody: T): HttpResponse<T> {
-            return HttpResponse(ResponseCode.OK, responseBody)
+        fun <T : Any> deleted(responseBody: T): ResponseEntity<T> {
+            return ResponseEntity(ResponseCode.OK, responseBody)
         }
-        fun <T : Any> requestAccepted(responseBody: T): HttpResponse<T> {
-            return HttpResponse(ResponseCode.ACCEPTED, responseBody)
+        fun <T : Any> accepted(responseBody: T): ResponseEntity<T> {
+            return ResponseEntity(ResponseCode.ACCEPTED, responseBody)
         }
-        fun <T : Any> seeOther(responseBody: T): HttpResponse<T> {
-            return HttpResponse(ResponseCode.SEE_OTHER, responseBody)
+        fun <T : Any> seeOther(responseBody: T): ResponseEntity<T> {
+            return ResponseEntity(ResponseCode.SEE_OTHER, responseBody)
         }
     }
 }

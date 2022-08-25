@@ -9,7 +9,7 @@ import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
-import net.corda.httprpc.response.HttpResponse
+import net.corda.httprpc.response.ResponseEntity
 import net.corda.libs.permissions.endpoints.v1.user.types.CreateUserType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserPermissionSummaryResponseType
 import net.corda.libs.permissions.endpoints.v1.user.types.UserResponseType
@@ -31,7 +31,7 @@ interface UserEndpoint : RpcOps {
     fun createUser(
         @HttpRpcRequestBodyParameter(description = "Details of the user to be created")
         createUserType: CreateUserType
-    ): HttpResponse<UserResponseType>
+    ): ResponseEntity<UserResponseType>
 
     /**
      * Get a user by loginName in the RBAC permission system.
@@ -51,7 +51,7 @@ interface UserEndpoint : RpcOps {
         loginName: String,
         @HttpRpcPathParameter(description = "Id of the role to associate with this user")
         roleId: String
-    ): HttpResponse<UserResponseType>
+    ): ResponseEntity<UserResponseType>
 
     /**
      * Un-assign a Role from a User in the RBAC permission system.
@@ -62,7 +62,7 @@ interface UserEndpoint : RpcOps {
         loginName: String,
         @HttpRpcPathParameter(description = "Id of the role to un-assign from this user")
         roleId: String
-    ): HttpResponse<UserResponseType>
+    ): ResponseEntity<UserResponseType>
 
     /**
      * Get a summary of a user's permissions.

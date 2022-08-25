@@ -8,7 +8,7 @@ import net.corda.httprpc.annotations.HttpRpcPUT
 import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
-import net.corda.httprpc.response.HttpResponse
+import net.corda.httprpc.response.ResponseEntity
 import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
 import net.corda.libs.permissions.endpoints.v1.role.types.RoleResponseType
 
@@ -35,7 +35,7 @@ interface RoleEndpoint : RpcOps {
     fun createRole(
         @HttpRpcRequestBodyParameter(description = "Details of the role to be created")
         createRoleType: CreateRoleType
-    ): HttpResponse<RoleResponseType>
+    ): ResponseEntity<RoleResponseType>
 
     /**
      * Get a role by its identifier in the RBAC permission system.
@@ -55,7 +55,7 @@ interface RoleEndpoint : RpcOps {
         roleId: String,
         @HttpRpcPathParameter(description = "Identifier for an existing permission")
         permissionId: String
-    ): HttpResponse<RoleResponseType>
+    ): ResponseEntity<RoleResponseType>
 
     /**
      * Removes Association between a role and a permission
@@ -66,5 +66,5 @@ interface RoleEndpoint : RpcOps {
         roleId: String,
         @HttpRpcPathParameter(description = "Identifier for an existing permission")
         permissionId: String
-    ): HttpResponse<RoleResponseType>
+    ): ResponseEntity<RoleResponseType>
 }

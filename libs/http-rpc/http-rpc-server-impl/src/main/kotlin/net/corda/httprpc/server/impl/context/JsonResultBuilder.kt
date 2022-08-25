@@ -2,12 +2,12 @@ package net.corda.httprpc.server.impl.context
 
 import io.javalin.http.Context
 import net.corda.httprpc.ResponseCode
-import net.corda.httprpc.response.HttpResponse
+import net.corda.httprpc.response.ResponseEntity
 
 fun Context.buildJsonResult(result: Any?, returnType: Class<*>) {
     val ctx = this
     when {
-        result is HttpResponse<*> -> {
+        result is ResponseEntity<*> -> {
             // if the responseBody is null, we return null in json
             ctx.json(result.responseBody ?: "null")
                 .status(result.responseCode.statusCode)

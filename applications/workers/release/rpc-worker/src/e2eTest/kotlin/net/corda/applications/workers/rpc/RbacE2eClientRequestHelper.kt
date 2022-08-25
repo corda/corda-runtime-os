@@ -179,7 +179,7 @@ fun PermissionEndpoint.createPermission(
     val type = CreatePermissionType(permissionType, permissionString, null, null)
     val permissionId = with(createPermission(type)) {
         SoftAssertions.assertSoftly {
-            it.assertThat(this.responseCode.statusCode).isEqualTo(200)
+            it.assertThat(this.responseCode.statusCode).isEqualTo(201)
             it.assertThat(this.responseBody).isNotNull
             it.assertThat(this.responseBody!!.permissionType).isEqualTo(permissionType)
             it.assertThat(this.responseBody!!.permissionString).isEqualTo(permissionString)

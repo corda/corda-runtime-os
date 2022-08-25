@@ -2,7 +2,7 @@ package net.corda.libs.permissions.endpoints.v1.user.impl
 
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.ResourceNotFoundException
-import net.corda.httprpc.response.HttpResponse
+import net.corda.httprpc.response.ResponseEntity
 import net.corda.libs.permissions.endpoints.common.PermissionEndpointEventHandler
 import net.corda.libs.permissions.endpoints.v1.converter.convertToDto
 import net.corda.libs.permissions.endpoints.v1.converter.convertToEndpointType
@@ -48,14 +48,14 @@ class UserEndpointImpl @Activate constructor(
         PermissionEndpointEventHandler("UserEndpoint")
     )
 
-    override fun createUser(createUserType: CreateUserType): HttpResponse<UserResponseType> {
+    override fun createUser(createUserType: CreateUserType): ResponseEntity<UserResponseType> {
         val principal = getRpcThreadLocalContext()
 
         val createUserResult = withPermissionManager(permissionManagementService.permissionManager, logger) {
             createUser(createUserType.convertToDto(principal))
         }
 
-        return HttpResponse.resourceCreated(createUserResult!!.convertToEndpointType())
+        return ResponseEntity.created(createUserResult!!.convertToEndpointType())
     }
 
     override fun getUser(loginName: String): UserResponseType {
@@ -68,22 +68,22 @@ class UserEndpointImpl @Activate constructor(
         return userResponseDto?.convertToEndpointType() ?: throw ResourceNotFoundException("User", loginName)
     }
 
-    override fun addRole(loginName: String, roleId: String): HttpResponse<UserResponseType> {
+    override fun addRole(loginName: String, roleId: String): ResponseEntity<UserResponseType> {
         val principal = getRpcThreadLocalContext()
 
         val result = withPermissionManager(permissionManagementService.permissionManager, logger) {
             addRoleToUser(AddRoleToUserRequestDto(principal, loginName.lowercase(), roleId))
         }
-        return HttpResponse.ok(result!!.convertToEndpointType())
+        return ResponseEntity.ok(result!!.convertToEndpointType())
     }
 
-    override fun removeRole(loginName: String, roleId: String): HttpResponse<UserResponseType> {
+    override fun removeRole(loginName: String, roleId: String): ResponseEntity<UserResponseType> {
         val principal = getRpcThreadLocalContext()
 
         val result = withPermissionManager(permissionManagementService.permissionManager, logger) {
             removeRoleFromUser(RemoveRoleFromUserRequestDto(principal, loginName.lowercase(), roleId))
         }
-        return HttpResponse.resourceDeleted(result!!.convertToEndpointType())
+        return ResponseEntity.deleted(result!!.convertToEndpointType())
     }
 
     override fun getPermissionSummary(loginName: String): UserPermissionSummaryResponseType {
