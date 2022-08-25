@@ -82,19 +82,19 @@ db:
 # Kafka configuration
 kafka:
   # -- comma-separated list of Kafka bootstrap servers (required)
-  bootstrapServers: ""
+  bootstrapServers: "prereqs-kafka:9092"
   # -- prefix to use for Kafka topic names (to support the use of a single Kafka cluster by multiple Corda clusters)
   topicPrefix: ""
   # TLS configuration for client connections to Kafka
   tls:
     # -- indicates whether TLS should be used for client connections to Kafka
-    enabled: false
+    enabled: true
     # if TLS is enabled, the truststore configuration for client connections to Kafka
     truststore:
       # if TLS is enabled, details of an existing Kubernetes secret containing the truststore for client connections to Kafka
       secretRef:
         # -- if TLS is enabled, the name of an existing Kubernetes secret containing the truststore for client connections to Kafka; blank if no truststore is required
-        name: ""
+        name: "prereqs-kafka-0-tls"
         # -- if TLS is enabled, the name of an existing Kubernetes secret containing the truststore for client connections to Kafka
         key: "ca.crt"
       # -- if TLS is enabled, the type of the truststore for client connections to Kafka; one of PEM or JKS
@@ -114,7 +114,6 @@ kafka:
 
 # Configuration for cluster bootstrap
 bootstrap:
-
   # Configuration for the initial user created with admin permissions
   initialAdminUser:
     # -- Username for the initial admin user
@@ -410,7 +409,7 @@ workers:
       requests: {}
       # -- the CPU/memory resource limits for the p2p-gateway worker containers
       limits: {}
-    # p2p-gateway worker worker service configuration
+    # p2p-gateway worker service configuration
     service:
       # -- The Gateway HTTP port
       port: 8080
