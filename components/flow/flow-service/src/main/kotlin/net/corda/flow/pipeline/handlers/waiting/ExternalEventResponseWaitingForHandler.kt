@@ -87,13 +87,13 @@ class ExternalEventResponseWaitingForHandler @Activate constructor(
         val retries = externalEventState.retries
         return if (retries >= config.getLong(FlowConfig.EXTERNAL_EVENT_MAX_RETRIES)) {
             log.error(
-                "Resuming flow with retriable error received from external event response after exceeding max " +
+                "Resuming flow with transient error received from external event response after exceeding max " +
                         "retries: $exception"
             )
             FlowContinuation.Error(CordaRuntimeException(exception.errorMessage))
         } else {
             log.warn(
-                "Resending external event after delay after receiving retriable error from external event response. " +
+                "Resending external event after delay after receiving transient error from external event response. " +
                         "Current retry count $retries. Error: $exception"
             )
             externalEventState.retries = retries.inc()

@@ -60,18 +60,18 @@ class ExternalEventResponseFactoryImplTest {
     }
 
     @Test
-    fun `retriable with throwable input`() {
+    fun `transient with throwable input`() {
         assertErrorResponse(
-            externalEventResponseFactory.retriable(EXTERNAL_EVENT_CONTEXT, EXCEPTION),
-            ExternalEventResponseErrorType.RETRY
+            externalEventResponseFactory.transientError(EXTERNAL_EVENT_CONTEXT, EXCEPTION),
+            ExternalEventResponseErrorType.TRANSIENT
         )
     }
 
     @Test
-    fun `retriable with exception envelope input`() {
+    fun `transient with exception envelope input`() {
         assertErrorResponse(
-            externalEventResponseFactory.retriable(EXTERNAL_EVENT_CONTEXT, EXCEPTION_ENVELOPE),
-            ExternalEventResponseErrorType.RETRY
+            externalEventResponseFactory.transientError(EXTERNAL_EVENT_CONTEXT, EXCEPTION_ENVELOPE),
+            ExternalEventResponseErrorType.TRANSIENT
         )
     }
 
@@ -79,7 +79,7 @@ class ExternalEventResponseFactoryImplTest {
     fun `platformError with throwable input`() {
         assertErrorResponse(
             externalEventResponseFactory.platformError(EXTERNAL_EVENT_CONTEXT, EXCEPTION),
-            ExternalEventResponseErrorType.PLATFORM_ERROR
+            ExternalEventResponseErrorType.PLATFORM
         )
     }
 
@@ -87,7 +87,7 @@ class ExternalEventResponseFactoryImplTest {
     fun `platformError with exception envelope input`() {
         assertErrorResponse(
             externalEventResponseFactory.platformError(EXTERNAL_EVENT_CONTEXT, EXCEPTION_ENVELOPE),
-            ExternalEventResponseErrorType.PLATFORM_ERROR
+            ExternalEventResponseErrorType.PLATFORM
         )
     }
 
@@ -95,7 +95,7 @@ class ExternalEventResponseFactoryImplTest {
     fun `fatalError with throwable input`() {
         assertErrorResponse(
             externalEventResponseFactory.fatalError(EXTERNAL_EVENT_CONTEXT, EXCEPTION),
-            ExternalEventResponseErrorType.FATAL_ERROR
+            ExternalEventResponseErrorType.FATAL
         )
     }
 
@@ -103,7 +103,7 @@ class ExternalEventResponseFactoryImplTest {
     fun `fatalError with exception envelope input`() {
         assertErrorResponse(
             externalEventResponseFactory.fatalError(EXTERNAL_EVENT_CONTEXT, EXCEPTION_ENVELOPE),
-            ExternalEventResponseErrorType.FATAL_ERROR
+            ExternalEventResponseErrorType.FATAL
         )
     }
 

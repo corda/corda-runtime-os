@@ -31,7 +31,7 @@ interface ExternalEventResponseFactory {
      *
      * @return A [FlowEvent] record containing a [ExternalEventResponse] to send back to the calling flow.
      */
-    fun retriable(flowExternalEventContext: ExternalEventContext, throwable: Throwable): Record<String, FlowEvent>
+    fun transientError(flowExternalEventContext: ExternalEventContext, throwable: Throwable): Record<String, FlowEvent>
 
     /**
      * Creates a response representing a failed attempt at processing an external event which should be retried by
@@ -42,7 +42,7 @@ interface ExternalEventResponseFactory {
      *
      * @return A [FlowEvent] record containing a [ExternalEventResponse] to send back to the calling flow.
      */
-    fun retriable(
+    fun transientError(
         flowExternalEventContext: ExternalEventContext,
         exceptionEnvelope: ExceptionEnvelope
     ): Record<String, FlowEvent>

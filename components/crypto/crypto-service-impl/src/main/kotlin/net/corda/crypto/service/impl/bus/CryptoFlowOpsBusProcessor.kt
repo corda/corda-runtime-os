@@ -66,7 +66,7 @@ class CryptoFlowOpsBusProcessor(
                 "Event ${request.request::class.java} for tenant ${request.context.tenantId} is no longer valid, " +
                         "expired at $expireAt { requestId: $requestId, key: $flowId }"
             )
-            return externalEventResponseFactory.retriable(
+            return externalEventResponseFactory.transientError(
                 request.flowExternalEventContext,
                 ExceptionEnvelope("Expired", "Expired at $expireAt")
             )
@@ -85,7 +85,7 @@ class CryptoFlowOpsBusProcessor(
                     "Event ${request.request::class.java} for tenant ${request.context.tenantId} is no longer valid, " +
                             "expired at $expireAt { requestId: $requestId, key: $flowId }"
                 )
-                return externalEventResponseFactory.retriable(
+                return externalEventResponseFactory.transientError(
                     request.flowExternalEventContext,
                     ExceptionEnvelope("Expired", "Expired at $expireAt")
                 )

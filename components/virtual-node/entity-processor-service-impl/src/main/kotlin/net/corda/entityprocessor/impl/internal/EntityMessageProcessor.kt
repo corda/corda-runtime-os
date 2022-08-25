@@ -92,10 +92,10 @@ class EntityMessageProcessor(
             entitySandboxService.get(holdingIdentity)
         } catch (e: NotReadyException) {
             // Flow worker could retry later, but may not be successful.
-            return retriableErrorResponse(request.flowExternalEventContext, e)
+            return transientErrorResponse(request.flowExternalEventContext, e)
         } catch (e: VirtualNodeException) {
             // Flow worker could retry later, but may not be successful.
-            return retriableErrorResponse(request.flowExternalEventContext, e)
+            return transientErrorResponse(request.flowExternalEventContext, e)
         } catch (e: Exception) {
             throw e // rethrow and handle higher up
         }
@@ -171,7 +171,7 @@ class EntityMessageProcessor(
         } catch (e: NullParameterException) {
             fatalErrorResponse(request.flowExternalEventContext, e)
         } catch (e: Exception) {
-            retriableErrorResponse(request.flowExternalEventContext, e)
+            transientErrorResponse(request.flowExternalEventContext, e)
         }
 
         return response
@@ -184,19 +184,19 @@ class EntityMessageProcessor(
         return externalEventResponseFactory.success(flowExternalEventContext, entityResponse)
     }
 
-    private fun retriableErrorResponse(
+    private fun transientErrorResponse(
         flowExternalEventContext: ExternalEventContext,
         e: Exception
     ): Record<String, FlowEvent> {
-        log.warn(errorLogMessage(flowExternalEventContext, ExternalEventResponseErrorType.RETRY), e)
-        return externalEventResponseFactory.retriable(flowExternalEventContext, e)
+        log.warn(errorLogMessage(flowExternalEventContext, ExternalEventResponseErrorType.TRANSIENT), e)
+        return externalEventResponseFactory.transientError(flowExternalEventContext, e)
     }
 
     private fun platformErrorResponse(
         flowExternalEventContext: ExternalEventContext,
         e: Exception
     ): Record<String, FlowEvent> {
-        log.warn(errorLogMessage(flowExternalEventContext, ExternalEventResponseErrorType.PLATFORM_ERROR), e)
+        log.warn(errorLogMessage(flowExternalEventContext, ExternalEventResponseErrorType.PLATFORM), e)
         return externalEventResponseFactory.platformError(flowExternalEventContext, e)
     }
 
@@ -204,7 +204,7 @@ class EntityMessageProcessor(
         flowExternalEventContext: ExternalEventContext,
         e: Exception
     ): Record<String, FlowEvent> {
-        log.error(errorLogMessage(flowExternalEventContext, ExternalEventResponseErrorType.FATAL_ERROR), e)
+        log.error(errorLogMessage(flowExternalEventContext, ExternalEventResponseErrorType.FATAL), e)
         return externalEventResponseFactory.fatalError(flowExternalEventContext, e)
     }
 

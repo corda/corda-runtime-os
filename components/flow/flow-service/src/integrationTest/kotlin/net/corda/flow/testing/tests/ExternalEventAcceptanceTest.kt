@@ -44,7 +44,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
             FindEntity("entity class name", BYTE_BUFFER),
             ExternalEventContext(REQUEST_ID, FLOW_ID1)
         )
-        val ANY_RESPONSE = EntityResponse(BYTE_BUFFER)
+        val ANY_RESPONSE = EntityResponse(listOf(BYTE_BUFFER))
         const val STRING_INPUT = "this is an input string"
         const val STRING_RESPONSE = "this is an response string"
         val BYTE_ARRAY_INPUT = "this is an input byte array".toByteArray()
@@ -138,7 +138,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            externalEventReceived(FLOW_ID1, "incorrect request id", EntityResponse(BYTE_BUFFER))
+            externalEventReceived(FLOW_ID1, "incorrect request id", ANY_RESPONSE)
         }
 
         then {
@@ -186,7 +186,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Receiving an event does not resend the external event unless a 'retriable' error is received`() {
+    fun `Receiving an event does not resend the external event unless a 'transient' error is received`() {
 
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
@@ -212,7 +212,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Receiving a 'retriable' error response resends the external event if the retry window has been surpassed`() {
+    fun `Receiving a 'transient' error response resends the external event if the retry window has been surpassed`() {
         given {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
                 .suspendsWith(
@@ -225,7 +225,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            externalEventErrorReceived(FLOW_ID1, REQUEST_ID, ExternalEventResponseErrorType.RETRY)
+            externalEventErrorReceived(FLOW_ID1, REQUEST_ID, ExternalEventResponseErrorType.TRANSIENT)
         }
 
         then {
@@ -237,7 +237,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Receiving a 'retriable' error response does not resend the external event if the retry window has not been surpassed`() {
+    fun `Receiving a 'transient' error response does not resend the external event if the retry window has not been surpassed`() {
         given {
             flowConfiguration(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW, 50000L)
 
@@ -252,7 +252,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            externalEventErrorReceived(FLOW_ID1, REQUEST_ID, ExternalEventResponseErrorType.RETRY)
+            externalEventErrorReceived(FLOW_ID1, REQUEST_ID, ExternalEventResponseErrorType.TRANSIENT)
         }
 
         then {
@@ -264,7 +264,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Given a 'retriable' error response has been received receiving an event will resend the external event if the retry window has been surpassed`() {
+    fun `Given a 'transient' error response has been received receiving an event will resend the external event if the retry window has been surpassed`() {
         given {
             flowConfiguration(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW, 10.seconds.toMillis())
 
@@ -279,7 +279,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            externalEventErrorReceived(FLOW_ID1, REQUEST_ID, ExternalEventResponseErrorType.RETRY)
+            externalEventErrorReceived(FLOW_ID1, REQUEST_ID, ExternalEventResponseErrorType.TRANSIENT)
         }
 
         then {
@@ -304,7 +304,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
     }
 
     @Test
-    fun `Given a 'retriable' error response has been received receiving a successful response resumes the flow and does not resend the event`() {
+    fun `Given a 'transient' error response has been received receiving a successful response resumes the flow and does not resend the event`() {
         given {
             flowConfiguration(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW, -50000L)
 
@@ -317,7 +317,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
                     )
                 )
 
-            externalEventErrorReceived(FLOW_ID1, REQUEST_ID, ExternalEventResponseErrorType.RETRY)
+            externalEventErrorReceived(FLOW_ID1, REQUEST_ID, ExternalEventResponseErrorType.TRANSIENT)
         }
 
         `when` {
@@ -347,7 +347,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            externalEventErrorReceived(FLOW_ID1, REQUEST_ID, ExternalEventResponseErrorType.PLATFORM_ERROR)
+            externalEventErrorReceived(FLOW_ID1, REQUEST_ID, ExternalEventResponseErrorType.PLATFORM)
         }
 
         then {
@@ -371,7 +371,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            externalEventErrorReceived(FLOW_ID1, REQUEST_ID, ExternalEventResponseErrorType.FATAL_ERROR)
+            externalEventErrorReceived(FLOW_ID1, REQUEST_ID, ExternalEventResponseErrorType.FATAL)
         }
 
         then {

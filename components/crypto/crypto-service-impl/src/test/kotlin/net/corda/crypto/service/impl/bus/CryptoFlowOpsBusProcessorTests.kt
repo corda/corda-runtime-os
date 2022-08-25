@@ -467,7 +467,7 @@ class CryptoFlowOpsBusProcessorTests {
         val flowExternalEventContext1 = ExternalEventContext("request id", recordKey1)
 
         whenever(
-            externalEventResponseFactory.retriable(
+            externalEventResponseFactory.transientError(
                 eq(flowExternalEventContext0),
                 any<ExceptionEnvelope>()
             )
@@ -561,7 +561,7 @@ class CryptoFlowOpsBusProcessorTests {
         assertNotNull(result.value)
         assertEquals(2, result.value?.size)
 
-        verify(externalEventResponseFactory).retriable(eq(flowExternalEventContext0), any<ExceptionEnvelope>())
+        verify(externalEventResponseFactory).transientError(eq(flowExternalEventContext0), any<ExceptionEnvelope>())
 
         flowOpsResponseArgumentCaptor.firstValue.let { flowOpsResponse ->
             assertInstanceOf(CryptoSigningKeys::class.java, flowOpsResponse.response)

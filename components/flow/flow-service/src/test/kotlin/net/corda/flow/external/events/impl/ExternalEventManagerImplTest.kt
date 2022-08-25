@@ -55,28 +55,31 @@ class ExternalEventManagerImplTest {
                     }
                 ),
                 Arguments.of(
-                    "Retriable",
-                    ExternalEventResponse().apply {
-                        requestId = REQUEST_ID_1
-                        error = ExternalEventResponseError(ExternalEventResponseErrorType.RETRY, ExceptionEnvelope())
-                    }
-                ),
-                Arguments.of(
-                    "platform error",
+                    "Transient",
                     ExternalEventResponse().apply {
                         requestId = REQUEST_ID_1
                         error = ExternalEventResponseError(
-                            ExternalEventResponseErrorType.PLATFORM_ERROR,
+                            ExternalEventResponseErrorType.TRANSIENT,
                             ExceptionEnvelope()
                         )
                     }
                 ),
                 Arguments.of(
-                    "fatal error",
+                    "Platform error",
                     ExternalEventResponse().apply {
                         requestId = REQUEST_ID_1
                         error = ExternalEventResponseError(
-                            ExternalEventResponseErrorType.FATAL_ERROR,
+                            ExternalEventResponseErrorType.PLATFORM,
+                            ExceptionEnvelope()
+                        )
+                    }
+                ),
+                Arguments.of(
+                    "Fatal error",
+                    ExternalEventResponse().apply {
+                        requestId = REQUEST_ID_1
+                        error = ExternalEventResponseError(
+                            ExternalEventResponseErrorType.FATAL,
                             ExceptionEnvelope()
                         )
                     }
@@ -87,9 +90,9 @@ class ExternalEventManagerImplTest {
         @JvmStatic
         fun errorResponses(): Stream<Arguments> {
             return Stream.of(
-                Arguments.of(ExternalEventStateType.RETRY, ExternalEventResponseErrorType.RETRY),
-                Arguments.of(ExternalEventStateType.PLATFORM_ERROR, ExternalEventResponseErrorType.PLATFORM_ERROR),
-                Arguments.of(ExternalEventStateType.FATAL_ERROR, ExternalEventResponseErrorType.FATAL_ERROR)
+                Arguments.of(ExternalEventStateType.RETRY, ExternalEventResponseErrorType.TRANSIENT),
+                Arguments.of(ExternalEventStateType.PLATFORM_ERROR, ExternalEventResponseErrorType.PLATFORM),
+                Arguments.of(ExternalEventStateType.FATAL_ERROR, ExternalEventResponseErrorType.FATAL)
             )
         }
     }
@@ -178,7 +181,7 @@ class ExternalEventManagerImplTest {
     }
 
     @Test
-    fun `processEventReceived sets the state's status to OK if the status was retriable before and a successful response was received`() {
+    fun `processEventReceived sets the state's status to OK if the status was retry before and a successful response was received`() {
         val externalEventState = ExternalEventState().apply {
             requestId = REQUEST_ID_1
             status = ExternalEventStateStatus(ExternalEventStateType.RETRY, ExceptionEnvelope())

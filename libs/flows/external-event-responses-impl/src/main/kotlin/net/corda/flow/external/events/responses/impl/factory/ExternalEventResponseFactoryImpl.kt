@@ -40,21 +40,21 @@ class ExternalEventResponseFactoryImpl(
         return flowEvent(flowExternalEventContext, response)
     }
 
-    override fun retriable(
+    override fun transientError(
         flowExternalEventContext: ExternalEventContext,
         throwable: Throwable
     ): Record<String, FlowEvent> {
-        return retriable(
+        return transientError(
             flowExternalEventContext,
             ExceptionEnvelope(throwable::class.java.name, throwable.message)
         )
     }
 
-    override fun retriable(
+    override fun transientError(
         flowExternalEventContext: ExternalEventContext,
         exceptionEnvelope: ExceptionEnvelope
     ): Record<String, FlowEvent> {
-        return error(flowExternalEventContext, exceptionEnvelope, ExternalEventResponseErrorType.RETRY)
+        return error(flowExternalEventContext, exceptionEnvelope, ExternalEventResponseErrorType.TRANSIENT)
     }
 
     override fun platformError(
@@ -71,7 +71,7 @@ class ExternalEventResponseFactoryImpl(
         flowExternalEventContext: ExternalEventContext,
         exceptionEnvelope: ExceptionEnvelope
     ): Record<String, FlowEvent> {
-        return error(flowExternalEventContext, exceptionEnvelope, ExternalEventResponseErrorType.PLATFORM_ERROR)
+        return error(flowExternalEventContext, exceptionEnvelope, ExternalEventResponseErrorType.PLATFORM)
     }
 
     override fun fatalError(
@@ -88,7 +88,7 @@ class ExternalEventResponseFactoryImpl(
         flowExternalEventContext: ExternalEventContext,
         exceptionEnvelope: ExceptionEnvelope
     ): Record<String, FlowEvent> {
-        return error(flowExternalEventContext, exceptionEnvelope, ExternalEventResponseErrorType.FATAL_ERROR)
+        return error(flowExternalEventContext, exceptionEnvelope, ExternalEventResponseErrorType.FATAL)
     }
 
     private fun error(
