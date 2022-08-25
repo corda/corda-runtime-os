@@ -14,15 +14,13 @@ import java.io.Serializable
  * - Are any objects *reachable* from this object mismatched or not what you expected?
  * - Is it suspiciously large or small?
  */
-class UntrustworthyData<out T>(@PublishedApi internal val fromUntrustedWorld: T) {
+class UntrustworthyData<out T>(private val fromUntrustedWorld: T) {
     @Suspendable
     fun <R> unwrap(validator: Validator<T, R>) = validator.validate(fromUntrustedWorld)
 
     @FunctionalInterface
-    interface Validator<in T, out R> : Serializable {
+    fun interface Validator<in T, out R> : Serializable {
         @Suspendable
         fun validate(data: T): R
     }
 }
-
-inline fun <T, R> UntrustworthyData<T>.unwrap(validator: (T) -> R): R = validator(fromUntrustedWorld)
