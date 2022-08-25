@@ -35,10 +35,11 @@ logging:
   # -- log level; one of "all", "trace", "debug", "info", "warn" (the default), "error", "fatal", or "off"
   level: "warn"
 
-# Dump host path configuration
+# -- Path on Kubernetes hosts to mount on Corda workers for collecting dumps
 dumpHostPath: ""
 
-# Enables capturing JVM heap memory dump from unexpectedly terminated pods
+# -- Enables capturing JVM heap dumps from Corda workers on an OutOfMemory error
+
 heapDumpOnOutOfMemoryError: false
 
 # Open Telemetry configuration
