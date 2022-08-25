@@ -37,6 +37,11 @@ class WireTransaction(
         rootMerkleTree.root
     }
 
+    init {
+        check(componentGroupLists.all { it.isNotEmpty() }) { "Empty component groups are not allowed" }
+        check(componentGroupLists.all { i -> i.all { j-> j.isNotEmpty() } }) { "Empty components are not allowed" }
+    }
+
     fun getComponentGroupList(componentGroupId: Int): List<ByteArray> =
         componentGroupLists[componentGroupId]
 

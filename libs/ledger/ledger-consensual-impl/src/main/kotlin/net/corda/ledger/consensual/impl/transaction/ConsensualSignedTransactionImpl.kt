@@ -16,6 +16,10 @@ class ConsensualSignedTransactionImpl(
     ): ConsensualSignedTransaction
 {
 
+    init {
+        require(signatures.isNotEmpty()) { "Tried to instantiate a ${ConsensualSignedTransactionImpl::class.java.simpleName} without any signatures " }
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is ConsensualSignedTransactionImpl) return false

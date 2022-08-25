@@ -1,7 +1,10 @@
 package net.corda.ledger.consensual.impl.transaction
 
 /**
- * Specifies Consensual transaction component groups.
+ * Specifies Consensual transaction component groups' enum.
+ * For which each property corresponds to a transaction component group.
+ * The position in the enum class declaration (ordinal) is used for component-leaf ordering when computing the
+ * Merkle tree.
  *
  * @property METADATA The metadata parameters component group. Ordinal = 0. (It needs to be in the first position.)
  * @property TIMESTAMP The timestamp parameter component group. Ordinal = 1.
