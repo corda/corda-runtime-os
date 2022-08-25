@@ -14,7 +14,8 @@ import org.bouncycastle.asn1.DERSequence
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import java.security.PublicKey
-import java.util.*
+import java.util.IdentityHashMap
+import java.util.function.Function
 
 /**
  * A tree data structure that enables the representation of composite public keys, which are used to represent
@@ -41,7 +42,7 @@ class CompositeKey private constructor(val threshold: Int, children: List<NodeAn
          * Build a composite key from a DER encoded form.
          */
         @JvmStatic
-        fun getInstance(asn1: ASN1Primitive, decoder: (ByteArray) -> PublicKey): PublicKey {
+        fun getInstance(asn1: ASN1Primitive, decoder: Function<ByteArray, PublicKey>): PublicKey {
             val keyInfo = SubjectPublicKeyInfo.getInstance(asn1)
             require(keyInfo.algorithm.algorithm == OID_COMPOSITE_KEY_IDENTIFIER) { "Key must be composite" }
             val sequence = ASN1Sequence.getInstance(keyInfo.parsePublicKey())
@@ -51,7 +52,7 @@ class CompositeKey private constructor(val threshold: Int, children: List<NodeAn
             val listOfChildren = sequenceOfChildren.objects.toList()
             listOfChildren.forEach { childSeq ->
                 require(childSeq is ASN1Sequence) { "Child key is not in ASN1 format" }
-                val key = decoder((childSeq.getObjectAt(0) as DERBitString).bytes)
+                val key = decoder.apply((childSeq.getObjectAt(0) as DERBitString).bytes)
                 val weight = ASN1Integer.getInstance(childSeq.getObjectAt(1))
                 builder.addKey(key, weight.positiveValue.toInt())
             }

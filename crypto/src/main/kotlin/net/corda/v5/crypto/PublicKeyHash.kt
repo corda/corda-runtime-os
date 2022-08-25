@@ -31,6 +31,7 @@ class PublicKeyHash private constructor(
          * @return Returns a [PublicKeyHash] containing the SHA-256 hash.
          * @throws IllegalArgumentException if size of [bytes] is not 32.
          */
+        @JvmStatic
         fun parse(bytes: ByteArray): PublicKeyHash {
             require(bytes.size == 32) {
                 "Input must be 32 bytes long for SHA-256 hash."
@@ -45,6 +46,7 @@ class PublicKeyHash private constructor(
          * @return Returns a [PublicKeyHash] containing the SHA-256 hash.
          * @throws IllegalArgumentException if length of [str] is not 64, or if [str] is not a valid Hex string.
          */
+        @JvmStatic
         fun parse(str: String): PublicKeyHash {
             require(str.length == 64) {
                 "Input must be 64 characters long for Hex of SHA-256 hash."
@@ -61,6 +63,7 @@ class PublicKeyHash private constructor(
          * @param publicKey The public key whose hash is to be generated.
          * @return Returns a [PublicKeyHash] containing the SHA-256 hash.
          */
+        @JvmStatic
         fun calculate(publicKey: PublicKey): PublicKeyHash =
             PublicKeyHash(value = publicKey.sha256Bytes().toHexString())
 
@@ -70,6 +73,7 @@ class PublicKeyHash private constructor(
          * @param publicKey The public key whose hash is to be generated.
          * @return Returns a [PublicKeyHash] containing the SHA-256 hash.
          */
+        @JvmStatic
         fun calculate(publicKey: ByteArray): PublicKeyHash =
             PublicKeyHash(value = publicKey.sha256Bytes().toHexString())
     }

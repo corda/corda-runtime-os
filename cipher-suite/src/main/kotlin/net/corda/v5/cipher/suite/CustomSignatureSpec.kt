@@ -26,8 +26,12 @@ import java.security.spec.AlgorithmParameterSpec
 class CustomSignatureSpec(
     signatureName: String,
     val customDigestName: DigestAlgorithmName,
-    val params: AlgorithmParameterSpec? = null
+    val params: AlgorithmParameterSpec?
 ) : SignatureSpec(signatureName) {
+
+    constructor(signatureName: String, customDigestName: DigestAlgorithmName)
+        : this(signatureName, customDigestName, null)
+
     override fun toString(): String = if(params != null) {
         "$signatureName:$customDigestName:${params::class.java.simpleName}"
     } else {
