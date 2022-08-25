@@ -1,4 +1,4 @@
-package net.corda.flow.eternal.events.impl.factory
+package net.corda.flow.eternal.events.responses.impl.factory
 
 import java.nio.ByteBuffer
 import java.time.Instant
@@ -10,7 +10,7 @@ import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
-import net.corda.flow.external.events.impl.factory.ExternalEventResponseFactoryImpl
+import net.corda.flow.external.events.responses.impl.factory.ExternalEventResponseFactoryImpl
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.utilities.time.Clock

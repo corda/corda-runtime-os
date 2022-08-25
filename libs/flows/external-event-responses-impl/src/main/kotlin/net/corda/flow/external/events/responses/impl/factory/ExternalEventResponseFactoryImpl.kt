@@ -1,4 +1,4 @@
-package net.corda.flow.external.events.impl.factory
+package net.corda.flow.external.events.responses.impl.factory
 
 import java.nio.ByteBuffer
 import net.corda.data.CordaAvroSerializationFactory
