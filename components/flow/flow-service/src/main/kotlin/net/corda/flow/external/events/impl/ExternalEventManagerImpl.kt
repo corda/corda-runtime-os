@@ -2,6 +2,7 @@ package net.corda.flow.external.events.impl
 
 import java.nio.ByteBuffer
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
@@ -30,6 +31,10 @@ class ExternalEventManagerImpl(
     private val anyDeserializer: CordaAvroDeserializer<Any>
 ) : ExternalEventManager {
 
+    private companion object {
+        val log = contextLogger()
+    }
+
     @Activate
     constructor(
         @Reference(service = CordaAvroSerializationFactory::class)
@@ -40,14 +45,6 @@ class ExternalEventManagerImpl(
         cordaAvroSerializationFactory.createAvroDeserializer({}, ByteArray::class.java),
         cordaAvroSerializationFactory.createAvroDeserializer({}, Any::class.java)
     )
-
-    private companion object {
-        val log = contextLogger()
-
-        // Comparing two instants which are the same can yield inconsistent comparison results.
-        // A small buffer is added to make sure we pick up new messages to be sent
-        const val INSTANT_COMPARE_BUFFER_MILLIS = 10L
-    }
 
     override fun processEventToSend(
         flowId: String,
@@ -76,7 +73,7 @@ class ExternalEventManagerImpl(
             .build()
     }
 
-    override fun processEventReceived(
+    override fun processResponse(
         externalEventState: ExternalEventState,
         externalEventResponse: ExternalEventResponse
     ): ExternalEventState {
@@ -95,15 +92,28 @@ class ExternalEventManagerImpl(
                 }
             } else {
                 val error = externalEventResponse.error
+                val exception = error.exception
                 externalEventState.status = when (error.errorType) {
                     ExternalEventResponseErrorType.RETRY -> {
-                        ExternalEventStateStatus(ExternalEventStateType.RETRY, error.exception)
+                        log.info(
+                            "Received a retriable error in external event response: $exception. Updating external " +
+                                    "event status to RETRY."
+                        )
+                        ExternalEventStateStatus(ExternalEventStateType.RETRY, exception)
                     }
                     ExternalEventResponseErrorType.PLATFORM_ERROR -> {
-                        ExternalEventStateStatus(ExternalEventStateType.PLATFORM_ERROR, error.exception)
+                        log.info(
+                            "Received a platform error in external event response: $exception. Updating external " +
+                                    "event status to PLATFORM_ERROR."
+                        )
+                        ExternalEventStateStatus(ExternalEventStateType.PLATFORM_ERROR, exception)
                     }
                     ExternalEventResponseErrorType.FATAL_ERROR -> {
-                        ExternalEventStateStatus(ExternalEventStateType.FATAL_ERROR, error.exception)
+                        log.info(
+                            "Received a fatal error in external event response: $exception. Updating external event " +
+                                    "status to FATAL_ERROR."
+                        )
+                        ExternalEventStateStatus(ExternalEventStateType.FATAL_ERROR, exception)
                     }
                     else -> throw FlowFatalException(
                         "Unexpected null ${Error::class.java.name} for external event with request id $requestId"
@@ -163,8 +173,13 @@ class ExternalEventManagerImpl(
     }
 
     private fun canRetryEvent(externalEventState: ExternalEventState, instant: Instant): Boolean {
-        return externalEventState.status.type == ExternalEventStateType.RETRY
-                && externalEventState.sendTimestamp.toEpochMilli() < (instant.toEpochMilli() + INSTANT_COMPARE_BUFFER_MILLIS)
+        return if (externalEventState.status.type == ExternalEventStateType.RETRY) {
+            val sendTimestamp = externalEventState.sendTimestamp.truncatedTo(ChronoUnit.MILLIS).toEpochMilli()
+            val currentTimestamp = instant.truncatedTo(ChronoUnit.MILLIS).toEpochMilli()
+            sendTimestamp < currentTimestamp
+        } else {
+            false
+        }
     }
 
     private fun getAndUpdateEventToSend(

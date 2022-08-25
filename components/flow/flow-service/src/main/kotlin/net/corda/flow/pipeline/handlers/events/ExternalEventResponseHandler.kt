@@ -53,7 +53,7 @@ class ExternalEventResponseHandler @Activate constructor(
             )
         }
 
-        checkpoint.externalEventState = externalEventManager.processEventReceived(
+        checkpoint.externalEventState = externalEventManager.processResponse(
             externalEventState,
             externalEventResponse
         )

@@ -50,7 +50,7 @@ class ExternalEventResponseHandlerTest {
         val updatedExternalEventState = ExternalEventState().apply { REQUEST_ID_1 }
         whenever(checkpoint.doesExist).thenReturn(true)
         whenever(checkpoint.externalEventState).thenReturn(externalEventState)
-        whenever(externalEventManager.processEventReceived(externalEventState, externalEventResponse)).thenReturn(updatedExternalEventState)
+        whenever(externalEventManager.processResponse(externalEventState, externalEventResponse)).thenReturn(updatedExternalEventState)
 
         val context = buildFlowEventContext(checkpoint, externalEventResponse)
 

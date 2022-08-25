@@ -38,18 +38,21 @@ class ExternalEventResponseWaitingForHandler @Activate constructor(
         val externalEventState = context.checkpoint.externalEventState
             ?: throw FlowFatalException("Waiting for external event but state not set")
 
+        val status = externalEventState.status
         val continuation = when (externalEventState.status.type) {
             ExternalEventStateType.OK -> {
                 resumeIfResponseReceived(context.checkpoint, externalEventState)
             }
             ExternalEventStateType.RETRY -> {
-                retryOrError(context.config, externalEventState.status.exception, externalEventState)
+                retryOrError(context.config, status.exception, externalEventState)
             }
             ExternalEventStateType.PLATFORM_ERROR -> {
-                FlowContinuation.Error(CordaRuntimeException(externalEventState.status.exception.errorMessage))
+                log.error("Resuming flow with platform error received from external event response: ${status.exception}")
+                FlowContinuation.Error(CordaRuntimeException(status.exception.errorMessage))
             }
             ExternalEventStateType.FATAL_ERROR -> {
-                throw FlowFatalException(externalEventState.status.exception.errorMessage)
+                log.error("Erroring flow due to fatal error received from external event response: ${status.exception}")
+                throw FlowFatalException(status.exception.errorMessage)
             }
             null -> throw FlowFatalException(
                 "Unexpected null ${ExternalEventStateType::class.java.name} for flow ${context.checkpoint.flowId}"
@@ -84,14 +87,14 @@ class ExternalEventResponseWaitingForHandler @Activate constructor(
         val retries = externalEventState.retries
         return if (retries >= config.getLong(FlowConfig.EXTERNAL_EVENT_MAX_RETRIES)) {
             log.error(
-                "Retriable exception received from the external event response. Exceeded max retries. Exception: " +
-                        exception
+                "Resuming flow with retriable error received from external event response after exceeding max " +
+                        "retries: $exception"
             )
             FlowContinuation.Error(CordaRuntimeException(exception.errorMessage))
         } else {
             log.warn(
-                "Retriable exception received from the external event response. Retrying exception after delay. " +
-                        "Current retry count $retries. Exception: $exception"
+                "Resending external event after delay after receiving retriable error from external event response. " +
+                        "Current retry count $retries. Error: $exception"
             )
             externalEventState.retries = retries.inc()
             FlowContinuation.Continue

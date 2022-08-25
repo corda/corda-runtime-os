@@ -169,7 +169,7 @@ class ExternalEventManagerImplTest {
             requestId = REQUEST_ID_1
             status = ExternalEventStateStatus(ExternalEventStateType.OK, null)
         }
-        val updatedExternalEventState = externalEventManager.processEventReceived(
+        val updatedExternalEventState = externalEventManager.processResponse(
             externalEventState,
             externalEventResponse
         )
@@ -183,7 +183,7 @@ class ExternalEventManagerImplTest {
             requestId = REQUEST_ID_1
             status = ExternalEventStateStatus(ExternalEventStateType.RETRY, ExceptionEnvelope())
         }
-        val updatedExternalEventState = externalEventManager.processEventReceived(
+        val updatedExternalEventState = externalEventManager.processResponse(
             externalEventState,
             ExternalEventResponse().apply {
                 requestId = REQUEST_ID_1
@@ -203,7 +203,7 @@ class ExternalEventManagerImplTest {
             requestId = REQUEST_ID_1
             status = ExternalEventStateStatus(ExternalEventStateType.OK, null)
         }
-        val updatedExternalEventState = externalEventManager.processEventReceived(
+        val updatedExternalEventState = externalEventManager.processResponse(
             externalEventState,
             ExternalEventResponse().apply {
                 requestId = REQUEST_ID_1
@@ -221,7 +221,7 @@ class ExternalEventManagerImplTest {
             status = ExternalEventStateStatus(ExternalEventStateType.OK, null)
         }
         assertThrows<FlowFatalException> {
-            externalEventManager.processEventReceived(
+            externalEventManager.processResponse(
                 externalEventState,
                 ExternalEventResponse().apply {
                     requestId = REQUEST_ID_1
@@ -237,7 +237,7 @@ class ExternalEventManagerImplTest {
             requestId = REQUEST_ID_1
             status = ExternalEventStateStatus(ExternalEventStateType.OK, null)
         }
-        val updatedExternalEventState = externalEventManager.processEventReceived(
+        val updatedExternalEventState = externalEventManager.processResponse(
             externalEventState,
             ExternalEventResponse().apply {
                 requestId = "wrong request id"
