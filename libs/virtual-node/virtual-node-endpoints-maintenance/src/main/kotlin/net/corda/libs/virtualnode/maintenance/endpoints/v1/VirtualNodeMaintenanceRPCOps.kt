@@ -35,7 +35,7 @@ interface VirtualNodeMaintenanceRPCOps : RpcOps {
         description = "Uploads a CPI",
         responseDescription = "The request Id calculated for a CPI upload request"
     )
-    fun forceCpiUpload(upload: HttpFileUpload, resetDb: Boolean = true): CpiUploadRPCOps.CpiUploadResponse
+    fun forceCpiUpload(upload: HttpFileUpload, resetDb: String = "true"): CpiUploadRPCOps.CpiUploadResponse
 
     /**
      * Updates a virtual nodes state.

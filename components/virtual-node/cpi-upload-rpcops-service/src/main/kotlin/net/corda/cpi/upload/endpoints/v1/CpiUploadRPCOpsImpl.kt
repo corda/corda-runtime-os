@@ -4,9 +4,11 @@ import net.corda.chunking.toCorda
 import net.corda.cpi.upload.endpoints.common.CpiUploadRPCOpsHandler
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.data.chunking.PropertyKeys
 import net.corda.data.chunking.UploadStatus
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.InternalServerException
+import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
 import net.corda.libs.cpiupload.endpoints.v1.GetCPIsResponse
 import net.corda.lifecycle.Lifecycle
@@ -56,7 +58,12 @@ class CpiUploadRPCOpsImpl @Activate constructor(
     override fun cpi(upload: HttpFileUpload): CpiUploadRPCOps.CpiUploadResponse {
         logger.info("Uploading CPI: ${upload.fileName}")
         requireRunning()
-        val cpiUploadRequestId = cpiUploadManager.uploadCpi(upload.fileName, upload.content)
+        val actor = CURRENT_RPC_CONTEXT.get().principal
+        val cpiUploadRequestId = cpiUploadManager.uploadCpi(
+            upload.fileName,
+            upload.content,
+            mapOf(PropertyKeys.ACTOR to actor)
+        )
         return CpiUploadRPCOps.CpiUploadResponse(cpiUploadRequestId.requestId)
     }
 

@@ -26,7 +26,7 @@ class ClusterBuilder {
     private fun uploadCpiResource(cmd: String, resourceName: String, groupId: String): SimpleResponse {
         val fileName = Paths.get(resourceName).fileName.toString()
         return CpiLoader.get(resourceName, groupId).use {
-            client!!.postMultiPart(cmd, emptyMap(), mapOf("upload" to HttpsClientFileUpload(it, fileName)))
+            client!!.postMultiPart(cmd, mapOf("resetDb" to "true"), mapOf("upload" to HttpsClientFileUpload(it, fileName)))
         }
     }
 

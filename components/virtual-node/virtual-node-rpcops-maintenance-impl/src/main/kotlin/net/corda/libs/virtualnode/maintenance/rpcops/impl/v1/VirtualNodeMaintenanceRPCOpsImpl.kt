@@ -123,10 +123,10 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
         }
     }
 
-    override fun forceCpiUpload(upload: HttpFileUpload, resetDb: Boolean): CpiUploadRPCOps.CpiUploadResponse {
+    override fun forceCpiUpload(upload: HttpFileUpload, resetDb: String): CpiUploadRPCOps.CpiUploadResponse {
         // Lookup actor to keep track of which RPC user triggered an update
         val actor = CURRENT_RPC_CONTEXT.get().principal
-        logger.info("Force uploading CPI: ${upload.fileName}")
+        logger.info("Force uploading CPI: ${upload.fileName} by: $actor")
         if (!isRunning) throw IllegalStateException(
             "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
         )
@@ -134,7 +134,7 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
             upload.fileName, upload.content,
             mapOf(
                 PropertyKeys.FORCE_UPLOAD to true.toString(),
-                PropertyKeys.RESET_DB to resetDb.toString(),
+                PropertyKeys.RESET_DB to resetDb,
                 PropertyKeys.ACTOR to actor
             )
         )
