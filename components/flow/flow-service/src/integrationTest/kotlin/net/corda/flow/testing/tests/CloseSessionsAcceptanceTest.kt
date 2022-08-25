@@ -1,5 +1,6 @@
 package net.corda.flow.testing.tests
 
+import java.util.stream.Stream
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
@@ -9,7 +10,6 @@ import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.StepSetup
 import net.corda.flow.testing.context.flowResumedWithError
 import net.corda.flow.testing.context.initiateFlowMessage
-import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -20,7 +20,6 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.osgi.test.junit5.service.ServiceExtension
-import java.util.stream.Stream
 
 @ExtendWith(ServiceExtension::class)
 @Execution(ExecutionMode.SAME_THREAD)
@@ -258,32 +257,41 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_1))
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_2))
+                .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_1)))
 
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1, SESSION_ID_2)))
         }
 
         `when` {
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = -1, receivedSequenceNum = 2)
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 5, receivedSequenceNum = 2)
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 3, receivedSequenceNum = 2)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 2, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
         then {
             expectOutputForFlow(FLOW_ID1) {
                 flowDidNotResume()
-                sessionAckEvents(SESSION_ID_1)
             }
+        }
+    }
 
-            expectOutputForFlow(FLOW_ID1) {
-                flowDidNotResume()
-                sessionAckEvents(SESSION_ID_1)
-            }
+    @Test
+    fun `Receiving an ordered session close event when waiting to receive data errors the flow`() {
+        given {
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_1))
 
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_1)))
+
+        }
+
+        `when` {
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.ForceCheckpoint)
+        }
+
+        then {
             expectOutputForFlow(FLOW_ID1) {
-                flowDidNotResume()
-                sessionAckEvents(SESSION_ID_1)
+                flowResumedWithError(CordaRuntimeException::class.java)
             }
         }
     }

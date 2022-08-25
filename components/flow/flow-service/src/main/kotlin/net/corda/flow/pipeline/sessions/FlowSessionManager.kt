@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.sessions
 
+import java.time.Instant
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
@@ -11,7 +12,6 @@ import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.types.MemberX500Name
-import java.time.Instant
 
 /**
  * [FlowSessionManager] encapsulates the logic of [SessionManager] with a specific focus on its usage within the flow event pipeline.
@@ -168,4 +168,16 @@ interface FlowSessionManager {
      * @throws FlowSessionStateException If any of the sessions don't exist, or they are not in the CONFIRMED state
      */
     fun validateSessionStates(checkpoint: FlowCheckpoint, sessionIds: Set<String>)
+
+    /**
+     * Get the states whose next ordered message is a SessionClose.
+     * This allows for detection of states which have received an ordered close when it is not expected.
+     * @param checkpoint The checkpoint to check states within
+     * @param sessionIds The sessions to check
+     * @return The list of states whose next received ordered message is a SessionClose
+     */
+    fun getSessionsWithNextMessageClose(
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>
+    ): List<SessionState>
 }
