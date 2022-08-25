@@ -63,13 +63,28 @@ spec:
         {{- end }}
         volumeMounts:
         {{- include "corda.workerVolumeMounts" . | nindent 10 }}
-        # Add health port when porting gateway to common worker framework CORE-4424
         ports:
           - name: http
             containerPort: {{ .Values.workers.p2pGateway.service.port }}
         {{- if .Values.workers.p2pGateway.debug.enabled }}
           - name: debug
             containerPort: 5005
+        {{- end }}
+          - name: health
+            containerPort: 7000
+        {{- if not .Values.workers.p2pGateway.debug.enabled }}
+        livenessProbe:
+          httpGet:
+            path: /isHealthy
+            port: health
+          periodSeconds: 10
+          failureThreshold: 1
+        startupProbe:
+          httpGet:
+            path: /isHealthy
+            port: health
+          periodSeconds: 5
+          failureThreshold: 20
         {{- end }}
       volumes:
       {{- include "corda.workerVolumes" . | nindent 8 }}

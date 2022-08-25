@@ -35,7 +35,7 @@ class RBACSecurityManagerService @Activate constructor(
     val securityManager: RPCSecurityManager
         get() {
             validateRpcSecurityManagerRunning()
-            return _securityManager!!
+            return innerSecurityManager!!
         }
 
     /**
@@ -45,12 +45,14 @@ class RBACSecurityManagerService @Activate constructor(
         require(isRunning) {
             "Security Manager is not running."
         }
-        requireNotNull(_securityManager) {
+        requireNotNull(innerSecurityManager) {
             "Security Manager has not been initialized."
         }
     }
 
-    private var _securityManager: RPCSecurityManager? = null
+    @Volatile
+    @VisibleForTesting
+    internal var innerSecurityManager: RPCSecurityManager? = null
 
     @VisibleForTesting
     internal var coordinator: LifecycleCoordinator = coordinatorFactory.createCoordinator<RBACSecurityManagerService>(::processEvent)
@@ -74,15 +76,15 @@ class RBACSecurityManagerService @Activate constructor(
                 log.info("Received registration status update ${event.status}.")
                 when (event.status) {
                     LifecycleStatus.UP -> {
-                        _securityManager?.close()
-                        _securityManager = RBACSecurityManager(
+                        innerSecurityManager?.close()
+                        innerSecurityManager = RBACSecurityManager(
                             permissionManagementService.permissionValidator,
                             permissionManagementService.basicAuthenticationService
                         )
                         coordinator.updateStatus(LifecycleStatus.UP)
                     }
                     LifecycleStatus.DOWN -> {
-                        coordinator.postEvent(StopEvent())
+                        downTransition()
                     }
                     LifecycleStatus.ERROR -> {
                         coordinator.postEvent(StopEvent(true))
@@ -93,10 +95,14 @@ class RBACSecurityManagerService @Activate constructor(
                 log.info("Stop event received, stopping dependencies and setting status to DOWN.")
                 registration?.close()
                 registration = null
-                _securityManager?.close()
-                _securityManager = null
+                downTransition()
             }
         }
+    }
+
+    private fun downTransition() {
+        innerSecurityManager?.close()
+        innerSecurityManager = null
     }
 
     override val isRunning: Boolean

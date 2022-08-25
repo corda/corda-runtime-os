@@ -2,8 +2,8 @@ package net.corda.entityprocessor.impl.tests
 
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.persistence.DeleteEntity
-import net.corda.data.persistence.DeleteEntityById
+import net.corda.data.persistence.DeleteEntities
+import net.corda.data.persistence.DeleteEntitiesById
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.EntityResponseFailure
@@ -11,8 +11,8 @@ import net.corda.data.persistence.EntityResponseSuccess
 import net.corda.data.persistence.Error
 import net.corda.data.persistence.FindAll
 import net.corda.data.persistence.FindEntity
-import net.corda.data.persistence.MergeEntity
-import net.corda.data.persistence.PersistEntity
+import net.corda.data.persistence.MergeEntities
+import net.corda.data.persistence.PersistEntities
 import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
@@ -169,7 +169,7 @@ class PersistenceServiceInternalTests {
         val persistenceService =
             PersistenceServiceInternal(entitySandboxService::getClass, requestId, UTCClock(), this::noOpPayloadCheck)
         val dog = sandbox.createDogInstance(dogId, "Rover", Instant.now(), "me")
-        val payload = PersistEntity(sandbox.serialize(dog))
+        val payload = PersistEntities(listOf(sandbox.serialize(dog)))
 
         val entityManager = BasicMocks.entityManager()
 
@@ -193,7 +193,7 @@ class PersistenceServiceInternalTests {
         val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity)
 
         val dog = sandbox.createDogInstance(UUID.randomUUID(), "Walter", Instant.now(), "me")
-        val request = createRequest(virtualNodeInfo.holdingIdentity, PersistEntity(sandbox.serialize(dog)))
+        val request = createRequest(virtualNodeInfo.holdingIdentity, PersistEntities(listOf(sandbox.serialize(dog))))
         val processor = EntityMessageProcessor(entitySandboxService, UTCClock(), this::noOpPayloadCheck)
 
         val requestId = UUID.randomUUID().toString() // just needs to be something unique.
@@ -246,7 +246,7 @@ class PersistenceServiceInternalTests {
         val dog = sandboxOne.createDogInstance(UUID.randomUUID(), "Stray", Instant.now(), "Not Known")
 
         // create persist request for the sandbox that isn't dog-aware
-        val request = EntityRequest(Instant.now(), UUID.randomUUID().toString(), virtualNodeInfoTwo.holdingIdentity.toAvro(), PersistEntity(sandboxOne.serialize(dog)))
+        val request = EntityRequest(Instant.now(), UUID.randomUUID().toString(), virtualNodeInfoTwo.holdingIdentity.toAvro(), PersistEntities(listOf(sandboxOne.serialize(dog))))
         val processor = EntityMessageProcessor(entitySandboxService, UTCClock(), this::noOpPayloadCheck)
         val requestId = UUID.randomUUID().toString() // just needs to be something unique.
         val records = listOf(Record(TOPIC, requestId, request))
@@ -286,7 +286,7 @@ class PersistenceServiceInternalTests {
             Instant.now().truncatedTo(ChronoUnit.MILLIS),
             "me"
         )
-        val dogRequest = createRequest(ctx.virtualNodeInfo.holdingIdentity, PersistEntity(ctx.serialize(dog)))
+        val dogRequest = createRequest(ctx.virtualNodeInfo.holdingIdentity, PersistEntities(listOf(ctx.serialize(dog))))
 
         // Now create a cat instance in the same way.
         val catId = UUID.randomUUID()
@@ -304,7 +304,7 @@ class PersistenceServiceInternalTests {
             dogRequest.timestamp,
             dogRequest.flowId,
             dogRequest.holdingIdentity,
-            PersistEntity(ctx.serialize(cat))
+            PersistEntities(listOf(ctx.serialize(cat)))
         )
 
         // Now send the two messages (both 'persist') to the message processor.  This is the point where we would
@@ -332,7 +332,7 @@ class PersistenceServiceInternalTests {
         val bytes = assertFindEntity(CAT_CLASS_NAME, ctx.serialize(catKey))
 
         // It's the cat we persisted.
-        assertThat(ctx.deserialize(bytes!!)).isEqualTo(cat)
+        assertThat(ctx.deserialize(bytes.first())).isEqualTo(cat)
     }
 
     @Test
@@ -354,7 +354,7 @@ class PersistenceServiceInternalTests {
         val bytes = assertFindEntity(DOG_CLASS_NAME, ctx.serialize(basilId))
 
         // assert it's the dog
-        val result = ctx.deserialize(bytes!!)
+        val result = ctx.deserialize(bytes.first())
         assertThat(result).isEqualTo(basilTheDog)
     }
 
@@ -386,8 +386,8 @@ class PersistenceServiceInternalTests {
         val entityResponse = flowEvent.payload as EntityResponse
         assertThat(entityResponse.responseType as EntityResponseSuccess).isInstanceOf(EntityResponseSuccess::class.java)
         val entityResponseSuccess = entityResponse.responseType as EntityResponseSuccess
-        val bytes = entityResponseSuccess.result as ByteBuffer
-        val responseEntity = ctx.deserialize(bytes)
+        val bytes = entityResponseSuccess.results as List<ByteBuffer>
+        val responseEntity = ctx.deserialize(bytes.first())
         assertThat(responseEntity).isEqualTo(bellaTheDog)
 
         // and can be found in the DB
@@ -430,7 +430,7 @@ class PersistenceServiceInternalTests {
         ctx.persist(dog)
 
         // use API to remove it
-        val responses = assertDeleteEntityById(DOG_CLASS_NAME, ctx.serialize(dogId))
+        val responses = assertDeleteEntityById(DOG_CLASS_NAME, listOf(ctx.serialize(dogId)))
 
         // assert the change - one response message (which contains success)
         assertThat(responses.size).isEqualTo(1)
@@ -440,13 +440,42 @@ class PersistenceServiceInternalTests {
         assertThat(actual).isNull()
     }
 
+
+    @Test
+    fun `delete with mulitple ids`() {
+        val dogIds = arrayOf("Athos", "Porthos", "Aramis").map {
+            // save a dog
+            val dogId = UUID.randomUUID()
+            val dog = ctx.sandbox.createDogInstance(
+                dogId,
+                it,
+                LocalDate.of(2015, 1, 11).atStartOfDay().toInstant(ZoneOffset.UTC),
+                "Musketeer"
+            )
+            ctx.persist(dog)
+            dogId
+        }
+        // use API to remove it
+        val responses = assertDeleteEntityById(DOG_CLASS_NAME, listOf(ctx.serialize(dogIds[0]), ctx.serialize(dogIds[1])))
+
+        // assert the change - one response message (which contains success)
+        assertThat(responses.size).isEqualTo(1)
+
+        // Check there's nothing.
+        val actual = ctx.findDog(dogIds[0])
+        assertThat(actual).isNull()
+
+        val actual2 = ctx.findDog(dogIds[2])
+        assertThat(actual2).isNotNull()
+    }
+
     @Test
     fun `delete by id is still successful if id not found`() {
         val dogId = UUID.randomUUID()
         ctx.persist(ctx.sandbox.createDogInstance(dogId, "K9", Instant.now(), "Doctor Who"))
 
         val differentDogId = UUID.randomUUID()
-        val responses = assertDeleteEntityById(DOG_CLASS_NAME, ctx.serialize(differentDogId))
+        val responses = assertDeleteEntityById(DOG_CLASS_NAME, listOf(ctx.serialize(differentDogId)))
 
         // we should not have deleted anything, and also not thrown either, i.e. the response contains a
         // 'success' message.
@@ -581,7 +610,7 @@ class PersistenceServiceInternalTests {
             if (it.array().size > 4) throw KafkaMessageSizeException("Too large")
             it
         }
-        val request = createRequest(ctx.virtualNodeInfo.holdingIdentity, MergeEntity(ctx.serialize(modifiedDog)))
+        val request = createRequest(ctx.virtualNodeInfo.holdingIdentity, MergeEntities(listOf(ctx.serialize(modifiedDog))))
 
         val responses = assertFailureResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), request))))
 
@@ -626,14 +655,14 @@ class PersistenceServiceInternalTests {
         assertPersistEntity(ctx.serialize(cat))
 
         val bytes = assertFindEntity(CAT_CLASS_NAME, ctx.serialize(catKey))
-        val actualCat = ctx.deserialize(bytes!!)
+        val actualCat = ctx.deserialize(bytes.first())
 
         assertThat(cat).isEqualTo(actualCat)
 
         assertDeleteEntity(ctx.serialize(cat))
 
-        val newBytes = assertFindEntity(CAT_CLASS_NAME, ctx.serialize(catKey))
-        assertThat(newBytes).isNull()
+        val newBytesList = assertFindEntity(CAT_CLASS_NAME, ctx.serialize(catKey))
+        assertThat(newBytesList.size).isEqualTo(0)
     }
 
     @Test
@@ -735,7 +764,8 @@ class PersistenceServiceInternalTests {
 
     @Test
     fun `find with named query result which hits Kafka message size limit`() {
-        assertQuery(QuerySetup.NamedQuery(mapOf(), "Dog.all"), expectFailure="Too large", sizeLimit = 10)
+        persistDogs(ctx, 1)
+        assertQuery(QuerySetup.NamedQuery(mapOf() , query="Dog.all"), expectFailure="Too large", sizeLimit = 10)
     }
 
 
@@ -818,17 +848,6 @@ class PersistenceServiceInternalTests {
         return records
     }
 
-    private fun assertThatResponseIsAList(entityResponse: EntityResponse): List<*> {
-        val entityResponseSuccess = entityResponse.responseType as EntityResponseSuccess
-        val bytes = entityResponseSuccess.result as ByteBuffer
-        val results = ctx.deserialize(bytes)
-
-        // We have a list
-        assertThat(results as List<*>).isInstanceOf(List::class.java)
-
-        return results
-    }
-
     private fun createRequest(holdingId: net.corda.virtualnode.HoldingIdentity, entity: Any): EntityRequest {
         logger.info("Entity Request - entity: ${entity.javaClass.simpleName} $entity")
         return EntityRequest(Instant.now(), UUID.randomUUID().toString(), holdingId.toAvro(), entity)
@@ -841,7 +860,7 @@ class PersistenceServiceInternalTests {
     ): List<*> {
         val rec = when(querySetup) {
             is QuerySetup.NamedQuery -> {
-                val paramsSerialized = querySetup.params.mapValues { ctx.serialize(it.value) }
+                val paramsSerialized = querySetup.params.mapValues { v -> ctx.serialize(v.value) }
                 FindWithNamedQuery(querySetup.query, paramsSerialized, offset, limit)
             }
             is QuerySetup.All -> {
@@ -849,7 +868,9 @@ class PersistenceServiceInternalTests {
             }
         }
         val processor = EntityMessageProcessor(ctx.entitySandboxService, UTCClock()) {
-            if (sizeLimit != Int.MAX_VALUE && it.array().size > sizeLimit) throw KafkaMessageSizeException("Too large")
+            val size = it.array().size
+            logger.info("payload check size $size c/w limit $sizeLimit")
+            if (size > sizeLimit) throw KafkaMessageSizeException("Too large; size $size exceeds limit $sizeLimit")
             it
         }
         val request = createRequest(ctx.virtualNodeInfo.holdingIdentity, rec)
@@ -857,8 +878,8 @@ class PersistenceServiceInternalTests {
         assertThat(records.size).withFailMessage("can only use this helper method with 1 result").isEqualTo(1)
         val record = records.first()
         val flowEvent = record.value as FlowEvent
+        val response = flowEvent.payload as EntityResponse
         if (expectFailure != null) {
-            val response = flowEvent.payload as EntityResponse
             if (response.responseType is EntityResponseFailure) {
                 logger.error("$response.responseType (expected failure)")
                 assertThat(response.responseType).isInstanceOf(EntityResponseFailure::class.java)
@@ -867,8 +888,7 @@ class PersistenceServiceInternalTests {
             assertThat(response.responseType.toString()).contains(expectFailure)
             return listOf<String>()
         } else {
-            val entityResponse = flowEvent.payload as EntityResponse
-            return assertThatResponseIsAList(entityResponse)
+            return (response.responseType as EntityResponseSuccess).results.map { ctx.deserialize(it as ByteBuffer) }
         }
     }
     /** Delete entity and assert
@@ -883,7 +903,7 @@ class PersistenceServiceInternalTests {
                     Record(
                         TOPIC,
                         UUID.randomUUID().toString(),
-                        createRequest(ctx.virtualNodeInfo.holdingIdentity, DeleteEntity(bytes))
+                        createRequest(ctx.virtualNodeInfo.holdingIdentity, DeleteEntities(listOf(bytes)))
                     )
                 )
             )
@@ -893,8 +913,8 @@ class PersistenceServiceInternalTests {
     /** Delete entity by primary key and do some asserting
      * @return the list of successful responses
      * */
-    private fun assertDeleteEntityById(className: String, bytes: ByteBuffer): List<Record<*, *>> {
-        val deleteByPrimaryKey = DeleteEntityById(className, bytes)
+    private fun assertDeleteEntityById(className: String, bytes: List<ByteBuffer>): List<Record<*, *>> {
+        val deleteByPrimaryKey = DeleteEntitiesById(className, bytes)
         val processor = EntityMessageProcessor(ctx.entitySandboxService, UTCClock(), this::noOpPayloadCheck)
         val records = listOf(
             Record(
@@ -909,7 +929,7 @@ class PersistenceServiceInternalTests {
     /** Find an entity and do some asserting
      * @return the list of successful responses
      * */
-    private fun assertFindEntity(className: String, bytes: ByteBuffer): ByteBuffer? {
+    private fun assertFindEntity(className: String, bytes: ByteBuffer): List<ByteBuffer> {
         val processor = EntityMessageProcessor(ctx.entitySandboxService, UTCClock(), this::noOpPayloadCheck)
 
         val responses = assertSuccessResponses(
@@ -931,7 +951,7 @@ class PersistenceServiceInternalTests {
         val response = flowEvent.payload as EntityResponse
         val success = response.responseType as EntityResponseSuccess
 
-        return success.result
+        return success.results
     }
 
     /** Persist an entity and do some asserting
@@ -946,7 +966,7 @@ class PersistenceServiceInternalTests {
                     Record(
                         TOPIC,
                         UUID.randomUUID().toString(),
-                        createRequest(ctx.virtualNodeInfo.holdingIdentity, PersistEntity(bytes))
+                        createRequest(ctx.virtualNodeInfo.holdingIdentity, PersistEntities(listOf(bytes)))
                     )
                 )
             )
@@ -964,7 +984,7 @@ class PersistenceServiceInternalTests {
                     Record(
                         TOPIC,
                         UUID.randomUUID().toString(),
-                        createRequest(ctx.virtualNodeInfo.holdingIdentity, MergeEntity(bytes))
+                        createRequest(ctx.virtualNodeInfo.holdingIdentity, MergeEntities(listOf(bytes)))
                     )
                 )
             )

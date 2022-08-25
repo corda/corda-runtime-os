@@ -37,7 +37,7 @@ internal data class EvolvableTagImplV1(
 
             val cpkSignerSummaryHashString = classTagEntries[CPK_PUBLIC_KEY_HASHES_IDX]
             val cpkSignerSummaryHash = try {
-                SecureHash.create(cpkSignerSummaryHashString)
+                SecureHash.parse(cpkSignerSummaryHashString)
             } catch (e: IllegalArgumentException) {
                 throw SandboxException(
                     "Couldn't parse hash $cpkSignerSummaryHashString in serialised evolvable class tag.", e

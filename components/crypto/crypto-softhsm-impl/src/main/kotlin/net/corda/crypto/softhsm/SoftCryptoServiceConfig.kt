@@ -34,7 +34,7 @@ const val WRAPPING_HSM_NAME = "HSM"
  *          "name": "DEFAULT|HSM",
  *          "hsm": {
  *              "name": ".."
- *              "config": {
+ *              "cfg": {
  *              }
  *          }
  *      }
@@ -74,5 +74,5 @@ class SoftWrappingConfig(
 
 class SoftWrappingHSMConfig(
     val name: String,
-    val config: Map<String, Any>
+    val cfg: Map<String, Any>
 )

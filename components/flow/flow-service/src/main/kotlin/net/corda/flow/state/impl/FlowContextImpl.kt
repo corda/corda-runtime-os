@@ -2,6 +2,7 @@ package net.corda.flow.state.impl
 
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.state.checkpoint.FlowStackItem
+import net.corda.flow.state.ContextPlatformProperties
 import net.corda.flow.state.FlowContext
 import net.corda.flow.utils.KeyValueStore
 
@@ -14,11 +15,31 @@ class FlowContextImpl(
     private val flowStack: FlowStackImpl
 ) : FlowContext {
 
+    override val platformProperties = object : ContextPlatformProperties {
+        override fun put(key: String, value: String) {
+            val platformContextKeyValueStore = KeyValueStore(
+                checkNotNull(flowStack.peek())
+                { "Attempt to set context before any items added to flow stack" }.contextPlatformProperties
+            )
+
+            require(getPropertyFromPlatformStack(key) == null) {
+                "'${key}' is already a platform context property, it cannot be overwritten"
+            }
+
+            platformContextKeyValueStore[key] = value
+        }
+    }
+
     companion object {
         const val CORDA_RESERVED_PREFIX = "corda." // must be lowercase
     }
 
     override fun put(key: String, value: String) {
+        val userContextKeyValueStore = KeyValueStore(
+            checkNotNull(flowStack.peek())
+            { "Attempt to set context before any items added to flow stack" }.contextUserProperties
+        )
+
         require(getPropertyFromPlatformStack(key) == null) {
             "'${key}' is already a platform context property, it cannot be overwritten with a user property"
         }
@@ -26,11 +47,6 @@ class FlowContextImpl(
         require(!key.lowercase().startsWith(CORDA_RESERVED_PREFIX)) {
             "'${key}' starts with '${CORDA_RESERVED_PREFIX}' which is reserved for Corda platform properties"
         }
-
-        val userContextKeyValueStore = KeyValueStore(
-            checkNotNull(flowStack.peek())
-            { "Attempt to set context before any items added to flow stack" }.contextUserProperties
-        )
 
         userContextKeyValueStore[key] = value
     }

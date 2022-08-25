@@ -264,5 +264,5 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
     // Mandatory lifecycle methods - def to coordinator
     override val isRunning get() = lifecycleCoordinator.isRunning
     override fun start() = lifecycleCoordinator.start()
-    override fun stop() = lifecycleCoordinator.close()
+    override fun stop() = lifecycleCoordinator.stop()
 }

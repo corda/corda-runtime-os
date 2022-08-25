@@ -26,7 +26,7 @@ data class UniquenessCheckInternalRequest private constructor(
 
             with (externalRequest) {
                 return UniquenessCheckInternalRequest(
-                    SecureHash.create(txId),
+                    SecureHash.parse(txId),
                     txId,
                     inputStates?.map { it.toInternalStateRef() } ?: emptyList(),
                     referenceStates?.map { it.toInternalStateRef() } ?: emptyList(),
@@ -39,7 +39,7 @@ data class UniquenessCheckInternalRequest private constructor(
 
         private fun String.toInternalStateRef(): UniquenessCheckInternalStateRef {
             return UniquenessCheckInternalStateRef(
-                SecureHash.create(this.substringBeforeLast(':')),
+                SecureHash.parse(this.substringBeforeLast(':')),
                 this.substringAfterLast(':').toInt()
             )
         }

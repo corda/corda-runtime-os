@@ -8,12 +8,13 @@ import net.corda.httprpc.security.read.RPCSecurityManager
 import net.corda.httprpc.server.impl.security.provider.bearer.BearerTokenAuthenticationProvider
 import net.corda.httprpc.server.impl.security.provider.credentials.tokens.BearerTokenAuthenticationCredentials
 import net.corda.v5.base.util.contextLogger
+import java.util.function.Supplier
 import javax.security.auth.login.FailedLoginException
 
 internal open class JwtAuthenticationProvider(
     private val jwtProcessor: JwtProcessor,
     private val claimExtractor: JwtClaimExtractor,
-    private val rpcSecurityManager: RPCSecurityManager
+    private val rpcSecurityManagerSupplier: Supplier<RPCSecurityManager>
 ) : BearerTokenAuthenticationProvider() {
 
     companion object {
@@ -39,7 +40,7 @@ internal open class JwtAuthenticationProvider(
         return try {
             val claims = jwtProcessor.process(jwt)
             val username = claimExtractor.getUsername(claims)
-            rpcSecurityManager.buildSubject(username)
+            rpcSecurityManagerSupplier.get().buildSubject(username)
         } catch (e: BadJOSEException) {
             throw FailedLoginException("Unable to validate token.")
         }

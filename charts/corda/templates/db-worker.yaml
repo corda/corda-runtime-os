@@ -63,6 +63,7 @@ spec:
           - -ddatabase.user={{ .Values.db.cluster.user }}
           - -ddatabase.pass=$(DATABASE_PASS)
           - -ddatabase.jdbc.url=jdbc:postgresql://{{ required "Must specify db.cluster.host" .Values.db.cluster.host }}:{{ .Values.db.cluster.port }}/{{ .Values.db.cluster.database }}
+          - -ddatabase.jdbc.directory=/opt/jdbc-driver
         volumeMounts:
         {{- include "corda.workerVolumeMounts" . | nindent 10 }}
         ports:

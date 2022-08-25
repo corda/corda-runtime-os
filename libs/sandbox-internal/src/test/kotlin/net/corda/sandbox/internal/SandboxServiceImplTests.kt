@@ -30,8 +30,13 @@ import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
 import org.osgi.framework.BundleException
 import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.nio.file.Paths
+import java.security.MessageDigest
 import java.time.Instant
+import java.util.Hashtable
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 import kotlin.random.Random.Default.nextBytes
 
 /** Tests of [SandboxServiceImpl]. */
@@ -73,6 +78,7 @@ class SandboxServiceImplTests {
 
         whenever(getServiceRuntimeComponentBundle()).thenReturn(scrBundle)
         whenever(allBundles).thenReturn(listOf(frameworkBundle, scrBundle))
+        whenever(resolveBundles(any())).thenReturn(true)
 
         cpksAndContents.forEach { contents ->
             val mainBundlePath = contents.cpk.metadata.mainBundle
@@ -90,6 +96,7 @@ class SandboxServiceImplTests {
 
                 val bundle = mockBundle(bundleName, bundleClass, bundleLocation)
                 whenever(getBundle(bundleClass)).thenReturn(bundle)
+                whenever(bundle.headers).thenReturn(Hashtable())
                 whenever(bundle.start()).then {
                     if (bundleName in notStartableBundles) throw BundleException("Start")
                     startedBundles.add(bundle)
@@ -143,6 +150,24 @@ class SandboxServiceImplTests {
         assertDoesNotThrow {
             sandboxService.createSandboxGroup(emptySet())
         }
+    }
+
+    @Test
+    fun `throws if a CPK bundle has invalid checksum`() {
+        val cpkAndContentsOne = CpkAndContents(
+            mainBundleClass = String::class.java,
+            libraryClass = Boolean::class.java,
+            cpkChecksum = SecureHash(HASH_ALGORITHM, nextBytes(HASH_LENGTH)))
+
+        val mockBundleUtils = mockBundleUtils(
+            setOf(cpkAndContentsOne)
+        )
+        val sandboxService = SandboxServiceImpl(mockBundleUtils, bundleContext)
+
+        val e = assertThrows<SandboxException> {
+            sandboxService.createSandboxGroup(setOf(cpkAndContentsOne.cpk))
+        }
+        assertTrue(e.message!!.contains("File checksum validation failed for CPK"))
     }
 
     @Test
@@ -517,27 +542,40 @@ private data class CpkAndContents(
     val libraryClass: Class<*>,
     val mainBundleName: String? = "${random.nextInt()}",
     val libraryBundleName: String? = "${random.nextInt()}",
-    private val cpkDependencies: List<CpkIdentifier> = emptyList()
+    private val cpkDependencies: List<CpkIdentifier> = emptyList(),
+    val cpkChecksum: SecureHash? = null
 ) {
     val bundleNames = setOf(mainBundleName, libraryBundleName)
     val cpk = createDummyCpk(cpkDependencies)
 
     /** Creates a dummy Cpk. */
     private fun createDummyCpk(cpkDependencies: List<CpkIdentifier>) = object : Cpk {
+        val mainBundle = Paths.get("${random.nextInt()}.jar").toString()
+        val libraries = listOf(Paths.get("lib/${random.nextInt()}.jar").toString())
+        val cpkBytes = ByteArrayOutputStream().apply {
+            ZipOutputStream(this).use {
+                (libraries + mainBundle).forEach { fileName ->
+                    it.putNextEntry((ZipEntry(fileName)))
+                    it.closeEntry()
+                }
+            }
+        }
         override val metadata = CpkMetadata(
             cpkId = CpkIdentifier(random.nextInt().toString(), "1.0", randomSecureHash()),
             manifest = CpkManifest(CpkFormatVersion(0, 0)),
-            mainBundle = Paths.get("${random.nextInt()}.jar").toString(),
-            libraries = listOf(Paths.get("lib/${random.nextInt()}.jar").toString()),
+            mainBundle = mainBundle,
+            libraries = libraries,
             dependencies = cpkDependencies,
             cordappManifest = mock<CordappManifest>().apply {
                 whenever(bundleSymbolicName).thenAnswer { mainBundleName }
                 whenever(bundleVersion).thenAnswer { "${random.nextInt()}" }
             },
             type = CpkType.UNKNOWN,
-            fileChecksum = SecureHash(HASH_ALGORITHM, nextBytes(HASH_LENGTH)),
+            fileChecksum = cpkChecksum ?:
+                SecureHash(HASH_ALGORITHM, MessageDigest.getInstance(HASH_ALGORITHM).digest(cpkBytes.toByteArray())),
             cordappCertificates = emptySet(),
             timestamp = Instant.now())
+        override fun getInputStream() = ByteArrayInputStream(cpkBytes.toByteArray())
         override fun getResourceAsStream(resourceName: String) = ByteArrayInputStream(ByteArray(0))
     }
 }

@@ -38,7 +38,7 @@ class HttpRpcServerAzureAdTest {
                 SsoSettings(AzureAdSettings(AzureAdMock.clientId, null, AzureAdMock.tenantId, trustedIssuers = listOf(AzureAdMock.issuer))), HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE)
         httpRpcServer = HttpRpcServerImpl(
             listOf(TestHealthCheckAPIImpl()),
-            securityManager,
+            ::securityManager,
             httpRpcSettings,
             multipartDir,
             true

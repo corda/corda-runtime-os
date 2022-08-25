@@ -1,9 +1,7 @@
 package net.corda.applications.workers.smoketest.websocket.client
 
-import java.util.Queue
-
 interface InternalWebsocketHandler {
-    val messageQueue: Queue<String>
+    val messageQueueSnapshot: List<String>
     fun isConnected(): Boolean
     fun send(message: String)
 }

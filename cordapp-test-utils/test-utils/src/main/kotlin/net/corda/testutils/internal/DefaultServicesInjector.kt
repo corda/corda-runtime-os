@@ -10,7 +10,7 @@ import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
 
 /**
- * Injector for default services for the FakeCorda.
+ * Injector for default services for the CordaSim.
  */
 class DefaultServicesInjector : FlowServicesInjector {
 
@@ -31,33 +31,33 @@ class DefaultServicesInjector : FlowServicesInjector {
     override fun injectServices(
         flow: Flow,
         member: MemberX500Name,
-        fakeFiber: FakeFiber,
+        fiber: SimFiber,
         flowFactory: FlowFactory,
     ) {
         val flowClass = flow.javaClass
         flow.injectIfRequired(JsonMarshallingService::class.java,
             createJsonMarshallingService())
         flow.injectIfRequired(FlowEngine::class.java,
-            createFlowEngine(member, fakeFiber))
+            createFlowEngine(member, fiber))
         flow.injectIfRequired(FlowMessaging::class.java,
-            createFlowMessaging(member, flowClass, fakeFiber, flowFactory))
+            createFlowMessaging(member, flowClass, fiber, flowFactory))
         flow.injectIfRequired(
             PersistenceService::class.java,
-            getOrCreatePersistenceService(member, fakeFiber))
+            getOrCreatePersistenceService(member, fiber))
     }
 
-    private fun getOrCreatePersistenceService(member: MemberX500Name, fakeFiber: FakeFiber): PersistenceService  {
-        return fakeFiber.getOrCreatePersistenceService(member)
+    private fun getOrCreatePersistenceService(member: MemberX500Name, fiber: SimFiber): PersistenceService  {
+        return fiber.getOrCreatePersistenceService(member)
     }
 
     private fun createJsonMarshallingService() : JsonMarshallingService = SimpleJsonMarshallingService()
-    private fun createFlowEngine(member: MemberX500Name, fakeFiber: FakeFiber): FlowEngine
-        = InjectingFlowEngine(member, fakeFiber)
+    private fun createFlowEngine(member: MemberX500Name, fiber: SimFiber): FlowEngine
+        = InjectingFlowEngine(member, fiber)
     private fun createFlowMessaging(
         member: MemberX500Name,
         flowClass: Class<out Flow>,
-        fakeFiber: FakeFiber,
+        fiber: SimFiber,
         flowFactory: FlowFactory
-    ): FlowMessaging = ConcurrentFlowMessaging(member, flowClass, fakeFiber, this, flowFactory)
+    ): FlowMessaging = ConcurrentFlowMessaging(member, flowClass, fiber, this, flowFactory)
 }
 

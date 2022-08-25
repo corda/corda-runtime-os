@@ -1,6 +1,5 @@
 package net.corda.flow.rpcops.impl.flowstatus.websocket
 
-import java.util.UUID
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.rpcops.flowstatus.FlowStatusUpdateListener
@@ -11,7 +10,7 @@ import net.corda.virtualnode.toCorda
  * Flow status update handler that uses websockets to communicate updates to the counterpart connection.
  */
 class WebSocketFlowStatusUpdateListener(
-    override val id: UUID,
+    override val id: String,
     private val clientRequestId: String,
     private val holdingIdentity: HoldingIdentity,
     private val onCloseCallback: (String) -> Unit,
@@ -26,7 +25,7 @@ class WebSocketFlowStatusUpdateListener(
     @Synchronized
     override fun updateReceived(status: FlowStatus) {
         logger.info(
-            "Flow status update: ${status.flowStatus.name} for listener $id (clientRequestId: $clientRequestId, " +
+            "Listener $id received flow status update: ${status.flowStatus.name} (clientRequestId: $clientRequestId, " +
                     "holdingId: ${holdingIdentity.toCorda().shortHash})."
         )
 

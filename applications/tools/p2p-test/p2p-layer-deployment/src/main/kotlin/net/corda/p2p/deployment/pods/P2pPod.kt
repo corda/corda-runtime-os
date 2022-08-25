@@ -20,13 +20,14 @@ abstract class P2pPod(
         mapOf("type" to imageName)
     }
     override val environmentVariables by lazy {
-        mapOf(
-            "KAFKA_SERVERS" to kafkaServers,
-        ) + if (details.debug) {
+        if (details.debug) {
             mapOf("JAVA_TOOL_OPTIONS" to "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:${Port.Debug.port}")
         } else {
             emptyMap()
         }
+    }
+    override val arguments by lazy {
+        mapOf("mbootstrap.servers" to kafkaServers)
     }
 
     override val resourceRequest = details.resourceRequest

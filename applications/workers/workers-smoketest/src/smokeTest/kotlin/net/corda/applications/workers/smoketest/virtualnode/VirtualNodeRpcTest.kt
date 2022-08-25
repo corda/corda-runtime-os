@@ -71,7 +71,7 @@ class VirtualNodeRpcTest {
             // BUG:  returning "OK" feels 'weakly' typed
             val json = assertWithRetry {
                 // CPI upload can be slow in the combined worker, especially after it has just started up.
-                timeout(Duration.ofSeconds(60))
+                timeout(Duration.ofSeconds(100))
                 interval(Duration.ofSeconds(2))
                 command { cpiStatus(requestId) }
                 condition {
@@ -299,7 +299,7 @@ class VirtualNodeRpcTest {
             // Check that timestamp for CPK been updated
             // Cannot use `assertWithRetry` as there is a strict type `Instant`
             // Allow ample time for CPI upload to be propagated through the system
-            eventually(Duration.ofSeconds(20)) {
+            eventually(Duration.ofSeconds(100)) {
                 assertThat(getCpkTimestamp()).isAfter(initialCpkTimeStamp)
             }
         }
@@ -331,7 +331,7 @@ class VirtualNodeRpcTest {
                 condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
             }
 
-            eventually(Duration.ofSeconds(20)) {
+            eventually(Duration.ofSeconds(100)) {
                 assertThat(getCpkTimestamp()).isAfter(initialCpkTimeStamp)
             }
         }
@@ -363,7 +363,7 @@ class VirtualNodeRpcTest {
                 condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
             }
 
-            eventually(Duration.ofSeconds(20)) {
+            eventually(Duration.ofSeconds(100)) {
                 assertThat(getCpkTimestamp()).isAfter(initialCpkTimeStamp)
             }
 
@@ -372,7 +372,7 @@ class VirtualNodeRpcTest {
     }
 
     private fun runReturnAStringFlow(expectedResult: String) {
-        val className = "net.cordapp.flowworker.development.flows.ReturnAStringFlow"
+        val className = "net.cordapp.flowworker.development.smoketests.virtualnode.ReturnAStringFlow"
 
         val requestId = startRpcFlow(aliceHoldingId, emptyMap(), className)
 
