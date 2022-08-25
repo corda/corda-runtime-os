@@ -48,11 +48,11 @@ class ExternalEventFactoryMapImplTest {
             flowExternalEventContext: ExternalEventContext,
             parameters: String
         ): ExternalEventRecord {
-            throw RuntimeException("Not called")
+            throw IllegalArgumentException("Not called")
         }
 
         override fun resumeWith(checkpoint: FlowCheckpoint, response: String): String {
-            throw RuntimeException("Not called")
+            throw IllegalArgumentException("Not called")
         }
     }
 
@@ -66,11 +66,11 @@ class ExternalEventFactoryMapImplTest {
             flowExternalEventContext: ExternalEventContext,
             parameters: ByteArray
         ): ExternalEventRecord {
-            throw RuntimeException("Not called")
+            throw IllegalArgumentException("Not called")
         }
 
         override fun resumeWith(checkpoint: FlowCheckpoint, response: ByteArray): ByteArray {
-            throw RuntimeException("Not called")
+            throw IllegalArgumentException("Not called")
         }
     }
 }
