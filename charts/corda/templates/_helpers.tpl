@@ -181,7 +181,7 @@ Worker environment variables
     {{- if and (( get .Values.workers .worker ).profiling.enabled ) ( .Values.dumpHostPath )  }}
       -agentpath:/opt/override/libyjpagent.so=exceptions=disable,port=10045,listen=all,dir=/dumps/profile/snapshots,logdir=/dumps/profile/logs
     {{- end -}}
-    {{- if .Values.dumpHostPath }}
+    {{- if .Values.heapDumpOnOutOfMemoryError }}
       -XX:+HeapDumpOnOutOfMemoryError
       -XX:HeapDumpPath=/dumps/heap
     {{- end -}}
