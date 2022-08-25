@@ -11,7 +11,6 @@ import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.unwrap
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
@@ -97,6 +96,7 @@ class RollCallFlow: RPCStartableFlow {
         }
     }
 
+    @Suspendable
     private fun retryRollCall(
         r: Pair<FlowSession, String>
     ) : List<AbsenceResponse> {

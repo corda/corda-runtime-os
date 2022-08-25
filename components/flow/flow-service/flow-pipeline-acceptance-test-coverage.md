@@ -58,6 +58,7 @@ This document should be maintained so that we can ensure that we have quick visi
 - Given two sessions receiving a session data event for one session and a session close event for the other resumes the flow with an error ✅
 - Given two sessions receiving session close events for both sessions resumes the flow with an error ✅
 - Given two sessions receiving a session data and then close event for one session and a session data event for the other resumes the flow  ✅
+- Given a session, if it receives an out of order close and then an ordered data event, the flow resumes  ✅
 
 ## Closing
 
@@ -68,6 +69,7 @@ This document should be maintained so that we can ensure that we have quick visi
 - Calling 'close' on a closed and errored session schedules a wakeup event and sends no session close events ✅
 - Calling 'close' on errored sessions schedules a wakeup event and sends no session close events ✅
 - Receiving an out-of-order session close events does not resume the flow and sends a session ack ✅
+  Receiving an ordered session close event when waiting to receive data errors the flow ✅
 - Receiving a wakeup or session ack event does not resume the flow and resends any unacknowledged events ✅ (Still requires the resends to be asserted)
 - Receiving a session event for an unrelated session does not resume the flow and sends a session ack ✅
 - Receiving a session data event instead of a close resumes the flow with an error ✅

@@ -9,6 +9,7 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -35,7 +36,9 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.toWire
+import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.MemberRegistrationService
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
@@ -88,12 +91,18 @@ class DynamicMemberRegistrationService @Activate constructor(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = MembershipGroupReaderProvider::class)
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    @Reference(service = MembershipPersistenceClient::class)
+    private val membershipPersistenceClient: MembershipPersistenceClient,
 ) : MemberRegistrationService {
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
      */
     private interface InnerRegistrationService : AutoCloseable {
-        fun register(member: HoldingIdentity, context: Map<String, String>): MembershipRequestRegistrationResult
+        fun register(
+            registrationId: UUID,
+            member: HoldingIdentity,
+            context: Map<String, String>
+        ): MembershipRequestRegistrationResult
     }
 
     private companion object {
@@ -110,8 +119,8 @@ class DynamicMemberRegistrationService @Activate constructor(
         const val SERIAL_CONST = "1"
 
         val defaultCodeNameToSpec = mapOf(
-            ECDSA_SECP256K1_CODE_NAME to SignatureSpec("SHA512withECDSA"),
-            ECDSA_SECP256R1_CODE_NAME to SignatureSpec("SHA512withECDSA"),
+            ECDSA_SECP256K1_CODE_NAME to SignatureSpec.ECDSA_SHA256,
+            ECDSA_SECP256R1_CODE_NAME to SignatureSpec.ECDSA_SHA256,
             EDDSA_ED25519_TEMPLATE to SignatureSpec.EDDSA_ED25519,
             GOST3410_GOST3411_TEMPLATE to SignatureSpec.GOST3410_GOST3411,
             RSA_CODE_NAME to SignatureSpec.RSA_SHA512,
@@ -170,12 +179,14 @@ class DynamicMemberRegistrationService @Activate constructor(
     }
 
     override fun register(
+        registrationId: UUID,
         member: HoldingIdentity,
         context: Map<String, String>,
-    ): MembershipRequestRegistrationResult = impl.register(member, context)
+    ): MembershipRequestRegistrationResult = impl.register(registrationId, member, context)
 
     private object InactiveImpl : InnerRegistrationService {
         override fun register(
+            registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
         ): MembershipRequestRegistrationResult {
@@ -191,12 +202,12 @@ class DynamicMemberRegistrationService @Activate constructor(
 
     private inner class ActiveImpl : InnerRegistrationService {
         override fun register(
+            registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>,
         ): MembershipRequestRegistrationResult {
             try {
-                val registrationId = UUID.randomUUID().toString()
-                val memberContext = buildMemberContext(context, registrationId, member)
+                val memberContext = buildMemberContext(context, registrationId.toString(), member)
                 val serializedMemberContext = keyValuePairListSerializer.serialize(memberContext)
                     ?: throw IllegalArgumentException("Failed to serialize the member context for this request.")
                 val publicKey =
@@ -221,7 +232,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                     MEMBERSHIP_P2P_SUBSYSTEM
                 )
                 val message = MembershipRegistrationRequest(
-                    registrationId,
+                    registrationId.toString(),
                     ByteBuffer.wrap(serializedMemberContext),
                     memberSignature
                 )
@@ -232,6 +243,19 @@ class DynamicMemberRegistrationService @Activate constructor(
                     // for the same member.
                     member.shortHash.value
                 )
+
+                membershipPersistenceClient.persistRegistrationRequest(
+                    viewOwningIdentity = member,
+                    registrationRequest = RegistrationRequest(
+                        status = RegistrationStatus.NEW,
+                        registrationId = registrationId.toString(),
+                        requester = member,
+                        memberContext = ByteBuffer.wrap(serializedMemberContext),
+                        publicKey = ByteBuffer.wrap(byteArrayOf()),
+                        signature = ByteBuffer.wrap(byteArrayOf()),
+                    )
+                )
+
                 publisher.publish(listOf(record)).first().get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             } catch (e: Exception) {
                 logger.warn("Registration failed.", e)
@@ -240,6 +264,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                     "Registration failed. Reason: ${e.message}"
                 )
             }
+
             return MembershipRequestRegistrationResult(MembershipRequestRegistrationOutcome.SUBMITTED)
         }
 

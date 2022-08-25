@@ -55,4 +55,5 @@ interface SandboxGroup: SingletonSerializeAsToken {
      * [net.corda.sandbox.internal.classtag.EvolvableTag] from a CPK private bundle.
      */
     fun getClass(className: String, serialisedClassTag: String): Class<*>
+    fun loadClassFromPublicBundles(className: String): Class<*>?
 }

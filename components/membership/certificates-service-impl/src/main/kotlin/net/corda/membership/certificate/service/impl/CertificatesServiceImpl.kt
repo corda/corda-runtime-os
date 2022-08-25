@@ -61,6 +61,21 @@ class CertificatesServiceImpl @Activate constructor(
     )
     private val coordinator = coordinatorFactory.createCoordinator<CertificatesService>(::handleEvent)
 
+    override fun importCertificates(tenantId: String, alias: String, certificates: String) =
+        processor.useCertificateProcessor(tenantId) { p -> p.saveCertificates(alias, certificates) }
+
+    override fun retrieveCertificates(tenantId: String, alias: String): String? {
+        var certificates: String? = null
+        processor.useCertificateProcessor(tenantId) { p -> certificates = p.readCertificates(alias) }
+        return certificates
+    }
+
+    override fun retrieveAllCertificates(tenantId: String): List<String> {
+        var certificates = emptyList<String>()
+        processor.useCertificateProcessor(tenantId) { p -> certificates = p.readAllCertificates() }
+        return certificates
+    }
+
     override fun start() {
         logger.info("Starting component.")
         coordinator.start()

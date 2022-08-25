@@ -6,6 +6,7 @@ import net.corda.httprpc.test.CalendarRPCOpsImpl
 import net.corda.httprpc.test.CustomSerializationAPIImpl
 import net.corda.httprpc.test.NumberSequencesRPCOpsImpl
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
+import net.corda.httprpc.test.utils.FakeSecurityManager
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.test.utils.WebRequest
 import net.corda.httprpc.test.utils.findFreePort
@@ -27,7 +28,7 @@ class HttpRpcServerDurableStreamsRequestsTest {
             val httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost",  findFreePort()), HttpRpcServerTestBase.context, null, null, HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE)
             HttpRpcServerTestBase.server = HttpRpcServerImpl(
                 listOf(NumberSequencesRPCOpsImpl(), CalendarRPCOpsImpl(), TestHealthCheckAPIImpl(), CustomSerializationAPIImpl()),
-                HttpRpcServerTestBase.securityManager,
+                { FakeSecurityManager() } ,
                 httpRpcSettings,
                 multipartDir,
                 true

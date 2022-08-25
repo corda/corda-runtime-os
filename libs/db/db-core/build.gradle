@@ -9,7 +9,11 @@ dependencies {
     api "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
+    compileOnly 'org.osgi:osgi.core'
     compileOnly "org.osgi:osgi.annotation"
+
+    // OSGi interface definition for DataSourceFactory, and needed as a bundle
+    implementation "org.osgi:org.osgi.service.jdbc:$osgiJdbcServiceVersion"
 
     api "com.zaxxer:HikariCP:$hikariCpVersion"
 
@@ -17,4 +21,13 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+}
+
+//  `DataSourceFactory` providers are in the jdbc drivers that we *dynamically* load at runtime
+tasks.named('jar', Jar) {
+    bnd '''\
+-noclassforname: true
+Import-Package: org.osgi.service.jdbc;resolution:=optional,\
+    *
+'''
 }

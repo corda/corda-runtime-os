@@ -12,4 +12,18 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(":libs:lifecycle:lifecycle")
+
+    implementation 'net.corda:corda-membership'
+    implementation 'net.corda:corda-topic-schema'
+
+    implementation project(':libs:chunking:chunking-core')
+    implementation project(':libs:layered-property-map')
+    implementation project(':libs:membership:membership-common')
+    implementation project(':libs:messaging:messaging')
+    implementation project(':libs:utilities')
+    implementation project(':components:crypto:crypto-client')
+
+    testImplementation project(':testing:test-utilities')
+    testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }

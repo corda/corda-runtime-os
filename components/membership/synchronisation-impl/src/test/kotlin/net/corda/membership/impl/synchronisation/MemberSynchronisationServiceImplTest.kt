@@ -9,6 +9,7 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedMemberInfo
+import net.corda.data.membership.command.synchronisation.SynchronisationMetaData
 import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.SignedMemberships
@@ -141,8 +142,11 @@ class MemberSynchronisationServiceImplTest {
     private val membershipPackage: MembershipPackage = mock {
         on { memberships } doReturn signedMemberships
     }
+    private val synchronisationMetadata: SynchronisationMetaData = mock {
+        on { member } doReturn member.toAvro()
+    }
     private val updates: ProcessMembershipUpdates = mock {
-        on { destination } doReturn member.toAvro()
+        on { synchronisationMetaData } doReturn synchronisationMetadata
         on { membershipPackage } doReturn membershipPackage
     }
     private val synchronisationService = MemberSynchronisationServiceImpl(

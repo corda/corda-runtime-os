@@ -7,20 +7,22 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.MembershipPackage
+import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
-import net.corda.membership.impl.registration.dynamic.handler.helpers.MembershipPackageFactory
-import net.corda.membership.impl.registration.dynamic.handler.helpers.MerkleTreeGenerator
-import net.corda.membership.impl.registration.dynamic.handler.helpers.P2pRecordsFactory
-import net.corda.membership.impl.registration.dynamic.handler.helpers.Signer
-import net.corda.membership.impl.registration.dynamic.handler.helpers.SignerFactory
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_SUSPENDED
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
+import net.corda.membership.p2p.helpers.MembershipPackageFactory
+import net.corda.membership.p2p.helpers.MerkleTreeGenerator
+import net.corda.membership.p2p.helpers.P2pRecordsFactory
+import net.corda.membership.p2p.helpers.Signer
+import net.corda.membership.p2p.helpers.SignerFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -241,6 +243,26 @@ class ApproveRegistrationHandlerTest {
         val reply = handler.invoke(state, key, command)
 
         assertThat(reply.outputStates).containsAll(membersRecord)
+    }
+
+
+    @Test
+    fun `invoke sends the approved state to the member over P2P`() {
+        val record = mock<Record<String, AppMessage>>()
+        whenever(
+            p2pRecordsFactory.createAuthenticatedMessageRecord(
+                owner.toAvro(),
+                member.toAvro(),
+                SetOwnRegistrationStatus(
+                    registrationId,
+                    RegistrationStatus.APPROVED
+                )
+            )
+        ).doReturn(record)
+
+        val reply = handler.invoke(state, key, command)
+
+        assertThat(reply.outputStates).contains(record)
     }
 
     @Test

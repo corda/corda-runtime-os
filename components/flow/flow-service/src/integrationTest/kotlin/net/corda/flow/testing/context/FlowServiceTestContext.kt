@@ -387,9 +387,9 @@ class FlowServiceTestContext @Activate constructor(
     override fun entityResponseSuccessReceived(
         flowId: String,
         requestId: String,
-        byteBuffer: ByteBuffer?
+        byteBuffers: List<ByteBuffer>
     ): FlowIoRequestSetup {
-        return addEntityResponseToTestRun(requestId, EntityResponseSuccess(byteBuffer), flowId)
+        return addEntityResponseToTestRun(requestId, EntityResponseSuccess(byteBuffers), flowId)
     }
 
     override fun entityResponseErrorReceived(

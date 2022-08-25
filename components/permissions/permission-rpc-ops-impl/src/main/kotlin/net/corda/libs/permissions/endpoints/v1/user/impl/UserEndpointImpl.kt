@@ -113,6 +113,6 @@ class UserEndpointImpl @Activate constructor(
     }
 
     override fun stop() {
-        coordinator.close()
+        coordinator.stop()
     }
 }
