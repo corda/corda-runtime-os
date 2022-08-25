@@ -35,6 +35,9 @@ logging:
   # -- log level; one of "all", "trace", "debug", "info", "warn" (the default), "error", "fatal", or "off"
   level: "warn"
 
+# Dump host path configuration
+dumpHostPath: "/test"
+
 # Open Telemetry configuration
 openTelemetry:
   # -- enables the Open Telemetry Java agent for the Corda workers

@@ -103,7 +103,7 @@ Worker image
 Worker security context
 */}}
 {{- define "corda.workerSecurityContext" -}}
-{{- if not ( get .Values.workers .worker ).profiling.enabled }}
+{{- if and (not .Values.dumpHostPath ) (not ( get .Values.workers .worker ).profiling.enabled) }}
 securityContext:
   runAsUser: 1000
   runAsGroup: 1000
@@ -175,8 +175,15 @@ Worker environment variables
   value: {{- if ( get .Values.workers .worker ).debug.enabled }}
       -agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend={{ if ( get .Values.workers .worker ).debug.suspend }}y{{ else }}n{{ end }}
     {{- end -}}
-    {{- if ( get .Values.workers .worker ).profiling.enabled }}
-      -agentpath:/opt/override/libyjpagent.so=exceptions=disable,port=10045,listen=all,,dir=/logging/profile/snapshots,logdir=/logging/profile/logs
+    {{- if and (( get .Values.workers .worker ).profiling.enabled) ( not .Values.dumpHostPath )  }}
+      -agentpath:/opt/override/libyjpagent.so=exceptions=disable,port=10045,listen=all
+    {{- end -}}
+    {{- if and (( get .Values.workers .worker ).profiling.enabled) ( .Values.dumpHostPath )  }}
+      -agentpath:/opt/override/libyjpagent.so=exceptions=disable,port=10045,listen=all,dir=/dumps/profile/snapshots,logdir=/dumps/profile/logs
+    {{- end -}}
+    {{- if .Values.dumpHostPath }}
+      -XX:+HeapDumpOnOutOfMemoryError
+      -XX:HeapDumpPath=/dumps/heap
     {{- end -}}
     {{- if ( get .Values.workers .worker ).verifyInstrumentation }}
       -Dco.paralleluniverse.fibers.verifyInstrumentation=true
@@ -295,9 +302,9 @@ Volume mounts for corda workers
   name: "jaas-conf"
   readOnly: true
 {{- end }}
-{{- if ( get .Values.workers .worker ).profiling.enabled }}
-- mountPath: /logging/profile/
-  name: logging
+{{- if .Values.dumpHostPath }}
+- mountPath: /dumps
+  name: dumps
 {{- end }}
 {{- end }}
 
@@ -318,10 +325,10 @@ Volumes for corda workers
   secret:
     secretName: {{ include "corda.fullname" . }}-kafka-sasl
 {{- end }}
-{{- if ( get .Values.workers .worker ).profiling.enabled }}
-- name: logging
+{{- if .Values.dumpHostPath }}
+- name: dumps
   hostPath:
-    path: /logging/profile/{{ include "corda.workerName" . }}/
+    path: {{ .Values.dumpHostPath }}/{{ include "corda.workerName" . }}/
     type: DirectoryOrCreate
 {{- end }}
 {{- end }}
