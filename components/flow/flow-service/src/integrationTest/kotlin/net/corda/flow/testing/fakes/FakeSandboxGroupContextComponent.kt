@@ -159,6 +159,10 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
         override fun getClass(className: String, serialisedClassTag: String): Class<*> {
             TODO("Not yet implemented")
         }
+
+        override fun loadClassFromPublicBundles(className: String): Class<*>? {
+            TODO("Not yet implemented")
+        }
     }
 
     class FakeFlowProtocolStore(
