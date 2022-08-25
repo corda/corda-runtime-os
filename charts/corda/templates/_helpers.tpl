@@ -103,7 +103,7 @@ Worker image
 Worker security context
 */}}
 {{- define "corda.workerSecurityContext" -}}
-{{- if and (not .Values.dumpHostPath ) (not ( get .Values.workers .worker ).profiling.enabled) }}
+{{- if and ( not .Values.dumpHostPath ) ( not ( get .Values.workers .worker ).profiling.enabled ) }}
 securityContext:
   runAsUser: 1000
   runAsGroup: 1000
@@ -175,10 +175,10 @@ Worker environment variables
   value: {{- if ( get .Values.workers .worker ).debug.enabled }}
       -agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend={{ if ( get .Values.workers .worker ).debug.suspend }}y{{ else }}n{{ end }}
     {{- end -}}
-    {{- if and (( get .Values.workers .worker ).profiling.enabled) ( not .Values.dumpHostPath )  }}
+    {{- if and (( get .Values.workers .worker ).profiling.enabled ) ( not .Values.dumpHostPath )  }}
       -agentpath:/opt/override/libyjpagent.so=exceptions=disable,port=10045,listen=all
     {{- end -}}
-    {{- if and (( get .Values.workers .worker ).profiling.enabled) ( .Values.dumpHostPath )  }}
+    {{- if and (( get .Values.workers .worker ).profiling.enabled ) ( .Values.dumpHostPath )  }}
       -agentpath:/opt/override/libyjpagent.so=exceptions=disable,port=10045,listen=all,dir=/dumps/profile/snapshots,logdir=/dumps/profile/logs
     {{- end -}}
     {{- if .Values.dumpHostPath }}

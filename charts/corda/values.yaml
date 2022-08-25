@@ -36,7 +36,7 @@ logging:
   level: "warn"
 
 # Dump host path configuration
-dumpHostPath: "/test"
+dumpHostPath: ""
 
 # Open Telemetry configuration
 openTelemetry:
