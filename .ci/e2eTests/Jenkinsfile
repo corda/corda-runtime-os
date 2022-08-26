@@ -1,10 +1,35 @@
 @Library('corda-shared-build-pipeline-steps@5.0') _
 
+/*
+ * Jenkins agent label to build on
+ */
+String agentLabel = 'docker'
+
+/*
+ * Docker label to use with worker base image
+ */
+String dockerLabel = '11'
+
+switch (params.BUILD_ARCH) {
+    case 'amd64':
+        break;
+    case 'arm64':
+        agentLabel = 'arm64'
+        dockerLabel = 'arm64-11'
+        break
+    default:
+        error """\
+                Not supported value for pipeline parameter 'BUILD_ARCH': '${params.BUILD_ARCH}'.
+                One of 'amd64' (default) or 'arm64' is allowed.
+            """.stripIndent()
+        break
+}
+
 pipeline {
     agent {
         docker {
-            image 'build-zulu-openjdk:11'
-            label 'docker'
+            image "build-zulu-openjdk:${dockerLabel}"
+            label "${agentLabel}"
             registryUrl 'https://engineering-docker.software.r3.com/'
             registryCredentialsId 'artifactory-credentials'
             // Volume used to mount storage from the host as a volume to persist the cache between builds
@@ -17,6 +42,7 @@ pipeline {
 
     parameters {
         string(name: 'BUILD_REV', defaultValue: '', description: 'Short git hash of the build revision to test - leave blank to test unstable')
+//        choice(name: 'BUILD_ARCH', choices: ['amd64', 'arm64'], description: 'Build architecture')
     }
 
     environment {
