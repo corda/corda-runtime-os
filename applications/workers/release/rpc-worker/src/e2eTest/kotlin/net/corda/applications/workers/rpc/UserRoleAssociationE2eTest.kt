@@ -34,13 +34,13 @@ class UserRoleAssociationE2eTest {
                 assertSoftly {
                     it.assertThat(this.responseCode.statusCode).isEqualTo(201)
                     it.assertThat(this.responseBody).isNotNull
-                    it.assertThat(this.responseBody!!.roleName).isEqualTo(name)
-                    it.assertThat(this.responseBody!!.version).isEqualTo(0L)
-                    it.assertThat(this.responseBody!!.groupVisibility).isNull()
-                    it.assertThat(this.responseBody!!.permissions).isEmpty()
+                    it.assertThat(this.responseBody.roleName).isEqualTo(name)
+                    it.assertThat(this.responseBody.version).isEqualTo(0L)
+                    it.assertThat(this.responseBody.groupVisibility).isNull()
+                    it.assertThat(this.responseBody.permissions).isEmpty()
                 }
 
-                this.responseBody!!.id
+                this.responseBody.id
             }
 
             // Check the role does exist now. The distribution of Role record may take some time to complete on the
@@ -72,8 +72,8 @@ class UserRoleAssociationE2eTest {
                 assertSoftly {
                     it.assertThat(this.responseCode.statusCode).isEqualTo(201)
                     it.assertThat(this.responseBody).isNotNull
-                    it.assertThat(this.responseBody!!.loginName).isEqualToIgnoringCase(userName)
-                    it.assertThat(this.responseBody!!.passwordExpiry).isEqualTo(passwordExpirySet)
+                    it.assertThat(this.responseBody.loginName).isEqualToIgnoringCase(userName)
+                    it.assertThat(this.responseBody.passwordExpiry).isEqualTo(passwordExpirySet)
                 }
             }
 
@@ -100,9 +100,9 @@ class UserRoleAssociationE2eTest {
                 assertSoftly {
                     it.assertThat(this.responseCode.statusCode).isEqualTo(200)
                     it.assertThat(this.responseBody).isNotNull
-                    it.assertThat(this.responseBody!!.loginName).isEqualToIgnoringCase(userName)
-                    it.assertThat(this.responseBody!!.roleAssociations).hasSize(1)
-                    it.assertThat(this.responseBody!!.roleAssociations.first().roleId).isEqualTo(roleId)
+                    it.assertThat(this.responseBody.loginName).isEqualToIgnoringCase(userName)
+                    it.assertThat(this.responseBody.roleAssociations).hasSize(1)
+                    it.assertThat(this.responseBody.roleAssociations.first().roleId).isEqualTo(roleId)
                 }
             }
 
@@ -116,8 +116,8 @@ class UserRoleAssociationE2eTest {
                 assertSoftly {
                     it.assertThat(this.responseCode.statusCode).isEqualTo(200)
                     it.assertThat(this.responseBody).isNotNull
-                    it.assertThat(this.responseBody!!.loginName).isEqualToIgnoringCase(userName)
-                    it.assertThat(this.responseBody!!.roleAssociations).hasSize(0)
+                    it.assertThat(this.responseBody.loginName).isEqualToIgnoringCase(userName)
+                    it.assertThat(this.responseBody.roleAssociations).hasSize(0)
                 }
             }
 

@@ -38,8 +38,8 @@ class CreateUserE2eTest {
                 assertSoftly {
                     it.assertThat(this.responseCode.statusCode).isEqualTo(201)
                     it.assertThat(this.responseBody).isNotNull
-                    it.assertThat(this.responseBody!!.loginName).isEqualToIgnoringCase(userName)
-                    it.assertThat(this.responseBody!!.passwordExpiry).isEqualTo(passwordExpirySet)
+                    it.assertThat(this.responseBody.loginName).isEqualToIgnoringCase(userName)
+                    it.assertThat(this.responseBody.passwordExpiry).isEqualTo(passwordExpirySet)
                 }
             }
 

@@ -45,9 +45,9 @@ class CreatePermissionE2eTest {
                 assertSoftly {
                     it.assertThat(this.responseCode.statusCode).isEqualTo(201)
                     it.assertThat(this.responseBody).isNotNull
-                    this.responseBody!!.assertResponseType()
+                    this.responseBody.assertResponseType()
                 }
-                return this.responseBody!!
+                return this.responseBody
             }
 
             val permId = proxy.createPermission(createPermType).assertCreated().id

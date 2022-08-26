@@ -31,8 +31,8 @@ class RbacE2eClientRequestHelper(
             SoftAssertions.assertSoftly {
                 it.assertThat(this.responseCode.statusCode).isEqualTo(201)
                 it.assertThat(this.responseBody).isNotNull
-                it.assertThat(this.responseBody!!.loginName).isEqualToIgnoringCase(newUserName)
-                it.assertThat(this.responseBody!!.passwordExpiry).isEqualTo(newUserPasswordExpiry)
+                it.assertThat(this.responseBody.loginName).isEqualToIgnoringCase(newUserName)
+                it.assertThat(this.responseBody.passwordExpiry).isEqualTo(newUserPasswordExpiry)
             }
         }
         verifyUserCreationPersisted(proxy, newUserName, newUserPasswordExpiry)
@@ -60,9 +60,9 @@ class RbacE2eClientRequestHelper(
             SoftAssertions.assertSoftly {
                 it.assertThat(this.responseCode.statusCode).isEqualTo(201)
                 it.assertThat(this.responseBody).isNotNull
-                it.assertThat(this.responseBody!!.roleName).isEqualTo(roleName)
+                it.assertThat(this.responseBody.roleName).isEqualTo(roleName)
             }
-            this.responseBody!!.id
+            this.responseBody.id
         }
         verifyRoleCreationPersisted(proxy, roleId, roleName)
         return roleId
@@ -96,7 +96,7 @@ class RbacE2eClientRequestHelper(
                 SoftAssertions.assertSoftly {
                     it.assertThat(this.responseCode.statusCode).isEqualTo(200)
                     it.assertThat(this.responseBody).isNotNull
-                    it.assertThat(this.responseBody!!.permissions.map { perm -> perm.id }).contains(permissionId)
+                    it.assertThat(this.responseBody.permissions.map { perm -> perm.id }).contains(permissionId)
                 }
             }
         }
@@ -109,7 +109,7 @@ class RbacE2eClientRequestHelper(
             SoftAssertions.assertSoftly {
                 it.assertThat(this.responseCode.statusCode).isEqualTo(200)
                 it.assertThat(this.responseBody).isNotNull
-                it.assertThat(this.responseBody!!.roleAssociations.map { role -> role.roleId }).contains(roleId)
+                it.assertThat(this.responseBody.roleAssociations.map { role -> role.roleId }).contains(roleId)
             }
         }
     }
@@ -121,7 +121,7 @@ class RbacE2eClientRequestHelper(
             SoftAssertions.assertSoftly {
                 it.assertThat(this.responseCode.statusCode).isEqualTo(200)
                 it.assertThat(this.responseBody).isNotNull
-                it.assertThat(this.responseBody!!.roleAssociations.map { role -> role.roleId }).contains(roleId)
+                it.assertThat(this.responseBody.roleAssociations.map { role -> role.roleId }).contains(roleId)
             }
         }
     }
@@ -181,10 +181,10 @@ fun PermissionEndpoint.createPermission(
         SoftAssertions.assertSoftly {
             it.assertThat(this.responseCode.statusCode).isEqualTo(201)
             it.assertThat(this.responseBody).isNotNull
-            it.assertThat(this.responseBody!!.permissionType).isEqualTo(permissionType)
-            it.assertThat(this.responseBody!!.permissionString).isEqualTo(permissionString)
+            it.assertThat(this.responseBody.permissionType).isEqualTo(permissionType)
+            it.assertThat(this.responseBody.permissionString).isEqualTo(permissionString)
         }
-        this.responseBody!!.id
+        this.responseBody.id
     }
     if (verify) {
         verifyPermissionCreationPersisted(this, permissionId, permissionType, permissionString)

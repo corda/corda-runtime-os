@@ -95,7 +95,7 @@ internal class UserEndpointImplTest {
 
         assertEquals(ResponseCode.CREATED, response.responseCode)
         assertNotNull(responseType)
-        assertEquals("uuid", responseType!!.id)
+        assertEquals("uuid", responseType.id)
         assertEquals(0, responseType.version)
         assertEquals(now, responseType.updateTimestamp)
         assertEquals("fullName1", responseType.fullName)
@@ -174,7 +174,7 @@ internal class UserEndpointImplTest {
         assertEquals("roleId1", capture.firstValue.roleId)
 
         assertNotNull(responseType)
-        assertEquals("uuid", responseType!!.id)
+        assertEquals("uuid", responseType.id)
         assertEquals(0, responseType.version)
         assertEquals(now, responseType.updateTimestamp)
         assertEquals("fullName1", responseType.fullName)
@@ -219,7 +219,7 @@ internal class UserEndpointImplTest {
         assertEquals("roleId1", capture.firstValue.roleId)
 
         assertNotNull(responseType)
-        assertEquals("uuid", responseType!!.id)
+        assertEquals("uuid", responseType.id)
         assertEquals(0, responseType.version)
         assertEquals(now, responseType.updateTimestamp)
         assertEquals("fullName1", responseType.fullName)

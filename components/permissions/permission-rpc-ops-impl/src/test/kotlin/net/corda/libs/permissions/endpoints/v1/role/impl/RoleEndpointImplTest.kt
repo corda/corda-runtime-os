@@ -67,7 +67,7 @@ internal class RoleEndpointImplTest {
 
         assertEquals(ResponseCode.CREATED, response.responseCode)
         assertNotNull(responseType)
-        assertEquals("roleId", responseType!!.id)
+        assertEquals("roleId", responseType.id)
         assertEquals(0, responseType.version)
         assertEquals(now, responseType.updateTimestamp)
         assertEquals("roleName", responseType.roleName)
