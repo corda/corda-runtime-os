@@ -22,27 +22,27 @@ import net.corda.httprpc.RpcOps
  * @param responseCode the status code of the response.
  * @param responseBody the payload of the response. If null, the response payload will be "null".
  */
-class ResponseEntity<T : Any>(
+class ResponseEntity<T : Any?>(
     val responseCode: ResponseCode,
-    val responseBody: T?,
+    val responseBody: T,
 ) {
     companion object {
-        fun <T : Any> ok(responseBody: T): ResponseEntity<T> {
+        fun <T : Any?> ok(responseBody: T): ResponseEntity<T> {
             return ResponseEntity(ResponseCode.OK, responseBody)
         }
-        fun <T : Any> updated(responseBody: T): ResponseEntity<T> {
+        fun <T : Any?> updated(responseBody: T): ResponseEntity<T> {
             return ResponseEntity(ResponseCode.OK, responseBody)
         }
-        fun <T : Any> created(responseBody: T): ResponseEntity<T> {
+        fun <T : Any?> created(responseBody: T): ResponseEntity<T> {
             return ResponseEntity(ResponseCode.CREATED, responseBody)
         }
-        fun <T : Any> deleted(responseBody: T): ResponseEntity<T> {
+        fun <T : Any?> deleted(responseBody: T): ResponseEntity<T> {
             return ResponseEntity(ResponseCode.OK, responseBody)
         }
-        fun <T : Any> accepted(responseBody: T): ResponseEntity<T> {
+        fun <T : Any?> accepted(responseBody: T): ResponseEntity<T> {
             return ResponseEntity(ResponseCode.ACCEPTED, responseBody)
         }
-        fun <T : Any> seeOther(responseBody: T): ResponseEntity<T> {
+        fun <T : Any?> seeOther(responseBody: T): ResponseEntity<T> {
             return ResponseEntity(ResponseCode.SEE_OTHER, responseBody)
         }
     }
