@@ -8,6 +8,7 @@ import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.flow.commands.GenerateFreshKeyFlowCommand
 import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
 import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
+import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import java.security.PublicKey
@@ -29,7 +30,11 @@ interface CryptoFlowOpsTransformer {
     /**
      * Creates [FilterMyKeysFlowQuery].
      */
-    fun createFilterMyKeys(tenantId: String, candidateKeys: Collection<PublicKey>): FlowOpsRequest
+    fun createFilterMyKeys(
+        tenantId: String,
+        candidateKeys: Collection<PublicKey>,
+        flowExternalEventContext: ExternalEventContext
+    ): FlowOpsRequest
 
     /**
      * Generates [SignFlowCommand]
@@ -41,7 +46,8 @@ interface CryptoFlowOpsTransformer {
         publicKey: PublicKey,
         signatureSpec: SignatureSpec,
         data: ByteArray,
-        context: Map<String, String> = EMPTY_CONTEXT
+        context: Map<String, String> = EMPTY_CONTEXT,
+        flowExternalEventContext: ExternalEventContext
     ): FlowOpsRequest
 
     /**

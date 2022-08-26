@@ -1,5 +1,9 @@
 package net.corda.flow.testing.context
 
+import java.nio.ByteBuffer
+import java.util.Arrays
+import net.corda.data.CordaAvroDeserializer
+import net.corda.data.CordaAvroSerializer
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
 import net.corda.data.flow.event.FlowEvent
@@ -24,6 +28,7 @@ import net.corda.schema.Schemas
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.uncheckedCast
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -31,6 +36,10 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 
 class OutputAssertionsImpl(
+    private val serializer: CordaAvroSerializer<Any>,
+    private val stringDeserializer: CordaAvroDeserializer<String>,
+    private val byteArrayDeserializer: CordaAvroDeserializer<ByteArray>,
+    private val anyDeserializer: CordaAvroDeserializer<Any>,
     private val flowId: String,
     private val sessionInitiatingIdentity: HoldingIdentity? = null,
     private val sessionInitiatedIdentity: HoldingIdentity? = null,
@@ -88,20 +97,57 @@ class OutputAssertionsImpl(
         }
     }
 
-    override fun cryptoSignEvents(vararg requestId: String) {
+    override fun externalEvent(topic: String, key: Any, payload: Any) {
         asserts.add { testRun ->
             assertNotNull(testRun.response, "Test run response value")
 
-            val cryptoSignEventRequestIds = testRun.response!!.responseEvents
-                .filter { it.topic == Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC }
-                .mapNotNull { it.value as? FlowOpsRequest }
-                .filter { it.request is SignFlowCommand }
-                .map { it.context.requestId }
+            val serializedKey = serializer.serialize(key)
+            val serializedPayload = serializer.serialize(payload)
+
+            val externalEventsToTopic = testRun.response!!.responseEvents.filter { it.topic == topic }
 
             assertEquals(
-                requestId.toList(),
-                cryptoSignEventRequestIds,
-                "Expected request ids: ${requestId.toList()} but found $cryptoSignEventRequestIds when expecting ${SignFlowCommand::class.simpleName} events"
+                1,
+                externalEventsToTopic.size,
+                "Expected to find a single external event sent to topic: $topic but found $externalEventsToTopic"
+            )
+
+            assertArrayEquals(
+                serializedKey!!,
+                externalEventsToTopic.single().key as ByteArray) {
+                "Expected the external event to have a key of $key but was ${
+                    avroDeserializeTo(externalEventsToTopic.single().key as ByteArray, key)
+                }"
+            }
+
+            assertArrayEquals(
+                serializedPayload,
+                externalEventsToTopic.single().value as ByteArray) {
+                "Expected the external event to have a payload of $payload but was ${
+                    avroDeserializeTo(externalEventsToTopic.single().value as ByteArray, payload)
+                }"
+            }
+        }
+    }
+
+    private fun avroDeserializeTo(bytes: ByteArray, serializeToMatchingType: Any): Any? {
+        return when (serializeToMatchingType) {
+            is String -> stringDeserializer.deserialize(bytes)
+            is ByteArray -> byteArrayDeserializer.deserialize(bytes)
+            else -> anyDeserializer.deserialize(bytes)
+        }
+    }
+
+    override fun noExternalEvent(topic: String) {
+        asserts.add { testRun ->
+            assertNotNull(testRun.response, "Test run response value")
+
+            val externalEventsToTopic = testRun.response!!.responseEvents.filter { it.topic == topic }
+
+            assertEquals(
+                0,
+                externalEventsToTopic.size,
+                "Expected to find no external event sent to topic: $topic but found $externalEventsToTopic"
             )
         }
     }

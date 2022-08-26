@@ -2,6 +2,8 @@ package net.corda.flow.state
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import java.nio.ByteBuffer
+import java.time.Instant
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePair
 import net.corda.data.flow.FlowKey
@@ -12,7 +14,7 @@ import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.checkpoint.FlowState
 import net.corda.data.flow.state.checkpoint.PipelineState
 import net.corda.data.flow.state.checkpoint.RetryState
-import net.corda.data.flow.state.persistence.PersistenceState
+import net.corda.data.flow.state.external.ExternalEventState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.data.flow.state.waiting.Wakeup
@@ -31,8 +33,6 @@ import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import java.nio.ByteBuffer
-import java.time.Instant
 
 class FlowCheckpointImplTest {
     private val flowConfig = ConfigFactory.empty()
@@ -80,7 +80,7 @@ class FlowCheckpointImplTest {
         maxFlowSleepDuration: Int = 10000,
         suspendCount: Int = 0,
         retryState: RetryState? = null,
-        persistenceState: PersistenceState? = null
+        externalEventState: ExternalEventState? = null
     ): Checkpoint {
         val startContext = FlowStartContext().apply {
             statusKey = key
@@ -95,7 +95,7 @@ class FlowCheckpointImplTest {
                 this.suspendedOn = suspendedOn
                 this.waitingFor = waitingFor
                 this.suspendCount = suspendCount
-                this.persistenceState = persistenceState
+                this.externalEventState = externalEventState
             }
         } else {
             null
@@ -724,28 +724,28 @@ class FlowCheckpointImplTest {
     }
 
     @Test
-    fun `existing checkpoint - can retrieve persistence state`() {
-        val persistenceState = PersistenceState().apply {
+    fun `existing checkpoint - can retrieve external event state`() {
+        val externalEventState = ExternalEventState().apply {
             requestId = "foo"
         }
-        val checkpoint = setupAvroCheckpoint(persistenceState = persistenceState)
+        val checkpoint = setupAvroCheckpoint(externalEventState = externalEventState)
         val flowCheckpoint = createFlowCheckpoint(checkpoint)
 
-        assertThat(flowCheckpoint.persistenceState).isEqualTo(persistenceState)
+        assertThat(flowCheckpoint.externalEventState).isEqualTo(externalEventState)
     }
 
     @Test
-    fun `existing checkpoint - can set persistence state`() {
-        val persistenceState = PersistenceState().apply {
+    fun `existing checkpoint - can set external event state`() {
+        val externalEventState = ExternalEventState().apply {
             requestId = "foo"
         }
         val checkpoint = setupAvroCheckpoint()
         val flowCheckpoint = createFlowCheckpoint(checkpoint)
-        flowCheckpoint.persistenceState = persistenceState
+        flowCheckpoint.externalEventState = externalEventState
 
-        assertThat(flowCheckpoint.persistenceState).isEqualTo(persistenceState)
+        assertThat(flowCheckpoint.externalEventState).isEqualTo(externalEventState)
         val avroCheckpoint = flowCheckpoint.toAvro()
-        assertThat(avroCheckpoint!!.flowState!!.persistenceState).isEqualTo(persistenceState)
+        assertThat(avroCheckpoint!!.flowState!!.externalEventState).isEqualTo(externalEventState)
     }
 }
 
