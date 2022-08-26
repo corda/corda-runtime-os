@@ -20,9 +20,9 @@ interface ExternalEventExecutor {
      * received response into an acceptable object to resume with.
      * @param parameters The [PARAMETERS] object.
      *
-     * @param PARAMETERS The type to pass to the handler just after suspending/creating the event.
-     * @param RESPONSE The type that is received as a response from the external processor.
-     * @param RESUME The type that the flow will resume with after calling [execute].
+     * @param PARAMETERS The type to pass to the factory just after suspending/creating the event.
+     * @param RESPONSE The type received as a response from the external processor.
+     * @param RESUME The type the flow resumes with after calling [execute].
      * @return The object that the flow will resume with.
      */
     @Suspendable
@@ -43,9 +43,9 @@ interface ExternalEventExecutor {
      * received response into an acceptable object to resume with.
      * @param parameters The [PARAMETERS] object.
      *
-     * @param PARAMETERS The type to pass to the handler when suspending/creating the event.
-     * @param RESPONSE The type that is received as a response from the external processor.
-     * @param RESUME The type that the flow will resume with after calling [execute].
+     * @param PARAMETERS The type to pass to the factory when suspending/creating the event.
+     * @param RESPONSE The type received as a response from the external processor.
+     * @param RESUME The type the flow resumes with after calling [execute].
      * @return The object that the flow will resume with.
      */
     @Suspendable

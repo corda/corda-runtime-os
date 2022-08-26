@@ -14,9 +14,9 @@ import net.corda.flow.state.FlowCheckpoint
  * a processor. Do not pass an Avro object in via [PARAMETERS].
  * - [resumeWith] receives an Avro object and should return a non-Avro object that can be serialized.
  *
- * @param PARAMETERS The type that is received by the factory just after suspending/creating the event.
- * @param RESPONSE The type that is received as a response from the external processor.
- * @param RESUME The type that the flow will resume with after being called by [ExternalEventExecutor]. [RESUME]
+ * @param PARAMETERS The factory receives this type after suspending/creating the event.
+ * @param RESPONSE The type received as a response from the external processor.
+ * @param RESUME The type the flow will resume with after being called by [ExternalEventExecutor]. [RESUME]
  * __cannot be an Avro object__.
  */
 interface ExternalEventFactory<PARAMETERS : Any, RESPONSE: Any, RESUME> {
@@ -51,7 +51,7 @@ interface ExternalEventFactory<PARAMETERS : Any, RESPONSE: Any, RESUME> {
      * This is called after receiving a response from an external processor and before the calling flow resumes.
      *
      * @param checkpoint The [FlowCheckpoint] which can be modified if required.
-     * @param response The [RESPONSE] that was received from an external processor.
+     * @param response The [RESPONSE] received from an external processor.
      *
      * @return A [RESUME] to resume the flow with.
      */
