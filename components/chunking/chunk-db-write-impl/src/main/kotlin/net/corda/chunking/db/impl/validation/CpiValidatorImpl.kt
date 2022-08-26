@@ -100,42 +100,6 @@ class CpiValidatorImpl constructor(
         val nodes = virtualNodeInfoReadService.get(groupId)
         val actor = fileInfo.actor
             ?: throw CordaRuntimeException("Actor is undefined for forceUpload operation $requestId")
-        nodes.forEach {
-            val maintenanceResponse = virtualNodeManagementSender.sendAndReceive(
-                VirtualNodeManagementRequest(
-                    clock.instant(),
-                    VirtualNodeStateChangeRequest(
-                        it.holdingIdentity.shortHash.value,
-                        "IN_MAINTENANCE",
-                        actor
-                        // TODO: It might make a lot of sense to have a "why field" here
-                        //  - IE (endpoint, new cpi, etc.)
-                        //  - ((audit))
-                    )
-                )
-            )
-            if (maintenanceResponse.responseType is VirtualNodeManagementResponseFailure) {
-                val exceptionSource = (maintenanceResponse.responseType as VirtualNodeManagementResponseFailure).exception
-                val cause = Exception("${exceptionSource.errorType}: ${exceptionSource.errorMessage}")
-                throw ValidationException(
-                    "Could not put vnode ${it.holdingIdentity.x500Name} into maintenance mode",
-                    cause
-                )
-            }
-            val resetResponse = virtualNodeManagementSender.sendAndReceive(
-                VirtualNodeManagementRequest(
-                    clock.instant(),
-                    VirtualNodeDBResetRequest(
-                        it.holdingIdentity.shortHash.value,
-                        actor
-                        // TODO: It might make a lot of sense to have a "why field" here
-                        //  - IE (endpoint, new cpi, etc.)
-                        //  - ((audit))
-                    )
-                )
-            )
-            log.info(resetResponse.responseType::class.qualifiedName)
-        }
 
         publisher.update(requestId, "Persisting CPI")
         val cpiMetadataEntity =
@@ -153,48 +117,21 @@ class CpiValidatorImpl constructor(
         cpiInfoWriteService.put(cpiMetadata.cpiId, cpiMetadata)
 
         val resetDB = fileInfo.forceUpload && fileInfo.resetDb
-        if (resetDB) {
+        if (nodes.isNotEmpty() && resetDB) {
             // update vnode
             publisher.update(requestId, "Performing reset of virtual node DBs and Re-running migrations")
-            nodes.forEach {
-                log.info("NODE > ${it.holdingIdentity.shortHash}")
-                val request = VirtualNodeManagementRequest(
-                    clock.instant(),
-                    VirtualNodeDBResetRequest(
-                        it.holdingIdentity.shortHash.value,
-                        actor
-                        // TODO: It might make a lot of sense to have a "why field" here
-                        //  - IE (endpoint, new cpi, etc.)
-                        //  - ((audit))
-                    )
-                )
-                val resp = virtualNodeManagementSender.sendAndReceive(request)
-                log.info("${it.holdingIdentity.shortHash.value}: ${resp.responseType::class.simpleName}")
-            }
-        }
-        publisher.update(requestId, "Restoring virtual nodes to active state")
-        nodes.forEach {
-            val maintenanceResponse = virtualNodeManagementSender.sendAndReceive(
-                VirtualNodeManagementRequest(
-                    clock.instant(),
-                    VirtualNodeStateChangeRequest(
-                        it.holdingIdentity.shortHash.value,
-                        "ACTIVE",
-                        actor
-                        // TODO: It might make a lot of sense to have a "why field" here
-                        //  - IE (endpoint, new cpi, etc.)
-                        //  - ((audit))
-                    )
+            val request = VirtualNodeManagementRequest(
+                clock.instant(),
+                VirtualNodeDBResetRequest(
+                    nodes.map { it.holdingIdentity.shortHash.value },
+                    actor
+                    // TODO: It might make a lot of sense to have a "why field" here
+                    //  - IE (endpoint, new cpi, etc.)
+                    //  - ((audit))
                 )
             )
-            if (maintenanceResponse.responseType is VirtualNodeManagementResponseFailure) {
-                val exceptionSource = (maintenanceResponse.responseType as VirtualNodeManagementResponseFailure).exception
-                val cause = Exception("${exceptionSource.errorType}: ${exceptionSource.errorMessage}")
-                throw ValidationException(
-                    "Could not take vnode ${it.holdingIdentity.x500Name} out of maintenance mode",
-                    cause
-                )
-            }
+            virtualNodeManagementSender.sendAndReceive(request)
+            // TODO: Propagate up response in refactor
         }
 
         return fileInfo.checksum
