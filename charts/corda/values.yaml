@@ -39,7 +39,6 @@ logging:
 dumpHostPath: ""
 
 # -- Enables capturing JVM heap dumps from Corda workers on an OutOfMemory error
-
 heapDumpOnOutOfMemoryError: false
 
 # Open Telemetry configuration
