@@ -1,3 +1,4 @@
+@file:JvmName("FlowUtils")
 package net.corda.v5.application.flows
 
 /**

@@ -1,3 +1,4 @@
+@file:JvmName("RPCRequestUtils")
 package net.corda.v5.application.flows
 
 import net.corda.v5.application.marshalling.MarshallingService

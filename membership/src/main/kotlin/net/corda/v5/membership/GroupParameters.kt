@@ -1,3 +1,4 @@
+@file:JvmName("GroupParametersUtils")
 package net.corda.v5.membership
 
 import net.corda.v5.base.annotations.CordaSerializable

@@ -1,3 +1,4 @@
+@file:JvmName("KotlinUtils")
 package net.corda.v5.base.util
 
 import net.corda.v5.base.annotations.CordaSerializable
@@ -5,6 +6,7 @@ import net.corda.v5.base.types.LayeredPropertyMap
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
+import java.util.function.Supplier
 import kotlin.reflect.KProperty
 
 //
@@ -82,7 +84,7 @@ val Int.millis: Duration get() = Duration.ofMillis(toLong())
  * will not be serialized, and if it's missing (or the first time it's accessed), the initializer will be
  * used to set it up.
  */
-fun <T> transient(initializer: () -> T): PropertyDelegate<T> = TransientProperty(initializer)
+fun <T> transient(initializer: Supplier<T>): PropertyDelegate<T> = TransientProperty(initializer)
 
 /**
  * Simple interface encapsulating the implicit Kotlin contract for immutable property delegates.
@@ -105,7 +107,7 @@ interface VariablePropertyDelegate<T> : PropertyDelegate<T> {
 }
 
 @CordaSerializable
-private class TransientProperty<out T> internal constructor(private val initialiser: () -> T) : PropertyDelegate<T> {
+private class TransientProperty<out T>(private val initialiser: Supplier<T>) : PropertyDelegate<T> {
     @Transient
     private var initialised = false
 
@@ -115,7 +117,7 @@ private class TransientProperty<out T> internal constructor(private val initiali
     @Synchronized
     override operator fun getValue(thisRef: Any?, property: KProperty<*>): T {
         if (!initialised) {
-            value = initialiser()
+            value = initialiser.get()
             initialised = true
         }
         return uncheckedCast(value)

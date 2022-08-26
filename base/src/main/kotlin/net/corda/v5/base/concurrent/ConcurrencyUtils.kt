@@ -28,7 +28,7 @@ import java.util.concurrent.TimeoutException
 fun <V> Future<V>.getOrThrow(timeout: Duration?): V = try {
     if (timeout == null) get() else get(timeout.toNanos(), TimeUnit.NANOSECONDS)
 } catch (e: ExecutionException) {
-    throw e.cause!!
+    throw e.cause ?: IllegalStateException("ExecutionException without cause", e)
 }
 
 /**

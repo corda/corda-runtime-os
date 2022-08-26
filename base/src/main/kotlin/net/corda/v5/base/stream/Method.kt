@@ -1,3 +1,4 @@
+@file:JvmName("MethodUtils")
 package net.corda.v5.base.stream
 
 import java.lang.reflect.Method

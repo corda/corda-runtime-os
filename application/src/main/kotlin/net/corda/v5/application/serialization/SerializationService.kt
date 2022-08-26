@@ -1,3 +1,4 @@
+@file:JvmName("SerializationUtils")
 package net.corda.v5.application.serialization
 
 import net.corda.v5.base.annotations.DoNotImplement

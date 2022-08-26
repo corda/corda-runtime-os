@@ -1,3 +1,4 @@
+@file:JvmName("PublicKeyUtils")
 package net.corda.v5.crypto
 
 import net.corda.v5.base.types.toHexString

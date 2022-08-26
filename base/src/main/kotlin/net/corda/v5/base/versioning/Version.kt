@@ -12,6 +12,7 @@ data class Version(val major: Int, val minor: Int) {
     }
 
     companion object {
+        @JvmStatic
         fun fromString(versionString: String): Version {
             val regex = Regex("(\\d+)\\.(\\d+)")
             val match = regex.matchEntire(versionString)

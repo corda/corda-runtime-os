@@ -1,3 +1,4 @@
+@file:JvmName("PersistenceUtils")
 package net.corda.v5.application.persistence
 
 import net.corda.v5.base.annotations.DoNotImplement

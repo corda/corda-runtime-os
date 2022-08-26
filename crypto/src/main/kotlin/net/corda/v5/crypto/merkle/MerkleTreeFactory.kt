@@ -1,3 +1,4 @@
+@file:JvmName("HashDigestConstants")
 package net.corda.v5.crypto.merkle
 
 import net.corda.v5.crypto.DigestAlgorithmName
