@@ -1,17 +1,16 @@
 #!groovy
 @Library('corda-shared-build-pipeline-steps@5.0') _
 
-cordaNightlyPipeline(
-    nexusAppId: 'flow-worker-5.0',
+cordaPipeline(
     dailyBuildCron: 'H 04 * * *',
     runIntegrationTests: true,
     publishRepoPrefix: 'corda-ent-maven',
     createPostgresDb: true,
-    publishOSGiImage: false, // change this to true when images don't overwrite AMD64 ones
+    publishOSGiImage: false, // change this to true when e2e tests are activated and running on arm nodes
     publishPreTestImage: true,
-    publishHelmChart: false, // change this to true when images don't overwrite AMD64 ones
+    publishHelmChart: false, // change this to true when images don't overwrite AMD64 ones (changes still needed here)
     e2eTestName: 'corda-runtime-os-e2e-tests',
     runE2eTests: false, // change this to true when E2E infrastructure is in place
     linuxArch: 'arm64',
-    gradleAdditionalArgs: '-PcliBasebaseTag=arm64-nightly'
+    gradleAdditionalArgs: '-PcliBaseTag=arm64-nightly -Dscan.tag.ARM64-Build'
     )
