@@ -5,6 +5,7 @@ import net.corda.crypto.client.CryptoOpsProxyClient
 import net.corda.crypto.service.impl.infra.TestDurableSubscription
 import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
+import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -34,6 +35,7 @@ class CryptoFlowOpsBusServiceTests {
     private lateinit var clientCoordinator: LifecycleCoordinator
     private lateinit var client: CryptoOpsProxyClient
     private lateinit var component: CryptoFlowOpsBusServiceImpl
+    private lateinit var externalEventResponseFactory: ExternalEventResponseFactory
 
     @BeforeEach
     fun setup() {
@@ -57,11 +59,15 @@ class CryptoFlowOpsBusServiceTests {
             assertTrue(clientCoordinator.isRunning)
             assertEquals(LifecycleStatus.UP, clientCoordinator.status)
         }
+
+        externalEventResponseFactory = mock()
+
         component = CryptoFlowOpsBusServiceImpl(
             factory.coordinatorFactory,
             subscriptionFactory,
             client,
-            factory.configurationReadService
+            factory.configurationReadService,
+            externalEventResponseFactory
         )
     }
 

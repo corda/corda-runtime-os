@@ -1,22 +1,22 @@
 package net.corda.entityprocessor.impl
 
-import net.corda.entityprocessor.FlowPersistenceProcessor
+import java.nio.ByteBuffer
 import net.corda.entityprocessor.EntityProcessorFactory
+import net.corda.entityprocessor.FlowPersistenceProcessor
 import net.corda.entityprocessor.impl.internal.EntityMessageProcessor
 import net.corda.entityprocessor.impl.internal.EntitySandboxService
 import net.corda.entityprocessor.impl.internal.exceptions.KafkaMessageSizeException
+import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.MessagingConfig
-import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.nio.ByteBuffer
 
 @Suppress("UNUSED")
 @Component(service = [EntityProcessorFactory::class])
@@ -26,7 +26,9 @@ class EntityProcessorFactoryImpl @Activate constructor(
     @Reference
     private val publisherFactory: PublisherFactory,
     @Reference
-    private val entitySandboxService: EntitySandboxService
+    private val entitySandboxService: EntitySandboxService,
+    @Reference(service = ExternalEventResponseFactory::class)
+    private val externalEventResponseFactory: ExternalEventResponseFactory
 ) : EntityProcessorFactory {
     companion object {
         internal const val GROUP_NAME = "virtual.node.entity.processor"
@@ -55,7 +57,11 @@ class EntityProcessorFactoryImpl @Activate constructor(
         val subscriptionConfig = SubscriptionConfig(GROUP_NAME, Schemas.VirtualNode.ENTITY_PROCESSOR)
         // max allowed msg size minus headroom for wrapper message
         val maxPayLoadSize = config.getInt(MessagingConfig.MAX_ALLOWED_MSG_SIZE) - CORDA_MESSAGE_OVERHEAD
-        val processor = EntityMessageProcessor(entitySandboxService, UTCClock(), PayloadChecker(maxPayLoadSize)::checkSize)
+        val processor = EntityMessageProcessor(
+            entitySandboxService,
+            externalEventResponseFactory,
+            PayloadChecker(maxPayLoadSize)::checkSize
+        )
 
         val subscription = subscriptionFactory.createDurableSubscription(
             subscriptionConfig,
