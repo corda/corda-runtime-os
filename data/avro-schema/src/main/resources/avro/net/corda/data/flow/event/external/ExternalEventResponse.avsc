@@ -1,0 +1,34 @@
+{
+  "type": "record",
+  "name": "ExternalEventResponse",
+  "namespace": "net.corda.data.flow.event.external",
+  "doc": "Events from workers that are sent back to the flow worker to be consumed by flows",
+  "fields": [
+    {
+      "name": "requestId",
+      "type": "string",
+      "doc": "The request id of the external event response. Used for deduplication when processing responses."
+    },
+    {
+      "name": "payload",
+      "type": ["null", "bytes"],
+      "doc": "Avro serialized representation of the underlying payload that can contain domain specific information that is not serialized into the {@link ExternalEventResponse#data} property. `null` if the response represents an error and therefore does not have a payload to respond with."
+    },
+    {
+      "name": "error",
+      "type": [
+        "null",
+        "net.corda.data.flow.event.external.ExternalEventResponseError"
+      ],
+      "doc": "The {@link ExternalEventResponseError} representing an error that occurred when processing the incoming external event request. `null` if the request was successfully processed and there is no error to respond with."
+    },
+    {
+      "name": "timestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Time ([Instant]) in milliseconds when the response was created."
+    }
+  ]
+}

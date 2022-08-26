@@ -17,6 +17,11 @@
         "net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery"
       ],
       "doc": "Request's payload, depends on the requested operation."
+    },
+    {
+      "name": "flowExternalEventContext",
+      "type": "net.corda.data.flow.event.external.ExternalEventContext",
+      "doc": "The context of the external event that this request was sent from."
     }
   ]
 }

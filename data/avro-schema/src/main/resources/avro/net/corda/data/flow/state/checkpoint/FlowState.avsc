@@ -15,16 +15,10 @@
       "doc": "Context data captured when the flow was started."
     },
     {
-      "name": "persistenceState",
-      "type": ["null", "net.corda.data.flow.state.persistence.PersistenceState"],
+      "name": "externalEventState",
+      "type": ["null", "net.corda.data.flow.state.external.ExternalEventState"],
       "default": null,
-      "doc": "Active persistence query. Null if there is no query in progress."
-    },
-    {
-      "name": "CryptoState",
-      "type": ["null", "net.corda.data.flow.state.crypto.CryptoState"],
-      "default": null,
-      "doc": "Active crypto request. Null if there are no requests in progress."
+      "doc": "Active external event request. Null if there are no requests in progress."
     },
     {
       "name": "sessions",

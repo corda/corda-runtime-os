@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "ExternalEventContext",
+  "namespace": "net.corda.data.flow.event.external",
+  "doc": "The context of an external event. To be included in the payloads sent as part of the external event structure. Used to extract request information on the responding side.",
+  "fields": [
+    {
+      "name": "requestId",
+      "type": "string",
+      "doc": "The request id of the external event. Used for deduplication when processing responses."
+    },
+    {
+      "name": "flowId",
+      "type": "string",
+      "doc": "The flow id of flow to respond to."
+    }
+  ]
+}

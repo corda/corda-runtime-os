@@ -1,0 +1,27 @@
+{
+  "type": "record",
+  "name": "ExternalEventResponseError",
+  "namespace": "net.corda.data.flow.event.external",
+  "doc": "Included in {@link ExternalEventResponse}s that have failed to be processed. The failure type may be further categorised by the {@link Error} enumeration.",
+  "fields": [
+    {
+      "name": "errorType",
+      "doc": "Error type",
+      "type": {
+        "name": "ExternalEventResponseErrorType",
+        "type": "enum",
+        "doc": "TRANSIENT: A transient error.\nPLATFORM: An error that should be propagated to the calling flow.\nFATAL: A fatal error.",
+        "symbols": [
+          "TRANSIENT",
+          "PLATFORM",
+          "FATAL"
+        ]
+      }
+    },
+    {
+      "name": "exception",
+      "doc": "Exception information",
+      "type": "net.corda.data.ExceptionEnvelope"
+    }
+  ]
+}

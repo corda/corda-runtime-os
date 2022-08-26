@@ -9,8 +9,7 @@
         "net.corda.data.flow.state.waiting.Wakeup",
         "net.corda.data.flow.state.waiting.SessionConfirmation",
         "net.corda.data.flow.state.waiting.SessionData",
-        "net.corda.data.flow.state.waiting.EntityResponse",
-        "net.corda.data.flow.state.waiting.SignedBytes"
+        "net.corda.data.flow.state.waiting.external.ExternalEventResponse"
       ]
     }
   ]

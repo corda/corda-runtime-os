@@ -1,0 +1,31 @@
+{
+  "type": "record",
+  "name": "ExternalEvent",
+  "namespace": "net.corda.data.flow.event.external",
+  "doc": "Events sent to workers that are triggered from flow APIs",
+  "fields": [
+    {
+      "name": "topic",
+      "type": "string",
+      "doc": "The topic that the external event is sent to."
+    },
+    {
+      "name": "key",
+      "type": "bytes",
+      "doc": "Avro serialized representation of the key that the external event is partitioned by."
+    },
+    {
+      "name": "payload",
+      "type": "bytes",
+      "doc": "Avro serialized representation of the payload that the external processor will process."
+    },
+    {
+      "name": "timestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      },
+      "doc": "Time ([Instant]) in milliseconds when the external event was created."
+    }
+  ]
+}

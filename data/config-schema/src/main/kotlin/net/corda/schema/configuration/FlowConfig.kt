@@ -1,12 +1,8 @@
 package net.corda.schema.configuration
 
 object FlowConfig {
-    const val CRYPTO_RESEND_BUFFER = "crypto.messageResendWindowBuffer"
-    const val CRYPTO_MESSAGE_RESEND_WINDOW = "crypto.messageResendWindow"
-    const val CRYPTO_MAX_RETRIES = "crypto.maxRetries"
-    const val PERSISTENCE_RESEND_BUFFER = "persistence.messageResendWindowBuffer"
-    const val PERSISTENCE_MESSAGE_RESEND_WINDOW = "persistence.messageResendWindow"
-    const val PERSISTENCE_MAX_RETRIES = "persistence.maxRetries"
+    const val EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW = "event.messageResendWindow"
+    const val EXTERNAL_EVENT_MAX_RETRIES = "event.maxRetries"
     const val SESSION_MESSAGE_RESEND_WINDOW = "session.messageResendWindow"
     const val SESSION_HEARTBEAT_TIMEOUT_WINDOW = "session.heartbeatTimeout"
     const val SESSION_P2P_TTL = "session.p2pTTL"

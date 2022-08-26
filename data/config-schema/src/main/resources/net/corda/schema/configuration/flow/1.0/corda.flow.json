@@ -69,34 +69,13 @@
         }
       }
     },
-    "persistence": {
-      "description": "Settings for persistence store interactions within a flow",
+    "event": {
+      "description": "Settings for external events within a flow",
       "type": "object",
       "default": {},
       "properties": {
         "messageResendWindow": {
-          "description": "Length of time to wait before resending unacknowledged query messages, in milliseconds",
-          "type": "integer",
-          "minimum": 100,
-          "maximum": 2147483647,
-          "default": 5000
-        },
-        "maxRetries": {
-          "description": "The maximum amount of times to retry a request before returning an exception to the user code.",
-          "type": "integer",
-          "minimum": 0,
-          "maximum": 2147483647,
-          "default": 5
-        }
-      }
-    },
-    "crypto": {
-      "description": "Settings for crypto interactions within a flow",
-      "type": "object",
-      "default": {},
-      "properties": {
-        "messageResendWindow": {
-          "description": "Length of time to wait before resending unacknowledged crypto events, in milliseconds",
+          "description": "Length of time to wait before resending unprocessed external events, in milliseconds",
           "type": "integer",
           "minimum": 100,
           "maximum": 2147483647,
