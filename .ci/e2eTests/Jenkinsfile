@@ -11,6 +11,7 @@ String agentLabel = 'docker'
 String dockerLabel = '11'
 
 switch (params.BUILD_ARCH) {
+    case '':
     case null:
     case 'amd64':
         break;
