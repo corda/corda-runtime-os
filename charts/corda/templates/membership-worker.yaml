@@ -2,7 +2,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "corda.workerName" . }}
+  name: {{ include "corda.workerName" . | quote }}
   labels:
     {{- include "corda.workerLabels" . | nindent 4 }}
 spec:
@@ -18,7 +18,7 @@ spec:
       {{- include "corda.workerSecurityContext" . | nindent 6 }}
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
       containers:
-      - name: {{ include "corda.workerName" . }}
+      - name: {{ include "corda.workerName" . | quote }}
         image: {{ include "corda.workerImage" . }}
         imagePullPolicy:  {{ .Values.imagePullPolicy }}
         securityContext:
