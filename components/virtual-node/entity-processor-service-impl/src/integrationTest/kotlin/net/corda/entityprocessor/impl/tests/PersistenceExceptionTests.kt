@@ -31,6 +31,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
@@ -121,7 +122,7 @@ class PersistenceExceptionTests {
         // The failure is correctly categorised.
         assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.TRANSIENT)
         // The failure also captures the exception name.
-        assertThat(response.error.exception.errorType).isEqualTo("NotReadyException")
+        assertThat(response.error.exception.errorType).isEqualTo(NotReadyException::class.java.name)
     }
 
     @Test
@@ -158,7 +159,7 @@ class PersistenceExceptionTests {
         // The failure is correctly categorised.
         assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.TRANSIENT)
         // The failure also captures the exception name.
-        assertThat(response.error.exception.errorType).isEqualTo("VirtualNodeException")
+        assertThat(response.error.exception.errorType).isEqualTo(VirtualNodeException::class.java.name)
     }
 
     @Test
@@ -190,7 +191,7 @@ class PersistenceExceptionTests {
         // The failure is correctly categorised.
         assertThat(response.error.errorType).isEqualTo(ExternalEventResponseErrorType.FATAL)
         // The failure also captures the exception name.
-        assertThat(response.error.exception.errorType).isEqualTo("CordaRuntimeException")
+        assertThat(response.error.exception.errorType).isEqualTo(CordaRuntimeException::class.java.name)
     }
 
     private fun noOpPayloadCheck(bytes: ByteBuffer) = bytes
