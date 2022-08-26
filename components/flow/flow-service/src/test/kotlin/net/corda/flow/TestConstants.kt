@@ -14,6 +14,7 @@ val BOB_X500_HOLDING_IDENTITY = HoldingIdentity(BOB_X500, "group1")
 val ALICE_X500_HOLDING_IDENTITY = HoldingIdentity(ALICE_X500, "group1")
 val SESSION_ID_1 = "S1"
 val FLOW_ID_1 = "F1"
+val REQUEST_ID_1 ="R1"
 
 val MINIMUM_SMART_CONFIG = SmartConfigFactory.create(ConfigFactory.empty()).create(
     ConfigFactory.parseMap(

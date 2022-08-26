@@ -1,9 +1,13 @@
 package net.corda.ledger.consensual.impl
 
+import java.security.KeyPairGenerator
+import java.security.PublicKey
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeFactoryImpl
 import net.corda.flow.application.crypto.SigningServiceImpl
+import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.flow.external.events.impl.executor.ExternalEventExecutorImpl
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.internal.serialization.amqp.helper.TestFlowFiberServiceWithSerialization
@@ -20,8 +24,6 @@ import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import java.security.KeyPairGenerator
-import java.security.PublicKey
 import kotlin.test.assertIs
 
 class TestFlowFiberServiceWithSerializationProxy constructor(
@@ -43,6 +45,7 @@ class ConsensualLedgerServiceImplTest {
         private lateinit var signingService: SigningService
         private lateinit var schemeMetadata: CipherSchemeMetadata
         private lateinit var flowFiberService: FlowFiberService
+        private lateinit var externalEventExecutor: ExternalEventExecutor
 
         private lateinit var testPublicKey: PublicKey
         private lateinit var testConsensualState: ConsensualState
@@ -62,7 +65,8 @@ class ConsensualLedgerServiceImplTest {
             merkleTreeFactory = MerkleTreeFactoryImpl(digestService)
 
             flowFiberService = TestFlowFiberServiceWithSerializationProxy(schemeMetadata)
-            signingService = SigningServiceImpl(flowFiberService, schemeMetadata)
+            externalEventExecutor = ExternalEventExecutorImpl(flowFiberService)
+            signingService = SigningServiceImpl(externalEventExecutor, schemeMetadata)
 
             val kpg = KeyPairGenerator.getInstance("RSA")
             kpg.initialize(512) // Shortest possible to not slow down tests.
