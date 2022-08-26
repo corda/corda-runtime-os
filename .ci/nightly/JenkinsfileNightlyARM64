@@ -6,11 +6,11 @@ cordaPipeline(
     runIntegrationTests: true,
     publishRepoPrefix: 'corda-ent-maven',
     createPostgresDb: true,
-    publishOSGiImage: false, // change this to true when e2e tests are activated and running on arm nodes
+    publishOSGiImage: true,
     publishPreTestImage: true,
     publishHelmChart: false, // change this to true when images don't overwrite AMD64 ones (changes still needed here)
     e2eTestName: 'corda-runtime-os-e2e-tests',
-    runE2eTests: false, // change this to true when E2E infrastructure is in place
+    runE2eTests: true,
     linuxArch: 'arm64',
     gradleAdditionalArgs: '-PcliBaseTag=arm64-nightly -Dscan.tag.ARM64-Build'
     )
