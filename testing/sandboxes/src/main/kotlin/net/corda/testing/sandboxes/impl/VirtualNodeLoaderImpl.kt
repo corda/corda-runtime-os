@@ -76,6 +76,10 @@ class VirtualNodeLoaderImpl @Activate constructor(
         return virtualNodeInfoMap[holdingIdentity]
     }
 
+    override fun get(groupId: String): List<VirtualNodeInfo> {
+        return virtualNodeInfoMap.filter { it.key.groupId == groupId }.values.toList()
+    }
+
     override fun getByHoldingIdentityShortHash(holdingIdentityShortHash: ShortHash): VirtualNodeInfo? {
         TODO("Not yet implemented - getById")
     }

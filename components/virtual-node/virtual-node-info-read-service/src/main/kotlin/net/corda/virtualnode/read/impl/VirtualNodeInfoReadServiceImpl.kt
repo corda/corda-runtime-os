@@ -89,6 +89,8 @@ class VirtualNodeInfoReadServiceImpl @Activate constructor(
 
     override fun get(holdingIdentity: HoldingIdentity): VirtualNodeInfo? = virtualNodeInfoProcessor.get(holdingIdentity)
 
+    override fun get(groupId: String): List<VirtualNodeInfo> = virtualNodeInfoProcessor.get(groupId)
+
     override fun getByHoldingIdentityShortHash(holdingIdentityShortHash: ShortHash): VirtualNodeInfo?
         = virtualNodeInfoProcessor.getById(holdingIdentityShortHash)
 

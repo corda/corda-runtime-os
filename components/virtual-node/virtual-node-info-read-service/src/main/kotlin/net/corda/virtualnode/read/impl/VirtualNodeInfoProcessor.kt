@@ -122,6 +122,9 @@ class VirtualNodeInfoProcessor(private val onStatusUpCallback: () -> Unit, priva
     fun get(holdingIdentity: HoldingIdentity): VirtualNodeInfo? =
         virtualNodeInfoMap.get(holdingIdentity.toAvro())?.toCorda()
 
+    fun get(groupId: String): List<VirtualNodeInfo> =
+        virtualNodeInfoMap.getAll().map { it.toCorda() }.filter { it.holdingIdentity.groupId == groupId }
+
     fun getById(holdingIdShortHash: ShortHash): VirtualNodeInfo? =
         virtualNodeInfoMap.getById(holdingIdShortHash)?.toCorda()
 

@@ -32,8 +32,8 @@ import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.virtualnode.rpcops.common.VirtualNodeSender
-import net.corda.virtualnode.rpcops.common.VirtualNodeSenderFactory
+import net.corda.virtualnode.rpcops.virtualNodeManagementSender.VirtualNodeManagementSender
+import net.corda.virtualnode.rpcops.virtualNodeManagementSender.VirtualNodeManagementSenderFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -48,8 +48,8 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
     configurationReadService: ConfigurationReadService,
     @Reference(service = CpiUploadRPCOpsService::class)
     private val cpiUploadRPCOpsService: CpiUploadRPCOpsService,
-    @Reference(service = VirtualNodeSenderFactory::class)
-    private val virtualNodeSenderFactory: VirtualNodeSenderFactory,
+    @Reference(service = VirtualNodeManagementSenderFactory::class)
+    private val virtualNodeManagementSenderFactory: VirtualNodeManagementSenderFactory,
 ) : VirtualNodeMaintenanceRPCOps, PluggableRPCOps<VirtualNodeMaintenanceRPCOps>, Lifecycle {
 
     companion object {
@@ -115,7 +115,7 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
                     // Make sender unavailable while we're updating
                     coordinator.updateStatus(LifecycleStatus.DOWN)
                     coordinator.createManagedResource(SENDER) {
-                        virtualNodeSenderFactory.createSender(duration, messagingConfig)
+                        virtualNodeManagementSenderFactory.createSender(duration, messagingConfig)
                     }
                     coordinator.updateStatus(LifecycleStatus.UP)
                 }
@@ -157,7 +157,7 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
             "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
         )
 
-        val sender = lifecycleCoordinator.getManagedResource<VirtualNodeSender>(SENDER)
+        val sender = lifecycleCoordinator.getManagedResource<VirtualNodeManagementSender>(SENDER)
             ?: throw CordaRuntimeException("Sender not initialized, check component status for ${this.javaClass.name}")
 
         return sender.sendAndReceive(request)

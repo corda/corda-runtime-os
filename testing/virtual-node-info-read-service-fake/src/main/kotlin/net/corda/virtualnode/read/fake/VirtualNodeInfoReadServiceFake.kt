@@ -113,6 +113,11 @@ class VirtualNodeInfoReadServiceFake internal constructor(
         return map[holdingIdentity]
     }
 
+    override fun get(groupId: String): List<VirtualNodeInfo> {
+        throwIfNotRunning()
+        return map.filter { it.key.groupId == groupId }.values.toList()
+    }
+
     override fun getByHoldingIdentityShortHash(holdingIdentityShortHash: ShortHash): VirtualNodeInfo? {
         throwIfNotRunning()
         return map.entries.firstOrNull { holdingIdentityShortHash == it.key.shortHash }?.value

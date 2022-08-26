@@ -37,8 +37,8 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import net.corda.virtualnode.rpcops.common.VirtualNodeSender
-import net.corda.virtualnode.rpcops.common.VirtualNodeSenderFactory
+import net.corda.virtualnode.rpcops.virtualNodeManagementSender.VirtualNodeManagementSender
+import net.corda.virtualnode.rpcops.virtualNodeManagementSender.VirtualNodeManagementSenderFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -51,7 +51,7 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
     configurationReadService: ConfigurationReadService,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
-    private val virtualNodeSenderFactory: VirtualNodeSenderFactory,
+    private val virtualNodeManagementSenderFactory: VirtualNodeManagementSenderFactory,
     private var clock: Clock
 ) : VirtualNodeRPCOps, PluggableRPCOps<VirtualNodeRPCOps>, Lifecycle {
 
@@ -62,9 +62,9 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
         configurationReadService: ConfigurationReadService,
         @Reference(service = VirtualNodeInfoReadService::class)
         virtualNodeInfoReadService: VirtualNodeInfoReadService,
-        @Reference(service = VirtualNodeSenderFactory::class)
-        virtualNodeSenderFactory: VirtualNodeSenderFactory,
-    ) : this(coordinatorFactory, configurationReadService, virtualNodeInfoReadService, virtualNodeSenderFactory, UTCClock())
+        @Reference(service = VirtualNodeManagementSenderFactory::class)
+        virtualNodeManagementSenderFactory: VirtualNodeManagementSenderFactory,
+    ) : this(coordinatorFactory, configurationReadService, virtualNodeInfoReadService, virtualNodeManagementSenderFactory, UTCClock())
 
     private companion object {
         private val requiredKeys = setOf(ConfigKeys.MESSAGING_CONFIG, ConfigKeys.RPC_CONFIG)
@@ -127,7 +127,7 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
                     // Make sender unavailable while we're updating
                     coordinator.updateStatus(LifecycleStatus.DOWN)
                     coordinator.createManagedResource(SENDER) {
-                        virtualNodeSenderFactory.createSender(duration, messagingConfig)
+                        virtualNodeManagementSenderFactory.createSender(duration, messagingConfig)
                     }
                     coordinator.updateStatus(LifecycleStatus.UP)
                 }
@@ -150,7 +150,7 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
             "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
         )
 
-        val sender = lifecycleCoordinator.getManagedResource<VirtualNodeSender>(SENDER)
+        val sender = lifecycleCoordinator.getManagedResource<VirtualNodeManagementSender>(SENDER)
             ?: throw IllegalStateException("Sender not initialized, check component status for ${this.javaClass.name}")
 
         return sender.sendAndReceive(request)

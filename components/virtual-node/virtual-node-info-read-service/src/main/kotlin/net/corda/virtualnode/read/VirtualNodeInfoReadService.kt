@@ -2,8 +2,8 @@ package net.corda.virtualnode.read
 
 import net.corda.lifecycle.Lifecycle
 import net.corda.reconciliation.ReconcilerReader
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 
 /**
@@ -35,6 +35,14 @@ interface VirtualNodeInfoReadService : ReconcilerReader<HoldingIdentity, Virtual
      * Returns `null` if no such information exists for the given [HoldingIdentity]
      */
     fun get(holdingIdentity: HoldingIdentity): VirtualNodeInfo?
+
+    /**
+     * Returns all virtual nodes for a given groupId
+     * without starting any bundles or instantiating any classes.
+     *
+     * Returns empty list if no virtual nodes are onboarded for the given [groupId]
+     */
+    fun get(groupId: String): List<VirtualNodeInfo>
 
     /**
      * Returns the virtual node info by short-hash code, for a given holding identity

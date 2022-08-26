@@ -21,7 +21,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import net.corda.virtualnode.rpcops.common.VirtualNodeSender
+import net.corda.virtualnode.rpcops.virtualNodeManagementSender.VirtualNodeManagementSender
 import java.nio.file.Files
 import java.nio.file.Path
 import java.security.cert.CertificateFactory
@@ -34,7 +34,7 @@ class CpiValidatorImpl constructor(
     private val cpiPersistence: CpiPersistence,
     private val cpiInfoWriteService: CpiInfoWriteService,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
-    private val virtualNodeSender: VirtualNodeSender,
+    private val virtualNodeManagementSender: VirtualNodeManagementSender,
     private val cpiCacheDir: Path,
     private val cpiPartsDir: Path,
     private val certificatesService: CertificatesService,
@@ -42,6 +42,7 @@ class CpiValidatorImpl constructor(
 ) : CpiValidator {
     companion object {
         private val log = contextLogger()
+
         // TODO Certificate type should be define somewhere else with CORE-6130
         private const val CERTIFICATE_TYPE = "codesigner"
     }
@@ -85,7 +86,8 @@ class CpiValidatorImpl constructor(
         }
 
         publisher.update(
-            requestId, "Checking we can upsert a cpi with name=${cpi.metadata.cpiId.name} and groupId=$groupId"
+            requestId,
+            "Checking we can upsert a cpi with name=${cpi.metadata.cpiId.name} and groupId=$groupId"
         )
         canUpsertCpi(cpi, groupId, fileInfo.forceUpload)
 
@@ -95,10 +97,11 @@ class CpiValidatorImpl constructor(
         // Put vnodes into maintenance
         log.info("All nodes for Cpi ${cpi.metadata.cpiId}<${cpi.metadata.cpiId}> has been set to response")
         publisher.update(requestId, "Putting all virtual nodes into maintenance mode")
-        val nodes = virtualNodeInfoReadService.getAll().filter { it.holdingIdentity.groupId == groupId }
-        val actor = fileInfo.actor ?: throw CordaRuntimeException("Actor is undefined for forceUpload operation $requestId")
+        val nodes = virtualNodeInfoReadService.get(groupId)
+        val actor = fileInfo.actor
+            ?: throw CordaRuntimeException("Actor is undefined for forceUpload operation $requestId")
         nodes.forEach {
-            val maintenanceResponse = virtualNodeSender.sendAndReceive(
+            val maintenanceResponse = virtualNodeManagementSender.sendAndReceive(
                 VirtualNodeManagementRequest(
                     clock.instant(),
                     VirtualNodeStateChangeRequest(
@@ -119,7 +122,7 @@ class CpiValidatorImpl constructor(
                     cause
                 )
             }
-            val resetResponse = virtualNodeSender.sendAndReceive(
+            val resetResponse = virtualNodeManagementSender.sendAndReceive(
                 VirtualNodeManagementRequest(
                     clock.instant(),
                     VirtualNodeDBResetRequest(
@@ -165,13 +168,13 @@ class CpiValidatorImpl constructor(
                         //  - ((audit))
                     )
                 )
-                val resp = virtualNodeSender.sendAndReceive(request)
+                val resp = virtualNodeManagementSender.sendAndReceive(request)
                 log.info("${it.holdingIdentity.shortHash.value}: ${resp.responseType::class.simpleName}")
             }
         }
         publisher.update(requestId, "Restoring virtual nodes to active state")
         nodes.forEach {
-            val maintenanceResponse = virtualNodeSender.sendAndReceive(
+            val maintenanceResponse = virtualNodeManagementSender.sendAndReceive(
                 VirtualNodeManagementRequest(
                     clock.instant(),
                     VirtualNodeStateChangeRequest(

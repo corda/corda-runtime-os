@@ -23,7 +23,7 @@ import net.corda.utilities.PathProvider
 import net.corda.utilities.TempPathProvider
 import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import net.corda.virtualnode.rpcops.common.VirtualNodeSender
+import net.corda.virtualnode.rpcops.virtualNodeManagementSender.VirtualNodeManagementSender
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -64,7 +64,7 @@ class ChunkDbWriterFactoryImpl(
         bootConfig: SmartConfig,
         entityManagerFactory: EntityManagerFactory,
         cpiInfoWriteService: CpiInfoWriteService,
-        virtualNodeSender: VirtualNodeSender
+        virtualNodeManagementSender: VirtualNodeManagementSender
     ): ChunkDbWriter {
         // Could be reused
         val uploadTopic = Schemas.VirtualNode.CPI_UPLOAD_TOPIC
@@ -79,10 +79,10 @@ class ChunkDbWriterFactoryImpl(
             entityManagerFactory,
             statusTopic,
             cpiInfoWriteService,
-            virtualNodeSender
+            virtualNodeManagementSender
         )
 
-        return ChunkDbWriterImpl(subscription, publisher, virtualNodeSender)
+        return ChunkDbWriterImpl(subscription, publisher, virtualNodeManagementSender)
     }
 
     private fun createPublisher(config: SmartConfig): Publisher {
@@ -104,7 +104,7 @@ class ChunkDbWriterFactoryImpl(
         entityManagerFactory: EntityManagerFactory,
         statusTopic: String,
         cpiInfoWriteService: CpiInfoWriteService,
-        virtualNodeSender: VirtualNodeSender
+        virtualNodeManagementSender: VirtualNodeManagementSender
     ): Pair<Publisher, Subscription<RequestId, Chunk>> {
         val chunkPersistence = DatabaseChunkPersistence(entityManagerFactory)
         val cpiPersistence = DatabaseCpiPersistence(entityManagerFactory)
@@ -118,7 +118,7 @@ class ChunkDbWriterFactoryImpl(
             cpiPersistence,
             cpiInfoWriteService,
             virtualNodeInfoReadService,
-            virtualNodeSender,
+            virtualNodeManagementSender,
             cpiCacheDir,
             cpiPartsDir,
             certificatesService,

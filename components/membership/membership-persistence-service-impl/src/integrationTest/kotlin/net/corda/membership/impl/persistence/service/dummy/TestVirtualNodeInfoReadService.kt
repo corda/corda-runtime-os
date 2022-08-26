@@ -53,6 +53,8 @@ class TestVirtualNodeInfoReadServiceImpl @Activate constructor(
 
     override fun get(holdingIdentity: HoldingIdentity) = vnodes[holdingIdentity]
 
+    override fun get(groupId: String) = vnodes.entries.map { it.value }.filter { it.holdingIdentity.groupId == groupId }
+
     override fun getByHoldingIdentityShortHash(holdingIdentityShortHash: ShortHash) = vnodes.entries.firstOrNull {
         it.key.shortHash == holdingIdentityShortHash
     }?.value

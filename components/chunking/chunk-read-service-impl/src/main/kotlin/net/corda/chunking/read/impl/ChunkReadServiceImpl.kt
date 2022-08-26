@@ -21,7 +21,7 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.virtualnode.rpcops.common.VirtualNodeSenderFactory
+import net.corda.virtualnode.rpcops.virtualNodeManagementSender.VirtualNodeManagementSenderFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -41,8 +41,8 @@ class ChunkReadServiceImpl @Activate constructor(
     private val dbConnectionManager: DbConnectionManager,
     @Reference(service = CpiInfoWriteService::class)
     private val cpiInfoWriteService: CpiInfoWriteService,
-    @Reference(service = VirtualNodeSenderFactory::class)
-    private val virtualNodeSenderFactory: VirtualNodeSenderFactory
+    @Reference(service = VirtualNodeManagementSenderFactory::class)
+    private val virtualNodeManagementSenderFactory: VirtualNodeManagementSenderFactory
 ) : ChunkReadService, LifecycleEventHandler {
     companion object {
         val log: Logger = contextLogger()
@@ -132,7 +132,7 @@ class ChunkReadServiceImpl @Activate constructor(
                         bootConfig,
                         dbConnectionManager.getClusterEntityManagerFactory(),
                         cpiInfoWriteService,
-                        virtualNodeSenderFactory.createSender(duration, messagingConfig)
+                        virtualNodeManagementSenderFactory.createSender(duration, messagingConfig)
                     )
                     .apply { start() }
             }
