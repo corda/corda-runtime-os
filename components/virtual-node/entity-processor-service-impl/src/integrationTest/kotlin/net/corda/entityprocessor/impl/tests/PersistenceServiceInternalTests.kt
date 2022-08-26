@@ -239,7 +239,7 @@ class PersistenceServiceInternalTests {
             EXTERNAL_EVENT_CONTEXT
         )
         val processor = EntityMessageProcessor(
-            entitySandboxService,
+            myEntitySandboxService,
             externalEventResponseFactory,
             this::noOpPayloadCheck
         )
