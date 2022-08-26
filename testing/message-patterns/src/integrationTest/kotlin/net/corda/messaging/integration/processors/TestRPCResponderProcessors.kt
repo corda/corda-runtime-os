@@ -17,7 +17,7 @@ class TestRPCResponderProcessor : RPCResponderProcessor<String, String> {
 class TestRPCAvroResponderProcessor(val time: Instant) : RPCResponderProcessor<RPCRequest, RPCResponse> {
 
     override fun onNext(request: RPCRequest, respFuture: CompletableFuture<RPCResponse>) {
-        respFuture.complete(RPCResponse("test", time, ResponseStatus.OK, ByteBuffer.wrap("test".encodeToByteArray())))
+        respFuture.complete(RPCResponse("sender", "test", time, ResponseStatus.OK, ByteBuffer.wrap("test".encodeToByteArray())))
     }
 }
 

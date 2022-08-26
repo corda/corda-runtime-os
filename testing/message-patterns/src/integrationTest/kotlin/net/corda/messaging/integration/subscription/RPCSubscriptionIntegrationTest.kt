@@ -188,6 +188,7 @@ class RPCSubscriptionIntegrationTest {
         var responseReceived = false
         var attempts = 5
         val response = RPCResponse(
+            "sender",
             "test",
             timestamp,
             ResponseStatus.OK,
@@ -198,6 +199,7 @@ class RPCSubscriptionIntegrationTest {
             try {
                 val future = rpcSender.sendRequest(
                     RPCRequest(
+                        "sender",
                         "test",
                         Instant.ofEpochMilli(0L),
                         "test",
