@@ -248,7 +248,6 @@ class MemberSynchronisationServiceImpl internal constructor(
         val memberHash = merkleTreeGenerator.generateTree(listOf(member))
             .root
             .toAvro()
-        groupReader.groupParameters
         return p2pRecordsFactory.createAuthenticatedMessageRecord(
             source = updates.synchronisationMetaData.member,
             destination = updates.synchronisationMetaData.mgm,
