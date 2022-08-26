@@ -25,6 +25,7 @@ import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Method
 import java.lang.reflect.ParameterizedType
 import net.corda.httprpc.ResponseCode
+import net.corda.httprpc.client.exceptions.InternalErrorException
 import net.corda.httprpc.response.ResponseEntity
 
 /**
@@ -117,13 +118,16 @@ internal class HttpRpcClientProxyHandler<I : RpcOps>(
                     itemType,
                     context
                 )
-                ResponseEntity(ResponseCode.fromStatusCode(response.responseStatus), response.body)
+                ResponseEntity(response.responseStatus.toResponseCode(), response.body)
             }
             else -> {
                 client.call(method.endpointHttpVerb, parameters.toWebRequest(rawPath), method.genericReturnType, context).body
             }
         }.also { log.trace { """Invoke "${method.name}" completed.""" } }
     }
+
+    private fun Int.toResponseCode() = ResponseCode.values().find { it.statusCode == this }
+        ?: throw InternalErrorException("Status code $this not implemented")
 
     private val Method.endpointPath: String?
         get() =

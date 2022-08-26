@@ -204,13 +204,6 @@ enum class ResponseCode constructor(val statusCode: Int) {
     HTTP_VERSION_NOT_SUPPORTED(505),
     ;
 
-    companion object {
-        fun fromStatusCode(statusCode: Int): ResponseCode {
-            return values().find { it.statusCode == statusCode }
-                ?: throw RuntimeException("Status code $statusCode not implemented")
-        }
-    }
-
     override fun toString(): String {
         return name
     }
