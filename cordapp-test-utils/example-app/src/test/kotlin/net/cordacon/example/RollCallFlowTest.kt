@@ -28,7 +28,7 @@ class RollCallFlowTest {
 
         // And a list of students who will respond predictably
         val students = listOf("Alpha", "Beta", "Gamma").map {
-            Pair(it, "CN=${it}, OU=VIth Form, O=Grange Hill, L=London, C=GB")
+            it to MemberX500Name.parse("CN=${it}, OU=VIth Form, O=Grange Hill, L=London, C=GB")
         }.toMap()
 
         val responses = mapOf(
@@ -41,7 +41,7 @@ class RollCallFlowTest {
         responses.forEach {
             val student = students[it.key]!!
             responder.whenever(RollCallRequest(student), listOf(RollCallResponse(it.value)))
-            corda.createVirtualNode(HoldingIdentity(MemberX500Name.parse(student)), "roll-call", responder)
+            corda.createVirtualNode(HoldingIdentity(student), "roll-call", responder)
         }
 
         // When we contact the students
@@ -70,13 +70,13 @@ class RollCallFlowTest {
         val teacherVNode = corda.createVirtualNode(teacherId, RollCallFlow::class.java)
 
         // And a student who will respond with empty string repeatedly
-        val studentId = "CN=Zammo, OU=VIth Form, O=Grange Hill, L=London, C=GB"
+        val studentId = MemberX500Name.parse("CN=Zammo, OU=VIth Form, O=Grange Hill, L=London, C=GB")
         val responder = ResponderMock<RollCallRequest, RollCallResponse>()
         responder.whenever(RollCallRequest(studentId), listOf(RollCallResponse("")))
 
         // ...for both kinds of flow
-        corda.createVirtualNode(HoldingIdentity(MemberX500Name.parse(studentId)), "roll-call", responder)
-        corda.createVirtualNode(HoldingIdentity(MemberX500Name.parse(studentId)), "absence-call", responder)
+        corda.createVirtualNode(HoldingIdentity(studentId), "roll-call", responder)
+        corda.createVirtualNode(HoldingIdentity(studentId), "absence-call", responder)
 
         // When we contact the student
         val result = teacherVNode.callFlow(RPCRequestDataWrapper.fromData(
@@ -121,7 +121,7 @@ class RollCallFlowTest {
         flow.call(RPCRequestDataWrapper.fromData(
             "r1",
             RollCallFlow::class.java,
-            RollCallInitiationRequest(listOf(studentId.member.toString()))).toRPCRequestData())
+            RollCallInitiationRequest(listOf(studentId.member))).toRPCRequestData())
 
         // Then the subflow should have been called twice
         verify(flow.flowEngine, times(2)).subFlow(any<AbsenceSubFlow>())

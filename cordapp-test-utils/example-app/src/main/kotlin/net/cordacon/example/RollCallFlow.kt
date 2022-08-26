@@ -57,7 +57,7 @@ class RollCallFlow: RPCStartableFlow {
 
         log.info("Initiating roll call")
         val sessionsAndRecipients = rollCall.recipientsX500.map {
-            Pair(flowMessaging.initiateFlow(MemberX500Name.parse(it)), it)
+            flowMessaging.initiateFlow(it) to it
         }
 
         log.info("Roll call initiated; waiting for responses")
@@ -74,7 +74,7 @@ class RollCallFlow: RPCStartableFlow {
                     val absenceResponses = retryRollCall(r)
                     if (absenceResponses.none{ar -> ar.response.isNotEmpty()}) {
                         persistenceService.persist(AbsenceRecordEntity(name = r.first.counterparty.rollCallName))
-                        absenceResponses.map { _ -> Pair(r.first, "") }
+                        absenceResponses.map { r.first to "" }
                     } else {
                         listOf(
                             Pair(r.first, absenceResponses.first { ar -> ar.response.isNotEmpty() }.response))
@@ -111,7 +111,7 @@ class RollCallFlow: RPCStartableFlow {
 }
 
 @InitiatingFlow("absence-call")
-class AbsenceSubFlow(val counterparty: MemberX500Name) : SubFlow<String> {
+class AbsenceSubFlow(private val counterparty: MemberX500Name) : SubFlow<String> {
 
     @CordaInject
     lateinit var flowMessaging: FlowMessaging
@@ -122,7 +122,7 @@ class AbsenceSubFlow(val counterparty: MemberX500Name) : SubFlow<String> {
     @Suspendable
     override fun call(): String {
         val session = flowMessaging.initiateFlow(counterparty)
-        session.send(RollCallRequest(counterparty.toString()))
+        session.send(RollCallRequest(counterparty))
         return session.receive(RollCallResponse::class.java).unwrap {it}.response
     }
 }
@@ -154,9 +154,9 @@ class AbsenceCallResponderFlow: ResponderFlow {
 }
 
 @CordaSerializable
-data class RollCallInitiationRequest(val recipientsX500: List<String>)
+data class RollCallInitiationRequest(val recipientsX500: List<MemberX500Name>)
 @CordaSerializable
-data class RollCallRequest(val recipientX500: String)
+data class RollCallRequest(val recipientX500: MemberX500Name)
 @CordaSerializable
 data class RollCallResponse(val response: String)
 

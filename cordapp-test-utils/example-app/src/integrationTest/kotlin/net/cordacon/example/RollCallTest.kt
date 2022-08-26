@@ -27,10 +27,10 @@ class RollCallTest {
         //
         // and a response (which we do need, but it's exactly the same; Ferris Bueller continues to take a day off)
         val students = listOf("Albers", "Anderson", "Anheiser", "Busch", "Bueller"). map {
-            "CN=$it, OU=Economics, O=Glenbrook North High School, L=Chicago, C=US"
+            MemberX500Name.parse("CN=$it, OU=Economics, O=Glenbrook North High School, L=Chicago, C=US")
         }
         students.forEach { corda.createVirtualNode(
-            HoldingIdentity(MemberX500Name.parse(it)),
+            HoldingIdentity(it),
             RollCallResponderFlow::class.java,
             AbsenceCallResponderFlow::class.java) }
 
@@ -74,11 +74,11 @@ class RollCallTest {
 
         // and recipients with the responder and absence flow
         val students = listOf("Albers", "Anderson", "Anheiser", "Busch", "Bueller"). map {
-            "O=$it, L=Chicago, C=US"
+            MemberX500Name.parse("O=$it, L=Chicago, C=US")
         }
 
         students.forEach { corda.createVirtualNode(
-            HoldingIdentity(MemberX500Name.parse(it)),
+            HoldingIdentity(it),
             RollCallResponderFlow::class.java,
             AbsenceCallResponderFlow::class.java)
         }
