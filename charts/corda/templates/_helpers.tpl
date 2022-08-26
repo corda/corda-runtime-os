@@ -325,7 +325,7 @@ Volumes for corda workers
 {{- if .Values.dumpHostPath }}
 - name: dumps
   hostPath:
-    path: {{ .Values.dumpHostPath }}/{{ include "corda.workerName" . }}/
+    path: {{ .Values.dumpHostPath }}/{{ .Release.Namespace }}/{{ include "corda.workerName" . }}/
     type: DirectoryOrCreate
 {{- end }}
 {{- end }}
