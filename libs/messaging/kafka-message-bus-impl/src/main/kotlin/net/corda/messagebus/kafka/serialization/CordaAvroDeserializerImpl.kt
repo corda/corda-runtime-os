@@ -6,10 +6,11 @@ import net.corda.v5.base.util.contextLogger
 import org.apache.kafka.common.serialization.Deserializer
 import org.apache.kafka.common.serialization.StringDeserializer
 import java.nio.ByteBuffer
+import java.util.function.Consumer
 
 class CordaAvroDeserializerImpl<T : Any>(
     private val schemaRegistry: AvroSchemaRegistry,
-    private val onError: (ByteArray) -> Unit,
+    private val onError: Consumer<ByteArray>,
     private val expectedClass: Class<T>
 ) : CordaAvroDeserializer<T>, Deserializer<T> {
 
@@ -37,7 +38,7 @@ class CordaAvroDeserializerImpl<T : Any>(
                     // We don't want to throw back into Kafka as that would mean the entire poll (with possibly
                     // many records) would fail, and keep failing.  So we'll just callback to note the bad deserialize
                     // and return a null.  This will mean the record gets treated as 'deleted' in the processors
-                    onError.invoke(data)
+                    onError.accept(data)
                     null
                 }
             }
