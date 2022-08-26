@@ -43,7 +43,7 @@ pipeline {
 
     parameters {
         string(name: 'BUILD_REV', defaultValue: '', description: 'Short git hash of the build revision to test - leave blank to test unstable')
-//        choice(name: 'BUILD_ARCH', choices: ['amd64', 'arm64'], description: 'Build architecture')
+        choice(name: 'BUILD_ARCH', choices: ['amd64', 'arm64'], description: 'Build architecture')
     }
 
     environment {
