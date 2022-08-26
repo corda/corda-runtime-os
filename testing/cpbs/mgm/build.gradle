@@ -1,0 +1,13 @@
+plugins {
+    id 'net.corda.plugins.cordapp-cpb'
+}
+
+cordapp {
+    targetPlatformVersion platformVersion as Integer
+    minimumPlatformVersion platformVersion as Integer
+    workflow {
+        name "MGM Testing Application"
+        versionId 1
+        vendor "R3"
+    }
+}
