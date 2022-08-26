@@ -69,7 +69,6 @@ import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.ByteBuffer
 import java.nio.file.Path
-import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.UUID
@@ -95,7 +94,7 @@ sealed class QuerySetup {
 class PersistenceServiceInternalTests {
     private companion object {
         const val TOPIC = "pretend-topic"
-        val flowExternalEventContext = ExternalEventContext("request id", "flow id")
+        val EXTERNAL_EVENT_CONTEXT = ExternalEventContext("request id", "flow id")
         val logger = contextLogger()
     }
 
@@ -188,7 +187,6 @@ class PersistenceServiceInternalTests {
 
     @Test
     fun `persist`() {
-        val requestId = UUID.randomUUID().toString()
         val persistenceService = PersistenceServiceInternal(entitySandboxService::getClass, this::noOpPayloadCheck)
         val payload = PersistEntities(listOf(sandbox.serialize(sandbox.createDog("Rover").instance)))
 
@@ -238,7 +236,7 @@ class PersistenceServiceInternalTests {
         val request = EntityRequest(
             virtualNodeInfoTwo.holdingIdentity.toAvro(),
             PersistEntities(listOf(sandboxOne.serialize(dog.instance))),
-            flowExternalEventContext
+            EXTERNAL_EVENT_CONTEXT
         )
         val processor = EntityMessageProcessor(
             entitySandboxService,
@@ -501,7 +499,7 @@ class PersistenceServiceInternalTests {
     fun `find all exceeds kakfa packet size`() {
         persistDogs()
 
-        val processor = EntityMessageProcessor(ctx.entitySandboxService, externalEventResponseFactory) {
+        val processor = EntityMessageProcessor(entitySandboxService, externalEventResponseFactory) {
             if (it.array().size > 50) throw KafkaMessageSizeException("Too large")
             it
         }
@@ -734,9 +732,13 @@ class PersistenceServiceInternalTests {
         return records
     }
 
-    private fun createRequest(holdingId: net.corda.virtualnode.HoldingIdentity, entity: Any): EntityRequest {
+    private fun createRequest(
+        holdingId: net.corda.virtualnode.HoldingIdentity,
+        entity: Any,
+        externalEventContext: ExternalEventContext = EXTERNAL_EVENT_CONTEXT
+    ): EntityRequest {
         logger.info("Entity Request - entity: ${entity.javaClass.simpleName} $entity")
-        return EntityRequest(holdingId.toAvro(), entity, flowExternalEventContext)
+        return EntityRequest(holdingId.toAvro(), entity, externalEventContext)
     }
 
     private fun assertQuery(
@@ -783,7 +785,7 @@ class PersistenceServiceInternalTests {
     /** Delete entity and assert
      * @return the list of successful responses
      * */
-    private fun assertDeleteEntity(bytes: ByteBuffer): List<Record<*, *>> {
+    private fun assertDeleteEntities(vararg objs: Any): Record<*, *> {
         val processor = EntityMessageProcessor(
             entitySandboxService,
             externalEventResponseFactory,
@@ -803,9 +805,9 @@ class PersistenceServiceInternalTests {
         )
         assertThat(responses.size).isEqualTo(1)
         val flowEvent = responses.first().value as FlowEvent
-        val response = flowEvent.payload as EntityResponse
-        assertThat(response.responseType).isInstanceOf(EntityResponseSuccess::class.java)
-        return response.responseType as EntityResponseSuccess
+        val response = flowEvent.payload as ExternalEventResponse
+        assertThat(response.error).isNull()
+        return responses.first()
     }
 
     /** Delete entity by primary key and do some asserting
@@ -856,7 +858,11 @@ class PersistenceServiceInternalTests {
         val flowEvent = responses.first().value as FlowEvent
         val response = deserializer.deserialize((flowEvent.payload as ExternalEventResponse).payload.array())!!
 
-        return if (response.results.size == 0) { null } else { success.results.first().let { sandbox.deserialize(it) } }
+        return if (response.results.size == 0) {
+            null
+        } else {
+            response.results.first().let { sandbox.deserialize(it) }
+        }
     }
 
     /** Persist an entity and do some asserting
@@ -875,15 +881,20 @@ class PersistenceServiceInternalTests {
                     Record(
                         TOPIC,
                         requestId,
-                        createRequest(virtualNodeInfo.holdingIdentity, PersistEntities(entities.map { sandbox.serialize(it) }))
+                        createRequest(
+                            virtualNodeInfo.holdingIdentity,
+                            PersistEntities(entities.map { sandbox.serialize(it) }),
+                            ExternalEventContext(requestId, "flow id")
+                        )
                     )
                 )
             )
         )
         assertThat(responses.size).isEqualTo(1)
-        val flowEvent = responses.first().value  as FlowEvent
-        val response = flowEvent.payload as EntityResponse
+        val flowEvent = responses.first().value as FlowEvent
+        val response = flowEvent.payload as ExternalEventResponse
         assertThat(response.requestId).isEqualTo(requestId)
+        assertThat(response.error).isNull()
         return responses
     }
 
@@ -909,10 +920,10 @@ class PersistenceServiceInternalTests {
         )
         assertThat(responses.size).isEqualTo(1)
         val flowEvent = responses.first().value  as FlowEvent
-        val entityResponse = flowEvent.payload as EntityResponse
-        assertThat(entityResponse.responseType as EntityResponseSuccess).isInstanceOf(EntityResponseSuccess::class.java)
-        val entityResponseSuccess = entityResponse.responseType as EntityResponseSuccess
-        val bytes = entityResponseSuccess.results as List<ByteBuffer>
+        val response = flowEvent.payload as ExternalEventResponse
+        assertThat(response.error).isNull()
+        val entityResponse = deserializer.deserialize(response.payload.array())!!
+        val bytes = entityResponse.results as List<ByteBuffer>
         return bytes.map { sandbox.deserialize(it) }
     }
 
