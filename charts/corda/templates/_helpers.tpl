@@ -70,6 +70,13 @@ Worker name
 {{- end }}
 
 {{/*
+Worker name with no quotes
+*/}}
+{{- define "corda.workerNameNoQuotes" -}}
+{{ include "corda.fullname" . }}-{{ .worker | kebabcase | replace "p-2p" "p2p" }}-worker
+{{- end }}
+
+{{/*
 Worker common labels
 */}}
 {{- define "corda.workerLabels" -}}
@@ -325,7 +332,7 @@ Volumes for corda workers
 {{- if .Values.dumpHostPath }}
 - name: dumps
   hostPath:
-    path: {{ .Values.dumpHostPath }}/{{ .Release.Namespace }}/{{ include "corda.workerName" . }}/
+    path: {{ .Values.dumpHostPath }}/{{ .Release.Namespace }}/{{ (include "corda.workerNameNoQuotes" .) }}/
     type: DirectoryOrCreate
 {{- end }}
 {{- end }}
