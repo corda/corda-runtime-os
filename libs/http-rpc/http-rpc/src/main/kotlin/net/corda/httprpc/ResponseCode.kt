@@ -20,6 +20,10 @@ package net.corda.httprpc
 enum class ResponseCode constructor(val statusCode: Int) {
 
     /**
+     * SUCCESSFUL 2xx
+     */
+
+    /**
      * Request has succeeded.
      *
      * See `https://httpwg.org/specs/rfc9110.html#status.200`.
@@ -48,12 +52,37 @@ enum class ResponseCode constructor(val statusCode: Int) {
     NO_CONTENT(204),
 
     /**
+     * See `https://httpwg.org/specs/rfc9110.html#status.205`.
+     */
+    RESET_CONTENT(205),
+
+    /**
+     * See `https://httpwg.org/specs/rfc9110.html#status.206`.
+     */
+    PARTIAL_CONTENT(206),
+
+    /**
+     * REDIRECTION 3xx
+     */
+
+    /**
      * The requested resource is located at another URI using the GET HTTP method. Use this for response from asynchronous APIs that return
      * a status URI.
      *
      * See `https://httpwg.org/specs/rfc9110.html#status.303`.
      */
     SEE_OTHER(303),
+
+    /**
+     *
+     *
+     * See `https://httpwg.org/specs/rfc9110.html#status.306`.
+     */
+    UNUSED(306),
+
+    /**
+     * CLIENT ERRORS 4xx
+     */
 
     /**
      * Signals the exception occurred due to invalid input data in the request or from a resource identified by the request.
@@ -91,11 +120,55 @@ enum class ResponseCode constructor(val statusCode: Int) {
     RESOURCE_NOT_FOUND(404),
 
     /**
+     * See `https://httpwg.org/specs/rfc9110.html#status.405`.
+     */
+    METHOD_NOT_ALLOWED(405),
+
+    /**
+     * See `https://httpwg.org/specs/rfc9110.html#status.406`.
+     */
+    NOT_ACCEPTABLE(406),
+
+    /**
+     * See `https://httpwg.org/specs/rfc9110.html#status.408`.
+     */
+    REQUEST_TIMEOUT(408),
+
+    /**
      * Signals the resource is not in the expected state.
      *
      * See `https://httpwg.org/specs/rfc9110.html#status.409`.
      */
     CONFLICT(409),
+
+    /**
+     * See `https://httpwg.org/specs/rfc9110.html#status.412`.
+     */
+    PRECONDITION_FAILED(412),
+
+    /**
+     * See `https://httpwg.org/specs/rfc9110.html#status.413`.
+     */
+    CONTENT_TOO_LARGE(413),
+
+    /**
+     * See `https://httpwg.org/specs/rfc9110.html#status.415`.
+     */
+    UNSUPPORTED_MEDIA_TYPE(415),
+
+    /**
+     * See `https://httpwg.org/specs/rfc9110.html#status.416`.
+     */
+    RANGE_NOT_SATISFIABLE(416),
+
+    /**
+     * See `https://httpwg.org/specs/rfc9110.html#status.422`.
+     */
+    UNPROCESSABLE_CONTENT(422),
+
+    /**
+     * SERVER ERRORS 5xx
+     */
 
     /**
      * An unexpected condition occurred that prevented it from fulfilling the request.
@@ -119,7 +192,24 @@ enum class ResponseCode constructor(val statusCode: Int) {
      * See `https://httpwg.org/specs/rfc9110.html#status.503`.
      */
     SERVICE_UNAVAILABLE(503),
+
+    /**
+     * See `https://httpwg.org/specs/rfc9110.html#status.504`.
+     */
+    GATEWAY_TIMEOUT(504),
+
+    /**
+     * See `https://httpwg.org/specs/rfc9110.html#status.505`.
+     */
+    HTTP_VERSION_NOT_SUPPORTED(505),
     ;
+
+    companion object {
+        fun fromStatusCode(statusCode: Int): ResponseCode {
+            return values().find { it.statusCode == statusCode }
+                ?: throw RuntimeException("Status code $statusCode not implemented")
+        }
+    }
 
     override fun toString(): String {
         return name
