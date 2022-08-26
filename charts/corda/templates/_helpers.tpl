@@ -66,13 +66,6 @@ imagePullSecrets:
 Worker name
 */}}
 {{- define "corda.workerName" -}}
-"{{ include "corda.fullname" . }}-{{ .worker | kebabcase | replace "p-2p" "p2p" }}-worker"
-{{- end }}
-
-{{/*
-Worker name with no quotes
-*/}}
-{{- define "corda.workerNameNoQuotes" -}}
 {{ include "corda.fullname" . }}-{{ .worker | kebabcase | replace "p-2p" "p2p" }}-worker
 {{- end }}
 
