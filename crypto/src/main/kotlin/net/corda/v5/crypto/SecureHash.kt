@@ -9,6 +9,9 @@ import java.nio.ByteBuffer
 /**
  * Container for a cryptographically secure hash value.
  * Provides utilities for generating a cryptographic hash using different algorithms (currently only SHA-256 supported).
+ *
+ * @property algorithm Hashing algorithm
+ * @property bytes Hash value
  */
 @CordaSerializable
 class SecureHash(val algorithm: String, bytes: ByteArray) : OpaqueBytes(bytes) {
@@ -38,6 +41,9 @@ class SecureHash(val algorithm: String, bytes: ByteArray) : OpaqueBytes(bytes) {
         }
     }
 
+    /**
+     * Returns hexadecimal representation of the hash value.
+     */
     fun toHexString(): String = bytes.toHexString()
 
     /**

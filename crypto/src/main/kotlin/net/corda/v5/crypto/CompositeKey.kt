@@ -32,7 +32,7 @@ import java.util.function.Function
  * create multi-level requirements such as *"either the CEO or 3 of 5 of his assistants need to sign"*.
  *
  * @property threshold specifies the minimum total weight required (in the simple case – the minimum number of child
- * signatures required) to satisfy the sub-tree rooted at this node.
+ * signatures required) to satisfy the subtree rooted at this node.
  */
 class CompositeKey private constructor(val threshold: Int, children: List<NodeAndWeight>) : PublicKey {
     companion object {
@@ -63,8 +63,6 @@ class CompositeKey private constructor(val threshold: Int, children: List<NodeAn
         // checking, [children] list is sorted during construction. A DESC ordering in the [NodeAndWeight.weight] field
         // will improve efficiency, because keys with bigger "weights" are the first to be checked and thus the
         // threshold requirement might be met earlier without requiring a full [children] scan.
-        // TODO: node.encoded.sequence() might be expensive, consider a faster deterministic compareTo implementation
-        //      for public keys in general.
         private val descWeightComparator = compareBy<NodeAndWeight>({ -it.weight }, { it.node.encoded.sequence() })
     }
 
@@ -74,7 +72,6 @@ class CompositeKey private constructor(val threshold: Int, children: List<NodeAn
     val children: List<NodeAndWeight> = children.sortedWith(descWeightComparator)
 
     init {
-        // TODO: replace with the more extensive, but slower, checkValidity() test.
         checkConstraints()
     }
 
@@ -120,7 +117,7 @@ class CompositeKey private constructor(val threshold: Int, children: List<NodeAn
 
     /**
      * This method will detect graph cycles in the full composite key structure to protect against infinite loops when
-     * traversing the graph and key duplicates in the each layer. It also checks if the threshold and weight constraint
+     * traversing the graph and key duplicates in each layer. It also checks if the threshold and weight constraint
      * requirements are met, while it tests for aggregated-weight integer overflow.
      * In practice, this method should be always invoked on the root [CompositeKey], as it inherently
      * validates the child nodes (all the way till the leaves).
@@ -164,7 +161,6 @@ class CompositeKey private constructor(val threshold: Int, children: List<NodeAn
 
         override fun compareTo(other: NodeAndWeight): Int {
             return if (weight == other.weight)
-                // TODO: this might be expensive, consider a faster deterministic compareTo implementation when weights are equal.
                 node.encoded.sequence().compareTo(other.node.encoded.sequence())
             else
                 weight.compareTo(other.weight)
@@ -222,7 +218,7 @@ class CompositeKey private constructor(val threshold: Int, children: List<NodeAn
      * If all thresholds are satisfied, the composite key requirement is considered to be met.
      */
     fun isFulfilledBy(keysToCheck: Iterable<PublicKey>): Boolean {
-        // We validate keys only when checking if they're matched, as this checks subkeys as a result.
+        // We validate keys only when checking if they're matched, as this checks sub keys as a result.
         // Doing these checks at deserialization/construction time would result in duplicate checks.
         checkValidity()
         if (keysToCheck.any { it is CompositeKey }) return false
@@ -276,7 +272,7 @@ class CompositeKey private constructor(val threshold: Int, children: List<NodeAn
          * During process removes single keys wrapped in [CompositeKey] and enforces ordering on child nodes.
          *
          * @param threshold specifies the minimum total weight required (in the simple case – the minimum number of child
-         * signatures required) to satisfy the sub-tree rooted at this node.
+         * signatures required) to satisfy the subtree rooted at this node.
          * @throws IllegalArgumentException if the threshold value is invalid.
          * @throws IllegalStateException if the composite key that would be generated from the current state of the builder
          * is invalid (for example it would contain no keys).

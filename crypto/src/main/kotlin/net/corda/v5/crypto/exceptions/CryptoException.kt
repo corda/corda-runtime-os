@@ -1,4 +1,4 @@
-package net.corda.v5.crypto.failures
+package net.corda.v5.crypto.exceptions
 
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -17,6 +17,11 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
  */
 @CordaSerializable
 open class CryptoException : CordaRuntimeException {
+
+    /**
+     * If the value is true then the error condition is considered transient and the operation which throws such
+     * exceptions can be retried.
+     */
     val isRecoverable: Boolean
 
     constructor(message: String) : super(message) {

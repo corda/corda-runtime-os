@@ -14,25 +14,32 @@ class DigestAlgorithmName(val name: String) {
     }
 
     companion object {
-
-        const val NONCE_SIZE = 8
-
+        /**
+         * Instance of SHA-256
+         */
         @JvmField
         val SHA2_256: DigestAlgorithmName = DigestAlgorithmName("SHA-256")
 
+        /**
+         * Instance of Double SHA-256
+         */
         @JvmField
         val SHA2_256D: DigestAlgorithmName = DigestAlgorithmName("SHA-256D")
 
+        /**
+         * Instance of SHA-384
+         */
         @JvmField
         val SHA2_384: DigestAlgorithmName = DigestAlgorithmName("SHA-384")
 
+        /**
+         * Instance of SHA-512
+         */
         @JvmField
         val SHA2_512: DigestAlgorithmName = DigestAlgorithmName("SHA-512")
 
         /**
-         * The [DEFAULT_ALGORITHM_NAME] instance will be parametrized and initialized at runtime.
-         *
-         * It would be probably useful to assume an override priority order.
+         * Instance of algorithm which is considered to be default. Set as SHA-256
          */
         @JvmField
         val DEFAULT_ALGORITHM_NAME: DigestAlgorithmName = SHA2_256

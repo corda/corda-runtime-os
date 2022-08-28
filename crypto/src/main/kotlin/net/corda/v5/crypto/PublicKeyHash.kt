@@ -20,6 +20,8 @@ fun PublicKey.publicKeyId(): String =
  * Container for a public key hash value.
  * Provides utilities for generating a public key hash by calculating it from a given [PublicKey], or by parsing a given
  * [String] or [ByteArray] input.
+ *
+ * @property value hexadecimal string representing SHA-256 of the public key
  */
 class PublicKeyHash private constructor(
     val value: String
@@ -80,7 +82,7 @@ class PublicKeyHash private constructor(
     }
 
     /**
-     * Returns the id as the first 12 characters of the value which is SHA-256 hash of the public key.
+     * Returns the id as the first 12 characters of the [value] which is SHA-256 hash of the public key.
      */
     val id: String by lazy(LazyThreadSafetyMode.PUBLICATION) { value.substring(0, 12) }
 

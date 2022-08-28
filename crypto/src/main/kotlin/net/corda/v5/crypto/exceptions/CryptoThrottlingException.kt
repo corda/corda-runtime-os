@@ -1,4 +1,4 @@
-package net.corda.v5.crypto.failures
+package net.corda.v5.crypto.exceptions
 
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.BackoffStrategy
@@ -6,9 +6,8 @@ import net.corda.v5.base.exceptions.BackoffStrategy.Companion.createExponentialB
 import net.corda.v5.base.exceptions.BackoffStrategy.Companion.createLinearBackoff
 
 /**
- * Signals that there is a throttling by a downstream service, such as HSM or any other.
- * The exception and its concrete implementation are not designed to be passed other
- * process boundaries (over the message bus).
+ * Signals that there is a throttling by a downstream service, such as HSM or any other and provides parameters which
+ * can be used to retry the operation which caused that.
  */
 @CordaSerializable
 open class CryptoThrottlingException : CryptoException, BackoffStrategy {

@@ -1,4 +1,4 @@
-package net.corda.v5.crypto.failures
+package net.corda.v5.crypto.exceptions
 
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
