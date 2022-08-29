@@ -350,29 +350,21 @@ subprojects {
     tasks.register("allDependencyInsight", DependencyInsightReportTask) {}
     tasks.register("allDependencies", DependencyReportTask) {}
 
-    tasks.register('releasable'){
+    tasks.register('releasableArtifacts') {
         description = "Prints a list of all modules which will be released externally"
         group = "Release"
-        if(project.hasProperty('releasable') && project.releasable){
-            project.publishing.publications.each { publication ->
-                logger.quiet("\n${publication.groupId}:${publication.artifactId}:${publication.version} [${project.path}]")
-                publication.artifacts.each { artifact ->
-                    logger.quiet(" * ${artifact.file.name}")
-                }
-            }
+        if (project.hasProperty('releasable') && project.releasable.toBoolean()) {
+                    println project.releasable.toBoolean()
+
+            logArtifacts(project)
         }
     }
 
-    tasks.register('unReleasable'){
+    tasks.register('unReleasableArtifacts') {
         description = "Prints a list of all modules which will not be released externally"
         group = "Release"
-        if(!project.hasProperty('releasable') || !project.releasable){
-            project.publishing.publications.each { publication ->
-                logger.quiet("\n${publication.groupId}:${publication.artifactId}:${publication.version} [${project.path}]")
-                publication.artifacts.each { artifact ->
-                    logger.quiet(" * ${artifact.file.name}")
-                }
-            }
+        if (!project.hasProperty('releasable') || !project.releasable.toBoolean()) {
+            logArtifacts(project)
         }
     }
 
@@ -399,6 +391,16 @@ subprojects {
             "javax.persistence.Embeddable",
             "javax.persistence.MappedSuperclass"
         )
+    }
+}
+
+// helper to log artifacts we will or will not publish during a release process
+def logArtifacts(Project project) {
+    project.publishing.publications.each { publication ->
+        logger.quiet("\n${publication.groupId}:${publication.artifactId}:${publication.version} [${project.path}]")
+        publication.artifacts.each { artifact ->
+            logger.quiet(" * ${artifact.file.name}")
+        }
     }
 }
 
