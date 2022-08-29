@@ -1577,15 +1577,24 @@ class SessionManagerTest {
         )
         verify(outboundSessionPool.constructed().last()).replaceSession(someSessionId, protocolInitiator)
 
+        /*  verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
+            .publish(listOf(Record(SESSION_OUT_PARTITIONS, someSessionId, null))
+        )*/
+/*        verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
+            .publish(listOf(Record(SESSION_OUT_PARTITIONS, protocolInitiator.sessionId, null))
+        )*/
+/*        verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
+            .publish(listOf(Record(SESSION_OUT_PARTITIONS, protocolInitiator.sessionId, null)))*/
 
+        //verify(outboundSessionPool.constructed().last()).replaceSession(protocolInitiator.sessionId, secondProtocolInitiator)
+/*        verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
+            .publish(listOf(Record(SESSION_OUT_PARTITIONS, protocolInitiator.sessionId, null)))
+    }*/
 
-
-
-
-
-
-
-
+/*        val sessionIds = listOf("firstSession", "anotherSession")
+        publisherWithDominoLogicByClientId["session-manager"]!!.forEach { publisher ->
+            verify(publisher).publish(sessionIds.map { Record(SESSION_OUT_PARTITIONS, it, null) }.toList())
+        }*/
 
     }
 }
