@@ -22,6 +22,7 @@ dependencies {
     cordaProvided "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     cordaProvided 'net.corda:corda-application'
     cordaProvided 'net.corda:corda-cipher-suite'
+    cordaProvided 'net.corda:corda-crypto-extensions'
     cordaProvided 'org.slf4j:slf4j-api'
     cordapp project(':testing:cpbs:crypto-custom-digest-one-cpk')
 }
