@@ -350,6 +350,32 @@ subprojects {
     tasks.register("allDependencyInsight", DependencyInsightReportTask) {}
     tasks.register("allDependencies", DependencyReportTask) {}
 
+    tasks.register('releasable'){
+        description = "Prints a list of all modules which will be released externally"
+        group = "Release"
+        if(project.hasProperty('releasable') && project.releasable){
+            project.publishing.publications.each { publication ->
+                logger.quiet("\n${publication.groupId}:${publication.artifactId}:${publication.version} [${project.path}]")
+                publication.artifacts.each { artifact ->
+                    logger.quiet(" * ${artifact.file.name}")
+                }
+            }
+        }
+    }
+
+    tasks.register('unReleasable'){
+        description = "Prints a list of all modules which will not be released externally"
+        group = "Release"
+        if(!project.hasProperty('releasable') || !project.releasable){
+            project.publishing.publications.each { publication ->
+                logger.quiet("\n${publication.groupId}:${publication.artifactId}:${publication.version} [${project.path}]")
+                publication.artifacts.each { artifact ->
+                    logger.quiet(" * ${artifact.file.name}")
+                }
+            }
+        }
+    }
+
     configurations {
         all {
             resolutionStrategy {

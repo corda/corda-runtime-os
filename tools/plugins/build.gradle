@@ -3,6 +3,10 @@ plugins {
     id 'java'
 }
 
+ext {
+    releasable = true
+}
+
 group 'net.corda.cli.deployment'
 
 configurations {
