@@ -38,10 +38,10 @@ import javax.persistence.EntityManagerFactory
 @ExtendWith(ServiceExtension::class)
 class EntitiesInBundlesTest {
     companion object {
-        private const val DOG_CLASS_NAME = "net.corda.testing.bundles.dogs.Dog"
-        private const val CAT_CLASS_NAME = "net.corda.testing.bundles.cats.Cat"
-        private const val CAT_KEY_CLASS_NAME = "net.corda.testing.bundles.cats.CatKey"
-        private const val OWNER_CLASS_NAME = "net.corda.testing.bundles.cats.Owner"
+        private const val DOG_CLASS_NAME = "net.cordapp.testing.bundles.dogs.Dog"
+        private const val CAT_CLASS_NAME = "net.cordapp.testing.bundles.cats.Cat"
+        private const val CAT_KEY_CLASS_NAME = "net.cordapp.testing.bundles.cats.CatKey"
+        private const val OWNER_CLASS_NAME = "net.cordapp.testing.bundles.cats.Owner"
 
         private val logger: Logger = LoggerFactory.getLogger("TEST")
 

@@ -1,6 +1,6 @@
 package net.cordapp.flowworker.development.smoketests.flow
 
-import net.corda.testing.bundles.dogs.Dog
+import net.cordapp.testing.bundles.dogs.Dog
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.CordaInject
