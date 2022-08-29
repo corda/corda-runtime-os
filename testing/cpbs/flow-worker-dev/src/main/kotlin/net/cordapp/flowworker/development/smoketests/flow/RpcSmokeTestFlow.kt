@@ -17,7 +17,7 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.failures.CryptoSignatureException
+import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.cordapp.flowworker.development.smoketests.flow.messages.InitiatedSmokeTestMessage
 import net.cordapp.flowworker.development.smoketests.flow.messages.RpcSmokeTestInput
 import net.cordapp.flowworker.development.smoketests.flow.messages.RpcSmokeTestOutput
