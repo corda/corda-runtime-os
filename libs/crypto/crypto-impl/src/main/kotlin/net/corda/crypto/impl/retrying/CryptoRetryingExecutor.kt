@@ -1,7 +1,6 @@
 package net.corda.crypto.impl.retrying
 
 import net.corda.crypto.core.isRecoverable
-import net.corda.v5.base.exceptions.BackoffStrategy
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.exceptions.CryptoRetryException
 import org.slf4j.Logger
