@@ -5,7 +5,6 @@ plugins {
 
 group 'net.corda.cli.deployment'
 
-<<<<<<< HEAD
 configurations {
     cliHostDist
 }
@@ -43,31 +42,67 @@ artifacts {
     cliInstallArchive
 }
 
-=======
->>>>>>> 7db585b96 (Add support for buildkit)
+
 tasks.register('publishBuildkitImage' , BuildkitBuild) {
     def sourceTasks = subprojects.collect { it.tasks.named("cliPluginTask").get() }
     def cordaCliIncluded = gradle.includedBuilds.collect { it.name == "corda-cli-plugin-host" }.contains(true)
-
-    if (cordaCliIncluded) {
-        logger.lifecycle("corda-cli-plugin-host project detected in composite build logic, building base image from include project")
-        dependsOn gradle.includedBuild("corda-cli-plugin-host").task(':app:publishOSGiImage')
-    }
-    it.sourceFiles.setFrom(sourceTasks)
-    it.subDir = "plugins/"
-    it.setEntry = false
+    def buildBaseDir = it.temporaryDir.toString()
+    def containerizationDir = "$buildBaseDir/containerization/"
+    def driverDir = "$buildBaseDir/jdbc-driver/"
+    def containerLocation = '/opt/override/'
+    def driverLocation = '/opt/jdbc-driver'
+    def subDir = "plugins/"
+    String containerName = project.name
+    String containerTag = ''
 
     if (project.hasProperty('cliBaseImage')) {
-        baseImageName = cliBaseImage
+        it.baseImageName = cliBaseImage
     } else {
         // cater for local composite build
-        baseImageName = (cordaCliIncluded) ? "corda-os-docker-dev.software.r3.com/corda-os-cli" : "corda-os-docker.software.r3.com/corda-os-cli"
+        it.baseImageName = (cordaCliIncluded) ? "corda-os-docker-dev.software.r3.com/corda-os-cli" : "corda-os-docker.software.r3.com/corda-os-cli"
     }
 
     if (project.hasProperty('baseTag')) {
-        baseImageTag = baseTag
+        it.baseImageTag = baseTag
     } else {
         it.baseImageTag = (cordaCliIncluded) ? "latest-local" : "unstable"
+    }
+
+    if(project.hasProperty('Tag')){
+        containerTag = Tag
+    }
+
+    List<String> javaArgs = new ArrayList<String>(it.arguments.get())
+    javaArgs.add("-Dlog4j2.debug=\${ENABLE_LOG4J2_DEBUG:-false}")
+    javaArgs.add("-Dlog4j.configurationFile=log4j2-console.xml")
+    javaArgs.add("-Dpf4j.pluginsDir=${containerLocation + subDir}")
+
+    if (cordaCliIncluded) {
+        logger.lifecycle("corda-cli-plugin-host project detected in composite build logic, building base image from include project")
+        dependsOn gradle.includedBuild("corda-cli-plugin-host").task(':app:publishBuildkitImage')
+    }
+
+    it.sourceFiles.setFrom(sourceTasks)
+    sourceFiles.forEach{
+        logger.quiet("${it.name.toString()}")
+    }
+
+    def baseImageName = "${it.baseImageTag.get().empty ? it.baseImageName.get() : "${it.baseImageName.get()}:${it.baseImageTag.get()}"}"
+    def finalName = "${containerTag.isEmpty() ? containerName : "${containerName}:${containerTag}"}"
+
+    String[] baseCommand = [ 'buildctl' , "--addr tcp://localhost:3476" , "build" ,"--frontend=dockerfile.v0" , "--local context=/" , "--local dockerfile=${project.rootDir.toString() + "/docker"}"]
+    String[] opts = ["--opt build-arg:BASE_IMAGE=${baseImageName}" , "--opt build-arg:BUILD_PATH=${containerizationDir}" , "--opt build-arg:JAR_LOCATION=${containerLocation + subDir}" , "--opt build-arg:JDBC_PATH=${driverDir}" , "--opt build-arg:JDBC_DRIVER_LOCATION=${driverLocation}" , "--opt build-arg:IMAGE_ENTRYPOINT=\"exec java ${javaArgs.join(" ")} -jar  ${containerLocation}cli.jar\" "]
+    String[] commandTail = ["--output type=image,name=docker-js-temp.software.r3.com/corda-os-${finalName},push=true" , "--export-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-${containerName}-cache" , "--import-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-${containerName}-cache"]
+    
+    String[] buildkitCommand = baseCommand + opts + commandTail
+
+    doLast {
+        exec{
+
+            workingDir("${project.rootDir}")
+            commandLine 'bash', '-c' , buildkitCommand.join(" ")
+            
+        }
     }
 
 }
