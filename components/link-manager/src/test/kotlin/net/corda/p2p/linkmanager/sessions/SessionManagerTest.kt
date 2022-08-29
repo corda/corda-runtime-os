@@ -1560,6 +1560,9 @@ class SessionManagerTest {
         val session = mock<Session> {
             on { sessionId } doReturn someSessionId
         }
+/*        val newPendingSession = mock<AuthenticationProtocolInitiator> {
+            on { sessionId } doReturn "newSession"
+        }*/
         whenever(protocolInitiator.getSession()).thenReturn(session)
         assertThat(sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))).isNull()
         mockTimeFacilitiesProvider.advanceTime(3.minutes)
@@ -1572,7 +1575,17 @@ class SessionManagerTest {
             "${someSessionId}_${InitiatorHandshakeMessage::class.java.simpleName}",
             SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY)
         )
+        verify(outboundSessionPool.constructed().last()).replaceSession(someSessionId, protocolInitiator)
+
+
+
+
+
+
+
+
+
+
 
     }
-
 }
