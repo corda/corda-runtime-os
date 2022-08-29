@@ -354,8 +354,6 @@ subprojects {
         description = "Prints a list of all modules which will be released externally"
         group = "Release"
         if (project.hasProperty('releasable') && project.releasable.toBoolean()) {
-                    println project.releasable.toBoolean()
-
             logArtifacts(project)
         }
     }
