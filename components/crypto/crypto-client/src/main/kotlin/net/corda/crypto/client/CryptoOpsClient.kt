@@ -186,7 +186,7 @@ interface CryptoOpsClient : Lifecycle {
      *
      * @throws IllegalArgumentException if a key already exists under this alias
      * and [failIfExists] is set to true.
-     * @throws net.corda.v5.crypto.failures.CryptoException for general cryptographic exceptions.
+     * @throws net.corda.v5.crypto.exceptions.CryptoException for general cryptographic exceptions.
      */
     fun createWrappingKey(
         hsmId: String,
