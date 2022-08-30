@@ -6,6 +6,7 @@ plugins {
     id 'com.jfrog.artifactory'
     id 'maven-publish'
     id 'base'
+    id 'corda.s3-publish'
 }
 
 description 'Publishes the cordapp-configuration Gradle plugin.'
