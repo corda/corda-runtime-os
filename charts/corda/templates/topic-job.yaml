@@ -94,5 +94,6 @@ spec:
                 path: ca.crt
         {{- end }}
       restartPolicy: Never
+      {{- include "corda.bootstrapNodeSelector" . | nindent 6 }}
   backoffLimit: 0
 {{- end }}
