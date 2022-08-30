@@ -1,7 +1,7 @@
 package com.example.crypto
 
-import net.corda.v5.cipher.suite.DigestAlgorithm
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.extensions.DigestAlgorithm
 import net.corda.v5.crypto.sha256Bytes
 import java.io.InputStream
 import java.security.MessageDigest

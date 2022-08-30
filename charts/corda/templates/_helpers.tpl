@@ -66,7 +66,7 @@ imagePullSecrets:
 Worker name
 */}}
 {{- define "corda.workerName" -}}
-"{{ include "corda.fullname" . }}-{{ .worker | kebabcase | replace "p-2p" "p2p" }}-worker"
+{{ include "corda.fullname" . }}-{{ .worker | kebabcase | replace "p-2p" "p2p" }}-worker
 {{- end }}
 
 {{/*
@@ -97,6 +97,18 @@ Worker image
 */}}
 {{- define "corda.workerImage" -}}
 "{{ ( get .Values.workers .worker ).image.registry | default .Values.image.registry }}/{{ ( get .Values.workers .worker ).image.repository }}:{{ ( get .Values.workers .worker ).image.tag | default .Values.image.tag | default .Chart.AppVersion }}"
+{{- end }}
+
+{{/*
+Worker security context
+*/}}
+{{- define "corda.workerSecurityContext" -}}
+{{- if and ( not .Values.dumpHostPath ) ( not ( get .Values.workers .worker ).profiling.enabled ) }}
+securityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+{{- end }}
 {{- end }}
 
 {{/*
@@ -163,8 +175,12 @@ Worker environment variables
   value: {{- if ( get .Values.workers .worker ).debug.enabled }}
       -agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend={{ if ( get .Values.workers .worker ).debug.suspend }}y{{ else }}n{{ end }}
     {{- end -}}
-    {{- if ( get .Values.workers .worker ).profiling.enabled }}
-      -agentpath:/opt/override/libyjpagent.so=exceptions=disable,port=10045,listen=all
+    {{- if  ( get .Values.workers .worker ).profiling.enabled }}
+      -agentpath:/opt/override/libyjpagent.so=exceptions=disable,port=10045,listen=all,dir=/dumps/profile/snapshots,logdir=/dumps/profile/logs
+    {{- end -}}
+    {{- if .Values.heapDumpOnOutOfMemoryError }}
+      -XX:+HeapDumpOnOutOfMemoryError
+      -XX:HeapDumpPath=/dumps/heap
     {{- end -}}
     {{- if ( get .Values.workers .worker ).verifyInstrumentation }}
       -Dco.paralleluniverse.fibers.verifyInstrumentation=true
@@ -283,6 +299,10 @@ Volume mounts for corda workers
   name: "jaas-conf"
   readOnly: true
 {{- end }}
+{{- if .Values.dumpHostPath }}
+- mountPath: /dumps
+  name: dumps
+{{- end }}
 {{- end }}
 
 {{/*
@@ -301,6 +321,12 @@ Volumes for corda workers
 - name: jaas-conf
   secret:
     secretName: {{ include "corda.fullname" . }}-kafka-sasl
+{{- end }}
+{{- if .Values.dumpHostPath }}
+- name: dumps
+  hostPath:
+    path: {{ .Values.dumpHostPath }}/{{ .Release.Namespace }}/{{ (include "corda.workerName" .) }}/
+    type: DirectoryOrCreate
 {{- end }}
 {{- end }}
 

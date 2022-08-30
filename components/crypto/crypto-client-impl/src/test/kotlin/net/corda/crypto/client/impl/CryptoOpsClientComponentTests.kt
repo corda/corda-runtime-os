@@ -54,7 +54,7 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.failures.CryptoException
+import net.corda.v5.crypto.exceptions.CryptoException
 import net.corda.v5.crypto.publicKeyId
 import net.corda.v5.crypto.sha256Bytes
 import org.assertj.core.api.Assertions.assertThat

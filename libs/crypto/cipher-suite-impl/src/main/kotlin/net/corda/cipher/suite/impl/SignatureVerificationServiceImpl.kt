@@ -12,7 +12,7 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.cipher.suite.getParamsSafely
-import net.corda.v5.crypto.failures.CryptoSignatureException
+import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.corda.v5.crypto.publicKeyId
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component

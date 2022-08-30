@@ -6,7 +6,7 @@ import net.corda.entityprocessor.impl.internal.EntitySandboxServiceImpl
 import net.corda.entityprocessor.impl.tests.components.VirtualNodeService
 import net.corda.entityprocessor.impl.tests.helpers.BasicMocks
 import net.corda.entityprocessor.impl.tests.helpers.Resources
-import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.createDogInstance
+import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.createDog
 import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getSerializer
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
@@ -76,11 +76,11 @@ class SerializationTests {
 
         val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity)
 
-        val expectedDog = sandbox.createDogInstance(UUID.randomUUID(), "rover", Instant.now(), "me")
-        val bytes = sandbox.getSerializer().serialize(expectedDog)
+        val expectedDog = sandbox.createDog( "Rover")
+        val bytes = sandbox.getSerializer().serialize(expectedDog.instance)
 
         val actualDog = sandbox.getSerializer().deserialize(bytes)
 
-        assertThat(actualDog).isEqualTo(expectedDog)
+        assertThat(actualDog).isEqualTo(expectedDog.instance)
     }
 }
