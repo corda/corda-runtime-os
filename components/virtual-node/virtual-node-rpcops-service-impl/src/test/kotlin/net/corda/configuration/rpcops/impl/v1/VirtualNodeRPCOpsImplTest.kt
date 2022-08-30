@@ -1,4 +1,4 @@
-package net.corda.configuration.rpcops.impl
+package net.corda.configuration.rpcops.impl.v1
 
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.security.RpcAuthContext

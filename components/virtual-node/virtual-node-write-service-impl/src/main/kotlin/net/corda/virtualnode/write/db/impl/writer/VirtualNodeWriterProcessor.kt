@@ -20,6 +20,8 @@ import net.corda.layeredpropertymap.toAvro
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.findDbChangeLogForCpi
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
+import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.Root.MGM_DEFAULT_GROUP_ID
@@ -31,7 +33,6 @@ import net.corda.orm.utils.use
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
 import net.corda.utilities.time.Clock
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
@@ -57,7 +58,7 @@ import javax.persistence.EntityManager
  * @property groupPolicyParser Parses group policy JSON strings and returns MemberInfo structures
  * @property clock A clock instance used to add timestamps to what the records we publish. This is configurable rather
  *           than always simply the system wall clock time so that we can control everything in tests.
- * @property an overridable function to obtain the changelogs for a CPI. The default looks up in the database.
+ * @property getChangelogs an overridable function to obtain the changelogs for a CPI. The default looks up in the database.
  *           Takes an EntityManager (since that lets us continue a transaction) and a CpiIdentifier as a parameter and
  *           returns a list of CpkDbChangeLogEntity.
  */
@@ -84,7 +85,7 @@ internal class VirtualNodeWriterProcessor(
         respFuture: CompletableFuture<VirtualNodeManagementResponse>
     ) {
         create.validationError()?.let { errMsg ->
-            handleException(respFuture, VirtualNodeWriteServiceException(errMsg))
+            handleException(respFuture, IllegalArgumentException(errMsg))
             return
         }
 
@@ -93,7 +94,7 @@ internal class VirtualNodeWriterProcessor(
             if (cpiMetadata == null) {
                 handleException(
                     respFuture,
-                    VirtualNodeWriteServiceException("CPI with file checksum ${create.cpiFileChecksum} was not found.")
+                    CpiNotFoundException("CPI with file checksum ${create.cpiFileChecksum} was not found.")
                 )
                 return
             }
@@ -106,7 +107,7 @@ internal class VirtualNodeWriterProcessor(
             if (virtualNodeEntityRepository.virtualNodeExists(holdingId, cpiMetadata.id)) {
                 handleException(
                     respFuture,
-                    VirtualNodeWriteServiceException(
+                    VirtualNodeAlreadyExistsException(
                         "Virtual node for CPI with file checksum ${create.cpiFileChecksum} and x500Name ${create.x500Name} already exists."
                     )
                 )
@@ -162,7 +163,9 @@ internal class VirtualNodeWriterProcessor(
                 val cpiMetadata = virtualNodeEntityRepository.getCPIMetadataByNameAndVersion(
                     this.cpiName,
                     this.cpiVersion
-                ) ?: throw CpiNotFoundException(this.holdingIdentity.holdingIdentityShortHash)
+                ) ?: throw CpiNotFoundException(
+                    "No corresponding meta data found for cpi for ${this.holdingIdentity.holdingIdentityShortHash}"
+                )
                 val holdingIdentity = HoldingIdentity(
                     MemberX500Name.parse(this.holdingIdentity.x500Name),
                     this.holdingIdentity.mgmGroupId
@@ -245,6 +248,10 @@ internal class VirtualNodeWriterProcessor(
     }
 
     private fun VirtualNodeCreateRequest.validationError(): String? {
+        if (cpiFileChecksum.isNullOrBlank()) {
+            return "CPI file checksum value is missing"
+        }
+
         if (!vaultDdlConnection.isNullOrBlank() && vaultDmlConnection.isNullOrBlank()) {
             return "If Vault DDL connection is provided, Vault DML connection needs to be provided as well."
         }
@@ -482,6 +489,3 @@ internal class VirtualNodeWriterProcessor(
         return respFuture.complete(response)
     }
 }
-
-class CpiNotFoundException(holdingIdentityShortId: String) :
-    CordaRuntimeException("No corresponding meta data found for cpi for $holdingIdentityShortId")
