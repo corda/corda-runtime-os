@@ -11,6 +11,8 @@ dependencies {
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
+    implementation project(':cordapp-test-utils:api')
+
     implementation "org.hibernate:hibernate-core:$hibernateVersion"
     implementation "org.hsqldb:hsqldb:$hsqldbVersion"
 
