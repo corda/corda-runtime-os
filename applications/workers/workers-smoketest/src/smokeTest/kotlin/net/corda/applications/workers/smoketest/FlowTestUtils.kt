@@ -21,7 +21,7 @@ fun FlowStatus.getRpcFlowResult(): RpcSmokeTestOutput =
 fun startRpcFlow(
     holdingId: String,
     args: RpcSmokeTestInput,
-    expectedCode: Int = 200,
+    expectedCode: Int = 202,
     requestId: String = UUID.randomUUID().toString()
 ): String {
 
@@ -59,7 +59,7 @@ fun startRpcFlow(holdingId: String, args: Map<String, Any>, flowName: String): S
                     escapeJson(ObjectMapper().writeValueAsString(args))
                 )
             }
-            condition { it.code == 200 }
+            condition { it.code == 202 }
         }
 
         requestId
