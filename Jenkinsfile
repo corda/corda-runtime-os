@@ -1,15 +1,14 @@
 @Library('corda-shared-build-pipeline-steps@5.0') _
 
-echo 'Temporarily blocked'
-//cordaPipeline(
-//    nexusAppId: 'flow-worker-5.0',
-//    runIntegrationTests: true,
-//    publishRepoPrefix: 'corda-ent-maven',
-//    createPostgresDb: true,
-//    publishOSGiImage: true,
-//    publishPreTestImage: true,
-//    publishHelmChart: true,
-//    e2eTestName: 'corda-runtime-os-e2e-tests',
-//    runE2eTests: true,
-//    combinedWorkere2eTests: true
-//    )
+cordaPipeline(
+    nexusAppId: 'flow-worker-5.0',
+    runIntegrationTests: true,
+    publishRepoPrefix: 'corda-ent-maven',
+    createPostgresDb: true,
+    publishOSGiImage: true,
+    publishPreTestImage: true,
+    publishHelmChart: true,
+    e2eTestName: 'corda-runtime-os-e2e-tests',
+    runE2eTests: true,
+    combinedWorkere2eTests: true
+    )
