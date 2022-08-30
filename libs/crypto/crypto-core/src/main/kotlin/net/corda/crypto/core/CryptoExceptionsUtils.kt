@@ -1,6 +1,6 @@
 package net.corda.crypto.core
 
-import net.corda.v5.crypto.failures.CryptoException
+import net.corda.v5.crypto.exceptions.CryptoException
 import java.util.concurrent.TimeoutException
 
 // don't want to depend here on the JPA directly hence the class names
