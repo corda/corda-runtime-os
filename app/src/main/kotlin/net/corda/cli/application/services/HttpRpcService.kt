@@ -7,11 +7,13 @@ import com.github.kittinunf.fuel.core.extensions.authentication
 import com.github.kittinunf.fuel.core.extensions.jsonBody
 import com.github.kittinunf.result.Result
 import net.corda.cli.api.services.HttpService
+import net.corda.cli.application.utils.Files
 import org.yaml.snakeyaml.Yaml
 import picocli.CommandLine
 import java.io.FileInputStream
 
-class HttpRpcService() : HttpService {
+@Deprecated(message="The Http Service should be replaced with a Http Rpc Client", replaceWith = ReplaceWith("HttpRpcClient<I>", "net.corda.httprpc.client.HttpRpcClient"), DeprecationLevel.WARNING)
+class HttpRpcService : HttpService {
 
     @CommandLine.Option(names = ["-u", "--user"], description = ["User name"], required = true)
     override var username: String? = null

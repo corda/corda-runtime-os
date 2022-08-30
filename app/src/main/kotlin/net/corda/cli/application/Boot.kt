@@ -3,7 +3,7 @@ package net.corda.cli.application
 import net.corda.cli.api.CordaCliPlugin
 import net.corda.cli.api.serviceUsers.HttpServiceUser
 import net.corda.cli.application.commands.SetCurrentNodeCommand
-import net.corda.cli.application.services.Files
+import net.corda.cli.application.utils.Files
 import net.corda.cli.application.services.HttpRpcService
 import org.pf4j.CompoundPluginDescriptorFinder
 import org.pf4j.DefaultPluginManager

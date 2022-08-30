@@ -2,7 +2,7 @@ package net.corda.cli.application.commands
 
 import com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable
 import net.corda.cli.application.App
-import net.corda.cli.application.services.Files
+import net.corda.cli.application.utils.Files
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.yaml.snakeyaml.Yaml
