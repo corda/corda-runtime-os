@@ -62,5 +62,13 @@ open class SchemaMultiRefObjectModel(
     override fun getRequiredFields() = this.properties.filter { it.value.isRequiredField() }.keys.toList().sorted()
 }
 
+/**
+ * JsonSchemaModel is a special type that allows all JSON types and null format.
+ */
+open class JsonSchemaModel : SchemaModel(
+    type = null,
+    format = null,
+)
+
 private fun SchemaModel.isRequiredField() = required && notNullableOrNull()
 private fun SchemaModel.notNullableOrNull() = (nullable == null || nullable == false)
