@@ -13,7 +13,12 @@ String dockerLabel = '11'
 /*
  * architecture string for Corda images
  */
-string architectureTag = ''
+String architectureTag = ''
+
+/*
+ * architecture for Kuberenetes workers during E2E tests
+ */
+String e2eArchitecture = 'amd64'
 
 switch (params.BUILD_ARCH) {
     case '':
@@ -24,6 +29,7 @@ switch (params.BUILD_ARCH) {
         agentLabel = 'arm64'
         dockerLabel = 'arm64-11'
         architectureTag = 'arm64-'
+        e2eArchitecture = 'arm64'
         break
     default:
         error """\
@@ -71,6 +77,7 @@ pipeline {
         HELM_CONFIG_HOME = "/tmp/helm"
         HELM_REPOSITORY_CACHE = "/host_tmp/helm/repository"
         GRADLE_PERFORMANCE_TUNING = "--parallel -Dscan.tag.E2E -Dscan.tag.${env.NAMESPACE} --build-cache"
+        E2EWORKERARCH = "${e2eArchitecture}"
     }
 
     options {
@@ -115,10 +122,18 @@ pipeline {
                script {
                   env.BASE_IMAGE = params.BUILD_REV ? "preTest-${architectureTag}${params.BUILD_REV}" : "${architectureTag}unstable"
                }
-                sh '''
-                    export SASL_SECRET=$(kubectl get secret -n $NAMESPACE prereqs-kafka-jaas -o=jsonpath='{.data.client-passwords}' | base64 --decode)
-                    helm install corda ./charts/corda -f .ci/e2eTests/corda.yaml --set kafka.sasl.password=$SASL_SECRET --set image.tag=$BASE_IMAGE -n $NAMESPACE --wait --timeout 600s
-                '''
+                sh '''\
+                    SASL_SECRET=$(kubectl get secret \
+                        --namespace "${NAMESPACE}" prereqs-kafka-jaas \
+                        --output=jsonpath='{.data.client-passwords}' | base64 --decode)
+                    helm install corda ./charts/corda \
+                        -f .ci/e2eTests/corda.yaml \
+                        --set kafka.sasl.password="${SASL_SECRET}" \
+                        --set image.tag="${BASE_IMAGE}"  \
+                        --set nodeSelector.kubernetes\\\\.io/os=linux \
+                        --set nodeSelector.kubernetes\\\\.io/arch="${E2EWORKERARCH}" \
+                        --namespace "${NAMESPACE}" --wait --timeout 600s
+                '''.stripIndent()
             }
             post {
                 unsuccessful {
