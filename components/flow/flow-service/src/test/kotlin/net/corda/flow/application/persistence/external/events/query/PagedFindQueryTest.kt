@@ -3,6 +3,7 @@ package net.corda.flow.application.persistence.external.events.query
 import java.nio.ByteBuffer
 import net.corda.flow.application.persistence.external.events.AbstractPersistenceExternalEventFactory
 import net.corda.flow.application.persistence.external.events.FindAllExternalEventFactory
+import net.corda.flow.application.persistence.query.PagedFindQuery
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.fiber.FlowFiberSerializationService
 import net.corda.v5.serialization.SerializedBytes

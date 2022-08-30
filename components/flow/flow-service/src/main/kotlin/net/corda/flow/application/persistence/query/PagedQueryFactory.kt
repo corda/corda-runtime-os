@@ -1,4 +1,4 @@
-package net.corda.flow.application.persistence.external.events.query
+package net.corda.flow.application.persistence.query
 
 import co.paralleluniverse.fibers.Suspendable
 import net.corda.flow.external.events.executor.ExternalEventExecutor
@@ -7,8 +7,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
-@Component(service = [ExternalQueryFactory::class])
-class ExternalQueryFactory @Activate constructor(
+@Component(service = [PagedQueryFactory::class])
+class PagedQueryFactory @Activate constructor(
     @Reference(service = ExternalEventExecutor::class)
     private val externalEventExecutor: ExternalEventExecutor,
     @Reference(service = FlowFiberSerializationService::class)
@@ -22,15 +22,18 @@ class ExternalQueryFactory @Activate constructor(
      * @return NamedParameterisedQuery object that can be used to execute named queries.
      */
     @Suppress("Unused")
-    fun <R : Any> createNamedParameterisedQuery(queryName: String, expectedClass: Class<R>): NamedParameterisedQuery<R> {
+    fun <R : Any> createNamedParameterisedQuery(
+        queryName: String,
+        expectedClass: Class<R>
+    ): NamedParameterisedQuery<R> {
         return NamedParameterisedQuery(
-            externalEventExecutor,
-            flowFiberSerializationService,
-            queryName,
-            mutableMapOf(),
-            0,
-            Int.MAX_VALUE,
-            expectedClass
+            externalEventExecutor = externalEventExecutor,
+            flowFiberSerializationService = flowFiberSerializationService,
+            queryName = queryName,
+            parameters = mutableMapOf(),
+            offset = 0,
+            limit = Int.MAX_VALUE,
+            expectedClass = expectedClass
         )
     }
 
@@ -42,6 +45,12 @@ class ExternalQueryFactory @Activate constructor(
      */
     @Suspendable
     fun <R : Any> createPagedFindQuery(entityClass: Class<R>): PagedFindQuery<R> {
-        return PagedFindQuery(externalEventExecutor, flowFiberSerializationService, entityClass, 0, Int.MAX_VALUE)
+        return PagedFindQuery(
+            externalEventExecutor = externalEventExecutor,
+            flowFiberSerializationService = flowFiberSerializationService,
+            entityClass = entityClass,
+            offset = 0,
+            limit = Int.MAX_VALUE
+        )
     }
 }

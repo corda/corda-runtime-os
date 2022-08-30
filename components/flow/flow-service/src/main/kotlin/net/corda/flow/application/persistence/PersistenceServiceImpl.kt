@@ -9,7 +9,7 @@ import net.corda.flow.application.persistence.external.events.PersistExternalEve
 import net.corda.flow.application.persistence.external.events.PersistParameters
 import net.corda.flow.application.persistence.external.events.RemoveExternalEventFactory
 import net.corda.flow.application.persistence.external.events.RemoveParameters
-import net.corda.flow.application.persistence.external.events.query.ExternalQueryFactory
+import net.corda.flow.application.persistence.query.PagedQueryFactory
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.fiber.FlowFiberSerializationService
 import net.corda.v5.application.persistence.PagedQuery
@@ -28,8 +28,8 @@ import org.osgi.service.component.annotations.ServiceScope
 class PersistenceServiceImpl @Activate constructor(
     @Reference(service = ExternalEventExecutor::class)
     private val externalEventExecutor: ExternalEventExecutor,
-    @Reference(service = ExternalQueryFactory::class)
-    private val externalQueryFactory: ExternalQueryFactory,
+    @Reference(service = PagedQueryFactory::class)
+    private val pagedQueryFactory: PagedQueryFactory,
     @Reference(service = FlowFiberSerializationService::class)
     private val flowFiberSerializationService: FlowFiberSerializationService
 ) : PersistenceService, SingletonSerializeAsToken {
@@ -51,7 +51,7 @@ class PersistenceServiceImpl @Activate constructor(
 
     @Suspendable
     override fun <R : Any> findAll(entityClass: Class<R>): PagedQuery<R> {
-        return externalQueryFactory.createPagedFindQuery(entityClass)
+        return pagedQueryFactory.createPagedFindQuery(entityClass)
     }
 
 
@@ -105,7 +105,7 @@ class PersistenceServiceImpl @Activate constructor(
         queryName: String,
         entityClass: Class<T>
     ): ParameterisedQuery<T> {
-        return externalQueryFactory.createNamedParameterisedQuery(queryName, entityClass)
+        return pagedQueryFactory.createNamedParameterisedQuery(queryName, entityClass)
     }
 
     /**

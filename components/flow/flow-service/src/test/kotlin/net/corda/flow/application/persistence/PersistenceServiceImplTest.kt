@@ -6,7 +6,7 @@ import net.corda.flow.application.persistence.external.events.FindExternalEventF
 import net.corda.flow.application.persistence.external.events.MergeExternalEventFactory
 import net.corda.flow.application.persistence.external.events.PersistExternalEventFactory
 import net.corda.flow.application.persistence.external.events.RemoveExternalEventFactory
-import net.corda.flow.application.persistence.external.events.query.ExternalQueryFactory
+import net.corda.flow.application.persistence.query.PagedQueryFactory
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.fiber.FlowFiberSerializationService
 import net.corda.v5.application.persistence.PersistenceService
@@ -24,7 +24,7 @@ import org.mockito.kotlin.whenever
 class PersistenceServiceImplTest {
 
     private val flowFiberSerializationService = mock<FlowFiberSerializationService>()
-    private val externalQueryFactory = mock<ExternalQueryFactory>()
+    private val pagedQueryFactory = mock<PagedQueryFactory>()
     private val serializedBytes = mock<SerializedBytes<Any>>()
     private val externalEventExecutor = mock<ExternalEventExecutor>()
 
@@ -36,7 +36,7 @@ class PersistenceServiceImplTest {
 
     @BeforeEach
     fun setup() {
-        persistenceService = PersistenceServiceImpl(externalEventExecutor, externalQueryFactory, flowFiberSerializationService)
+        persistenceService = PersistenceServiceImpl(externalEventExecutor, pagedQueryFactory, flowFiberSerializationService)
 
         whenever(flowFiberSerializationService.serialize(any())).thenReturn(serializedBytes)
         whenever(serializedBytes.bytes).thenReturn(byteBuffer.array())
@@ -94,13 +94,13 @@ class PersistenceServiceImplTest {
     @Test
     fun `find all executes successfully`() {
         persistenceService.findAll(TestObject::class.java)
-        verify(externalQueryFactory).createPagedFindQuery<TestObject>(any())
+        verify(pagedQueryFactory).createPagedFindQuery<TestObject>(any())
     }
 
     @Test
     fun `named query executes successfully`() {
         persistenceService.query("", TestObject::class.java)
-        verify(externalQueryFactory).createNamedParameterisedQuery<TestObject>(any(), any())
+        verify(pagedQueryFactory).createNamedParameterisedQuery<TestObject>(any(), any())
     }
 
     class TestObject

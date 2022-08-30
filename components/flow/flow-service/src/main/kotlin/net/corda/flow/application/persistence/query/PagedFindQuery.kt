@@ -1,4 +1,4 @@
-package net.corda.flow.application.persistence.external.events.query
+package net.corda.flow.application.persistence.query
 
 import co.paralleluniverse.fibers.Suspendable
 import net.corda.flow.application.persistence.external.events.FindAllExternalEventFactory
@@ -21,12 +21,14 @@ class PagedFindQuery<R : Any>(
 
     @Suspendable
     override fun setLimit(limit: Int): PagedQuery<R> {
+        require (limit >= 0) { "Limit cannot be negative" }
         this.limit = limit
         return this
     }
 
     @Suspendable
     override fun setOffset(offset: Int): PagedQuery<R> {
+        require (offset >= 0) { "Offset cannot be negative" }
         this.offset = offset
         return this
     }
@@ -38,7 +40,7 @@ class PagedFindQuery<R : Any>(
                 FindAllExternalEventFactory::class.java,
                 FindAllParameters(entityClass, offset, limit)
             )
-        }.mapNotNull { flowFiberSerializationService.deserializePayload(it.array(), entityClass) }
+        }.map { flowFiberSerializationService.deserializePayload(it.array(), entityClass) }
 
         return deserialized
     }
