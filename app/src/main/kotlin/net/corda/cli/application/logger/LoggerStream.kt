@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory
 import java.io.ByteArrayOutputStream
 
 enum class LogLevel {
-    TRACE, DEBUG, INFO, WARN, ERROR
+    INFO, ERROR
 }
 
 class LoggerStream(
@@ -25,38 +25,35 @@ class LoggerStream(
         }
     }
 
-    private val baos = ByteArrayOutputStream(1000)
+    private val byteArrayOutputStream = ByteArrayOutputStream(1000)
 
-    override fun write(b: Int) {
-        if (b.toChar() == '\n') {
+    override fun write(byte: Int) {
+        if (byte.toChar() == '\n') {
 
-            val line = baos.toString()
-            baos.reset()
+            val line = byteArrayOutputStream.toString()
+            byteArrayOutputStream.reset()
 
             systemOutput(logLevel, line)
 
         } else {
-            baos.write(b)
+            byteArrayOutputStream.write(byte)
         }
-        logIfNotEmpty(logLevel, b.toString())
+        logIfNotEmpty(logLevel, byte.toString())
     }
 
-    override fun write(b: ByteArray) {
-        logIfNotEmpty(logLevel, String(b))
+    override fun write(byteArray: ByteArray) {
+        logIfNotEmpty(logLevel, String(byteArray))
     }
 
-    override fun write(b: ByteArray, off: Int, len: Int) {
-        logIfNotEmpty(logLevel, String(b, off, len))
+    override fun write(byteArray: ByteArray, off: Int, len: Int) {
+        logIfNotEmpty(logLevel, String(byteArray, off, len))
     }
 
     // needed to wrap slf4js log method which offers no level options
     private fun systemOutput(logLevel: LogLevel, message: String) {
         when (logLevel) {
-            LogLevel.DEBUG -> logger.debug(message)
             LogLevel.ERROR -> logger.error(message)
             LogLevel.INFO -> logger.info(message)
-            LogLevel.TRACE -> logger.trace(message)
-            LogLevel.WARN -> logger.warn(message)
         }
     }
 

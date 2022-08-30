@@ -3,7 +3,6 @@ package net.corda.cli.application
 import net.corda.cli.api.CordaCliPlugin
 import net.corda.cli.api.serviceUsers.HttpServiceUser
 import net.corda.cli.application.commands.SetCurrentNodeCommand
-import net.corda.cli.application.logger.LogToFileAppender
 import net.corda.cli.application.logger.LoggerStream
 import net.corda.cli.application.services.Files
 import net.corda.cli.application.services.HttpRpcService
@@ -11,7 +10,6 @@ import org.pf4j.CompoundPluginDescriptorFinder
 import org.pf4j.DefaultPluginManager
 import org.pf4j.ManifestPluginDescriptorFinder
 import picocli.CommandLine
-import java.io.File
 import java.nio.file.Path
 import java.nio.file.Paths
 import kotlin.system.exitProcess
@@ -43,12 +41,6 @@ object Boot {
     fun run(vararg args: String) {
         // Setup loggers to redirect sysOut and sysErr
         LoggerStream.redirectSystemAndErrorOut()
-        // Create additional logger if logFile env is available
-        if (!System.getProperty("logFile").isNullOrEmpty()) {
-            val path = File(System.getProperty("logFile"))
-            val level = System.getProperty("logLevel", "INFO")
-            LogToFileAppender.enableLogToFile(path, level)
-        }
 
         // create storage dir if it doesn't exist
         Files.cliHomeDir().mkdirs()
