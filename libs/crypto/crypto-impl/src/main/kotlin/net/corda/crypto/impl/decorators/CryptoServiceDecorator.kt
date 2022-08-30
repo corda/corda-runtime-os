@@ -1,8 +1,8 @@
 package net.corda.crypto.impl.decorators
 
 import net.corda.crypto.core.isRecoverable
+import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutorWithTimeout
-import net.corda.v5.base.exceptions.BackoffStrategy
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceExtensions
