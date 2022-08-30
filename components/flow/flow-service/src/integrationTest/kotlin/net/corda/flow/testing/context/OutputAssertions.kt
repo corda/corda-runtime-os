@@ -35,7 +35,9 @@ interface OutputAssertions {
         initiatedIdentity: HoldingIdentity? = null
     )
 
-    fun cryptoSignEvents(vararg requestId: String)
+    fun externalEvent(topic: String, key: Any, payload: Any)
+
+    fun noExternalEvent(topic: String)
 
     fun scheduleFlowMapperCleanupEvents(vararg key: String)
 

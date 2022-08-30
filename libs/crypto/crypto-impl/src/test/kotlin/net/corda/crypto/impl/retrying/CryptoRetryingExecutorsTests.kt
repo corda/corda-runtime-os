@@ -1,9 +1,8 @@
 package net.corda.crypto.impl.retrying
 
-import net.corda.v5.base.exceptions.BackoffStrategy
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.crypto.failures.CryptoException
-import net.corda.v5.crypto.failures.CryptoRetryException
+import net.corda.v5.crypto.exceptions.CryptoException
+import net.corda.v5.crypto.exceptions.CryptoRetryException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test

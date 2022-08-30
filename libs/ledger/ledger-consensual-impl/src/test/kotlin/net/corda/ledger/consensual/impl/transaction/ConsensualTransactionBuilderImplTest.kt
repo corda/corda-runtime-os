@@ -1,9 +1,14 @@
 package net.corda.ledger.consensual.impl.transaction
 
+import java.security.KeyPairGenerator
+import java.security.PublicKey
+import java.security.SecureRandom
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeFactoryImpl
 import net.corda.flow.application.crypto.SigningServiceImpl
+import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.flow.external.events.impl.executor.ExternalEventExecutorImpl
 import net.corda.flow.fiber.FlowFiberServiceImpl
 import net.corda.ledger.consensual.impl.PartyImpl
 import net.corda.ledger.consensual.impl.helper.ConfiguredTestSerializationService
@@ -20,9 +25,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import java.security.KeyPairGenerator
-import java.security.PublicKey
-import java.security.SecureRandom
 
 internal class ConsensualTransactionBuilderImplTest{
     companion object {
@@ -31,6 +33,7 @@ internal class ConsensualTransactionBuilderImplTest{
         private lateinit var secureRandom: SecureRandom
         private lateinit var serializer: SerializationService
         private lateinit var signingService: SigningService
+        private lateinit var externalEventExecutor: ExternalEventExecutor
         private lateinit var testPublicKey: PublicKey
         private lateinit var testConsensualState: ConsensualState
 
@@ -53,7 +56,8 @@ internal class ConsensualTransactionBuilderImplTest{
             serializer = ConfiguredTestSerializationService.getTestSerializationService(schemeMetadata)
 
             val flowFiberService = FlowFiberServiceImpl()
-            signingService = SigningServiceImpl(flowFiberService, schemeMetadata)
+            externalEventExecutor = ExternalEventExecutorImpl(flowFiberService)
+            signingService = SigningServiceImpl(externalEventExecutor, schemeMetadata)
 
             val kpg = KeyPairGenerator.getInstance("RSA")
             kpg.initialize(512) // Shortest possible to not slow down tests.
