@@ -1,9 +1,0 @@
-<?xml version="1.0" ?>
-<SmellBaseline>
-  <ManuallySuppressedIssues></ManuallySuppressedIssues>
-  <CurrentIssues>
-    <ID>ForbiddenComment:CompositeKey.kt$CompositeKey$// TODO: replace with the more extensive, but slower, checkValidity() test.</ID>
-    <ID>ForbiddenComment:CompositeKey.kt$CompositeKey.Companion$// TODO: node.encoded.sequence() might be expensive, consider a faster deterministic compareTo implementation</ID>
-    <ID>ForbiddenComment:CompositeKey.kt$CompositeKey.NodeAndWeight$// TODO: this might be expensive, consider a faster deterministic compareTo implementation when weights are equal.</ID>
-  </CurrentIssues>
-</SmellBaseline>

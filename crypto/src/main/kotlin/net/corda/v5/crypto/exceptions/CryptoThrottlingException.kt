@@ -1,16 +1,14 @@
 package net.corda.v5.crypto.exceptions
 
 import net.corda.v5.base.annotations.CordaSerializable
-import net.corda.v5.base.exceptions.BackoffStrategy
-import net.corda.v5.base.exceptions.BackoffStrategy.Companion.createExponentialBackoff
-import net.corda.v5.base.exceptions.BackoffStrategy.Companion.createLinearBackoff
+
 
 /**
  * Signals that there is a throttling by a downstream service, such as HSM or any other and provides parameters which
  * can be used to retry the operation which caused that.
  */
 @CordaSerializable
-open class CryptoThrottlingException : CryptoException, BackoffStrategy {
+open class CryptoThrottlingException : CryptoException {
     companion object {
         /**
          * Creates an instance of the exception with the message
@@ -46,24 +44,54 @@ open class CryptoThrottlingException : CryptoException, BackoffStrategy {
             initialBackoff: Long
         ): CryptoThrottlingException =
             CryptoThrottlingException(message, cause, createExponentialBackoff(maxAttempts, initialBackoff))
+
+        private fun createLinearBackoff(): List<Long> =
+            createBackoff(3, listOf(200L))
+
+        private fun createExponentialBackoff(): List<Long> =
+            createExponentialBackoff(6, 1000L)
+
+        private fun createExponentialBackoff(maxAttempts: Int, initialBackoff: Long): List<Long> = when {
+            maxAttempts <= 1 -> emptyList()
+            else -> {
+                var next = initialBackoff
+                List(maxAttempts - 1) {
+                    val current = next
+                    next *= 2
+                    current
+                }
+            }
+        }
+
+        private fun createBackoff(maxAttempts: Int, backoff: List<Long>): List<Long> = when {
+            maxAttempts <= 1 -> emptyList()
+            backoff.isEmpty() -> createBackoff(maxAttempts, listOf(0L))
+            else -> List(maxAttempts - 1) {
+                    if (it < backoff.size) {
+                        backoff[it]
+                    } else {
+                        backoff[backoff.size - 1]
+                    }
+                }
+        }
     }
 
-    private val strategy: BackoffStrategy
+    private val backoff: List<Long>
 
     /**
      * Creates an instance of the exception with the message
      * and linear backoff of 3 max attempts with 200 milliseconds wait time in between
      */
-    constructor(message: String) : super(message, true) {
-        strategy = createLinearBackoff()
+    constructor(message: String) : super(message,true) {
+        this.backoff = createLinearBackoff()
     }
 
     /**
      * Creates an instance of the exception with the message
      * and specified backoff, the number of max attempts would be the size of the array plus 1
      */
-    constructor(message: String, vararg backoff: Long) : super(message, true) {
-        strategy = BackoffStrategy.Default(backoff.toTypedArray())
+    constructor(message: String, backoff: List<Long>) : super(message, true) {
+        this.backoff = backoff
     }
 
     /**
@@ -71,25 +99,21 @@ open class CryptoThrottlingException : CryptoException, BackoffStrategy {
      * and linear backoff of 3 max attempts with 200 milliseconds wait time in between
      */
     constructor(message: String, cause: Throwable?) : super(message, true, cause) {
-        strategy = createLinearBackoff()
+        this.backoff = createLinearBackoff()
     }
 
     /**
      * Creates an instance of the exception with the message, cause
      * and specified backoff, the number of max attempts would be the size of the array plus 1
      */
-    constructor(message: String, cause: Throwable?, vararg backoff: Long) : super(message, true, cause) {
-        strategy = BackoffStrategy.Default(backoff.toTypedArray())
+    constructor(message: String, cause: Throwable?, backoff: List<Long>) : super(message, true, cause) {
+        this.backoff = backoff
     }
 
-    private constructor(message: String, cause: Throwable?, strategy: BackoffStrategy) : super(
-        message,
-        true,
-        cause
-    ) {
-        this.strategy = strategy
-    }
-
-    override fun getBackoff(attempt: Int): Long =
-        strategy.getBackoff(attempt)
+    open fun getBackoff(attempt: Int): Long =
+        if (attempt < 1 || attempt > backoff.size) {
+            -1
+        } else {
+            backoff[attempt - 1]
+        }
 }

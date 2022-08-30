@@ -1,4 +1,4 @@
-package net.corda.v5.cipher.suite
+package net.corda.v5.crypto.extensions
 
 import java.io.InputStream
 

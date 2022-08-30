@@ -20,7 +20,7 @@ class CryptoThrottlingExceptionTests {
 
     @Test
     fun `Should return customized backoff with message only`() {
-        val e =  CryptoThrottlingException("Something wrong.", 100, 200)
+        val e =  CryptoThrottlingException("Something wrong.", listOf(100, 200))
         assertNull(e.cause)
         var backoff = e.getBackoff(1)
         assertEquals(100L, backoff)
@@ -46,7 +46,7 @@ class CryptoThrottlingExceptionTests {
     @Test
     fun `Should return customized backoff with message and cause`() {
         val cause = RuntimeException()
-        val e =  CryptoThrottlingException("Something wrong.", cause, 100, 200)
+        val e =  CryptoThrottlingException("Something wrong.", cause, listOf(100, 200))
         assertSame(cause, e.cause)
         var backoff = e.getBackoff(1)
         assertEquals(100L, backoff)

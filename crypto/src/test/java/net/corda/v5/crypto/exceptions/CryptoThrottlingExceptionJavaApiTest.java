@@ -1,6 +1,5 @@
 package net.corda.v5.crypto.exceptions;
 
-import net.corda.v5.crypto.exceptions.CryptoThrottlingException;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
