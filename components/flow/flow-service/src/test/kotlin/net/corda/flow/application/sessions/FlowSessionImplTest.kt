@@ -2,19 +2,16 @@ package net.corda.flow.application.sessions
 
 import net.corda.flow.ALICE_X500_NAME
 import net.corda.flow.application.services.MockFlowFiberService
+import net.corda.flow.fiber.FlowFiberSerializationService
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.application.messaging.unwrap
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
@@ -31,24 +28,17 @@ class FlowSessionImplTest {
         val received = mapOf(SESSION_ID to HELLO_THERE.toByteArray())
     }
 
-    private val serializationService = mock<SerializationService>().apply {
+    private val mockFlowFiberService = MockFlowFiberService()
+    private val flowFiberSerializationService = mock<FlowFiberSerializationService>().apply {
         whenever(serialize(HELLO_THERE)).thenReturn(SerializedBytes(HELLO_THERE.toByteArray()))
         whenever(serialize(HI)).thenReturn(SerializedBytes(HI.toByteArray()))
-        whenever(deserialize(HELLO_THERE.toByteArray(), String::class.java)).thenReturn(HELLO_THERE)
-        whenever(deserialize(HI.toByteArray(), String::class.java)).thenReturn(HI)
+        whenever(deserializePayload(HELLO_THERE.toByteArray(), String::class.java)).thenReturn(HELLO_THERE)
+        whenever(deserializePayload(HI.toByteArray(), String::class.java)).thenReturn(HI)
     }
 
-    private val mockFlowFiberService = MockFlowFiberService()
     private val flowFiber = mockFlowFiberService.flowFiber.apply {
         whenever(suspend(any<FlowIORequest.SendAndReceive>())).thenReturn(received)
         whenever(suspend(any<FlowIORequest.Receive>())).thenReturn(received)
-    }
-
-    @BeforeEach
-    fun setup() {
-        mockFlowFiberService.sandboxGroupContext.apply {
-            whenever(amqpSerializer).thenReturn(serializationService)
-        }
     }
 
     @Test
@@ -72,13 +62,6 @@ class FlowSessionImplTest {
         session.sendAndReceive(String::class.java, HI)
         verify(flowFiber, never()).suspend(any<FlowIORequest.InitiateFlow>())
         verify(flowFiber).suspend(any<FlowIORequest.SendAndReceive>())
-    }
-
-    @Test
-    fun `receiving the wrong object type in sendAndReceive throws an exception`() {
-        whenever(serializationService.deserialize(eq(HELLO_THERE.toByteArray()), any<Class<*>>())).thenReturn(1)
-        val session = createSession(initiated = true)
-        assertThrows<CordaRuntimeException> { session.sendAndReceive(String::class.java, HI) }
     }
 
     @Test
@@ -109,13 +92,6 @@ class FlowSessionImplTest {
         session.receive(String::class.java)
         verify(flowFiber, never()).suspend(any<FlowIORequest.InitiateFlow>())
         verify(flowFiber).suspend(any<FlowIORequest.Receive>())
-    }
-
-    @Test
-    fun `receiving the wrong object type in receive throws an exception`() {
-        whenever(serializationService.deserialize(eq(HELLO_THERE.toByteArray()), any<Class<*>>())).thenReturn(1)
-        val session = createSession(initiated = true)
-        assertThrows<CordaRuntimeException> { session.receive(String::class.java) }
     }
 
     @Test
@@ -160,6 +136,7 @@ class FlowSessionImplTest {
             counterparty = ALICE_X500_NAME,
             sourceSessionId = SESSION_ID,
             mockFlowFiberService,
+            flowFiberSerializationService,
             initiated
         )
     }

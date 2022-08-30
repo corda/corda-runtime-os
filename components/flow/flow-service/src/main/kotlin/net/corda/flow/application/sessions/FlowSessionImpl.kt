@@ -1,23 +1,22 @@
 package net.corda.flow.application.sessions
 
 import net.corda.flow.fiber.FlowFiber
+import net.corda.flow.fiber.FlowFiberSerializationService
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.v5.application.messaging.FlowInfo
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.UntrustworthyData
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.castIfPossible
 import net.corda.v5.base.util.contextLogger
-import java.io.NotSerializableException
 
 class FlowSessionImpl(
     override val counterparty: MemberX500Name,
     private val sourceSessionId: String,
     private val flowFiberService: FlowFiberService,
+    private val flowFiberSerializationService: FlowFiberSerializationService,
     private var initiated: Boolean
 ) : FlowSession {
 
@@ -98,7 +97,7 @@ class FlowSessionImpl(
     }
 
     private fun serialize(payload: Any): ByteArray {
-        return getSerializationService().serialize(payload).bytes
+        return flowFiberSerializationService.serialize(payload).bytes
     }
 
     private fun <R : Any> deserializeReceivedPayload(
@@ -106,33 +105,8 @@ class FlowSessionImpl(
         receiveType: Class<R>
     ): UntrustworthyData<R> {
         return received[sourceSessionId]?.let {
-            try {
-                val payload = getSerializationService().deserialize(it, receiveType)
-                checkPayloadIs(payload, receiveType)
-                UntrustworthyData(payload)
-            } catch (e: NotSerializableException) {
-                log.info("Received a payload but failed to deserialize it into a ${receiveType.name}", e)
-                throw e
-            }
-        }
-            ?: throw CordaRuntimeException("The session [${sourceSessionId}] did not receive a payload when trying to receive one")
-    }
-
-    /**
-     * AMQP deserialization outputs an object whose type is solely based on the serialized content, therefore although the generic type is
-     * specified, it can still be the wrong type. We check this type here, so that we can throw an accurate error instead of failing later
-     * on when the object is used.
-     */
-    private fun <R : Any> checkPayloadIs(payload: Any, receiveType: Class<R>) {
-        receiveType.castIfPossible(payload) ?: throw CordaRuntimeException(
-            "Expecting to receive a ${receiveType.name} but received a ${payload.javaClass.name} instead, payload: ($payload)"
-        )
-    }
-
-    private fun getSerializationService(): SerializationService {
-        return fiber.getExecutionContext().run {
-            sandboxGroupContext.amqpSerializer
-        }
+            UntrustworthyData(flowFiberSerializationService.deserializePayload(it, receiveType))
+        } ?: throw CordaRuntimeException("The session [${sourceSessionId}] did not receive a payload when trying to receive one")
     }
 
     override fun equals(other: Any?): Boolean =

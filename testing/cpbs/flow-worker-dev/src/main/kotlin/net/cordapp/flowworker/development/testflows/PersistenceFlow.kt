@@ -54,6 +54,12 @@ class PersistenceFlow : RPCStartableFlow {
             val foundDog = persistenceService.find(Dog::class.java, id)
             log.info("Found Dog: $foundDog")
 
+            log.info("Launching name query")
+            val namedQueryDog = persistenceService.query("Dog.summon", Dog::class.java)
+            namedQueryDog.setParameter("name", "Penny")
+            val queriedDogs = namedQueryDog.execute()
+            log.info("Query for Penny returned the following dogs: $queriedDogs")
+
             val mergeDog = Dog(id, "Penny", Instant.now(), "Bob")
             val updatedDog = persistenceService.merge(mergeDog)
             log.info("Updated Dog: $updatedDog")
