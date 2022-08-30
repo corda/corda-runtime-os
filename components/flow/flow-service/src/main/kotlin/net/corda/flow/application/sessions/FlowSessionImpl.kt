@@ -4,6 +4,7 @@ import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.state.impl.FlatSerializableContext
+import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.messaging.FlowInfo
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.UntrustworthyData
@@ -19,7 +20,7 @@ class FlowSessionImpl(
     override val counterparty: MemberX500Name,
     private val sourceSessionId: String,
     private val flowFiberService: FlowFiberService,
-    private var initiated: Boolean
+    private var isSessionConfirmed: Boolean
 ) : FlowSession {
 
     private companion object {
@@ -29,23 +30,29 @@ class FlowSessionImpl(
     private val fiber: FlowFiber get() = flowFiberService.getExecutingFiber()
 
     /**
-     * Both sessionLocalFlowContext and contextProperties must be lazily initialised, they can only be obtained from
-     * an executing flow fiber by user code.
+     * This class can be serialized, so we need to ensure all properties support that too. In this case that means we
+     * cannot touch the executing fiber when setting or getting this property, because we might not be in one. Instead
+     * that is done when [contextProperties] is requested or [confirmSession] called, because both of those things can
+     * only happen inside a fiber by contract.
      */
-    private val sessionLocalFlowContext by lazy {
-        if (initiated) {
-            throw IllegalStateException(
-                "FlowSessions of initiated flows do not have local context, obtain FlowContext from the FlowEngine"
-            )
+    private var sessionLocalFlowContext: FlatSerializableContext? = null
+
+    override val contextProperties: FlowContextProperties
+        get() {
+            initialiseSessionLocalFlowContext()
+            return sessionLocalFlowContext!!
         }
 
-        val flowContext = fiber.getExecutionContext().flowCheckpoint.flowContext
-        FlatSerializableContext(
-            contextUserProperties = flowContext.flattenUserProperties(),
-            contextPlatformProperties = flowContext.flattenPlatformProperties()
-        )
+    private fun initialiseSessionLocalFlowContext() {
+        if (sessionLocalFlowContext == null) {
+            with(fiber.getExecutionContext().flowCheckpoint.flowContext) {
+                sessionLocalFlowContext = FlatSerializableContext(
+                    contextUserProperties = this.flattenUserProperties(),
+                    contextPlatformProperties = this.flattenPlatformProperties()
+                )
+            }
+        }
     }
-    override val contextProperties by lazy { sessionLocalFlowContext }
 
     @Suspendable
     override fun getCounterpartyFlowInfo(): FlowInfo {
@@ -55,9 +62,9 @@ class FlowSessionImpl(
     @Suspendable
     override fun <R : Any> sendAndReceive(receiveType: Class<R>, payload: Any): UntrustworthyData<R> {
         enforceNotPrimitive(receiveType)
-        log.info("sessionId=${sourceSessionId} is init=${initiated}")
-        ensureSessionIsOpen()
-        log.info("sessionId=${sourceSessionId} is init=${initiated}")
+        log.info("sessionId=${sourceSessionId} is init=${isSessionConfirmed}")
+        confirmSession()
+        log.info("sessionId=${sourceSessionId} is init=${isSessionConfirmed}")
         val request = FlowIORequest.SendAndReceive(mapOf(sourceSessionId to serialize(payload)))
         val received = fiber.suspend(request)
         return deserializeReceivedPayload(received, receiveType)
@@ -66,7 +73,7 @@ class FlowSessionImpl(
     @Suspendable
     override fun <R : Any> receive(receiveType: Class<R>): UntrustworthyData<R> {
         enforceNotPrimitive(receiveType)
-        ensureSessionIsOpen()
+        confirmSession()
         val request = FlowIORequest.Receive(setOf(sourceSessionId))
         val received = fiber.suspend(request)
         return deserializeReceivedPayload(received, receiveType)
@@ -74,14 +81,14 @@ class FlowSessionImpl(
 
     @Suspendable
     override fun send(payload: Any) {
-        ensureSessionIsOpen()
+        confirmSession()
         val request = FlowIORequest.Send(sessionToPayload = mapOf(sourceSessionId to serialize(payload)))
         return fiber.suspend(request)
     }
 
     @Suspendable
     override fun close() {
-        if (initiated) {
+        if (isSessionConfirmed) {
             fiber.suspend(FlowIORequest.CloseSessions(setOf(sourceSessionId)))
             log.info("Closed session: $sourceSessionId")
         } else {
@@ -90,8 +97,9 @@ class FlowSessionImpl(
     }
 
     @Suspendable
-    private fun ensureSessionIsOpen() {
-        if (!initiated) {
+    private fun confirmSession() {
+        if (!isSessionConfirmed) {
+            initialiseSessionLocalFlowContext()
             fiber.suspend(
                 FlowIORequest.InitiateFlow(
                     counterparty,
@@ -100,7 +108,7 @@ class FlowSessionImpl(
                     contextPlatformProperties = sessionLocalFlowContext.flattenPlatformProperties()
                 )
             )
-            initiated = true
+            isSessionConfirmed = true
         }
     }
 
@@ -155,5 +163,5 @@ class FlowSessionImpl(
     override fun hashCode(): Int = sourceSessionId.hashCode()
 
     override fun toString(): String =
-        "FlowSessionImpl(counterparty=$counterparty, sourceSessionId=$sourceSessionId, initiated=$initiated)"
+        "FlowSessionImpl(counterparty=$counterparty, sourceSessionId=$sourceSessionId, initiated=$isSessionConfirmed)"
 }
