@@ -89,7 +89,7 @@ class FlowRPCOpsImpl @Activate constructor(
                 clientRequestId,
                 vNode,
                 flowClassName,
-                startFlow.requestData,
+                startFlow.requestData.escapedJson,
                 flowContextPlatformProperties
             )
         val status = messageFactory.createStartFlowStatus(clientRequestId, vNode, flowClassName)
