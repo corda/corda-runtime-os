@@ -1,4 +1,4 @@
-package net.corda.testing.bundles.cats
+package net.cordapp.testing.bundles.cats
 import net.corda.v5.base.annotations.CordaSerializable
 import java.util.UUID
 
