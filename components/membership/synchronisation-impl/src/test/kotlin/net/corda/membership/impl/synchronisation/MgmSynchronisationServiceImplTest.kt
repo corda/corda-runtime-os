@@ -5,7 +5,6 @@ import net.corda.chunking.toCorda
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.crypto.merkle.impl.MerkleTreeImpl
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHash
@@ -58,6 +57,7 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
@@ -168,10 +168,10 @@ class MgmSynchronisationServiceImplTest {
     private val syncId = UUID.randomUUID().toString()
     private val byteBuffer = "1234".toByteBuffer()
     private val secureHash = createSecureHash("algorithm1")
-    private val matchingMerkleTree: MerkleTreeImpl = mock {
+    private val matchingMerkleTree: MerkleTree = mock {
         on { root } doReturn secureHash.toCorda()
     }
-    private val nonMatchingMerkleTree: MerkleTreeImpl = mock {
+    private val nonMatchingMerkleTree: MerkleTree = mock {
         on { root } doReturn createSecureHash("algorithm2").toCorda()
     }
     private val merkleTreeGenerator: MerkleTreeGenerator = mock {
