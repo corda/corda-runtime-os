@@ -93,6 +93,7 @@ pipeline {
                     kubectl create ns $NAMESPACE
                     kubectl label ns $NAMESPACE namespace-type=corda-e2e --overwrite=true
                     kubectl label ns $NAMESPACE branch=${sanitizedBranchName()} --overwrite=true
+                    kubectl label ns $NAMESPACE arch="\${E2EWORKERARCH}" --overwrite=true
                 """
             }
         }
