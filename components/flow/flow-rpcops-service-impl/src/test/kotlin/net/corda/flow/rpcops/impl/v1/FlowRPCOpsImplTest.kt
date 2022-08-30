@@ -112,6 +112,9 @@ class FlowRPCOpsImplTest {
         val flowRPCOps =
             FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory)
         flowRPCOps.initialise(SmartConfigImpl.empty())
+
+        whenever(messageFactory.createFlowStatusResponse(any())).thenReturn(mock())
+
         flowRPCOps.startFlow("1234567890ab", StartFlowParameters("", "", TestJsonObject()))
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
@@ -120,7 +123,6 @@ class FlowRPCOpsImplTest {
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
         verify(publisher, times(1)).publish(any())
         verify(messageFactory, times(1)).createStartFlowStatus(any(), any(), any())
-        verify(messageFactory, times(1)).createFlowStatusResponse(any())
     }
 
     @Test
