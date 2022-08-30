@@ -1,4 +1,4 @@
-package net.corda.testing.bundles.dogs
+package net.cordapp.testing.bundles.dogs
 
 import net.corda.v5.base.annotations.CordaSerializable
 import java.time.Instant

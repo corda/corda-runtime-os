@@ -8,5 +8,5 @@
         This must match the name passed into the 'ChangeLogResourceFiles' objects when setting up LiquibaseSchemaMigrator
         This is to allow overlapping resource names in different bundles.
     -->
-    <include file="classloader://net.corda.testing.bundles.cats/migration/owner-migration-v1.0.xml"/>
+    <include file="classloader://net.cordapp.testing.bundles.cats/migration/owner-migration-v1.0.xml"/>
 </databaseChangeLog>

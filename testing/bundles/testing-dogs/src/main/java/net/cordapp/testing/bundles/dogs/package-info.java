@@ -1,4 +1,4 @@
 @Export
-package net.corda.testing.bundles.cats;
+package net.cordapp.testing.bundles.dogs;
 
 import org.osgi.annotation.bundle.Export;
