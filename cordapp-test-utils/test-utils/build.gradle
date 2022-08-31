@@ -3,6 +3,10 @@ plugins {
     id 'corda.common-library'
 }
 
+ext {
+    releasable = true
+}
+
 dependencies {
 
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"

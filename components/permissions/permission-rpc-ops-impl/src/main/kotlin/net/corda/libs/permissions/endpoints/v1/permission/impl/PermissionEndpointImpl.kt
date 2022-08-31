@@ -2,6 +2,7 @@ package net.corda.libs.permissions.endpoints.v1.permission.impl
 
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.response.ResponseEntity
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.permissions.endpoints.common.PermissionEndpointEventHandler
 import net.corda.libs.permissions.endpoints.common.withPermissionManager
@@ -43,7 +44,7 @@ class PermissionEndpointImpl @Activate constructor(
         PermissionEndpointEventHandler("PermissionEndpoint")
     )
 
-    override fun createPermission(createPermissionType: CreatePermissionType): PermissionResponseType {
+    override fun createPermission(createPermissionType: CreatePermissionType): ResponseEntity<PermissionResponseType> {
         val rpcContext = CURRENT_RPC_CONTEXT.get()
         val principal = rpcContext.principal
 
@@ -51,7 +52,7 @@ class PermissionEndpointImpl @Activate constructor(
             createPermission(createPermissionType.convertToDto(principal))
         }
 
-        return createPermissionResult!!.convertToEndpointType()
+        return ResponseEntity.created(createPermissionResult!!.convertToEndpointType())
     }
 
     override fun getPermission(id: String): PermissionResponseType {

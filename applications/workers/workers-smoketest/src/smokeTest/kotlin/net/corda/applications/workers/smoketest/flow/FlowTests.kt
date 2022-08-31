@@ -111,7 +111,7 @@ class FlowTests {
             data = mapOf("echo_value" to "hello")
         }
 
-        startRpcFlow(bobHoldingId, requestBody, 200)
+        startRpcFlow(bobHoldingId, requestBody)
         startRpcFlow(bobHoldingId, requestBody, 409)
     }
 
