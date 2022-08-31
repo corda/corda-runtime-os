@@ -41,7 +41,17 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val responderProcessor: RPCResponderProcessor<REQUEST, RESPONSE>,
     private val serializer: CordaAvroSerializer<RESPONSE>,
     private val deserializer: CordaAvroDeserializer<REQUEST>,
-    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    private val threadFactory: (() -> Unit) -> Thread = {
+        thread(
+            start = true,
+            isDaemon = true,
+            contextClassLoader = null,
+            name = "rpc subscription thread ${config.group}-${config.topic}",
+            priority = -1,
+            block = it,
+        )
+    }
 ) : RPCSubscription<REQUEST, RESPONSE> {
 
     private val log = LoggerFactory.getLogger(config.loggerName)
@@ -67,14 +77,7 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
             if (consumeLoopThread == null) {
                 stopped = false
                 lifecycleCoordinator.start()
-                consumeLoopThread = thread(
-                    start = true,
-                    isDaemon = true,
-                    contextClassLoader = null,
-                    name = "rpc subscription thread ${config.group}-${config.topic}",
-                    priority = -1,
-                    block = ::runConsumeLoop
-                )
+                threadFactory.invoke(::runConsumeLoop)
             }
         }
     }
@@ -157,7 +160,8 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                     }
                     else -> {
                         throw CordaMessageAPIFatalException(
-                            "Failed to process records from topic ${config.topic}, group ${config.group}.", ex
+                            "Failed to process records from topic ${config.topic}, group ${config.group}.",
+                            ex,
                         )
                     }
                 }
@@ -180,11 +184,10 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                 val record: CordaProducerRecord<String, RPCResponse>?
                 try {
                     when {
-                        //the order of these is important due to how the futures api is
+                        // the order of these is important due to how the futures api is
                         future.isCancelled -> {
                             record = buildRecord(
-                                rpcRequest.replyTopic,
-                                rpcRequest.correlationKey,
+                                rpcRequest,
                                 ResponseStatus.CANCELLED,
                                 ExceptionEnvelope(
                                     error.javaClass.name,
@@ -194,8 +197,7 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                         }
                         future.isCompletedExceptionally -> {
                             record = buildRecord(
-                                rpcRequest.replyTopic,
-                                rpcRequest.correlationKey,
+                                rpcRequest,
                                 ResponseStatus.FAILED,
                                 ExceptionEnvelope(error.javaClass.name, error.message).toByteBuffer().array()
                             )
@@ -203,8 +205,7 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                         else -> {
                             val serializedResponse = serializer.serialize(response)
                             record = buildRecord(
-                                rpcRequest.replyTopic,
-                                rpcRequest.correlationKey,
+                                rpcRequest,
                                 ResponseStatus.OK,
                                 serializedResponse!!
                             )
@@ -212,7 +213,7 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                     }
                     producer.sendRecordsToPartitions(listOf(Pair(rpcRequest.replyPartition, record)))
                 } catch (ex: Exception) {
-                    //intentionally swallowed
+                    // intentionally swallowed
                     log.warn("Error publishing response", ex)
                 }
             }
@@ -221,16 +222,16 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     }
 
     private fun buildRecord(
-        topic: String,
-        key: String,
+        request: RPCRequest,
         status: ResponseStatus,
         payload: ByteArray
     ): CordaProducerRecord<String, RPCResponse> {
         return CordaProducerRecord(
-            topic,
-            key,
+            request.replyTopic,
+            request.correlationKey,
             RPCResponse(
-                key,
+                request.sender,
+                request.correlationKey,
                 Instant.now(),
                 status,
                 ByteBuffer.wrap(payload)
