@@ -28,6 +28,7 @@
     bnd.identity;id='net.corda.sandbox-internal',\
     bnd.identity;id='net.corda.application',\
     bnd.identity;id='net.corda.cipher-suite-impl',\
+    bnd.identity;id='co.paralleluniverse.quasar-core',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
     bnd.identity;id='slf4j.simple'

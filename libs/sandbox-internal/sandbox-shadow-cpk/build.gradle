@@ -1,0 +1,22 @@
+plugins {
+    id 'net.corda.plugins.cordapp-cpb'
+    id 'org.jetbrains.kotlin.jvm'
+}
+
+group = 'com.example'
+
+cordapp {
+    targetPlatformVersion platformVersion.toInteger()
+    contract {
+        name 'Corda Shadow CPK'
+        versionId 1
+        vendor 'R3'
+    }
+}
+
+dependencies {
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+    cordaProvided 'net.corda:corda-application'
+    cordaProvided 'net.corda:corda-base'
+    implementation "com.esotericsoftware:reflectasm:$reflectAsmVersion"
+}

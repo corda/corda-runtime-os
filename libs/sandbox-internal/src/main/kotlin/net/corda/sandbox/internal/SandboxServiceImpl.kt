@@ -57,6 +57,9 @@ internal class SandboxServiceImpl @Activate constructor(
     // The public sandboxes that have been created.
     private val publicSandboxes = mutableSetOf<Sandbox>()
 
+    // The symbolic names of our public "platform" bundles.
+    private val publicSymbolicNames = mutableSetOf<String>()
+
     // Bundles that failed to uninstall when a sandbox group was unloaded.
     private val zombieBundles = mutableSetOf<Bundle>()
 
@@ -65,15 +68,18 @@ internal class SandboxServiceImpl @Activate constructor(
     override fun createPublicSandbox(publicBundles: Iterable<Bundle>, privateBundles: Iterable<Bundle>) {
         if (publicSandboxes.isNotEmpty()) {
             val publicSandbox = publicSandboxes.first()
-            check(publicBundles.toSet() == publicSandbox.publicBundles.toSet()
-                    && privateBundles.toSet() == publicSandbox.privateBundles.toSet()) {
+            check(publicBundles.toSet() == publicSandbox.publicBundles
+                    && privateBundles.toSet() == publicSandbox.privateBundles) {
                 "Public sandbox was already created with different bundles"
             }
             logger.warn("Public sandbox was already created")
         }
         val publicSandbox = SandboxImpl(UUID.randomUUID(), publicBundles.toSet(), privateBundles.toSet())
-        (publicBundles + privateBundles).forEach { bundle ->
+        publicSandbox.allBundles.forEach { bundle ->
             bundleIdToSandbox[bundle.bundleId] = publicSandbox
+        }
+        publicSandbox.publicBundles.forEach { bundle ->
+            publicSymbolicNames.add(bundle.symbolicName)
         }
         publicSandboxes.add(publicSandbox)
     }
@@ -314,6 +320,9 @@ internal class SandboxServiceImpl @Activate constructor(
 
         sandboxForbidsThat(bundle.symbolicName == null) {
             "Bundle at $bundleSource does not have a symbolic name, which would prevent serialisation."
+        }
+        sandboxForbidsThat(bundle.symbolicName in publicSymbolicNames) {
+            "Bundle ${bundle.symbolicName} shadows a Corda platform bundle."
         }
         return bundle
     }
