@@ -46,11 +46,11 @@ public class FlowSessionImplJavaTest {
     private final FlowFiber flowFiber = new FakeFiber(flowFiberExecutionContext);
     private final FlowFiberService flowFiberService = mock(FlowFiberService.class);
 
-    private final FlowSession session = new FlowSessionImpl(
+    private final FlowSession session = FlowSessionImpl.Companion.asInitiatedSession(
             new MemberX500Name("Alice", "Alice Corp", "LDN", "GB"),
             "session id",
             flowFiberService,
-            true
+            new HashMap<String, String>()
     );
 
     private static class FakeFiber implements FlowFiber {
@@ -62,7 +62,7 @@ public class FlowSessionImplJavaTest {
 
         private FlowFiberExecutionContext fiberContext;
 
-        public FakeFiber (FlowFiberExecutionContext context) {
+        public FakeFiber(FlowFiberExecutionContext context) {
             fiberContext = context;
         }
 
@@ -75,7 +75,7 @@ public class FlowSessionImplJavaTest {
         @Override
         public <SUSPENDRETURN> SUSPENDRETURN suspend(FlowIORequest<? extends SUSPENDRETURN> flowIORequest) {
             Map<String, byte[]> received = new HashMap<>();
-            received.put("session id", new byte[]{ 1, 2, 3 });
+            received.put("session id", new byte[]{1, 2, 3});
             return (SUSPENDRETURN) received;
         }
 
@@ -101,8 +101,8 @@ public class FlowSessionImplJavaTest {
     @BeforeEach
     public void beforeEach() {
         Map<String, byte[]> received = new HashMap<>();
-        received.put("session id", new byte[]{ 1, 2, 3 });
-        when(serializationService.serialize(any())).thenReturn(new SerializedBytes(new byte[]{ 1, 2, 3 }));
+        received.put("session id", new byte[]{1, 2, 3});
+        when(serializationService.serialize(any())).thenReturn(new SerializedBytes(new byte[]{1, 2, 3}));
         when(serializationService.deserialize(any(byte[].class), any())).thenReturn(1);
         when(flowSandboxGroupContext.getDependencyInjector()).thenReturn(sandboxDependencyInjector);
         when(flowSandboxGroupContext.getCheckpointSerializer()).thenReturn(checkpointSerializer);

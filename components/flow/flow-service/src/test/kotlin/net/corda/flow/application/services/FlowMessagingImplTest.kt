@@ -27,7 +27,7 @@ class FlowMessagingImplTest {
     private val flowSession = mock<FlowSession>()
 
     private val flowSessionFactory = mock<FlowSessionFactory>().apply {
-        whenever(create(any(), eq(ALICE_X500_NAME), initiated = eq(false))).thenReturn(flowSession)
+        whenever(createInitiatingFlowSession(any(), eq(ALICE_X500_NAME))).thenReturn(flowSession)
     }
 
     private val flowMessaging = FlowMessagingImpl(mockFlowFiberService, flowSessionFactory)
@@ -44,7 +44,7 @@ class FlowMessagingImplTest {
             )
         )
         flowMessaging.initiateFlow(ALICE_X500_NAME)
-        verify(flowSessionFactory).create(any(), eq(ALICE_X500_NAME), initiated = eq(false))
+        verify(flowSessionFactory).createInitiatingFlowSession(any(), eq(ALICE_X500_NAME))
     }
 
     @Test

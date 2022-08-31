@@ -14,7 +14,7 @@ import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
 import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.flow.utils.emptyKeyValuePairList
-import net.corda.membership.lib.toMap
+import net.corda.flow.utils.toMap
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate

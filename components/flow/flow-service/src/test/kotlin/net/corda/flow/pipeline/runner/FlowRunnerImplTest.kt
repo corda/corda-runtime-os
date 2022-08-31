@@ -28,6 +28,7 @@ import net.corda.flow.state.FlowStack
 import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
+import net.corda.flow.utils.toMap
 import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
@@ -146,7 +147,14 @@ class FlowRunnerImplTest {
 
         val context = buildFlowEventContext<Any>(flowCheckpoint, sessionEvent)
         whenever(flowCheckpoint.flowStartContext).thenReturn(flowStartContext)
-        whenever(flowFactory.createInitiatedFlow(flowStartContext, sandboxGroupContext)).thenReturn(logicAndArgs)
+        whenever(
+            flowFactory.createInitiatedFlow(
+                flowStartContext,
+                sandboxGroupContext,
+                // Current behaviour of the FlowRunner is to pass platform context to initiated sessions unaltered
+                platformContext.avro.toMap()
+            )
+        ).thenReturn(logicAndArgs)
         whenever(
             flowFiberFactory.createAndStartFlowFiber(
                 eq(flowFiberExecutionContext),
