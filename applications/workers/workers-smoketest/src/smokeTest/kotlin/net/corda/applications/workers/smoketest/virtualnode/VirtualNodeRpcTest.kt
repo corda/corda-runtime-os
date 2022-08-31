@@ -206,7 +206,7 @@ class VirtualNodeRpcTest {
 
             assertWithRetry {
                 command { vNodeCreate(hash, X500_ALICE) }
-                condition { it.code == 500 }
+                condition { it.code == 409 }
             }
         }
     }
