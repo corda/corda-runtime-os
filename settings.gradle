@@ -16,7 +16,7 @@ pluginManagement {
             }
         } else {
             maven {
-                url "${artifactoryContextUrl}/corda-releases"
+                url "${artifactoryContextUrl}/corda-dev"
                 content {
                     includeGroupByRegex 'net\\.corda\\.plugins(\\..*)?'
                 }
