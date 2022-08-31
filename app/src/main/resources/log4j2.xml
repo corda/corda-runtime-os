@@ -3,7 +3,7 @@
 <configuration>
 
     <Properties>
-<!--        <Property name="logFile">"${sys:user.home}/.corda/cli/logs/corda-cli.log"</Property>-->
+        <!--        <Property name="logFile">"${sys:user.home}/.corda/cli/logs/corda-cli.log"</Property>-->
     </Properties>
 
     <Appenders>
@@ -18,12 +18,21 @@
 
     <Loggers>
         <!-- avoid duplicated logs with additivity=false -->
-        <Logger name="org.pf4j" level="info" additivity="false">
+        <Logger name="org.pf4j" level="${sys:logLevel:-info}" additivity="false">
             <AppenderRef ref="LogToFile"/>
         </Logger>
-        <Root level="info">
+
+        <Logger name="SystemErr" level="${sys:logLevel:-info}" additivity="false">
             <AppenderRef ref="LogToConsole"/>
-            <AppenderRef ref="LogToFile" level="${sys:logLevel:-info}"/>
+            <AppenderRef ref="LogToFile"/>
+        </Logger>
+
+        <Logger name="SystemOut" level="info" additivity="false">
+            <AppenderRef ref="LogToConsole"/>
+        </Logger>
+
+        <Root level="${sys:logLevel:-info}" >
+            <AppenderRef ref="LogToFile"/>
         </Root>
     </Loggers>
 
