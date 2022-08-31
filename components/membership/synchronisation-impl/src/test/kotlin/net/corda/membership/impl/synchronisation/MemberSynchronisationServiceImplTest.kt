@@ -1,16 +1,20 @@
 package net.corda.membership.impl.synchronisation
 
 import com.typesafe.config.ConfigFactory
+import net.corda.chunking.toCorda
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.SecureHash
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedMemberInfo
+import net.corda.data.membership.command.synchronisation.SynchronisationMetaData
 import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
 import net.corda.data.membership.p2p.MembershipPackage
+import net.corda.data.membership.p2p.MembershipSyncRequest
 import net.corda.data.membership.p2p.SignedMemberships
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -22,38 +26,50 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.p2p.helpers.MerkleTreeGenerator
+import net.corda.membership.p2p.helpers.P2pRecordsFactory
+import net.corda.membership.read.MembershipGroupReader
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
+import net.corda.p2p.app.AppMessage
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.SoftAssertions
+import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.SortedMap
 import java.util.concurrent.CompletableFuture
 import kotlin.test.assertFailsWith
 
@@ -102,9 +118,14 @@ class MemberSynchronisationServiceImplTest {
     private val configurationReadService: ConfigurationReadService = mock {
         on { registerComponentForUpdates(eq(coordinator), any()) } doReturn configHandle
     }
-    private val memberProvidedContext: MemberContext = mock()
-    private val mgmProvidedContext: MGMContext = mock()
     private val participantName = MemberX500Name("Bob", "London", "GB")
+    private val participantId = HoldingIdentity(participantName, GROUP_NAME).toAvro()
+    private val memberProvidedContext = mock<MemberContext> {
+        on { entries } doReturn mapOf(PARTY_NAME to participantName.toString()).entries
+    }
+    private val mgmProvidedContext = mock<MGMContext> {
+        on { entries } doReturn emptySet()
+    }
     private val participant: MemberInfo = mock {
         on { memberProvidedContext } doReturn memberProvidedContext
         on { mgmProvidedContext } doReturn mgmProvidedContext
@@ -113,6 +134,7 @@ class MemberSynchronisationServiceImplTest {
     }
     private val memberInfoFactory: MemberInfoFactory = mock {
         on { create(any()) } doReturn participant
+        on { create(any<SortedMap<String, String?>>(), any()) } doReturn participant
     }
     private val memberName = MemberX500Name("Alice", "London", "GB")
     private val member = HoldingIdentity(memberName, GROUP_NAME)
@@ -135,22 +157,59 @@ class MemberSynchronisationServiceImplTest {
         on { memberContext } doReturn memberContext
         on { mgmContext } doReturn mgmContext
     }
+    private val hash = SecureHash("algo", ByteBuffer.wrap(byteArrayOf(1, 2, 3)))
     private val signedMemberships: SignedMemberships = mock {
         on { memberships } doReturn listOf(signedMemberInfo)
+        on { hashCheck } doReturn hash
     }
     private val membershipPackage: MembershipPackage = mock {
         on { memberships } doReturn signedMemberships
     }
-    private val updates: ProcessMembershipUpdates = mock {
-        on { destination } doReturn member.toAvro()
-        on { membershipPackage } doReturn membershipPackage
+    private val synchronisationMetadata = mock<SynchronisationMetaData> {
+        on { member } doReturn member.toAvro()
+        on { mgm } doReturn participantId
     }
+    private val updates: ProcessMembershipUpdates = mock {
+        on { membershipPackage } doReturn membershipPackage
+        on { synchronisationMetaData } doReturn synchronisationMetadata
+    }
+    private val synchronisationRequest = mock<Record<String, AppMessage>>()
+    private val synchRequest = argumentCaptor<MembershipSyncRequest>()
+    private val p2pRecordsFactory = mock<P2pRecordsFactory> {
+        on {
+            createAuthenticatedMessageRecord(
+                eq(member.toAvro()),
+                eq(HoldingIdentity(participantName, GROUP_NAME).toAvro()),
+                synchRequest.capture(),
+                isNull(),
+            )
+        } doReturn synchronisationRequest
+    }
+    private val tree = mock<MerkleTree> {
+        on { root } doReturn hash.toCorda()
+    }
+    private val merkleTreeGenerator = mock<MerkleTreeGenerator> {
+        on { generateTree(any()) } doReturn tree
+    }
+    private val memberInfo = mock<MemberInfo>()
+    private val groupReader = mock<MembershipGroupReader> {
+        on { lookup() } doReturn emptyList()
+        on { lookup(any()) } doReturn memberInfo
+    }
+    private val groupReaderProvider = mock<MembershipGroupReaderProvider> {
+        on { getGroupReader(member) } doReturn groupReader
+    }
+    private val clock = TestClock(Instant.ofEpochSecond(100))
     private val synchronisationService = MemberSynchronisationServiceImpl(
         publisherFactory,
         configurationReadService,
         lifecycleCoordinatorFactory,
         serializationFactory,
-        memberInfoFactory
+        memberInfoFactory,
+        groupReaderProvider,
+        p2pRecordsFactory,
+        merkleTreeGenerator,
+        clock,
     )
 
     private fun postStartEvent() {
@@ -182,7 +241,8 @@ class MemberSynchronisationServiceImplTest {
                     ConfigKeys.BOOT_CONFIG to testConfig,
                     ConfigKeys.MESSAGING_CONFIG to testConfig
                 )
-            ), coordinator
+            ),
+            coordinator
         )
     }
 
@@ -206,25 +266,131 @@ class MemberSynchronisationServiceImplTest {
         postConfigChangedEvent()
         synchronisationService.start()
         val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
+        whenever(mockPublisher.publish(capturedPublishedList.capture())).thenReturn(listOf(CompletableFuture.completedFuture(Unit)))
+
         synchronisationService.processMembershipUpdates(updates)
-        verify(mockPublisher, times(1)).publish(capturedPublishedList.capture())
+
         val publishedMemberList = capturedPublishedList.firstValue
-        SoftAssertions.assertSoftly {
-            it.assertThat(publishedMemberList.size).isEqualTo(1)
+        assertSoftly {
+            it.assertThat(publishedMemberList).hasSize(1)
+
             val publishedMember = publishedMemberList.first()
             it.assertThat(publishedMember.topic).isEqualTo(MEMBER_LIST_TOPIC)
             it.assertThat(publishedMember.key).isEqualTo("${member.shortHash}-${participant.id}")
-            with(publishedMember.value as PersistentMemberInfo) {
-                val name = memberContext.items.first { item -> item.key == PARTY_NAME }.value
-                it.assertThat(name).isEqualTo(participantName.toString())
-                it.assertThat(mgmContext.items).isEmpty()
-            }
+            it.assertThat(publishedMember.value).isInstanceOf(PersistentMemberInfo::class.java)
+            val value = publishedMember.value as? PersistentMemberInfo
+            val name = value?.memberContext?.items?.firstOrNull { item -> item.key == PARTY_NAME }?.value
+            it.assertThat(name).isEqualTo(participantName.toString())
+            it.assertThat(value?.mgmContext?.items).isEmpty()
         }
     }
 
     @Test
+    fun `processMembershipUpdates asks for synchronization if hash is empty`() {
+        postConfigChangedEvent()
+        synchronisationService.start()
+        val capturedPublishedList = argumentCaptor<List<Record<String, *>>>()
+        whenever(mockPublisher.publish(capturedPublishedList.capture())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
+        whenever(signedMemberships.hashCheck) doReturn null
+
+        synchronisationService.processMembershipUpdates(updates)
+
+        val publishedMemberList = capturedPublishedList.firstValue
+        assertSoftly {
+            it.assertThat(publishedMemberList)
+                .hasSize(2)
+                .anySatisfy {
+                    assertThat(it.topic).isEqualTo(MEMBER_LIST_TOPIC)
+                }
+                .contains(synchronisationRequest)
+        }
+    }
+
+    @Test
+    fun `processMembershipUpdates asks for synchronization when hashes are misaligned`() {
+        postConfigChangedEvent()
+        synchronisationService.start()
+        val capturedPublishedList = argumentCaptor<List<Record<String, *>>>()
+        whenever(mockPublisher.publish(capturedPublishedList.capture())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
+        whenever(signedMemberships.hashCheck) doReturn SecureHash("algo", ByteBuffer.wrap(byteArrayOf(4, 5, 6)))
+
+        synchronisationService.processMembershipUpdates(updates)
+
+        val publishedMemberList = capturedPublishedList.firstValue
+        assertSoftly {
+            it.assertThat(publishedMemberList)
+                .hasSize(2)
+                .anySatisfy {
+                    assertThat(it.topic).isEqualTo(MEMBER_LIST_TOPIC)
+                }
+                .contains(synchronisationRequest)
+        }
+    }
+
+    @Test
+    fun `processMembershipUpdates create the correct synch request when hashes are misaligned`() {
+        postConfigChangedEvent()
+        synchronisationService.start()
+        val capturedPublishedList = argumentCaptor<List<Record<String, *>>>()
+        whenever(mockPublisher.publish(capturedPublishedList.capture())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
+        whenever(signedMemberships.hashCheck) doReturn SecureHash("algo", ByteBuffer.wrap(byteArrayOf(4, 5, 6)))
+
+        synchronisationService.processMembershipUpdates(updates)
+
+        assertSoftly {
+            val request = synchRequest.firstValue
+            it.assertThat(request.membersHash).isEqualTo(hash)
+            it.assertThat(request.bloomFilter).isNull()
+            it.assertThat(request.distributionMetaData.syncRequested).isEqualTo(clock.instant())
+        }
+    }
+
+    @Test
+    fun `processMembershipUpdates hash the correct members`() {
+        postConfigChangedEvent()
+        synchronisationService.start()
+        val mgmContextMgm = mock<MGMContext> {
+            on {
+                parseOrNull(
+                    MemberInfoExtension.IS_MGM,
+                    Boolean::class.javaObjectType
+                )
+            } doReturn true
+        }
+        val mgmInfo = mock<MemberInfo> {
+            on { mgmProvidedContext } doReturn mgmContextMgm
+        }
+        val memberContext = mock<MemberContext> {
+            on { parse(MemberInfoExtension.GROUP_ID, String::class.java) } doReturn GROUP_NAME
+        }
+        val memberInfo = mock<MemberInfo> {
+            on { mgmProvidedContext } doReturn mgmProvidedContext
+            on { memberProvidedContext } doReturn memberContext
+            on { name } doReturn MemberX500Name("Member", "London", "GB")
+        }
+        whenever(groupReader.lookup()).doReturn(
+            listOf(
+                mgmInfo,
+                memberInfo,
+            )
+        )
+
+        synchronisationService.processMembershipUpdates(updates)
+
+        verify(
+            merkleTreeGenerator
+        ).generateTree(
+            argThat {
+                this.contains(memberInfo) && this.contains(participant) && !this.contains(mgmInfo)
+            }
+        )
+    }
+
+    @Test
     fun `processing of membership updates fails when coordinator is not running`() {
-        val ex1 = assertFailsWith<IllegalStateException>{ synchronisationService.processMembershipUpdates(mock()) }
+        val ex1 = assertFailsWith<IllegalStateException> {
+            synchronisationService.processMembershipUpdates(mock())
+        }
         assertThat(ex1.message).isEqualTo("MemberSynchronisationService is currently inactive.")
     }
 

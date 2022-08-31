@@ -1,4 +1,8 @@
-description("OSGi Framework Bootstrap")
+plugins {
+    id 'java-library'
+}
+
+description 'OSGi Framework Bootstrap'
 
 configurations {
     testBundles {
@@ -12,7 +16,6 @@ configurations {
 
 dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
     implementation project(":osgi-framework-api")
     implementation 'org.slf4j:slf4j-api'
@@ -24,10 +27,9 @@ dependencies {
     runtimeOnly "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
     runtimeOnly "com.fasterxml.jackson.core:jackson-annotations:$jacksonVersion"
 
-    testImplementation "com.google.jimfs:jimfs:$jimfsVersion"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.apache.sling:org.apache.sling.testing.osgi-mock.junit5:$slingVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-params:$junit5Version"
-    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junit5Version"
 
     testBundles project(':testing:apps:test-app')

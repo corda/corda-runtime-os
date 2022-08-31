@@ -6,6 +6,7 @@ import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.response.ResponseEntity
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionResponseType
 
@@ -26,7 +27,7 @@ interface PermissionEndpoint : RpcOps {
     fun createPermission(
         @HttpRpcRequestBodyParameter(description = "Details of the permission to be created")
         createPermissionType: CreatePermissionType
-    ): PermissionResponseType
+    ): ResponseEntity<PermissionResponseType>
 
     /**
      * Get a permission by its identifier in the RBAC permission system.

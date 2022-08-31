@@ -3,6 +3,7 @@ package net.corda.membership.registration
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.lib.exceptions.RegistrationProtocolSelectionException
 import net.corda.virtualnode.HoldingIdentity
+import java.util.UUID
 
 /**
  * Proxy for registering a holding identity with the appropriate instance of [MemberRegistrationService].
@@ -13,6 +14,7 @@ interface RegistrationProxy : Lifecycle {
      * Retrieves the appropriate instance of [MemberRegistrationService] for a holding identity as specified in the CPI
      * configuration, and forwards the registration request to it.
      *
+     * @param registrationId The registration ID.
      * @param member The holding identity of the virtual node requesting registration.
      * @param context The member or MGM context required for on-boarding within a group.
      *
@@ -21,5 +23,9 @@ interface RegistrationProxy : Lifecycle {
      *
      * @throws [RegistrationProtocolSelectionException] when the registration protocol could not be selected.
      */
-    fun register(member: HoldingIdentity, context: Map<String, String>): MembershipRequestRegistrationResult
+    fun register(
+        registrationId: UUID,
+        member: HoldingIdentity,
+        context: Map<String, String>,
+    ): MembershipRequestRegistrationResult
 }

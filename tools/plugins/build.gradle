@@ -3,6 +3,10 @@ plugins {
     id 'java'
 }
 
+ext {
+    releasable = true
+}
+
 group 'net.corda.cli.deployment'
 
 configurations {
@@ -29,7 +33,7 @@ tasks.register('copyCliFiles') {
     }
 }
 
-task cliInstallArchive(type: Zip) {
+tasks.register("cliInstallArchive", Zip) {
     dependsOn tasks.named('copyCliFiles')
     from "$buildDir/cli"
     include '*'
@@ -77,8 +81,8 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
         baseImageName = (cordaCliIncluded) ? "corda-os-docker-dev.software.r3.com/corda-os-cli" : "corda-os-docker.software.r3.com/corda-os-cli"
     }
 
-    if (project.hasProperty('cliBasebaseTag')) {
-        baseImageTag = cliBasebaseTag
+    if (project.hasProperty('cliBaseTag')) {
+        baseImageTag = cliBaseTag
     } else {
         it.baseImageTag = (cordaCliIncluded) ? "latest-local" : "unstable"
     }

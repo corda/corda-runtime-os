@@ -7,7 +7,6 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
-import java.time.Duration
 import java.util.UUID
 
 @Component(service = [FlowEngine::class, SingletonSerializeAsToken::class], scope = PROTOTYPE)
@@ -18,10 +17,6 @@ class FakeFlowEngineImpl : FlowEngine, SingletonSerializeAsToken {
         get() = throw UnsupportedOperationException("VICTORY IS MINE!")
     override val flowContextProperties: FlowContextProperties
         get() = throw UnsupportedOperationException("VICTORY IS MINE!")
-
-    override fun sleep(duration: Duration) {
-        throw UnsupportedOperationException("VICTORY IS MINE!")
-    }
 
     override fun <R> subFlow(subFlow: SubFlow<R>): R {
         throw UnsupportedOperationException("VICTORY IS MINE!")

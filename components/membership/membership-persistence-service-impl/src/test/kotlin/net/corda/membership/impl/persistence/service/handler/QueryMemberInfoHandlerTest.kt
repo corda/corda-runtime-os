@@ -7,7 +7,6 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.datamodel.MemberInfoEntity
@@ -55,11 +54,12 @@ class QueryMemberInfoHandlerTest {
     )
     private val ourRegistrationId = UUID.randomUUID().toString()
     private val clock = TestClock(Instant.ofEpochSecond(0))
+    private val vaultDmlConnectionId = UUID(44, 0)
 
     private val virtualNodeInfo = VirtualNodeInfo(
         ourHoldingIdentity,
         CpiIdentifier("TEST_CPI", "1.0", null),
-        vaultDmlConnectionId = UUID(0, 0),
+        vaultDmlConnectionId = vaultDmlConnectionId,
         cryptoDmlConnectionId = UUID(0, 0),
         timestamp = clock.instant()
     )
@@ -80,9 +80,8 @@ class QueryMemberInfoHandlerTest {
 
     private val dbConnectionManager: DbConnectionManager = mock {
         on {
-            getOrCreateEntityManagerFactory(
-                eq(VirtualNodeDbType.VAULT.getConnectionName(ourHoldingIdentity.shortHash)),
-                any(),
+            createEntityManagerFactory(
+                eq(vaultDmlConnectionId),
                 any(),
             )
         } doReturn entityManagerFactory
@@ -175,9 +174,9 @@ class QueryMemberInfoHandlerTest {
             verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
             assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
         }
-        verify(dbConnectionManager).getOrCreateEntityManagerFactory(any(), any(), any())
         verify(jpaEntitiesRegistry).get(any())
         verify(entityManagerFactory).createEntityManager()
+        verify(entityManagerFactory).close()
         verify(entityTransaction).begin()
         verify(entityTransaction).commit()
         verify(entityManager).close()
@@ -203,9 +202,9 @@ class QueryMemberInfoHandlerTest {
             verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
             assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
         }
-        verify(dbConnectionManager).getOrCreateEntityManagerFactory(any(), any(), any())
         verify(jpaEntitiesRegistry).get(any())
         verify(entityManagerFactory).createEntityManager()
+        verify(entityManagerFactory).close()
         verify(entityTransaction).begin()
         verify(entityTransaction).commit()
         verify(entityManager).close()
@@ -247,9 +246,9 @@ class QueryMemberInfoHandlerTest {
             verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
             assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
         }
-        verify(dbConnectionManager).getOrCreateEntityManagerFactory(any(), any(), any())
         verify(jpaEntitiesRegistry).get(any())
         verify(entityManagerFactory).createEntityManager()
+        verify(entityManagerFactory).close()
         verify(entityTransaction).begin()
         verify(entityTransaction).commit()
         verify(entityManager).close()
@@ -279,9 +278,9 @@ class QueryMemberInfoHandlerTest {
             verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(capture())
             assertThat(firstValue).isEqualTo(ourHoldingIdentity.shortHash)
         }
-        verify(dbConnectionManager).getOrCreateEntityManagerFactory(any(), any(), any())
         verify(jpaEntitiesRegistry).get(any())
         verify(entityManagerFactory).createEntityManager()
+        verify(entityManagerFactory).close()
         verify(entityTransaction).begin()
         verify(entityTransaction).commit()
         verify(entityManager).close()

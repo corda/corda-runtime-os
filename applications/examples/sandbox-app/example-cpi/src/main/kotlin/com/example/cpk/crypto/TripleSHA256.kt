@@ -2,9 +2,9 @@ package com.example.cpk.crypto
 
 import java.io.InputStream
 import java.security.MessageDigest
-import net.corda.v5.cipher.suite.DigestAlgorithm
-import net.corda.v5.cipher.suite.DigestAlgorithmFactory
 import net.corda.v5.crypto.DigestAlgorithmName.Companion.SHA2_256
+import net.corda.v5.crypto.extensions.DigestAlgorithm
+import net.corda.v5.crypto.extensions.DigestAlgorithmFactory
 import net.corda.v5.crypto.sha256Bytes
 
 @Suppress("unused")

@@ -51,7 +51,7 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
                     TestEntityRpcOpsImpl(),
                     TestFileUploadImpl()
                 ),
-                securityManager,
+                ::securityManager,
                 httpRpcSettings,
                 multipartDir,
                 true
@@ -127,9 +127,9 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
     }
 
     @Test
-    fun `GET void returns nothing`() {
+    fun `GET void returns NO_CONTENT and no body`() {
         val pingResponse = client.call(GET, WebRequest<Any>("health/void"), userName, password)
-        assertEquals(HttpStatus.SC_OK, pingResponse.responseStatus)
+        assertEquals(HttpStatus.SC_NO_CONTENT, pingResponse.responseStatus)
         assertEquals("", pingResponse.body)
     }
 

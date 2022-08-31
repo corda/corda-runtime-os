@@ -1,8 +1,8 @@
 package net.corda.internal.serialization.amqp
 
+import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.internal.serialization.amqp.testutils.serialize
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactoryNoEvolution
-import net.corda.internal.serialization.amqp.testutils.testSerializationContext
 import net.corda.v5.base.types.ByteSequence
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test

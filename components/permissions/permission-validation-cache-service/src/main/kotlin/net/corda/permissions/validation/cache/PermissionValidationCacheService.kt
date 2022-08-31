@@ -101,6 +101,7 @@ class PermissionValidationCacheService @Activate constructor(
                 }
             }
             is ConfigChangedEvent -> {
+                downTransition()
                 createAndStartSubscriptionsAndCache(event.config.getConfig(MESSAGING_CONFIG))
             }
             // Let's set the component as UP when it has received all the snapshots it needs
@@ -121,6 +122,7 @@ class PermissionValidationCacheService @Activate constructor(
     }
 
     private fun downTransition() {
+        log.info("Performing down transition")
         coordinator.updateStatus(LifecycleStatus.DOWN)
 
         configHandle?.close()

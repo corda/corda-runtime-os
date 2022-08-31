@@ -2,6 +2,11 @@ plugins {
     id 'corda.common-publishing'
     id 'corda.quasar-app'
     id 'corda.docker-app'
+    id 'corda.s3-publish'
+}
+
+ext {
+    releasable = true
 }
 
 description 'Combined Worker'
@@ -20,10 +25,27 @@ quasar {
     ])
 }
 
+configurations {
+    drivers {
+        canBeConsumed = false
+        transitive = false
+    }
+}
+
 dependencies {
     // for BundleManager
     compileOnly "org.osgi:osgi.core"
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    drivers "org.postgresql:postgresql:$postgresDriverVersion"
+
+    // Oracle isn't OSGi wrapped, but if it were, it is sufficient to just do this:
+    // OSGi bundle that registers a `DataSourceFactory` on behalf of Oracle,
+    // and add the OSGi wrapped version, i.e.
+    //
+    // drivers "org.ops4j.pax.jdbc:pax-jdbc-oracle:1.5.3"
+    // drivers "com.oracle.database.jdbc:ojdbc10WRAPPED-AS-A-BUNDLE:19.15.0.0"
+
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':applications:workers:worker-common')
@@ -63,4 +85,17 @@ dependencies {
         exclude group: 'org.apache.felix'
         exclude group: 'org.osgi'
     }
+}
+
+// Download drivers into this folder - if you change this folder
+// or this location, you'll have to change the .run/*.xml files to
+// reflect the change in relative path.  This is used by intellij:
+//  -ddatabase.jdbc.directory=$ProjectFileDir$/applications/workers/release/combined-worker/drivers
+def download = tasks.register("download", Copy) {
+    from configurations.drivers
+    into 'drivers'
+}
+
+tasks.named('jar', Jar) {
+    dependsOn(download)
 }

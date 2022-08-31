@@ -12,7 +12,7 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.v5.cipher.suite.ConfigurationSecrets
-import net.corda.v5.crypto.failures.CryptoException
+import net.corda.v5.crypto.exceptions.CryptoException
 import java.util.UUID
 
 
@@ -25,14 +25,10 @@ import java.util.UUID
     "signingService": {
         "cache": {
             "expireAfterAccessMins": 60,
-            "maximumSize": 1000
+            "maximumSize": 10000
         }
     },
     "hsmService": {
-        "cache": {
-            "expireAfterAccessMins": 5,
-            "maximumSize": 10
-        },
         "downstreamMaxAttempts": 3
     },
     "hsmId": "SOFT",
@@ -52,7 +48,7 @@ import java.util.UUID
                     }
                 ],
                 "masterKeyPolicy": "UNIQUE",
-                "capacity": "-1",
+                "capacity": -1,
                 "supportedSchemes": [
                     "CORDA.RSA",
                     "CORDA.ECDSA.SECP256R1",
@@ -88,7 +84,7 @@ import java.util.UUID
                         "name": "DEFAULT",
                         "hsm": {
                             "name": "..",
-                            "config": {}
+                            "cfg": {}
                         }
                     }
                 }
@@ -117,14 +113,14 @@ import java.util.UUID
                 ],
                 "masterKeyPolicy": "SHARED",
                 "masterKeyAlias": "cordawrappingkey",
-                "capacity": "3300",
+                "capacity": 3300,
                 "supportedSchemes": [
                     "CORDA.RSA",
                     "CORDA.ECDSA.SECP256R1",
                     "CORDA.ECDSA.SECP256K1",
                     "CORDA.X25519"
                 ],
-                "config": {
+                "cfg": {
                     "username": "user",
                     "passphrase": {
                         "configSecret": {
@@ -134,34 +130,26 @@ import java.util.UUID
                     "partition": "whatever"
                 }
             }
+        }
+    },
+    "busProcessors": {
+        "ops": {
+            "maxAttempts": 3,
+            "waitBetweenMills": [
+                200
+            ]
         },
-        "bus": {
-            "processors": {
-                "ops": {
-                    "maxAttempts": 3,
-                    "waitBetweenMills": [
-                        200
-                    ]
-                },
-                "flow": {
-                    "maxAttempts": 3,
-                    "waitBetweenMills": [
-                        200
-                    ]
-                },
-                "config": {
-                    "maxAttempts": 3,
-                    "waitBetweenMills": [
-                        200
-                    ]
-                },
-                "registration": {
-                    "maxAttempts": 3,
-                    "waitBetweenMills": [
-                        200
-                    ]
-                }
-            }
+        "flow": {
+            "maxAttempts": 3,
+            "waitBetweenMills": [
+                200
+            ]
+        },
+        "registration": {
+            "maxAttempts": 3,
+            "waitBetweenMills": [
+                200
+            ]
         }
     }
 }
@@ -182,10 +170,9 @@ private val MASTER_WRAPPING_KEY_PASSPHRASE = DEFAULT_HSM_OBJ +
         CryptoHSMConfig::hsm.name +
         CryptoHSMConfig.HSMConfig::cfg.name +
         "wrappingKeyMap.passphrase"
-private const val BUS_PROCESSORS_OBJ = "bus.processors"
+private const val BUS_PROCESSORS_OBJ = "busProcessors"
 private const val OPS_BUS_PROCESSOR_OBJ = "ops"
 private const val FLOW_BUS_PROCESSOR_OBJ = "flow"
-private const val HSM_CONFIG_BUS_PROCESSOR_OBJ = "config"
 private const val HSM_REGISTRATION_BUS_PROCESSOR_OBJ = "registration"
 
 fun Map<String, SmartConfig>.toCryptoConfig(): SmartConfig =
@@ -258,13 +245,6 @@ fun SmartConfig.flowBusProcessor(): CryptoBusProcessorConfig =
         throw IllegalStateException("Failed to get BusProcessorConfig for flow ops operations.", e)
     }
 
-fun SmartConfig.hsmConfigBusProcessor(): CryptoBusProcessorConfig =
-    try {
-        CryptoBusProcessorConfig(getConfig(BUS_PROCESSORS_OBJ).getConfig(HSM_CONFIG_BUS_PROCESSOR_OBJ))
-    } catch (e: Throwable) {
-        throw IllegalStateException("Failed to get BusProcessorConfig for hsm config operations.", e)
-    }
-
 fun SmartConfig.hsmRegistrationBusProcessor(): CryptoBusProcessorConfig =
     try {
         CryptoBusProcessorConfig(getConfig(BUS_PROCESSORS_OBJ).getConfig(HSM_REGISTRATION_BUS_PROCESSOR_OBJ))
@@ -335,7 +315,7 @@ fun SmartConfigFactory.createDefaultCryptoConfig(masterWrappingKey: KeyCredentia
                     mapOf(
                         CryptoSigningServiceConfig::cache.name to mapOf(
                             CryptoSigningServiceConfig.CacheConfig::expireAfterAccessMins.name to "60",
-                            CryptoSigningServiceConfig.CacheConfig::maximumSize.name to "1000"
+                            CryptoSigningServiceConfig.CacheConfig::maximumSize.name to "10000"
                         )
                     )
                 )
@@ -343,10 +323,6 @@ fun SmartConfigFactory.createDefaultCryptoConfig(masterWrappingKey: KeyCredentia
             .withValue(
                 HSM_SERVICE_OBJ, ConfigValueFactory.fromMap(
                     mapOf(
-                        CryptoHSMServiceConfig::cache.name to mapOf(
-                            CryptoHSMServiceConfig.CacheConfig::expireAfterAccessMins.name to "5",
-                            CryptoHSMServiceConfig.CacheConfig::maximumSize.name to "10"
-                        ),
                         CryptoHSMServiceConfig::downstreamMaxAttempts.name to "3"
                     )
                 )
@@ -371,7 +347,7 @@ fun SmartConfigFactory.createDefaultCryptoConfig(masterWrappingKey: KeyCredentia
                                 )
                             ),
                             CryptoHSMConfig.HSMConfig::masterKeyPolicy.name to MasterKeyPolicy.UNIQUE.name,
-                            CryptoHSMConfig.HSMConfig::capacity.name to "-1",
+                            CryptoHSMConfig.HSMConfig::capacity.name to -1,
                             CryptoHSMConfig.HSMConfig::supportedSchemes.name to listOf(
                                 "CORDA.RSA",
                                 "CORDA.ECDSA.SECP256R1",
@@ -398,7 +374,7 @@ fun SmartConfigFactory.createDefaultCryptoConfig(masterWrappingKey: KeyCredentia
                                     ),
                                     "cache" to mapOf(
                                         "expireAfterAccessMins" to "60",
-                                        "maximumSize" to "100"
+                                        "maximumSize" to "1000"
                                     )
                                 ),
                                 "wrapping" to mapOf(
@@ -417,10 +393,6 @@ fun SmartConfigFactory.createDefaultCryptoConfig(masterWrappingKey: KeyCredentia
                             CryptoBusProcessorConfig::waitBetweenMills.name to ConfigValueFactory.fromIterable(listOf(200)),
                         ),
                         FLOW_BUS_PROCESSOR_OBJ to mapOf(
-                            CryptoBusProcessorConfig::maxAttempts.name to "3",
-                            CryptoBusProcessorConfig::waitBetweenMills.name to ConfigValueFactory.fromIterable(listOf(200)),
-                        ),
-                        HSM_CONFIG_BUS_PROCESSOR_OBJ to mapOf(
                             CryptoBusProcessorConfig::maxAttempts.name to "3",
                             CryptoBusProcessorConfig::waitBetweenMills.name to ConfigValueFactory.fromIterable(listOf(200)),
                         ),

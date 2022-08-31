@@ -187,7 +187,7 @@ class MemberProcessorTestUtils {
                 waitBetween = Duration.ofMillis(1000)
             ) {
                 assertDoesNotThrow {
-                    registrationProxy.register(holdingIdentity, context)
+                    registrationProxy.register(UUID.randomUUID(), holdingIdentity, context)
                 }
             }
         }
@@ -261,7 +261,7 @@ class MemberProcessorTestUtils {
         private fun getCpiIdentifier(
             name: String = "INTEGRATION_TEST",
             version: String
-        ) = CpiIdentifier(name, version, SecureHash.create("SHA-256:0000000000000000"))
+        ) = CpiIdentifier(name, version, SecureHash.parse("SHA-256:0000000000000000"))
 
         private fun getCpiMetadata(
             cpiVersion: String,
@@ -269,7 +269,7 @@ class MemberProcessorTestUtils {
             cpiIdentifier: CpiIdentifier = getCpiIdentifier(version = cpiVersion)
         ) = CpiMetadata(
             cpiIdentifier,
-            SecureHash.create("SHA-256:0000000000000000"),
+            SecureHash.parse("SHA-256:0000000000000000"),
             emptyList(),
             groupPolicy,
             -1,

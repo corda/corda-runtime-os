@@ -3,7 +3,13 @@ package net.corda.httprpc.server.impl
 import io.swagger.v3.core.util.Json
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.media.ArraySchema
+import io.swagger.v3.oas.models.media.BooleanSchema
 import io.swagger.v3.oas.models.media.ComposedSchema
+import io.swagger.v3.oas.models.media.IntegerSchema
+import io.swagger.v3.oas.models.media.NumberSchema
+import io.swagger.v3.oas.models.media.ObjectSchema
+import io.swagger.v3.oas.models.media.Schema
+import io.swagger.v3.oas.models.media.StringSchema
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.impl.internal.OptionalDependency
 import net.corda.httprpc.server.impl.utils.compact
@@ -25,6 +31,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import net.corda.httprpc.test.NullabilityRPCOpsImpl
+import net.corda.httprpc.test.ObjectsInJsonEndpointImpl
 import net.corda.httprpc.test.TestFileUploadImpl
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.test.utils.WebRequest
@@ -33,13 +40,27 @@ import net.corda.httprpc.test.utils.multipartDir
 
 class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
     companion object {
-        private val httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost", findFreePort()), context, null, null, HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE)
+        private val httpRpcSettings = HttpRpcSettings(
+            NetworkHostAndPort("localhost", findFreePort()),
+            context,
+            null,
+            null,
+            HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE
+        )
+
         @BeforeAll
         @JvmStatic
         fun setUpBeforeClass() {
             server = HttpRpcServerImpl(
-                listOf(CalendarRPCOpsImpl(), TestHealthCheckAPIImpl(), TestEntityRpcOpsImpl(), TestFileUploadImpl(), NullabilityRPCOpsImpl()),
-                securityManager,
+                listOf(
+                    CalendarRPCOpsImpl(),
+                    TestHealthCheckAPIImpl(),
+                    TestEntityRpcOpsImpl(),
+                    TestFileUploadImpl(),
+                    NullabilityRPCOpsImpl(),
+                    ObjectsInJsonEndpointImpl()
+                ),
+                ::securityManager,
                 httpRpcSettings,
                 multipartDir,
                 true
@@ -82,7 +103,10 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
         val responseOk = path.post.responses["200"]
         assertNotNull(responseOk)
         //need to assert that FiniteDurableReturnResult is generated as a referenced schema rather than inline content
-        assertEquals("#/components/schemas/FiniteDurableReturnResult_of_CalendarDay", responseOk.content["application/json"]!!.schema.`$ref`)
+        assertEquals(
+            "#/components/schemas/FiniteDurableReturnResult_of_CalendarDay",
+            responseOk.content["application/json"]!!.schema.`$ref`
+        )
 
         val compactBody = body.compact()
 
@@ -380,6 +404,84 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
             assertEquals("binary", file.format)
             assertFalse(file.nullable)
             assertEquals("differentDesc", file.description, "File upload should have a description.")
+        }
+    }
+
+    @Test
+    fun `OpenApi spec json should include correctly formatted json objects including nullability`() {
+
+        val apiSpec = client.call(GET, WebRequest<Any>("swagger.json"))
+        val body = apiSpec.body!!.compact()
+
+        val openAPI = Json.mapper().readValue(body, OpenAPI::class.java)
+
+        fun assertJsonObject(jsonObject: Schema<*>?, nullable: Boolean? = false) {
+            assertNotNull(jsonObject)
+            assertNull(jsonObject.type)
+            assertNull(jsonObject.format)
+            assertEquals("Can be any value - string, number, boolean, array or object.", jsonObject.description)
+            assertEquals("{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}", jsonObject.example)
+            assertEquals(nullable, jsonObject.nullable)
+            val composedSchema = jsonObject as ComposedSchema
+            assertTrue(composedSchema.anyOf.containsAll(setOf(StringSchema(), NumberSchema(), IntegerSchema(), BooleanSchema(),
+                ArraySchema(), ObjectSchema()))
+            )
+        }
+
+        with(openAPI.paths["/objects-in-json-endpoint/create-with-one-object"]) {
+            assertNotNull(this)
+            val requestSchema = post.requestBody.content["application/json"]!!.schema
+            assertEquals("#/components/schemas/RequestWithJsonObject", requestSchema.`$ref`)
+        }
+
+        with(openAPI.components.schemas["RequestWithJsonObject"]) {
+            assertNotNull(this)
+            assertEquals(listOf("id", "obj"), this.required)
+            assertEquals(2, this.properties.size)
+            assertNotNull(this.properties["id"])
+            val jsonObject = this.properties["obj"]
+            assertJsonObject(jsonObject)
+        }
+
+        with(openAPI.paths["/objects-in-json-endpoint/create-with-individual-params"]) {
+            assertNotNull(this)
+            val requestSchema = post.requestBody.content["application/json"]!!.schema
+            assertEquals("#/components/schemas/CreateWithIndividualParamsWrapperRequest", requestSchema.`$ref`)
+        }
+
+        with(openAPI.components.schemas["CreateWithIndividualParamsWrapperRequest"]) {
+            assertNotNull(this)
+            assertEquals(listOf("id", "obj"), this.required)
+            assertEquals(2, this.properties.size)
+            assertNotNull(this.properties["id"])
+            val jsonObject = this.properties["obj"]
+            assertJsonObject(jsonObject)
+        }
+
+        with(openAPI.paths["/objects-in-json-endpoint/nullable-json-object-in-request"]) {
+            assertNotNull(this)
+            val requestSchema = post.requestBody.content["application/json"]!!.schema
+            assertEquals("#/components/schemas/NullableJsonObjectInRequestWrapperRequest", requestSchema.`$ref`)
+            val responseSchema = post.responses["200"]!!.content["application/json"]!!.schema
+            assertEquals("#/components/schemas/ResponseWithJsonObjectNullable", responseSchema.`$ref`)
+        }
+
+        with(openAPI.components.schemas["NullableJsonObjectInRequestWrapperRequest"]) {
+            assertNotNull(this)
+            assertEquals(listOf("id"), this.required)
+            assertEquals(2, this.properties.size)
+            assertNotNull(this.properties["id"])
+            val jsonObject = this.properties["obj"]
+            assertJsonObject(jsonObject, true)
+        }
+
+        with(openAPI.components.schemas["ResponseWithJsonObjectNullable"]) {
+            assertNotNull(this)
+            assertEquals(listOf("id"), this.required)
+            assertEquals(2, this.properties.size)
+            assertNotNull(this.properties["id"])
+            val jsonObject = this.properties["obj"]
+            assertJsonObject(jsonObject, true)
         }
     }
 

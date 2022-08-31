@@ -1,6 +1,6 @@
 package net.corda.crypto.core
 
-import net.corda.v5.cipher.suite.DigestAlgorithmFactory
+import net.corda.v5.crypto.extensions.DigestAlgorithmFactory
 
 /**
  * A simple interface to register and unregister a single custom digest provider.

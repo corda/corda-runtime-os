@@ -17,7 +17,7 @@ import kotlin.streams.toList
 class VirtualNodeDbReconcilerReaderTest {
     companion object {
         const val x500name = "O=Alice,L=London,C=GB"
-        val cpiSignerSummaryHash = SecureHash.create("ABC:1234567890ABCDEF")
+        val cpiSignerSummaryHash = SecureHash.parse("ABC:1234567890ABCDEF")
         const val cpiName = "test"
         const val cpiVersion = "1.0"
         const val holdingId = "ABCDEF1234567890"

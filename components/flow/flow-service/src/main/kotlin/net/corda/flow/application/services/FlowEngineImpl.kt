@@ -20,7 +20,6 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.security.AccessController
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
-import java.time.Duration
 import java.util.UUID
 
 @Component(service = [FlowEngine::class, SingletonSerializeAsToken::class], scope = PROTOTYPE)
@@ -41,11 +40,6 @@ class FlowEngineImpl @Activate constructor(
 
     override val flowContextProperties: FlowContextProperties
         get() = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.flowContext
-
-    @Suspendable
-    override fun sleep(duration: Duration) {
-        TODO("Not yet implemented")
-    }
 
     @Suspendable
     override fun <R> subFlow(subFlow: SubFlow<R>): R {
@@ -104,12 +98,14 @@ class FlowEngineImpl @Activate constructor(
 
     private fun peekCurrentFlowStackItem(): FlowStackItem {
         return getFiberExecutionContext().flowStackService.peek()
-            ?: throw CordaRuntimeException("Flow [${flowFiberService.getExecutingFiber().flowId}] does not have a flow stack item")
+            ?: throw CordaRuntimeException(
+                "Flow [${flowFiberService.getExecutingFiber().flowId}] does not have a flow stack item")
     }
 
     private fun popCurrentFlowStackItem(): FlowStackItem {
         return getFiberExecutionContext().flowStackService.pop()
-            ?: throw CordaRuntimeException("Flow [${flowFiberService.getExecutingFiber().flowId}] does not have a flow stack item")
+            ?: throw CordaRuntimeException(
+                "Flow [${flowFiberService.getExecutingFiber().flowId}] does not have a flow stack item")
     }
 
     private fun getFiberExecutionContext(): FlowFiberExecutionContext {
