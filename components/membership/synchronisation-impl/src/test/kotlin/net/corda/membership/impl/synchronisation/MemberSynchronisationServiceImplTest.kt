@@ -16,6 +16,7 @@ import net.corda.data.membership.command.synchronisation.member.ProcessMembershi
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.MembershipSyncRequest
 import net.corda.data.membership.p2p.SignedMemberships
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -42,6 +43,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.MembershipConfig
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.merkle.MerkleTree
@@ -90,6 +92,9 @@ class MemberSynchronisationServiceImplTest {
     private val configHandle: AutoCloseable = mock()
     private val testConfig =
         SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.parseString("instanceId=1"))
+    private val membershipConfig = mock<SmartConfig> {
+        on { getLong(MembershipConfig.MAX_DURATION_BETWEEN_SYNC_REQUESTS_MINUTES) } doReturn 10
+    }
     private val dependentComponents = setOf(
         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
     )
@@ -236,10 +241,11 @@ class MemberSynchronisationServiceImplTest {
     private fun postConfigChangedEvent() {
         lifecycleHandlerCaptor.firstValue.processEvent(
             ConfigChangedEvent(
-                setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG),
+                setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG, ConfigKeys.MEMBERSHIP_CONFIG),
                 mapOf(
                     ConfigKeys.BOOT_CONFIG to testConfig,
-                    ConfigKeys.MESSAGING_CONFIG to testConfig
+                    ConfigKeys.MESSAGING_CONFIG to testConfig,
+                    ConfigKeys.MEMBERSHIP_CONFIG to membershipConfig,
                 )
             ),
             coordinator
@@ -432,7 +438,7 @@ class MemberSynchronisationServiceImplTest {
             configArgs.capture()
         )
         assertThat(configArgs.firstValue)
-            .isEqualTo(setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG))
+            .isEqualTo(setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG, ConfigKeys.MEMBERSHIP_CONFIG))
 
         postRegistrationStatusChangeEvent(LifecycleStatus.UP)
         verify(configHandle).close()

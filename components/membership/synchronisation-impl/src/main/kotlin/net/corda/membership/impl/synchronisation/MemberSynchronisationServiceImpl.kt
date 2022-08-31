@@ -11,6 +11,7 @@ import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
 import net.corda.data.membership.p2p.DistributionMetaData
 import net.corda.data.membership.p2p.MembershipSyncRequest
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -21,6 +22,7 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.lifecycle.TimerEvent
 import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoFactory
@@ -39,13 +41,15 @@ import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.MembershipConfig.MAX_DURATION_BETWEEN_SYNC_REQUESTS_MINUTES
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
@@ -109,6 +113,11 @@ class MemberSynchronisationServiceImpl internal constructor(
      */
     private interface InnerSynchronisationService : AutoCloseable {
         fun processMembershipUpdates(updates: ProcessMembershipUpdates)
+
+        fun cancelCurrentRequestAndScheduleNewOne(
+            memberIdentity: HoldingIdentity,
+            mgm: HoldingIdentity,
+        ): Boolean
     }
 
     private companion object {
@@ -153,8 +162,8 @@ class MemberSynchronisationServiceImpl internal constructor(
         coordinator.stop()
     }
 
-    private fun activate(coordinator: LifecycleCoordinator) {
-        impl = ActiveImpl()
+    private fun activate(membershipConfigurations: SmartConfig) {
+        impl = ActiveImpl(membershipConfigurations)
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 
@@ -168,10 +177,41 @@ class MemberSynchronisationServiceImpl internal constructor(
         override fun processMembershipUpdates(updates: ProcessMembershipUpdates) =
             throw IllegalStateException("$SERVICE is currently inactive.")
 
+        override fun cancelCurrentRequestAndScheduleNewOne(
+            memberIdentity: HoldingIdentity,
+            mgm: HoldingIdentity,
+        ) = false
+
         override fun close() = Unit
     }
 
-    private inner class ActiveImpl : InnerSynchronisationService {
+    private data class SendSyncRequest(
+        val member: HoldingIdentity,
+        val mgm: HoldingIdentity,
+        override val key: String,
+    ) : TimerEvent
+
+    private inner class ActiveImpl(
+        membershipConfigurations: SmartConfig,
+    ) : InnerSynchronisationService {
+
+        override fun cancelCurrentRequestAndScheduleNewOne(
+            memberIdentity: HoldingIdentity,
+            mgm: HoldingIdentity,
+        ): Boolean {
+            coordinator.setTimer(
+                key = "SendSyncRequest-${memberIdentity.fullHash}",
+                delay = delayBetweenRequests // YIFT: Add random to avoid resending all at the same time
+            ) {
+                SendSyncRequest(memberIdentity, mgm, it)
+            }
+            return true
+        }
+
+        private val delayBetweenRequests = membershipConfigurations
+            .getLong(MAX_DURATION_BETWEEN_SYNC_REQUESTS_MINUTES).also {
+                TimeUnit.MINUTES.toMillis(it)
+            }
 
         private val deserializer: CordaAvroDeserializer<KeyValuePairList> =
             serializationFactory.createAvroDeserializer({
@@ -180,6 +220,9 @@ class MemberSynchronisationServiceImpl internal constructor(
 
         override fun processMembershipUpdates(updates: ProcessMembershipUpdates) {
             val viewOwningMember = updates.synchronisationMetaData.member.toCorda()
+            val mgm = updates.synchronisationMetaData.mgm.toCorda()
+            logger.info("Member $viewOwningMember received membership updates from $mgm.")
+            cancelCurrentRequestAndScheduleNewOne(viewOwningMember, mgm)
 
             try {
                 val updateMembersInfo = updates.membershipPackage.memberships.memberships.map { update ->
@@ -210,13 +253,21 @@ class MemberSynchronisationServiceImpl internal constructor(
                 val packageHash = updates.membershipPackage.memberships.hashCheck?.toCorda()
                 val groupReader = membershipGroupReaderProvider.getGroupReader(viewOwningMember)
                 val allRecords = if (packageHash == null) {
-                    persistentMemberInfoRecords + createSynchronisationRequestMessage(groupReader, updates)
+                    persistentMemberInfoRecords + createSynchronisationRequestMessage(
+                        groupReader,
+                        viewOwningMember,
+                        mgm,
+                    )
                 } else {
                     val knownMembers = groupReader.lookup().filter { !it.isMgm }.associateBy { it.id }
                     val allMembers = knownMembers + updateMembersInfo
                     val expectedHash = merkleTreeGenerator.generateTree(allMembers.values).root
                     if (packageHash != expectedHash) {
-                        persistentMemberInfoRecords + createSynchronisationRequestMessage(groupReader, updates)
+                        persistentMemberInfoRecords + createSynchronisationRequestMessage(
+                            groupReader,
+                            viewOwningMember,
+                            mgm,
+                        )
                     } else {
                         persistentMemberInfoRecords
                     }
@@ -240,17 +291,18 @@ class MemberSynchronisationServiceImpl internal constructor(
 
     private fun createSynchronisationRequestMessage(
         groupReader: MembershipGroupReader,
-        updates: ProcessMembershipUpdates
+        memberIdentity: HoldingIdentity,
+        mgm: HoldingIdentity,
     ): Record<String, AppMessage> {
         val member = groupReader.lookup(
-            MemberX500Name.parse(updates.synchronisationMetaData.member.x500Name)
-        ) ?: throw CordaRuntimeException("Unknown member ${updates.synchronisationMetaData.member}")
+            memberIdentity.x500Name
+        ) ?: throw CordaRuntimeException("Unknown member $memberIdentity")
         val memberHash = merkleTreeGenerator.generateTree(listOf(member))
             .root
             .toAvro()
         return p2pRecordsFactory.createAuthenticatedMessageRecord(
-            source = updates.synchronisationMetaData.member,
-            destination = updates.synchronisationMetaData.mgm,
+            source = memberIdentity.toAvro(),
+            destination = mgm.toAvro(),
             content = MembershipSyncRequest(
                 DistributionMetaData(
                     UUID.randomUUID().toString(),
@@ -273,7 +325,31 @@ class MemberSynchronisationServiceImpl internal constructor(
             is StartEvent -> handleStartEvent(coordinator)
             is StopEvent -> handleStopEvent(coordinator)
             is RegistrationStatusChangeEvent -> handleRegistrationChangeEvent(event, coordinator)
-            is ConfigChangedEvent -> handleConfigChange(event, coordinator)
+            is ConfigChangedEvent -> handleConfigChange(event)
+            is SendSyncRequest -> sendSyncRequest(event)
+        }
+    }
+
+    private fun sendSyncRequest(request: SendSyncRequest) {
+        if (!impl.cancelCurrentRequestAndScheduleNewOne(request.member, request.mgm)) {
+            return
+        }
+        logger.info(
+            "Member ${request.member} had not received membership package for a while now, " +
+                "asking MGM to send sync package"
+        )
+        try {
+            val groupReader = membershipGroupReaderProvider.getGroupReader(request.member)
+            val syncRequest = createSynchronisationRequestMessage(
+                groupReader,
+                request.member,
+                request.mgm,
+            )
+            publisher.publish(listOf(syncRequest)).forEach {
+                it.get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            }
+        } catch (e: Exception) {
+            logger.warn("Sync request for ${request.member} failed!", e)
         }
     }
 
@@ -308,7 +384,7 @@ class MemberSynchronisationServiceImpl internal constructor(
                 configHandle?.close()
                 configHandle = configurationReadService.registerComponentForUpdates(
                     coordinator,
-                    setOf(BOOT_CONFIG, MESSAGING_CONFIG)
+                    setOf(BOOT_CONFIG, MESSAGING_CONFIG, MEMBERSHIP_CONFIG)
                 )
             }
             else -> {
@@ -319,7 +395,7 @@ class MemberSynchronisationServiceImpl internal constructor(
     }
 
     // re-creates the publisher with the new config, sets the lifecycle status to UP when the publisher is ready for the first time
-    private fun handleConfigChange(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
+    private fun handleConfigChange(event: ConfigChangedEvent) {
         logger.info("Handling config changed event.")
         _publisher?.close()
         _publisher = publisherFactory.createPublisher(
@@ -327,6 +403,6 @@ class MemberSynchronisationServiceImpl internal constructor(
             event.config.getConfig(MESSAGING_CONFIG)
         )
         _publisher?.start()
-        activate(coordinator)
+        activate(event.config.getConfig(MEMBERSHIP_CONFIG))
     }
 }
