@@ -8,7 +8,7 @@ cordaPipeline(
     createPostgresDb: true,
     publishOSGiImage: true,
     publishPreTestImage: true,
-    publishHelmChart: false, // change this to true when images don't overwrite AMD64 ones (changes still needed here)
+    publishHelmChart: false, // do not publish Helm chart, there is nothing specific there architecture-wise
     e2eTestName: 'corda-runtime-os-e2e-tests',
     runE2eTests: true,
     linuxArch: 'arm64',
