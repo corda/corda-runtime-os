@@ -80,10 +80,6 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
         }
     }
 
-    override fun start() {
-        // Nothing to do
-    }
-
     override fun close() {
         eventConsumer.close()
         stateConsumer.close()

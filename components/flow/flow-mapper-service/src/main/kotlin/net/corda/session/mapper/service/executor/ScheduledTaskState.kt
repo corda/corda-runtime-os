@@ -10,10 +10,6 @@ data class ScheduledTaskState(
     val publisher: Publisher?,
     val tasks: MutableMap<String, ScheduledFuture<*>>
 ) : Resource {
-    override fun start() {
-        // Nothing to do
-    }
-
     override fun close() {
         tasks.values.forEach { it.cancel(false) }
         tasks.clear()

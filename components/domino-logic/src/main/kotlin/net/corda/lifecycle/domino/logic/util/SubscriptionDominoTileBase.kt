@@ -44,7 +44,6 @@ import java.util.concurrent.atomic.AtomicReference
  */
 abstract class SubscriptionDominoTileBase(
     coordinatorFactory: LifecycleCoordinatorFactory,
-    // Resource type is used, because there is no single type capturing all subscriptions. Type checks are executed at runtime.
     private val subscriptionGenerator: () -> SubscriptionBase,
     private val subscriptionConfig: SubscriptionConfig,
     final override val dependentChildren: Collection<LifecycleCoordinatorName>,

@@ -31,9 +31,5 @@ class VirtualNodeSenderImpl(
         }
     }
 
-    override fun start() {
-        // Nothing to do
-    }
-
     override fun close() = sender.close()
 }

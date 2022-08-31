@@ -9,6 +9,11 @@ interface SubscriptionBase : Resource {
      * for status changes from this subscription by calling [followStatusChangesByName] and passing in this value.
      */
     val subscriptionName: LifecycleCoordinatorName
+
+    /**
+     * Start a subscription.
+     */
+    fun start()
 }
 /**
  * A subscription that can be used to manage the life cycle of consumption of event records from a topic.
@@ -23,11 +28,6 @@ interface SubscriptionBase : Resource {
  * A subscription will stop consuming events and close the connection upon close()/stop()
  */
 interface Subscription<K, V> : SubscriptionBase {
-
-    /**
-     * Start a subscription.
-     */
-    override fun start()
 
     /**
      * Check the state of a subscription. true if subscription is still active. false otherwise.

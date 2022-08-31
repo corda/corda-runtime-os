@@ -192,7 +192,7 @@ class MGMOpsClientImpl @Activate constructor(
 
         }
 
-        override fun close() = rpcSender.stop()
+        override fun close() = rpcSender.close()
 
         @Suppress("SpreadOperator")
         private fun generateGroupPolicyResponse(response: MGMGroupPolicyResponse): String =

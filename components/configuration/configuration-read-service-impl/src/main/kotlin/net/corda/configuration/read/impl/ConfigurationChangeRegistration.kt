@@ -31,10 +31,6 @@ class ConfigurationChangeRegistration(
         }
     }
 
-    override fun start() {
-        // Nothing to do
-    }
-
     override fun close() {
         val closed = isClosed.getAndSet(true)
         if (!closed) {

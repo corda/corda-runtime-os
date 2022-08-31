@@ -10,7 +10,7 @@ class ChunkDbWriterImpl internal constructor(
     private val subscription: Subscription<RequestId, Chunk>,
     private val publisher: Publisher
 ) : ChunkDbWriter {
-    override fun start() {
+    fun start() {
         subscription.start()
     }
 

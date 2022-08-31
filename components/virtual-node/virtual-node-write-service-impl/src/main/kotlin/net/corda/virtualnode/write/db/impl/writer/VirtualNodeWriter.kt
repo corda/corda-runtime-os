@@ -21,7 +21,7 @@ internal class VirtualNodeWriter internal constructor(
     private val publisher: Publisher
 ) : Resource {
 
-    override fun start() {
+    fun start() {
         subscription.start()
         publisher.start()
     }
