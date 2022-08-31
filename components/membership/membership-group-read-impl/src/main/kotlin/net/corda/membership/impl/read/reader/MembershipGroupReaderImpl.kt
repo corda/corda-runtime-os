@@ -36,8 +36,14 @@ class MembershipGroupReaderImpl(
     override fun lookupByLedgerKey(ledgerKeyHash: PublicKeyHash): MemberInfo? =
         memberList.singleOrNull { it.isActiveOrPending() && ledgerKeyHash in it.ledgerKeyHashes }
 
-    override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash): MemberInfo? =
-        memberList.singleOrNull { it.isActiveOrPending() && sessionKeyHash == it.sessionKeyHash }
+    override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash): MemberInfo? {
+        println("QQQ lookupBySessionKey -> $sessionKeyHash for ${holdingIdentity.x500Name}")
+        memberList.forEach {
+            println("QQQ for ${it.name} -> ${it.sessionKeyHash} (${it.sessionKeyHash == sessionKeyHash})")
+        }
+        return memberList.singleOrNull { it.isActiveOrPending() && sessionKeyHash == it.sessionKeyHash }
+    }
+
 
     override fun lookup(name: MemberX500Name) = memberList.singleOrNull {
         it.isActiveOrPending() && it.name == name
