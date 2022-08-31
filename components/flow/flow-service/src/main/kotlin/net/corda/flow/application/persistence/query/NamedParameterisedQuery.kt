@@ -18,8 +18,8 @@ class NamedParameterisedQuery<R : Any>(
     private val flowFiberSerializationService: FlowFiberSerializationService,
     private val queryName: String,
     private var parameters: MutableMap<String, Any>,
-    private var offset: Int,
     private var limit: Int,
+    private var offset: Int,
     private var expectedClass: Class<R>,
 ) : ParameterisedQuery<R> {
 
@@ -56,7 +56,7 @@ class NamedParameterisedQuery<R : Any>(
                 NamedQueryExternalEventFactory::class.java,
                 NamedQueryParameters(queryName, getSerializedParameters(parameters), offset, limit)
             )
-        }.map { flowFiberSerializationService.deserializePayload(it.array(), expectedClass) }
+        }.map { flowFiberSerializationService.deserialize(it.array(), expectedClass) }
 
         return deserialized
     }

@@ -41,7 +41,7 @@ class PersistenceServiceImpl @Activate constructor(
                 FindExternalEventFactory::class.java,
                 FindParameters(entityClass, serialize(primaryKey))
             )
-        }.firstOrNull()?.let { flowFiberSerializationService.deserializePayload(it.array(), entityClass) }
+        }.firstOrNull()?.let { flowFiberSerializationService.deserialize(it.array(), entityClass) }
     }
 
     @Suspendable
@@ -62,7 +62,7 @@ class PersistenceServiceImpl @Activate constructor(
                 MergeExternalEventFactory::class.java,
                 MergeParameters(serialize(entity))
             )
-        }.firstOrNull()?.let { flowFiberSerializationService.deserializePayload(it.array(), entity::class.java) }
+        }.firstOrNull()?.let { flowFiberSerializationService.deserialize(it.array(), entity::class.java) }
     }
 
     @Suspendable

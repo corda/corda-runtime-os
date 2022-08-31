@@ -15,8 +15,8 @@ class PagedFindQuery<R : Any>(
     private val externalEventExecutor: ExternalEventExecutor,
     private val flowFiberSerializationService: FlowFiberSerializationService,
     private val entityClass: Class<R>,
-    private var offset: Int,
     private var limit: Int,
+    private var offset: Int,
 ) : PagedQuery<R> {
 
     @Suspendable
@@ -40,7 +40,7 @@ class PagedFindQuery<R : Any>(
                 FindAllExternalEventFactory::class.java,
                 FindAllParameters(entityClass, offset, limit)
             )
-        }.map { flowFiberSerializationService.deserializePayload(it.array(), entityClass) }
+        }.map { flowFiberSerializationService.deserialize(it.array(), entityClass) }
 
         return deserialized
     }

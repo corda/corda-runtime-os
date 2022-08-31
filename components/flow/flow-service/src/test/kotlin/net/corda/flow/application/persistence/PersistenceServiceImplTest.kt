@@ -58,22 +58,22 @@ class PersistenceServiceImplTest {
 
     @Test
     fun `merge executes successfully`() {
-        whenever(flowFiberSerializationService.deserializePayload<TestObject>(any(), any())).thenReturn(TestObject())
+        whenever(flowFiberSerializationService.deserialize<TestObject>(any(), any())).thenReturn(TestObject())
 
         persistenceService.merge(TestObject())
 
-        verify(flowFiberSerializationService).deserializePayload<TestObject>(any(), any())
+        verify(flowFiberSerializationService).deserialize<TestObject>(any(), any())
         verify(flowFiberSerializationService).serialize<TestObject>(any())
         assertThat(argumentCaptor.firstValue).isEqualTo(MergeExternalEventFactory::class.java)
     }
 
     @Test
     fun `remove executes successfully`() {
-        whenever(flowFiberSerializationService.deserializePayload<TestObject>(any(), any())).thenReturn(TestObject())
+        whenever(flowFiberSerializationService.deserialize<TestObject>(any(), any())).thenReturn(TestObject())
 
         persistenceService.remove(TestObject())
 
-        verify(flowFiberSerializationService, times(0)).deserializePayload<TestObject>(any(), any())
+        verify(flowFiberSerializationService, times(0)).deserialize<TestObject>(any(), any())
 
         verify(flowFiberSerializationService).serialize<TestObject>(any())
         assertThat(argumentCaptor.firstValue).isEqualTo(RemoveExternalEventFactory::class.java)
@@ -82,11 +82,11 @@ class PersistenceServiceImplTest {
     @Test
     fun `find executes successfully`() {
         val expectedObj = TestObject()
-        whenever(flowFiberSerializationService.deserializePayload<TestObject>(any(), any())).thenReturn(expectedObj)
+        whenever(flowFiberSerializationService.deserialize<TestObject>(any(), any())).thenReturn(expectedObj)
 
         assertThat(persistenceService.find(TestObject::class.java, "key")).isEqualTo(expectedObj)
 
-        verify(flowFiberSerializationService).deserializePayload<TestObject>(any(), any())
+        verify(flowFiberSerializationService).deserialize<TestObject>(any(), any())
         verify(flowFiberSerializationService).serialize<String>(any())
         assertThat(argumentCaptor.firstValue).isEqualTo(FindExternalEventFactory::class.java)
     }

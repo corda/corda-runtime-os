@@ -4,7 +4,6 @@ import net.corda.flow.ALICE_X500_NAME
 import net.corda.flow.application.services.MockFlowFiberService
 import net.corda.flow.fiber.FlowFiberSerializationService
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.v5.application.messaging.unwrap
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -32,8 +31,8 @@ class FlowSessionImplTest {
     private val flowFiberSerializationService = mock<FlowFiberSerializationService>().apply {
         whenever(serialize(HELLO_THERE)).thenReturn(SerializedBytes(HELLO_THERE.toByteArray()))
         whenever(serialize(HI)).thenReturn(SerializedBytes(HI.toByteArray()))
-        whenever(deserializePayload(HELLO_THERE.toByteArray(), String::class.java)).thenReturn(HELLO_THERE)
-        whenever(deserializePayload(HI.toByteArray(), String::class.java)).thenReturn(HI)
+        whenever(deserialize(HELLO_THERE.toByteArray(), String::class.java)).thenReturn(HELLO_THERE)
+        whenever(deserialize(HI.toByteArray(), String::class.java)).thenReturn(HI)
     }
 
     private val flowFiber = mockFlowFiberService.flowFiber.apply {

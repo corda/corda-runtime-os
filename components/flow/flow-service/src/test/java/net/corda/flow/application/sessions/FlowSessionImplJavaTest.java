@@ -104,7 +104,7 @@ public class FlowSessionImplJavaTest {
         Map<String, byte[]> received = new HashMap<>();
         received.put("session id", new byte[]{ 1, 2, 3 });
         when(flowFiberSerializationService.serialize(any())).thenReturn(new SerializedBytes(new byte[]{ 1, 2, 3 }));
-        when(flowFiberSerializationService.deserializePayload(any(byte[].class), any())).thenReturn(1);
+        when(flowFiberSerializationService.deserialize(any(byte[].class), any())).thenReturn(1);
         when(flowSandboxGroupContext.getDependencyInjector()).thenReturn(sandboxDependencyInjector);
         when(flowSandboxGroupContext.getCheckpointSerializer()).thenReturn(checkpointSerializer);
         when(flowFiberService.getExecutingFiber()).thenReturn(flowFiber);

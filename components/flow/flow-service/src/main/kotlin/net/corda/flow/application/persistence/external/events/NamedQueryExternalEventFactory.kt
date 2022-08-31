@@ -13,4 +13,9 @@ class NamedQueryExternalEventFactory : AbstractPersistenceExternalEventFactory<N
     }
 }
 
-data class NamedQueryParameters(val queryName: String, val parameters: Map<String, ByteBuffer>, val offset: Int, val limit: Int)
+data class NamedQueryParameters(
+    val queryName: String,
+    val parameters: Map<String, ByteBuffer>,
+    val offset: Int,
+    val limit: Int
+)

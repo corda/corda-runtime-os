@@ -1,5 +1,6 @@
 package net.corda.flow.application.sessions
 
+import net.corda.flow.fiber.DeserializedWrongAMQPObjectException
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberSerializationService
 import net.corda.flow.fiber.FlowFiberService
@@ -34,9 +35,7 @@ class FlowSessionImpl(
     @Suspendable
     override fun <R : Any> sendAndReceive(receiveType: Class<R>, payload: Any): UntrustworthyData<R> {
         enforceNotPrimitive(receiveType)
-        log.info("sessionId=${sourceSessionId} is init=${initiated}")
         ensureSessionIsOpen()
-        log.info("sessionId=${sourceSessionId} is init=${initiated}")
         val request = FlowIORequest.SendAndReceive(mapOf(sourceSessionId to serialize(payload)))
         val received = fiber.suspend(request)
         return deserializeReceivedPayload(received, receiveType)
@@ -105,7 +104,11 @@ class FlowSessionImpl(
         receiveType: Class<R>
     ): UntrustworthyData<R> {
         return received[sourceSessionId]?.let {
-            UntrustworthyData(flowFiberSerializationService.deserializePayload(it, receiveType))
+            try {
+                UntrustworthyData(flowFiberSerializationService.deserialize(it, receiveType))
+            } catch (e: DeserializedWrongAMQPObjectException) {
+                throw CordaRuntimeException("Expecting to receive a ${e.expectedType} but received a ${e.deserializedType} instead, payload: (${e.deserializedObject})")
+            }
         } ?: throw CordaRuntimeException("The session [${sourceSessionId}] did not receive a payload when trying to receive one")
     }
 

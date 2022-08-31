@@ -40,11 +40,11 @@ class FlowFiberSerializationServiceImplTest {
     }
 
     @Test
-    fun `test deserialize success`() {
+    fun `deserialize success`() {
         val tesObj = TestObject()
         whenever(serializationService.deserialize(byteArray, TestObject::class.java)).thenReturn(tesObj)
 
-        val deserialized = flowFiberSerializationService.deserializePayload(byteArray, TestObject::class.java)
+        val deserialized = flowFiberSerializationService.deserialize(byteArray, TestObject::class.java)
 
         assertThat(deserialized).isEqualTo(tesObj)
         verify(serializationService, times(1)).deserialize(byteArray,  TestObject::class.java)
@@ -52,17 +52,17 @@ class FlowFiberSerializationServiceImplTest {
     }
 
     @Test
-    fun `test deserialize wrong payload`() {
+    fun `deserialize wrong object`() {
         whenever(serializationService.deserialize<Any>(any<ByteArray>(),  any())).thenReturn(1)
 
-        assertThrows<CordaRuntimeException> { flowFiberSerializationService.deserializePayload(byteArray, TestObject::class.java) }
+        assertThrows<CordaRuntimeException> { flowFiberSerializationService.deserialize(byteArray, TestObject::class.java) }
 
         verify(serializationService, times(1)).deserialize(byteArray,  TestObject::class.java)
         verify(flowFiberService, times(1)).getExecutingFiber()
     }
 
     @Test
-    fun `test serialize success`() {
+    fun `serialize success`() {
         val testObj = TestObject()
         val deserialized = flowFiberSerializationService.serialize(testObj)
 

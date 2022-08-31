@@ -31,8 +31,8 @@ class PagedQueryFactory @Activate constructor(
             flowFiberSerializationService = flowFiberSerializationService,
             queryName = queryName,
             parameters = mutableMapOf(),
-            offset = 0,
             limit = Int.MAX_VALUE,
+            offset = 0,
             expectedClass = expectedClass
         )
     }
@@ -49,8 +49,8 @@ class PagedQueryFactory @Activate constructor(
             externalEventExecutor = externalEventExecutor,
             flowFiberSerializationService = flowFiberSerializationService,
             entityClass = entityClass,
-            offset = 0,
-            limit = Int.MAX_VALUE
+            limit = Int.MAX_VALUE,
+            offset = 0
         )
     }
 }
