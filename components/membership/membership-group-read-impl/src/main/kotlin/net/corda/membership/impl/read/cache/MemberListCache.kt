@@ -34,6 +34,7 @@ interface MemberListCache : MemberDataListCache<MemberInfo> {
         override fun get(holdingIdentity: HoldingIdentity): List<MemberInfo> = cache[holdingIdentity.shortHash] ?: emptyList()
 
         override fun put(holdingIdentity: HoldingIdentity, data: List<MemberInfo>) {
+            println("QQQ Adding to $holdingIdentity -> ${data.map { it.name }}")
             cache.compute(holdingIdentity.shortHash) { _, value ->
                 (value ?: ReplaceableList())
                     .addOrReplace(data) { old, new ->
