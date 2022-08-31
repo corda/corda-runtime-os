@@ -92,7 +92,7 @@ internal class WebsocketRouteAdaptor(
             requireNotNull(channels[ctx.sessionId]).onTextMessage?.invoke(ctx.message())
                 ?: log.info("Inbound messages are not supported.")
         } catch (th: Throwable) {
-            log.error("Unexpected exception in handleMessage", th)
+            log.error("Exception during message handling", th)
         }
     }
 
@@ -116,7 +116,7 @@ internal class WebsocketRouteAdaptor(
 
     override fun close() {
         channels.forEach {
-            it.value.close("Server closed all duplex connections.")
+            it.value.close("All duplex connections closed.")
         }
     }
 }

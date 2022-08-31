@@ -42,7 +42,7 @@ class WebSocketFlowStatusUpdateListener(
         }
         duplexChannel.onTextMessage = {
             logger.debug { "Flow status feed $id does not support receiving messages. Terminating connection." }
-            error(WebSocketProtocolViolationException("Inbound messages are not permitted."))
+            duplexChannel.error(WebSocketProtocolViolationException("Inbound messages are not permitted."))
         }
         duplexChannel.onConnect = {
             logger.info("Flow status feed $id connected (clientRequestId=$clientRequestId, holdingId=$holdingIdentityShortHash).")
