@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import kotlin.reflect.jvm.javaMethod
+import net.corda.httprpc.JsonObject
 import net.corda.httprpc.test.TestFileUploadAPI
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -414,5 +415,29 @@ class ResourceToOpenApiSpecMapperTest {
         assertEquals("binary", file.format)
         assertEquals("The file input stream.", file.description)
         assertFalse(file.nullable)
+    }
+
+    @Test
+    fun `Can convert JsonObject parameter to OpenApiParameter`() {
+        val schemaModelProvider = DefaultSchemaModelProvider(SchemaModelContextHolder())
+        val queryParameter = EndpointParameter(
+            id = "id",
+            name = "name",
+            description = "description",
+            required = true,
+            default = "default",
+            classType = JsonObject::class.java,
+            type = ParameterType.BODY
+        )
+        val openApiQueryParameter = queryParameter.toOpenApiParameter(schemaModelProvider)
+        assertEquals("name", openApiQueryParameter.name)
+        assertEquals("description", openApiQueryParameter.description)
+        assertEquals(true, openApiQueryParameter.required)
+        assertEquals("body", openApiQueryParameter.`in`)
+        assertEquals(null, openApiQueryParameter.schema.type)
+        assertEquals(null, openApiQueryParameter.schema.format)
+        assertEquals("Can be any value - string, number, boolean, array or object.", openApiQueryParameter.schema.description)
+        assertEquals("{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
+            openApiQueryParameter.schema.example)
     }
 }

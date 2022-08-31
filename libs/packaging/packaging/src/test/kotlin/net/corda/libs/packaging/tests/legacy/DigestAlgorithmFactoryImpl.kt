@@ -1,7 +1,7 @@
 package net.corda.libs.packaging.tests.legacy
 
-import net.corda.v5.cipher.suite.DigestAlgorithm
-import net.corda.v5.cipher.suite.DigestAlgorithmFactory
+import net.corda.v5.crypto.extensions.DigestAlgorithm
+import net.corda.v5.crypto.extensions.DigestAlgorithmFactory
 import java.io.InputStream
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException

@@ -11,6 +11,7 @@ import net.corda.crypto.config.impl.hsmService
 import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
+import net.corda.crypto.impl.retrying.BackoffStrategy
 import net.corda.crypto.impl.retrying.CryptoRetryingExecutor
 import net.corda.crypto.persistence.HSMStore
 import net.corda.crypto.service.HSMService
@@ -18,7 +19,6 @@ import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
-import net.corda.v5.base.exceptions.BackoffStrategy
 import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import org.osgi.service.component.annotations.Activate

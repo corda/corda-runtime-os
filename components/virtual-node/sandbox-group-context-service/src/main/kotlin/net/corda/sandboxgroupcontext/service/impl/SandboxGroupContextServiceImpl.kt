@@ -14,8 +14,8 @@ import net.corda.sandboxgroupcontext.SandboxGroupContextService
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.loggerFor
-import net.corda.v5.cipher.suite.DigestAlgorithmFactory
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.crypto.extensions.DigestAlgorithmFactory
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
 import org.osgi.framework.Constants.OBJECTCLASS
