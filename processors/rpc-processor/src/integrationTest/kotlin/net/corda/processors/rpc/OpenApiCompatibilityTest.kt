@@ -95,8 +95,8 @@ class OpenApiCompatibilityTest {
         val context = HttpRpcContext(
             "1",
             "api",
-            "HttpRpcContext ${javaClass.simpleName}",
-            "HttpRpcContext ${javaClass.simpleName}"
+            "Corda HTTP RPC API",
+            "All the endpoints for publicly visible Open API calls"
         )
         val freePort = findFreePort()
         val serverAddress = NetworkHostAndPort("localhost", freePort)
