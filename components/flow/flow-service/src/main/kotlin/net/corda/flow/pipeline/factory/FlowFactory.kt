@@ -26,11 +26,13 @@ interface FlowFactory {
      *
      * @param flowStartContext The [FlowStartContext] describing the flow.
      * @param sandboxGroupContext The sandbox to load the [Flow] class from.
+     * @param contextProperties The context properties to be set on the session which is passed to the initiated flow.
      *
      * @return A new [Flow] instance.
      */
     fun createInitiatedFlow(
         flowStartContext: FlowStartContext,
-        sandboxGroupContext: SandboxGroupContext
+        sandboxGroupContext: SandboxGroupContext,
+        contextProperties: Map<String, String>
     ): FlowLogicAndArgs
 }

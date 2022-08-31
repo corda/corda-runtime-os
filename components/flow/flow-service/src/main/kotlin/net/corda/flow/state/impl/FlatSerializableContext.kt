@@ -9,25 +9,17 @@ import net.corda.v5.application.flows.FlowContextProperties.Companion.CORDA_RESE
  * [FlowStackBasedContext], except is non-stack based and serializable. This makes it suitable to be held as a property
  * of classes which need to allow the user to add extra context properties to a snapshot of the core set, but know they
  * are also required to be accessed by suspendable fibers.
+ *
+ * This base class does not support put operations.
  */
-class FlatSerializableContext(
+open class FlatSerializableContext(
     contextUserProperties: Map<String, String>, contextPlatformProperties: Map<String, String>
 ) : FlowContext {
 
-    private val userPropertyMap = contextUserProperties.toMutableMap()
-    private val platformPropertyMap = contextPlatformProperties.toMutableMap()
+    protected val userPropertyMap = contextUserProperties.toMutableMap()
+    protected val platformPropertyMap = contextPlatformProperties.toMutableMap()
 
-    override fun put(key: String, value: String) {
-        require(platformPropertyMap[key] == null) {
-            "'${key}' is already a platform context property, it cannot be overwritten with a user property"
-        }
-
-        require(!key.lowercase().startsWith(CORDA_RESERVED_PREFIX)) {
-            "'${key}' starts with '${CORDA_RESERVED_PREFIX}' which is reserved for Corda platform properties"
-        }
-
-        userPropertyMap[key] = value
-    }
+    override fun put(key: String, value: String): Unit = throw Exception("not supported")
 
     override fun get(key: String): String? = platformPropertyMap[key] ?: userPropertyMap[key]
 
@@ -36,11 +28,6 @@ class FlatSerializableContext(
     override fun flattenUserProperties() = userPropertyMap.toMap()
 
     override val platformProperties: ContextPlatformProperties = object : ContextPlatformProperties {
-        override fun put(key: String, value: String) {
-            require(platformPropertyMap[key] == null) {
-                "'${key}' is already a platform context property, it cannot be overwritten"
-            }
-            platformPropertyMap[key] = value
-        }
+        override fun put(key: String, value: String): Unit = throw Exception("not supported")
     }
 }

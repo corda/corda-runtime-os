@@ -17,10 +17,29 @@ class FlowSessionFactoryImpl @Activate constructor(
     private val flowFiberService: FlowFiberService
 ) : FlowSessionFactory {
 
-    override fun create(sessionId: String, x500Name: MemberX500Name, initiated: Boolean): FlowSession {
+    override fun createInitiatedFlowSession(
+        sessionId: String,
+        x500Name: MemberX500Name,
+        contextProperties: Map<String, String>
+    ): FlowSession {
         return try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
-                FlowSessionImpl(counterparty = x500Name, sessionId, flowFiberService, initiated)
+                FlowSessionImpl.asInitiatedSession(
+                    counterparty = x500Name,
+                    sessionId,
+                    flowFiberService,
+                    contextProperties
+                )
+            })
+        } catch (e: PrivilegedActionException) {
+            throw e.exception
+        }
+    }
+
+    override fun createInitiatingFlowSession(sessionId: String, x500Name: MemberX500Name): FlowSession {
+        return try {
+            AccessController.doPrivileged(PrivilegedExceptionAction {
+                FlowSessionImpl.asInitiatingSession(counterparty = x500Name, sessionId, flowFiberService)
             })
         } catch (e: PrivilegedActionException) {
             throw e.exception

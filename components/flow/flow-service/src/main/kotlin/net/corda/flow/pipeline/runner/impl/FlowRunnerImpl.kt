@@ -14,6 +14,7 @@ import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
 import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.flow.utils.emptyKeyValuePairList
+import net.corda.membership.lib.toMap
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
@@ -69,9 +70,22 @@ class FlowRunnerImpl @Activate constructor(
         sessionInitEvent: SessionInit
     ): FiberFuture {
         val flowStartContext = context.checkpoint.flowStartContext
+        // This is where the initiated flow context is initialised.
+        // The flow's own platform and user context, the context which user code will extract from the FlowEngine should
+        // be passed to startFlow().
+        // The session context, which to the user code is the context of the invoking party, should be passed to
+        // createInitiatedFlow(). Because these are immutable properties always set by the platform, only one property
+        // map is supported here.
+        // Presently both contexts are passed through those from the session init even untouched.
         return startFlow(
             context,
-            createFlow = { sgc -> flowFactory.createInitiatedFlow(flowStartContext, sgc) },
+            createFlow = { sgc ->
+                flowFactory.createInitiatedFlow(
+                    flowStartContext,
+                    sgc,
+                    sessionInitEvent.contextPlatformProperties.toMap()
+                )
+            },
             updateFlowStackItem = { fsi -> fsi.sessionIds.add(flowStartContext.statusKey.id) },
             contextUserProperties = sessionInitEvent.contextUserProperties,
             contextPlatformProperties = sessionInitEvent.contextPlatformProperties

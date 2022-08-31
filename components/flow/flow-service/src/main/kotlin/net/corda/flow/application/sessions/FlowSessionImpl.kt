@@ -4,6 +4,7 @@ import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.state.impl.FlatSerializableContext
+import net.corda.flow.state.impl.MutableFlatSerializableContext
 import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.messaging.FlowInfo
 import net.corda.v5.application.messaging.FlowSession
@@ -16,15 +17,44 @@ import net.corda.v5.base.util.castIfPossible
 import net.corda.v5.base.util.contextLogger
 import java.io.NotSerializableException
 
-class FlowSessionImpl(
+class FlowSessionImpl private constructor(
     override val counterparty: MemberX500Name,
     private val sourceSessionId: String,
     private val flowFiberService: FlowFiberService,
-    private var isSessionConfirmed: Boolean
+    direction: Direction
 ) : FlowSession {
 
-    private companion object {
-        val log = contextLogger()
+    companion object {
+        fun asInitiatingSession(
+            counterparty: MemberX500Name,
+            sourceSessionId: String,
+            flowFiberService: FlowFiberService
+        ): FlowSession =
+            FlowSessionImpl(counterparty, sourceSessionId, flowFiberService, Direction.INITIATING_SIDE)
+
+        fun asInitiatedSession(
+            counterparty: MemberX500Name,
+            sourceSessionId: String,
+            flowFiberService: FlowFiberService,
+            contextProperties: Map<String, String>
+        ) = FlowSessionImpl(counterparty, sourceSessionId, flowFiberService, Direction.INITIATED_SIDE).apply {
+            sessionLocalFlowContext = FlatSerializableContext(
+                contextUserProperties = emptyMap(),
+                contextPlatformProperties = contextProperties
+            )
+        }
+
+        private val log = contextLogger()
+    }
+
+    internal enum class Direction {
+        INITIATING_SIDE,
+        INITIATED_SIDE
+    }
+
+    private var isSessionConfirmed = when (direction) {
+        Direction.INITIATING_SIDE -> false // Initiating flows need to establish a session
+        Direction.INITIATED_SIDE -> true // Initiated flows are always instantiated as the result of an existing session
     }
 
     private val fiber: FlowFiber get() = flowFiberService.getExecutingFiber()
@@ -35,7 +65,7 @@ class FlowSessionImpl(
      * that is done when [contextProperties] is requested or [confirmSession] called, because both of those things can
      * only happen inside a fiber by contract.
      */
-    private var sessionLocalFlowContext: FlatSerializableContext? = null
+    internal var sessionLocalFlowContext: FlatSerializableContext? = null
 
     override val contextProperties: FlowContextProperties
         get() {
@@ -46,7 +76,7 @@ class FlowSessionImpl(
     private fun initialiseSessionLocalFlowContext() {
         if (sessionLocalFlowContext == null) {
             with(fiber.getExecutionContext().flowCheckpoint.flowContext) {
-                sessionLocalFlowContext = FlatSerializableContext(
+                sessionLocalFlowContext = MutableFlatSerializableContext(
                     contextUserProperties = this.flattenUserProperties(),
                     contextPlatformProperties = this.flattenPlatformProperties()
                 )
@@ -104,8 +134,8 @@ class FlowSessionImpl(
                 FlowIORequest.InitiateFlow(
                     counterparty,
                     sourceSessionId,
-                    contextUserProperties = sessionLocalFlowContext.flattenUserProperties(),
-                    contextPlatformProperties = sessionLocalFlowContext.flattenPlatformProperties()
+                    contextUserProperties = sessionLocalFlowContext!!.flattenUserProperties(),
+                    contextPlatformProperties = sessionLocalFlowContext!!.flattenPlatformProperties()
                 )
             )
             isSessionConfirmed = true
