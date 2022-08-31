@@ -18,7 +18,7 @@ import net.corda.httprpc.client.processing.toWebRequest
 import net.corda.httprpc.tools.HttpPathUtils.joinResourceAndEndpointPaths
 import net.corda.httprpc.tools.annotations.extensions.path
 import net.corda.httprpc.tools.isStaticallyExposedGet
-import net.corda.v5.base.stream.returnsDurableCursorBuilder
+import net.corda.httprpc.durablestream.api.returnsDurableCursorBuilder
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import java.lang.reflect.InvocationHandler

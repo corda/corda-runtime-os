@@ -16,8 +16,8 @@ import net.corda.httprpc.server.impl.apigen.processing.streams.FiniteDurableRetu
 import net.corda.httprpc.tools.annotations.validation.HttpRpcInterfaceValidator
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
-import net.corda.v5.base.stream.returnsDurableCursorBuilder
-import net.corda.v5.base.stream.isFiniteDurableStreamsMethod
+import net.corda.httprpc.durablestream.api.returnsDurableCursorBuilder
+import net.corda.httprpc.durablestream.api.isFiniteDurableStreamsMethod
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcDELETE

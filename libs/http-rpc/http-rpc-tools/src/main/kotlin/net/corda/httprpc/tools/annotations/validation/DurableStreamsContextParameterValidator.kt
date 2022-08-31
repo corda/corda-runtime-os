@@ -5,7 +5,7 @@ import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPUT
 import net.corda.httprpc.tools.annotations.validation.utils.getParameterName
 import net.corda.httprpc.tools.annotations.validation.utils.isBodyParameter
-import net.corda.v5.base.stream.returnsDurableCursorBuilder
+import net.corda.httprpc.durablestream.api.returnsDurableCursorBuilder
 import java.lang.reflect.Method
 
 /**
