@@ -2,15 +2,19 @@ package net.corda.flow.application.sessions
 
 import net.corda.flow.ALICE_X500_NAME
 import net.corda.flow.application.services.MockFlowFiberService
+import net.corda.flow.fiber.DeserializedWrongAMQPObjectException
 import net.corda.flow.fiber.FlowFiberSerializationService
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
@@ -64,6 +68,15 @@ class FlowSessionImplTest {
     }
 
     @Test
+    fun `receiving the wrong object type in sendAndReceive throws an exception`() {
+        whenever(flowFiberSerializationService.deserialize(eq(HELLO_THERE.toByteArray()), any<Class<*>>()))
+            .thenThrow(DeserializedWrongAMQPObjectException(String::class.java, Int::class.java, 1, "wrong"))
+
+        val session = createSession(initiated = true)
+        assertThrows<CordaRuntimeException> { session.sendAndReceive(String::class.java, HI) }
+    }
+
+    @Test
     fun `sendAndReceive returns the result of the flow's suspension`() {
         val session = createSession(initiated = true)
         assertEquals(HELLO_THERE, session.sendAndReceive(String::class.java, HI).unwrap { it })
@@ -91,6 +104,15 @@ class FlowSessionImplTest {
         session.receive(String::class.java)
         verify(flowFiber, never()).suspend(any<FlowIORequest.InitiateFlow>())
         verify(flowFiber).suspend(any<FlowIORequest.Receive>())
+    }
+
+    @Test
+    fun `receiving the wrong object type in receive throws an exception`() {
+        whenever(flowFiberSerializationService.deserialize(eq(HELLO_THERE.toByteArray()), any<Class<*>>()))
+            .thenThrow(DeserializedWrongAMQPObjectException(String::class.java, Int::class.java, 1, "wrong"))
+
+        val session = createSession(initiated = true)
+        assertThrows<CordaRuntimeException> { session.receive(String::class.java) }
     }
 
     @Test
