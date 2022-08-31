@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.type.TypeFactory
 import com.fasterxml.jackson.databind.util.LRUMap
 import com.fasterxml.jackson.databind.util.LookupCache
 import com.fasterxml.jackson.module.kotlin.KotlinModule
+import net.corda.common.json.serializers.standardTypesModule
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Component
@@ -36,6 +37,8 @@ class JsonMarshallingServiceImpl : JsonMarshallingService, SingletonSerializeAsT
 
         // Register Kotlin after resetting the AnnotationIntrospector.
         registerModule(KotlinModule.Builder().build())
+
+        registerModule(standardTypesModule())
     }
 
     override fun format(data: Any): String {

@@ -1,11 +1,14 @@
 package net.corda.testutils.services
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import net.corda.common.json.serializers.standardTypesModule
 import net.corda.v5.application.marshalling.JsonMarshallingService
 
 class SimpleJsonMarshallingService : JsonMarshallingService{
 
+
     private val objectMapper = jacksonObjectMapper()
+        .registerModule(standardTypesModule())
 
     override fun format(data: Any): String {
         return objectMapper.writeValueAsString(data)

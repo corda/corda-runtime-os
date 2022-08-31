@@ -16,6 +16,7 @@ dependencies {
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation project(":libs:serialization:json-serializers")
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 }
