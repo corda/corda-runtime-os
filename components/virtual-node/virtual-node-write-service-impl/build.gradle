@@ -28,6 +28,7 @@ dependencies {
     implementation project(':libs:db:db-orm')
     implementation project(':libs:layered-property-map')
     implementation project(':libs:lifecycle:lifecycle')
+    implementation project(':libs:virtual-node:virtual-node-common')
     implementation project(':libs:virtual-node:virtual-node-datamodel')
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
