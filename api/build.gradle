@@ -4,10 +4,6 @@ plugins {
     id 'corda.common-publishing'
 }
 
-ext {
-    releasable = true
-}
-
 group = "net.corda.cli.host"
 
 dependencies {
