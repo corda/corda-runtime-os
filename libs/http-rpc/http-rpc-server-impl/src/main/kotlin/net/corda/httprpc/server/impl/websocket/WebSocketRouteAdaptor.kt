@@ -29,9 +29,10 @@ typealias SessionId = String
  * and clientB are both connected to the server, clientA sends a message, clientB sends a message, both messages will be handled by this
  * handleMessage function.
  *
- * WsContext contains a SessionId which is unique per connection and used as an identifier for a duplex channel and key in [channels] map.
+ * WsContext contains a SessionId which is unique per connection and used as an identifier for a duplex channel and key in
+ * [channelsBySessionId] map.
  */
-internal class WebsocketRouteAdaptor(
+internal class WebSocketRouteAdaptor(
     private val routeInfo: RouteInfo,
     private val securityManager: HttpRpcSecurityManager,
     private val credentialResolver: DefaultCredentialResolver,
@@ -43,20 +44,20 @@ internal class WebsocketRouteAdaptor(
         const val WEBSOCKET_IDLE_TIMEOUT = 20000L
     }
 
-    private val channels = ConcurrentHashMap<SessionId, DuplexChannel>()
+    private val channelsBySessionId = ConcurrentHashMap<SessionId, DuplexChannel>()
 
     // The handler is called when a WebSocket client connects.
     @Suppress("NestedBlockDepth")
     override fun handleConnect(ctx: WsConnectContext) {
         try {
-            channels[ctx.sessionId]?.let {
+            channelsBySessionId[ctx.sessionId]?.let {
                 log.info("Session with id ${ctx.sessionId} already exists, overwriting and closing the old session.")
                 it.close("New session overwriting old session with id ${ctx.sessionId}")
             }
             log.info("Connected to remote: ${ctx.session.remoteAddress}")
 
             ServerDuplexChannel(ctx, webSocketCloserService, ctx.sessionId).let { newChannel ->
-                channels[ctx.sessionId] = newChannel
+                channelsBySessionId[ctx.sessionId] = newChannel
 
                 ctx.session.idleTimeout = WEBSOCKET_IDLE_TIMEOUT
                 val clientWsRequestContext = ClientWsRequestContext(ctx)
@@ -89,7 +90,7 @@ internal class WebsocketRouteAdaptor(
             // incoming messages could be malicious. We won't do anything with the message unless an onTextMessage
             // hook has been defined. The hook will be responsible for ensuring the messages respect the protocol
             // and terminate connections when malicious messages arrive.
-            requireNotNull(channels[ctx.sessionId]).onTextMessage?.invoke(ctx.message())
+            requireNotNull(channelsBySessionId[ctx.sessionId]).onTextMessage?.invoke(ctx.message())
                 ?: log.info("Inbound messages are not supported.")
         } catch (th: Throwable) {
             log.error("Exception during message handling", th)
@@ -99,7 +100,7 @@ internal class WebsocketRouteAdaptor(
     // The handler is called when an error is detected.
     override fun handleError(ctx: WsErrorContext) {
         try {
-            requireNotNull(channels[ctx.sessionId]).onError?.invoke(ctx.error())
+            requireNotNull(channelsBySessionId[ctx.sessionId]).onError?.invoke(ctx.error())
         } catch (th: Throwable) {
             log.error("Unexpected exception in handleError", th)
         }
@@ -108,14 +109,17 @@ internal class WebsocketRouteAdaptor(
     // The handler is called when a WebSocket client closes the connection.
     override fun handleClose(ctx: WsCloseContext) {
         try {
-            channels.remove(ctx.sessionId)?.onClose?.invoke(ctx.status(), ctx.reason())
+            channelsBySessionId.remove(ctx.sessionId)?.onClose?.invoke(ctx.status(), ctx.reason())
         } catch (th: Throwable) {
             log.error("Unexpected exception in handleClose", th)
         }
     }
 
+    /**
+     * Close the RouteAdaptor, and close all duplex channel connections.
+     */
     override fun close() {
-        channels.forEach {
+        channelsBySessionId.forEach {
             it.value.close("All duplex connections closed.")
         }
     }

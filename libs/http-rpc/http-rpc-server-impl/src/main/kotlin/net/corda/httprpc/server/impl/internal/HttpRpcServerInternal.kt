@@ -66,7 +66,7 @@ internal class HttpRpcServerInternal(
         internal const val CONTENT_LENGTH_EXCEEDS_LIMIT = "Content length is %d which exceeds the maximum limit of %d."
     }
 
-    private val wsRouteAdaptors = LinkedList<AutoCloseable>()
+    private val webSocketRouteAdaptors = LinkedList<AutoCloseable>()
     private val credentialResolver = DefaultCredentialResolver()
     private val server = Javalin.create {
         it.jsonMapper(JavalinJackson(serverJacksonObjectMapper))
@@ -193,7 +193,7 @@ internal class HttpRpcServerInternal(
                 // For "before" handlers we have a global space of handlers in Javalin regardless of which method was actually
                 // used. In case when two separate handlers created for GET and for DELETE for the same resource, without "if"
                 // condition below both handlers will be used - which will be redundant.
-                if(it.method() == handlerType.name) {
+                if (it.method() == handlerType.name) {
                     with(configurationsProvider.maxContentLength()) {
                         if (it.contentLength() > this) throw BadRequestResponse(
                             CONTENT_LENGTH_EXCEEDS_LIMIT.format(
@@ -266,10 +266,12 @@ internal class HttpRpcServerInternal(
     }
 
     fun stop() {
+        log.trace { "Close ${webSocketRouteAdaptors.size} WebSocket route adaptors." }
+        webSocketRouteAdaptors.forEach { it.close() }
+        log.trace { "Finished closing WebSocket route adaptors." }
         log.trace { "Stop the Javalin server." }
         server.stop()
         log.trace { "Stop the Javalin server completed." }
-        wsRouteAdaptors.forEach { it.close() }
     }
 
     @SuppressWarnings("ComplexMethod")
@@ -371,7 +373,10 @@ internal class HttpRpcServerInternal(
         try {
             log.info("Add WS handler for \"${routeInfo.fullPath}\".")
 
-            ws(routeInfo.fullPath, routeInfo.setupWsCall(securityManager, credentialResolver, webSocketCloserService, wsRouteAdaptors))
+            ws(
+                routeInfo.fullPath,
+                routeInfo.setupWsCall(securityManager, credentialResolver, webSocketCloserService, webSocketRouteAdaptors)
+            )
 
             log.debug { "Add WS handler for \"${routeInfo.fullPath}\" completed." }
         } catch (e: Exception) {

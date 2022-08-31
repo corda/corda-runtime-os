@@ -5,7 +5,7 @@ import net.corda.httprpc.server.impl.apigen.models.Endpoint
 import net.corda.httprpc.server.impl.apigen.models.EndpointMethod
 import net.corda.httprpc.server.impl.apigen.models.EndpointParameter
 import net.corda.httprpc.server.impl.apigen.models.Resource
-import net.corda.httprpc.server.impl.websocket.WebsocketRouteAdaptor
+import net.corda.httprpc.server.impl.websocket.WebSocketRouteAdaptor
 import net.corda.httprpc.server.impl.internal.HttpExceptionMapper
 import net.corda.httprpc.server.impl.security.HttpRpcSecurityManager
 import net.corda.httprpc.server.impl.security.provider.credentials.DefaultCredentialResolver
@@ -161,7 +161,7 @@ internal class RouteInfo(
         return { wsConfig ->
             log.info("Setting-up WS call for '$fullPath'")
             try {
-                val adaptor = WebsocketRouteAdaptor(this, securityManager, credentialResolver, webSocketCloserService)
+                val adaptor = WebSocketRouteAdaptor(this, securityManager, credentialResolver, webSocketCloserService)
                 wsConfig.onMessage(adaptor)
                 wsConfig.onClose(adaptor)
                 wsConfig.onConnect(adaptor)
