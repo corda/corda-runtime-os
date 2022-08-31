@@ -94,7 +94,7 @@ pipeline {
                     kubectl create ns "${NAMESPACE}"
                     kubectl label ns "${NAMESPACE}" namespace-type=corda-e2e --overwrite=true
                     kubectl label ns "${NAMESPACE}" branch="${E2E_BRANCH_LABEL}" --overwrite=true
-                    kubectl label ns "${NAMESPACE}" arch="${E2EWORKERARCH}" --overwrite=true
+                    kubectl label ns "${NAMESPACE}" arch="${E2E_WORKER_ARCH}" --overwrite=true
                 '''.stripIndent()
             }
         }
@@ -133,7 +133,7 @@ pipeline {
                         --set kafka.sasl.password="${SASL_SECRET}" \
                         --set image.tag="${BASE_IMAGE}"  \
                         --set nodeSelector.kubernetes\\\\.io/os=linux \
-                        --set nodeSelector.kubernetes\\\\.io/arch="${E2EWORKERARCH}" \
+                        --set nodeSelector.kubernetes\\\\.io/arch="${E2E_WORKER_ARCH}" \
                         --namespace "${NAMESPACE}" --wait --timeout 600s
                 '''.stripIndent()
             }
