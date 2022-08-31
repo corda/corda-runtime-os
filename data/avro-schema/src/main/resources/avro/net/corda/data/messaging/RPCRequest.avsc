@@ -4,6 +4,11 @@
   "namespace": "net.corda.data.messaging",
   "doc": "Request envelope for RPC message pattern",
   "fields": [
+	{
+		"name": "sender",
+		"type": "string",
+		"doc": "The sender identifier"
+	},
     {
       "name": "correlationKey",
       "type": "string",
