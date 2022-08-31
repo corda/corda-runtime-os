@@ -107,7 +107,10 @@ class FlowSessionImpl(
             try {
                 UntrustworthyData(flowFiberSerializationService.deserialize(it, receiveType))
             } catch (e: DeserializedWrongAMQPObjectException) {
-                throw CordaRuntimeException("Expecting to receive a ${e.expectedType} but received a ${e.deserializedType} instead, payload: (${e.deserializedObject})")
+                throw CordaRuntimeException(
+                    "Expecting to receive a ${e.expectedType} but received a ${e.deserializedType} instead, payload: " +
+                            "(${e.deserializedObject})"
+                )
             }
         } ?: throw CordaRuntimeException("The session [${sourceSessionId}] did not receive a payload when trying to receive one")
     }
