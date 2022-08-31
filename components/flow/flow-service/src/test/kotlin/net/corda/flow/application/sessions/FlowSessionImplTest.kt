@@ -173,16 +173,16 @@ class FlowSessionImplTest {
     fun `initiating sessions pull initial context from the platform`() {
         val session = createInitiatingSession()
 
-        assertEquals(mockFlowFiberService.PLATFORM_VALUE, session.contextProperties[mockFlowFiberService.PLATFORM_KEY])
-        assertEquals(mockFlowFiberService.USER_VALUE, session.contextProperties[mockFlowFiberService.USER_KEY])
+        assertEquals(mockFlowFiberService.platformValue, session.contextProperties[mockFlowFiberService.platformKey])
+        assertEquals(mockFlowFiberService.userValue, session.contextProperties[mockFlowFiberService.userKey])
 
         // Ensure user keys can be overwritten
-        session.contextProperties[mockFlowFiberService.USER_KEY] = "overwriteUser"
-        assertEquals("overwriteUser", session.contextProperties[mockFlowFiberService.USER_KEY])
+        session.contextProperties[mockFlowFiberService.userKey] = "overwriteUser"
+        assertEquals("overwriteUser", session.contextProperties[mockFlowFiberService.userKey])
 
         // And platform keys cannot
         assertThrows<java.lang.IllegalArgumentException> {
-            session.contextProperties[mockFlowFiberService.PLATFORM_KEY] = "overwritePlatform"
+            session.contextProperties[mockFlowFiberService.platformKey] = "overwritePlatform"
         }
     }
 

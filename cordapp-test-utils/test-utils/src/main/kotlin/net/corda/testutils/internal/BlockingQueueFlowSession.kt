@@ -23,7 +23,10 @@ class BlockingQueueFlowSession(
         TODO("Not yet implemented")
     }
 
-    override val contextProperties: FlowContextProperties by lazy { TODO("Not yet implemented") }
+    override val contextProperties: FlowContextProperties
+        get() {
+            TODO("Not yet implemented")
+        }
 
     override fun <R : Any> receive(receiveType: Class<R>): UntrustworthyData<R> {
         return cast<UntrustworthyData<R>>(UntrustworthyData(to.take()))

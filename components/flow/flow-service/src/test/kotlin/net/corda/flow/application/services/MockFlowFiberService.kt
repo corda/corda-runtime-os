@@ -26,14 +26,14 @@ class MockFlowFiberService : FlowFiberService {
     private val membershipGroupReader = mock<MembershipGroupReader>()
     val flowFiberExecutionContext: FlowFiberExecutionContext
 
-    val USER_KEY = "userKey"
-    val USER_VALUE = "userValue"
+    val userKey = "userKey"
+    val userValue = "userValue"
 
-    val PLATFORM_KEY = "platformKey"
-    val PLATFORM_VALUE = "platformValue"
+    val platformKey = "platformKey"
+    val platformValue = "platformValue"
 
-    val userContext = mapOf(USER_KEY to USER_VALUE)
-    val platformContext = mapOf(PLATFORM_KEY to PLATFORM_VALUE)
+    val userContext = mapOf(userKey to userValue)
+    val platformContext = mapOf(platformKey to platformValue)
 
     private val flowContext = mock<FlowContext>()
 

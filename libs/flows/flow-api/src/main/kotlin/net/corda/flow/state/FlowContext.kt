@@ -1,6 +1,5 @@
 package net.corda.flow.state
 
-import net.corda.serialization.checkpoint.NonSerializable
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowContextProperties
 
