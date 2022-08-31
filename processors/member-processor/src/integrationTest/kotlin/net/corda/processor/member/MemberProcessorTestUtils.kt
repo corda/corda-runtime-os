@@ -21,6 +21,7 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.MembershipConfig.MAX_DURATION_BETWEEN_SYNC_REQUESTS_MINUTES
 import net.corda.test.util.eventually
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
@@ -73,6 +74,15 @@ class MemberProcessorTestUtils {
     """
 
         private const val KEY_SCHEME = "corda.key.scheme"
+
+        fun makeMembershipConfig() : SmartConfig =
+            SmartConfigFactory.create(
+                ConfigFactory.empty()
+            ).create(
+                ConfigFactory.empty()
+                    .withValue(MAX_DURATION_BETWEEN_SYNC_REQUESTS_MINUTES,
+                        ConfigValueFactory.fromAnyRef(100L))
+            )
 
         fun makeMessagingConfig(boostrapConfig: SmartConfig): SmartConfig =
             boostrapConfig.factory.create(
@@ -251,6 +261,9 @@ class MemberProcessorTestUtils {
 
         fun Publisher.publishMessagingConf(messagingConfig: SmartConfig) =
             publishConf(ConfigKeys.MESSAGING_CONFIG, messagingConfig.root().render())
+
+        fun Publisher.publishMembershipConf(membershipConfig: SmartConfig) =
+            publishConf(ConfigKeys.MEMBERSHIP_CONFIG, membershipConfig.root().render())
 
         private fun getSampleGroupPolicy(fileName: String): String {
             val url = this::class.java.getResource(fileName)
