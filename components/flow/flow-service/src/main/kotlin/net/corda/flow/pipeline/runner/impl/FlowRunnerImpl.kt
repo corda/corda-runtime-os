@@ -70,6 +70,8 @@ class FlowRunnerImpl @Activate constructor(
         sessionInitEvent: SessionInit
     ): FiberFuture {
         val flowStartContext = context.checkpoint.flowStartContext
+        // TODO remoteContextToLocalContextMapper
+
         // This is where the initiated flow context is initialised.
         // The flow's own platform and user context, the context which user code will extract from the FlowEngine should
         // be passed to startFlow().

@@ -1,6 +1,7 @@
 package net.corda.testutils.internal
 
 import net.corda.v5.application.flows.Flow
+import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.messaging.FlowInfo
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.UntrustworthyData
@@ -21,6 +22,8 @@ class BlockingQueueFlowSession(
     override fun getCounterpartyFlowInfo(): FlowInfo {
         TODO("Not yet implemented")
     }
+
+    override val contextProperties: FlowContextProperties by lazy { TODO("Not yet implemented") }
 
     override fun <R : Any> receive(receiveType: Class<R>): UntrustworthyData<R> {
         return cast<UntrustworthyData<R>>(UntrustworthyData(to.take()))

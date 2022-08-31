@@ -47,7 +47,7 @@ class FlowSessionImpl private constructor(
         private val log = contextLogger()
     }
 
-    internal enum class Direction {
+    private enum class Direction {
         INITIATING_SIDE,
         INITIATED_SIDE
     }
@@ -65,7 +65,7 @@ class FlowSessionImpl private constructor(
      * that is done when [contextProperties] is requested or [confirmSession] called, because both of those things can
      * only happen inside a fiber by contract.
      */
-    internal var sessionLocalFlowContext: FlatSerializableContext? = null
+    private var sessionLocalFlowContext: FlatSerializableContext? = null
 
     override val contextProperties: FlowContextProperties
         get() {
