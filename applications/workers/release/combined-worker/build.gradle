@@ -100,7 +100,7 @@ tasks.named('jar', Jar) {
 }
 
 // Allow us to publish to S3 bucket for DP2 - to be extracted to plugin
-if (project.hasProperty('maven.repo.s3')) {
+if (project.hasProperty('maven.repo.s3') && project.hasProperty('releasable')) {
     publishing {
         repositories {
             maven {
