@@ -17,6 +17,7 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.framework.Bundle
+import org.osgi.framework.Bundle.RESOLVED
 import org.osgi.framework.BundleContext
 import org.osgi.framework.BundleException
 import org.osgi.framework.Constants.FRAGMENT_HOST
@@ -218,8 +219,21 @@ internal class SandboxServiceImpl @Activate constructor(
         }
 
         // Ensure that all of these bundles are resolved before we start them.
-        sandboxRequiresThat(bundleUtils.resolveBundles(bundles)) {
-            "Failed to resolve bundles: ${bundles.joinToString()}"
+        if (!bundleUtils.resolveBundles(bundles)) {
+            val allFailed = bundles.filter { it.state < RESOLVED }
+            val ex = SandboxException("Failed to resolve bundles: ${allFailed.joinToString()}")
+            for (failed in allFailed) {
+                try {
+                    // We expect this to throw a BundleException.
+                    failed.start()
+
+                    // We don't expect to reach here, but just in case...
+                    failed.stop()
+                } catch (e: BundleException) {
+                    ex.addSuppressed(e)
+                }
+            }
+            throw ex
         }
 
         // We only start the bundles once all the CPKs' bundles have been installed and sandboxed, since there are
