@@ -1,6 +1,8 @@
 package net.corda.membership.impl.synchronisation
 
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigRenderOptions
+import com.typesafe.config.ConfigValueFactory
 import net.corda.chunking.toAvro
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
@@ -64,7 +66,9 @@ import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.MembershipConfig.MAX_DURATION_BETWEEN_SYNC_REQUESTS_MINUTES
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
 import net.corda.test.util.time.TestClock
@@ -190,6 +194,12 @@ class SynchronisationIntegrationTest {
         const val cryptoConf = """
             dummy=1
         """
+        private val membershipConfig = ConfigFactory.empty()
+            .withValue(
+                MAX_DURATION_BETWEEN_SYNC_REQUESTS_MINUTES,
+                ConfigValueFactory.fromAnyRef(100L)
+            ).root()
+            .render(ConfigRenderOptions.concise())
         const val MEMBERSHIP_P2P_SUBSYSTEM = "membership"
         const val CATEGORY = "SESSION_INIT"
         const val SCHEME = "CORDA.ECDSA.SECP256R1"
@@ -294,6 +304,15 @@ class SynchronisationIntegrationTest {
                         CONFIG_TOPIC,
                         CRYPTO_CONFIG,
                         Configuration(cryptoConf, cryptoConf, 0, schemaVersion)
+                    )
+                )
+            )
+            publisher.publish(
+                listOf(
+                    Record(
+                        CONFIG_TOPIC,
+                        MEMBERSHIP_CONFIG,
+                        Configuration(membershipConfig, membershipConfig, 0, schemaVersion)
                     )
                 )
             )
