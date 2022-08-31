@@ -8,16 +8,16 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.SmartConfigImpl
-//import net.corda.libs.configuration.merger.ConfigMerger
-//import net.corda.messaging.api.publisher.factory.PublisherFactory
-//import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.libs.configuration.merger.ConfigMerger
+import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
-//import net.corda.schema.TestSchema.Companion.APP_RECEIVED_MESSAGES_TOPIC
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.MessagingConfig
+import net.corda.testschema.TestSchema.Companion.APP_RECEIVED_MESSAGES_TOPIC
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
@@ -38,12 +38,12 @@ import kotlin.random.Random
 class AppSimulator @Activate constructor(
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
-//    @Reference(service = PublisherFactory::class)
-//    private val publisherFactory: PublisherFactory,
-//    @Reference(service = SubscriptionFactory::class)
-//    private val subscriptionFactory: SubscriptionFactory,
-//    @Reference(service = ConfigMerger::class)
-//    private val configMerger: ConfigMerger,
+    @Reference(service = PublisherFactory::class)
+    private val publisherFactory: PublisherFactory,
+    @Reference(service = SubscriptionFactory::class)
+    private val subscriptionFactory: SubscriptionFactory,
+    @Reference(service = ConfigMerger::class)
+    private val configMerger: ConfigMerger,
 ) : Application {
 
     companion object {
@@ -96,23 +96,21 @@ class AppSimulator @Activate constructor(
     }
 
     private fun runSimulator(parameters: CliParameters, bootConfig: SmartConfig) {
-        bootConfig.factory //Delete me
         val configFromFile = parameters.simulatorConfig?.let { ConfigFactory.parseFile(it) } ?: ConfigFactory.empty()
         val clients = parameters.clients ?: configFromFile.getIntOrNull(PARALLEL_CLIENTS_KEY) ?: DEFAULT_PARALLEL_CLIENTS
-        logger.info("$clients")
         val simulatorMode = parameters.simulationMode ?: configFromFile.getEnumOrNull("simulatorMode")
         if (simulatorMode == null) {
             logErrorAndShutdown("Simulation mode must be specified as a command line option or in the config file.")
         }
         when (simulatorMode) {
             SimulationMode.SENDER -> {
-                runSender(configFromFile, parameters, /*publisherFactory, bootConfig, clients, parameters.instanceId*/)
+                runSender(configFromFile, parameters, publisherFactory, bootConfig, clients, parameters.instanceId)
             }
             SimulationMode.RECEIVER -> {
-                runReceiver(parameters, /*subscriptionFactory, bootConfig, clients, parameters.instanceId*/)
+                runReceiver(parameters, subscriptionFactory, bootConfig, clients, parameters.instanceId)
             }
             SimulationMode.DB_SINK -> {
-                runSink(configFromFile, parameters, /*subscriptionFactory, bootConfig, clients, parameters.instanceId*/)
+                runSink(configFromFile, parameters, subscriptionFactory, bootConfig, clients, parameters.instanceId)
             }
             else -> throw IllegalStateException("Invalid value for simulator mode: $simulatorMode")
         }
@@ -122,74 +120,72 @@ class AppSimulator @Activate constructor(
     private fun runSender(
         configFromFile: Config,
         parameters: CliParameters,
-//        publisherFactory: PublisherFactory,
-//        bootConfig: SmartConfig,
-//        clients: Int,
-//        instanceId: String,
+        publisherFactory: PublisherFactory,
+        bootConfig: SmartConfig,
+        clients: Int,
+        instanceId: String,
     ) {
         val sendTopic = parameters.sendTopic ?: P2P_OUT_TOPIC
         val connectionDetails = readDbParams(configFromFile, parameters)
-        logger.info("$sendTopic $connectionDetails")
         val loadGenerationParams = readLoadGenParams(configFromFile, parameters)
-//        val sender = Sender(
-//            publisherFactory,
-//            configMerger,
-//            connectionDetails,
-//            loadGenerationParams,
-//            sendTopic,
-//            bootConfig,
-//            clients,
-//            instanceId,
-//            clock
-//        )
-//        sender.start()
-//        resources.add(sender)
+        val sender = Sender(
+            publisherFactory,
+            configMerger,
+            connectionDetails,
+            loadGenerationParams,
+            sendTopic,
+            bootConfig,
+            clients,
+            instanceId,
+            clock
+        )
+        sender.start()
+        resources.add(sender)
         // If it's one-off we wait until all messages have been sent.
         // Otherwise, we let the threads run until the process is stopped by the user.
         if (loadGenerationParams.loadGenerationType == LoadGenerationType.ONE_OFF) {
-//            sender.waitUntilComplete()
+            sender.waitUntilComplete()
             shutdownOSGiFramework()
         }
     }
 
     private fun runReceiver(
         parameters: CliParameters,
-    //    subscriptionFactory: SubscriptionFactory,
-//        bootConfig: SmartConfig,
-//        clients: Int,
-//        instanceId: String,
+        subscriptionFactory: SubscriptionFactory,
+        bootConfig: SmartConfig,
+        clients: Int,
+        instanceId: String,
     ) {
         val receiveTopic = parameters.receiveTopic ?: P2P_IN_TOPIC
-        logger.info("$receiveTopic")
-//        val receiver = Receiver(
-//            subscriptionFactory,
-//            configMerger,
-//            receiveTopic,
-//            APP_RECEIVED_MESSAGES_TOPIC,
-//            bootConfig,
-//            clients,
-//            instanceId
-//        )
-//        receiver.start()
-//        resources.add(receiver)
+        val receiver = Receiver(
+            subscriptionFactory,
+            configMerger,
+            receiveTopic,
+            APP_RECEIVED_MESSAGES_TOPIC,
+            bootConfig,
+            clients,
+            instanceId
+        )
+        receiver.start()
+        resources.add(receiver)
     }
 
     private fun runSink(
         configFromFile: Config,
         parameters: CliParameters,
-//        subscriptionFactory: SubscriptionFactory,
-//        bootConfig: SmartConfig,
-//        clients: Int,
-//        instanceId: String,
+        subscriptionFactory: SubscriptionFactory,
+        bootConfig: SmartConfig,
+        clients: Int,
+        instanceId: String,
     ) {
         val connectionDetails = readDbParams(configFromFile, parameters)
         if (connectionDetails == null) {
             logErrorAndShutdown("dbParams configuration option is mandatory for sink mode.")
             return
         }
-//        val sink = Sink(subscriptionFactory, configMerger, connectionDetails, bootConfig, clients, instanceId)
-//        sink.start()
-//        resources.add(sink)
+        val sink = Sink(subscriptionFactory, configMerger, connectionDetails, bootConfig, clients, instanceId)
+        sink.start()
+        resources.add(sink)
     }
 
     private fun readDbParams(config: Config, parameters: CliParameters): DBParams? {
@@ -268,7 +264,13 @@ class AppSimulator @Activate constructor(
                 default
             }
         } else {
-            Duration.parse(parameterFromCommandLine)
+            try {
+                Duration.parse(parameterFromCommandLine)
+            } catch (exception: DateTimeParseException) {
+                logErrorAndShutdown("Load generation parameter $path = $parameterFromCommandLine can not be parsed as a duration. " +
+                        "It must have the ISO-8601 duration format PnDTnHnMn.nS. e.g. PT20.5S gets converted to 20.5 seconds.")
+                Duration.ofSeconds(0)
+            }
         }
     }
 
@@ -328,7 +330,8 @@ class AppSimulator @Activate constructor(
         val peerGroupId = getLoadGenStrParameter("peerGroupId", configFromFile, parameters)
         val ourX500Name = getLoadGenStrParameter("ourX500Name", configFromFile, parameters)
         val ourGroupId = getLoadGenStrParameter("ourGroupId", configFromFile, parameters)
-        val loadGenerationType: LoadGenerationType? = getLoadGenEnumParameter<LoadGenerationType>("loadGenerationType", configFromFile, parameters)
+        val loadGenerationType: LoadGenerationType? =
+            getLoadGenEnumParameter<LoadGenerationType>("loadGenerationType", configFromFile, parameters)
         val totalNumberOfMessages = when (loadGenerationType) {
             LoadGenerationType.ONE_OFF -> getLoadGenIntParameter(
                 "totalNumberOfMessages",
@@ -336,14 +339,17 @@ class AppSimulator @Activate constructor(
                 configFromFile,
                 parameters
             )
+
             LoadGenerationType.CONTINUOUS -> null
             else -> throw IllegalStateException("Invalid value for load generation type: $loadGenerationType")
         }
         val batchSize = getLoadGenIntParameter("batchSize", DEFAULT_BATCH_SIZE, configFromFile, parameters)
-        val interBatchDelay = getLoadGenDuration("interBatchDelay", DEFAULT_INTER_BATCH_DELAY, configFromFile, parameters)
-        val messageSizeBytes = getLoadGenIntParameter("messageSizeBytes", DEFAULT_MESSAGE_SIZE_BYTES, configFromFile, parameters)
+        val interBatchDelay =
+            getLoadGenDuration("interBatchDelay", DEFAULT_INTER_BATCH_DELAY, configFromFile, parameters)
+        val messageSizeBytes =
+            getLoadGenIntParameter("messageSizeBytes", DEFAULT_MESSAGE_SIZE_BYTES, configFromFile, parameters)
         val expireAfterTime = getLoadGenDurationOrNull("expireAfterTime", configFromFile, parameters)
-        val params = LoadGenerationParams(
+        return LoadGenerationParams(
             HoldingIdentity(peerX500Name, peerGroupId),
             HoldingIdentity(ourX500Name, ourGroupId),
             loadGenerationType,
@@ -353,8 +359,6 @@ class AppSimulator @Activate constructor(
             messageSizeBytes,
             expireAfterTime
         )
-        logger.info("$params")
-        return params
     }
 
     private fun logErrorAndShutdown(error: String) {

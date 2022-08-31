@@ -1,0 +1,50 @@
+{{- if and (.Values.appSimulators.sender.enabled) (eq .Values.appSimulators.sender.loadGenerationType "ONE_OFF") }}
+{{- $_ := set . "type" "sender" }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "appSimulator.typeName" . }}
+  labels:
+    {{- include "appSimulator.typeLabels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install
+spec:
+  parallelism: {{ .Values.appSimulators.sender.replicaCount }}
+  template:
+    metadata:
+      labels:
+        {{- include "appSimulator.typeSelectorLabels" . | nindent 8 }}
+    spec:
+      {{- include "appSimulator.imagePullSecrets" . | nindent 6 }}
+      containers:
+        - name: {{ include "appSimulator.typeName" . }}
+          image: {{ include "appSimulator.image" . }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+          args:
+            - "--mode {{ .type | snakecase | upper }}"
+            - "--clients {{ .Values.appSimulators.sender.parallelClientsPerReplica }}"
+            - "-lloadGenerationType=ONE_OFF"
+            - "-lpeerX500Name={{ .Values.appSimulators.sender.peerX500Name }}"
+            - "-lpeerGroupId={{ .Values.appSimulators.sender.peerGroupId }}"
+            - "-lourX500Name={{ .Values.appSimulators.sender.ourX500Name }}"
+            - "-lourGroupId={{ .Values.appSimulators.sender.ourGroupId }}"
+            - "-lbatchSize={{ .Values.appSimulators.sender.batchSize }}"
+            - "-linterBatchDelay={{ .Values.appSimulators.sender.interBatchDelay }}"
+            - "-lmessageSizeBytes={{ .Values.appSimulators.sender.messageSizeBytes }}"
+            {{- if .Values.appSimulators.sender.expireMessages.enabled }}
+            - "--lexpireAfterTime={{ .Values.appSimulators.sender.expireAfterTimeS }}"
+            {{- end }}
+            {{- include "appSimulator.kafkaArgs" . | nindent 12 }}
+            {{- include "appSimulator.databaseArgs" . | nindent 12 }}
+          {{- if .Values.appSimulators.sender.debug.enabled }}
+          ports:
+            - name: debug
+              containerPort: 5005
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      restartPolicy: Never
+  backoffLimit: 0
+{{- end }}

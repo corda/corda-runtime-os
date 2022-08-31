@@ -33,6 +33,12 @@ class Create(
     )
     var partitionOverride: Int = 1
 
+    @CommandLine.Option(
+        names = ["-s", "--schema-name"],
+        description = ["Override schema name"]
+    )
+    var schemaName = "net/corda/schema"
+
     data class TopicConfig(
         val name: String,
         val consumers: List<String>,
@@ -56,7 +62,7 @@ class Create(
     )
 
     fun getTopicConfigs(): List<TopicConfig> {
-        val files: List<URL> = resourceGetter("net/corda/schema")
+        val files: List<URL> = resourceGetter(schemaName)
 
         @Suppress("UNCHECKED_CAST")
         val topicDefinitions: List<TopicDefinitions> =

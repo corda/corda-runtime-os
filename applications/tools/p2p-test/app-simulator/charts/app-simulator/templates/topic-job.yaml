@@ -1,0 +1,99 @@
+{{- if .Values.bootstrap.kafka.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "appSimulator.fullname" . }}-create-topics
+  labels:
+    {{- include "appSimulator.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install
+spec:
+  template:
+    metadata:
+      labels:
+        {{- include "appSimulator.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- include "appSimulator.imagePullSecrets" . | nindent 6 }}
+      containers:
+        - name: create-topics
+          image: {{ include "appSimulator.bootstrapImage" . }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "appSimulator.bootstrapResources" . | nindent 10 }}
+          args: [
+            'topic',
+            '-b', '{{ include "appSimulator.kafkaBootstrapServers" . }}',
+            '-k', '/tmp/working_dir/config.properties',
+            {{- if .Values.kafka.topicPrefix }}
+            '-n', '{{ .Values.kafka.topicPrefix }}',
+            {{- end }}
+            'create',
+            '-r', '{{ .Values.bootstrap.kafka.replicas }}',
+            '-p', '{{ .Values.bootstrap.kafka.partitions }}',
+            '-s', '{{ .Values.bootstrap.kafka.schema }}',
+            'connect'{{- if .Values.bootstrap.kafka.cleanup }},
+            '-d'
+            {{- end }}
+          ]
+          volumeMounts:
+            - mountPath: /tmp/working_dir
+              name: working-volume
+            {{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
+            - mountPath: "/certs"
+              name: certs
+              readOnly: true
+            {{- end }}
+      initContainers:
+        - name: create-trust-store
+          image: {{ include "appSimulator.bootstrapImage" . }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "appSimulator.bootstrapResources" . | nindent 10 }}
+          command:
+            - /bin/bash
+            - -c
+          args:
+            - |
+                touch /tmp/working_dir/config.properties
+                {{- if .Values.kafka.tls.enabled }}
+                {{- if .Values.kafka.sasl.enabled }}
+                echo "security.protocol=SASL_SSL\n" >> /tmp/working_dir/config.properties
+                echo "sasl.mechanism={{ .Values.kafka.sasl.mechanism }}\n" >> /tmp/working_dir/config.properties
+                {{- if eq .Values.kafka.sasl.mechanism "PLAIN" }}
+                echo "sasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username=\"{{ .Values.kafka.sasl.username }}\" password=\"{{ .Values.kafka.sasl.password }}\" ;\n">> /tmp/working_dir/config.properties
+                {{- else }}
+                echo "sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username=\"{{ .Values.kafka.sasl.username }}\" password=\"{{ .Values.kafka.sasl.password }}\" ;\n">> /tmp/working_dir/config.properties
+                {{- end }}
+                {{- else }}
+                echo "security.protocol=SSL\n" >> /tmp/working_dir/config.properties
+                {{- end }}
+                {{- if .Values.kafka.tls.truststore.secretRef.name }}
+                echo "ssl.truststore.location=/certs/ca.crt\n" >> /tmp/working_dir/config.properties
+                echo "ssl.truststore.type={{ .Values.kafka.tls.truststore.type | upper }}\n" >> /tmp/working_dir/config.properties
+                {{- if .Values.kafka.tls.truststore.password }}
+                echo "ssl.truststore.password={{ .Values.kafka.tls.truststore.password }}\n" >> /tmp/working_dir/config.properties
+                {{- end }}
+                {{- end }}
+                {{- else }}
+                {{- if .Values.kafka.sasl.enabled }}
+                echo "security.protocol=SASL_PLAINTEXT\n" >> /tmp/working_dir/config.properties
+
+                echo "sasl.mechanism={{ .Values.kafka.sasl.mechanism }}\n" >> /tmp/working_dir/config.properties
+                echo "sasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username=\"{{ .Values.kafka.sasl.username }}\" password=\"{{ .Values.kafka.sasl.password }}\" ;\n">> /tmp/working_dir/config.properties
+                {{- end }}
+                {{- end }}
+          volumeMounts:
+            - mountPath: /tmp/working_dir
+              name: working-volume
+      volumes:
+        - name: working-volume
+          emptyDir: {}
+        {{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
+        - name: certs
+          secret:
+            secretName: {{ .Values.kafka.tls.truststore.secretRef.name | quote }}
+            items:
+              - key: {{ .Values.kafka.tls.truststore.secretRef.key | quote }}
+                path: ca.crt
+        {{- end }}
+      restartPolicy: Never
+  backoffLimit: 0
+{{- end }}

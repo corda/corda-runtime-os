@@ -1,5 +1,5 @@
-{{- if .Values.appSimulators.receiver.enabled }}
-{{- $_ := set . "type" "receiver" }}
+{{- if and (.Values.appSimulators.sender.enabled) (eq .Values.appSimulators.sender.loadGenerationType "CONTINUOUS") }}
+{{- $_ := set . "type" "sender" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -7,7 +7,7 @@ metadata:
   labels:
     {{- include "appSimulator.typeLabels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.appSimulators.receiver.replicaCount }}
+  replicas: {{ .Values.appSimulators.sender.replicaCount }}
   selector:
     matchLabels:
       {{- include "appSimulator.typeSelectorLabels" . | nindent 6 }}
@@ -41,9 +41,21 @@ spec:
             allowPrivilegeEscalation: false
           args:
             - "--mode {{ .type | snakecase | upper }}"
-            - "--clients {{ .Values.appSimulators.receiver.parallelClientsPerReplica }}"
+            - "--clients {{ .Values.appSimulators.sender.parallelClientsPerReplica }}"
+            - "-lloadGenerationType=CONTINUOUS"
+            - "-lpeerX500Name={{ .Values.appSimulators.sender.peerX500Name }}"
+            - "-lpeerGroupId={{ .Values.appSimulators.sender.peerGroupId }}"
+            - "-lourX500Name={{ .Values.appSimulators.sender.ourX500Name }}"
+            - "-lourGroupId={{ .Values.appSimulators.sender.ourGroupId }}"
+            - "-lbatchSize={{ .Values.appSimulators.sender.batchSize }}"
+            - "-linterBatchDelay={{ .Values.appSimulators.sender.interBatchDelay }}"
+            - "-lmessageSizeBytes={{ .Values.appSimulators.sender.messageSizeBytes }}"
+            {{- if .Values.appSimulators.sender.expireMessages.enabled }}
+            - "--lexpireAfterTime={{ .Values.appSimulators.sender.expireAfterTimeS }}"
+            {{- end }}
             {{- include "appSimulator.kafkaArgs" . | nindent 12 }}
-          {{- if .Values.appSimulators.receiver.debug.enabled }}
+            {{- include "appSimulator.databaseArgs" . | nindent 12 }}
+          {{- if .Values.appSimulators.sender.debug.enabled }}
           ports:
             - name: debug
               containerPort: 5005

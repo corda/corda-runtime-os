@@ -1,0 +1,195 @@
+# Default values for the app-simulator.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# -- override chart fullname
+fullnameOverride: ""
+
+# -- override chart name
+nameOverride: "app-simulator"
+
+image:
+  # -- image registry
+  registry: "corda-os-docker.software.r3.com"
+  # -- image repository
+  repository: "corda-os-app-simulator"
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+# -- image pull secrets
+imagePullSecrets: []
+
+# -- the image policy
+imagePullPolicy: Always
+
+# default resource limits and requests configuration for the app simulator containers
+resources:
+  # -- the default CPU/memory resource limits for the app simulator containers
+  limits: {}
+  # -- the default CPU/memory resource request for the app simulator containers
+  requests: {}
+
+# Logging configuration
+logging:
+  # -- log format; "json" or "text"
+  format: "json"
+  # -- log level; one of "all", "trace", "debug", "info", "warn" (the default), "error", "fatal", or "off"
+  level: "warn"
+
+# Open Telemetry configuration
+openTelemetry:
+  # -- enables the Open Telemetry Java agent for the app simulator
+  enabled: false
+  # -- the Open Telemetry endpoint to use e.g https://otel.example.com:4317; telemetry will be logged locally if this is unset
+  endpoint:
+  # -- the Open Telemetry protocol the endpoint is using; one of `grpc` or `http/protobuf`
+  protocol: "grpc"
+
+# -- node labels for pod assignment, see https://kubernetes.io/docs/user-guide/node-selection/
+nodeSelector: {}
+
+# Database configuration
+db:
+  # App Simulator database configuration
+  appSimulator:
+    # -- the k8s namespace the database is deployed into
+    namespace: ""
+    # -- the cluster database host (required)
+    host: "db-postgresql"
+    # -- the cluster database type
+    type: "postgresql"
+    # -- the cluster database port
+    port: 5432 
+    # -- the cluster database user
+    user: simulator
+    # -- the name of the app simulator database
+    database: app_simulator
+    # -- the cluster database password (ignored if existingSecret is set, otherwise required)
+    password: ""
+    # -- the name of an existing secret containing the cluster database password with a key of 'password'
+    #existingSecret: ""
+  clientImage:
+    # -- registry for image containing a db client, used to set up the db
+    registry: ""
+    # -- repository for image containing a db client, used to set up the db
+    repository: postgres
+    # -- tag for image containing a db client, used to set up the db
+    tag: 14.4
+
+# Configuration for cluster bootstrap
+bootstrap:
+  # Configuration for Kafka bootstrap
+  kafka:
+    # -- Indicates whether Kafka bootstrap is enabled as part of installation
+    enabled: true
+    # -- Specifies whether existing topics with the given prefix should be deleted before trying to create new ones (deletes all existing topics if no prefix is given)
+    cleanup: false
+    # -- Kafka topic partitions
+    partitions: 10
+    # -- Kafka topic replicas
+    replicas: 3
+    # --
+    schema: "net/corda/testschema"
+  # Configuration for CLI image used for bootstrap
+  image:
+    # -- CLI image registry; defaults to image.registry
+    registry: ""
+    # -- CLI image repository
+    repository: "corda-os-plugins"
+    # -- CLI default tag; defaults to image.tag
+    tag: ""
+  # resource limits and requests configuration for the bootstrap containers
+  resources:
+    # -- the CPU/memory resource requests for the bootstrap containers
+    requests: { }
+    # -- the CPU/memory resource limits for the bootstrap containers
+    limits: { }
+
+# Kafka configuration
+kafka:
+  # -- comma-separated list of Kafka bootstrap servers (required)
+  bootstrapServers: "prereqs-kafka:9092"
+  # TLS configuration for client connections to Kafka
+  tls:
+    # -- indicates whether TLS should be used for client connections to Kafka
+    enabled: true
+    # if TLS is enabled, the truststore configuration for client connections to Kafka
+    truststore:
+      # if TLS is enabled, details of an existing Kubernetes secret containing the truststore for client connections to Kafka
+      secretRef:
+        # -- if TLS is enabled, the name of an existing Kubernetes secret containing the truststore for client connections to Kafka; blank if no truststore is required
+        name: "prereqs-kafka-0-tls"
+        # -- if TLS is enabled, the name of an existing Kubernetes secret containing the truststore for client connections to Kafka
+        key: "ca.crt"
+      # -- if TLS is enabled, the type of the truststore for client connections to Kafka; one of PEM or JKS
+      type: "PEM"
+      # -- if TLS is enabled, the password for the truststore for client connections to Kafka, if any
+      password: ""
+  # SASL configuration for client connection to Kafka
+  sasl:
+    # -- SASL username for client connection to Kafka
+    username: "user"
+    # -- SASL password for client connection to Kafka
+    password: ""
+    # -- SASL mechanism for client connection to Kafka
+    mechanism: "SCRAM-SHA-256"
+    # -- enable/disable SASL for client connection to Kafka
+    enabled: false
+
+# app simulator configuration
+appSimulators:
+  sender:
+    enabled: true
+    # -- peer x500Name
+    peerX500Name: ""
+    # -- peer groupId
+    peerGroupId: ""
+    # -- our x500Name
+    ourX500Name: ""
+    # -- our groupId
+    ourGroupId: ""
+    # -- sender app simulator replica count
+    replicaCount: 1
+    # -- the number of parallel clients/threads (per replica) sending messages to Kafka.
+    parallelClientsPerReplica: 1
+    # -- the load generation type, either "ONE_OFF" generates a specific number of messages or "CONTINUOUS" send messages in a closed loop.
+    loadGenerationType: "ONE_OFF"
+    # -- The size of the payload for the generated messages in bytes.
+    messageSizeBytes: 10000
+    # -- The delay between each batch of messages, in ISO-8601 duration format.
+    interBatchDelay: "PT0S"
+    # -- The number of messages sent in parallel on every batch.
+    batchSize: 50
+    expireMessages:
+      # -- Enable message expiry.
+      enabled: false
+      # -- The time after (in ISO-8601 duration format) which the message will expire in seconds, if message expiry is enabled. This is used
+      # to calculate the TTL of the generated messages, which corresponds to the current time plus the duration specified by `expireAfterTime`.
+      expireAfterTime: "PT180S"
+    debug:
+      # -- run receiver app simulator worker with debug enabled
+      enabled: false
+      # -- if debug is enabled, suspend the receiver app simulator worker until the debugger is attached
+      suspend: false
+  receiver:
+    enabled: true
+    # -- receiver app simulator replica count
+    replicaCount: 1
+    # -- the number of parallel clients/threads (per replica) consuming messages from Kafka.
+    parallelClientsPerReplica: 1
+    debug:
+      # -- run receiver app simulator worker with debug enabled
+      enabled: false
+      # -- if debug is enabled, suspend the receiver app simulator worker until the debugger is attached
+      suspend: false
+  dbSink:
+    enabled: true
+    # -- database sink app simulator replica count
+    replicaCount: 1
+    # -- the number of parallel clients/threads (per replica) writing messages to the database.
+    parallelClientsPerReplica: 1
+    debug:
+      # -- run database sink app simulator with debug enabled
+      enabled: false
+      # -- if debug is enabled, suspend the database sink app simulator until the debugger is attached
+      suspend: false

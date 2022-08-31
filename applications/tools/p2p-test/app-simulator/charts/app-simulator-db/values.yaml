@@ -31,7 +31,7 @@ postgresql:
           chmod 600 $PGPASSFILE
           trap "rm $PGPASSFILE" EXIT
           echo "localhost:${POSTGRES_PORT_NUMBER:-5432}:$POSTGRESQL_DATABASE:postgres:$POSTGRES_POSTGRES_PASSWORD" > $PGPASSFILE
-          psql -v ON_ERROR_STOP=1 app_simulator <<-EOF
+          psql -U $POSTGRES_USER -v ON_ERROR_STOP=1 app_simulator <<-EOF
             ALTER ROLE "$POSTGRES_USER" NOSUPERUSER CREATEDB CREATEROLE INHERIT LOGIN;
             CREATE TABLE sent_messages (sender_id varchar(512) NOT NULL, message_id varchar(512) NOT NULL, PRIMARY KEY(sender_id, message_id));
             CREATE TABLE received_messages (sender_id varchar(512) NOT NULL, message_id varchar(512) NOT NULL, sent_timestamp timestamp, received_timestamp timestamp, delivery_latency_ms bigint, PRIMARY KEY(sender_id, message_id));
