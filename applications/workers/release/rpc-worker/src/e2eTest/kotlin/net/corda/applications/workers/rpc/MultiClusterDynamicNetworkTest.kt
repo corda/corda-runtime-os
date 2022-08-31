@@ -66,7 +66,7 @@ class MultiClusterDynamicNetworkTest {
 
         memberClusters.forEach { cordaCluster ->
             cordaCluster.disableCLRChecks()
-            cordaCluster.onboardMembers(mgm, memberGroupPolicy)
+            cordaCluster.onboardMembers(mgm, memberGroupPolicy = memberGroupPolicy)
         }
 
         // Assert all members can see each other in their member lists.

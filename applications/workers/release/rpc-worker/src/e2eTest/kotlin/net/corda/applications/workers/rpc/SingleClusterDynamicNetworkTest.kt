@@ -56,7 +56,7 @@ class SingleClusterDynamicNetworkTest {
 
         val memberGroupPolicy = cordaCluster.generateGroupPolicy(mgm.holdingId)
 
-        cordaCluster.onboardMembers(mgm, memberGroupPolicy)
+        cordaCluster.onboardMembers(mgm, memberGroupPolicy = memberGroupPolicy)
 
         // Assert all members can see each other in their member lists
         val allMembers = cordaCluster.members + mgm

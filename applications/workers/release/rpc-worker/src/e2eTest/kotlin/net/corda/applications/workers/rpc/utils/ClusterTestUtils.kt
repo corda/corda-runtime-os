@@ -21,6 +21,7 @@ import net.corda.test.util.eventually
 import net.corda.v5.base.util.minutes
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.fail
 
 const val GATEWAY_CONFIG = "corda.p2p.gateway"
 const val KEY_SCHEME = "CORDA.ECDSA.SECP256R1"
@@ -233,10 +234,14 @@ fun E2eCluster.disableCLRChecks() = with(testToolkit) {
  */
 fun E2eCluster.onboardMembers(
     mgm: E2eClusterMember,
-    memberGroupPolicy: String
+    memberGroupPolicy: String? = null,
+    cpiHash: String? = null
 ): List<E2eClusterMember> {
     val holdingIds = mutableListOf<E2eClusterMember>()
-    val memberCpiChecksum = uploadCpi(memberGroupPolicy.toByteArray())
+    val memberCpiChecksum = cpiHash
+        ?: memberGroupPolicy?.let{
+            uploadCpi(it.toByteArray())
+        } ?: fail("Need to specify cpiHash or provide a group policy file.")
     members.forEach { member ->
         createVirtualNode(member, memberCpiChecksum)
 
@@ -277,9 +282,10 @@ fun E2eCluster.onboardMembers(
 }
 
 fun E2eCluster.onboardMgm(
-    mgm: E2eClusterMember
+    mgm: E2eClusterMember,
+    cpiHash: String? = null
 ) {
-    val cpiChecksum = uploadCpi(createMGMGroupPolicyJson(), true)
+    val cpiChecksum = cpiHash ?: uploadCpi(createMGMGroupPolicyJson(), true)
     createVirtualNode(mgm, cpiChecksum)
     assignSoftHsm(mgm.holdingId, HSM_CAT_SESSION)
 
