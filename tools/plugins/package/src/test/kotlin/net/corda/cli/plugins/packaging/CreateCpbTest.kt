@@ -69,7 +69,7 @@ class CreateCpbTest {
                 "$cpk0",
                 "$cpk1",
                 "--cpb-name=testCpb",
-                "--cpb-version=5.0.0.0-SNAPSHOT",
+                "--cpb-version=5",
                 "--file=$outcomeCpb",
                 "--keystore=$testKeyStore",
                 "--storepass=keystore password",
@@ -102,7 +102,7 @@ class CreateCpbTest {
                     "$cpk0",
                     "$missingCpk",
                     "--cpb-name=testCpb",
-                    "--cpb-version=5.0.0.0-SNAPSHOT",
+                    "--cpb-version=5",
                     "--file=never-generated-cpb.cpb",
                     "--keystore=$testKeyStore",
                     "--storepass=keystore password",
@@ -136,7 +136,7 @@ class CreateCpbTest {
                 "$cpk0",
                 "$cpk1",
                 "--cpb-name=testCpb",
-                "--cpb-version=5.0.0.0-SNAPSHOT",
+                "--cpb-version=5",
                 "--file=$outcomeCpb",
                 "--keystore=$testKeyStore",
                 "--storepass=keystore password",
@@ -156,7 +156,7 @@ private fun checkCpbContainsEntries(cpb: Path, expectedEntries: List<String>) {
         assertTrue(it.manifest.mainAttributes.isNotEmpty())
         assertTrue(it.manifest.mainAttributes[Attributes.Name("Corda-CPB-Format")] == "2.0")
         assertTrue(it.manifest.mainAttributes[Attributes.Name("Corda-CPB-Name")] == "testCpb")
-        assertTrue(it.manifest.mainAttributes[Attributes.Name("Corda-CPB-Version")] == "5.0.0.0-SNAPSHOT")
+        assertTrue(it.manifest.mainAttributes[Attributes.Name("Corda-CPB-Version")] == "5")
         assertTrue(it.manifest.mainAttributes[Attributes.Name("Corda-CPB-Upgrade")] == false.toString())
 
         val jarEntries = mutableListOf<ZipEntry>()

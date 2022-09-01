@@ -28,8 +28,8 @@ class CreateCpb : Runnable {
     @Option(names = ["--cpb-name"], required = true, description = ["CPB name"])
     lateinit var cpbName: String
 
-    @Option(names = ["--cpb-version"], required = true, description = ["CPB version"])
-    lateinit var cpbVersion: String
+    @Option(names = ["--cpb-version"], required = true, description=["CPB version"], converter = [VersionConverter::class])
+    var cpbVersion: Int =1
 
     @Option(names = ["--upgrade"], arity = "1", description = ["Allow upgrade without flow draining"])
     var cpbUpgrade: Boolean = false
@@ -84,7 +84,7 @@ class CreateCpb : Runnable {
         manifestMainAttributes[Attributes.Name.MANIFEST_VERSION] = MANIFEST_VERSION
         manifestMainAttributes[CPB_FORMAT_VERSION] = CPB_CURRENT_FORMAT_VERSION
         manifestMainAttributes[CPB_NAME_ATTRIBUTE] = cpbName
-        manifestMainAttributes[CPB_VERSION_ATTRIBUTE] = cpbVersion
+        manifestMainAttributes[CPB_VERSION_ATTRIBUTE] = cpbVersion.toString()
         manifestMainAttributes[CPB_UPGRADE] = cpbUpgrade.toString()
 
         JarOutputStream(
