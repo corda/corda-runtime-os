@@ -1247,6 +1247,14 @@ internal class LifecycleCoordinatorImplTest {
         coordinator1.close()
     }
 
+    @Test
+    fun `closing a coordinator twice doesnt error`() {
+        val coordinator1 = createTestCoordinator { _, _ -> }
+
+        coordinator1.close()
+        coordinator1.close()
+    }
+
     // Should go in the test but that is hard to specify as a KProperty
     private val dependency = mock<LifecycleCoordinator>()
     @Test
