@@ -23,7 +23,7 @@ import org.osgi.service.component.propertytypes.ServiceRanking
 import java.io.File
 import java.util.stream.Stream
 
-
+@Suppress("TooManyFunctions")
 @ServiceRanking(Int.MAX_VALUE)
 @Component(service = [VirtualNodeInfoReadService::class, VirtualNodeInfoReadServiceFake::class])
 class VirtualNodeInfoReadServiceFake internal constructor(
