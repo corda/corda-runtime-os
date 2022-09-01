@@ -262,10 +262,11 @@ class LifecycleCoordinatorImpl(
     }
 
     override fun close() {
-        logger.trace { "$name: Closing coordinator" }
-        stop()
-        postEvent(CloseCoordinator())
-        registry.removeCoordinator(name)
-        _isClosed.set(true)
+        if (_isClosed.compareAndSet(false, true)) {
+            logger.trace { "$name: Closing coordinator" }
+            postInternalEvent(StopEvent())
+            postInternalEvent(CloseCoordinator())
+            registry.removeCoordinator(name)
+        }
     }
 }
