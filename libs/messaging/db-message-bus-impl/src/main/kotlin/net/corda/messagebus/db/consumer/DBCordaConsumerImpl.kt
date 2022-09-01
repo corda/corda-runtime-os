@@ -16,6 +16,9 @@ import net.corda.messaging.api.exception.CordaMessageAPIIntermittentException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
+import java.time.Instant
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
@@ -26,6 +29,18 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
     private val valueDeserializer: CordaAvroDeserializer<V>,
     private var defaultListener: CordaConsumerRebalanceListener?,
 ) : CordaConsumer<K, V> {
+
+    companion object {
+        /** Minimal period between checking for new records in database */
+        private val MIN_POLL_PERIOD = Duration.ofMillis(100)
+        /** Time of the last check for new records in database */
+        @Volatile
+        private var lastPollTime: Instant = Instant.MIN
+        /** Offset positions retrieved with the last check for new records in database */
+        private val lastOffsetPositions = mutableMapOf<CordaTopicPartition, Long>()
+        /** Lock for updating [lastPollTime] and [lastOffsetPositions] */
+        private val pollLock = ReentrantLock()
+    }
 
     enum class SubscriptionType { NONE, ASSIGNED, SUBSCRIBED }
 
@@ -117,9 +132,36 @@ internal class DBCordaConsumerImpl<K : Any, V : Any> constructor(
         return pausedPartitions
     }
 
+    /**
+     * Returns offset position for given [topicPartition] that was retrieved with the latest database poll ensuring
+     * that the last database poll is not older than [MIN_POLL_PERIOD].
+     */
+    private fun getLastOffsetPosition(topicPartition: CordaTopicPartition): Long {
+        pollLock.withLock {
+            if (Duration.between(lastPollTime, Instant.now()) >= MIN_POLL_PERIOD) {
+                lastOffsetPositions.putAll(dbAccess.getLatestRecordOffsets())
+                lastPollTime = Instant.now()
+            }
+            return lastOffsetPositions[topicPartition] ?: -1
+        }
+    }
+
+    /**
+     * Checks whether [topicPartition] has records with offset that is equal or greater than [fromOffset]. Check is
+     * done against values retrieved with the latest database poll, that could be up to [MIN_POLL_PERIOD] old.
+     */
+    private fun recordsAvailable(fromOffset: Long, topicPartition: CordaTopicPartition, timeout: Duration): Boolean {
+        if (getLastOffsetPosition(topicPartition) >= fromOffset) return true
+        if (timeout <= Duration.ZERO) return false
+        Thread.sleep(timeout.toMillis())
+        return getLastOffsetPosition(topicPartition) >= fromOffset
+    }
+
     override fun poll(timeout: Duration): List<CordaConsumerRecord<K, V>> {
         val topicPartition = getNextTopicPartition() ?: return emptyList()
         val fromOffset = position(topicPartition)
+
+        if (!recordsAvailable(fromOffset, topicPartition, timeout)) return emptyList()
 
         val dbRecords = dbAccess.readRecords(fromOffset, topicPartition, maxPollRecords)
 

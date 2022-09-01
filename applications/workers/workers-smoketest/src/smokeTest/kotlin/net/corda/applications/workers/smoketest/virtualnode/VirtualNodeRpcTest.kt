@@ -21,6 +21,7 @@ import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRe
 import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -206,7 +207,7 @@ class VirtualNodeRpcTest {
 
             assertWithRetry {
                 command { vNodeCreate(hash, X500_ALICE) }
-                condition { it.code == 500 }
+                condition { it.code == 409 }
             }
         }
     }
@@ -398,10 +399,14 @@ class VirtualNodeRpcTest {
         return Instant.parse(this.asText())
     }
 
-    fun ClusterBuilder.getCpiChecksum(cpiName: String): String {
-        val cpis = cpiList().toJson()["cpis"]
-        val cpiJson = cpis.toList().first { it["id"]["cpiName"].textValue() == cpiName }
-        return truncateLongHash(cpiJson["cpiFileChecksum"].textValue())
+    private fun ClusterBuilder.getCpiChecksum(cpiName: String): String {
+        val cpiFileChecksum = eventually {
+            val cpis = cpiList().toJson()["cpis"]
+            val cpiJson = cpis.toList().find { it["id"]["cpiName"].textValue() == cpiName }
+            assertNotNull(cpiJson, "Cpi with name $cpiName not yet found in cpi list.")
+            truncateLongHash(cpiJson!!["cpiFileChecksum"].textValue())
+        }
+        return cpiFileChecksum
     }
 
     private fun String.toJson(): JsonNode = ObjectMapper().readTree(this)

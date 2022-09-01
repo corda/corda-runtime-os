@@ -4,18 +4,20 @@ import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcPOST
+import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Component
 
-@HttpRpcResource(name = "Hello RPC Ops", description = "Hello RPC Ops endpoints", path = "hello")
+@HttpRpcResource(name = "Hello RPC API", description = "Test endpoint to test interaction via HTTP RPC API", path = "hello")
 interface HelloRpcOps : RpcOps {
 
-    @HttpRpcPOST(path = "greet")
-    fun greet(addressee: String): String
+    @HttpRpcPOST
+    fun greet(@HttpRpcQueryParameter addressee: String): String
 }
 
 @Component(service = [PluggableRPCOps::class])
+@Suppress("unused")
 class HelloRpcOpsImpl : HelloRpcOps, PluggableRPCOps<HelloRpcOps>, RpcOps {
 
     private companion object {

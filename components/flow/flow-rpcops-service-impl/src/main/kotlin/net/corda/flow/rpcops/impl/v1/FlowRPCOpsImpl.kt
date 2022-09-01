@@ -6,7 +6,7 @@ import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.flow.rpcops.FlowRPCOpsServiceException
 import net.corda.flow.rpcops.FlowStatusCacheService
 import net.corda.flow.rpcops.factory.MessageFactory
-import net.corda.flow.rpcops.impl.flowstatus.websocket.registerFlowStatusFeedHooks
+import net.corda.flow.rpcops.impl.flowstatus.websocket.WebSocketFlowStatusUpdateListener
 import net.corda.flow.rpcops.v1.FlowRpcOps
 import net.corda.flow.rpcops.v1.types.request.StartFlowParameters
 import net.corda.flow.rpcops.v1.types.response.FlowStatusResponse
@@ -134,6 +134,7 @@ class FlowRPCOpsImpl @Activate constructor(
         holdingIdentityShortHash: String,
         clientRequestId: String
     ) {
+        val sessionId = channel.id
         val holdingIdentity = try {
             getVirtualNode(ShortHash.of(holdingIdentityShortHash)).holdingIdentity
         } catch (e: ShortHashException) {
@@ -143,7 +144,27 @@ class FlowRPCOpsImpl @Activate constructor(
             channel.error(WebSocketValidationException("Invalid virtual node", e))
             return
         }
-        channel.registerFlowStatusFeedHooks(flowStatusCacheService, clientRequestId, holdingIdentity, log)
+        try {
+            val flowStatusFeedRegistration = flowStatusCacheService.registerFlowStatusListener(
+                clientRequestId,
+                holdingIdentity,
+                WebSocketFlowStatusUpdateListener(clientRequestId, holdingIdentity, channel)
+            )
+
+            channel.onClose = { statusCode, reason ->
+                log.info(
+                    "Close hook called for duplex channel $sessionId with status $statusCode, reason: $reason " +
+                            "(clientRequestId=$clientRequestId, holdingId=$holdingIdentityShortHash)"
+                )
+                flowStatusFeedRegistration.close()
+            }
+        } catch (e: WebSocketValidationException) {
+            log.warn("Validation error while registering flow status listener - ${e.message}")
+            error(e)
+        } catch (e: Exception) {
+            log.error("Unexpected error at registerFlowStatusListener")
+            error(e)
+        }
     }
 
     override fun start() = Unit

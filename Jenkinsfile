@@ -10,5 +10,6 @@ cordaPipeline(
     publishHelmChart: false,
     e2eTestName: 'corda-runtime-os-e2e-tests',
     runE2eTests: false,
-    combinedWorkere2eTests: false
+    combinedWorkere2eTests: false,
+    publishToMavenS3Repository: true
     )
