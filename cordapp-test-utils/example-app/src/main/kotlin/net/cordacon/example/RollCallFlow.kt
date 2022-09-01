@@ -108,7 +108,7 @@ class RollCallFlow: RPCStartableFlow {
     @Suspendable
     private fun retryRollCall(
         r: Pair<FlowSession, String>
-    ) : List<AbsenceResponse> {
+    ): List<AbsenceResponse> {
         var retries = 0
         val responses = mutableListOf<AbsenceResponse>()
         while(retries < RETRIES && responses.none { it.response.isNotEmpty() }) {

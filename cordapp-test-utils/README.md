@@ -98,8 +98,6 @@ The CordaSim has several components which can also be used independently:
 - A `JsonMarshallingService` which can be used to convert objects to JSON and vice-versa, available through the  
   `JsonMarshallingServiceFactory`
 
-Note these will eventually move to being `cordaProvided` from a factory.
-
 ## TODO:
 
 - Check for @CordaSerializable on messages

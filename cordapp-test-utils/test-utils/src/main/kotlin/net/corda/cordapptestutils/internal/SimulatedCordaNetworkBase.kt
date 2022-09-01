@@ -27,8 +27,8 @@ class SimulatedCordaNetworkBase  (
 
     override fun createVirtualNode(
         holdingIdentity: HoldingIdentity,
-        vararg flowClasses: Class<out Flow>)
-    : SimulatedVirtualNode {
+        vararg flowClasses: Class<out Flow>
+    ): SimulatedVirtualNode {
         flowClasses.forEach {
             flowChecker.check(it)
             registerWithFiber(holdingIdentity.member, it)
@@ -62,8 +62,8 @@ class SimulatedCordaNetworkBase  (
     override fun createVirtualNode(
         responder: HoldingIdentity,
         protocol: String,
-        responderFlow: ResponderFlow)
-    : SimulatedVirtualNode {
+        responderFlow: ResponderFlow
+    ): SimulatedVirtualNode {
         fiber.registerResponderInstance(responder.member, protocol, responderFlow)
         return SimulatedVirtualNodeBase(responder, fiber, injector, flowFactory)
     }

@@ -32,13 +32,17 @@ class BaseFlowFactoryTest {
     @Test
     fun `should error if the flow class is not recognized`() {
         val notAFlowClass = Object::class.java
-        assertThrows<UnrecognizedFlowClassException> { BaseFlowFactory().createInitiatingFlow(member, notAFlowClass.name)}
+        assertThrows<UnrecognizedFlowClassException> {
+            BaseFlowFactory().createInitiatingFlow(member, notAFlowClass.name)
+        }
     }
 
     @Test
     fun `should error if initiating flow being constructed is not an RPCStartableFlow`() {
         val notAnInitFlow = ValidResponderFlow::class.java
-        assertThrows<UnrecognizedFlowClassException> { BaseFlowFactory().createInitiatingFlow(member, notAnInitFlow.name)}
+        assertThrows<UnrecognizedFlowClassException> {
+            BaseFlowFactory().createInitiatingFlow(member, notAnInitFlow.name)
+        }
     }
 
     @Test

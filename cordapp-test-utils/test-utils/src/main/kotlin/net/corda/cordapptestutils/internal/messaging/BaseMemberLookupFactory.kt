@@ -20,8 +20,6 @@ class BaseMemberLookupFactory : MemberLookupFactory {
             override fun myInfo(): MemberInfo {
                 return lookup(member)
             }
-
         }
     }
-
 }

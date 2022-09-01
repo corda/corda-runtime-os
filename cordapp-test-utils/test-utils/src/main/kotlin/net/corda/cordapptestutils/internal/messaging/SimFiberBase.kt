@@ -38,7 +38,8 @@ class SimFiberBase(
     override fun registerResponderClass(
         responder: MemberX500Name,
         protocol: String,
-        flowClass: Class<out ResponderFlow>) {
+        flowClass: Class<out ResponderFlow>
+    ) {
 
         registerMember(responder)
 
@@ -60,7 +61,8 @@ class SimFiberBase(
     override fun registerResponderInstance(
         responder: MemberX500Name,
         protocol: String,
-        responderFlow: ResponderFlow) {
+        responderFlow: ResponderFlow
+    ) {
 
         registerMember(responder)
 
