@@ -10,7 +10,6 @@ import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.LocalTypeModelConfigurationImpl
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.base.annotations.CordaSerializable
-import net.corda.v5.base.annotations.SerializableCalculatedProperty
 import net.corda.v5.serialization.SerializationCustomSerializer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -152,27 +151,7 @@ class LocalTypeModelTests {
     interface OldStylePojo<A> {
         var a: A?
         var b: String
-        @get:SerializableCalculatedProperty
         val c: String
-    }
-
-    @CordaSerializable
-    class OldStylePojoImpl : OldStylePojo<IntArray> {
-        override var a: IntArray? = null
-        override var b: String = ""
-        override val c: String = a.toString() + b
-    }
-
-    @Test
-    fun `getter setter and calculated properties`() {
-        assertInformation<OldStylePojoImpl>(
-            """
-           OldStylePojoImpl(): OldStylePojo<int[]>
-             a (optional): int[]
-             b: String
-             c (calculated): String
-        """
-        )
     }
 
     class AliasingOldStylePojoImpl(override var a: String?, override var b: String, override val c: String) : OldStylePojo<String>
