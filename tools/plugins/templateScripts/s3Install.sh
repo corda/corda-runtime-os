@@ -7,7 +7,7 @@ cliSymlink="/usr/bin/corda-cli.sh"
 # temp dir
 tempDir="/tmp/corda/cli/"
 # base s3 url
-s3Bucket="https://r3.s3.com/cli/"
+s3Bucket=TEMPLATE_URL
 
 # use md5 checksum or not
 verify=${verify:-false}

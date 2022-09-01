@@ -42,6 +42,31 @@ tasks.register("cliInstallArchive", Zip) {
     destinationDir(file("$buildDir/zip"))
 }
 
+tasks.register("cleanDir", Delete){
+    description 'Removes any previously generated scripts'
+    delete 'build/generatedScripts'
+}
+
+
+tasks.register("cliInstallScriptsS3", Copy){
+
+    mustRunAfter cleanDir
+    description 'Copy corda-cli install scripts to a location in build dir and update to use correct version'
+
+    if (project.hasProperty('s3Url')) {
+
+
+        from 'templateScripts'
+        into 'build/generatedScripts'
+        filter {
+            String line -> line.replaceAll("TEMPLATE_URL", s3Url)
+        }
+    }
+    else {
+        throw new GradleException("parameter 's3Url' is required! e.g. -Ps3url=https://demo.s3.com/example/bucket")
+    }
+}
+
 artifacts {
     cliInstallArchive
 }
