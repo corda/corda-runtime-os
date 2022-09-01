@@ -150,6 +150,9 @@ These -m options are passed into the Kafka client. For example to use TLS to con
 ```bash
 java -jar ./applications/p2p-link-manager/build/bin/corda-p2p-link-manager*.jar -msecurity.protocol=SSL -mssl.truststore.location=/certs/ca.crt -mssl.truststore.type=PEM
 ```
+It is possible to pass in the all the options from the command line, instead of using a config file.
+The dbParams can be specified with `-d` options e.g. `-dusername=root -dpassword=securePassword` and loadGenerationParams with `-l` options e.g. `-lpeerX500Name=Me`.
+The command line has precedence over the config file, if an option is specified in both places.
 
 ### Running the Docker image
 

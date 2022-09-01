@@ -1,7 +1,6 @@
 package net.corda.p2p.app.simulator
 
 import com.typesafe.config.Config
-import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.data.identity.HoldingIdentity
@@ -13,6 +12,14 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
+import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getDbParameter
+import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getEnumOrNull
+import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getIntOrNull
+import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getLoadGenDuration
+import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getLoadGenDurationOrNull
+import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getLoadGenEnumParameter
+import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getLoadGenIntParameter
+import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getLoadGenStrParameter
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.configuration.BootConfig
@@ -28,10 +35,8 @@ import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import picocli.CommandLine
 import java.io.File
-import java.lang.NumberFormatException
 import java.time.Duration
 import java.time.Instant
-import java.time.format.DateTimeParseException
 import kotlin.random.Random
 
 @Component(immediate = true)
@@ -95,6 +100,7 @@ class AppSimulator @Activate constructor(
         }
     }
 
+    @Suppress("ComplexMethod")
     private fun runSimulator(parameters: CliParameters, bootConfig: SmartConfig) {
         val configFromFile = parameters.simulatorConfig?.let { ConfigFactory.parseFile(it) } ?: ConfigFactory.empty()
         val clients = parameters.clients ?: configFromFile.getIntOrNull(PARALLEL_CLIENTS_KEY) ?: DEFAULT_PARALLEL_CLIENTS
@@ -170,6 +176,7 @@ class AppSimulator @Activate constructor(
         resources.add(receiver)
     }
 
+    @Suppress("LongParameterList")
     private fun runSink(
         configFromFile: Config,
         parameters: CliParameters,
@@ -189,166 +196,40 @@ class AppSimulator @Activate constructor(
     }
 
     private fun readDbParams(config: Config, parameters: CliParameters): DBParams? {
-        val username = getDbParameter("username", config, parameters) ?: return null
-        val password = getDbParameter("password", config, parameters) ?: return null
-        val host = getDbParameter("host", config, parameters) ?: return null
-        val db = getDbParameter("db", config, parameters) ?: return null
+        val username = getDbParameter("username", config, parameters, ::logErrorAndShutdown) ?: return null
+        val password = getDbParameter("password", config, parameters, ::logErrorAndShutdown) ?: return null
+        val host = getDbParameter("host", config, parameters, ::logErrorAndShutdown) ?: return null
+        val db = getDbParameter("db", config, parameters, ::logErrorAndShutdown) ?: return null
         val dbParams = DBParams(username, password, host, db)
         logger.info("$dbParams")
         return dbParams
     }
 
-    /***
-     * Get a database parameter from the command line or the config file. Command line options override options in
-     * the config file.
-     */
-    private fun getDbParameter(path: String, configFromFile: Config, parameters: CliParameters): String? {
-        val parameter = getParameter(path, configFromFile.getConfigOrEmpty(DB_PARAMS_PREFIX), parameters.databaseParams)
-        if (parameter == null) {
-            logErrorAndShutdown("Database parameter $path must be specified on the command line, using -d$path, or in a config file.")
-        }
-        return parameter
-    }
-
-    /***
-     * Get a load generation parameter from the command line or the config file. Command line options override options in
-     * the config file.
-     */
-    private fun getLoadGenStrParameter(path: String, configFromFile: Config, parameters: CliParameters): String? {
-        val parameter = getParameter(path, configFromFile.getConfigOrEmpty(LOAD_GEN_PARAMS_PREFIX), parameters.loadGenerationParams)
-        if (parameter == null) {
-            logErrorAndShutdown("Load generation parameter $path must be specified on the command line, using -l$path, or in a config file.")
-        }
-        return parameter
-    }
-
-    private inline fun <reified E: Enum<E>> getLoadGenEnumParameter(path: String, configFromFile: Config, parameters: CliParameters): E? {
-        val stringParameter = getParameter(
-            path,
-            configFromFile.getConfigOrEmpty(LOAD_GEN_PARAMS_PREFIX),
-            parameters.loadGenerationParams
-        )
-        if (stringParameter == null) {
-            logErrorAndShutdown("Load generation parameter $path must be specified on the command line, using -l$path, or in a " +
-                "config file. " + "Must be one of (${E::class.java.enumConstants.map { it.name }.toSet()})."
-            )
-        }
-        val enum = E::class.java.enumConstants.singleOrNull {
-            it.name == stringParameter
-        }
-        if (enum == null) {
-            logErrorAndShutdown("Load generation parameter $path = $stringParameter is not one of " +
-                "(${E::class.java.enumConstants.map { it.name }.toSet()})."
-            )
-        }
-        return enum
-    }
-
-    private fun getLoadGenIntParameter(path: String, default: Int, configFromFile: Config, parameters: CliParameters): Int {
-        val stringParameter = getParameter(path, configFromFile.getConfigOrEmpty(LOAD_GEN_PARAMS_PREFIX), parameters.loadGenerationParams)
-            ?: return default
-        return try {
-            Integer.parseInt(stringParameter)
-        } catch (exception: NumberFormatException) {
-            logErrorAndShutdown("Load generation parameter $path = $stringParameter is not an integer.")
-            default
-        }
-    }
-
-    private fun getLoadGenDuration(path: String, default: Duration, configFromFile: Config, parameters: CliParameters): Duration {
-        val parameterFromCommandLine = parameters.loadGenerationParams[path]
-        return if (parameterFromCommandLine == null) {
-            try {
-                configFromFile.getDuration(path)
-            } catch (exception: ConfigException.Missing) {
-                default
-            }
-        } else {
-            try {
-                Duration.parse(parameterFromCommandLine)
-            } catch (exception: DateTimeParseException) {
-                logErrorAndShutdown("Load generation parameter $path = $parameterFromCommandLine can not be parsed as a duration. " +
-                        "It must have the ISO-8601 duration format PnDTnHnMn.nS. e.g. PT20.5S gets converted to 20.5 seconds.")
-                Duration.ofSeconds(0)
-            }
-        }
-    }
-
-    private fun getLoadGenDurationOrNull(path: String, configFromFile: Config, parameters: CliParameters): Duration? {
-        val parameterFromCommandLine = parameters.loadGenerationParams[path]
-        return if (parameterFromCommandLine == null) {
-            try {
-                configFromFile.getDuration(path)
-            } catch (exception: ConfigException.Missing) {
-                null
-            }
-        } else {
-            try {
-                Duration.parse(parameterFromCommandLine)
-            } catch (exception: DateTimeParseException) {
-                logErrorAndShutdown("Load generation parameter $path = $parameterFromCommandLine can not be parsed as a duration. " +
-                    "It must have the ISO-8601 duration format PnDTnHnMn.nS. e.g. PT20.5S gets converted to 20.5 seconds.")
-                null
-            }
-        }
-    }
-
-    private fun getParameter(path: String, config: Config, parameters: Map<String, String>): String? {
-        return parameters[path] ?: config.getStringOrNull(path)
-    }
-
-    private fun Config.getStringOrNull(path: String): String? {
-        return getOrNull(path, this::getString)
-    }
-
-    private fun Config.getConfigOrEmpty(path: String): Config {
-        return getOrNull(path, this::getConfig) ?: ConfigFactory.empty()
-    }
-
-    private fun Config.getIntOrNull(path: String): Int? {
-        return getOrNull(path, this::getInt)
-    }
-
-    private fun <E> getOrNull(path: String, getFun: (String) -> E): E? {
-        return try {
-            getFun(path)
-        } catch (exception: ConfigException.Missing) {
-            null
-        }
-    }
-
-    private inline fun <reified E: Enum<E>> Config.getEnumOrNull(path: String): E? {
-        return try {
-            this.getEnum(E::class.java, path)
-        } catch (exception: ConfigException.Missing) {
-            null
-        }
-    }
-
     private fun readLoadGenParams(configFromFile: Config, parameters: CliParameters): LoadGenerationParams {
-        val peerX500Name = getLoadGenStrParameter("peerX500Name", configFromFile, parameters)
-        val peerGroupId = getLoadGenStrParameter("peerGroupId", configFromFile, parameters)
-        val ourX500Name = getLoadGenStrParameter("ourX500Name", configFromFile, parameters)
-        val ourGroupId = getLoadGenStrParameter("ourGroupId", configFromFile, parameters)
+        val peerX500Name = getLoadGenStrParameter("peerX500Name", configFromFile, parameters, ::logErrorAndShutdown)
+        val peerGroupId = getLoadGenStrParameter("peerGroupId", configFromFile, parameters, ::logErrorAndShutdown)
+        val ourX500Name = getLoadGenStrParameter("ourX500Name", configFromFile, parameters, ::logErrorAndShutdown)
+        val ourGroupId = getLoadGenStrParameter("ourGroupId", configFromFile, parameters, ::logErrorAndShutdown)
         val loadGenerationType: LoadGenerationType? =
-            getLoadGenEnumParameter<LoadGenerationType>("loadGenerationType", configFromFile, parameters)
+            getLoadGenEnumParameter<LoadGenerationType>("loadGenerationType", configFromFile, parameters, ::logErrorAndShutdown)
         val totalNumberOfMessages = when (loadGenerationType) {
             LoadGenerationType.ONE_OFF -> getLoadGenIntParameter(
                 "totalNumberOfMessages",
                 DEFAULT_TOTAL_NUMBER_OF_MESSAGES,
                 configFromFile,
-                parameters
+                parameters,
+                ::logErrorAndShutdown
             )
 
             LoadGenerationType.CONTINUOUS -> null
             else -> throw IllegalStateException("Invalid value for load generation type: $loadGenerationType")
         }
-        val batchSize = getLoadGenIntParameter("batchSize", DEFAULT_BATCH_SIZE, configFromFile, parameters)
+        val batchSize = getLoadGenIntParameter("batchSize", DEFAULT_BATCH_SIZE, configFromFile, parameters, ::logErrorAndShutdown)
         val interBatchDelay =
-            getLoadGenDuration("interBatchDelay", DEFAULT_INTER_BATCH_DELAY, configFromFile, parameters)
+            getLoadGenDuration("interBatchDelay", DEFAULT_INTER_BATCH_DELAY, configFromFile, parameters, ::logErrorAndShutdown)
         val messageSizeBytes =
-            getLoadGenIntParameter("messageSizeBytes", DEFAULT_MESSAGE_SIZE_BYTES, configFromFile, parameters)
-        val expireAfterTime = getLoadGenDurationOrNull("expireAfterTime", configFromFile, parameters)
+            getLoadGenIntParameter("messageSizeBytes", DEFAULT_MESSAGE_SIZE_BYTES, configFromFile, parameters, ::logErrorAndShutdown)
+        val expireAfterTime = getLoadGenDurationOrNull("expireAfterTime", configFromFile, parameters, ::logErrorAndShutdown)
         return LoadGenerationParams(
             HoldingIdentity(peerX500Name, peerGroupId),
             HoldingIdentity(ourX500Name, ourGroupId),
