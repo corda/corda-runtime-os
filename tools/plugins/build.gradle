@@ -100,4 +100,18 @@ publishing {
             artifact cliInstallArchive
         }
     }
+    if (project.hasProperty('maven.repo.s3') && project.hasProperty('releasable')) {
+        publishing {
+            repositories {
+                maven {
+                    url = project.findProperty('maven.repo.s3')
+                    credentials(AwsCredentials) {
+                        accessKey "${System.getenv('AWS_ACCESS_KEY_ID')}"
+                        secretKey "${System.getenv('AWS_SECRET_ACCESS_KEY')}"
+                        sessionToken "${System.getenv('AWS_SESSION_TOKEN')}"
+                    }
+                }
+            }
+        }
+    }
 }
