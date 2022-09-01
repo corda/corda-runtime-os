@@ -4,9 +4,6 @@ plugins {
     id 'org.jetbrains.kotlin.plugin.allopen'
 }
 
-group = "net.corda"
-version = "$cordaApiVersion"
-
 dependencies {
 
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
