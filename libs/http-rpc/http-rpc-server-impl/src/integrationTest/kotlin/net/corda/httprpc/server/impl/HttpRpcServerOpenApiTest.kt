@@ -17,7 +17,7 @@ import net.corda.httprpc.test.CalendarRPCOpsImpl
 import net.corda.httprpc.test.TestEntityRpcOpsImpl
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.tools.HttpVerb.GET
-import net.corda.v5.base.util.NetworkHostAndPort
+import net.corda.base.util.NetworkHostAndPort
 import org.apache.http.HttpStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll

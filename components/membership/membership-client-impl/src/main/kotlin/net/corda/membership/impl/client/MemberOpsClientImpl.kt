@@ -38,7 +38,7 @@ import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.v5.base.concurrent.getOrThrow
+import net.corda.base.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate

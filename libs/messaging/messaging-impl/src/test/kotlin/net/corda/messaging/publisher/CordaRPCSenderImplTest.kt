@@ -1,5 +1,6 @@
 package net.corda.messaging.publisher
 
+import net.corda.base.concurrent.getOrThrow
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.messaging.RPCRequest
@@ -18,7 +19,6 @@ import net.corda.messagebus.api.producer.builder.CordaProducerBuilder
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.messaging.constants.SubscriptionType
 import net.corda.messaging.createResolvedSubscriptionConfig
-import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

@@ -26,7 +26,7 @@ import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.time.UTCClock
-import net.corda.v5.base.concurrent.getOrThrow
+import net.corda.base.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.ShortHash

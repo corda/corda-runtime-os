@@ -24,7 +24,7 @@ import net.corda.membership.httprpc.v1.MemberLookupRpcOps
 import net.corda.membership.httprpc.v1.MemberRegistrationRpcOps
 import net.corda.membership.httprpc.v1.NetworkRpcOps
 import net.corda.processors.rpc.diff.diff
-import net.corda.v5.base.util.NetworkHostAndPort
+import net.corda.base.util.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

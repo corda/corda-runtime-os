@@ -21,6 +21,7 @@ dependencies {
     implementation "org.apache.servicemix.bundles:org.apache.servicemix.bundles.kafka-clients:$kafkaClientVersion"
 
     implementation project(":osgi-framework-api")
+    implementation project(":libs:base")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:configuration:configuration-core")

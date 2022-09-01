@@ -5,7 +5,7 @@ import net.corda.httprpc.server.config.models.HttpRpcContext
 import net.corda.httprpc.server.config.models.HttpRpcSSLSettings
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.config.models.SsoSettings
-import net.corda.v5.base.util.NetworkHostAndPort
+import net.corda.base.util.NetworkHostAndPort
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
 import java.nio.file.Path

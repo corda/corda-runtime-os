@@ -6,7 +6,7 @@ import net.corda.httprpc.server.impl.HttpRpcServerImpl;
 import net.corda.httprpc.test.CustomSerializationAPIImpl;
 import net.corda.httprpc.test.TestHealthCheckAPI;
 import net.corda.httprpc.test.TestHealthCheckAPIImpl;
-import net.corda.v5.base.util.NetworkHostAndPort;
+import net.corda.base.util.NetworkHostAndPort;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;

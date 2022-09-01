@@ -7,7 +7,7 @@ import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.test.utils.findFreePort
 import net.corda.httprpc.test.utils.multipartDir
-import net.corda.v5.base.util.NetworkHostAndPort
+import net.corda.base.util.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
 import org.eclipse.jetty.client.HttpClient
 import org.eclipse.jetty.util.ssl.SslContextFactory

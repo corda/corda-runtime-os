@@ -17,7 +17,7 @@ import net.corda.libs.permissions.storage.reader.PermissionStorageReader
 import net.corda.libs.permissions.storage.writer.impl.permission.PermissionWriter
 import net.corda.libs.permissions.storage.writer.impl.role.RoleWriter
 import net.corda.libs.permissions.storage.writer.impl.user.UserWriter
-import net.corda.v5.base.concurrent.getOrThrow
+import net.corda.base.concurrent.getOrThrow
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue

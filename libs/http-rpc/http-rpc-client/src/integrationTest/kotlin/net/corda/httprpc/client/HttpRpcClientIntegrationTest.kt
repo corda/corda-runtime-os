@@ -17,7 +17,7 @@ import net.corda.httprpc.test.TestHealthCheckAPI
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.test.utils.findFreePort
 import net.corda.test.util.eventually
-import net.corda.v5.base.util.NetworkHostAndPort
+import net.corda.base.util.NetworkHostAndPort
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy

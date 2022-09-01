@@ -6,7 +6,7 @@ import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.test.utils.WebRequest
 import net.corda.httprpc.test.utils.findFreePort
 import net.corda.httprpc.test.utils.multipartDir
-import net.corda.v5.base.util.NetworkHostAndPort
+import net.corda.base.util.NetworkHostAndPort
 import org.apache.http.HttpStatus
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll

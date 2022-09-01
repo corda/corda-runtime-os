@@ -25,6 +25,7 @@ dependencies {
     implementation project(":components:membership:synchronisation")
     implementation project(':components:membership:membership-group-read')
 
+    implementation project(":libs:base")
     implementation project(':libs:chunking:chunking-core')
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")

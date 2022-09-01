@@ -31,6 +31,7 @@ dependencies {
     implementation project(":components:crypto:crypto-client-hsm")
     implementation project(':components:membership:group-policy')
 
+    implementation project(":libs:base")
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-merger')
     implementation project(':libs:lifecycle:lifecycle')

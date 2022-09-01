@@ -23,7 +23,7 @@ import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_ENTITY_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_GROUP_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_ROLE_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_USER_TOPIC
-import net.corda.v5.base.concurrent.getOrThrow
+import net.corda.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import java.util.concurrent.atomic.AtomicReference

@@ -6,7 +6,7 @@ import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.CpkChunkId
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
-import net.corda.v5.base.concurrent.getOrThrow
+import net.corda.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import java.time.Duration

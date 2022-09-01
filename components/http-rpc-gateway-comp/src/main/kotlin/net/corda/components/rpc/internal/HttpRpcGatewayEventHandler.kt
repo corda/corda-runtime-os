@@ -1,5 +1,6 @@
 package net.corda.components.rpc.internal
 
+import net.corda.base.util.NetworkHostAndPort
 import net.corda.components.rbac.RBACSecurityManagerService
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
@@ -39,7 +40,6 @@ import net.corda.schema.configuration.ConfigKeys.RPC_MAX_CONTENT_LENGTH
 import net.corda.utilities.PathProvider
 import net.corda.utilities.TempPathProvider
 import net.corda.v5.base.annotations.VisibleForTesting
-import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
 import java.util.function.Supplier
 

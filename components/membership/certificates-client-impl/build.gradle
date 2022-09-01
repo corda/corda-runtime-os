@@ -12,6 +12,7 @@ dependencies {
     implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-avro-schema'
     implementation 'net.corda:corda-topic-schema'
+    implementation project(":libs:base")
     implementation project(':libs:messaging:messaging')
     implementation project(':components:membership:certificates-client')
     implementation project(':components:configuration:configuration-read-service')

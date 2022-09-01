@@ -13,7 +13,7 @@ import net.corda.data.crypto.wire.hsm.registration.commands.AssignSoftHSMCommand
 import net.corda.data.crypto.wire.hsm.registration.queries.AssignedHSMQuery
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.messaging.api.publisher.RPCSender
-import net.corda.v5.base.concurrent.getOrThrow
+import net.corda.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import java.time.Duration

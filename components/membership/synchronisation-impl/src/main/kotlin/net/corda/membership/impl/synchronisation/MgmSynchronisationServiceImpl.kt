@@ -1,5 +1,6 @@
 package net.corda.membership.impl.synchronisation
 
+import net.corda.base.concurrent.getOrThrow
 import net.corda.chunking.toCorda
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
@@ -34,7 +35,6 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
-import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger

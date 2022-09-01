@@ -1,6 +1,6 @@
 package net.corda.httprpc.server.config.models
 
-import net.corda.v5.base.util.NetworkHostAndPort
+import net.corda.base.util.NetworkHostAndPort
 
 data class HttpRpcSettings(
     val address: NetworkHostAndPort,

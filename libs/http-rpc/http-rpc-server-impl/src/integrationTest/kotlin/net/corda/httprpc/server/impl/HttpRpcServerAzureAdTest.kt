@@ -16,7 +16,7 @@ import net.corda.httprpc.test.utils.WebRequest
 import net.corda.httprpc.test.utils.findFreePort
 import net.corda.httprpc.test.utils.multipartDir
 import net.corda.httprpc.tools.HttpVerb
-import net.corda.v5.base.util.NetworkHostAndPort
+import net.corda.base.util.NetworkHostAndPort
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

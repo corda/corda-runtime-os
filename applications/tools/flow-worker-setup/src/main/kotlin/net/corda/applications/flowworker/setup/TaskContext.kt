@@ -1,6 +1,7 @@
 package net.corda.applications.flowworker.setup
 
 import com.typesafe.config.ConfigValueFactory
+import net.corda.base.concurrent.getOrThrow
 import java.util.Properties
 import java.util.concurrent.TimeUnit
 import net.corda.libs.configuration.SmartConfigImpl
@@ -12,7 +13,6 @@ import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_BOOTSTRAP_SERVERS
-import net.corda.v5.base.concurrent.getOrThrow
 import org.apache.kafka.clients.CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG
 import org.apache.kafka.clients.admin.AdminClient
 import org.apache.kafka.clients.admin.NewTopic

@@ -12,7 +12,7 @@ import net.corda.httprpc.test.utils.multipartDir
 import net.corda.httprpc.tools.HttpVerb.DELETE
 import net.corda.httprpc.tools.HttpVerb.POST
 import net.corda.httprpc.tools.HttpVerb.PUT
-import net.corda.v5.base.util.NetworkHostAndPort
+import net.corda.base.util.NetworkHostAndPort
 import org.apache.http.HttpStatus
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach

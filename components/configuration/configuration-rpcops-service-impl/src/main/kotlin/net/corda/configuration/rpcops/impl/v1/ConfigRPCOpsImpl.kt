@@ -1,6 +1,7 @@
 package net.corda.configuration.rpcops.impl.v1
 
 import com.typesafe.config.ConfigFactory
+import net.corda.base.concurrent.getOrThrow
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.rpcops.ConfigRPCOpsServiceException
 import net.corda.configuration.rpcops.impl.CLIENT_NAME_HTTP
@@ -26,7 +27,6 @@ import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas.Config.Companion.CONFIG_MGMT_REQUEST_TOPIC
-import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.versioning.Version

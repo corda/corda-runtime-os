@@ -1,6 +1,6 @@
 package net.corda.membership.lib
 
-import net.corda.v5.base.util.NetworkHostAndPort
+import net.corda.base.util.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.parse
 import net.corda.v5.base.util.parseList

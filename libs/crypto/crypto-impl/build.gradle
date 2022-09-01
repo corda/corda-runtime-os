@@ -13,6 +13,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
+    implementation project(":libs:base")
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:utilities")
     implementation project(':libs:layered-property-map')

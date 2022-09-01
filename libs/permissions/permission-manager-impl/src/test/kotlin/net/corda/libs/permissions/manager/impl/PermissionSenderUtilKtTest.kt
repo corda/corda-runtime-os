@@ -10,7 +10,7 @@ import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.libs.permissions.manager.exception.RemotePermissionManagementException
 import net.corda.libs.permissions.manager.exception.UnexpectedPermissionResponseException
 import net.corda.messaging.api.publisher.RPCSender
-import net.corda.v5.base.concurrent.getOrThrow
+import net.corda.base.concurrent.getOrThrow
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows

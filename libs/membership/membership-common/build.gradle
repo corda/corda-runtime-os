@@ -16,4 +16,5 @@ dependencies {
     api "net.corda:corda-membership"
     api project(":libs:membership:membership-datamodel")
     api project(":libs:virtual-node:virtual-node-info")
+    implementation project(":libs:base")
 }

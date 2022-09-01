@@ -3,7 +3,7 @@ package net.corda.httprpc.server.impl
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.test.*
 import net.corda.httprpc.tools.HttpVerb.POST
-import net.corda.v5.base.util.NetworkHostAndPort
+import net.corda.base.util.NetworkHostAndPort
 import org.apache.http.HttpStatus
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach

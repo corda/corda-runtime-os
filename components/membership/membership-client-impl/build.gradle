@@ -13,6 +13,7 @@ dependencies {
     implementation project(":components:membership:membership-client")
     implementation project(":components:membership:membership-group-read")
     implementation project(":components:virtual-node:virtual-node-info-read-service")
+    implementation project(":libs:base")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:membership:membership-common")
     implementation project(":libs:messaging:messaging")

@@ -23,6 +23,7 @@ dependencies {
     implementation 'net.corda:corda-serialization'
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
 
+    implementation project(":libs:base")
     testImplementation project(":libs:crypto:crypto-impl")
     testImplementation project(":testing:layered-property-map-testkit")
     testImplementation project(":testing:test-utilities")
