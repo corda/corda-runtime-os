@@ -1,0 +1,36 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+
+<configuration>
+
+    <Appenders>
+        <!-- Logs the redirected stdOut and stdErr to the console -->
+        <Console name="LogToConsole" target="SYSTEM_OUT"/>
+
+        <File name="LogToFile" fileName="${sys:logFile:-${sys:user.home}/.corda/cli/logs/corda-cli.log}" append="true">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %level [%t] [%c] - %msg%n"/>
+        </File>
+
+    </Appenders>
+
+    <Loggers>
+        <!-- avoid duplicated logs with additivity=false -->
+        <Logger name="org.pf4j" level="${sys:logLevel:-info}" additivity="false">
+            <AppenderRef ref="LogToFile"/>
+        </Logger>
+
+        <Logger name="SystemErr" level="error" additivity="false">
+            <AppenderRef ref="LogToConsole"/>
+            <AppenderRef ref="LogToFile"/>
+        </Logger>
+
+        <Logger name="SystemOut" level="info" additivity="false">
+            <AppenderRef ref="LogToConsole"/>
+            <AppenderRef ref="LogToFile"/>
+        </Logger>
+
+        <Root level="${sys:logLevel:-info}" >
+            <AppenderRef ref="LogToFile"/>
+        </Root>
+    </Loggers>
+
+</configuration>
