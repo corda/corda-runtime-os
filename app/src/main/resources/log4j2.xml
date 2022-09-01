@@ -2,10 +2,6 @@
 
 <configuration>
 
-    <Properties>
-        <!--        <Property name="logFile">"${sys:user.home}/.corda/cli/logs/corda-cli.log"</Property>-->
-    </Properties>
-
     <Appenders>
         <!-- Logs the redirected stdOut and stdErr to the console -->
         <Console name="LogToConsole" target="SYSTEM_OUT"/>
@@ -22,13 +18,14 @@
             <AppenderRef ref="LogToFile"/>
         </Logger>
 
-        <Logger name="SystemErr" level="${sys:logLevel:-info}" additivity="false">
+        <Logger name="SystemErr" level="error" additivity="false">
             <AppenderRef ref="LogToConsole"/>
             <AppenderRef ref="LogToFile"/>
         </Logger>
 
         <Logger name="SystemOut" level="info" additivity="false">
             <AppenderRef ref="LogToConsole"/>
+            <AppenderRef ref="LogToFile"/>
         </Logger>
 
         <Root level="${sys:logLevel:-info}" >
