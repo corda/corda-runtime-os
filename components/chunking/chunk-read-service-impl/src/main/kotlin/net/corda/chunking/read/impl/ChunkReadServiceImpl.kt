@@ -50,6 +50,7 @@ class ChunkReadServiceImpl @Activate constructor(
 
         private const val REGISTRATION = "REGISTRATION"
         private const val CONFIG_HANDLE = "CONFIG_HANDLE"
+        private const val CHUNK_DB_WRITER = "CHUNK_DB_WRITER"
     }
 
     private val coordinator = coordinatorFactory.createCoordinator<ChunkReadService>(this)
@@ -93,7 +94,6 @@ class ChunkReadServiceImpl @Activate constructor(
 
     private fun onStopEvent(coordinator: LifecycleCoordinator) {
         log.debug("onStopEvent")
-        coordinator.closeManagedResources()
         coordinator.updateStatus(LifecycleStatus.DOWN)
     }
 
@@ -125,7 +125,7 @@ class ChunkReadServiceImpl @Activate constructor(
             val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
             val rpcConfig = event.config.getConfig(ConfigKeys.RPC_CONFIG)
             val duration = Duration.ofMillis(rpcConfig.getInt(ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS).toLong())
-            coordinator.createManagedResource("CHUNK_DB_WRITER") {
+            coordinator.createManagedResource(CHUNK_DB_WRITER) {
                 chunkDbWriterFactory
                     .create(
                         messagingConfig,
