@@ -4,6 +4,7 @@ import net.corda.cordapptestutils.HoldingIdentity
 import net.corda.cordapptestutils.RequestData
 import net.corda.cordapptestutils.Simulator
 import net.corda.cordapptestutils.factories.JsonMarshallingServiceFactory
+import net.corda.cordapptestutils.tools.FlowChecker
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.UntrustworthyData
@@ -20,6 +21,11 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class RollCallFlowTest {
+
+    @Test
+    fun `should pass flow checks that allow Corda to find and build it`() {
+        FlowChecker.check(RollCallFlow::class.java)
+    }
 
     @Test
     fun `should request each student to respond to roll call`() {
