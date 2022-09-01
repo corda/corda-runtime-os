@@ -4,7 +4,7 @@ import net.corda.libs.packaging.core.CpkFormatVersion
 import net.corda.libs.packaging.core.exception.PackagingException
 import java.util.jar.Manifest
 
-internal class FormatVersionReader {
+class FormatVersionReader {
     companion object {
         private const val CPK_FORMAT = "Corda-CPK-Format"
         private const val CPB_FORMAT = "Corda-CPB-Format"
