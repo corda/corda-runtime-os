@@ -36,7 +36,8 @@ class PersistenceServiceImplTest {
 
     @BeforeEach
     fun setup() {
-        persistenceService = PersistenceServiceImpl(externalEventExecutor, pagedQueryFactory, flowFiberSerializationService)
+        persistenceService =
+            PersistenceServiceImpl(externalEventExecutor, pagedQueryFactory, flowFiberSerializationService)
 
         whenever(flowFiberSerializationService.serialize(any())).thenReturn(serializedBytes)
         whenever(serializedBytes.bytes).thenReturn(byteBuffer.array())
@@ -58,22 +59,32 @@ class PersistenceServiceImplTest {
 
     @Test
     fun `merge executes successfully`() {
-        whenever(flowFiberSerializationService.deserialize<TestObject>(any(), any())).thenReturn(TestObject())
+        whenever(
+            flowFiberSerializationService.deserialize<TestObject>(
+                any<ByteArray>(),
+                any()
+            )
+        ).thenReturn(TestObject())
 
         persistenceService.merge(TestObject())
 
-        verify(flowFiberSerializationService).deserialize<TestObject>(any(), any())
+        verify(flowFiberSerializationService).deserialize<TestObject>(any<ByteArray>(), any())
         verify(flowFiberSerializationService).serialize<TestObject>(any())
         assertThat(argumentCaptor.firstValue).isEqualTo(MergeExternalEventFactory::class.java)
     }
 
     @Test
     fun `remove executes successfully`() {
-        whenever(flowFiberSerializationService.deserialize<TestObject>(any(), any())).thenReturn(TestObject())
+        whenever(
+            flowFiberSerializationService.deserialize<TestObject>(
+                any<ByteArray>(),
+                any()
+            )
+        ).thenReturn(TestObject())
 
         persistenceService.remove(TestObject())
 
-        verify(flowFiberSerializationService, times(0)).deserialize<TestObject>(any(), any())
+        verify(flowFiberSerializationService, times(0)).deserialize<TestObject>(any<ByteArray>(), any())
 
         verify(flowFiberSerializationService).serialize<TestObject>(any())
         assertThat(argumentCaptor.firstValue).isEqualTo(RemoveExternalEventFactory::class.java)
@@ -82,11 +93,11 @@ class PersistenceServiceImplTest {
     @Test
     fun `find executes successfully`() {
         val expectedObj = TestObject()
-        whenever(flowFiberSerializationService.deserialize<TestObject>(any(), any())).thenReturn(expectedObj)
+        whenever(flowFiberSerializationService.deserialize<TestObject>(any<ByteArray>(), any())).thenReturn(expectedObj)
 
         assertThat(persistenceService.find(TestObject::class.java, "key")).isEqualTo(expectedObj)
 
-        verify(flowFiberSerializationService).deserialize<TestObject>(any(), any())
+        verify(flowFiberSerializationService).deserialize<TestObject>(any<ByteArray>(), any())
         verify(flowFiberSerializationService).serialize<String>(any())
         assertThat(argumentCaptor.firstValue).isEqualTo(FindExternalEventFactory::class.java)
     }
@@ -100,7 +111,7 @@ class PersistenceServiceImplTest {
     @Test
     fun `named query executes successfully`() {
         persistenceService.query("", TestObject::class.java)
-        verify(pagedQueryFactory).createNamedParameterisedQuery<TestObject>(any(), any())
+        verify(pagedQueryFactory).createNamedParameterizedQuery<TestObject>(any(), any())
     }
 
     class TestObject

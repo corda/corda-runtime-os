@@ -3,7 +3,7 @@ package net.corda.cordapptestutils.internal.persistence
 import net.corda.cordapptestutils.internal.utils.sandboxName
 import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.application.persistence.PagedQuery
-import net.corda.v5.application.persistence.ParameterisedQuery
+import net.corda.v5.application.persistence.ParameterizedQuery
 import net.corda.v5.base.types.MemberX500Name
 import org.hibernate.cfg.AvailableSettings.DIALECT
 import org.hibernate.cfg.AvailableSettings.HBM2DDL_AUTO
@@ -95,7 +95,7 @@ class DbPersistenceService(member : MemberX500Name) : CloseablePersistenceServic
         }
     }
 
-    override fun <T : Any> query(queryName: String, entityClass: Class<T>): ParameterisedQuery<T> {
+    override fun <T : Any> query(queryName: String, entityClass: Class<T>): ParameterizedQuery<T> {
         TODO("Not yet implemented")
     }
 

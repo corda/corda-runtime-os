@@ -3,6 +3,7 @@ package net.corda.flow.application.persistence.query
 import co.paralleluniverse.fibers.Suspendable
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.fiber.FlowFiberSerializationService
+import net.corda.v5.application.persistence.PagedQuery
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -16,17 +17,21 @@ class PagedQueryFactory @Activate constructor(
 ) {
 
     /**
-     * Create a parameterised query object to execute named queries against the external DB process.
-     * Sets default values of offset to 0, and limit to max int max int value. Sets query params to empty.
-     * @param queryName the name of the query to execute
-     * @return NamedParameterisedQuery object that can be used to execute named queries.
+     * Create a [NamedParameterizedQuery] to execute named queries.
+     *
+     * Sets default values of [PagedQuery] offset to 0, and [PagedQuery] limit to [Int.MAX_VALUE].
+     *
+     * @param queryName The name of the query to execute.
+     * @param expectedClass The type that the named query returns and is deserialized into.
+     *
+     * @return [NamedParameterizedQuery] instance that can be used to execute queries.
      */
     @Suppress("Unused")
-    fun <R : Any> createNamedParameterisedQuery(
+    fun <R : Any> createNamedParameterizedQuery(
         queryName: String,
         expectedClass: Class<R>
-    ): NamedParameterisedQuery<R> {
-        return NamedParameterisedQuery(
+    ): NamedParameterizedQuery<R> {
+        return NamedParameterizedQuery(
             externalEventExecutor = externalEventExecutor,
             flowFiberSerializationService = flowFiberSerializationService,
             queryName = queryName,
@@ -38,10 +43,13 @@ class PagedQueryFactory @Activate constructor(
     }
 
     /**
-     * Create a paged find query object to execute Find queries against the external DB process.
-     * Sets default values of offset to 0, and limit to max int max int value.
-     * @param entityClass the class of the object to find
-     * @return PagedFindQuery object that can be used to execute queries.
+     * Create a [PagedFindQuery] to execute find queries.
+     *
+     * Sets default values of [PagedQuery] offset to 0, and [PagedQuery] limit to [Int.MAX_VALUE].
+     *
+     * @param entityClass The type to find.
+     *
+     * @return [PagedFindQuery] instance that can be used to execute queries.
      */
     @Suspendable
     fun <R : Any> createPagedFindQuery(entityClass: Class<R>): PagedFindQuery<R> {

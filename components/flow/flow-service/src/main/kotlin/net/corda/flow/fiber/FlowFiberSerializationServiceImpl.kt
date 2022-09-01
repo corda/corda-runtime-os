@@ -27,15 +27,22 @@ class FlowFiberSerializationServiceImpl @Activate constructor(
             }
         }
 
-    override fun <R : Any> deserialize(bytes: ByteArray, expectedType: Class<R>): R {
+    override fun <T : Any> serialize(obj: T): SerializedBytes<T> {
+        return serializationService.serialize(obj)
+    }
+
+    override fun <T : Any> deserialize(bytes: ByteArray, clazz: Class<T>): T {
         return try {
-            val payload = serializationService.deserialize(bytes, expectedType)
-            checkDeserializedObjectIs(payload, expectedType)
-            payload
+            val deserialized = serializationService.deserialize(bytes, clazz)
+            checkDeserializedObjectIs(deserialized, clazz)
         } catch (e: NotSerializableException) {
-            log.info("Failed to deserialize it into a ${expectedType.name}", e)
+            log.info("Failed to deserialize it into a ${clazz.name}", e)
             throw e
         }
+    }
+
+    override fun <T : Any> deserialize(serializedBytes: SerializedBytes<T>, clazz: Class<T>): T {
+        return deserialize(serializedBytes.bytes, clazz)
     }
 
     /**
@@ -43,16 +50,12 @@ class FlowFiberSerializationServiceImpl @Activate constructor(
      * the generic type is specified, it can still be the wrong type. We check this type here, so that we can throw an
      * accurate error instead of failing later on when the object is used.
      */
-    private fun <R : Any> checkDeserializedObjectIs(deserialized: Any, expectedType: Class<R>) {
-        expectedType.castIfPossible(deserialized) ?: throw DeserializedWrongAMQPObjectException(
-            expectedType = expectedType,
+    private fun <T : Any> checkDeserializedObjectIs(deserialized: Any, clazz: Class<T>): T {
+        return clazz.castIfPossible(deserialized) ?: throw DeserializedWrongAMQPObjectException(
+            expectedType = clazz,
             deserializedType = deserialized.javaClass,
             deserializedObject = deserialized,
-            "Expected to deserialize into a ${expectedType.name} but was a ${deserialized.javaClass.name} instead, object: ($deserialized)"
+            "Expected to deserialize into a ${clazz.name} but was a ${deserialized.javaClass.name} instead, object: ($deserialized)"
         )
-    }
-
-    override fun <T : Any> serialize(obj: T): SerializedBytes<T> {
-        return serializationService.serialize(obj)
     }
 }

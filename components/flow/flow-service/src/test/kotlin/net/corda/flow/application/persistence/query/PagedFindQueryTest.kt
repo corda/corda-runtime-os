@@ -49,7 +49,7 @@ class PagedFindQueryTest {
     fun `setLimit updates the limit`() {
         whenever(externalEventExecutor.execute(factoryArgumentCaptor.capture(), parametersArgumentCaptor.capture()))
             .thenReturn(listOf(byteBuffer))
-        whenever(flowFiberSerializationService.deserialize<TestObject>(any(), any()))
+        whenever(flowFiberSerializationService.deserialize<TestObject>(any<ByteArray>(), any()))
             .thenReturn(TestObject())
 
         query.execute()
@@ -64,7 +64,7 @@ class PagedFindQueryTest {
     fun `setOffset updates the offset`() {
         whenever(externalEventExecutor.execute(factoryArgumentCaptor.capture(), parametersArgumentCaptor.capture()))
             .thenReturn(listOf(byteBuffer))
-        whenever(flowFiberSerializationService.deserialize<TestObject>(any(), any()))
+        whenever(flowFiberSerializationService.deserialize<TestObject>(any<ByteArray>(), any()))
             .thenReturn(TestObject())
 
         query.execute()
@@ -94,7 +94,7 @@ class PagedFindQueryTest {
         query.setOffset(1)
         query.execute()
 
-        verify(flowFiberSerializationService).deserialize<TestObject>(any(), any())
+        verify(flowFiberSerializationService).deserialize<TestObject>(any<ByteArray>(), any())
         assertEquals(FindAllExternalEventFactory::class.java, factoryArgumentCaptor.firstValue)
     }
 
@@ -108,7 +108,7 @@ class PagedFindQueryTest {
 
         assertThat(query.execute()).isEmpty()
 
-        verify(flowFiberSerializationService, never()).deserialize<TestObject>(any(), any())
+        verify(flowFiberSerializationService, never()).deserialize<TestObject>(any<ByteArray>(), any())
         assertEquals(FindAllExternalEventFactory::class.java, factoryArgumentCaptor.firstValue)
     }
 }

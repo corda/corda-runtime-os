@@ -13,7 +13,7 @@ import net.corda.flow.application.persistence.query.PagedQueryFactory
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.fiber.FlowFiberSerializationService
 import net.corda.v5.application.persistence.PagedQuery
-import net.corda.v5.application.persistence.ParameterisedQuery
+import net.corda.v5.application.persistence.ParameterizedQuery
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -103,8 +103,8 @@ class PersistenceServiceImpl @Activate constructor(
     override fun <T : Any> query(
         queryName: String,
         entityClass: Class<T>
-    ): ParameterisedQuery<T> {
-        return pagedQueryFactory.createNamedParameterisedQuery(queryName, entityClass)
+    ): ParameterizedQuery<T> {
+        return pagedQueryFactory.createNamedParameterizedQuery(queryName, entityClass)
     }
 
     /**

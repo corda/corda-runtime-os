@@ -20,7 +20,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
-class NamedParameterisedQueryTest {
+class NamedParameterizedQueryTest {
 
     private class TestObject
 
@@ -32,7 +32,7 @@ class NamedParameterisedQueryTest {
     private val parametersArgumentCaptor = argumentCaptor<NamedQueryParameters>()
     private val serializeArgumentCaptor = argumentCaptor<Any>()
 
-    private val query = NamedParameterisedQuery(
+    private val query = NamedParameterizedQuery(
         externalEventExecutor = externalEventExecutor,
         flowFiberSerializationService = flowFiberSerializationService,
         queryName = "",
@@ -52,7 +52,7 @@ class NamedParameterisedQueryTest {
     fun `setLimit updates the limit`() {
         whenever(externalEventExecutor.execute(factoryArgumentCaptor.capture(), parametersArgumentCaptor.capture()))
             .thenReturn(listOf(byteBuffer))
-        whenever(flowFiberSerializationService.deserialize<TestObject>(any(), any()))
+        whenever(flowFiberSerializationService.deserialize<TestObject>(any<ByteArray>(), any()))
             .thenReturn(TestObject())
 
         query.execute()
@@ -67,7 +67,7 @@ class NamedParameterisedQueryTest {
     fun `setOffset updates the offset`() {
         whenever(externalEventExecutor.execute(factoryArgumentCaptor.capture(), parametersArgumentCaptor.capture()))
             .thenReturn(listOf(byteBuffer))
-        whenever(flowFiberSerializationService.deserialize<TestObject>(any(), any()))
+        whenever(flowFiberSerializationService.deserialize<TestObject>(any<ByteArray>(), any()))
             .thenReturn(TestObject())
 
         query.execute()
@@ -92,7 +92,7 @@ class NamedParameterisedQueryTest {
     fun `setParameter sets a parameter`() {
         whenever(externalEventExecutor.execute(factoryArgumentCaptor.capture(), parametersArgumentCaptor.capture()))
             .thenReturn(listOf(byteBuffer))
-        whenever(flowFiberSerializationService.deserialize<TestObject>(any(), any()))
+        whenever(flowFiberSerializationService.deserialize<TestObject>(any<ByteArray>(), any()))
             .thenReturn(TestObject())
 
         query.execute()
@@ -120,7 +120,7 @@ class NamedParameterisedQueryTest {
     fun `setParameters overwrites all parameters`() {
         whenever(externalEventExecutor.execute(factoryArgumentCaptor.capture(), parametersArgumentCaptor.capture()))
             .thenReturn(listOf(byteBuffer))
-        whenever(flowFiberSerializationService.deserialize<TestObject>(any(), any()))
+        whenever(flowFiberSerializationService.deserialize<TestObject>(any<ByteArray>(), any()))
             .thenReturn(TestObject())
 
         query.execute()
@@ -151,7 +151,7 @@ class NamedParameterisedQueryTest {
         val result = TestObject()
         whenever(externalEventExecutor.execute(factoryArgumentCaptor.capture(), any()))
             .thenReturn(listOf(byteBuffer))
-        whenever(flowFiberSerializationService.deserialize<TestObject>(any(), any()))
+        whenever(flowFiberSerializationService.deserialize<TestObject>(any<ByteArray>(), any()))
             .thenReturn(result)
 
         query.setOffset(1)
@@ -160,7 +160,7 @@ class NamedParameterisedQueryTest {
 
         assertEquals(listOf(result), query.execute())
 
-        verify(flowFiberSerializationService).deserialize<TestObject>(any(), any())
+        verify(flowFiberSerializationService).deserialize<TestObject>(any<ByteArray>(), any())
         verify(flowFiberSerializationService).serialize<String>(any())
         assertEquals(NamedQueryExternalEventFactory::class.java, factoryArgumentCaptor.firstValue)
     }
@@ -176,7 +176,7 @@ class NamedParameterisedQueryTest {
 
         assertThat(query.execute()).isEmpty()
 
-        verify(flowFiberSerializationService, never()).deserialize<TestObject>(any(), any())
+        verify(flowFiberSerializationService, never()).deserialize<TestObject>(any<ByteArray>(), any())
         verify(flowFiberSerializationService).serialize<String>(any())
         assertEquals(NamedQueryExternalEventFactory::class.java, factoryArgumentCaptor.firstValue)
     }
