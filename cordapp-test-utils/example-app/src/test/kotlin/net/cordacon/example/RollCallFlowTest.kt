@@ -1,12 +1,13 @@
 package net.cordacon.example
 
-import net.corda.testutils.CordaSim
-import net.corda.testutils.HoldingIdentity
-import net.corda.testutils.services.SimpleJsonMarshallingService
-import net.corda.testutils.tools.RPCRequestDataWrapper
-import net.corda.testutils.tools.ResponderMock
+import net.corda.cordapptestutils.HoldingIdentity
+import net.corda.cordapptestutils.RequestData
+import net.corda.cordapptestutils.Simulator
+import net.corda.cordapptestutils.factories.JsonMarshallingServiceFactory
+import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.UntrustworthyData
+import net.corda.v5.application.messaging.receive
 import net.corda.v5.base.types.MemberX500Name
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
@@ -23,7 +24,7 @@ class RollCallFlowTest {
     fun `should request each student to respond to roll call`() {
         // Given a teacher with an initiating flow
         val teacherId = HoldingIdentity.create("Teach")
-        val corda = CordaSim()
+        val corda = Simulator()
         val teacherVNode = corda.createVirtualNode(teacherId, RollCallFlow::class.java)
 
         // And a list of students who will respond predictably
@@ -37,15 +38,22 @@ class RollCallFlowTest {
             "Gamma" to "Yo"
         )
 
-        val responder = ResponderMock<RollCallRequest, RollCallResponse>()
-        responses.forEach {
-            val student = students[it.key]!!
-            responder.whenever(RollCallRequest(student), listOf(RollCallResponse(it.value)))
-            corda.createVirtualNode(HoldingIdentity(MemberX500Name.parse(student)), "roll-call", responder)
+        val responder = mock<ResponderFlow>()
+        whenever(responder.call(any())).then {r ->
+            val session = r.getArgument<FlowSession>(0)
+            val request = session.receive<RollCallRequest>()
+            val student = MemberX500Name.parse(request.unwrap {it}.recipientX500).commonName
+            session.send(RollCallResponse(responses[student]!!))
+        }
+
+        responses.forEach {r ->
+            val student = students[r.key]!!
+            corda.createVirtualNode(HoldingIdentity.create(MemberX500Name.parse(student)), "roll-call", responder)
         }
 
         // When we contact the students
-        val result = teacherVNode.callFlow(RPCRequestDataWrapper.fromData(
+        val result = teacherVNode.callFlow(
+            RequestData.create(
             "r1",
             RollCallFlow::class.java,
             RollCallInitiationRequest(students.values.toList())))
@@ -66,20 +74,26 @@ class RollCallFlowTest {
     fun `should retry twice if any student fails to respond`() {
         // Given a teacher with an initiating flow
         val teacherId = HoldingIdentity.create("Teach")
-        val corda = CordaSim()
+        val corda = Simulator()
         val teacherVNode = corda.createVirtualNode(teacherId, RollCallFlow::class.java)
 
         // And a student who will respond with empty string repeatedly
         val studentId = "CN=Zammo, OU=VIth Form, O=Grange Hill, L=London, C=GB"
-        val responder = ResponderMock<RollCallRequest, RollCallResponse>()
-        responder.whenever(RollCallRequest(studentId), listOf(RollCallResponse("")))
+
+        val responder = mock<ResponderFlow>()
+        whenever(responder.call(any())).then {
+            val session = it.getArgument<FlowSession>(0)
+            session.receive<RollCallRequest>()
+            session.send(RollCallResponse(""))
+        }
 
         // ...for both kinds of flow
-        corda.createVirtualNode(HoldingIdentity(MemberX500Name.parse(studentId)), "roll-call", responder)
-        corda.createVirtualNode(HoldingIdentity(MemberX500Name.parse(studentId)), "absence-call", responder)
+        corda.createVirtualNode(HoldingIdentity.create(MemberX500Name.parse(studentId)), "roll-call", responder)
+        corda.createVirtualNode(HoldingIdentity.create(MemberX500Name.parse(studentId)), "absence-call", responder)
 
         // When we contact the student
-        val result = teacherVNode.callFlow(RPCRequestDataWrapper.fromData(
+        val result = teacherVNode.callFlow(
+            RequestData.create(
             "r1",
             RollCallFlow::class.java,
             RollCallInitiationRequest(listOf(studentId))))
@@ -101,7 +115,7 @@ class RollCallFlowTest {
         flow.flowMessaging = mock()
         flow.flowEngine = mock()
         flow.persistenceService = mock()
-        flow.jsonMarshallingService = SimpleJsonMarshallingService()
+        flow.jsonMarshallingService = JsonMarshallingServiceFactory.create()
 
         whenever(flow.flowEngine.virtualNodeName).thenReturn(teacherId.member)
 
@@ -118,7 +132,8 @@ class RollCallFlowTest {
         whenever(flow.flowEngine.subFlow(any<AbsenceSubFlow>())).thenReturn("")
 
         // When we call the flow for a student who is absent
-        flow.call(RPCRequestDataWrapper.fromData(
+        flow.call(
+            RequestData.create(
             "r1",
             RollCallFlow::class.java,
             RollCallInitiationRequest(listOf(studentId.member.toString()))).toRPCRequestData())

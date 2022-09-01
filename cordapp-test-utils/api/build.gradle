@@ -1,0 +1,29 @@
+
+plugins {
+    id 'org.jetbrains.kotlin.plugin.jpa'
+    id 'org.jetbrains.kotlin.plugin.allopen'
+}
+
+group = "net.corda"
+version = "$cordaApiVersion"
+
+dependencies {
+
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation "net.corda:corda-application:$cordaApiVersion"
+
+    runtimeOnly project(':cordapp-test-utils:test-utils')
+
+    testImplementation "org.junit.jupiter:junit-jupiter:$junit5Version"
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+
+    testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+
+
+}
+
+tasks.named('jar', Jar) {
+    archiveBaseName = "cordapp-test-api"
+}
