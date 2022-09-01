@@ -8,7 +8,6 @@ import net.corda.data.flow.FlowKey
 import net.corda.data.flow.output.FlowStatus
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.rpcops.FlowStatusCacheService
-import net.corda.flow.rpcops.flowstatus.FlowStatusListenerValidationException
 import net.corda.flow.rpcops.flowstatus.FlowStatusUpdateListener
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinator

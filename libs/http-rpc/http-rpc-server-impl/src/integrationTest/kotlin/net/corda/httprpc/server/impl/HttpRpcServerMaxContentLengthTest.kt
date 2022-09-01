@@ -23,7 +23,7 @@ class HttpRpcServerMaxContentLengthTest : HttpRpcServerTestBase() {
         @BeforeAll
         @JvmStatic
         fun setUpBeforeClass() {
-            val httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost",  findFreePort()), context, null, null, MAX_CONTENT_LENGTH)
+            val httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost",  findFreePort()), context, null, null, MAX_CONTENT_LENGTH, 20000L)
             server = HttpRpcServerImpl(
                 listOf(TestHealthCheckAPIImpl()),
                 ::securityManager,
