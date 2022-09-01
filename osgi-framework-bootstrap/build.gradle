@@ -22,6 +22,12 @@ dependencies {
     implementation "org.slf4j:jul-to-slf4j:$slf4jVersion"
     runtimeOnly "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 
+    // For getting default property values from configuration schema
+    implementation 'net.corda:corda-base'
+    implementation 'net.corda:corda-config-schema'
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation project(':libs:configuration:configuration-validation')
+
     // Jackson dependencies for JSON formatted logs
     runtimeOnly "com.fasterxml.jackson.core:jackson-core:$jacksonVersion"
     runtimeOnly "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"

@@ -110,6 +110,27 @@ class ConfigurationValidatorImplTest {
         }
     }
 
+    @Test
+    fun `default values from test schema`() {
+        val validator = createSchemaValidator()
+        val expectedConfig = ConfigFactory.parseString("""
+            testInteger=7
+            testReference.bar=false
+        """.trimIndent())
+
+        val outputConfig = validator.getDefaults(TEST_SCHEMA, TEST_VERSION)
+
+        assertThat(outputConfig).isEqualTo(expectedConfig)
+    }
+
+    @Test
+    fun `throws when retrieving default values from malformed schema`() {
+        val validator = createSchemaValidator()
+        assertThrows<ConfigurationSchemaFetchException> {
+            validator.getDefaults(INVALID_SCHEMA, TEST_VERSION)
+        }
+    }
+
     private fun loadData(dataResource: String): SmartConfig {
         val data = loadResource(dataResource).bufferedReader().readText()
         val rawConfig = ConfigFactory.parseString(data)
