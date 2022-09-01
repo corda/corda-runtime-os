@@ -13,7 +13,7 @@ import org.mockito.kotlin.whenever
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
 
-internal class VirtualNodeManagementSenderImplTest {
+internal class VirtualNodeSenderImplTest {
     private val duration = Duration.ofMillis(1000)
     private val mockResponse = mock<VirtualNodeManagementResponse>()
     private val sender = mock<RPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>>().apply {
@@ -21,7 +21,7 @@ internal class VirtualNodeManagementSenderImplTest {
             mockResponse
         }
     }
-    private val senderWrapper = VirtualNodeManagementSenderImpl(duration, sender)
+    private val senderWrapper = VirtualNodeSenderImpl(duration, sender)
 
     @Test
     fun `test sendAndReceive passes request to sendRequest`() {

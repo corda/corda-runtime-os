@@ -19,7 +19,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import net.corda.virtualnode.rpcops.common.VirtualNodeManagementSender
+import net.corda.virtualnode.rpcops.common.VirtualNodeSender
 import java.nio.file.Files
 import java.nio.file.Path
 import java.security.cert.CertificateFactory
@@ -32,7 +32,7 @@ class CpiValidatorImpl constructor(
     private val cpiPersistence: CpiPersistence,
     private val cpiInfoWriteService: CpiInfoWriteService,
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
-    private val virtualNodeManagementSender: VirtualNodeManagementSender,
+    private val virtualNodeSender: VirtualNodeSender,
     private val cpiCacheDir: Path,
     private val cpiPartsDir: Path,
     private val certificatesService: CertificatesService,
@@ -125,7 +125,7 @@ class CpiValidatorImpl constructor(
                     actor
                 )
             )
-            virtualNodeManagementSender.sendAndReceive(request)
+            virtualNodeSender.sendAndReceive(request)
         }
 
         return fileInfo.checksum

@@ -4,34 +4,34 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
-import net.corda.virtualnode.rpcops.common.VirtualNodeManagementSender
-import net.corda.virtualnode.rpcops.common.VirtualNodeManagementSenderFactory
+import net.corda.virtualnode.rpcops.common.VirtualNodeSender
+import net.corda.virtualnode.rpcops.common.VirtualNodeSenderFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.time.Duration
 
-@Component(service = [VirtualNodeManagementSenderFactory::class])
-class VirtualNodeManagementSenderFactoryImpl @Activate constructor(
+@Component(service = [VirtualNodeSenderFactory::class])
+class VirtualNodeSenderFactoryImpl @Activate constructor(
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory
-) : VirtualNodeManagementSenderFactory {
+) : VirtualNodeSenderFactory {
     companion object {
         private val logger = contextLogger()
     }
 
     /**
-     * Provides an injectable factory to create [VirtualNodeManagementSender]s.
+     * Provides an injectable factory to create [VirtualNodeSender]s.
      *
      * @property timeout is a [Duration]. Defines how long to wait before assuming something went wrong in a given request
      * @property messagingConfig is a [SmartConfig]. This is the config for the given RPCSender to be created
      * @throws CordaRuntimeException If the updated sender cannot not be created.
-     * @return [VirtualNodeManagementSender] is a wrapper object around a sender, and the accompanying timeout
-     * @see VirtualNodeManagementSender
+     * @return [VirtualNodeSender] is a wrapper object around a sender, and the accompanying timeout
+     * @see VirtualNodeSender
      */
-    override fun createSender(timeout: Duration, messagingConfig: SmartConfig): VirtualNodeManagementSender {
+    override fun createSender(timeout: Duration, messagingConfig: SmartConfig): VirtualNodeSender {
         try {
-            return VirtualNodeManagementSenderImpl(
+            return VirtualNodeSenderImpl(
                 timeout,
                 publisherFactory.createRPCSender(SENDER_CONFIG, messagingConfig).apply {
                     start()

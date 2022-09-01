@@ -42,7 +42,7 @@ dependencies {
     implementation project(":libs:utilities")
     implementation project(':components:chunking:chunk-db-write')
     implementation project(':components:membership:certificates-service')
-    implementation project(':components:virtual-node:virtual-node-management-sender')
+    implementation project(':components:virtual-node:virtual-node-rpcops-common')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
 
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"

@@ -5,13 +5,13 @@ import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.virtualnode.rpcops.common.VirtualNodeManagementSender
+import net.corda.virtualnode.rpcops.common.VirtualNodeSender
 import java.time.Duration
 
-class VirtualNodeManagementSenderImpl(
+class VirtualNodeSenderImpl(
     override val timeout: Duration,
     private val sender: RPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>
-) : VirtualNodeManagementSender {
+) : VirtualNodeSender {
     /**
      * Sends the [request] to the virtual node topic in the message bus.
      *

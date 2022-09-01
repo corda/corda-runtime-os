@@ -2,7 +2,7 @@ package net.corda.chunking.db
 
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.libs.configuration.SmartConfig
-import net.corda.virtualnode.rpcops.common.VirtualNodeManagementSender
+import net.corda.virtualnode.rpcops.common.VirtualNodeSender
 import javax.persistence.EntityManagerFactory
 
 interface ChunkDbWriterFactory {
@@ -11,6 +11,6 @@ interface ChunkDbWriterFactory {
         bootConfig: SmartConfig,
         entityManagerFactory: EntityManagerFactory,
         cpiInfoWriteService: CpiInfoWriteService,
-        virtualNodeManagementSender: VirtualNodeManagementSender
+        virtualNodeSender: VirtualNodeSender
     ): ChunkDbWriter
 }

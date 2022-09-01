@@ -17,12 +17,12 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Duration
 
-internal class VirtualNodeManagementSenderFactoryImplTest {
+internal class VirtualNodeSenderFactoryImplTest {
     private val mockRpcSender = mock<RPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>>()
     private val mockPublisherFactory = mock<PublisherFactory>().apply {
         whenever(createRPCSender<VirtualNodeManagementRequest, VirtualNodeManagementResponse>(any(), any())) doReturn mockRpcSender
     }
-    private val senderFactory = VirtualNodeManagementSenderFactoryImpl(mockPublisherFactory)
+    private val senderFactory = VirtualNodeSenderFactoryImpl(mockPublisherFactory)
     @Test
     fun `Validate creation of underlying sender wrapper`() {
         val duration = Duration.ofMillis(1000)

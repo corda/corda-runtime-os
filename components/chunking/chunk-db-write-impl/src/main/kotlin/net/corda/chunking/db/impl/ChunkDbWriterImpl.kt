@@ -5,12 +5,12 @@ import net.corda.chunking.db.ChunkDbWriter
 import net.corda.data.chunking.Chunk
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.subscription.Subscription
-import net.corda.virtualnode.rpcops.common.VirtualNodeManagementSender
+import net.corda.virtualnode.rpcops.common.VirtualNodeSender
 
 class ChunkDbWriterImpl internal constructor(
     private val subscription: Subscription<RequestId, Chunk>,
     private val publisher: Publisher,
-    private val virtualNodeManagementSender: VirtualNodeManagementSender
+    private val virtualNodeSender: VirtualNodeSender
 ) : ChunkDbWriter {
     override val isRunning get() = subscription.isRunning
 
@@ -25,6 +25,6 @@ class ChunkDbWriterImpl internal constructor(
     override fun close() {
         publisher.close()
         subscription.close()
-        virtualNodeManagementSender.close()
+        virtualNodeSender.close()
     }
 }
