@@ -71,8 +71,17 @@ class VirtualNodeEntitiesIntegrationTest {
     fun `can persist and read back Holding Identity entity`() {
         val holdingIdentityShortHash = Generator.randomHoldingIdentityShortHash()
         val holdingIdentity = HoldingIdentityEntity(
-            holdingIdentityShortHash, "a=b", "OU=LLC, O=Bob, L=Dublin, C=IE",
-            "${random.nextInt()}", null, null, null, null, null
+            holdingIdentityShortHash,
+            "a=b",
+            "OU=LLC, O=Bob, L=Dublin, C=IE",
+            "${random.nextInt()}",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
         )
 
         entityManagerFactory.createEntityManager().transaction { em ->
@@ -204,6 +213,8 @@ class VirtualNodeEntitiesIntegrationTest {
         vaultDMLConnectionId = null,
         cryptoDDLConnectionId = null,
         cryptoDMLConnectionId = null,
+        uniquenessDDLConnectionId = null,
+        uniquenessDMLConnectionId = null,
         hsmConnectionId = null
     )
 

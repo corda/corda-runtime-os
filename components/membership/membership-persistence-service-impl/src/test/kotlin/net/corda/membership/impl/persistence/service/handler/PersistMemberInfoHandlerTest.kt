@@ -69,6 +69,7 @@ class PersistMemberInfoHandlerTest {
         CpiIdentifier("TEST_CPI", "1.0", null),
         vaultDmlConnectionId = vaultDmlConnectionId,
         cryptoDmlConnectionId = UUID(0, 0),
+        uniquenessDmlConnectionId = UUID(0, 0),
         timestamp = clock.instant()
     )
 

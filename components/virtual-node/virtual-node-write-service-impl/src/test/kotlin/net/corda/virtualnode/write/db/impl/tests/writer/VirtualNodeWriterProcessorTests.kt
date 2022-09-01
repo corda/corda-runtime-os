@@ -110,15 +110,29 @@ class VirtualNodeWriterProcessorTests {
         VirtualNodeInfo(
             holdingIdentity.toAvro(),
             cpiIdentifier,
-            connectionId, connectionId, connectionId, connectionId,
-            null, "ACTIVE", -1, clock.instant()
+            connectionId,
+            connectionId,
+            connectionId,
+            connectionId,
+            connectionId,
+            connectionId,
+            null,
+            "ACTIVE",
+            -1,
+            clock.instant()
         )
 
     private val vnodeCreationReq =
         VirtualNodeCreateRequest(
-            vnodeInfo.holdingIdentity.x500Name, CPI_ID_SHORT_HASH,
-            "dummy_vault_ddl_config", "dummy_vault_dml_config",
-            "dummy_crypto_ddl_config", "dummy_crypto_dml_config", "update_actor"
+            vnodeInfo.holdingIdentity.x500Name,
+            CPI_ID_SHORT_HASH,
+            "dummy_vault_ddl_config",
+            "dummy_vault_dml_config",
+            "dummy_crypto_ddl_config",
+            "dummy_crypto_dml_config",
+            "dummy_uniqueness_ddl_config",
+            "dummy_uniqueness_dml_config",
+            "update_actor"
         )
 
     private val em = mock<EntityManager>() {
@@ -350,9 +364,15 @@ class VirtualNodeWriterProcessorTests {
     fun `generates group ID during MGM virtual node creation`() {
         val mgmVnodeCreationReq =
             VirtualNodeCreateRequest(
-                mgmName.toString(), CPI_ID_SHORT_HASH,
-                "dummy_vault_ddl_config", "dummy_vault_dml_config",
-                "dummy_crypto_ddl_config", "dummy_crypto_dml_config", "update_actor"
+                mgmName.toString(),
+                CPI_ID_SHORT_HASH,
+                "dummy_vault_ddl_config",
+                "dummy_vault_dml_config",
+                "dummy_crypto_ddl_config",
+                "dummy_crypto_dml_config",
+                "dummy_uniqueness_ddl_config",
+                "dummy_uniqueness_dml_config",
+                "update_actor"
             )
         val vNodeRepo = mock<VirtualNodeEntityRepository> {
             on { getCPIMetadataByChecksum(any()) }.doReturn(
@@ -402,6 +422,8 @@ class VirtualNodeWriterProcessorTests {
                 vnodeInfo.holdingIdentity.groupId,
                 vnodeInfo.holdingIdentity,
                 holdingIdentity.shortHash.value,
+                connectionId,
+                connectionId,
                 connectionId,
                 connectionId,
                 connectionId,
@@ -477,9 +499,15 @@ class VirtualNodeWriterProcessorTests {
     @Test
     fun `sends RPC failure response if CPI checksum is null`() {
         val request = VirtualNodeCreateRequest(
-            vnodeInfo.holdingIdentity.x500Name, null,
-            "dummy_vault_ddl_config", "dummy_vault_dml_config",
-            "dummy_crypto_ddl_config", "dummy_crypto_dml_config", "update_actor"
+            vnodeInfo.holdingIdentity.x500Name,
+            null,
+            "dummy_vault_ddl_config",
+            "dummy_vault_dml_config",
+            "dummy_crypto_ddl_config",
+            "dummy_crypto_dml_config",
+            "dummy_uniqueness_ddl_config",
+            "dummy_uniqueness_dml_config",
+            "update_actor"
         )
         val expectedEnvelope = ExceptionEnvelope(
             IllegalArgumentException::class.java.name,
@@ -492,9 +520,15 @@ class VirtualNodeWriterProcessorTests {
     @Test
     fun `sends RPC failure response if CPI checksum is blank`() {
         val request = VirtualNodeCreateRequest(
-            vnodeInfo.holdingIdentity.x500Name, "",
-            "dummy_vault_ddl_config", "dummy_vault_dml_config",
-            "dummy_crypto_ddl_config", "dummy_crypto_dml_config", "update_actor"
+            vnodeInfo.holdingIdentity.x500Name,
+            "",
+            "dummy_vault_ddl_config",
+            "dummy_vault_dml_config",
+            "dummy_crypto_ddl_config",
+            "dummy_crypto_dml_config",
+            "dummy_uniqueness_ddl_config",
+            "dummy_uniqueness_dml_config",
+            "update_actor"
         )
         val expectedEnvelope = ExceptionEnvelope(
             IllegalArgumentException::class.java.name,
@@ -507,9 +541,15 @@ class VirtualNodeWriterProcessorTests {
     @Test
     fun `sends RPC failure response if Vault DDL connection is provided but Vault DML connection is not`() {
         val request = VirtualNodeCreateRequest(
-            vnodeInfo.holdingIdentity.x500Name, CPI_ID_SHORT_HASH,
-            "dummy_vault_ddl_config", "",
-            "dummy_crypto_ddl_config", "dummy_crypto_dml_config", "update_actor"
+            vnodeInfo.holdingIdentity.x500Name,
+            CPI_ID_SHORT_HASH,
+            "dummy_vault_ddl_config",
+            "",
+            "dummy_crypto_ddl_config",
+            "dummy_crypto_dml_config",
+            "dummy_uniqueness_ddl_config",
+            "dummy_uniqueness_dml_config",
+            "update_actor"
         )
         val expectedEnvelope = ExceptionEnvelope(
             IllegalArgumentException::class.java.name,
@@ -522,9 +562,15 @@ class VirtualNodeWriterProcessorTests {
     @Test
     fun `sends RPC failure response if Crypto DDL connection is provided, Crypto DML connection is not`() {
         val request = VirtualNodeCreateRequest(
-            vnodeInfo.holdingIdentity.x500Name, CPI_ID_SHORT_HASH,
-            "dummy_vault_ddl_config", "dummy_vault_dml_config",
-            "dummy_crypto_ddl_config", null, "update_actor"
+            vnodeInfo.holdingIdentity.x500Name,
+            CPI_ID_SHORT_HASH,
+            "dummy_vault_ddl_config",
+            "dummy_vault_dml_config",
+            "dummy_crypto_ddl_config",
+            null,
+            "dummy_uniqueness_ddl_config",
+            "dummy_uniqueness_dml_config",
+            "update_actor"
         )
         val expectedEnvelope = ExceptionEnvelope(
             IllegalArgumentException::class.java.name,
@@ -535,11 +581,38 @@ class VirtualNodeWriterProcessorTests {
     }
 
     @Test
+    fun `sends RPC failure response if Uniqueness DDL connection is provided, Uniqueness DML connection is not`() {
+        val request = VirtualNodeCreateRequest(
+            vnodeInfo.holdingIdentity.x500Name,
+            CPI_ID_SHORT_HASH,
+            "dummy_vault_ddl_config",
+            "dummy_vault_dml_config",
+            "dummy_crypto_ddl_config",
+            "dummy_crypto_dml_config",
+            "dummy_uniqueness_ddl_config",
+            null,
+            "update_actor"
+        )
+        val expectedEnvelope = ExceptionEnvelope(
+            IllegalArgumentException::class.java.name,
+            "If Uniqueness DDL connection is provided, Uniqueness DML connection needs to be provided as well."
+        )
+
+        testInvalidRequest(request, expectedEnvelope)
+    }
+
+    @Test
     fun `sends RPC failure response if X500 name is null`() {
         val request = VirtualNodeCreateRequest(
-            null, CPI_ID_SHORT_HASH,
-            "dummy_vault_ddl_config", "dummy_vault_dml_config",
-            "dummy_crypto_ddl_config", "dummy_crypto_dml_config", "update_actor"
+            null,
+            CPI_ID_SHORT_HASH,
+            "dummy_vault_ddl_config",
+            "dummy_vault_dml_config",
+            "dummy_crypto_ddl_config",
+            "dummy_crypto_dml_config",
+            "dummy_uniqueness_ddl_config",
+            "dummy_uniqueness_dml_config",
+            "update_actor"
         )
         val expectedEnvelope = ExceptionEnvelope(
             IllegalArgumentException::class.java.name,
@@ -552,9 +625,15 @@ class VirtualNodeWriterProcessorTests {
     @Test
     fun `sends RPC failure response if X500 name can't be parsed`() {
         val request = VirtualNodeCreateRequest(
-            "invalid x500 name", CPI_ID_SHORT_HASH,
-            "dummy_vault_ddl_config", "dummy_vault_dml_config",
-            "dummy_crypto_ddl_config", "dummy_crypto_dml_config", "update_actor"
+            "invalid x500 name",
+            CPI_ID_SHORT_HASH,
+            "dummy_vault_ddl_config",
+            "dummy_vault_dml_config",
+            "dummy_crypto_ddl_config",
+            "dummy_crypto_dml_config",
+            "dummy_uniqueness_ddl_config",
+            "dummy_uniqueness_dml_config",
+            "update_actor"
         )
         val expectedEnvelope = ExceptionEnvelope(
             IllegalArgumentException::class.java.name,

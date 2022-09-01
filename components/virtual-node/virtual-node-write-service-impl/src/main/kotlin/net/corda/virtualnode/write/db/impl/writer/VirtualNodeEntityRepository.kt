@@ -115,7 +115,9 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
                 connections.vaultDdlConnectionId,
                 connections.vaultDmlConnectionId,
                 connections.cryptoDdlConnectionId,
-                connections.cryptoDmlConnectionId
+                connections.cryptoDmlConnectionId,
+                connections.uniquenessDdlConnectionId,
+                connections.uniquenessDmlConnectionId
             )
         } ?: HoldingIdentityEntity(
             holdingIdentity.shortHash.value,
@@ -126,6 +128,8 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
             connections.vaultDmlConnectionId,
             connections.cryptoDdlConnectionId,
             connections.cryptoDmlConnectionId,
+            connections.uniquenessDdlConnectionId,
+            connections.uniquenessDmlConnectionId,
             null
         )
         entityManager.persist(entity)
@@ -196,6 +200,8 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
         connections?.vaultDmlConnectionId,
         connections?.cryptoDdlConnectionId,
         connections?.cryptoDmlConnectionId,
+        connections?.uniquenessDdlConnectionId,
+        connections?.uniquenessDmlConnectionId,
         null
     )
 }

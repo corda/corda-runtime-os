@@ -315,6 +315,7 @@ class MembershipPersistenceTest {
                 CpiIdentifier("PLACEHOLDER", "PLACEHOLDER", null),
                 vaultDmlConnectionId = connectionID,
                 cryptoDmlConnectionId = connectionID,
+                uniquenessDmlConnectionId = connectionID,
                 timestamp = clock.instant()
             )
             virtualNodeReadService.putVNodeInfo(vnodeInfo)

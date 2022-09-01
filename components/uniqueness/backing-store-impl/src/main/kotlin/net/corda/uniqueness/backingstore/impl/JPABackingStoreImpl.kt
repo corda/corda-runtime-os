@@ -387,7 +387,7 @@ open class JPABackingStoreImpl @Activate constructor(
             linkedSetOf(
                 ClassloaderChangeLog.ChangeLogResourceFiles(
                     DbSchema::class.java.packageName,
-                    listOf("net/corda/db/schema/uniqueness/db.changelog-master.xml"),
+                    listOf("net/corda/db/schema/vnode-uniqueness/db.changelog-master.xml"),
                     DbSchema::class.java.classLoader
                 )
             )

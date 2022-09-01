@@ -55,6 +55,7 @@ class SetupVirtualNode(private val context: TaskContext) : Task {
                 cpi.metadata.cpiId,
                 vaultDmlConnectionId = UUID.randomUUID(),
                 cryptoDmlConnectionId = UUID.randomUUID(),
+                uniquenessDmlConnectionId = UUID.randomUUID(),
                 timestamp = Instant.now(),
                 state = VirtualNodeInfo.DEFAULT_INITIAL_STATE
             ) }

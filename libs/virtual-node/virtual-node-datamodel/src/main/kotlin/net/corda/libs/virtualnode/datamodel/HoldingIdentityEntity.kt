@@ -23,6 +23,7 @@ import javax.persistence.Table
  */
 @Entity
 @Table(name = HOLDING_IDENTITY_DB_TABLE, schema = CONFIG)
+@Suppress("LongParameterList")
 data class HoldingIdentityEntity(
     @Id
     @Column(name = "holding_identity_id", nullable = false)
@@ -41,13 +42,26 @@ data class HoldingIdentityEntity(
     var cryptoDDLConnectionId: UUID?,
     @Column(name = "crypto_dml_connection_id", nullable = true)
     var cryptoDMLConnectionId: UUID?,
+    @Column(name = "uniqueness_ddl_connection_id", nullable = true)
+    var uniquenessDDLConnectionId: UUID?,
+    @Column(name = "uniqueness_dml_connection_id", nullable = true)
+    var uniquenessDMLConnectionId: UUID?,
     @Column(name = "hsm_connection_id", nullable = true)
     var hsmConnectionId: UUID?
 ) {
-    fun update(vaultDdlConnectionId: UUID?, vaultDmlConnectionId: UUID?, cryptoDdlConnectionId: UUID?, cryptoDmlConnectionId: UUID?) {
+    fun update(
+        vaultDdlConnectionId: UUID?,
+        vaultDmlConnectionId: UUID?,
+        cryptoDdlConnectionId: UUID?,
+        cryptoDmlConnectionId: UUID?,
+        uniquenessDDLConnectionId: UUID?,
+        uniquenessDMLConnectionId: UUID?
+    ) {
         this.vaultDDLConnectionId = vaultDdlConnectionId
         this.vaultDMLConnectionId = vaultDmlConnectionId
         this.cryptoDDLConnectionId = cryptoDdlConnectionId
         this.cryptoDMLConnectionId = cryptoDmlConnectionId
+        this.uniquenessDDLConnectionId = uniquenessDDLConnectionId
+        this.uniquenessDMLConnectionId = uniquenessDMLConnectionId
     }
 }

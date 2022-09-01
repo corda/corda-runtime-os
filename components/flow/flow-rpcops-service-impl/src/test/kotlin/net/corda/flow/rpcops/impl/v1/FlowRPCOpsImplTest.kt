@@ -50,6 +50,8 @@ class FlowRPCOpsImplTest {
             UUID.randomUUID(),
             UUID.randomUUID(),
             UUID.randomUUID(),
+            UUID.randomUUID(),
+            UUID.randomUUID(),
             VirtualNodeState.ACTIVE,
             0,
             Instant.now()

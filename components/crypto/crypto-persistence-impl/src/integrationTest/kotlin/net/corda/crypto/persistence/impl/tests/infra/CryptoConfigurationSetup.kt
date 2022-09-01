@@ -65,6 +65,7 @@ object CryptoConfigurationSetup {
                 signerSummaryHash = null
             ),
             cryptoDmlConnectionId = CryptoDBSetup.connectionId(CryptoDBSetup.vnodeDb.name),
+            uniquenessDmlConnectionId = UUID.randomUUID(),
             vaultDmlConnectionId = UUID.randomUUID(),
             timestamp = Instant.now()
         )

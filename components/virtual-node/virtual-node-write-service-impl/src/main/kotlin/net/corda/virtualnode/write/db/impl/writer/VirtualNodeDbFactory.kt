@@ -7,6 +7,7 @@ import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.connection.manager.VirtualNodeDbType.CRYPTO
+import net.corda.db.connection.manager.VirtualNodeDbType.UNIQUENESS
 import net.corda.db.connection.manager.VirtualNodeDbType.VAULT
 import net.corda.db.connection.manager.createDbConfig
 import net.corda.db.core.DbPrivilege
@@ -50,7 +51,8 @@ class VirtualNodeDbFactory(
         with(request) {
             return mapOf(
                 Pair(VAULT, createVNodeDb(VAULT, holdingIdentityShortHash, vaultDdlConnection, vaultDmlConnection)),
-                Pair(CRYPTO, createVNodeDb(CRYPTO, holdingIdentityShortHash, cryptoDdlConnection, cryptoDmlConnection))
+                Pair(CRYPTO, createVNodeDb(CRYPTO, holdingIdentityShortHash, cryptoDdlConnection, cryptoDmlConnection)),
+                Pair(UNIQUENESS, createVNodeDb(UNIQUENESS, holdingIdentityShortHash, uniquenessDdlConnection, uniquenessDmlConnection))
             )
         }
     }
