@@ -5,6 +5,10 @@ plugins {
     id 'corda.cli-plugin-packager'
 }
 
+ext {
+    releasable = false
+}
+
 group 'net.corda.cli.deployment'
 
 dependencies {

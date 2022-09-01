@@ -2,7 +2,7 @@ package net.corda.httprpc.test
 
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.durablestream.DurableStreamHelper
-import net.corda.v5.base.stream.DurableCursorBuilder
+import net.corda.httprpc.durablestream.api.DurableCursorBuilder
 
 @Suppress("MagicNumber")
 class NumberSequencesRPCOpsImpl : NumberSequencesRPCOps, PluggableRPCOps<NumberSequencesRPCOps> {

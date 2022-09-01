@@ -8,7 +8,6 @@ import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
 import net.corda.httprpc.PluggableRPCOps
-import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.configuration.helper.getConfig
@@ -39,6 +38,7 @@ import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.rpcops.virtualNodeManagementSender.VirtualNodeManagementSender
 import net.corda.virtualnode.rpcops.virtualNodeManagementSender.VirtualNodeManagementSenderFactory
+import net.corda.virtualnode.rpcops.impl.v1.ExceptionTranslator.Companion.translate
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -221,15 +221,7 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
                     )
                 }
             }
-            is VirtualNodeManagementResponseFailure -> {
-                val exception = resolvedResponse.exception
-                if (exception == null) {
-                    logger.warn("Configuration Management request was unsuccessful but no exception was provided.")
-                    throw InternalServerException("Request was unsuccessful but no exception was provided.")
-                }
-                logger.warn("Remote request to create virtual node responded with exception: ${exception.errorMessage}")
-                throw InternalServerException(exception.errorMessage)
-            }
+            is VirtualNodeManagementResponseFailure -> throw translate(resolvedResponse.exception)
             else -> throw UnknownResponseTypeException(resp.responseType::class.java.name)
         }
     }

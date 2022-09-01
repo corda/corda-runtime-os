@@ -8,10 +8,10 @@ import net.corda.httprpc.client.processing.parametersFrom
 import net.corda.httprpc.client.processing.toWebRequest
 import net.corda.httprpc.client.stream.InMemoryPositionManager
 import net.corda.httprpc.client.stream.TypeUtils
-import net.corda.v5.base.stream.Cursor
-import net.corda.v5.base.stream.FiniteDurableCursor
-import net.corda.v5.base.stream.FiniteDurableCursorBuilder
-import net.corda.v5.base.stream.PositionManager
+import net.corda.httprpc.durablestream.api.Cursor
+import net.corda.httprpc.durablestream.api.FiniteDurableCursor
+import net.corda.httprpc.durablestream.api.FiniteDurableCursorBuilder
+import net.corda.httprpc.durablestream.api.PositionManager
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import net.corda.v5.base.util.uncheckedCast
