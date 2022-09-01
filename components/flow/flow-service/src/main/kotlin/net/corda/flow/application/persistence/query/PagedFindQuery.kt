@@ -19,14 +19,12 @@ class PagedFindQuery<R : Any>(
     private var offset: Int,
 ) : PagedQuery<R> {
 
-    @Suspendable
     override fun setLimit(limit: Int): PagedQuery<R> {
         require (limit >= 0) { "Limit cannot be negative" }
         this.limit = limit
         return this
     }
 
-    @Suspendable
     override fun setOffset(offset: Int): PagedQuery<R> {
         require (offset >= 0) { "Offset cannot be negative" }
         this.offset = offset

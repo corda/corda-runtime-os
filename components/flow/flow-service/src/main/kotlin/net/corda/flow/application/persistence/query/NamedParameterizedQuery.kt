@@ -23,27 +23,23 @@ class NamedParameterizedQuery<R : Any>(
     private var expectedClass: Class<R>,
 ) : ParameterizedQuery<R> {
 
-    @Suspendable
     override fun setLimit(limit: Int): ParameterizedQuery<R> {
         require (limit >= 0) { "Limit cannot be negative" }
         this.limit = limit
         return this
     }
 
-    @Suspendable
     override fun setOffset(offset: Int): ParameterizedQuery<R> {
         require (offset >= 0) { "Offset cannot be negative" }
         this.offset = offset
         return this
     }
 
-    @Suspendable
     override fun setParameter(name: String, value: Any): ParameterizedQuery<R> {
         parameters[name] = value
         return this
     }
 
-    @Suspendable
     override fun setParameters(parameters: Map<String, Any>): ParameterizedQuery<R> {
         this.parameters = parameters.toMutableMap()
         return this
