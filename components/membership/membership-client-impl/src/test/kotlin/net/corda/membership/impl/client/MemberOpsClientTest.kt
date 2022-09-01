@@ -41,7 +41,6 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
