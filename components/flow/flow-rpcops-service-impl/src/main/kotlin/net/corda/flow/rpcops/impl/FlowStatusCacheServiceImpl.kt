@@ -45,7 +45,6 @@ class FlowStatusCacheServiceImpl @Activate constructor(
 
     private companion object {
         val log = contextLogger()
-        const val MAX_WEBSOCKET_CONNECTIONS_PER_FLOW_KEY = 10
     }
 
     private var flowStatusSubscription: CompactedSubscription<FlowKey, FlowStatus>? = null
@@ -134,8 +133,6 @@ class FlowStatusCacheServiceImpl @Activate constructor(
     ): AutoCloseable {
         val flowKey = FlowKey(clientRequestId, holdingIdentity)
 
-        validateMaxConnectionsPerFlowKey(flowKey)
-
         lock.writeLock().withLock {
             statusListenersPerFlowKey.put(flowKey, listener)
         }
@@ -164,19 +161,6 @@ class FlowStatusCacheServiceImpl @Activate constructor(
                 "Unregistered flow status listener: ${listener.id} for clientId: $clientRequestId." +
                         " Total number of open listeners: ${statusListenersPerFlowKey.size()}."
             )
-        }
-    }
-
-    private fun validateMaxConnectionsPerFlowKey(flowKey: FlowKey) {
-        val existingHandlers = lock.readLock().withLock { statusListenersPerFlowKey[flowKey] }
-        val handlersForRequestAndHoldingIdAlreadyExist = existingHandlers != null && existingHandlers.isNotEmpty()
-        if (handlersForRequestAndHoldingIdAlreadyExist) {
-            if (existingHandlers.size >= MAX_WEBSOCKET_CONNECTIONS_PER_FLOW_KEY) {
-                throw FlowStatusListenerValidationException(
-                    "Max WebSocket connections ($MAX_WEBSOCKET_CONNECTIONS_PER_FLOW_KEY) reached for req: ${flowKey.id}, " +
-                            "identity ${flowKey.identity.toCorda().shortHash}."
-                )
-            }
         }
     }
 
