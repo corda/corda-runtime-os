@@ -22,6 +22,7 @@ import net.corda.p2p.crypto.util.hash
 import net.corda.p2p.crypto.util.perform
 import net.corda.p2p.crypto.util.verify
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.util.toBase64
 import net.corda.v5.crypto.SignatureSpec
 import java.nio.ByteBuffer
 import java.security.PublicKey
@@ -75,6 +76,7 @@ class AuthenticationProtocolInitiator(val sessionId: String,
 
     fun generateInitiatorHello(): InitiatorHelloMessage {
         return transition(Step.INIT, Step.SENT_MY_DH_KEY, { initiatorHelloMessage!! }) {
+            println("QQQ in generateInitiatorHello for (${hashCode()}")
             val keyPair = keyPairGenerator.generateKeyPair()
             myPrivateDHKey = keyPair.private
             myPublicDHKey = keyPair.public.encoded
@@ -82,6 +84,7 @@ class AuthenticationProtocolInitiator(val sessionId: String,
             val commonHeader = CommonHeader(MessageType.INITIATOR_HELLO, PROTOCOL_VERSION, sessionId, 0, Instant.now().toEpochMilli())
             val identity = InitiatorHandshakeIdentity(ByteBuffer.wrap(messageDigest.hash(ourPublicKey.encoded)), groupId)
             initiatorHelloMessage = InitiatorHelloMessage(commonHeader, ByteBuffer.wrap(myPublicDHKey!!), supportedModes.toList(), identity)
+            println("QQQ \t public key - ${identity.initiatorPublicKeyHash.array().toBase64()}")
             step = Step.SENT_MY_DH_KEY
             initiatorHelloMessage!!
         }

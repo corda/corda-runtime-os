@@ -344,6 +344,7 @@ internal class SessionManagerImpl(
                 ourIdentityInfo.sessionPublicKey,
                 ourIdentityInfo.holdingIdentity.groupId
             )
+            println("QQQ Creating createInitiator for ${ourIdentityInfo.holdingIdentity.x500Name} (created ${session.hashCode()}")
             messagesAndProtocol.add(Pair(session, session.generateInitiatorHello()))
         }
         return messagesAndProtocol
