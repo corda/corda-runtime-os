@@ -4,20 +4,44 @@ import net.corda.cordapptestutils.internal.persistence.CloseablePersistenceServi
 import net.corda.cordapptestutils.internal.persistence.HsqlPersistenceServiceFactory
 import net.corda.cordapptestutils.internal.persistence.PersistenceServiceFactory
 import net.corda.v5.application.flows.ResponderFlow
+import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.membership.MemberInfo
 
 /**
  * Registers, and looks up, responder flows via their protocol.
  */
-class SimFiberBase(private val persistenceServiceFactory : PersistenceServiceFactory = HsqlPersistenceServiceFactory())
-    : SimFiber {
+class SimFiberBase(
+    private val persistenceServiceFactory : PersistenceServiceFactory = HsqlPersistenceServiceFactory(),
+    private val memberLookUpFactory: MemberLookupFactory = BaseMemberLookupFactory()
+) : SimFiber {
 
     private val nodeClasses = HashMap<MemberX500Name, HashMap<String, Class<out ResponderFlow>>>()
     private val nodeInstances = HashMap<MemberX500Name, HashMap<String, ResponderFlow>>()
     private val persistenceServices = HashMap<MemberX500Name, CloseablePersistenceService>()
+    private val memberInfos = HashMap<MemberX500Name, MemberInfo>()
 
-    override fun registerResponderClass(responder: MemberX500Name, protocol: String, flowClass: Class<out ResponderFlow>) {
+    override val members
+        get() = memberInfos
+
+    override fun registerInitiator(initiator: MemberX500Name) {
+        registerMember(initiator)
+    }
+
+    private fun registerMember(member: MemberX500Name) {
+        if (!memberInfos.contains(member)) {
+            memberInfos[member] = BaseMemberInfo(member)
+        }
+    }
+
+    override fun registerResponderClass(
+        responder: MemberX500Name,
+        protocol: String,
+        flowClass: Class<out ResponderFlow>) {
+
+        registerMember(responder)
+
         if(nodeInstances[responder]?.get(protocol) != null) {
             throw IllegalStateException("Member \"$responder\" has already registered " +
                     "flow instance for protocol \"$protocol\"")
@@ -33,7 +57,13 @@ class SimFiberBase(private val persistenceServiceFactory : PersistenceServiceFac
         }
     }
 
-    override fun registerResponderInstance(responder: MemberX500Name, protocol: String, responderFlow: ResponderFlow) {
+    override fun registerResponderInstance(
+        responder: MemberX500Name,
+        protocol: String,
+        responderFlow: ResponderFlow) {
+
+        registerMember(responder)
+
         if(nodeClasses[responder]?.get(protocol) != null) {
             throw IllegalStateException("Member \"$responder\" has already registered " +
                     "flow class for protocol \"$protocol\"")
@@ -58,6 +88,10 @@ class SimFiberBase(private val persistenceServiceFactory : PersistenceServiceFac
             persistenceServices[member] = persistenceServiceFactory.createPersistenceService(member)
         }
         return persistenceServices[member]!!
+    }
+
+    override fun createMemberLookup(member: MemberX500Name): MemberLookup {
+        return memberLookUpFactory.createMemberLookup(member, this)
     }
 
     override fun close() {

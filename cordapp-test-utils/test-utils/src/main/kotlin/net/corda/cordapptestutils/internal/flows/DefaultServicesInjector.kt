@@ -7,6 +7,7 @@ import net.corda.cordapptestutils.internal.utils.injectIfRequired
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
@@ -46,6 +47,14 @@ class DefaultServicesInjector : FlowServicesInjector {
         flow.injectIfRequired(
             PersistenceService::class.java,
             getOrCreatePersistenceService(member, fiber))
+
+        flow.injectIfRequired(
+            MemberLookup::class.java,
+            getOrCreateMemberLookup(member, fiber))
+    }
+
+    private fun getOrCreateMemberLookup(member: MemberX500Name, fiber: SimFiber): MemberLookup {
+        return fiber.createMemberLookup(member)
     }
 
     private fun getOrCreatePersistenceService(member: MemberX500Name, fiber: SimFiber): PersistenceService  {

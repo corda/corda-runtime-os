@@ -39,7 +39,7 @@ class RollCallTest {
             RequestData.create(
                 "r1",
                 RollCallFlow::class.java,
-                RollCallInitiationRequest(students)
+                ""
         ))
 
         // Then we should get the response back
@@ -89,7 +89,7 @@ class RollCallTest {
             RequestData.create(
             "r1",
             RollCallFlow::class.java,
-            RollCallInitiationRequest(students)
+            ""
         ))
 
         // Then we should still get the response back

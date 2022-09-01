@@ -7,6 +7,7 @@ import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.annotations.Suspendable
@@ -24,6 +25,9 @@ class HelloFlow : RPCStartableFlow {
 
     @CordaInject
     lateinit var persistenceService: PersistenceService
+
+    @CordaInject
+    lateinit var memberLookup: MemberLookup
 
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
