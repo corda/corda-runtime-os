@@ -106,14 +106,11 @@ subprojects {
             toolchain {
                 languageVersion = of(javaVersion.majorVersion.toInteger())
             }
-
-            if (releaseType != 'GA' && releaseType != 'RC') {
-                withSourcesJar()
-            }
+            withSourcesJar()
         }
     }
 
-    apply plugin: "org.gradle.test-retry" 
+    apply plugin: "org.gradle.test-retry"
 
     pluginManager.withPlugin('org.jetbrains.kotlin.jvm') {
         apply plugin: 'io.gitlab.arturbosch.detekt'
