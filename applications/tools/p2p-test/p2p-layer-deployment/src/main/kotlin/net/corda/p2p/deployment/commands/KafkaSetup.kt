@@ -16,7 +16,7 @@ import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
-import net.corda.schema.TestSchema.Companion.APP_RECEIVED_MESSAGES_TOPIC
+import net.corda.testschema.TestSchema.Companion.APP_RECEIVED_MESSAGES_TOPIC
 import java.io.File
 import java.io.StringWriter
 import java.lang.Integer.min
