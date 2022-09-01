@@ -28,7 +28,7 @@ class CreateCpb : Runnable {
     @Option(names = ["--cpb-name"], required = true, description = ["CPB name"])
     lateinit var cpbName: String
 
-    @Option(names = ["--cpb-version"], required = true, description=["CPB version"], converter = [VersionConverter::class])
+    @Option(names = ["--cpb-version"], description=["CPB version"], converter = [VersionConverter::class])
     var cpbVersion: Int =1
 
     @Option(names = ["--upgrade"], arity = "1", description = ["Allow upgrade without flow draining"])
