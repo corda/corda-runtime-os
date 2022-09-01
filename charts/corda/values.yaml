@@ -103,13 +103,13 @@ kafka:
       password: ""
   # SASL configuration for client connection to Kafka
   sasl:
-    # -- SASL username for client connection to Kafka 
+    # -- SASL username for client connection to Kafka
     username: "user"
-    # -- SASL password for client connection to Kafka 
+    # -- SASL password for client connection to Kafka
     password: ""
-    # -- SASL mechanism for client connection to Kafka 
+    # -- SASL mechanism for client connection to Kafka
     mechanism: "SCRAM-SHA-256"
-    # -- enable/disable SASL for client connection to Kafka 
+    # -- enable/disable SASL for client connection to Kafka
     enabled: false
 
 # Configuration for cluster bootstrap
@@ -161,6 +161,9 @@ bootstrap:
     requests: { }
     # -- the CPU/memory resource limits for the bootstrap containers
     limits: { }
+
+  # node selector for the bootstrap containers
+  nodeSelector: { }
 
 # worker configuration
 workers:
@@ -224,7 +227,7 @@ workers:
     # -- DB worker salt, defaults to a value randomly-generated on install
     salt: ""
     # -- DB worker passphrase, defaults to a value randomly-generated on install
-    passphrase: ""    
+    passphrase: ""
     # resource limits and requests configuration for the DB worker containers.
     resources:
       # -- the CPU/memory resource requests for the DB worker containers
