@@ -148,6 +148,17 @@ resources:
 {{- end }}
 
 {{/*
+Node selector for the bootstrapper
+*/}}
+
+{{- define "corda.bootstrapNodeSelector" }}
+{{- with .Values.bootstrap.nodeSelector | default .Values.nodeSelector }}
+nodeSelector:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+{{- end }}
+
+{{/*
 Worker environment variables
 */}}
 {{- define "corda.workerEnv" -}}
@@ -281,8 +292,8 @@ resources:
     cpu: {{ default .Values.resources.limits.cpu ( get .Values.workers .worker ).resources.limits.cpu }}
   {{- end }}
   {{- if or .Values.resources.limits.memory ( get .Values.workers .worker ).resources.limits.memory }}
-    memory: {{ default .Values.resources.limits.memory ( get .Values.workers .worker ).resources.limits.memory }}  
-  {{- end }} 
+    memory: {{ default .Values.resources.limits.memory ( get .Values.workers .worker ).resources.limits.memory }}
+  {{- end }}
 {{- end }}
 
 {{/*

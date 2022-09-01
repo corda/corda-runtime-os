@@ -18,6 +18,7 @@ import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.PersistenceException
+import javax.persistence.Tuple
 
 /**
  * Class for DB reads and writes.  Handles the query execution.
@@ -293,6 +294,28 @@ class DBAccess(
                 """.trimIndent(),
                     TopicRecordEntry::class.java
                 ).setMaxResults(1).resultList.firstOrNull()?.recordOffset ?: 0L
+            }
+        }
+    }
+
+    /**
+     * Returns the maximal value of record offset for each [CordaTopicPartition]
+     */
+    fun getLatestRecordOffsets(): Map<CordaTopicPartition, Long> {
+        return executeWithErrorHandling("read latest offsets") { entityManager ->
+            entityManager.createQuery(
+                """
+                 select ${TopicRecordEntry::topic.name}, ${TopicRecordEntry::partition.name}, max(${TopicRecordEntry::recordOffset.name})
+                 from topic_record
+                 group by ${TopicRecordEntry::topic.name}, ${TopicRecordEntry::partition.name}
+                """.trimIndent(),
+                Tuple::class.java)
+            .resultList
+            .associate { r ->
+                val topic = r.get(0) as String
+                val partition = (r.get(1) as Number).toInt()
+                val recordOffset = (r.get(2) as Number).toLong()
+                CordaTopicPartition(topic, partition) to recordOffset
             }
         }
     }
