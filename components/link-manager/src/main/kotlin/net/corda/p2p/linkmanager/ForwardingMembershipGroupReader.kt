@@ -10,6 +10,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.linkmanager.PublicKeyReader.Companion.toKeyAlgorithm
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.toBase64
 import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -32,8 +33,13 @@ internal class ForwardingMembershipGroupReader(
 
     override fun getMemberInfo(requestingIdentity: HoldingIdentity, publicKeyHashToLookup: ByteArray):
             LinkManagerMembershipGroupReader.MemberInfo? {
+        println("QQQ forward, groupReaderProvider: $groupReaderProvider, " +
+                "id: ${publicKeyHashToLookup.toBase64()}, requestingIdentity -> $requestingIdentity")
         val lookup = groupReaderProvider
             .getGroupReader(requestingIdentity)
+            .also {
+                println("QQQ reader -> $it")
+            }
             .lookupBySessionKey(PublicKeyHash.Companion.parse(publicKeyHashToLookup))
         return lookup?.toLinkManagerMemberInfo(HoldingIdentity(lookup.name, requestingIdentity.groupId))
     }

@@ -559,8 +559,12 @@ internal class SessionManagerImpl(
         }
 
         val sessionManagerConfig = config.get()
+        println("QQQ 2 - members are: $members; hostedIdentityInSameGroup - ${hostedIdentityInSameGroup.x500Name} " +
+                "hash - ${message.source.initiatorPublicKeyHash.array().toBase64()}")
         val peer = members.getMemberInfo(hostedIdentityInSameGroup, message.source.initiatorPublicKeyHash.array())
         if (peer == null) {
+            println("QQQ 2 - got null!")
+            logger.warn("QQQ 2")
             logger.peerHashNotInMembersMapWarning(
                 message::class.java.simpleName,
                 message.header.sessionId,
@@ -607,8 +611,14 @@ internal class SessionManagerImpl(
             return null
         }
 
+        println(
+            "QQQ 1 - members are: $members; hostedIdentityInSameGroup - ${hostedIdentityInSameGroup.x500Name} hash - " +
+                    "${initiatorIdentityData.initiatorPublicKeyHash.array().toBase64()}"
+        )
         val peer = members.getMemberInfo(hostedIdentityInSameGroup, initiatorIdentityData.initiatorPublicKeyHash.array())
         if (peer == null) {
+            println("QQQ 1 - GOT null!!!")
+            logger.warn("QQQ 1")
             logger.peerHashNotInMembersMapWarning(
                 message::class.java.simpleName,
                 message.header.sessionId,
