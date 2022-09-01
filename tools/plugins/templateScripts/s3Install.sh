@@ -24,7 +24,7 @@ done
 wget "${s3Bucket}/cliInstall.zip" -O "${tempDir}/cliInstall.zip"
 
 if [ "$verify" = true ]; then
-  wget "${s3Bucket}/cliInstall..zip.md5" -O "${tempDir}/cliInstall.zip.md5"
+  wget "${s3Bucket}/cliInstall.zip.md5" -O "${tempDir}/cliInstall.zip.md5"
   if md5sum -c "${tempDir}/cliInstall.zip.mpd5"; then
     echo "md5 checksum verified!"
   else
