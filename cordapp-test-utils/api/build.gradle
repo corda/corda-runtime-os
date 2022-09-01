@@ -2,6 +2,11 @@
 plugins {
     id 'org.jetbrains.kotlin.plugin.jpa'
     id 'org.jetbrains.kotlin.plugin.allopen'
+    id 'corda.common-publishing'
+}
+
+ext {
+    releasable = true
 }
 
 dependencies {
