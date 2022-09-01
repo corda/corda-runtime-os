@@ -5,7 +5,7 @@ import net.corda.chunking.db.ChunkDbWriter
 import net.corda.data.chunking.Chunk
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.subscription.Subscription
-import net.corda.virtualnode.rpcops.virtualNodeManagementSender.VirtualNodeManagementSender
+import net.corda.virtualnode.rpcops.common.VirtualNodeManagementSender
 
 class ChunkDbWriterImpl internal constructor(
     private val subscription: Subscription<RequestId, Chunk>,

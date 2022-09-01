@@ -26,7 +26,6 @@ import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsExcep
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.Root.MGM_DEFAULT_GROUP_ID
-import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -150,60 +149,64 @@ internal class VirtualNodeWriterProcessor(
         respFuture: CompletableFuture<VirtualNodeManagementResponse>
     ) {
         val em = dbConnectionManager.getClusterEntityManagerFactory().createEntityManager()
-        val shortHash = ShortHash.Companion.of(virtualNodeDBResetRequest.holdingIdentityShortHash)
-        val holdingIdentityEntity = em.use {
-            virtualNodeEntityRepository.getHoldingIdentityEntity(shortHash)
-        }!!
-        val connections = dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().transaction {
-            mapOf(
-                VirtualNodeDbType.VAULT to mapOf(
-                    DDL to it.findDbConnectionByNameAndPrivilege(VirtualNodeDbType.VAULT.getSchemaName(shortHash), DDL),
-                    DML to it.findDbConnectionByNameAndPrivilege(VirtualNodeDbType.VAULT.getSchemaName(shortHash), DML)
-                ),
-                VirtualNodeDbType.CRYPTO to mapOf(
-                    DDL to it.findDbConnectionByNameAndPrivilege(VirtualNodeDbType.CRYPTO.getSchemaName(shortHash), DDL),
-                    DML to it.findDbConnectionByNameAndPrivilege(VirtualNodeDbType.CRYPTO.getSchemaName(shortHash), DML)
+        val shortHashes = virtualNodeDBResetRequest.holdingIdentityShortHashes.map { shortHashString ->
+            val shortHash = ShortHash.Companion.of(shortHashString)
+            val holdingIdentityEntity = em.use {
+                virtualNodeEntityRepository.getHoldingIdentityEntity(shortHash)
+            }!!
+            val connections = dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().transaction {
+                mapOf(
+                    VirtualNodeDbType.VAULT to mapOf(
+                        DDL to it.findDbConnectionByNameAndPrivilege(VirtualNodeDbType.VAULT.getSchemaName(shortHash), DDL),
+                        DML to it.findDbConnectionByNameAndPrivilege(VirtualNodeDbType.VAULT.getSchemaName(shortHash), DML)
+                    ),
+                    VirtualNodeDbType.CRYPTO to mapOf(
+                        DDL to it.findDbConnectionByNameAndPrivilege(VirtualNodeDbType.CRYPTO.getSchemaName(shortHash), DDL),
+                        DML to it.findDbConnectionByNameAndPrivilege(VirtualNodeDbType.CRYPTO.getSchemaName(shortHash), DML)
+                    )
                 )
+            }
+            val holdingId = HoldingIdentity(MemberX500Name.parse(holdingIdentityEntity.x500Name), holdingIdentityEntity.mgmGroupId)
+            dropVirtualNodeDBs(
+                vnodeDbFactory.createVNodeDbs(
+                    shortHash,
+                    holdingIdentityEntity.run {
+                        VirtualNodeCreateRequest(
+                            x500Name,
+                            "",
+                            connections[VirtualNodeDbType.VAULT]?.get(DDL)?.config,
+                            connections[VirtualNodeDbType.VAULT]?.get(DML)?.config,
+                            connections[VirtualNodeDbType.CRYPTO]?.get(DDL)?.config,
+                            connections[VirtualNodeDbType.CRYPTO]?.get(DML)?.config,
+                            virtualNodeDBResetRequest.updateActor
+                        )
+                    }
+                ).values
             )
-        }
-        val holdingId = HoldingIdentity(MemberX500Name.parse(holdingIdentityEntity.x500Name), holdingIdentityEntity.mgmGroupId)
-        dropVirtualNodeDBs(
-            vnodeDbFactory.createVNodeDbs(
+            val vNodeDbs = vnodeDbFactory.createVNodeDbs(
                 shortHash,
                 holdingIdentityEntity.run {
                     VirtualNodeCreateRequest(
                         x500Name,
                         "",
-                        connections[VirtualNodeDbType.VAULT]?.get(DDL)?.config,
-                        connections[VirtualNodeDbType.VAULT]?.get(DML)?.config,
-                        connections[VirtualNodeDbType.CRYPTO]?.get(DDL)?.config,
-                        connections[VirtualNodeDbType.CRYPTO]?.get(DML)?.config,
+                        null,
+                        null,
+                        null,
+                        null,
                         virtualNodeDBResetRequest.updateActor
                     )
                 }
-            ).values
-        )
-        val vNodeDbs = vnodeDbFactory.createVNodeDbs(
-            shortHash,
-            holdingIdentityEntity.run {
-                VirtualNodeCreateRequest(
-                    x500Name,
-                    "",
-                    null,
-                    null,
-                    null,
-                    null,
-                    virtualNodeDBResetRequest.updateActor
-                )
-            }
-        )
-        createSchemasAndUsers(holdingId, vNodeDbs.values)
-        runDbMigrations(holdingId, vNodeDbs.values)
+            )
+            createSchemasAndUsers(holdingId, vNodeDbs.values)
+            runDbMigrations(holdingId, vNodeDbs.values)
+
+            shortHash.value
+        }
 
         respFuture.complete(
             VirtualNodeManagementResponse(
                 instant,
-                VirtualNodeDBResetResponse(shortHash.value)
+                VirtualNodeDBResetResponse(shortHashes)
             )
         )
     }

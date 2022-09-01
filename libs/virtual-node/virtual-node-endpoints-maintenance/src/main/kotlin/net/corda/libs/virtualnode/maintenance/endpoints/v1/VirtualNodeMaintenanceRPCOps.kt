@@ -5,6 +5,7 @@ import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPUT
 import net.corda.httprpc.annotations.HttpRpcPathParameter
+import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
 import net.corda.libs.virtualnode.maintenance.endpoints.v1.types.ChangeVirtualNodeStateResponse
@@ -35,7 +36,15 @@ interface VirtualNodeMaintenanceRPCOps : RpcOps {
         description = "Uploads a CPI",
         responseDescription = "The request Id calculated for a CPI upload request"
     )
-    fun forceCpiUpload(upload: HttpFileUpload, resetDb: String = "true"): CpiUploadRPCOps.CpiUploadResponse
+    fun forceCpiUpload(
+        upload: HttpFileUpload,
+        @HttpRpcQueryParameter(
+            default = "true",
+            description = "Set whether we want to reset the node db when we upload the new CPI",
+            required = false
+        )
+        resetDb: String = "true"
+    ): CpiUploadRPCOps.CpiUploadResponse
 
     /**
      * Updates a virtual nodes state.

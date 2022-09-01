@@ -23,7 +23,7 @@ import net.corda.utilities.PathProvider
 import net.corda.utilities.TempPathProvider
 import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import net.corda.virtualnode.rpcops.virtualNodeManagementSender.VirtualNodeManagementSender
+import net.corda.virtualnode.rpcops.common.VirtualNodeManagementSender
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

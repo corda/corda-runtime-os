@@ -8,8 +8,6 @@ import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.data.virtualnode.VirtualNodeDBResetRequest
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
-import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
-import net.corda.data.virtualnode.VirtualNodeStateChangeRequest
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.core.CpiMetadata
@@ -21,7 +19,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import net.corda.virtualnode.rpcops.virtualNodeManagementSender.VirtualNodeManagementSender
+import net.corda.virtualnode.rpcops.common.VirtualNodeManagementSender
 import java.nio.file.Files
 import java.nio.file.Path
 import java.security.cert.CertificateFactory
@@ -125,13 +123,9 @@ class CpiValidatorImpl constructor(
                 VirtualNodeDBResetRequest(
                     nodes.map { it.holdingIdentity.shortHash.value },
                     actor
-                    // TODO: It might make a lot of sense to have a "why field" here
-                    //  - IE (endpoint, new cpi, etc.)
-                    //  - ((audit))
                 )
             )
             virtualNodeManagementSender.sendAndReceive(request)
-            // TODO: Propagate up response in refactor
         }
 
         return fileInfo.checksum
