@@ -6,6 +6,8 @@ import net.corda.flow.application.persistence.external.events.FindAllExternalEve
 import net.corda.flow.application.persistence.external.events.FindAllParameters
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.fiber.FlowFiberSerializationService
+import net.corda.v5.application.persistence.CordaPersistenceException
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -110,5 +112,27 @@ class PagedFindQueryTest {
 
         verify(flowFiberSerializationService, never()).deserialize<TestObject>(any<ByteArray>(), any())
         assertEquals(FindAllExternalEventFactory::class.java, factoryArgumentCaptor.firstValue)
+    }
+
+    @Test
+    fun `rethrows CordaRuntimeExceptions as CordaPersistenceExceptions`() {
+        whenever(externalEventExecutor.execute(factoryArgumentCaptor.capture(), any()))
+            .thenThrow(CordaRuntimeException("boom"))
+
+        query.setLimit(10)
+        query.setOffset(1)
+
+        assertThrows<CordaPersistenceException> { query.execute() }
+    }
+
+    @Test
+    fun `does not rethrow general exceptions as CordaPersistenceExceptions`() {
+        whenever(externalEventExecutor.execute(factoryArgumentCaptor.capture(), any()))
+            .thenThrow(IllegalStateException("boom"))
+
+        query.setLimit(10)
+        query.setOffset(1)
+
+        assertThrows<IllegalStateException> { query.execute() }
     }
 }
