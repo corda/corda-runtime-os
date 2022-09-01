@@ -12,8 +12,8 @@ import net.corda.httprpc.server.impl.security.provider.credentials.DefaultCreden
 import net.corda.httprpc.tools.HttpPathUtils.joinResourceAndEndpointPaths
 import net.corda.httprpc.tools.isDuplexChannel
 import net.corda.httprpc.tools.isStaticallyExposedGet
-import net.corda.v5.base.stream.isFiniteDurableStreamsMethod
-import net.corda.v5.base.stream.returnsDurableCursorBuilder
+import net.corda.httprpc.durablestream.api.isFiniteDurableStreamsMethod
+import net.corda.httprpc.durablestream.api.returnsDurableCursorBuilder
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace

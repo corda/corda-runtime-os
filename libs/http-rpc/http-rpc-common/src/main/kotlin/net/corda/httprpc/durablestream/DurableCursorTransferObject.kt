@@ -1,9 +1,9 @@
 package net.corda.httprpc.durablestream
 
-import net.corda.v5.base.stream.Cursor
-import net.corda.v5.base.stream.FiniteDurableCursor
-import net.corda.v5.base.stream.FiniteDurableCursorBuilder
-import net.corda.v5.base.stream.PositionManager
+import net.corda.httprpc.durablestream.api.Cursor
+import net.corda.httprpc.durablestream.api.FiniteDurableCursor
+import net.corda.httprpc.durablestream.api.FiniteDurableCursorBuilder
+import net.corda.httprpc.durablestream.api.PositionManager
 import java.util.function.Supplier
 
 /**

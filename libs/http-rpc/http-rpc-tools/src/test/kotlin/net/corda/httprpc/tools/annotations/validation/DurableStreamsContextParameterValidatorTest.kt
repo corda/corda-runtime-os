@@ -7,7 +7,7 @@ import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
-import net.corda.v5.base.stream.DurableCursorBuilder
+import net.corda.httprpc.durablestream.api.DurableCursorBuilder
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 
