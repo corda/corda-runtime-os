@@ -1,3 +1,4 @@
+
 {
   "openapi" : "3.0.1",
   "info" : {
@@ -1287,7 +1288,18 @@
         "tags" : [ "Virtual Node Maintenance API" ],
         "description" : "Uploads a CPI",
         "operationId" : "post_maintenance_virtualnode_forcecpiupload",
-        "parameters" : [ ],
+        "parameters" : [ {
+          "name" : "resetdb",
+          "in" : "query",
+          "description" : "Set whether we want to reset the node db when we upload the new CPI",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "description" : "Set whether we want to reset the node db when we upload the new CPI",
+            "nullable" : false,
+            "example" : "string"
+          }
+        } ],
         "requestBody" : {
           "description" : "requestBody",
           "content" : {
@@ -1301,11 +1313,6 @@
                     "format" : "binary",
                     "nullable" : false,
                     "example" : "No example available for this type"
-                  },
-                  "resetDb" : {
-                    "type" : "boolean",
-                    "nullable" : false,
-                    "example" : true
                   }
                 }
               }

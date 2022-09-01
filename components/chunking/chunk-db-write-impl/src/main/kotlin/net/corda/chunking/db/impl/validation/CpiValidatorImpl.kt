@@ -92,9 +92,6 @@ class CpiValidatorImpl constructor(
         publisher.update(requestId, "Extracting Liquibase files from CPKs in CPI")
         val cpkDbChangeLogEntities = cpi.extractLiquibaseScripts()
 
-        // Put vnodes into maintenance
-        log.info("All nodes for Cpi ${cpi.metadata.cpiId}<${cpi.metadata.cpiId}> has been set to response")
-        publisher.update(requestId, "Putting all virtual nodes into maintenance mode")
         val nodes = virtualNodeInfoReadService.get(groupId)
         val actor = fileInfo.actor
             ?: throw CordaRuntimeException("Actor is undefined for forceUpload operation $requestId")
