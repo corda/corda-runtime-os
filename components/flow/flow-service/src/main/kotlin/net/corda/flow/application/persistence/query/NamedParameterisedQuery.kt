@@ -7,13 +7,13 @@ import net.corda.flow.application.persistence.external.events.NamedQueryParamete
 import net.corda.flow.application.persistence.wrapWithPersistenceException
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.fiber.FlowFiberSerializationService
-import net.corda.v5.application.persistence.ParameterizedQuery
+import net.corda.v5.application.persistence.ParameterisedQuery
 
 /**
- * [NamedParameterizedQuery] is used to set and execute named queries.
+ * [NamedParameterisedQuery] is used to set and execute named queries.
  */
 @Suppress("LongParameterList")
-class NamedParameterizedQuery<R : Any>(
+class NamedParameterisedQuery<R : Any>(
     private val externalEventExecutor: ExternalEventExecutor,
     private val flowFiberSerializationService: FlowFiberSerializationService,
     private val queryName: String,
@@ -21,26 +21,26 @@ class NamedParameterizedQuery<R : Any>(
     private var limit: Int,
     private var offset: Int,
     private var expectedClass: Class<R>,
-) : ParameterizedQuery<R> {
+) : ParameterisedQuery<R> {
 
-    override fun setLimit(limit: Int): ParameterizedQuery<R> {
+    override fun setLimit(limit: Int): ParameterisedQuery<R> {
         require (limit >= 0) { "Limit cannot be negative" }
         this.limit = limit
         return this
     }
 
-    override fun setOffset(offset: Int): ParameterizedQuery<R> {
+    override fun setOffset(offset: Int): ParameterisedQuery<R> {
         require (offset >= 0) { "Offset cannot be negative" }
         this.offset = offset
         return this
     }
 
-    override fun setParameter(name: String, value: Any): ParameterizedQuery<R> {
+    override fun setParameter(name: String, value: Any): ParameterisedQuery<R> {
         parameters[name] = value
         return this
     }
 
-    override fun setParameters(parameters: Map<String, Any>): ParameterizedQuery<R> {
+    override fun setParameters(parameters: Map<String, Any>): ParameterisedQuery<R> {
         this.parameters = parameters.toMutableMap()
         return this
     }

@@ -22,7 +22,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
-class NamedParameterizedQueryTest {
+class NamedParameterisedQueryTest {
 
     private class TestObject
 
@@ -34,7 +34,7 @@ class NamedParameterizedQueryTest {
     private val parametersArgumentCaptor = argumentCaptor<NamedQueryParameters>()
     private val serializeArgumentCaptor = argumentCaptor<Any>()
 
-    private val query = NamedParameterizedQuery(
+    private val query = NamedParameterisedQuery(
         externalEventExecutor = externalEventExecutor,
         flowFiberSerializationService = flowFiberSerializationService,
         queryName = "",

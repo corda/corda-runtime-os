@@ -17,21 +17,21 @@ class PagedQueryFactory @Activate constructor(
 ) {
 
     /**
-     * Create a [NamedParameterizedQuery] to execute named queries.
+     * Create a [NamedParameterisedQuery] to execute named queries.
      *
      * Sets default values of [PagedQuery] offset to 0, and [PagedQuery] limit to [Int.MAX_VALUE].
      *
      * @param queryName The name of the query to execute.
      * @param expectedClass The type that the named query returns and is deserialized into.
      *
-     * @return [NamedParameterizedQuery] instance that can be used to execute queries.
+     * @return [NamedParameterisedQuery] instance that can be used to execute queries.
      */
     @Suppress("Unused")
     fun <R : Any> createNamedParameterizedQuery(
         queryName: String,
         expectedClass: Class<R>
-    ): NamedParameterizedQuery<R> {
-        return NamedParameterizedQuery(
+    ): NamedParameterisedQuery<R> {
+        return NamedParameterisedQuery(
             externalEventExecutor = externalEventExecutor,
             flowFiberSerializationService = flowFiberSerializationService,
             queryName = queryName,
