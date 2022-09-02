@@ -23,8 +23,7 @@ class CpbReaderV2Test {
         val cpi = CpbReaderV2.readCpi(
             cpbStream,
             tmp,
-            "",
-            false
+            ""
         )
 
         Assertions.assertAll(

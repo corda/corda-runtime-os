@@ -65,7 +65,7 @@ class CpkReadServiceImpl @Activate constructor(
 
     override fun loadCPI(resourceName: String): Cpi {
         return getInputStream(resourceName).buffered().use { input ->
-            CpbReaderV2.readCpi(input, expansionLocation = cpkDir, verifySignature = true)
+            CpbReaderV2.readCpi(input, expansionLocation = cpkDir)
         }.let { newCpi ->
             val cpiId = newCpi.metadata.cpiId
             cpis.putIfAbsent(cpiId, newCpi) ?: newCpi

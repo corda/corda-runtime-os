@@ -20,8 +20,7 @@ internal object CpbReaderV2 {
     fun readCpi(
         cpbInputStream: InputStream,
         expansionLocation: Path,
-        cpiLocation: String? = null,
-        verifySignature: Boolean
+        cpiLocation: String? = null
     ): Cpi {
         // Read input stream, so we can process it through different classes that will consume the stream
         val cpbBytes = cpbInputStream.readAllBytes()
@@ -37,8 +36,7 @@ internal object CpbReaderV2 {
             .loadCpi(
                 cpbBytes,
                 expansionLocation,
-                cpiLocation,
-                verifySignature
+                cpiLocation
             )
     }
 }

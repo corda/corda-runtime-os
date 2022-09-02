@@ -18,30 +18,28 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.exception.PackagingException
-import net.corda.libs.packaging.internal.CpiLoader
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 
-internal class CpbLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
+internal class CpbLoaderV2(private val clock: Clock = UTCClock()) {
 
-    override fun loadCpi(
+    fun loadCpi(
         byteArray: ByteArray,
         expansionLocation: Path,
-        cpiLocation: String?,
-        verifySignature: Boolean
+        cpiLocation: String?
     ): Cpi {
 
         // Calculate file hash
         val md = MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name)
 
-        JarInputStream(DigestInputStream(ByteArrayInputStream(byteArray), md), false).use {
-            val mainAttributes = it.manifest.mainAttributes
+        JarInputStream(DigestInputStream(ByteArrayInputStream(byteArray), md), false).use { jarInputStream ->
+            val mainAttributes = jarInputStream.manifest.mainAttributes
             val cpks = mutableListOf<Cpk>()
 
             while (true) {
-                val jarEntry = it.nextEntry ?: break
+                val jarEntry = jarInputStream.nextEntry ?: break
                 if (isCpk(jarEntry)) {
-                    val cpkBytes = it.readAllBytes()
+                    val cpkBytes = jarInputStream.readAllBytes()
                     val cpk = CpkReader.readCpk(
                         cpkBytes.inputStream(),
                         expansionLocation,
@@ -51,7 +49,7 @@ internal class CpbLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
                     )
                     cpks.add(cpk)
                 }
-                it.closeEntry()
+                jarInputStream.closeEntry()
             }
 
             return object : Cpi {
