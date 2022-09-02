@@ -4,11 +4,13 @@ import net.corda.cordapptestutils.HoldingIdentity
 import net.corda.cordapptestutils.RequestData
 import net.corda.cordapptestutils.Simulator
 import net.corda.cordapptestutils.factories.JsonMarshallingServiceFactory
+import net.corda.cordapptestutils.tools.FlowChecker
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.UntrustworthyData
 import net.corda.v5.application.messaging.receive
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.membership.MemberInfo
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Test
@@ -19,6 +21,11 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class RollCallFlowTest {
+
+    @Test
+    fun `should pass flow checks that allow Corda to find and build it`() {
+        FlowChecker.check(RollCallFlow::class.java)
+    }
 
     @Test
     fun `should request each student to respond to roll call`() {
@@ -56,10 +63,10 @@ class RollCallFlowTest {
             RequestData.create(
             "r1",
             RollCallFlow::class.java,
-            RollCallInitiationRequest(students.values.toList())))
+            ""))
 
         // Then their responses should be tallied in the report
-        assertThat(result, `is`("""
+         assertThat(result, `is`("""
             TEACH: Alpha?
             ALPHA: Yep
             TEACH: Beta?
@@ -96,7 +103,7 @@ class RollCallFlowTest {
             RequestData.create(
             "r1",
             RollCallFlow::class.java,
-            RollCallInitiationRequest(listOf(studentId))))
+            ""))
 
         // Then it should just be the teacher calling into empty air
         assertThat(result, `is`("""
@@ -116,11 +123,16 @@ class RollCallFlowTest {
         flow.flowEngine = mock()
         flow.persistenceService = mock()
         flow.jsonMarshallingService = JsonMarshallingServiceFactory.create()
+        flow.memberLookup = mock()
 
         whenever(flow.flowEngine.virtualNodeName).thenReturn(teacherId.member)
 
         // And a student who we'll mimic being absent
         val studentId = HoldingIdentity.create("Zammo")
+
+        val memberInfo = mock<MemberInfo>()
+        whenever(memberInfo.name).thenReturn(studentId.member)
+        whenever(flow.memberLookup.lookup()).thenReturn(listOf(memberInfo))
 
         val flowSession = mock<FlowSession>()
         whenever(flowSession.counterparty).thenReturn(studentId.member)
@@ -136,7 +148,7 @@ class RollCallFlowTest {
             RequestData.create(
             "r1",
             RollCallFlow::class.java,
-            RollCallInitiationRequest(listOf(studentId.member.toString()))).toRPCRequestData())
+            "").toRPCRequestData())
 
         // Then the subflow should have been called twice
         verify(flow.flowEngine, times(2)).subFlow(any<AbsenceSubFlow>())

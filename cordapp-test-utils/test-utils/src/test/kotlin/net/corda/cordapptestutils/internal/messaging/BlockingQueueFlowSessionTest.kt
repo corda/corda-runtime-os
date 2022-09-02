@@ -26,14 +26,16 @@ class BlockingQueueFlowSessionTest {
             receiver,
             PingAckFlow::class.java,
             fromInitiatorToResponder,
-            fromResponderToInitiator)
+            fromResponderToInitiator
+        )
 
         val receivingSession = BlockingQueueFlowSession(
             receiver,
             sender,
             PingAckResponderFlow::class.java,
             fromResponderToInitiator,
-            fromInitiatorToResponder)
+            fromInitiatorToResponder
+        )
 
         // When we send a message
         val payload = PingAckMessage("Ping")
