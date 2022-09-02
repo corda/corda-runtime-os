@@ -10,7 +10,7 @@ import com.fasterxml.jackson.databind.deser.ContextualDeserializer
 import com.fasterxml.jackson.databind.module.SimpleModule
 import net.corda.common.json.serialization.jacksonObjectMapper
 import net.corda.httprpc.durablestream.DurableCursorTransferObject
-import net.corda.v5.base.stream.Cursor
+import net.corda.httprpc.durablestream.api.Cursor
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.trace
 import net.corda.v5.base.util.uncheckedCast
@@ -56,7 +56,7 @@ internal object SecureHashDeserializer : JsonDeserializer<SecureHash>() {
     override fun deserialize(parser: JsonParser, context: DeserializationContext): SecureHash {
         log.trace { "Deserialize." }
         try {
-            return uncheckedCast(SecureHash.create(parser.text))
+            return uncheckedCast(SecureHash.parse(parser.text))
                 .also { log.trace { "Deserialize completed." } }
         } catch (e: Exception) {
             "Invalid hash ${parser.text}: ${e.message}".let {

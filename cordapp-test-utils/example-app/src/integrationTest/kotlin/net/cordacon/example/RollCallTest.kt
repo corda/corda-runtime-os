@@ -1,8 +1,8 @@
 package net.cordacon.example
 
-import net.corda.testutils.FakeCorda
-import net.corda.testutils.HoldingIdentity
-import net.corda.testutils.tools.RPCRequestDataWrapper
+import net.corda.cordapptestutils.HoldingIdentity
+import net.corda.cordapptestutils.RequestData
+import net.corda.cordapptestutils.Simulator
 import net.corda.v5.base.types.MemberX500Name
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
@@ -13,10 +13,10 @@ class RollCallTest {
     @Test
     fun `should get roll call from multiple recipients`() {
         // Given a RollCallFlow that's been uploaded to Corda for a teacher
-        val corda = FakeCorda()
+        val corda = Simulator()
         val teacher = MemberX500Name.parse(
             "CN=Ben Stein, OU=Economics, O=Glenbrook North High School, L=Chicago, C=US")
-        val teacherId = HoldingIdentity(teacher)
+        val teacherId = HoldingIdentity.create(teacher)
         val teacherVNode = corda.createVirtualNode(teacherId, RollCallFlow::class.java)
 
         // and recipients with the responder flow
@@ -30,15 +30,16 @@ class RollCallTest {
             "CN=$it, OU=Economics, O=Glenbrook North High School, L=Chicago, C=US"
         }
         students.forEach { corda.createVirtualNode(
-            HoldingIdentity(MemberX500Name.parse(it)),
+            HoldingIdentity.create(MemberX500Name.parse(it)),
             RollCallResponderFlow::class.java,
             AbsenceCallResponderFlow::class.java) }
 
         // When we invoke it in Corda
-        val response = teacherVNode.callFlow(RPCRequestDataWrapper.fromData(
-            "r1",
-            RollCallFlow::class.java,
-            RollCallInitiationRequest(students)
+        val response = teacherVNode.callFlow(
+            RequestData.create(
+                "r1",
+                RollCallFlow::class.java,
+                ""
         ))
 
         // Then we should get the response back
@@ -68,8 +69,8 @@ class RollCallTest {
     @Test
     fun `should default to using the org name if a student has no common name`() {
         // Given a RollCallFlow that's been uploaded to Corda
-        val corda = FakeCorda()
-        val teacherId = HoldingIdentity(MemberX500Name.parse("O=BEN STEIN, L=Chicago, C=US"))
+        val corda = Simulator()
+        val teacherId = HoldingIdentity.create(MemberX500Name.parse("O=BEN STEIN, L=Chicago, C=US"))
         val teacherVNode = corda.createVirtualNode(teacherId, RollCallFlow::class.java)
 
         // and recipients with the responder and absence flow
@@ -78,16 +79,17 @@ class RollCallTest {
         }
 
         students.forEach { corda.createVirtualNode(
-            HoldingIdentity(MemberX500Name.parse(it)),
+            HoldingIdentity.create(MemberX500Name.parse(it)),
             RollCallResponderFlow::class.java,
             AbsenceCallResponderFlow::class.java)
         }
 
         // When we invoke it in Corda
-        val response = teacherVNode.callFlow(RPCRequestDataWrapper.fromData(
+        val response = teacherVNode.callFlow(
+            RequestData.create(
             "r1",
             RollCallFlow::class.java,
-            RollCallInitiationRequest(students)
+            ""
         ))
 
         // Then we should still get the response back

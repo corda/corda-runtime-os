@@ -30,13 +30,13 @@ import net.corda.v5.cipher.suite.ConfigurationSecrets
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceExtensions
 import net.corda.v5.cipher.suite.CryptoServiceProvider
+import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.GeneratedKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
 import net.corda.v5.cipher.suite.SharedSecretSpec
 import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.cipher.suite.SigningSpec
 import net.corda.v5.cipher.suite.schemes.KeyScheme
-import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SignatureSpec
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.test.assertEquals

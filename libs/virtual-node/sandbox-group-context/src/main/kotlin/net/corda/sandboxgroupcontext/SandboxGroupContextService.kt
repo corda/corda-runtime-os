@@ -103,7 +103,7 @@ interface SandboxGroupContextService: AutoCloseable {
      * instances that exist inside the [SandboxGroup][net.corda.sandbox.SandboxGroup]'s CPKs.
      * The [DigestAlgorithmFactoryProvider][net.corda.crypto.core.DigestAlgorithmFactoryProvider]
      * component will discover these services when the sandbox uses its
-     * [DigestService][net.corda.v5.crypto.DigestService] for the first time.
+     * [DigestService][net.corda.v5.cipher.suite.DigestService] for the first time.
      *
      * @param sandboxGroupContext
      *

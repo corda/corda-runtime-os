@@ -5,6 +5,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.PackagingConstants.CPK_DEPENDENCIES_FILE_ENTRY_V2
 import net.corda.libs.packaging.PackagingConstants.CPK_DEPENDENCIES_FORMAT_VERSION2
+import net.corda.libs.packaging.PackagingConstants.CPK_FORMAT_VERSION2_MAINBUNDLE_PLACEHOLDER
 import net.corda.libs.packaging.signerSummaryHash
 import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CpkIdentifier
@@ -108,7 +109,7 @@ class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
             ),
             type = cpkType,
             manifest = cpkManifest,
-            mainBundle = ".",
+            mainBundle = CPK_FORMAT_VERSION2_MAINBUNDLE_PLACEHOLDER,
             fileChecksum = fileChecksum,
             cordappManifest = cordappManifest,
             cordappCertificates = cordappCertificates,

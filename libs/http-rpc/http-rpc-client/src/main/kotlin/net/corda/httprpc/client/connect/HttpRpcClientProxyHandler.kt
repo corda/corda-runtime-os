@@ -18,11 +18,15 @@ import net.corda.httprpc.client.processing.toWebRequest
 import net.corda.httprpc.tools.HttpPathUtils.joinResourceAndEndpointPaths
 import net.corda.httprpc.tools.annotations.extensions.path
 import net.corda.httprpc.tools.isStaticallyExposedGet
-import net.corda.v5.base.stream.returnsDurableCursorBuilder
+import net.corda.httprpc.durablestream.api.returnsDurableCursorBuilder
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Method
+import java.lang.reflect.ParameterizedType
+import net.corda.httprpc.ResponseCode
+import net.corda.httprpc.client.exceptions.InternalErrorException
+import net.corda.httprpc.response.ResponseEntity
 
 /**
  * [HttpRpcClientProxyHandler] is responsible for converting method invocations to web requests that are called against the server,
@@ -96,15 +100,34 @@ internal class HttpRpcClientProxyHandler<I : RpcOps>(
 
         val parameters = method.parametersFrom(args)
         val context = RequestContext.fromAuthenticationConfig(authenticationConfig)
-        return if (method.returnType.isAssignableFrom(Void::class.java) || method.returnType.isAssignableFrom(Void.TYPE)) {
-            client.call(method.endpointHttpVerb, parameters.toWebRequest(rawPath), context)
-            null
-        } else if (method.returnType == String::class.java) {
-            client.call(method.endpointHttpVerb, parameters.toWebRequest(rawPath), context).body
-        } else {
-            client.call(method.endpointHttpVerb, parameters.toWebRequest(rawPath), method.genericReturnType, context).body
+        return when {
+            (method.returnType.isAssignableFrom(Void::class.java) || method.returnType.isAssignableFrom(Void.TYPE)) -> {
+                client.call(method.endpointHttpVerb, parameters.toWebRequest(rawPath), context)
+                null
+            }
+            method.returnType == String::class.java -> {
+                client.call(method.endpointHttpVerb, parameters.toWebRequest(rawPath), context).body
+            }
+            method.returnType == ResponseEntity::class.java -> {
+                val methodParameterizedType = method.genericReturnType as ParameterizedType
+                val itemType = methodParameterizedType.actualTypeArguments[0]
+
+                val response = client.call(
+                    method.endpointHttpVerb,
+                    parameters.toWebRequest(rawPath),
+                    itemType,
+                    context
+                )
+                ResponseEntity(response.responseStatus.toResponseCode(), response.body)
+            }
+            else -> {
+                client.call(method.endpointHttpVerb, parameters.toWebRequest(rawPath), method.genericReturnType, context).body
+            }
         }.also { log.trace { """Invoke "${method.name}" completed.""" } }
     }
+
+    private fun Int.toResponseCode() = ResponseCode.values().find { it.statusCode == this }
+        ?: throw InternalErrorException("Status code $this not implemented")
 
     private val Method.endpointPath: String?
         get() =

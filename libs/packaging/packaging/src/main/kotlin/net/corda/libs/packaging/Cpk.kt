@@ -43,5 +43,14 @@ interface Cpk {
      */
     @Throws(IOException::class)
     fun getResourceAsStream(resourceName : String) : InputStream
+
+    /**
+     * Returns an [InputStream] pointing to the main bundle of the CPK.
+     *
+     * @return an [InputStream] reading from the main bundle
+     * @throws [IOException] if a resource with the provided name is not found
+     */
+    @Throws(IOException::class)
+    fun getMainBundle() : InputStream
 }
 

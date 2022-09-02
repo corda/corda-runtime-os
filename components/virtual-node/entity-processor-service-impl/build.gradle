@@ -35,6 +35,7 @@ dependencies {
     implementation project(':libs:db:db-admin-impl')
     implementation project(':libs:db:db-core')
     implementation project(':libs:db:db-orm')
+    implementation project(':libs:flows:external-event-responses')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(":libs:messaging:messaging")
     implementation project(':libs:virtual-node:sandbox-group-context')
@@ -87,6 +88,7 @@ dependencies {
     integrationTestImplementation project(':components:virtual-node:sandbox-group-context-service')
     integrationTestImplementation project(':testing:test-utilities')
 
+    integrationTestRuntimeOnly project(':libs:flows:external-event-responses-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')

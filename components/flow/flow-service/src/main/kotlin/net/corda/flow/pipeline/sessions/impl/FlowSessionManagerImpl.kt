@@ -1,5 +1,7 @@
 package net.corda.flow.pipeline.sessions.impl
 
+import java.nio.ByteBuffer
+import java.time.Instant
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.MessageDirection
@@ -21,8 +23,6 @@ import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.nio.ByteBuffer
-import java.time.Instant
 
 @Component(service = [FlowSessionManager::class])
 class FlowSessionManagerImpl @Activate constructor(
@@ -122,6 +122,22 @@ class FlowSessionManagerImpl @Activate constructor(
         return sessionIds.mapNotNull { sessionId ->
             val sessionState = getAndRequireSession(checkpoint, sessionId)
             sessionManager.getNextReceivedEvent(sessionState)?.let { sessionState to it }
+        }
+    }
+
+    override fun getSessionsWithNextMessageClose(
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>
+    ): List<SessionState> {
+        return sessionIds.mapNotNull { sessionId ->
+            val sessionState = getAndRequireSession(checkpoint, sessionId)
+            val receivedEventsState = sessionState.receivedEventsState
+            val lastProcessedSequenceNum = receivedEventsState.lastProcessedSequenceNum
+            receivedEventsState.undeliveredMessages.firstOrNull()?.let { message ->
+                if (message.sequenceNum <= lastProcessedSequenceNum && message.payload is SessionClose) {
+                    sessionState
+                } else null
+            }
         }
     }
 

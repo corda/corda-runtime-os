@@ -1,3 +1,4 @@
+import net.corda.libs.packaging.PackagingConstants.CPK_FORMAT_VERSION2_MAINBUNDLE_PLACEHOLDER
 import net.corda.libs.packaging.internal.v2.CpkLoaderV2
 import net.corda.libs.packaging.testutils.TestUtils
 import net.corda.libs.packaging.testutils.cpk.TestCpkV2Builder
@@ -38,7 +39,7 @@ class CpkLoaderV2Test {
                 )
             },
             { assertEquals(0, cpk.metadata.dependencies.size) },
-            { assertEquals(".", cpk.metadata.mainBundle) },
+            { assertEquals(CPK_FORMAT_VERSION2_MAINBUNDLE_PLACEHOLDER, cpk.metadata.mainBundle) },
         )
     }
 }

@@ -66,6 +66,7 @@ dependencies {
     runtimeOnly project(':components:crypto:crypto-service-impl')
     runtimeOnly project(':components:crypto:crypto-softhsm-impl')
     runtimeOnly project(":libs:db:db-orm-impl")
+    runtimeOnly project(':libs:flows:external-event-responses-impl')
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
     runtimeOnly project(":libs:messaging:messaging-impl")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")

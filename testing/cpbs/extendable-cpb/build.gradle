@@ -4,7 +4,7 @@ plugins {
 }
 
 description 'Animal CPB'
-group 'net.corda.testing.animals'
+group 'net.cordapp.testing.animals'
 
 cordapp {
     targetPlatformVersion platformVersion as Integer

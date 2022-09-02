@@ -42,7 +42,7 @@ class SandboxGroupContextTest {
 
     private val virtualNodeContext = VirtualNodeContext(
         holdingIdentity,
-        cpksMetadata.map { SecureHash.create("DUMMY:1234567890abcdef") }.toSet(),
+        cpksMetadata.map { SecureHash.parse("DUMMY:1234567890abcdef") }.toSet(),
         SandboxGroupType.FLOW,
         SingletonSerializeAsToken::class.java,
         null

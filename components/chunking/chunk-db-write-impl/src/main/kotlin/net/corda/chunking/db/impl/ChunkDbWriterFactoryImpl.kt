@@ -11,6 +11,7 @@ import net.corda.chunking.db.impl.validation.CpiValidatorImpl
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.data.chunking.Chunk
 import net.corda.libs.configuration.SmartConfig
+import net.corda.membership.certificate.service.CertificatesService
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -31,7 +32,8 @@ import javax.persistence.EntityManagerFactory
 class ChunkDbWriterFactoryImpl(
     private val subscriptionFactory: SubscriptionFactory,
     private val publisherFactory: PublisherFactory,
-    private val tempPathProvider: PathProvider
+    private val tempPathProvider: PathProvider,
+    private val certificatesService: CertificatesService
 ) : ChunkDbWriterFactory {
 
     @Activate
@@ -39,8 +41,10 @@ class ChunkDbWriterFactoryImpl(
         @Reference(service = SubscriptionFactory::class)
         subscriptionFactory: SubscriptionFactory,
         @Reference(service = PublisherFactory::class)
-        publisherFactory: PublisherFactory
-    ) : this(subscriptionFactory, publisherFactory, TempPathProvider())
+        publisherFactory: PublisherFactory,
+        @Reference(service = CertificatesService::class)
+        certificatesService: CertificatesService
+    ) : this(subscriptionFactory, publisherFactory, TempPathProvider(), certificatesService)
 
     companion object {
         internal const val GROUP_NAME = "cpi.chunk.writer"
@@ -107,6 +111,7 @@ class ChunkDbWriterFactoryImpl(
             cpiInfoWriteService,
             cpiCacheDir,
             cpiPartsDir,
+            certificatesService,
             UTCClock()
         )
         val processor = ChunkWriteToDbProcessor(statusPublisher, chunkPersistence, validator)

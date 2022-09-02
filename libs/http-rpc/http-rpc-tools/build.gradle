@@ -11,11 +11,12 @@ dependencies {
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "net.corda:corda-base"
     implementation project(':libs:http-rpc:http-rpc')
+    implementation project(':libs:http-rpc:http-rpc-common')
 
     compileOnly "org.osgi:osgi.annotation"
 }
 
-jacocoTestCoverageVerification {
+tasks.named("jacocoTestCoverageVerification", JacocoCoverageVerification) {
     violationRules {
         rule {
             limit {

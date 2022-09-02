@@ -34,7 +34,7 @@ class ZipTweakerTest {
     fun `Ensure a jar with removed signature can be read`() {
         val cpk = workflowCPKPath.openStream().use { CpkReader.readCpk(it, testDir) }
         val algo = "SHA-256"
-        val originalEntries = ZipInputStream(cpk.getResourceAsStream(cpk.metadata.mainBundle)).use { zipInputStream ->
+        val originalEntries = ZipInputStream(cpk.getMainBundle()).use { zipInputStream ->
             generateSequence { zipInputStream.nextEntry }.map {
                 it.name to let {
                     val md = MessageDigest.getInstance(algo)
@@ -47,7 +47,7 @@ class ZipTweakerTest {
         }
         val dest = testDir.resolve("mainBundle.jar")
         Files.newOutputStream(testDir.resolve("mainBundle.jar")).use { outputStream ->
-            cpk.getResourceAsStream(cpk.metadata.mainBundle).use {
+            cpk.getMainBundle().use {
                 it.transferTo(outputStream)
             }
         }
@@ -59,7 +59,7 @@ class ZipTweakerTest {
                 jarInputStream.copyTo(OutputStream.nullOutputStream())
             }
         }
-        val unsignedJarEntries = ZipInputStream(cpk.getResourceAsStream(cpk.metadata.mainBundle)).use { zipInputStream ->
+        val unsignedJarEntries = ZipInputStream(cpk.getMainBundle()).use { zipInputStream ->
                 generateSequence { zipInputStream.nextEntry }.map {
                     it.name to let {
                         val md = MessageDigest.getInstance(algo)

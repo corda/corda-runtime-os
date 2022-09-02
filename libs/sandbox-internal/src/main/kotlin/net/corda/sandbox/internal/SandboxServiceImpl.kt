@@ -17,8 +17,10 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.framework.Bundle
+import org.osgi.framework.Bundle.RESOLVED
 import org.osgi.framework.BundleContext
 import org.osgi.framework.BundleException
+import org.osgi.framework.Constants.FRAGMENT_HOST
 import org.osgi.framework.Constants.SYSTEM_BUNDLE_ID
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -33,6 +35,7 @@ import kotlin.streams.asSequence
 
 
 /** An implementation of [SandboxCreationService] and [SandboxContextService]. */
+@Suppress("TooManyFunctions")
 @Component(service = [SandboxCreationService::class, SandboxContextService::class])
 @RequireSandboxHooks
 internal class SandboxServiceImpl @Activate constructor(
@@ -160,8 +163,9 @@ internal class SandboxServiceImpl @Activate constructor(
         securityDomain: String,
         startBundles: Boolean
     ): SandboxGroup {
-        if (securityDomain.contains('/'))
-            throw SandboxException("Security domain cannot contain a '/' character.")
+        sandboxForbidsThat(securityDomain.contains('/')) {
+            "Security domain cannot contain a '/' character."
+        }
 
         // Verify that CPK files were not tampered with
         // TODO there is a small time window between verification and installation during which CPK files might still be modified
@@ -176,10 +180,14 @@ internal class SandboxServiceImpl @Activate constructor(
             val mainBundle = installBundle(
                 "${cpk.metadata.cpkId.name}-${cpk.metadata.cpkId.version}/${cpk.metadata.mainBundle}",
                 // TODO - only pass in metadata and inject in service to get binary
-                cpk.getResourceAsStream(cpk.metadata.mainBundle),
+                cpk.getMainBundle(),
                 sandboxId,
                 securityDomain
             )
+            sandboxForbidsThat(isFragment(mainBundle)) {
+                "CPK main bundle $mainBundle cannot be a fragment"
+            }
+
             val libraryBundles = cpk.metadata.libraries.mapTo(LinkedHashSet()) { libraryJar ->
                 installBundle(
                     "${cpk.metadata.cpkId.name}-${cpk.metadata.cpkId.version}/$libraryJar",
@@ -210,6 +218,24 @@ internal class SandboxServiceImpl @Activate constructor(
             newSandbox.grantVisibility(newSandboxes - newSandbox)
         }
 
+        // Ensure that all of these bundles are resolved before we start them.
+        if (!bundleUtils.resolveBundles(bundles)) {
+            val allFailed = bundles.filter { it.state < RESOLVED }
+            val ex = SandboxException("Failed to resolve bundles: ${allFailed.joinToString()}")
+            for (failed in allFailed) {
+                try {
+                    // We expect this to throw a BundleException.
+                    failed.start()
+
+                    // We don't expect to reach here, but just in case...
+                    failed.stop()
+                } catch (e: BundleException) {
+                    ex.addSuppressed(e)
+                }
+            }
+            throw ex
+        }
+
         // We only start the bundles once all the CPKs' bundles have been installed and sandboxed, since there are
         // likely dependencies between the CPKs' bundles.
         if (startBundles) {
@@ -237,8 +263,8 @@ internal class SandboxServiceImpl @Activate constructor(
      * Calculates [cpk]'s checksum and validates it against expected value
      */
     private fun verifyCpkChecksum(cpk: Cpk) {
-        if (checksum(cpk.getInputStream()) != cpk.metadata.fileChecksum) {
-            throw SandboxException("File checksum validation failed for CPK ${cpk.metadata.cpkId.name} during sandbox creation")
+        sandboxRequiresThat(checksum(cpk.getInputStream()) == cpk.metadata.fileChecksum) {
+            "File checksum validation failed for CPK ${cpk.metadata.cpkId.name} during sandbox creation"
         }
     }
 
@@ -286,10 +312,9 @@ internal class SandboxServiceImpl @Activate constructor(
             throw SandboxException("Could not install $bundleSource as a bundle in sandbox $sandboxId.", e)
         }
 
-        if (bundle.symbolicName == null)
-            throw SandboxException(
-                "Bundle at $bundleSource does not have a symbolic name, which would prevent serialisation."
-            )
+        sandboxForbidsThat(bundle.symbolicName == null) {
+            "Bundle at $bundleSource does not have a symbolic name, which would prevent serialisation."
+        }
         return bundle
     }
 
@@ -299,7 +324,9 @@ internal class SandboxServiceImpl @Activate constructor(
      * Throws [SandboxException] if a bundle cannot be started.
      * */
     private fun startBundles(bundles: Collection<Bundle>) {
-        bundles.forEach { bundle ->
+        // OSGi merges fragments with their host bundle,
+        // and so we only start non-fragment bundles.
+        bundles.filterNot(::isFragment).forEach { bundle ->
             try {
                 bundle.start()
             } catch (e: BundleException) {
@@ -307,4 +334,19 @@ internal class SandboxServiceImpl @Activate constructor(
             }
         }
     }
+
+    private fun isFragment(bundle: Bundle): Boolean {
+        return bundle.headers.get(FRAGMENT_HOST) != null
+    }
 }
+
+// "Syntactic sugar" around throwing a SandboxException, just to shut Detekt up.
+private inline fun sandboxForbidsThat(condition: Boolean, message: () -> String) {
+    if (condition) {
+        throw SandboxException(message())
+    }
+}
+
+// "Syntactic sugar" around throwing a SandboxException, just to shut Detekt up.
+private inline fun sandboxRequiresThat(condition: Boolean, message: () -> String)
+    = sandboxForbidsThat(!condition, message)

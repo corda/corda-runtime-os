@@ -2,7 +2,7 @@ package net.cordapp.flowworker.development.testflows
 
 import java.time.Instant
 import java.util.UUID
-import net.corda.testing.bundles.dogs.Dog
+import net.cordapp.testing.bundles.dogs.Dog
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
@@ -53,6 +53,21 @@ class PersistenceFlow : RPCStartableFlow {
 
             val foundDog = persistenceService.find(Dog::class.java, id)
             log.info("Found Dog: $foundDog")
+
+            log.info("Launching name query")
+            val namedQueryDog = persistenceService.query("Dog.summon", Dog::class.java)
+                .setLimit(100)
+                .setOffset(0)
+                .setParameter("name", "Penny")
+            val queriedDogs = namedQueryDog.execute()
+            log.info("Query for Penny returned the following dogs: $queriedDogs")
+
+            log.info("Launching findAll")
+            val findAllQuery = persistenceService.findAll(Dog::class.java)
+                .setLimit(100)
+                .setOffset(0)
+            val allDogs = findAllQuery.execute()
+            log.info("findAll returned the following dogs: $allDogs")
 
             val mergeDog = Dog(id, "Penny", Instant.now(), "Bob")
             val updatedDog = persistenceService.merge(mergeDog)

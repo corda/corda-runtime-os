@@ -6,7 +6,7 @@ import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.flow.rpcops.FlowRPCOpsServiceException
 import net.corda.flow.rpcops.FlowStatusCacheService
 import net.corda.flow.rpcops.factory.MessageFactory
-import net.corda.flow.rpcops.impl.flowstatus.websocket.registerFlowStatusFeedHooks
+import net.corda.flow.rpcops.impl.flowstatus.websocket.WebSocketFlowStatusUpdateListener
 import net.corda.flow.rpcops.v1.FlowRpcOps
 import net.corda.flow.rpcops.v1.types.request.StartFlowParameters
 import net.corda.flow.rpcops.v1.types.response.FlowStatusResponse
@@ -14,6 +14,7 @@ import net.corda.flow.rpcops.v1.types.response.FlowStatusResponses
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.response.ResponseEntity
 import net.corda.httprpc.ws.DuplexChannel
 import net.corda.httprpc.ws.WebSocketValidationException
 import net.corda.libs.configuration.SmartConfig
@@ -67,7 +68,7 @@ class FlowRPCOpsImpl @Activate constructor(
     override fun startFlow(
         holdingIdentityShortHash: String,
         startFlow: StartFlowParameters
-    ): FlowStatusResponse {
+    ): ResponseEntity<FlowStatusResponse> {
         if (publisher == null) {
             throw FlowRPCOpsServiceException("FlowRPC has not been initialised ")
         }
@@ -89,7 +90,7 @@ class FlowRPCOpsImpl @Activate constructor(
                 clientRequestId,
                 vNode,
                 flowClassName,
-                startFlow.requestData,
+                startFlow.requestData.escapedJson,
                 flowContextPlatformProperties
             )
         val status = messageFactory.createStartFlowStatus(clientRequestId, vNode, flowClassName)
@@ -107,7 +108,7 @@ class FlowRPCOpsImpl @Activate constructor(
             throw FlowRPCOpsServiceException("Failed to publish the Start Flow event.", e)
         }
 
-        return messageFactory.createFlowStatusResponse(status)
+        return ResponseEntity.accepted(messageFactory.createFlowStatusResponse(status))
     }
 
     override fun getFlowStatus(holdingIdentityShortHash: String, clientRequestId: String): FlowStatusResponse {
@@ -133,6 +134,7 @@ class FlowRPCOpsImpl @Activate constructor(
         holdingIdentityShortHash: String,
         clientRequestId: String
     ) {
+        val sessionId = channel.id
         val holdingIdentity = try {
             getVirtualNode(ShortHash.of(holdingIdentityShortHash)).holdingIdentity
         } catch (e: ShortHashException) {
@@ -142,7 +144,27 @@ class FlowRPCOpsImpl @Activate constructor(
             channel.error(WebSocketValidationException("Invalid virtual node", e))
             return
         }
-        channel.registerFlowStatusFeedHooks(flowStatusCacheService, clientRequestId, holdingIdentity, log)
+        try {
+            val flowStatusFeedRegistration = flowStatusCacheService.registerFlowStatusListener(
+                clientRequestId,
+                holdingIdentity,
+                WebSocketFlowStatusUpdateListener(clientRequestId, holdingIdentity, channel)
+            )
+
+            channel.onClose = { statusCode, reason ->
+                log.info(
+                    "Close hook called for duplex channel $sessionId with status $statusCode, reason: $reason " +
+                            "(clientRequestId=$clientRequestId, holdingId=$holdingIdentityShortHash)"
+                )
+                flowStatusFeedRegistration.close()
+            }
+        } catch (e: WebSocketValidationException) {
+            log.warn("Validation error while registering flow status listener - ${e.message}")
+            error(e)
+        } catch (e: Exception) {
+            log.error("Unexpected error at registerFlowStatusListener")
+            error(e)
+        }
     }
 
     override fun start() = Unit

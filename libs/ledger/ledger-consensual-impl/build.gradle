@@ -2,6 +2,7 @@ import aQute.bnd.gradle.Bundle
 
 plugins {
     id 'corda.common-publishing'
+    id 'corda.osgi-test-conventions'
     id 'corda.common-library'
     id 'corda.osgi-test-conventions'
 }
@@ -18,14 +19,21 @@ configurations {
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
-    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(":libs:membership:membership-common")
+    implementation project(':libs:membership:membership-impl')
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
-    implementation "net.corda:corda-membership"
+    implementation "net.corda:corda-ledger-common"
     implementation "net.corda:corda-ledger-consensual"
-    implementation 'net.corda:corda-avro-schema'
-    implementation project(":libs:db:db-orm")
+    implementation "net.corda:corda-base"
+    implementation "net.corda:corda-cipher-suite"
+    implementation project(":libs:crypto:crypto-core")
+    implementation project(":libs:ledger:ledger-common-impl")
+    implementation project(':components:flow:flow-service')
+    implementation project(':libs:serialization:serialization-checkpoint-api')
+    implementation project(":libs:virtual-node:sandbox-group-context")
+    implementation project(":libs:serialization:serialization-internal")
 
     // dependencies for persistence + integration tests
     implementation 'javax.persistence:javax.persistence-api'
@@ -76,47 +84,26 @@ dependencies {
     testImplementation project(':testing:db-testkit')
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation project(":testing:layered-property-map-testkit")
+    testImplementation project(":libs:crypto:cipher-suite-impl")
+    testImplementation project(":libs:crypto:crypto-serialization-impl")
+    testImplementation project(":libs:crypto:merkle-impl")
+    testImplementation project(':libs:flows:flow-api')
+    testImplementation project(":libs:serialization:serialization-amqp")
+    testImplementation project(":libs:serialization:serialization-internal")
+    testImplementation project(':testing:test-serialization')
 
-    testRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
-    integrationTestImplementation "org.osgi:org.osgi.test.junit5:$osgiTestJunit5Version"
-    integrationTestImplementation("org.mockito:mockito-core:$mockitoVersion")
-
-    integrationTestImplementation project(":testing:db-message-bus-testkit")
-
-    // Integration test resources using cpis configuration
-    cpis project(path: ':testing:cpbs:extendable-cpb', configuration: 'cordaCPB')
-    cpis project(path: ':testing:cpbs:calculator', configuration: 'cordaCPB')
-
-    // needed to import serialization libs
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
-
-    integrationTestImplementation project(':testing:sandboxes')
-    integrationTestImplementation project(':components:virtual-node:cpk-read-service')
-    integrationTestImplementation project(':components:virtual-node:sandbox-group-context-service')
-    integrationTestImplementation project(':testing:test-utilities')
-
-    integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
-
-    integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
-    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
-    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
-
-    integrationTestRuntimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {
-        exclude group: 'org.osgi'
-    }
-}
-
-//  Copy the cpi builds declared in the cpis configuration into our resources so we find and load them
-def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {
-    from(configurations.cpis) {
-        into 'META-INF'
-        rename "(.*)-\\Q${version}\\E-package.cpb", "\$1.cpb"
-    }
-}
-
-tasks.named('testingBundle', Bundle) {
-    dependsOn integrationTestResources
+    integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
+    integrationTestRuntimeOnly project(':testing:cpi-info-read-service-fake')
+    integrationTestRuntimeOnly project(':components:membership:membership-group-read-impl')
+    integrationTestRuntimeOnly project(':components:virtual-node:cpk-read-service-impl')
+    integrationTestRuntimeOnly project(':libs:sandbox-internal')
+    integrationTestRuntimeOnly project(':libs:serialization:serialization-checkpoint-api')
+    integrationTestRuntimeOnly project(':libs:serialization:serialization-kryo')
+    integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
+    integrationTestRuntimeOnly project(":libs:crypto:crypto-serialization-impl")
+    integrationTestRuntimeOnly project(':testing:test-serialization')
 }

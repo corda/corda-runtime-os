@@ -27,7 +27,7 @@ plugins {
     id 'com.github.ben-manes.versions' // discover possible dependency version upgrades
 }
 
-wrapper {
+tasks.named("wrapper") {
     gradleVersion = '7.4.2'
     distributionType = Wrapper.DistributionType.BIN
 }
@@ -347,8 +347,24 @@ subprojects {
         detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:$detektPluginVersion"
     }
 
-    task allDependencyInsight(type: DependencyInsightReportTask) {}
-    task allDependencies(type: DependencyReportTask) {}
+    tasks.register("allDependencyInsight", DependencyInsightReportTask) {}
+    tasks.register("allDependencies", DependencyReportTask) {}
+
+    tasks.register('releasableArtifacts') {
+        description = "Prints a list of all modules which will be released externally"
+        group = "Release"
+        if (project.hasProperty('releasable') && project.releasable.toBoolean()) {
+            logArtifacts(project)
+        }
+    }
+
+    tasks.register('unReleasableArtifacts') {
+        description = "Prints a list of all modules which will not be released externally"
+        group = "Release"
+        if (!project.hasProperty('releasable') || !project.releasable.toBoolean()) {
+            logArtifacts(project)
+        }
+    }
 
     configurations {
         all {
@@ -373,6 +389,16 @@ subprojects {
             "javax.persistence.Embeddable",
             "javax.persistence.MappedSuperclass"
         )
+    }
+}
+
+// helper to log artifacts we will or will not publish during a release process
+def logArtifacts(Project project) {
+    project.publishing.publications.each { publication ->
+        logger.quiet("\n${publication.groupId}:${publication.artifactId}:${publication.version} [${project.path}]")
+        publication.artifacts.each { artifact ->
+            logger.quiet(" * ${artifact.file.name}")
+        }
     }
 }
 

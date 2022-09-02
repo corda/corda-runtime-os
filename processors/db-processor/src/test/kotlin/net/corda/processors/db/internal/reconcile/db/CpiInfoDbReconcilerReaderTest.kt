@@ -48,7 +48,7 @@ class CpiInfoDbReconcilerReaderTest {
             )
         ),
         CordappManifest(
-            "net.corda.Bundle",
+            "net.cordapp.Bundle",
             "1.2.3",
             12,
             34,
@@ -117,12 +117,12 @@ class CpiInfoDbReconcilerReaderTest {
         val expectedId = CpiIdentifier(
             dummyCpiMetadataEntity.name,
             dummyCpiMetadataEntity.version,
-            SecureHash.create(dummyCpiMetadataEntity.signerSummaryHash))
+            SecureHash.parse(dummyCpiMetadataEntity.signerSummaryHash))
 
         assertThat(record.key).isEqualTo(expectedId)
         assertThat(record.value.cpiId).isEqualTo(expectedId)
 
-        assertThat(record.value.fileChecksum).isEqualTo(SecureHash.create(dummyCpiMetadataEntity.fileChecksum))
+        assertThat(record.value.fileChecksum).isEqualTo(SecureHash.parse(dummyCpiMetadataEntity.fileChecksum))
         assertThat(record.value.groupPolicy).isEqualTo(dummyCpiMetadataEntity.groupPolicy)
         assertThat(record.value.cpksMetadata).containsExactly(dummyCpkMetadata)
     }
