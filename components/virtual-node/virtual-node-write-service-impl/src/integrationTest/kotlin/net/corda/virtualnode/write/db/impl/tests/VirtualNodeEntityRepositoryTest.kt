@@ -239,6 +239,8 @@ internal class VirtualNodeEntityRepositoryTest {
             it.persist(vaultDmlConnection)
             it.persist(cryptoDdlConnection)
             it.persist(cryptoDmlConnection)
+            it.persist(uniquenessDdlConnection)
+            it.persist(uniquenessDmlConnection)
             repository.putHoldingIdentity(it, expectedHoldingIdentity, expectedConnections)
         }
 
@@ -300,6 +302,8 @@ internal class VirtualNodeEntityRepositoryTest {
             it.persist(vaultDmlConnection)
             it.persist(cryptoDdlConnection)
             it.persist(cryptoDmlConnection)
+            it.persist(uniquenessDdlConnection)
+            it.persist(uniquenessDmlConnection)
             repository.putHoldingIdentity(it, expectedHoldingIdentity, dbConnections)
         }
 
@@ -338,6 +342,8 @@ internal class VirtualNodeEntityRepositoryTest {
             it.persist(newVaultDmlConnection)
             it.persist(newCryptoDdlConnection)
             it.persist(newCryptoDmlConnection)
+            it.persist(newUniquenessDdlConnection)
+            it.persist(newUniquenessDmlConnection)
             repository.putHoldingIdentity(it, expectedHoldingIdentity, expectedConnections)
         }
 
