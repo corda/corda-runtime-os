@@ -563,12 +563,14 @@ internal class SessionManagerImpl(
             .firstNotNullOfOrNull {
                 val member = members.getMemberInfo(it, message.source.initiatorPublicKeyHash.array())
                 if (member == null) {
+                    println("QQQ From member ${it.x500Name} could not find, will try next")
                     null
                 } else {
                     it to member
                 }
             }
         if (sourceAndPeer == null) {
+            println("QQQ Could not find anyone")
             logger.peerHashNotInMembersMapWarning(
                 message::class.java.simpleName,
                 message.header.sessionId,
@@ -584,11 +586,16 @@ internal class SessionManagerImpl(
         }
 
         val session = pendingInboundSessions.computeIfAbsent(message.header.sessionId) { sessionId ->
+            println("QQQ in computeIfAbsent sessionId -> $sessionId")
+            println("QQQ in computeIfAbsent groupInfo -> $groupInfo")
+            println("QQQ in computeIfAbsent sessionManagerConfig -> $sessionManagerConfig")
+            println("QQQ in computeIfAbsent protocolFactory -> $protocolFactory")
             val session = protocolFactory.createResponder(
                 sessionId,
                 groupInfo.protocolModes,
                 sessionManagerConfig.maxMessageSize
             )
+            println("QQQ in computeIfAbsent session -> $session")
             session.receiveInitiatorHello(message)
             session
         }
