@@ -6,6 +6,7 @@ import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.PackagingConstants.CPK_DEPENDENCIES_FILE_ENTRY_V2
 import net.corda.libs.packaging.PackagingConstants.CPK_DEPENDENCIES_FORMAT_VERSION2
 import net.corda.libs.packaging.PackagingConstants.CPK_FORMAT_VERSION2_MAINBUNDLE_PLACEHOLDER
+import net.corda.libs.packaging.PackagingConstants.CPK_LIB_FOLDER_V2
 import net.corda.libs.packaging.signerSummaryHash
 import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CpkIdentifier
@@ -29,8 +30,6 @@ import java.security.cert.Certificate
 import java.util.Collections
 import java.util.jar.JarInputStream
 import java.util.jar.Manifest
-
-private const val LIB_FOLDER = "META-INF/privatelib/"
 
 class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
 
@@ -136,7 +135,7 @@ class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
         jarEntryAndBytes
             .asSequence()
             .map { it.entry }
-            .filter { it.name.startsWith(LIB_FOLDER) }
+            .filter { it.name.startsWith(CPK_LIB_FOLDER_V2) }
             .map { it.name }
             .toList()
 
