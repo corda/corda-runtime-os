@@ -280,9 +280,9 @@ class CPKTests {
                 currentEntry: ZipEntry,
                 buffer: ByteArray
             ) =
-                if (currentEntry.name == PackagingConstants.CPK_DEPENDENCIES_FILE_ENTRY) {
+                if (currentEntry.name == PackagingConstants.CPK_DEPENDENCIES_FILE_ENTRY_V2) {
                     val source = {
-                        ByteArrayInputStream("<<<<<This is clearly invalid XML content".toByteArray())
+                        ByteArrayInputStream("<<<<<This is clearly invalid JSON content".toByteArray())
                     }
                     writeZipEntry(outputStream, source, currentEntry.name, buffer, currentEntry.method)
                     AfterTweakAction.DO_NOTHING
