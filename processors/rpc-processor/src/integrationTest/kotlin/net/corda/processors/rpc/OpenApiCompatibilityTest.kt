@@ -2,6 +2,7 @@ package net.corda.processors.rpc
 
 import io.swagger.v3.core.util.Json
 import io.swagger.v3.oas.models.OpenAPI
+import net.corda.flow.rpcops.v1.FlowClassRpcOps
 import net.corda.flow.rpcops.v1.FlowRpcOps
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.RpcOps
@@ -18,6 +19,7 @@ import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanc
 import net.corda.membership.httprpc.v1.CertificatesRpcOps
 import net.corda.membership.httprpc.v1.HsmRpcOps
 import net.corda.membership.httprpc.v1.KeysRpcOps
+import net.corda.membership.httprpc.v1.MGMRpcOps
 import net.corda.membership.httprpc.v1.MemberLookupRpcOps
 import net.corda.membership.httprpc.v1.MemberRegistrationRpcOps
 import net.corda.membership.httprpc.v1.NetworkRpcOps
@@ -41,23 +43,25 @@ class OpenApiCompatibilityTest {
         private val logger = contextLogger()
 
         private val importantRpcOps = setOf(
-            CertificatesRpcOps::class.java,
-            ConfigRPCOps::class.java,
-            CpiUploadRPCOps::class.java,
-            FlowRpcOps::class.java,
-            HsmRpcOps::class.java,
-            KeysRpcOps::class.java,
-            MemberLookupRpcOps::class.java,
-            MemberRegistrationRpcOps::class.java,
-            NetworkRpcOps::class.java,
-            PermissionEndpoint::class.java,
-            RoleEndpoint::class.java,
-            UserEndpoint::class.java,
-            VirtualNodeRPCOps::class.java,
-            VirtualNodeMaintenanceRPCOps::class.java
+            CertificatesRpcOps::class.java, // P2P
+            HsmRpcOps::class.java, // P2P
+            KeysRpcOps::class.java, // P2P
+            ConfigRPCOps::class.java, // Flow
+            FlowRpcOps::class.java, // Flow
+            FlowClassRpcOps::class.java, // Flow
+            CpiUploadRPCOps::class.java, // Packaging
+            VirtualNodeRPCOps::class.java, // Packaging
+            MemberLookupRpcOps::class.java, // MGM
+            MemberRegistrationRpcOps::class.java, // MGM
+            MGMRpcOps::class.java, // MGM
+            NetworkRpcOps::class.java, // MGM
+            PermissionEndpoint::class.java, // RPC
+            RoleEndpoint::class.java, // RPC
+            UserEndpoint::class.java, // RPC
+            VirtualNodeMaintenanceRPCOps::class.java // RPC
         )
 
-        // `cardinality` is not equal to `expectedRpcOps.size` as there might be some test RpcOps as well
+        // `cardinality` is not equal to `importantRpcOps.size` as there might be some test RpcOps as well
         @InjectService(service = PluggableRPCOps::class, cardinality = 16, timeout = 10_000)
         lateinit var dynamicRpcOps: List<RpcOps>
 
@@ -68,7 +72,9 @@ class OpenApiCompatibilityTest {
     @Test
     fun test() {
         val allOps = dynamicRpcOps.map { (it as PluggableRPCOps<*>).targetInterface }.sortedBy { it.name }
-        assertThat(allOps).containsAll(importantRpcOps)
+        assertThat(allOps.filterNot {
+            it.name.contains("HelloRpcOps") // the only test, i.e. not important RPC Ops we have
+        }.toSet()).isEqualTo(importantRpcOps)
 
         logger.info("RPC Ops discovered: ${allOps.map { it.simpleName }}")
 

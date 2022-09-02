@@ -279,6 +279,8 @@ class ConsoleGroupPolicyOutput : GroupPolicyOutput {
      * Receives the content of the file and prints it to the console output. It makes the testing easier.
      */
     override fun generateOutput(content: String) {
-        println(content)
+        content.lines().forEach {
+            println(it)
+        }
     }
 }
