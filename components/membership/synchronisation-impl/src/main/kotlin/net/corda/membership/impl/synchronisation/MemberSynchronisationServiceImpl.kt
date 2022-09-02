@@ -195,7 +195,8 @@ class MemberSynchronisationServiceImpl internal constructor(
 
                 val persistentMemberInfoRecords = updateMembersInfo.entries.map { (id, memberInfo) ->
                     // TODO - CORE-5811 - verify signatures in signed member infos.
-                    println("QQQ in MemberSynchronisationServiceImpl viewOwningIdentity = ${viewOwningMember.x500Name}, member ${memberInfo.name}")
+                    println("QQQ in MemberSynchronisationServiceImpl " +
+                            "viewOwningIdentity = ${viewOwningMember.x500Name}, member ${memberInfo.name}")
                     val persistentMemberInfo = PersistentMemberInfo(
                         viewOwningMember.toAvro(),
                         memberInfo.memberProvidedContext.toWire(),

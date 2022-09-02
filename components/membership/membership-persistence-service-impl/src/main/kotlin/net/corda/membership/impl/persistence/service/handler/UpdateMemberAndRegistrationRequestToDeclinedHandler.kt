@@ -73,7 +73,9 @@ internal class UpdateMemberAndRegistrationRequestToDeclinedHandler(
             registrationRequest.status = RegistrationStatus.DECLINED.name
             registrationRequest.lastModified = now
 
-            println("QQQ in UpdateMemberAndRegistrationRequestToDeclinedHandler viewOwningIdentity = ${context.holdingIdentity.x500Name}, member ${member.memberX500Name}")
+            println("QQQ in UpdateMemberAndRegistrationRequestToDeclinedHandler " +
+                    "viewOwningIdentity = ${context.holdingIdentity.x500Name}," +
+                    " member ${member.memberX500Name}")
             UpdateMemberAndRegistrationRequestResponse(
                 PersistentMemberInfo(
                     context.holdingIdentity,
