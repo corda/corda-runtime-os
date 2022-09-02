@@ -40,7 +40,7 @@ interface VirtualNodeMaintenanceRPCOps : RpcOps {
         upload: HttpFileUpload,
         @HttpRpcQueryParameter(
             default = "true",
-            description = "Set whether we want to reset the node db when we upload the new CPI",
+            description = "Sets whether we want to reset the node DB when we upload the new CPI. If omitted, the DB will be reset.",
             required = false
         )
         resetDb: String = "true"
