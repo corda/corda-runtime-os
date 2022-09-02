@@ -6,6 +6,7 @@ import java.nio.file.Paths
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import java.util.jar.JarInputStream
+import java.util.zip.ZipEntry
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.CpkReader
@@ -41,7 +42,7 @@ class CpbLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
                 val jarEntry = it.nextEntry ?: break
 
                 when {
-                    jarEntry.name.endsWith(".jar") -> {
+                    isCpk(jarEntry) -> {
                         val cpkBytes = it.readAllBytes()
                         val cpk = CpkReader.readCpk(
                             cpkBytes.inputStream(),
@@ -83,6 +84,8 @@ class CpbLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
             }
         }
     }
-
-    private fun calculateHash(cpiBytes: ByteArray) = cpiBytes.hash(DigestAlgorithmName.SHA2_256).bytes
 }
+
+private fun isCpk(zipEntry: ZipEntry) = zipEntry.name.endsWith(".jar")
+
+private fun calculateHash(cpiBytes: ByteArray) = cpiBytes.hash(DigestAlgorithmName.SHA2_256).bytes
