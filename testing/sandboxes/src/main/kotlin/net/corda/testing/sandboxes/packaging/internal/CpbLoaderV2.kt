@@ -36,12 +36,10 @@ class CpbLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
 
         JarInputStream(DigestInputStream(ByteArrayInputStream(byteArray), md), false).use {
             val mainAttributes = it.manifest.mainAttributes
-
             val cpks = mutableListOf<Cpk>()
 
             while (true) {
                 val jarEntry = it.nextEntry ?: break
-
                 when {
                     isCpk(jarEntry) -> {
                         val cpkBytes = it.readAllBytes()
@@ -79,7 +77,6 @@ class CpbLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
                 private val cpksMap = cpks.associate { cpk ->
                     cpk.metadata.cpkId to cpk
                 }
-
                 override fun getCpkById(id: CpkIdentifier) =
                     cpksMap[id]
             }
