@@ -429,6 +429,7 @@ internal class VirtualNodeWriterProcessor(
             return
         }
         val mgmHoldingIdentity = HoldingIdentity(mgmInfo.name, mgmInfo.groupId)
+        println("QQQ in VirtualNodeWriterProcessor viewOwningIdentity = ${holdingIdentity.x500Name}, member ${mgmInfo.name}")
         val mgmRecord = Record(
             MEMBER_LIST_TOPIC,
             "${holdingIdentity.shortHash}-${mgmHoldingIdentity.shortHash}",

@@ -74,6 +74,7 @@ internal class UpdateMemberAndRegistrationRequestToApprovedHandler(
             registrationRequest.status = RegistrationStatus.APPROVED.name
             registrationRequest.lastModified = now
 
+            println("QQQ in UpdateMemberAndRegistrationRequestToApprovedHandler viewOwningIdentity = ${context.holdingIdentity.x500Name}, member ${member.memberX500Name}")
             UpdateMemberAndRegistrationRequestResponse(
                 PersistentMemberInfo(
                     context.holdingIdentity,

@@ -62,5 +62,7 @@ internal class QueryMemberInfoHandler(
             viewOwningMember,
             keyValuePairListDeserializer.deserialize(this.memberContext),
             keyValuePairListDeserializer.deserialize(this.mgmContext)
-        )
+        ).also {
+            println("QQQ in QueryMemberInfoHandler viewOwningIdentity = ${viewOwningMember.x500Name}, member ${this.memberX500Name}")
+        }
 }

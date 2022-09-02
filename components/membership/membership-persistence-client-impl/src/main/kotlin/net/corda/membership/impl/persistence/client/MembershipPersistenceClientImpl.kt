@@ -85,6 +85,7 @@ class MembershipPersistenceClientImpl(
             buildMembershipRequestContext(avroViewOwningIdentity),
             PersistMemberInfo(
                 memberInfos.map {
+                    println("QQQ in MembershipPersistenceClientImpl viewOwningIdentity = ${viewOwningIdentity.x500Name}, member ${it.name}")
                     PersistentMemberInfo(
                         avroViewOwningIdentity,
                         it.memberProvidedContext.toAvro(),

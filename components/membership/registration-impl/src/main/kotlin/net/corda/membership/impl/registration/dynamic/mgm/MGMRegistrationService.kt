@@ -265,6 +265,7 @@ class MGMRegistrationService @Activate constructor(
                     )
                 }
 
+                println("QQQ in MGMRegistrationService viewOwningIdentity = ${member.x500Name}, member ${mgmInfo.name}")
                 val mgmRecord = Record(
                     Schemas.Membership.MEMBER_LIST_TOPIC,
                     "${member.shortHash}-${member.shortHash}",
