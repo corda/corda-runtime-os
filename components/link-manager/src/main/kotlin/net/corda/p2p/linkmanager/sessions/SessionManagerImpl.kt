@@ -607,15 +607,18 @@ internal class SessionManagerImpl(
         }
 
         val initiatorIdentityData = session.getInitiatorIdentity()
-        val hostedIdentityInSameGroup = linkManagerHostingMap.allLocallyHostedIdentities()
-            .find { it.groupId == initiatorIdentityData.groupId }
-        if (hostedIdentityInSameGroup == null) {
+        val hostedIdentitiesInSameGroup = linkManagerHostingMap.allLocallyHostedIdentities()
+            .filter { it.groupId == initiatorIdentityData.groupId }
+        if (hostedIdentitiesInSameGroup.isEmpty()) {
             logger.warn("There is no locally hosted identity in group ${initiatorIdentityData.groupId}. The initiator handshake message" +
                     " was discarded.")
             return null
         }
 
-        val peer = members.getMemberInfo(hostedIdentityInSameGroup, initiatorIdentityData.initiatorPublicKeyHash.array())
+        val peer = hostedIdentitiesInSameGroup
+            .firstNotNullOfOrNull {
+                members.getMemberInfo(it, initiatorIdentityData.initiatorPublicKeyHash.array())
+            }
         if (peer == null) {
             logger.peerHashNotInMembersMapWarning(
                 message::class.java.simpleName,
