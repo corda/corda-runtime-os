@@ -1,4 +1,4 @@
-package net.corda.testing.sandboxes.packaging.internal
+package net.corda.testing.sandboxes.impl.packaging.v2
 
 import java.io.ByteArrayInputStream
 import java.nio.file.Path
@@ -22,7 +22,7 @@ import net.corda.libs.packaging.internal.CpiLoader
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 
-class CpbLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
+internal class CpbLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
 
     override fun loadCpi(
         byteArray: ByteArray,

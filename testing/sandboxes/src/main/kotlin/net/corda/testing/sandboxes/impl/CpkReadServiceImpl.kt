@@ -5,7 +5,6 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.Cpi
-import net.corda.libs.packaging.CpiReader
 import net.corda.libs.packaging.Cpk
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.v5.base.util.loggerFor
@@ -20,7 +19,7 @@ import java.io.InputStream
 import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
-import net.corda.testing.sandboxes.packaging.CpbReader
+import net.corda.testing.sandboxes.impl.packaging.v2.CpbReaderV2
 import net.corda.v5.crypto.SecureHash
 
 @Suppress("unused")
@@ -66,7 +65,7 @@ class CpkReadServiceImpl @Activate constructor(
 
     override fun loadCPI(resourceName: String): Cpi {
         return getInputStream(resourceName).buffered().use { input ->
-            CpbReader.readCpi(input, expansionLocation = cpkDir, verifySignature = true)
+            CpbReaderV2.readCpi(input, expansionLocation = cpkDir, verifySignature = true)
         }.let { newCpi ->
             val cpiId = newCpi.metadata.cpiId
             cpis.putIfAbsent(cpiId, newCpi) ?: newCpi

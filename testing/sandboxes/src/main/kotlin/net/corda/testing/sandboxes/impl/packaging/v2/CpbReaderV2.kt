@@ -1,4 +1,4 @@
-package net.corda.testing.sandboxes.packaging
+package net.corda.testing.sandboxes.impl.packaging.v2
 
 import java.io.ByteArrayInputStream
 import java.io.InputStream
@@ -8,13 +8,13 @@ import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.core.CpkFormatVersion
 import net.corda.libs.packaging.core.exception.CordappManifestException
 import net.corda.libs.packaging.internal.FormatVersionReader
-import net.corda.testing.sandboxes.packaging.internal.CpbLoaderV2
 
 /**
- * Parses a CPB into a [Cpi], leaving CPI related fields nulled out. This reader might be useful in testing cases where
- * we have a .cpb file and we are only interested in testing at CPB level and not interested in CPI fields.
+ * Parses a .cpb file V2 into a [Cpi], leaving CPI related fields nulled out. This reader might be useful
+ * in testing cases where we have a .cpb file and we are only interested in testing at CPB level and
+ * not interested in CPI fields.
  */
-object CpbReader {
+internal object CpbReaderV2 {
     private val version2 = CpkFormatVersion(2, 0)
 
     fun readCpi(
