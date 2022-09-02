@@ -52,6 +52,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.toSortedMap
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.registration.RegistrationRequest
+import net.corda.membership.persistence.client.GroupPolicyListener
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -219,6 +220,10 @@ class MembershipPersistenceTest {
                 membershipPersistenceClient.setRegistrationRequestStatus(
                     viewOwningIdentity, registrationId, registrationRequestStatus
                 )
+            }
+
+            override fun registerGroupPolicyCallback(listener: GroupPolicyListener) {
+                TODO("Not yet implemented")
             }
 
             fun <T> safeCall(func: () -> T): T {
