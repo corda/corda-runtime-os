@@ -40,18 +40,16 @@ class CpbLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
 
             while (true) {
                 val jarEntry = it.nextEntry ?: break
-                when {
-                    isCpk(jarEntry) -> {
-                        val cpkBytes = it.readAllBytes()
-                        val cpk = CpkReader.readCpk(
-                            cpkBytes.inputStream(),
-                            expansionLocation,
-                            cpkLocation = cpiLocation.plus("/${jarEntry.name}"),
-                            verifySignature = false,
-                            cpkFileName = Paths.get(jarEntry.name).fileName.toString()
-                        )
-                        cpks.add(cpk)
-                    }
+                if (isCpk(jarEntry)) {
+                    val cpkBytes = it.readAllBytes()
+                    val cpk = CpkReader.readCpk(
+                        cpkBytes.inputStream(),
+                        expansionLocation,
+                        cpkLocation = cpiLocation.plus("/${jarEntry.name}"),
+                        verifySignature = false,
+                        cpkFileName = Paths.get(jarEntry.name).fileName.toString()
+                    )
+                    cpks.add(cpk)
                 }
                 it.closeEntry()
             }
