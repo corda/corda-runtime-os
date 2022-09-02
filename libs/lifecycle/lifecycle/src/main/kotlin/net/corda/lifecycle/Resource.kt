@@ -17,7 +17,7 @@ interface Resource : AutoCloseable {
      *
      * It should be safe to call start multiple times without side effects.
      */
-//    fun start()
+//    fun start() {}
 
     /**
      * Automatically called when this resource is out of try-with-resource scope.
