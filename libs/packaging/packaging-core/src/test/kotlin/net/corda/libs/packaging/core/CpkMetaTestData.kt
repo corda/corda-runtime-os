@@ -30,7 +30,7 @@ object CpkMetaTestData {
     val cpkManifest = CpkManifest(CpkFormatVersion(2, 3))
     val cordappType = CordappType.WORKFLOW
     val cordappManifest = CordappManifest(
-        "net.corda.Bundle",
+        "net.cordapp.Bundle",
         "1.2.3",
         12,
         34,

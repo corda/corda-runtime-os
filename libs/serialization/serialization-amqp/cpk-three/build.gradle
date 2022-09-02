@@ -25,9 +25,9 @@ dependencies {
 
 tasks.named('jar', Jar) {
     osgi {
-        // We only want to export packages 'net.corda.bundle3'
-        // and 'net.corda.bundle5'.
-        // 'net.corda.bundle2' must be a private package.
+        // We only want to export packages 'net.cordapp.bundle3'
+        // and 'net.cordapp.bundle5'.
+        // 'net.cordapp.bundle2' must be a private package.
         autoExport = false
     }
 }
