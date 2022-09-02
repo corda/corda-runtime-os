@@ -3,6 +3,8 @@ package net.corda.testing.sandboxes.packaging.internal
 import java.io.ByteArrayInputStream
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.security.DigestInputStream
+import java.security.MessageDigest
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import java.util.jar.JarInputStream
@@ -16,7 +18,6 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.exception.PackagingException
-import net.corda.libs.packaging.hash
 import net.corda.libs.packaging.internal.CpiLoader
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
@@ -31,9 +32,9 @@ class CpbLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
     ): Cpi {
 
         // Calculate file hash
-        val hash = calculateHash(byteArray)
+        val md = MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name)
 
-        JarInputStream(ByteArrayInputStream(byteArray), false).use {
+        JarInputStream(DigestInputStream(ByteArrayInputStream(byteArray), md), false).use {
             val mainAttributes = it.manifest.mainAttributes
 
             val cpks = mutableListOf<Cpk>()
@@ -65,9 +66,9 @@ class CpbLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
                                 ?: throw PackagingException("$CPB_NAME_ATTRIBUTE missing from CPB manifest"),
                             mainAttributes.getValue(CPB_VERSION_ATTRIBUTE)
                                 ?: throw PackagingException("$CPB_VERSION_ATTRIBUTE missing from CPB manifest"),
-                            null // signerSummaryHash comes from group policy file which is not available in CPB
+                            null // signerSummaryHash comes from group policy file which is not present in CPB
                         ),
-                        fileChecksum = SecureHash(DigestAlgorithmName.SHA2_256.name, hash),
+                        fileChecksum = SecureHash(DigestAlgorithmName.SHA2_256.name, md.digest()),
                         cpksMetadata = cpks.map { it.metadata },
                         groupPolicy = null,
                         timestamp = clock.instant()
@@ -87,5 +88,3 @@ class CpbLoaderV2(private val clock: Clock = UTCClock()) : CpiLoader {
 }
 
 private fun isCpk(zipEntry: ZipEntry) = zipEntry.name.endsWith(".jar")
-
-private fun calculateHash(cpiBytes: ByteArray) = cpiBytes.hash(DigestAlgorithmName.SHA2_256).bytes
