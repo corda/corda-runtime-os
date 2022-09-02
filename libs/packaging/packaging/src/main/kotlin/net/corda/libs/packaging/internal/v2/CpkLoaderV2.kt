@@ -1,14 +1,13 @@
 package net.corda.libs.packaging.internal.v2
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.core.JsonParseException
+import com.fasterxml.jackson.core.JacksonException
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.PackagingConstants.CPK_DEPENDENCIES_FILE_ENTRY_V2
 import net.corda.libs.packaging.PackagingConstants.CPK_DEPENDENCIES_FORMAT_VERSION2
 import net.corda.libs.packaging.PackagingConstants.CPK_FORMAT_VERSION2_MAINBUNDLE_PLACEHOLDER
 import net.corda.libs.packaging.PackagingConstants.CPK_LIB_FOLDER_V2
-import net.corda.libs.packaging.signerSummaryHash
 import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkManifest
@@ -23,6 +22,7 @@ import net.corda.libs.packaging.internal.CpkLoader
 import net.corda.libs.packaging.internal.FormatVersionReader
 import net.corda.libs.packaging.internal.v1.CpkLoaderV1
 import net.corda.libs.packaging.internal.v1.SignatureCollector
+import net.corda.libs.packaging.signerSummaryHash
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -97,17 +97,23 @@ class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
                 cpkDependenciesBytes,
                 CPKDependencyFormatVersion::class.java
             )
-        } catch (e: JsonParseException) {
+        } catch (e: JacksonException) {
             throw DependencyMetadataException("Error reading CPKDependencies.json", e)
         }
-        val cpkDependencies = when (cpkDependenciesFormatVersion.formatVersion) {
-            CPK_DEPENDENCIES_FORMAT_VERSION2 -> jacksonObjectMapper.readValue(
-                cpkDependenciesBytes,
-                CPKDependencyFileV2::class.java
-            )
-            else -> throw UnknownFormatVersionException("$CPK_DEPENDENCIES_FILE_ENTRY_V2 has an unknown " +
-                    "format version \"${cpkDependenciesFormatVersion.formatVersion}\"")
+        val cpkDependencies = try {
+            when (cpkDependenciesFormatVersion.formatVersion) {
+                CPK_DEPENDENCIES_FORMAT_VERSION2 -> jacksonObjectMapper.readValue(
+                    cpkDependenciesBytes,
+                    CPKDependencyFileV2::class.java
+                )
+                else -> throw UnknownFormatVersionException("$CPK_DEPENDENCIES_FILE_ENTRY_V2 has an unknown " +
+                            "format version \"${cpkDependenciesFormatVersion.formatVersion}\""
+                )
+            }
+        } catch (e: JacksonException) {
+            throw DependencyMetadataException("Error reading CPKDependencies.json", e)
         }
+
 
         return CpkMetadata(
             cpkId = CpkIdentifier(
