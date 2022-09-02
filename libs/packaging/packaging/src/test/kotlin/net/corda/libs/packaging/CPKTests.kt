@@ -163,7 +163,7 @@ class CPKTests {
         }.run(Files.newInputStream(workflowCPKPath), Files.newOutputStream(destination))
     }
 
-    private fun tweakDependencyMetadataFile(destination: Path, xml: String) {
+    private fun tweakDependencyMetadataFile(destination: Path, json: String) {
         val tweaker = object : ZipTweaker() {
             override fun tweakEntry(
                 inputStream: ZipInputStream,
@@ -171,9 +171,9 @@ class CPKTests {
                 currentEntry: ZipEntry,
                 buffer: ByteArray
             ) =
-                if (currentEntry.name == PackagingConstants.CPK_DEPENDENCIES_FILE_ENTRY) {
+                if (currentEntry.name == PackagingConstants.CPK_DEPENDENCIES_FILE_ENTRY_V2) {
                     val source = {
-                        ByteArrayInputStream(xml.toByteArray())
+                        ByteArrayInputStream(json.toByteArray())
                     }
                     writeZipEntry(outputStream, source, currentEntry.name, buffer, currentEntry.method)
                     AfterTweakAction.DO_NOTHING
