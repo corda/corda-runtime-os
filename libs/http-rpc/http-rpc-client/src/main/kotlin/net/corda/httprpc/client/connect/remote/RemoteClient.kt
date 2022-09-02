@@ -28,6 +28,7 @@ import java.lang.reflect.Type
 import javax.net.ssl.SSLContext
 import kong.unirest.MultipartBody
 import net.corda.httprpc.client.processing.HttpRpcClientFileUpload
+import java.util.concurrent.TimeUnit
 
 /**
  * [RemoteClient] implementations are responsible for making remote calls to the server and returning the response,
@@ -46,6 +47,11 @@ internal class RemoteUnirestClient(override val baseAddress: String, private val
     }
 
     init {
+        if(Unirest.config().connectionTimeout != TimeUnit.MINUTES.toMillis(10).toInt()) {
+            Unirest.config().connectTimeout(TimeUnit.MINUTES.toMillis(10).toInt())
+            Unirest.config().socketTimeout(TimeUnit.MINUTES.toMillis(10).toInt())
+        }
+        Unirest.config().verifySsl(false)
         Unirest.config().objectMapper = JacksonObjectMapper(objectMapper)
     }
 
@@ -119,6 +125,7 @@ internal class RemoteUnirestClient(override val baseAddress: String, private val
             )
                 .also { log.trace { """Do call "$verb $path" completed.""" } }
         } catch (e: UnirestException) {
+            e.printStackTrace()
             throw InternalErrorException(e.message ?: "No message provided")
         }
     }

@@ -18,10 +18,13 @@ import net.corda.membership.httprpc.v1.types.request.HostedIdentitySetupRequest
 import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.httprpc.v1.types.response.RegistrationStatus
 import net.corda.test.util.eventually
+import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.minutes
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
+import java.io.File
 
 const val GATEWAY_CONFIG = "corda.p2p.gateway"
 const val KEY_SCHEME = "CORDA.ECDSA.SECP256R1"
@@ -169,7 +172,7 @@ fun E2eCluster.register(
             ).apply {
                 assertThat(registrationStatus).isEqualTo("SUBMITTED")
 
-                eventually(duration = 1.minutes) {
+                eventually(duration = 5.minutes, waitBefore = 1.seconds) {
                     val registrationStatus = proxy.checkSpecificRegistrationProgress(holdingId, registrationId)
                     assertThat(registrationStatus?.registrationStatus)
                         .isNotNull
@@ -228,6 +231,26 @@ fun E2eCluster.disableCLRChecks() = with(testToolkit) {
     }
 }
 
+fun exec(
+    dir: File,
+    command: String,
+    vararg args: String
+): String {
+    val all = listOf(command) + args
+    println("executeing :$all")
+    val process = ProcessBuilder(listOf(command) + args)
+        .directory(dir)
+        .redirectError(ProcessBuilder.Redirect.INHERIT)
+        .redirectInput(ProcessBuilder.Redirect.INHERIT)
+        .start()
+    val output = process.inputStream.reader().readText()
+    if (process.waitFor() != 0) {
+        println(process.errorStream.reader().readText())
+        throw CordaRuntimeException("Could not run process: $all")
+    }
+    return output
+}
+
 /**
  * Onboard all members in a cluster definition using a given CPI checksum.
  * Returns a map from member X500 name to holding ID.
@@ -237,46 +260,74 @@ fun E2eCluster.onboardMembers(
     memberGroupPolicy: String? = null,
     cpiHash: String? = null
 ): List<E2eClusterMember> {
+    println("onloading members to ${this.clusterConfig.clusterName}")
     val holdingIds = mutableListOf<E2eClusterMember>()
     val memberCpiChecksum = cpiHash
         ?: memberGroupPolicy?.let{
             uploadCpi(it.toByteArray())
         } ?: fail("Need to specify cpiHash or provide a group policy file.")
-    members.forEach { member ->
-        createVirtualNode(member, memberCpiChecksum)
-
-        assignSoftHsm(member.holdingId, HSM_CAT_SESSION)
-        assignSoftHsm(member.holdingId, HSM_CAT_LEDGER)
-
-        if (!keyExists(P2P_TENANT_ID, HSM_CAT_TLS)) {
-            val memberTlsKeyId = generateKeyPairIfNotExists(P2P_TENANT_ID, HSM_CAT_TLS)
-            val memberTlsCsr = generateCsr(member, memberTlsKeyId)
-            val memberTlsCert = getCa().generateCert(memberTlsCsr)
-            uploadTlsCertificate(memberTlsCert)
+    val exists = testToolkit.httpClientFor(VirtualNodeRPCOps::class.java)
+        .use { client ->
+            client.start().proxy.getAllVirtualNodes().virtualNodes.associate {
+                MemberX500Name.parse(it.holdingIdentity.x500Name) to it.holdingIdentity.shortHash
+            }
         }
+    members.
+        filter {
+            val hash = exists[MemberX500Name.parse(it.name)]
+            if(hash != null) {
+                it.holdingId = hash
+                println("Skiping ${it.name}")
+                false
+            } else {
+                true
+            }
+        }
+        .forEach { member ->
 
-        val memberSessionKeyId = generateKeyPairIfNotExists(member.holdingId, HSM_CAT_SESSION)
-        val memberLedgerKeyId = generateKeyPairIfNotExists(member.holdingId, HSM_CAT_LEDGER)
+            println("Onboarding ${member.name}")
+            println("\t createVirtualNode")
+            createVirtualNode(member, memberCpiChecksum)
 
-        setUpNetworkIdentity(member.holdingId, memberSessionKeyId)
+            println("\t assign keys")
+            assignSoftHsm(member.holdingId, HSM_CAT_SESSION)
+            assignSoftHsm(member.holdingId, HSM_CAT_LEDGER)
 
-        assertOnlyMgmIsInMemberList(member.holdingId, mgm.name)
-        register(
-            member.holdingId,
-            createMemberRegistrationContext(
-                this,
-                memberSessionKeyId,
-                memberLedgerKeyId
+            if (!keyExists(P2P_TENANT_ID, HSM_CAT_TLS)) {
+                println("\t upload TLS..")
+                val memberTlsKeyId = generateKeyPairIfNotExists(P2P_TENANT_ID, HSM_CAT_TLS)
+                val memberTlsCsr = generateCsr(member, memberTlsKeyId)
+                val memberTlsCert = getCa().generateCert(memberTlsCsr)
+                uploadTlsCertificate(memberTlsCert)
+            }
+
+            println("\t generate key pairs")
+            val memberSessionKeyId = generateKeyPairIfNotExists(member.holdingId, HSM_CAT_SESSION)
+            val memberLedgerKeyId = generateKeyPairIfNotExists(member.holdingId, HSM_CAT_LEDGER)
+
+            println("\t setup network identitys")
+            setUpNetworkIdentity(member.holdingId, memberSessionKeyId)
+
+            assertOnlyMgmIsInMemberList(member.holdingId, mgm.name)
+            println("\t register")
+            register(
+                member.holdingId,
+                createMemberRegistrationContext(
+                    this,
+                    memberSessionKeyId,
+                    memberLedgerKeyId
+                )
             )
-        )
 
-        // Check registration complete.
-        // Eventually we can use the registration status endpoint.
-        // For now just assert we have received our own member data.
-        assertMemberInMemberList(
-            member.holdingId,
-            member
-        )
+            // Check registration complete.
+            // Eventually we can use the registration status endpoint.
+            // For now just assert we have received our own member data.
+            println("\t assertMemberInMemberList")
+            assertMemberInMemberList(
+                member.holdingId,
+                member
+            )
+            println("Onboared ${member.name}")
     }
     return holdingIds
 }
@@ -290,6 +341,8 @@ fun E2eCluster.onboardMgm(
     assignSoftHsm(mgm.holdingId, HSM_CAT_SESSION)
 
     val mgmSessionKeyId = generateKeyPairIfNotExists(mgm.holdingId, HSM_CAT_SESSION)
+    println("mgmSessionKeyId - $mgmSessionKeyId")
+    Thread.sleep(300)
 
     register(
         mgm.holdingId,

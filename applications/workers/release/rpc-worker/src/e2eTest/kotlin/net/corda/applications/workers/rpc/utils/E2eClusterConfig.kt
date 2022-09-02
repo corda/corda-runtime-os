@@ -1,41 +1,65 @@
 package net.corda.applications.workers.rpc.utils
 
-abstract class E2eClusterConfig {
-    abstract val rpcHostPropertyName: String
-    abstract val rpcPortPropertyName: String
-    abstract val p2pHostPropertyName: String
-    abstract val p2pPortPropertyName: String
+import java.io.File
+import java.net.ServerSocket
+import kotlin.concurrent.thread
 
+abstract class E2eClusterConfig {
     private companion object {
-        private const val DEFAULT_RPC_HOST = "localhost"
         private const val DEFAULT_RPC_PORT = 8888
-        private const val DEFAULT_P2P_HOST = "localhost"
         private const val DEFAULT_P2P_PORT = 8080
     }
 
-    val rpcHost: String get() = System.getProperty(rpcHostPropertyName) ?: DEFAULT_RPC_HOST
-    val rpcPort: Int get() = System.getProperty(rpcPortPropertyName)?.toInt() ?: DEFAULT_RPC_PORT
-    val p2pHost: String get() = System.getProperty(p2pHostPropertyName) ?: DEFAULT_P2P_HOST
-    val p2pPort: Int get() = System.getProperty(p2pPortPropertyName)?.toInt() ?: DEFAULT_P2P_PORT
+    abstract val clusterName: String
+
+    val rpcHost = "localhost"
+
+    /*: String
+        get() = "corda-rpc-worker.$clusterName"*/
+    val rpcPort by lazy {
+        val port = ServerSocket(0).use {
+            it.localPort
+        }
+        println("for $clusterName - will use port $port")
+        val output = File.createTempFile("forward", "txt")
+        val err = File.createTempFile("forward", "err")
+        val process = ProcessBuilder(
+            "kubectl",
+            "port-forward",
+            "--namespace",
+            clusterName,
+            "deployment/corda-rpc-worker",
+            "$port:$DEFAULT_RPC_PORT"
+        )
+            .redirectOutput(output)
+            .redirectError(err)
+            .start()
+        println("QQQ process -> $process - logs -> $output, err -> $err")
+        Runtime.getRuntime().addShutdownHook(
+            thread(start = false) {
+                println("Killing forward for $clusterName ($process)")
+                if(process.isAlive) {
+                    process.destroyForcibly()
+                }
+            }
+        )
+
+        Thread.sleep(3000)
+        port
+    }
+    val p2pHost: String
+        get() = "corda-p2p-gateway-worker.$clusterName"
+    val p2pPort = DEFAULT_P2P_PORT
 }
 
 internal object E2eClusterAConfig : E2eClusterConfig() {
-    override val rpcHostPropertyName = "E2E_CLUSTER_A_RPC_HOST"
-    override val rpcPortPropertyName = "E2E_CLUSTER_A_RPC_PORT"
-    override val p2pHostPropertyName = "E2E_CLUSTER_A_P2P_HOST"
-    override val p2pPortPropertyName = "E2E_CLUSTER_A_P2P_PORT"
+    override val clusterName = "yift-cluster-a"
 }
 
 internal object E2eClusterBConfig : E2eClusterConfig() {
-    override val rpcHostPropertyName = "E2E_CLUSTER_B_RPC_HOST"
-    override val rpcPortPropertyName = "E2E_CLUSTER_B_RPC_PORT"
-    override val p2pHostPropertyName = "E2E_CLUSTER_B_P2P_HOST"
-    override val p2pPortPropertyName = "E2E_CLUSTER_B_P2P_PORT"
+    override val clusterName = "yift-cluster-b"
 }
 
 internal object E2eClusterCConfig : E2eClusterConfig() {
-    override val rpcHostPropertyName = "E2E_CLUSTER_C_RPC_HOST"
-    override val rpcPortPropertyName = "E2E_CLUSTER_C_RPC_PORT"
-    override val p2pHostPropertyName = "E2E_CLUSTER_C_P2P_HOST"
-    override val p2pPortPropertyName = "E2E_CLUSTER_C_P2P_PORT"
+    override val clusterName = "yift-cluster-mgm"
 }

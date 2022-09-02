@@ -12,7 +12,7 @@ data class E2eClusterMember(
 
     var holdingId: String
         get() = _holdingId
-            ?: fail("Holding ID was never set for member. Virtual node must be created for member first.")
+            ?: fail("Holding ID for $name was never set for member. Virtual node must be created for member first.")
         set(value) {
             _holdingId = value
         }

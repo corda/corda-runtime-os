@@ -105,7 +105,9 @@ fun createMemberRegistrationContext(
     "corda.ledger.keys.0.signature.spec" to SIGNATURE_SPEC,
     "corda.endpoints.0.connectionURL" to memberE2eCluster.p2pUrl,
     "corda.endpoints.0.protocolVersion" to "1"
-)
+).also {
+    println("Context: \n" + it)
+}
 
 val RpcMemberInfo.status get() = mgmContext["corda.status"] ?: fail("Could not find member status")
 val RpcMemberInfo.groupId get() = memberContext["corda.groupId"] ?: fail("Could not find member group ID")
