@@ -34,13 +34,13 @@ class CordaConMultiClusterDynamicNetworkTest {
                 E2eClusterMember("O=Bob, L=London, C=GB"),
                 E2eClusterMember("O=Charlie, L=London, C=GB"),
                 E2eClusterMember("O=Dustin, L=London, C=GB"),
-                /*E2eClusterMember("O=Elaine, L=London, C=GB"),
+                E2eClusterMember("O=Elaine, L=London, C=GB"),
                 E2eClusterMember("O=Fred, L=London, C=GB"),
                 E2eClusterMember("O=Ginny, L=London, C=GB"),
                 E2eClusterMember("O=Harry, L=London, C=GB"),
                 E2eClusterMember("O=Isabel, L=London, C=GB"),
                 E2eClusterMember("O=Jimmy, L=London, C=GB"),
-                E2eClusterMember("O=Ernest, L=Bristol, C=GB"),*/
+                E2eClusterMember("O=Ernest, L=Bristol, C=GB"),
             )
         )
     }
@@ -51,14 +51,14 @@ class CordaConMultiClusterDynamicNetworkTest {
                 E2eClusterMember("O=Kate, L=London, C=GB"),
                 E2eClusterMember("O=Loki, L=London, C=GB"),
                 E2eClusterMember("O=Morgan, L=London, C=GB"),
-                /*E2eClusterMember("O=Nick, L=London, C=GB"),
+                E2eClusterMember("O=Nick, L=London, C=GB"),
                 E2eClusterMember("O=Olivia, L=London, C=GB"),
                 E2eClusterMember("O=Peter, L=London, C=GB"),
                 E2eClusterMember("O=Quinn, L=London, C=GB"),
                 E2eClusterMember("O=Ronan, L=London, C=GB"),
                 E2eClusterMember("O=Sally, L=London, C=GB"),
                 E2eClusterMember("O=Thor, L=London, C=GB"),
-                E2eClusterMember("O=David, L=Bristol, C=GB"),*/
+                E2eClusterMember("O=David, L=Bristol, C=GB"),
             )
         )
     }
@@ -70,11 +70,11 @@ class CordaConMultiClusterDynamicNetworkTest {
                 E2eClusterMember("O=Victor, L=London, C=GB"),
                 E2eClusterMember("O=Wanda, L=London, C=GB"),
                 E2eClusterMember("O=Xavier, L=London, C=GB"),
-                /*E2eClusterMember("O=Yelena, L=London, C=GB"),
+                E2eClusterMember("O=Yelena, L=London, C=GB"),
                 E2eClusterMember("O=Zack, L=London, C=GB"),
                 E2eClusterMember("O=Alfred, L=Bristol, C=GB"),
                 E2eClusterMember("O=Becky, L=Bristol, C=GB"),
-                E2eClusterMember("O=Carol, L=Bristol, C=GB"),*/
+                E2eClusterMember("O=Carol, L=Bristol, C=GB"),
             )
         )
     }
