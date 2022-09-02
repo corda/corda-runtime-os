@@ -171,3 +171,42 @@ resources:
     memory: {{ default .Values.resources.limits.memory .Values.bootstrap.resources.limits.memory }}
   {{- end }}
 {{- end }}
+
+{{/*
+Volume mounts for corda workers
+*/}}
+{{- define "appSimulator.volumeMounts" }}
+{{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
+- mountPath: "/certs"
+  name: "certs"
+  readOnly: true
+{{- end }}
+{{- if .Values.kafka.sasl.enabled  }}
+- mountPath: "/etc/config"
+  name: "jaas-conf"
+  readOnly: true
+{{- end }}
+{{- if .Values.dumpHostPath }}
+- mountPath: /dumps
+  name: dumps
+{{- end }}
+{{- end }}
+
+{{/*
+Volumes for corda workers
+*/}}
+{{- define "appSimulator.workerVolumes" }}
+{{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
+- name: certs
+  secret:
+    secretName: {{ .Values.kafka.tls.truststore.secretRef.name | quote }}
+    items:
+      - key: {{ .Values.kafka.tls.truststore.secretRef.key | quote }}
+        path: "ca.crt"
+{{- end -}}
+{{- if .Values.kafka.sasl.enabled  }}
+- name: jaas-conf
+  secret:
+    secretName: {{ include "corda.fullname" . }}-kafka-sasl
+{{- end }}
+{{- end }}

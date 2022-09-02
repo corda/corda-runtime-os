@@ -55,6 +55,8 @@ spec:
             {{- end }}
             {{- include "appSimulator.kafkaArgs" . | nindent 12 }}
             {{- include "appSimulator.databaseArgs" . | nindent 12 }}
+          volumeMounts:
+          {{- include "appSimulator.volumeMounts" . | nindent 10 }}
           {{- if .Values.appSimulators.sender.debug.enabled }}
           ports:
             - name: debug
@@ -62,6 +64,8 @@ spec:
           {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+      {{- include "appSimulator.workerVolumes" . | nindent 8 }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

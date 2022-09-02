@@ -65,12 +65,17 @@ class Receiver(private val subscriptionFactory: SubscriptionFactory,
 
         override fun onNext(events: List<EventLogRecord<String, AppMessage>>): List<Record<*, *>> {
             val now = Instant.now()
-            return events.map {
+            return events.mapNotNull {
                 val authenticatedMessage = it.value!!.message as AuthenticatedMessage
-                val payload = objectMapper.readValue<MessagePayload>(authenticatedMessage.payload.array())
-                val messageReceivedEvent = MessageReceivedEvent(payload.sender,
-                    authenticatedMessage.header.messageId, payload.sendTimestamp, now, Duration.between(payload.sendTimestamp, now))
-                Record(destinationTopic, messageReceivedEvent.messageId, objectMapper.writeValueAsString(messageReceivedEvent))
+                //Only JSON deserialize messages from another app-simulator (not sent by the MGM for example).
+                if (it.key.split(":").last().toIntOrNull() != null) {
+                    val payload = objectMapper.readValue<MessagePayload>(authenticatedMessage.payload.array())
+                    val messageReceivedEvent = MessageReceivedEvent(payload.sender,
+                        authenticatedMessage.header.messageId, payload.sendTimestamp, now, Duration.between(payload.sendTimestamp, now))
+                    Record(destinationTopic, messageReceivedEvent.messageId, objectMapper.writeValueAsString(messageReceivedEvent))
+                } else {
+                    null
+                }
             }
         }
     }
