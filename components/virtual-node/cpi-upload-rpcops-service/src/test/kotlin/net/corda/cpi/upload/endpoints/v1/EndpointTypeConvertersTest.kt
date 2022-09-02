@@ -14,7 +14,7 @@ import java.time.Instant
 internal class EndpointTypeConvertersTest {
 
     fun cpk() : CpkMetadata {
-        val id = CpkIdentifier("cpk", "1.0", SecureHash.parse("DONT_CARE:1234"))
+        val id = CpkIdentifier("cpk", "1.0", SecureHash.parse("DONT_CARE:1234"), null)
         return CpkMetadata(
             cpkId = id,
             manifest = mock(),

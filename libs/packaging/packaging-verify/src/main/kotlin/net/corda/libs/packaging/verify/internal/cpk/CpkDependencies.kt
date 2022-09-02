@@ -24,7 +24,7 @@ class CpkDependencies(private val jarName: String, inputStream: InputStream, cpk
         val cpkSummaryHash = certificates.asSequence().signerSummaryHash()
         dependencies = dependencies.mapTo(TreeSet()) { cpk ->
             if (cpk.signerSummaryHash === CpkDocumentReader.SAME_SIGNER_PLACEHOLDER) {
-                CpkIdentifier(cpk.name, cpk.version, cpkSummaryHash)
+                CpkIdentifier(cpk.name, cpk.version, cpkSummaryHash, cpk.fileHash)
             } else {
                 cpk
             }

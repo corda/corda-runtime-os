@@ -23,7 +23,7 @@ private fun id(name: String,
             .map(String::toByteArray)
             .forEach(md::update)
     }
-    return CpkIdentifier(name, version, signersSummaryHash)
+    return CpkIdentifier(name, version, signersSummaryHash, null)
 }
 
 private fun ids(vararg ids : CpkIdentifier) = ids.toCollection(TreeSet())

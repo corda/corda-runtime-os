@@ -6,4 +6,5 @@ interface Identifier {
     val name: String
     val version: String
     val signerSummaryHash: SecureHash?
+    val fileHash: SecureHash?
 }

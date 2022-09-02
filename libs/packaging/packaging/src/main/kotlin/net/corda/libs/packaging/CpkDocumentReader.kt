@@ -119,7 +119,8 @@ class CpkDocumentReader {
                 CpkIdentifier(
                     dependencyNameElements.item(0).textContent,
                     dependencyVersionElements.item(0).textContent,
-                    publicKeySummaryHash
+                    publicKeySummaryHash,
+                    null
                 ).takeIf {
                     when (dependencyTypeElements.length) {
                         0 -> true

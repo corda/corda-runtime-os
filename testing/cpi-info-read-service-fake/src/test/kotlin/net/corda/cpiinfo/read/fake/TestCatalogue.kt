@@ -21,7 +21,7 @@ object TestCatalogue {
                 SecureHash("ALG", byteArrayOf(0, 0, 0, 0)),
                 listOf(
                     CpkMetadata(
-                        CpkIdentifier(cpkName, "0.0", SecureHash("ALG", byteArrayOf(0, 0, 0, 0))),
+                        CpkIdentifier(cpkName, "0.0", SecureHash("ALG", byteArrayOf(0, 0, 0, 0)), null),
                         CpkManifest(CpkFormatVersion(0, 0)),
                         "",
                         listOf(),

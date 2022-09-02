@@ -26,6 +26,8 @@ data class CpiIdentifier(
         )
     }
 
+    override val fileHash: SecureHash? = null
+
     override fun compareTo(other: CpiIdentifier) = identifierComparator.compare(this, other)
 
     fun toAvro(): CpiIdentifierAvro {

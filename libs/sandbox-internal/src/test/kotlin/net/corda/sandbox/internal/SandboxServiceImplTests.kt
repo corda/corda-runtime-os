@@ -562,7 +562,7 @@ private data class CpkAndContents(
             }
         }
         override val metadata = CpkMetadata(
-            cpkId = CpkIdentifier(random.nextInt().toString(), "1.0", randomSecureHash()),
+            cpkId = CpkIdentifier(random.nextInt().toString(), "1.0", randomSecureHash(), null),
             manifest = CpkManifest(CpkFormatVersion(0, 0)),
             mainBundle = mainBundle,
             libraries = libraries,

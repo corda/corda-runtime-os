@@ -105,16 +105,18 @@ internal object CpkLoaderV1 : CpkLoader {
         }
 
         fun buildMetadata(): CpkMetadata {
+            val fileChecksum = SecureHash(DigestAlgorithmName.SHA2_256.name, cpkDigest.digest())
             return CpkMetadata(
                 cpkId = CpkIdentifier(
                     cordappManifest!!.bundleSymbolicName,
                     cordappManifest!!.bundleVersion,
-                    cordappCertificates!!.asSequence().signerSummaryHash()
+                    cordappCertificates!!.asSequence().signerSummaryHash(),
+                    fileChecksum
                 ),
                 type = cpkType,
                 manifest = cpkManifest!!,
                 mainBundle = cordappFileName!!,
-                fileChecksum = SecureHash(DigestAlgorithmName.SHA2_256.name, cpkDigest.digest()),
+                fileChecksum = fileChecksum,
                 cordappManifest = cordappManifest!!,
                 cordappCertificates = cordappCertificates!!,
                 libraries = Collections.unmodifiableList(ArrayList(libraryMap.keys)),
@@ -201,7 +203,7 @@ internal object CpkLoaderV1 : CpkLoader {
         val cpkSummaryHash = certificates.asSequence().signerSummaryHash()
         ctx.cpkDependencies = ctx.cpkDependencies.mapTo(TreeSet()) { cpk ->
             if (cpk.signerSummaryHash === SAME_SIGNER_PLACEHOLDER) {
-                CpkIdentifier(cpk.name, cpk.version, cpkSummaryHash)
+                CpkIdentifier(cpk.name, cpk.version, cpkSummaryHash, null)
             } else {
                 cpk
             }

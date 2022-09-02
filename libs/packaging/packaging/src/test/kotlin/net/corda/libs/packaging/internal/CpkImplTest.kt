@@ -12,9 +12,10 @@ import java.util.TreeSet
 class CpkImplTest {
     @Test
     fun `CPK identifiers without a signerSummaryHash compares correctly`() {
-        val id1 = CpkIdentifier("a", "1.0", null)
-        val id2 = CpkIdentifier("a", "1.0", SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32)))
-        val id3 = CpkIdentifier("a", "2.0", SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32)))
+        val signerSummaryHash = SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32))
+        val id1 = CpkIdentifier("a", "1.0", null, null)
+        val id2 = CpkIdentifier("a", "1.0", signerSummaryHash, null)
+        val id3 = CpkIdentifier("a", "2.0", signerSummaryHash, null)
         var ids : NavigableSet<CpkIdentifier> = Collections.emptyNavigableSet()
         Assertions.assertDoesNotThrow {
              ids = TreeSet<CpkIdentifier>().apply {

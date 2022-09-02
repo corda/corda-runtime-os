@@ -136,7 +136,8 @@ internal class DatabaseCpiPersistenceTest {
         val cpkId = CpkIdentifier(
             name = name,
             version = "cpk-version",
-            signerSummaryHash = cpkSignerSummaryHash
+            signerSummaryHash = cpkSignerSummaryHash,
+            fileHash = null
         )
 
         val cpkManifest = CpkManifest(CpkFormatVersion(1, 0))

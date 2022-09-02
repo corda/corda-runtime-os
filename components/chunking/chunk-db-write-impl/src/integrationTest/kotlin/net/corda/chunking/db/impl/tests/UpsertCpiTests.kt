@@ -116,7 +116,7 @@ class UpsertCpiTests {
         fileChecksum: SecureHash = newRandomSecureHash(),
         cpkSignerSummaryHash: SecureHash? = newRandomSecureHash()
     ) = mock<Cpk>().also { cpk ->
-        val cpkId = CpkIdentifier(name, "cpk-version", cpkSignerSummaryHash)
+        val cpkId = CpkIdentifier(name, "cpk-version", cpkSignerSummaryHash, null)
 
         val cordappManifest = CordappManifest(
             "", "", -1, -1,

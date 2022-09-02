@@ -473,7 +473,8 @@ class FlowServiceTestContext @Activate constructor(
         return CpkIdentifier(
             cpkId,
             "0.0",
-            getSecureHash()
+            getSecureHash(),
+            null
         )
     }
 

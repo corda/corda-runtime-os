@@ -6,7 +6,6 @@ import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.PackagingConstants.CPK_DEPENDENCIES_FILE_ENTRY_V2
 import net.corda.libs.packaging.PackagingConstants.CPK_DEPENDENCIES_FORMAT_VERSION2
 import net.corda.libs.packaging.PackagingConstants.CPK_FORMAT_VERSION2_MAINBUNDLE_PLACEHOLDER
-import net.corda.libs.packaging.signerSummaryHash
 import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkManifest
@@ -19,12 +18,15 @@ import net.corda.libs.packaging.internal.CpkLoader
 import net.corda.libs.packaging.internal.FormatVersionReader
 import net.corda.libs.packaging.internal.v1.CpkLoaderV1
 import net.corda.libs.packaging.internal.v1.SignatureCollector
+import net.corda.libs.packaging.signerSummaryHash
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.SecureHash
 import java.nio.file.Files
 import java.nio.file.Path
 import java.security.cert.Certificate
+import java.util.Base64
 import java.util.Collections
 import java.util.jar.JarInputStream
 import java.util.jar.Manifest
@@ -101,11 +103,13 @@ class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
                     "format version \"${cpkDependenciesFormatVersion.formatVersion}\"")
         }
 
+        val decoder = Base64.getDecoder()
         return CpkMetadata(
             cpkId = CpkIdentifier(
                 cordappManifest.bundleSymbolicName,
                 cordappManifest.bundleVersion,
-                signerSummaryHash
+                signerSummaryHash,
+                fileChecksum
             ),
             type = cpkType,
             manifest = cpkManifest,
@@ -117,7 +121,10 @@ class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
             dependencies = cpkDependencies.dependencies.map { CpkIdentifier(
                 it.name,
                 it.version,
-                if (it.verifySameSignerAsMe) signerSummaryHash else null
+                if (it.verifySameSignerAsMe) signerSummaryHash else null,
+                it.verifyFileHash?.let { verifyFileHash ->
+                    SecureHash(verifyFileHash.algorithm, decoder.decode(verifyFileHash.fileHash))
+                }
             ) }
                 .toList(), // Add file hash option
             timestamp = clock.instant()

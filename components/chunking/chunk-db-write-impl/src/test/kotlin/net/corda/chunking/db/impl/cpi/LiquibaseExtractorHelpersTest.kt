@@ -75,7 +75,7 @@ internal class LiquibaseExtractorHelpersTest {
     }
 
     private fun mockCpk(name: String, version: String, signerHash: SecureHash, fileChecksum: SecureHash): Cpk {
-        val cpkId = CpkIdentifier(name, version, signerHash)
+        val cpkId = CpkIdentifier(name, version, signerHash, null)
         val mockMetadata = mock<CpkMetadata>().also {
             whenever(it.cpkId).thenReturn(cpkId)
             whenever(it.fileChecksum).thenReturn(fileChecksum)
