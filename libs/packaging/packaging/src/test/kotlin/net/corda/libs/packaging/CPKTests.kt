@@ -1,5 +1,6 @@
 package net.corda.libs.packaging
 
+import jdk.security.jarsigner.JarSigner
 import net.corda.libs.packaging.core.exception.CordappManifestException
 import net.corda.libs.packaging.core.exception.DependencyMetadataException
 import net.corda.libs.packaging.core.exception.InvalidSignatureException
@@ -7,6 +8,8 @@ import net.corda.libs.packaging.core.exception.LibraryIntegrityException
 import net.corda.libs.packaging.core.exception.PackagingException
 import net.corda.libs.packaging.internal.ZipTweaker
 import net.corda.libs.packaging.internal.v2.CpkLoaderV2
+import net.corda.libs.packaging.testutils.TestUtils.ALICE
+import net.corda.utilities.outputStream
 import net.corda.utilities.readAll
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -273,6 +276,7 @@ class CPKTests {
     @Test
     fun `throws if a CPK does not have a dependencies file`() {
         val modifiedWorkflowCPK = testDir.resolve("tweaked.cpk")
+        val modifiedWorkflowCPKSigned = testDir.resolve("tweaked-signed.cpk")
         val tweaker = object : ZipTweaker() {
             override fun tweakEntry(
                 inputStream: ZipInputStream,
@@ -286,13 +290,28 @@ class CPKTests {
                     }
                     writeZipEntry(outputStream, source, currentEntry.name, buffer, currentEntry.method)
                     AfterTweakAction.DO_NOTHING
-                } else AfterTweakAction.WRITE_ORIGINAL_ENTRY
+                }
+                else if (isSignatureFile(currentEntry)) AfterTweakAction.DO_NOTHING
+                else AfterTweakAction.WRITE_ORIGINAL_ENTRY
         }
         tweakCordappJar(modifiedWorkflowCPK, tweaker)
+
+        signJar(modifiedWorkflowCPK, modifiedWorkflowCPKSigned)
+
         assertThrows<DependencyMetadataException> {
             CpkLoaderV2().loadMetadata(modifiedWorkflowCPK.readAll(),
                 cpkLocation = modifiedWorkflowCPK.toString(), verifySignature = false
             )
+        }
+    }
+
+    private fun isSignatureFile(currentEntry: ZipEntry) = currentEntry.name.startsWith("META-INF/CORDAPP.")
+
+    private fun signJar(modifiedWorkflowCPK: Path, modifiedWorkflowCPKSigned: Path) {
+        ZipFile(modifiedWorkflowCPK.toFile()).use { inputFile ->
+            modifiedWorkflowCPKSigned.outputStream().use { outputStream ->
+                JarSigner.Builder(ALICE.privateKeyEntry).build().sign(inputFile, outputStream)
+            }
         }
     }
 
