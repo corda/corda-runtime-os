@@ -335,15 +335,9 @@ class CPKTests {
     @Test
     fun `throws if a CPK dependencies file lists a dependency with no signers`() {
         val modifiedWorkflowCPK = testDir.resolve("tweaked.cpk")
-        val xml = """
-        |<cpkDependencies xmlns="urn:corda-cpk">
-        |    <cpkDependency>
-        |        <name>DUMMY_NAME</name>
-        |        <version>DUMMY_VERSION</version>
-        |    </cpkDependency>
-        |</cpkDependencies>
-        """.trimMargin()
-        tweakDependencyMetadataFile(modifiedWorkflowCPK, xml)
+        val json = "{\"formatVersion\":\"2.0\",\"dependencies\":[" +
+                "{\"name\":\"DUMMY_NAME\",\"version\":\"DUMMY_VERSION\"}]}"
+        tweakDependencyMetadataFile(modifiedWorkflowCPK, json)
         assertThrows<DependencyMetadataException> {
             CpkLoaderV2().loadMetadata(modifiedWorkflowCPK.readAll(),
                 cpkLocation = modifiedWorkflowCPK.toString(), verifySignature = false
@@ -354,18 +348,9 @@ class CPKTests {
     @Test
     fun `throws if a CPK dependencies file lists a dependency with a signer but no algorithm`() {
         val modifiedWorkflowCPK = testDir.resolve("tweaked.cpk")
-        val xml = """
-        |<cpkDependencies xmlns="urn:corda-cpk">
-        |    <cpkDependency>
-        |        <name>DUMMY_NAME</name>
-        |        <version>DUMMY_VERSION</version>
-        |        <signers>
-        |            <signer>$DUMMY_HASH</signer>
-        |        </signers>
-        |    </cpkDependency>
-        |</cpkDependencies>
-        """.trimMargin()
-        tweakDependencyMetadataFile(modifiedWorkflowCPK, xml)
+        val json = "{\"formatVersion\":\"2.0\",\"dependencies\":[" +
+                "{\"name\":\"DUMMY_NAME\",\"version\":\"DUMMY_VERSION\",\"verifyFileHash\":{\"fileHash\":\"$DUMMY_HASH\"}}]}"
+        tweakDependencyMetadataFile(modifiedWorkflowCPK, json)
         assertThrows<DependencyMetadataException> {
             CpkLoaderV2().loadMetadata(modifiedWorkflowCPK.readAll(),
                 cpkLocation = modifiedWorkflowCPK.toString(), verifySignature = false
