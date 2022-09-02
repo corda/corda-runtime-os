@@ -3,12 +3,9 @@ package net.corda.schema.configuration.provider.impl
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
-import net.corda.schema.configuration.ConfigKeys.IDENTITY_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
 import net.corda.schema.configuration.ConfigKeys.P2P_LINK_MANAGER_CONFIG
-import net.corda.schema.configuration.ConfigKeys.PLATFORM_CONFIG
-import net.corda.schema.configuration.ConfigKeys.POLICY_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.schema.configuration.ConfigKeys.SANDBOX_CONFIG
@@ -32,12 +29,9 @@ class SchemaProviderImplTest {
             CRYPTO_CONFIG,
             DB_CONFIG,
             FLOW_CONFIG,
-            IDENTITY_CONFIG,
             MESSAGING_CONFIG,
             P2P_LINK_MANAGER_CONFIG,
             P2P_GATEWAY_CONFIG,
-            PLATFORM_CONFIG,
-            POLICY_CONFIG,
             RPC_CONFIG,
             SECRETS_CONFIG,
             SANDBOX_CONFIG,

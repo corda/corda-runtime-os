@@ -14,28 +14,28 @@
       "default": 30000
     },
     "cpkWriteIntervalMs": {
-      "description": "",
+      "description": "Interval in ms between aligning Kafka CPKs state with DB CPKs state.",
       "type": "integer",
       "minimum": 5000,
       "maximum": 2147483647,
       "default": 10000
     },
     "cpiInfoIntervalMs": {
-      "description": "",
+      "description": "Interval in ms between aligning Kafka CPI Metadata state with DB CPI Metadata state.",
       "type": "integer",
       "minimum": 5000,
       "maximum": 2147483647,
       "default": 30000
     },
     "vnodeInfoIntervalMs": {
-      "description": "",
+      "description": "Interval in ms between aligning Kafka Virtual Node Info state with DB Virtual Node Info state.",
       "type": "integer",
       "minimum": 5000,
       "maximum": 2147483647,
       "default": 30000
     },
     "configIntervalMs": {
-      "description": "",
+      "description": "Interval in ms between aligning Kafka Configuration Sections state with DB Configuration Sections.",
       "type": "integer",
       "minimum": 5000,
       "maximum": 2147483647,

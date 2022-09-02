@@ -4,5 +4,19 @@
   "title": "Corda Sandbox Configuration Schema",
   "description": "Configuration schema for the sandbox subsection.",
   "type": "object",
-  "properties": {}
+  "properties": {
+    "cache": {
+      "description": "Settings for sandbox caching",
+      "type": "object",
+      "default": {},
+      "properties": {
+        "size": {
+          "description": "The maximum number cached sandboxes.",
+          "type": "integer",
+          "minimum": 0,
+          "default": 2
+        }
+      }
+    }
+  }
 }
