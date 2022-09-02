@@ -561,8 +561,12 @@ private data class CpkAndContents(
                 }
             }
         }
+        val fileChecksum = cpkChecksum ?: SecureHash(
+            HASH_ALGORITHM,
+            MessageDigest.getInstance(HASH_ALGORITHM).digest(cpkBytes.toByteArray())
+        )
         override val metadata = CpkMetadata(
-            cpkId = CpkIdentifier(random.nextInt().toString(), "1.0", randomSecureHash(), null),
+            cpkId = CpkIdentifier(random.nextInt().toString(), "1.0", randomSecureHash(), fileChecksum),
             manifest = CpkManifest(CpkFormatVersion(0, 0)),
             mainBundle = mainBundle,
             libraries = libraries,
@@ -572,8 +576,7 @@ private data class CpkAndContents(
                 whenever(bundleVersion).thenAnswer { "${random.nextInt()}" }
             },
             type = CpkType.UNKNOWN,
-            fileChecksum = cpkChecksum ?:
-                SecureHash(HASH_ALGORITHM, MessageDigest.getInstance(HASH_ALGORITHM).digest(cpkBytes.toByteArray())),
+            fileChecksum = fileChecksum,
             cordappCertificates = emptySet(),
             timestamp = Instant.now())
         override fun getInputStream() = ByteArrayInputStream(cpkBytes.toByteArray())

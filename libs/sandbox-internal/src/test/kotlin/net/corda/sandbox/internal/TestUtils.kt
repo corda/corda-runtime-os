@@ -38,8 +38,8 @@ fun mockBundle(
 
 /** Generates a mock CpkMetadata. */
 fun mockCpkMeta(): CpkMetadata {
-    val id = CpkIdentifier(random.nextInt().toString(), "1.0", randomSecureHash(), null)
     val hash = randomSecureHash()
+    val id = CpkIdentifier(random.nextInt().toString(), "1.0", randomSecureHash(), hash)
     return mock<CpkMetadata>().apply {
         whenever(this.cpkId).thenReturn(id)
         whenever(this.fileChecksum).thenReturn(hash)
