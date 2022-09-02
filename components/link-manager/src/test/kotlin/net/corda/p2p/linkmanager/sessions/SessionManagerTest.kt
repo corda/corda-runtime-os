@@ -508,6 +508,31 @@ class SessionManagerTest {
     }
 
     @Test
+    fun `when an initiator hello is received, we will try all the locally hosted identities`() {
+        val sessionId = "some-session-id"
+        val responderHello = mock<ResponderHelloMessage>()
+        val carol = createTestHoldingIdentity("CN=Carol, O=Alice Corp, L=LDN, C=GB", GROUP_ID)
+        val david = createTestHoldingIdentity("CN=David, O=Alice Corp, L=LDN, C=GB", GROUP_ID)
+        whenever(linkManagerHostingMap.allLocallyHostedIdentities()).thenReturn(
+            listOf(
+                carol,
+                david,
+                OUR_PARTY,
+            )
+        )
+        whenever(protocolResponder.generateResponderHello()).thenReturn(responderHello)
+
+        val header = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
+        val initiatorHelloMsg = InitiatorHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded),
+            PROTOCOL_MODES, InitiatorHandshakeIdentity(ByteBuffer.wrap(messageDigest.hash(PEER_KEY.public.encoded)), GROUP_ID))
+
+        sessionManager.processSessionMessage(LinkInMessage(initiatorHelloMsg))
+
+        verify(members).getMemberInfo(eq(carol), any<ByteArray>())
+        verify(members).getMemberInfo(eq(david), any<ByteArray>())
+    }
+
+    @Test
     fun `when an initiator hello is received, but peer's member info is missing from network map, then message is dropped`() {
         val initiatorKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
         val sessionId = "some-session-id"

@@ -551,16 +551,24 @@ internal class SessionManagerImpl(
     private fun processInitiatorHello(message: InitiatorHelloMessage): LinkOutMessage? {
         logger.info("Processing ${message::class.java.simpleName} for session ${message.header.sessionId}.")
         //This will be adjusted so that we use the group policy coming from the CPI with the latest version deployed locally (CORE-5323).
-        val hostedIdentityInSameGroup = linkManagerHostingMap.allLocallyHostedIdentities()
-            .find { it.groupId == message.source.groupId }
-        if (hostedIdentityInSameGroup == null) {
+        val hostedIdentitiesInSameGroup = linkManagerHostingMap.allLocallyHostedIdentities()
+            .filter { it.groupId == message.source.groupId }
+        if (hostedIdentitiesInSameGroup.isEmpty()) {
             logger.warn("There is no locally hosted identity in group ${message.source.groupId}. The initiator message was discarded.")
             return null
         }
 
         val sessionManagerConfig = config.get()
-        val peer = members.getMemberInfo(hostedIdentityInSameGroup, message.source.initiatorPublicKeyHash.array())
-        if (peer == null) {
+        val sourceAndPeer = hostedIdentitiesInSameGroup
+            .firstNotNullOfOrNull {
+                val member = members.getMemberInfo(it, message.source.initiatorPublicKeyHash.array())
+                if (member == null) {
+                    null
+                } else {
+                    it to member
+                }
+            }
+        if (sourceAndPeer == null) {
             logger.peerHashNotInMembersMapWarning(
                 message::class.java.simpleName,
                 message.header.sessionId,
@@ -569,9 +577,9 @@ internal class SessionManagerImpl(
             return null
         }
 
-        val groupInfo = groups.getGroupInfo(hostedIdentityInSameGroup)
+        val groupInfo = groups.getGroupInfo(sourceAndPeer.first)
         if (groupInfo == null) {
-            logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, hostedIdentityInSameGroup)
+            logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, sourceAndPeer.first)
             return null
         }
 
@@ -586,8 +594,8 @@ internal class SessionManagerImpl(
         }
         val responderHello = session.generateResponderHello()
 
-        logger.info("Remote identity ${peer.holdingIdentity} initiated new session ${message.header.sessionId}.")
-        return createLinkOutMessage(responderHello, hostedIdentityInSameGroup, peer, groupInfo.networkType)
+        logger.info("Remote identity ${sourceAndPeer.second.holdingIdentity} initiated new session ${message.header.sessionId}.")
+        return createLinkOutMessage(responderHello, sourceAndPeer.first, sourceAndPeer.second, groupInfo.networkType)
     }
 
     private fun processInitiatorHandshake(message: InitiatorHandshakeMessage): LinkOutMessage? {
