@@ -163,9 +163,15 @@ class CPKTests {
                     }
                     writeZipEntry(outputStream, source, currentEntry.name, buffer, currentEntry.method)
                     AfterTweakAction.DO_NOTHING
-                } else AfterTweakAction.WRITE_ORIGINAL_ENTRY
+                }
+                else if (isSignatureFile(currentEntry)) AfterTweakAction.DO_NOTHING
+                else AfterTweakAction.WRITE_ORIGINAL_ENTRY
         }
-        tweakCordappJar(destination, tweaker)
+
+        // Sign the jar
+        val notSigned = destination.resolveSibling(destination.name + "-not-signed")
+        tweakCordappJar(notSigned, tweaker)
+        signJar(notSigned, destination)
     }
 
     private fun tamperWithLibraries(destination: Path) {
