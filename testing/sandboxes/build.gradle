@@ -29,6 +29,9 @@ dependencies {
 
     runtimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
     runtimeOnly project(':libs:sandbox-internal')
+
+    testImplementation project(":testing:packaging-test-utilities")
+    testImplementation project(':testing:test-utilities')
 }
 
 tasks.named('jar', Jar) {
