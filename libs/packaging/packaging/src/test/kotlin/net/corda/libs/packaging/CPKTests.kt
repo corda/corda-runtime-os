@@ -354,15 +354,6 @@ class CPKTests {
     }
 
     @Test
-    fun `library verification fails if jar file in the lib folder do not match the content of DependencyConstraints`() {
-        val tamperedCPK = testDir.resolve("tampered.cpk")
-        tamperWithLibraries(tamperedCPK)
-        Assertions.assertThrows(LibraryIntegrityException::class.java) {
-            CpkLoaderV2().loadMetadata(tamperedCPK.readAll(), null, verifySignature = false)
-        }
-    }
-
-    @Test
     fun `signature verification fails if archive has been tampered with`() {
         val modifiedWorkflowCPK = testDir.resolve("tweaked.cpk")
         val xml = """
