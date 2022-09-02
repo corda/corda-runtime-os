@@ -3,8 +3,6 @@ package net.corda.libs.packaging
 import jdk.security.jarsigner.JarSigner
 import net.corda.libs.packaging.core.exception.CordappManifestException
 import net.corda.libs.packaging.core.exception.DependencyMetadataException
-import net.corda.libs.packaging.core.exception.InvalidSignatureException
-import net.corda.libs.packaging.core.exception.LibraryIntegrityException
 import net.corda.libs.packaging.core.exception.PackagingException
 import net.corda.libs.packaging.internal.ZipTweaker
 import net.corda.libs.packaging.internal.v2.CpkLoaderV2
@@ -39,6 +37,7 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
+import kotlin.io.path.name
 
 // This is to avoid extracting the CPK archive in every single test case,
 // no test case writes anything to the filesystem, nor alters the state of the test class instance;
@@ -324,12 +323,8 @@ class CPKTests {
     @Test
     fun `does not complain if a CPK dependencies file lists no dependencies`() {
         val modifiedWorkflowCPK = testDir.resolve("tweaked.cpk")
-        val xml = """
-        |<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-        |<cpkDependencies xmlns="urn:corda-cpk">
-        |</cpkDependencies>
-        """.trimMargin()
-        tweakDependencyMetadataFile(modifiedWorkflowCPK, xml)
+        val json = "{\"formatVersion\":\"2.0\",\"dependencies\":[]}"
+        tweakDependencyMetadataFile(modifiedWorkflowCPK, json)
         Assertions.assertDoesNotThrow {
             CpkLoaderV2().loadMetadata(modifiedWorkflowCPK.readAll(),
                 cpkLocation = modifiedWorkflowCPK.toString(), verifySignature = false
