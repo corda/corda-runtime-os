@@ -62,6 +62,7 @@ class StartRegistrationHandler(
     override val commandType = StartRegistration::class.java
 
     override fun invoke(state: RegistrationState?, key: String, command: StartRegistration): RegistrationHandlerResult {
+        println("QQQ in StartRegistrationHandler ${command.source.x500Name} 1")
         val (registrationRequest, mgmHoldingId, pendingMemberHoldingId) =
             with(command) {
                 Triple(
@@ -71,6 +72,7 @@ class StartRegistrationHandler(
                 )
             }
 
+        println("QQQ in StartRegistrationHandler ${command.source.x500Name} 2")
         val (outputCommand, outputStates) = try {
             logger.info("Persisting the received registration request.")
             membershipPersistenceClient.persistRegistrationRequest(mgmHoldingId, registrationRequest).also {
@@ -80,36 +82,43 @@ class StartRegistrationHandler(
                 }
             }
 
+            println("QQQ in StartRegistrationHandler ${command.source.x500Name} 3")
             val mgmMemberInfo = getMGMMemberInfo(mgmHoldingId)
             logger.info("Registering with MGM for holding identity: $mgmHoldingId")
             val pendingMemberInfo = buildPendingMemberInfo(registrationRequest)
+            println("QQQ in StartRegistrationHandler ${command.source.x500Name} 4")
             // Parse the registration request and verify contents
             // The MemberX500Name matches the source MemberX500Name from the P2P messaging
             validateRegistrationRequest(
                 pendingMemberInfo.name == pendingMemberHoldingId.x500Name
             ) { "MemberX500Name in registration request does not match member sending request over P2P." }
+            println("QQQ in StartRegistrationHandler ${command.source.x500Name} 5")
 
             // The MemberX500Name is not a duplicate
             val existingMemberInfo = membershipQueryClient.queryMemberInfo(
                 mgmHoldingId,
                 listOf(pendingMemberHoldingId)
             )
+            println("QQQ in StartRegistrationHandler ${command.source.x500Name} 6")
             validateRegistrationRequest(
                 existingMemberInfo is MembershipQueryResult.Success
                         && existingMemberInfo.payload.isEmpty()
             ) { "Member Info already exists for applying member" }
 
             // The group ID matches the group ID of the MGM
+            println("QQQ in StartRegistrationHandler ${command.source.x500Name} 7")
             validateRegistrationRequest(
                 pendingMemberInfo.groupId == mgmMemberInfo.groupId
             ) { "Group ID in registration request does not match the group ID of the target MGM." }
 
             // There is at least one endpoint specified
+            println("QQQ in StartRegistrationHandler ${command.source.x500Name} 8")
             validateRegistrationRequest(
                 pendingMemberInfo.endpoints.isNotEmpty()
             ) { "Registering member has not specified any endpoints" }
 
             // Persist pending member info
+            println("QQQ in StartRegistrationHandler ${command.source.x500Name} 9")
             membershipPersistenceClient.persistMemberInfo(mgmHoldingId, listOf(pendingMemberInfo)).also {
                 require(it as? MembershipPersistenceResult.Failure == null) {
                     "Failed to persist pending member info. Reason: " +
@@ -117,6 +126,7 @@ class StartRegistrationHandler(
                 }
             }
 
+            println("QQQ in StartRegistrationHandler ${command.source.x500Name} 10")
             val persistentMemberInfo = PersistentMemberInfo.newBuilder()
                 .setMemberContext(pendingMemberInfo.memberProvidedContext.toAvro())
                 .setViewOwningMember(mgmMemberInfo.holdingIdentity.toAvro())
@@ -127,19 +137,22 @@ class StartRegistrationHandler(
                 key = "${mgmMemberInfo.holdingIdentity.shortHash}-${pendingMemberInfo.holdingIdentity.shortHash}",
                 value = persistentMemberInfo,
             )
+            println("QQQ in StartRegistrationHandler ${command.source.x500Name} 11")
 
             logger.info("Successful initial validation of registration request with ID ${registrationRequest.registrationId}")
             Pair(VerifyMember(), listOf(pendingMemberRecord))
         } catch (ex: InvalidRegistrationRequestException) {
+            println("QQQ in StartRegistrationHandler ${command.source.x500Name} err 1 ${ex.message}")
             logger.warn("Declined registration.", ex)
             Pair(DeclineRegistration(ex.originalMessage), emptyList())
         } catch (ex: Exception) {
+            println("QQQ in StartRegistrationHandler ${command.source.x500Name} err 2 ${ex.message}")
             logger.warn("Declined registration.", ex)
             Pair(DeclineRegistration("Failed to verify registration request due to: [${ex.message}]"), emptyList())
         }
 
 
-
+        println("QQQ in StartRegistrationHandler ${command.source.x500Name} err 12")
         return RegistrationHandlerResult(
             RegistrationState(
                 registrationRequest.registrationId,
