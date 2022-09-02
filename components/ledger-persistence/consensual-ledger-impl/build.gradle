@@ -25,6 +25,7 @@ dependencies {
     implementation project(':components:configuration:configuration-read-service')
     implementation project(':components:db:db-connection-manager')
     implementation project(':components:db:db-connection-manager-impl')
+    // implementation project(':components:ledger-persistence:consensual-ledger')
     implementation project(':components:virtual-node:cpi-info-read-service')
     implementation project(':components:virtual-node:entity-processor-service')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
@@ -88,6 +89,7 @@ dependencies {
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation project(':components:virtual-node:cpk-read-service')
     integrationTestImplementation project(':components:virtual-node:sandbox-group-context-service')
+    integrationTestImplementation project(':components:ledger-persistence:consensual-ledger-impl')
     integrationTestImplementation project(':testing:test-utilities')
 
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
@@ -95,7 +97,8 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
 
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
-    integrationTestImplementation "org.hsqldb:hsqldb:$hsqldbVersion"
+    integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
+    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 }
 

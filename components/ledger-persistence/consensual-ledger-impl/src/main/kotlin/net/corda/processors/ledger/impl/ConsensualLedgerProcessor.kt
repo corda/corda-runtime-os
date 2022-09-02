@@ -18,7 +18,6 @@ import net.corda.entityprocessor.impl.internal.exceptions.VirtualNodeException
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
-import net.corda.processors.ledger.impl.ConsensualLedgerDAO
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.schema.Schemas
@@ -28,6 +27,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
+import java.io.NotSerializableException
 
 
 fun EntitySandboxService.getClass(holdingIdentity: HoldingIdentity, fullyQualifiedClassName: String) =
@@ -127,7 +127,7 @@ class ConsensualLedgerProcessor(
                     }
                 }
             }
-        } catch (e: java.io.NotSerializableException) {
+        } catch (e: NotSerializableException) {
             failureResponse(requestId, e, Error.FATAL)
         } catch (e: KafkaMessageSizeException) {
             failureResponse(requestId, e, Error.FATAL)

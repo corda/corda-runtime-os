@@ -1,4 +1,4 @@
-package net.corda.processors.ledger.impl
+package net.corda.processors.ledger.impl.tests
 
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.flow.event.FlowEvent
