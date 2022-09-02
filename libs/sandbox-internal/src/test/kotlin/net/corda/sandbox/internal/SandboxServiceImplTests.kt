@@ -31,6 +31,7 @@ import org.osgi.framework.BundleContext
 import org.osgi.framework.BundleException
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.io.InputStream
 import java.nio.file.Paths
 import java.security.MessageDigest
 import java.time.Instant
@@ -577,5 +578,6 @@ private data class CpkAndContents(
             timestamp = Instant.now())
         override fun getInputStream() = ByteArrayInputStream(cpkBytes.toByteArray())
         override fun getResourceAsStream(resourceName: String) = ByteArrayInputStream(ByteArray(0))
+        override fun getMainBundle(): InputStream = ByteArrayInputStream(ByteArray(0))
     }
 }
