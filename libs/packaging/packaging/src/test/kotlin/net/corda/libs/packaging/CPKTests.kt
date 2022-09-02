@@ -361,7 +361,7 @@ class CPKTests {
         |</cpkDependencies>
         """.trimMargin()
         tweakDependencyMetadataFile(modifiedWorkflowCPK, xml)
-        Assertions.assertThrows(InvalidSignatureException::class.java) {
+        Assertions.assertThrows(SecurityException::class.java) {
             CpkLoaderV2().loadMetadata(modifiedWorkflowCPK.readAll(), null, verifySignature = true)
         }
     }
