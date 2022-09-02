@@ -6,14 +6,15 @@ import net.corda.libs.packaging.core.exception.InvalidSignatureException
 import net.corda.libs.packaging.core.exception.LibraryIntegrityException
 import net.corda.libs.packaging.core.exception.PackagingException
 import net.corda.libs.packaging.internal.ZipTweaker
-import net.corda.libs.packaging.internal.v1.CpkLoaderV1
 import net.corda.libs.packaging.internal.v1.UncloseableInputStream
+import net.corda.libs.packaging.internal.v2.CpkLoaderV2
 import net.corda.utilities.readAll
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
@@ -79,14 +80,14 @@ class CPKTests {
     fun setup(@TempDir junitTestDir: Path) {
         testDir = junitTestDir
 
-        workflowCPKPath = Path.of(URI(System.getProperty("net.corda.packaging.test.workflow.cpk")))
+        workflowCPKPath = Path.of(URI(System.getProperty("net.cordapp.packaging.test.workflow.cpk")))
         processedWorkflowCPKPath = testDir.resolve(workflowCPKPath.fileName)
         workflowCPK = Files.newInputStream(workflowCPKPath).use {
             CpkReader.readCpk(it, processedWorkflowCPKPath, workflowCPKPath.toString())
         }
-        cordappJarPath = Path.of(URI(System.getProperty("net.corda.packaging.test.workflow.cordapp")))
+        cordappJarPath = Path.of(URI(System.getProperty("net.cordapp.packaging.test.workflow.cordapp")))
         nonJarFile = Files.createFile(testDir.resolve("someFile.bin"))
-        workflowCPKLibraries = System.getProperty("net.corda.packaging.test.workflow.libs").split(' ').stream().map { jarFilePath ->
+        workflowCPKLibraries = System.getProperty("net.cordapp.packaging.test.workflow.libs").split(' ').stream().map { jarFilePath ->
             val filePath = Path.of(URI(jarFilePath))
             Path.of(PackagingConstants.CPK_LIB_FOLDER).resolve(filePath.fileName).toString() to computeSHA256Digest(Files.newInputStream(filePath))
         }.collect(
@@ -246,8 +247,8 @@ class CPKTests {
         val contractCPKDependency = dependencies.single()
 
         contractCPKDependency.apply {
-            Assertions.assertEquals(System.getProperty("net.corda.packaging.test.contract.bundle.symbolic.name"), name)
-            Assertions.assertEquals(System.getProperty("net.corda.packaging.test.contract.bundle.version"), version)
+            Assertions.assertEquals(System.getProperty("net.cordapp.packaging.test.contract.bundle.symbolic.name"), name)
+            Assertions.assertEquals(System.getProperty("net.cordapp.packaging.test.contract.bundle.version"), version)
             Assertions.assertEquals(
                 cordaDevCertSummaryHash.toString().toByteArray().hash(), signerSummaryHash,
                 "The cpk dependency is expected to be signed with corda development key only"
@@ -279,7 +280,7 @@ class CPKTests {
         tweakCordappJar(modifiedWorkflowCPK, tweaker)
         assertThrows<CordappManifestException> {
             Files.newInputStream(modifiedWorkflowCPK).use {
-                CpkLoaderV1.loadMetadata(it.readAllBytes(),
+                CpkLoaderV2().loadMetadata(it.readAllBytes(),
                     cpkLocation = modifiedWorkflowCPK.toString(),
                     verifySignature = false
                 )
@@ -307,7 +308,7 @@ class CPKTests {
         }
         tweakCordappJar(modifiedWorkflowCPK, tweaker)
         assertThrows<DependencyMetadataException> {
-            CpkLoaderV1.loadMetadata(modifiedWorkflowCPK.readAll(),
+            CpkLoaderV2().loadMetadata(modifiedWorkflowCPK.readAll(),
                 cpkLocation = modifiedWorkflowCPK.toString(), verifySignature = false
             )
         }
@@ -323,7 +324,7 @@ class CPKTests {
         """.trimMargin()
         tweakDependencyMetadataFile(modifiedWorkflowCPK, xml)
         Assertions.assertDoesNotThrow {
-            CpkLoaderV1.loadMetadata(modifiedWorkflowCPK.readAll(),
+            CpkLoaderV2().loadMetadata(modifiedWorkflowCPK.readAll(),
                 cpkLocation = modifiedWorkflowCPK.toString(), verifySignature = false
             )
         }
@@ -342,7 +343,7 @@ class CPKTests {
         """.trimMargin()
         tweakDependencyMetadataFile(modifiedWorkflowCPK, xml)
         assertThrows<DependencyMetadataException> {
-            CpkLoaderV1.loadMetadata(modifiedWorkflowCPK.readAll(),
+            CpkLoaderV2().loadMetadata(modifiedWorkflowCPK.readAll(),
                 cpkLocation = modifiedWorkflowCPK.toString(), verifySignature = false
             )
         }
@@ -364,7 +365,7 @@ class CPKTests {
         """.trimMargin()
         tweakDependencyMetadataFile(modifiedWorkflowCPK, xml)
         assertThrows<DependencyMetadataException> {
-            CpkLoaderV1.loadMetadata(modifiedWorkflowCPK.readAll(),
+            CpkLoaderV2().loadMetadata(modifiedWorkflowCPK.readAll(),
                 cpkLocation = modifiedWorkflowCPK.toString(), verifySignature = false
             )
         }
@@ -396,7 +397,7 @@ class CPKTests {
         |</cpkDependencies>
         """.trimMargin()
         tweakDependencyMetadataFile(modifiedWorkflowCPK, xml)
-        val cpk = CpkLoaderV1.loadMetadata(modifiedWorkflowCPK.readAll(),
+        val cpk = CpkLoaderV2().loadMetadata(modifiedWorkflowCPK.readAll(),
             cpkLocation = modifiedWorkflowCPK.toString(), verifySignature = false
         )
         val dependency = cpk.dependencies.find { it.name == dummyName && it.version == dummyVersion }
@@ -409,7 +410,7 @@ class CPKTests {
         val tamperedCPK = testDir.resolve("tampered.cpk")
         tamperWithLibraries(tamperedCPK)
         Assertions.assertThrows(LibraryIntegrityException::class.java) {
-            CpkLoaderV1.loadMetadata(tamperedCPK.readAll(), null, verifySignature = false)
+            CpkLoaderV2().loadMetadata(tamperedCPK.readAll(), null, verifySignature = false)
         }
     }
 
@@ -422,14 +423,14 @@ class CPKTests {
         """.trimMargin()
         tweakDependencyMetadataFile(modifiedWorkflowCPK, xml)
         Assertions.assertThrows(InvalidSignatureException::class.java) {
-            CpkLoaderV1.loadMetadata(modifiedWorkflowCPK.readAll(), null, verifySignature = true)
+            CpkLoaderV2().loadMetadata(modifiedWorkflowCPK.readAll(), null, verifySignature = true)
         }
     }
 
     @Test
     fun `throws if archive is not a jar file at all`() {
         assertThrows<PackagingException> {
-            CpkLoaderV1.loadMetadata(nonJarFile.readAll(),
+            CpkLoaderV2().loadMetadata(nonJarFile.readAll(),
                 nonJarFile.toString(),
                 jarSignatureVerificationEnabledByDefault()
             )
@@ -441,7 +442,7 @@ class CPKTests {
 
     @Test
     fun `corda-api dependencies are not included in cpk dependencies`() {
-        Assertions.assertIterableEquals(listOf("net.corda.packaging.test.contract"), workflowCPK.metadata.dependencies.map { it.name })
+        Assertions.assertIterableEquals(listOf("net.cordapp.packaging.test.contract"), workflowCPK.metadata.dependencies.map { it.name })
     }
 
     @Test

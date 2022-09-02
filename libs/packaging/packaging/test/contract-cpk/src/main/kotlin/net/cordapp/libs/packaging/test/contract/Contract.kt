@@ -1,4 +1,4 @@
-package net.corda.libs.packaging.test.contract
+package net.cordapp.libs.packaging.test.contract
 
 import net.corda.v5.ledger.obsolete.contracts.Contract
 import net.corda.v5.ledger.obsolete.contracts.ContractState
