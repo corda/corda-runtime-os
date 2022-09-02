@@ -86,7 +86,7 @@ class CPKTests {
         nonJarFile = Files.createFile(testDir.resolve("someFile.bin"))
         workflowCPKLibraries = System.getProperty("net.cordapp.packaging.test.workflow.libs").split(' ').stream().map { jarFilePath ->
             val filePath = Path.of(URI(jarFilePath))
-            Path.of(PackagingConstants.CPK_LIB_FOLDER).resolve(filePath.fileName).toString() to computeSHA256Digest(Files.newInputStream(filePath))
+            Path.of(PackagingConstants.CPK_LIB_FOLDER_V2).resolve(filePath.fileName).toString() to computeSHA256Digest(Files.newInputStream(filePath))
         }.collect(
             Collectors.toUnmodifiableMap({
                 // silly hack for Windows - file path uses \ resource path uses /
