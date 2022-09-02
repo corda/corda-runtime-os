@@ -63,8 +63,7 @@ class SimulatedCordaNetworkBaseTest {
 
         // And a concrete responder
         val responder = object : ResponderFlow {
-            override fun call(session: FlowSession) {
-            }
+            override fun call(session: FlowSession) = Unit
         }
 
         // When I upload the relevant flow and concrete responder
@@ -73,6 +72,19 @@ class SimulatedCordaNetworkBaseTest {
 
         // Then it should have registered the responder with the fiber
         verify(fiber, times(1)).registerResponderInstance(holdingId.member,"ping-ack", responder)
+    }
+
+    @Test
+    fun `should register initiating members with the fiber`() {
+        // Given a simulated Corda network with a simulated fiber we control
+        val fiber = mock<SimFiber>()
+        val corda = SimulatedCordaNetworkBase(fiber = fiber)
+
+        // When I upload an initiating flow
+        corda.createVirtualNode(holdingId, PingAckFlow::class.java)
+
+        // Then it should have registered the initiating member with the fiber
+        verify(fiber, times(1)).registerInitiator(holdingId.member)
     }
 
     @Test

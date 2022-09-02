@@ -9,6 +9,7 @@ import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.persistence.PersistenceService
@@ -21,9 +22,16 @@ import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
 
+
 val MemberX500Name.rollCallName: String
     get() {
         return this.commonName ?: this.organisation
+    }
+
+private val MemberX500Name.regOrderer: String
+    get() {
+        // Put Busch before Bueller when sorted alphabetically
+        return this.rollCallName.replace("Busch", "Bua")
     }
 
 @InitiatingFlow("roll-call")
@@ -34,7 +42,6 @@ class RollCallFlow: RPCStartableFlow {
         private val nl = System.lineSeparator()
         val log = contextLogger()
     }
-
 
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
@@ -48,16 +55,18 @@ class RollCallFlow: RPCStartableFlow {
     @CordaInject
     lateinit var persistenceService: PersistenceService
 
+    @CordaInject
+    lateinit var memberLookup: MemberLookup
+
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
         log.info("Flow invoked")
-
-        val rollCall = requestBody.getRequestBodyAs(jsonMarshallingService, RollCallInitiationRequest::class.java)
-
-
         log.info("Initiating roll call")
-        val sessionsAndRecipients = rollCall.recipientsX500.map {
-            Pair(flowMessaging.initiateFlow(MemberX500Name.parse(it)), it)
+
+        val students = memberLookup.lookup().minus(memberLookup.myInfo()).sortedBy { it.name.regOrderer }
+
+        val sessionsAndRecipients = students.map {
+            Pair(flowMessaging.initiateFlow(it.name), it.name)
         }
 
         log.info("Roll call initiated; waiting for responses")
@@ -66,7 +75,7 @@ class RollCallFlow: RPCStartableFlow {
             val firstResponses = listOf(Pair(
                 it.first, it.first.sendAndReceive(
                     RollCallResponse::class.java,
-                    RollCallRequest(it.second)
+                    RollCallRequest(it.second.toString())
                 ).unwrap { r -> r }.response
             ))
             val rechecks = firstResponses.filter { r -> r.second.isEmpty() }
@@ -99,7 +108,7 @@ class RollCallFlow: RPCStartableFlow {
     @Suspendable
     private fun retryRollCall(
         r: Pair<FlowSession, String>
-    ) : List<AbsenceResponse> {
+    ): List<AbsenceResponse> {
         var retries = 0
         val responses = mutableListOf<AbsenceResponse>()
         while(retries < RETRIES && responses.none { it.response.isNotEmpty() }) {
@@ -115,9 +124,6 @@ class AbsenceSubFlow(val counterparty: MemberX500Name) : SubFlow<String> {
 
     @CordaInject
     lateinit var flowMessaging: FlowMessaging
-
-    @CordaInject
-    lateinit var flowEngine: FlowEngine
 
     @Suspendable
     override fun call(): String {
@@ -137,8 +143,6 @@ class RollCallResponderFlow: ResponderFlow {
     override fun call(session: FlowSession) {
         ResponderFlowDelegate().callDelegate(session, flowEngine)
     }
-
-
 }
 
 @InitiatedBy("absence-call")
@@ -153,8 +157,6 @@ class AbsenceCallResponderFlow: ResponderFlow {
     }
 }
 
-@CordaSerializable
-data class RollCallInitiationRequest(val recipientsX500: List<String>)
 @CordaSerializable
 data class RollCallRequest(val recipientX500: String)
 @CordaSerializable

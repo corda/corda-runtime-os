@@ -12,7 +12,9 @@ fun <T> Flow.injectIfRequired(
 }?.set(this, value)
 
 val MemberX500Name.sandboxName: Any
-    get() {return this.toString()
-        .replace("=", "_")
-        .replace(" ", "_")
-        .replace(",", "")}
+    get() {
+        return this.toString()
+            .replace("=", "_")
+            .replace(" ", "_")
+            .replace(",", "")
+    }

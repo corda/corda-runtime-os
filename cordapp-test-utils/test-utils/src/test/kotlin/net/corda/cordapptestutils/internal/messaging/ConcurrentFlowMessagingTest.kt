@@ -80,7 +80,12 @@ class ConcurrentFlowMessagingTest {
 
         // When we initiate the flow
         val flowMessaging = ConcurrentFlowMessaging(
-            senderX500, PingAckFlow::class.java, flowAndServiceLookUp, injector, flowFactory)
+            senderX500,
+            PingAckFlow::class.java,
+            flowAndServiceLookUp,
+            injector,
+            flowFactory
+        )
         val sendingSession = flowMessaging.initiateFlow(receiverX500)
 
         // Then it should have injected the services into the responder

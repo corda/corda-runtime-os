@@ -2,7 +2,9 @@ package net.corda.cordapptestutils.internal.messaging
 
 import net.corda.cordapptestutils.internal.persistence.CloseablePersistenceService
 import net.corda.cordapptestutils.internal.persistence.PersistenceServiceFactory
+import net.corda.cordapptestutils.internal.testflows.PingAckResponderFlow
 import net.corda.v5.application.flows.ResponderFlow
+import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
 import org.hamcrest.MatcherAssert.assertThat
@@ -11,12 +13,13 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
-class BaseSimFiberTest {
+class SimFiberBaseTest {
 
     private val memberA = MemberX500Name.parse("CN=CorDapperA, OU=Application, O=R3, L=London, C=GB")
     private val memberB = MemberX500Name.parse("CN=CorDapperB, OU=Application, O=R3, L=London, C=GB")
@@ -92,7 +95,28 @@ class BaseSimFiberTest {
     }
 
     @Test
-    fun `should create then retrieve the same persistence service for a member`() {
+    fun `should create a member lookup for a member`() {
+        // Given a fiber
+        val mlFactory = mock<MemberLookupFactory>()
+        val fiber = SimFiberBase(memberLookUpFactory = mlFactory)
+
+        // And some members who are going to be looked up
+        val alice = MemberX500Name.parse("O=Alice, L=London, C=GB")
+        fiber.registerInitiator(alice)
+
+        // And a mock factory that will create a memberLookup for us
+        val memberLookup = mock<MemberLookup>()
+        whenever(mlFactory.createMemberLookup(any(), eq(fiber))).thenReturn(memberLookup)
+
+        // When we create a member lookup
+        fiber.createMemberLookup(alice)
+
+        // Then it should use the factory to do it
+        verify(mlFactory, times(1)).createMemberLookup(alice, fiber)
+    }
+
+    @Test
+    fun `should create then retrieve the same persistence service for a member to avoid extra resources`() {
         val fiber = SimFiberBase()
         val persistenceService1 = fiber.getOrCreatePersistenceService(memberA)
         val persistenceService2 = fiber.getOrCreatePersistenceService(memberA)
@@ -113,6 +137,24 @@ class BaseSimFiberTest {
 
         // Then it should have closed the persistence service too
         verify(persistenceService, times(1)).close()
+    }
+
+    @Test
+    fun `should provide memberInfos for all members`() {
+        // Given a SimFiber
+        val fiber = SimFiberBase()
+
+        // With members who have registered in multiple different ways
+        val members = listOf("Alice", "Bob", "Charlie").map { MemberX500Name.parse("O=$it, L=London, C=GB")}
+        fiber.registerInitiator(members[0])
+        fiber.registerResponderClass(members[1], "ping-ack", PingAckResponderFlow::class.java)
+        fiber.registerResponderInstance(members[2], "ping-ack", PingAckResponderFlow())
+
+        // When we get their memberInfos
+        val memberInfos = fiber.members
+
+        // Then they should all be there, but none of them twice
+        assertThat(memberInfos.keys.sortedBy { it.organisation }, `is`(members))
     }
 
     class Flow1 : ResponderFlow { override fun call(session: FlowSession) {} }

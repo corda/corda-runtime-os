@@ -16,10 +16,11 @@ the `CPI_HASH`).
 ```kotlin
   val corda = Simulator()
   val member = MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB")
-  val node = corda.createVirtualNode(member, HelloFlow::class.java)
+  val holdingIdentity = HoldingIdentity.create(member)
+  val node = corda.createVirtualNode(holdingIdentity, HelloFlow::class.java)
 
   val response = node.callFlow(
-      RPCRequestDataWrapper("r1", HelloFlow::class.java.name, "{ \"name\" : \"CordaDev\" }")
+      RequestData.create("r1", HelloFlow::class.java.name, "{ \"name\" : \"CordaDev\" }")
   )
 ```
 
@@ -98,8 +99,6 @@ The CordaSim has several components which can also be used independently:
 - A `JsonMarshallingService` which can be used to convert objects to JSON and vice-versa, available through the  
   `JsonMarshallingServiceFactory`
 
-Note these will eventually move to being `cordaProvided` from a factory.
-
 ## TODO:
 
 - Check for @CordaSerializable on messages
@@ -107,4 +106,4 @@ Note these will eventually move to being `cordaProvided` from a factory.
 - Implement FlowMessaging send / receive methods
 - Allow upload and invocation of InitiatingFlow instances
 - Timeouts
-- SigningService, MemberLookup
+- SigningService, other MemberLookup / MemberInfo methods
