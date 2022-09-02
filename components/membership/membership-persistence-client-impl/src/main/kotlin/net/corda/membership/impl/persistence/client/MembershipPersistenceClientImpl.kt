@@ -21,6 +21,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.registration.RegistrationRequest
+import net.corda.membership.persistence.client.GroupPolicyListener
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -75,6 +76,8 @@ class MembershipPersistenceClientImpl(
     override val groupName = "membership.db.persistence.client.group"
     override val clientName = "membership.db.persistence.client"
 
+    private val callbacks = mutableListOf<GroupPolicyListener>()
+
     override fun persistMemberInfo(
         viewOwningIdentity: HoldingIdentity,
         memberInfos: Collection<MemberInfo>
@@ -111,7 +114,10 @@ class MembershipPersistenceClientImpl(
             PersistGroupPolicy(groupPolicy.toAvro())
         ).execute()
         return when (val response = result.payload) {
-            is PersistGroupPolicyResponse -> MembershipPersistenceResult.Success(response.version)
+            is PersistGroupPolicyResponse -> {
+                callbacks.forEach { it.onUpdate(viewOwningIdentity) }
+                MembershipPersistenceResult.Success(response.version)
+            }
             is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(response.errorMessage)
             else -> MembershipPersistenceResult.Failure("Unexpected response: $response")
         }
@@ -202,5 +208,9 @@ class MembershipPersistenceClientImpl(
             null -> MembershipPersistenceResult.success()
             else -> MembershipPersistenceResult.Failure(failedResponse.errorMessage)
         }
+    }
+
+    override fun registerGroupPolicyCallback(listener: GroupPolicyListener) {
+        callbacks.add(listener)
     }
 }

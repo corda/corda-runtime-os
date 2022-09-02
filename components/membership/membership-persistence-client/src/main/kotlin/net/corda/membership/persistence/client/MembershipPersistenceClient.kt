@@ -103,4 +103,8 @@ interface MembershipPersistenceClient : Lifecycle {
         registrationId: String,
         registrationRequestStatus: RegistrationStatus
     ): MembershipPersistenceResult<Unit>
+
+    fun registerGroupPolicyCallback(
+        listener: GroupPolicyListener
+    )
 }

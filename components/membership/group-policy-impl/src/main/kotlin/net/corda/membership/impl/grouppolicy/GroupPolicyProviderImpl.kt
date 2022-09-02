@@ -14,6 +14,7 @@ import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
+import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.v5.base.types.LayeredPropertyMap
@@ -27,6 +28,7 @@ import org.osgi.service.component.annotations.Reference
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 
+@Suppress("LongParameterList")
 @Component(service = [GroupPolicyProvider::class])
 class GroupPolicyProviderImpl @Activate constructor(
     @Reference(service = VirtualNodeInfoReadService::class)
@@ -39,6 +41,8 @@ class GroupPolicyProviderImpl @Activate constructor(
     private val groupPolicyParser: GroupPolicyParser,
     @Reference(service = MembershipQueryClient::class)
     private val membershipQueryClient: MembershipQueryClient,
+    @Reference(service = MembershipPersistenceClient::class)
+    private val membershipPersistenceClient: MembershipPersistenceClient,
 ) : GroupPolicyProvider {
 
     /**
@@ -133,6 +137,10 @@ class GroupPolicyProviderImpl @Activate constructor(
 
         private var virtualNodeInfoCallbackHandle: AutoCloseable = startVirtualNodeHandle()
 
+        init {
+            // TODO this should be autocloseable as well?
+            startPersistenceCallbackHandle()
+        }
         override fun getGroupPolicy(
             holdingIdentity: HoldingIdentity
         ) = try {
@@ -199,6 +207,19 @@ class GroupPolicyProviderImpl @Activate constructor(
             }
         }
 
+        private fun startPersistenceCallbackHandle() =
+            membershipPersistenceClient.registerGroupPolicyCallback { holdingIdentity ->
+                logger.info("Meghivodott a persistence callback")
+                val persistedGroupPolicy = parseGroupPolicy(holdingIdentity)!! // TODO null check?
+
+                logger.info("GP: $persistedGroupPolicy")
+
+                synchronized(listeners) {
+                    listeners.forEach { callback -> callback(holdingIdentity, persistedGroupPolicy) }
+                }
+            }
+
+
         /**
          * Register callback so that if a holding identity modifies their virtual node information, the
          * group policy for that holding identity will be parsed in case the virtual node change affected the
@@ -207,7 +228,17 @@ class GroupPolicyProviderImpl @Activate constructor(
         private fun startVirtualNodeHandle(): AutoCloseable =
             virtualNodeInfoReadService.registerCallback { changed, snapshot ->
                 logger.info("Processing new snapshot after change in virtual node information.")
-                changed.filter { snapshot[it] != null }.forEach {
+                changed.filter {
+                    snapshot[it] != null
+                }.filter {
+                    val gp = parseGroupPolicy(it, virtualNodeInfo = snapshot[it])!! // TODO null check?
+                    val isStatic = gp.protocolParameters.staticNetworkMembers != null
+                    if (isStatic) {
+                        true
+                    } else {
+                        gp.mgmInfo != null
+                    }
+                }.forEach {
                     groupPolicies.compute(it) { _, _ ->
                         try {
                             parseGroupPolicy(it, virtualNodeInfo = snapshot[it])
