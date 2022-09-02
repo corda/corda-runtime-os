@@ -7,7 +7,7 @@ import java.util.jar.JarInputStream
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.core.CpkFormatVersion
 import net.corda.libs.packaging.core.exception.CordappManifestException
-import net.corda.libs.packaging.internal.FormatVersionReader
+import net.corda.libs.packaging.readCpbFormatVersion
 
 /**
  * Parses a .cpb file V2 into a [Cpi], leaving CPI related fields nulled out. This reader might be useful
@@ -30,7 +30,7 @@ internal object CpbReaderV2 {
             it.manifest
         } ?: throw CordappManifestException("No manifest in Jar file")
 
-        val formatVersion = FormatVersionReader.readCpbFormatVersion(manifest)
+        val formatVersion = readCpbFormatVersion(manifest)
         require(formatVersion == version2)
 
         return CpbLoaderV2()

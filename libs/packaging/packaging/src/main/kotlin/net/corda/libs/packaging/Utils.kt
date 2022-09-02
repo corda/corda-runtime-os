@@ -10,6 +10,9 @@ import java.security.cert.Certificate
 import java.security.cert.X509Certificate
 import java.util.Arrays
 import java.util.jar.JarEntry
+import java.util.jar.Manifest
+import net.corda.libs.packaging.core.CpkFormatVersion
+import net.corda.libs.packaging.internal.FormatVersionReader
 
 internal val secureHashComparator = Comparator.nullsFirst(
     Comparator.comparing(SecureHash::algorithm)
@@ -75,3 +78,6 @@ internal fun jarSignatureVerificationEnabledByDefault() = System.getProperty(DEF
 
 fun signerInfo(jarEntry: JarEntry) =
     jarEntry.codeSigners.mapTo(LinkedHashSet()) { (it.signerCertPath.certificates[0]).publicKey }
+
+fun readCpbFormatVersion(manifest: Manifest): CpkFormatVersion =
+    FormatVersionReader.readCpbFormatVersion(manifest)
