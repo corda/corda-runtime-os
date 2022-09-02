@@ -35,7 +35,7 @@ interface SerializationService {
      *
      * @param bytes The [ByteArray] to deserialize.
      * @param clazz [Class] containing the type [T] to deserialize to.
-     * @param <T> The type to deserialize to.
+     * @param T The type to deserialize to.
      *
      * @return A new instance of type [T] created from the input [bytes].
      */

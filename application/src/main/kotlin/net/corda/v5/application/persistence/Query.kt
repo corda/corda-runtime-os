@@ -12,6 +12,8 @@ interface Query<R> {
      * Execute the [Query]
      *
      * @return list of entities found. Empty list if none were found.
+     *
+     * @throws CordaPersistenceException If there is an error executing the query.
      */
     @Suspendable
     fun execute(): List<R>

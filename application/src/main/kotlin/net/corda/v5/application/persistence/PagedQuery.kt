@@ -12,6 +12,8 @@ interface PagedQuery<R> : Query<R> {
      *
      * @param limit maximum number of results to return.
      * @return the same [Query] instance.
+     *
+     * @throws IllegalArgumentException If [limit] is negative.
      */
     fun setLimit(limit: Int): PagedQuery<R>
 
@@ -21,6 +23,8 @@ interface PagedQuery<R> : Query<R> {
      *
      * @param offset the index of the first result in the query to return.
      * @return the same [Query] instance.
+     *
+     * @throws IllegalArgumentException If [offset] is negative.
      */
     fun setOffset(offset: Int): PagedQuery<R>
 }

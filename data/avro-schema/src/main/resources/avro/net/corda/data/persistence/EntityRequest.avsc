@@ -18,7 +18,8 @@
         "net.corda.data.persistence.DeleteEntities",
         "net.corda.data.persistence.DeleteEntitiesById",
         "net.corda.data.persistence.FindEntity",
-        "net.corda.data.persistence.FindAll"
+        "net.corda.data.persistence.FindAll",
+        "net.corda.data.persistence.FindWithNamedQuery"
       ]
     },
     {

@@ -6,6 +6,17 @@ package net.corda.v5.application.persistence
  * @param R the type of the results.
  */
 interface ParameterisedQuery<R> : PagedQuery<R> {
+
+    /**
+     * @see PagedQuery.setLimit
+     */
+    override fun setLimit(limit: Int): ParameterisedQuery<R>
+
+    /**
+     * @see PagedQuery.setOffset
+     */
+    override fun setOffset(offset: Int): ParameterisedQuery<R>
+
     /**
      * Set parameter with given [name].
      *
@@ -22,8 +33,4 @@ interface ParameterisedQuery<R> : PagedQuery<R> {
      * @return the same [ParameterisedQuery] instance.
      */
     fun setParameters(parameters: Map<String, Any>): ParameterisedQuery<R>
-
-    override fun setOffset(offset: Int): ParameterisedQuery<R>
-
-    override fun setLimit(limit: Int): ParameterisedQuery<R>
 }
