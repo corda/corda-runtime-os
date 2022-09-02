@@ -9,8 +9,8 @@ import java.io.Closeable
 interface SimulatedCordaNetwork : Closeable {
     fun createVirtualNode(
         holdingIdentity: HoldingIdentity,
-        vararg flowClasses: Class<out Flow>)
-    : SimulatedVirtualNode
+        vararg flowClasses: Class<out Flow>
+    ): SimulatedVirtualNode
 
     /**
      * Creates a virtual node holding a concrete instance of a responder flow. Note that this bypasses all
@@ -19,6 +19,6 @@ interface SimulatedCordaNetwork : Closeable {
     fun createVirtualNode(
         responder: HoldingIdentity,
         protocol: String,
-        responderFlow: ResponderFlow)
-    : SimulatedVirtualNode
+        responderFlow: ResponderFlow
+    ): SimulatedVirtualNode
 }

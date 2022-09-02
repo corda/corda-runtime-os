@@ -180,7 +180,7 @@ internal class SandboxServiceImpl @Activate constructor(
             val mainBundle = installBundle(
                 "${cpk.metadata.cpkId.name}-${cpk.metadata.cpkId.version}/${cpk.metadata.mainBundle}",
                 // TODO - only pass in metadata and inject in service to get binary
-                cpk.getResourceAsStream(cpk.metadata.mainBundle),
+                cpk.getMainBundle(),
                 sandboxId,
                 securityDomain
             )

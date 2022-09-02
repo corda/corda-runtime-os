@@ -16,13 +16,12 @@ interface HoldingIdentity {
         }
 
         fun create(commonName: String): HoldingIdentity {
-
             return factory.create(
-                MemberX500Name.parse(
-                "CN=$commonName, OU=ExampleUnit, O=ExampleOrg, L=London, C=GB"))
+                MemberX500Name.parse("CN=$commonName, OU=ExampleUnit, O=ExampleOrg, L=London, C=GB")
+            )
         }
 
-        fun create(member : MemberX500Name): HoldingIdentity {
+        fun create(member: MemberX500Name): HoldingIdentity {
             return factory.create(member)
         }
     }

@@ -10,9 +10,11 @@ class RPCRequestDataWrapperTest {
 
     @Test
     fun `should create a valid RPC request from individual values`() {
-        val requestBody = RPCRequestDataWrapper("r1",
+        val requestBody = RPCRequestDataWrapper(
+            "r1",
             HelloFlow::class.java.name,
-            "{ \"a\" : 6, \"b\" : 7 }")
+            "{ \"a\" : 6, \"b\" : 7 }"
+        )
         MatcherAssert.assertThat(
             requestBody.toRPCRequestData().getRequestBodyAs(
                 SimpleJsonMarshallingService(),
