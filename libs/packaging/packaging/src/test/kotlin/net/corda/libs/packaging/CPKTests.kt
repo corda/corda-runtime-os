@@ -375,11 +375,29 @@ class CPKTests {
     @Test
     fun `signature verification fails if archive has been tampered with`() {
         val modifiedWorkflowCPK = testDir.resolve("tweaked.cpk")
-        val xml = """
-        |<cpkDependencies xmlns="urn:corda-cpk">
-        |</cpkDependencies>
-        """.trimMargin()
-        tweakDependencyMetadataFile(modifiedWorkflowCPK, xml)
+        val tweaker = object : ZipTweaker() {
+            override fun tweakEntry(
+                inputStream: ZipInputStream,
+                outputStream: ZipOutputStream,
+                currentEntry: ZipEntry,
+                buffer: ByteArray
+            ) =
+                when (currentEntry.name) {
+                    PackagingConstants.CPK_DEPENDENCIES_FILE_ENTRY_V2 -> {
+                        writeZipEntry(
+                            outputStream,
+                            "modified"::byteInputStream,
+                            currentEntry.name,
+                            buffer,
+                            currentEntry.method
+                        )
+                        AfterTweakAction.DO_NOTHING
+                    }
+                    else -> AfterTweakAction.WRITE_ORIGINAL_ENTRY
+                }
+        }
+        tweakCordappJar(modifiedWorkflowCPK, tweaker)
+
         Assertions.assertThrows(SecurityException::class.java) {
             CpkLoaderV2().loadMetadata(modifiedWorkflowCPK.readAll(), null, verifySignature = true)
         }
