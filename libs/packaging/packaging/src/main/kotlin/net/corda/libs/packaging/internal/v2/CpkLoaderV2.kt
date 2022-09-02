@@ -1,6 +1,7 @@
 package net.corda.libs.packaging.internal.v2
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.PackagingConstants.CPK_DEPENDENCIES_FILE_ENTRY_V2
@@ -14,6 +15,7 @@ import net.corda.libs.packaging.core.CpkManifest
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
 import net.corda.libs.packaging.core.exception.CordappManifestException
+import net.corda.libs.packaging.core.exception.DependencyMetadataException
 import net.corda.libs.packaging.core.exception.UnknownFormatVersionException
 import net.corda.libs.packaging.hash
 import net.corda.libs.packaging.internal.CpkImpl
@@ -90,9 +92,14 @@ class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
         // Read CPK dependencies
         val cpkDependenciesBytes: ByteArray = readCpkDependencies(cpkEntries)
         val jacksonObjectMapper = jacksonObjectMapper()
-        val cpkDependenciesFormatVersion = jacksonObjectMapper.readValue(
-            cpkDependenciesBytes,
-            CPKDependencyFormatVersion::class.java)
+        val cpkDependenciesFormatVersion = try {
+            jacksonObjectMapper.readValue(
+                cpkDependenciesBytes,
+                CPKDependencyFormatVersion::class.java
+            )
+        } catch (e: JsonParseException) {
+            throw DependencyMetadataException("Error reading CPKDependencies.json", e)
+        }
         val cpkDependencies = when (cpkDependenciesFormatVersion.formatVersion) {
             CPK_DEPENDENCIES_FORMAT_VERSION2 -> jacksonObjectMapper.readValue(
                 cpkDependenciesBytes,
