@@ -6,7 +6,6 @@ import net.corda.libs.packaging.core.exception.InvalidSignatureException
 import net.corda.libs.packaging.core.exception.LibraryIntegrityException
 import net.corda.libs.packaging.core.exception.PackagingException
 import net.corda.libs.packaging.internal.ZipTweaker
-import net.corda.libs.packaging.internal.v1.UncloseableInputStream
 import net.corda.libs.packaging.internal.v2.CpkLoaderV2
 import net.corda.utilities.readAll
 import net.corda.v5.base.types.MemberX500Name
@@ -19,7 +18,6 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.io.TempDir
 import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.net.URI
@@ -145,23 +143,8 @@ class CPKTests {
         }
     }
 
-    private fun tweakCordappJar(destination: Path, cordappJarTweaker: ZipTweaker) {
-        object : ZipTweaker() {
-            override fun tweakEntry(
-                inputStream: ZipInputStream,
-                outputStream: ZipOutputStream,
-                currentEntry: ZipEntry,
-                buffer: ByteArray
-            ) = if (currentEntry.name == workflowCPK.metadata.mainBundle) {
-                val baos = ByteArrayOutputStream()
-                cordappJarTweaker.run(UncloseableInputStream(inputStream), baos)
-                writeZipEntry(outputStream, { ByteArrayInputStream(baos.toByteArray()) }, currentEntry.name, buffer, ZipEntry.STORED)
-                AfterTweakAction.DO_NOTHING
-            } else {
-                AfterTweakAction.WRITE_ORIGINAL_ENTRY
-            }
-        }.run(Files.newInputStream(workflowCPKPath), Files.newOutputStream(destination))
-    }
+    private fun tweakCordappJar(destination: Path, cordappJarTweaker: ZipTweaker) =
+        cordappJarTweaker.run(Files.newInputStream(workflowCPKPath), Files.newOutputStream(destination))
 
     private fun tweakDependencyMetadataFile(destination: Path, json: String) {
         val tweaker = object : ZipTweaker() {
