@@ -14,6 +14,7 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
@@ -333,6 +334,7 @@ class CPKTests {
     }
 
     @Test
+    @Disabled("Need to implement file hash before we can check this is invalid")
     fun `throws if a CPK dependencies file lists a dependency with no signers`() {
         val modifiedWorkflowCPK = testDir.resolve("tweaked.cpk")
         val json = "{\"formatVersion\":\"2.0\",\"dependencies\":[" +
