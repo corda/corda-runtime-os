@@ -1,6 +1,6 @@
 package net.corda.crypto.impl.retrying
 
-import net.corda.base.concurrent.getOrThrow
+import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.concurrent.SecManagerForkJoinPool
 import org.slf4j.Logger
 import java.time.Duration

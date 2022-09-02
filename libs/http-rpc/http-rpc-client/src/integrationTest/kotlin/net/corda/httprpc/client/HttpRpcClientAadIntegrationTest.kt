@@ -10,7 +10,7 @@ import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.test.utils.AzureAdMock
 import net.corda.httprpc.test.utils.findFreePort
 import net.corda.httprpc.test.utils.multipartDir
-import net.corda.base.util.NetworkHostAndPort
+import net.corda.utilities.NetworkHostAndPort
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

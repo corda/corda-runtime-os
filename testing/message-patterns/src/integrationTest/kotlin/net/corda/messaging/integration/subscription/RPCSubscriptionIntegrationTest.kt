@@ -1,6 +1,6 @@
 package net.corda.messaging.integration.subscription
 
-import net.corda.base.concurrent.getOrThrow
+import net.corda.utilities.concurrent.getOrThrow
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
 import net.corda.data.messaging.ResponseStatus

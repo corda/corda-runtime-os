@@ -1,6 +1,6 @@
 package net.corda.serialization.amqp.test
 
-import net.corda.base.util.toByteSequence
+import net.corda.utilities.toByteSequence
 import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.ObjectAndEnvelope

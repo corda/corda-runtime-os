@@ -1,6 +1,6 @@
 package net.corda.libs.permissions.manager.impl
 
-import net.corda.base.concurrent.getOrThrow
+import net.corda.utilities.concurrent.getOrThrow
 import java.time.Duration
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.permissions.management.PermissionManagementRequest

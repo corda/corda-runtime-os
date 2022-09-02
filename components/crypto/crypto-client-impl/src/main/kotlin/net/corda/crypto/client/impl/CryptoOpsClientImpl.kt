@@ -1,6 +1,6 @@
 package net.corda.crypto.client.impl
 
-import net.corda.base.concurrent.getOrThrow
+import net.corda.utilities.concurrent.getOrThrow
 import net.corda.crypto.component.impl.retry
 import net.corda.crypto.component.impl.toClientException
 import net.corda.crypto.core.CryptoTenants

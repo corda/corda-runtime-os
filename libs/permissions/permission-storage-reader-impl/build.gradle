@@ -14,7 +14,6 @@ dependencies {
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-topic-schema"
 
-    implementation project(":libs:base")
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:db:db-orm")
     implementation project(":libs:lifecycle:lifecycle")
@@ -24,6 +23,7 @@ dependencies {
     implementation project(':libs:permissions:permission-datamodel')
     implementation project(':libs:permissions:permission-storage-common')
     implementation project(':libs:permissions:permission-storage-reader')
+    implementation project(":libs:utilities")
 
     implementation "javax.persistence:javax.persistence-api"
 

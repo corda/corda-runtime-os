@@ -1,6 +1,6 @@
 package net.corda.membership.impl.synchronisation
 
-import net.corda.base.concurrent.getOrThrow
+import net.corda.utilities.concurrent.getOrThrow
 import net.corda.chunking.toCorda
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService

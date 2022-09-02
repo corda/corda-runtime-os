@@ -3,7 +3,7 @@ package net.corda.p2p.gateway
 import com.typesafe.config.ConfigValueFactory
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.handler.codec.http.HttpResponseStatus
-import net.corda.base.concurrent.getOrThrow
+import net.corda.utilities.concurrent.getOrThrow
 import net.corda.crypto.test.certificates.generation.CertificateAuthority
 import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
 import net.corda.crypto.test.certificates.generation.PrivateKeyWithCertificate

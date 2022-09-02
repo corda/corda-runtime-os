@@ -1,4 +1,4 @@
-package net.corda.base.util
+package net.corda.utilities
 
 import net.corda.v5.base.annotations.CordaSerializable
 import java.net.URI

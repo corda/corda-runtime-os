@@ -1,7 +1,7 @@
 package net.corda.configuration.rpcops.impl.v1
 
 import com.typesafe.config.ConfigFactory
-import net.corda.base.concurrent.getOrThrow
+import net.corda.utilities.concurrent.getOrThrow
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.rpcops.ConfigRPCOpsServiceException
 import net.corda.configuration.rpcops.impl.CLIENT_NAME_HTTP

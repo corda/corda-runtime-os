@@ -1,4 +1,4 @@
-package net.corda.base.util
+package net.corda.utilities
 
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Assertions.assertEquals

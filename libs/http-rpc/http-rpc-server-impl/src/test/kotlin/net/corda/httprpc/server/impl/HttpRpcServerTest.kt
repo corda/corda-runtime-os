@@ -13,7 +13,7 @@ import net.corda.httprpc.server.impl.internal.HttpRpcServerInternal.Companion.SS
 import net.corda.httprpc.server.impl.rpcops.impl.MultipleParamAnnotationApiImpl
 import net.corda.httprpc.server.impl.security.SecurityManagerRPCImpl
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
-import net.corda.base.util.NetworkHostAndPort
+import net.corda.utilities.NetworkHostAndPort
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals

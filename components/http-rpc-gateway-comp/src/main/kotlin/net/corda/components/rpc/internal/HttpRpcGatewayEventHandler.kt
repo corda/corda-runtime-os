@@ -1,6 +1,6 @@
 package net.corda.components.rpc.internal
 
-import net.corda.base.util.NetworkHostAndPort
+import net.corda.utilities.NetworkHostAndPort
 import net.corda.components.rbac.RBACSecurityManagerService
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService

@@ -1,7 +1,7 @@
 package net.corda.applications.flowworker.setup
 
 import com.typesafe.config.ConfigValueFactory
-import net.corda.base.concurrent.getOrThrow
+import net.corda.utilities.concurrent.getOrThrow
 import java.util.Properties
 import java.util.concurrent.TimeUnit
 import net.corda.libs.configuration.SmartConfigImpl

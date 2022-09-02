@@ -1,4 +1,4 @@
-package net.corda.base.util
+package net.corda.utilities
 
 import net.corda.v5.base.types.ByteSequence
 import net.corda.v5.base.types.OpaqueBytesSubSequence
