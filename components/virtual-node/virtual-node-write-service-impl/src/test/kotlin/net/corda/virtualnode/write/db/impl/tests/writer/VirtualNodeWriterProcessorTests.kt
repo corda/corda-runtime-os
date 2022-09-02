@@ -171,10 +171,13 @@ class VirtualNodeWriterProcessorTests {
         VirtualNodeDbType.VAULT, true, HOLDING_ID_SHORT_HASH, dbConnections, mock(), connectionManager, mock())
     private val cryptoDb = VirtualNodeDb(
         VirtualNodeDbType.CRYPTO, true, HOLDING_ID_SHORT_HASH, dbConnections, mock(), connectionManager, mock())
+    private val uniquenessDb = VirtualNodeDb(
+        VirtualNodeDbType.UNIQUENESS, true, HOLDING_ID_SHORT_HASH, dbConnections, mock(), connectionManager, mock())
     private val vNodeFactory = mock<VirtualNodeDbFactory>() {
         on { createVNodeDbs(any(), any()) }.doReturn(mapOf(
             VirtualNodeDbType.VAULT to vaultDb,
-            VirtualNodeDbType.CRYPTO to cryptoDb))
+            VirtualNodeDbType.CRYPTO to cryptoDb,
+            VirtualNodeDbType.UNIQUENESS to uniquenessDb))
     }
 
     private val vNodeRepo = mock<VirtualNodeEntityRepository>() {

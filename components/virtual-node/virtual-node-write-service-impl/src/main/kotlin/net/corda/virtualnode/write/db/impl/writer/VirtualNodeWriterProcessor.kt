@@ -263,6 +263,10 @@ internal class VirtualNodeWriterProcessor(
             return "If Crypto DDL connection is provided, Crypto DML connection needs to be provided as well."
         }
 
+        if (!uniquenessDdlConnection.isNullOrBlank() && uniquenessDmlConnection.isNullOrBlank()) {
+            return "If Uniqueness DDL connection is provided, Uniqueness DML connection needs to be provided as well."
+        }
+
         try {
             MemberX500Name.parse(x500Name)
         } catch (e: Exception) {
@@ -311,8 +315,8 @@ internal class VirtualNodeWriterProcessor(
                             putConnection(entityManager, vNodeDbs, VAULT, DML, updateActor)!!,
                             putConnection(entityManager, vNodeDbs, CRYPTO, DDL, updateActor),
                             putConnection(entityManager, vNodeDbs, CRYPTO, DML, updateActor)!!,
-                            putConnection(entityManager, vNodeDbs, UNIQUENESS, DML, updateActor),
-                            putConnection(entityManager, vNodeDbs, UNIQUENESS, DDL, updateActor)!!,
+                            putConnection(entityManager, vNodeDbs, UNIQUENESS, DDL, updateActor),
+                            putConnection(entityManager, vNodeDbs, UNIQUENESS, DML, updateActor)!!,
                         )
                     virtualNodeEntityRepository.putHoldingIdentity(entityManager, holdingIdentity, dbConnections)
                     virtualNodeEntityRepository.putVirtualNode(entityManager, holdingIdentity, cpiId)
