@@ -565,10 +565,13 @@ internal class SessionManagerImpl(
         val sourceAndPeer = hostedIdentitiesInSameGroup
             .asSequence()
             .map {
+                println("QQQ Looking in $it")
                 val member = members.getMemberInfo(it, message.source.initiatorPublicKeyHash.array())
                 if(member == null) {
+                    println("Nop")
                     null
                 } else {
+                    println("QQQ GOT IT!!!!")
                     it to member
                 }
             }.firstOrNull()
