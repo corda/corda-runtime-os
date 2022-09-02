@@ -1,5 +1,6 @@
 package net.corda.messaging.integration.subscription
 
+import net.corda.base.concurrent.getOrThrow
 import net.corda.data.messaging.RPCRequest
 import net.corda.data.messaging.RPCResponse
 import net.corda.data.messaging.ResponseStatus
@@ -27,7 +28,6 @@ import net.corda.messaging.integration.processors.TestRPCErrorResponderProcessor
 import net.corda.messaging.integration.processors.TestRPCResponderProcessor
 import net.corda.messaging.integration.processors.TestRPCUnresponsiveResponderProcessor
 import net.corda.test.util.eventually
-import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions

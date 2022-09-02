@@ -21,7 +21,8 @@ data class NetworkHostAndPort(val host: String, val port: Int) {
          * Parses a string of the form host:port into a [NetworkHostAndPort].
          * The host part may be a hostname or IP address. If it's an IPv6 address, it must be enclosed in square brackets.
          * Note this does not parse the toString of a resolved [java.net.InetSocketAddress], which is of a host/IP:port form.
-         * @throws IllegalArgumentException if the port is missing, the string is garbage, or the NetworkHostAndPort constructor rejected the parsed parts.
+         * @throws IllegalArgumentException if the port is missing, the string is garbage, or the NetworkHostAndPort
+         * constructor rejected the parsed parts.
          */
         @JvmStatic
         fun parse(str: String): NetworkHostAndPort {

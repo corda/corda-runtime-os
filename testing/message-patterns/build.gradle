@@ -27,6 +27,7 @@ dependencies {
 
     integrationTestImplementation project(":components:kafka-topic-admin")
 
+    integrationTestImplementation project(":libs:base")
     integrationTestImplementation project(":libs:configuration:configuration-core")
     integrationTestImplementation project(":libs:lifecycle:lifecycle")
     integrationTestImplementation project(":libs:messaging:messaging")

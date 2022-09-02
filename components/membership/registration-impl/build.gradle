@@ -21,6 +21,7 @@ dependencies {
     implementation project(":components:membership:membership-persistence-client")
     implementation project(':components:membership:membership-p2p')
     implementation project(":components:membership:registration")
+    implementation project(":libs:base")
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:lifecycle:lifecycle")

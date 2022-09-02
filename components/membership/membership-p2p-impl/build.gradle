@@ -17,6 +17,7 @@ dependencies {
     implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-topic-schema'
 
+    implementation project(":libs:base")
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:membership:membership-impl')
     implementation project(':libs:messaging:messaging')

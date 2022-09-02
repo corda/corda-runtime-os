@@ -10,6 +10,7 @@ dependencies {
     compileOnly 'org.osgi:osgi.core'
     implementation project(":osgi-framework-api")
 
+    implementation project(":libs:base")
     implementation project(":libs:http-rpc:http-rpc")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:utilities")
