@@ -10,11 +10,11 @@ class RPCRequestDataWrapperFactory : RequestDataFactory {
 
     private data class HttpStartFlow(val httpStartFlow: RequestData)
 
-    override fun create(clientRequestId: String, flowClass: String, requestBody: String): RequestData
-        = RPCRequestDataWrapper(clientRequestId, flowClass, requestBody)
+    override fun create(clientRequestId: String, flowClass: String, requestBody: String): RequestData =
+        RPCRequestDataWrapper(clientRequestId, flowClass, requestBody)
 
-    override fun create(clientRequestId: String, flowClass: Class<out Flow>, requestBody: Any): RequestData
-        = RPCRequestDataWrapper(clientRequestId, flowClass.name, jms.format(requestBody))
+    override fun create(clientRequestId: String, flowClass: Class<out Flow>, requestBody: Any): RequestData =
+        RPCRequestDataWrapper(clientRequestId, flowClass.name, jms.format(requestBody))
 
     override fun create(jsonString : String) = jms.parse(jsonString, HttpStartFlow::class.java).httpStartFlow
 

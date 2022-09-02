@@ -25,5 +25,6 @@ class DefaultServicesInjectorTest {
         assertNotNull(flow.jsonMarshallingService)
         assertNotNull(flow.persistenceService)
         assertNotNull(flow.flowMessaging)
+        assertNotNull(flow.memberLookup)
     }
 }
