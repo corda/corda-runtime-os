@@ -371,40 +371,6 @@ class CPKTests {
     }
 
     @Test
-    fun `allows a CPK dependencies file to list multiple signers`() {
-        val publicKey = "some public key".toByteArray()
-        val dummyName = "DUMMY_NAME"
-        val dummyVersion = "DUMMY_VERSION"
-        val hashdata1 = publicKey.hash(DigestAlgorithmName.SHA2_384)
-        val hashdata2 = publicKey.hash(DigestAlgorithmName.SHA2_384)
-        val hashdata3 = publicKey.hash(DigestAlgorithmName.SHA2_512)
-
-        val expectedSignersSummaryHash = sequenceOf(hashdata1, hashdata2, hashdata3).summaryHash()
-
-        val modifiedWorkflowCPK = testDir.resolve("tweaked.cpk")
-        val xml = """
-        |<cpkDependencies xmlns="urn:corda-cpk">
-        |    <cpkDependency>
-        |        <name>$dummyName</name>
-        |        <version>$dummyVersion</version>
-        |        <signers>
-        |            <signer algorithm="${hashdata1.algorithm}">${String(Base64.getEncoder().encode(hashdata1.bytes))}</signer>
-        |            <signer algorithm="${hashdata2.algorithm}">${String(Base64.getEncoder().encode(hashdata2.bytes))}</signer>
-        |            <signer algorithm="${hashdata3.algorithm}">${String(Base64.getEncoder().encode(hashdata3.bytes))}</signer>
-        |        </signers>
-        |    </cpkDependency>
-        |</cpkDependencies>
-        """.trimMargin()
-        tweakDependencyMetadataFile(modifiedWorkflowCPK, xml)
-        val cpk = CpkLoaderV2().loadMetadata(modifiedWorkflowCPK.readAll(),
-            cpkLocation = modifiedWorkflowCPK.toString(), verifySignature = false
-        )
-        val dependency = cpk.dependencies.find { it.name == dummyName && it.version == dummyVersion }
-        Assertions.assertNotNull(dependency, "Test dependency not found")
-        Assertions.assertEquals(expectedSignersSummaryHash, dependency!!.signerSummaryHash)
-    }
-
-    @Test
     fun `library verification fails if jar file in the lib folder do not match the content of DependencyConstraints`() {
         val tamperedCPK = testDir.resolve("tampered.cpk")
         tamperWithLibraries(tamperedCPK)
