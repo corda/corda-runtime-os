@@ -112,7 +112,7 @@ class GroupPolicyProviderImplTest {
     var virtualNodeListener: VirtualNodeInfoListener? = null
 
     fun createVirtualNodeInfo(holdingIdentity: HoldingIdentity, cpiIdentifier: CpiIdentifier) = VirtualNodeInfo(
-        holdingIdentity, cpiIdentifier, null, UUID.randomUUID(), null, UUID.randomUUID(), timestamp = Instant.now()
+        holdingIdentity, cpiIdentifier, null, UUID.randomUUID(), null, UUID.randomUUID(), null, UUID.randomUUID(), timestamp = Instant.now()
     )
 
     val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
@@ -296,6 +296,8 @@ class GroupPolicyProviderImplTest {
                     UUID.randomUUID(),
                     null,
                     UUID.randomUUID(),
+                    null,
+                    UUID.randomUUID(),
                     timestamp = Instant.now()
                 )
             )
@@ -318,6 +320,8 @@ class GroupPolicyProviderImplTest {
                 holdingIdentity1 to VirtualNodeInfo(
                     holdingIdentity1,
                     cpiIdentifier2,
+                    null,
+                    UUID.randomUUID(),
                     null,
                     UUID.randomUUID(),
                     null,

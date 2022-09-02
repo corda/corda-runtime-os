@@ -38,6 +38,8 @@ class VirtualNodeInfoMapTest {
         UUID.randomUUID(),
         null,
         UUID.randomUUID(),
+        null,
+        UUID.randomUUID(),
         timestamp = Instant.now()
     )
 

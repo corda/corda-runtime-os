@@ -34,7 +34,13 @@ class VirtualNodeInfoProcessorTest {
     private fun sendOnNextRandomMessage(processor: VirtualNodeInfoProcessor): HoldingIdentity {
         val holdingIdentity = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", UUID.randomUUID().toString())
         val newVirtualNodeInfo = VirtualNodeInfo(holdingIdentity, CpiIdentifier("ghi", "hjk", secureHash),
-            null, UUID.randomUUID(), null, UUID.randomUUID(), timestamp = Instant.now())
+            null,
+            UUID.randomUUID(),
+            null,
+            UUID.randomUUID(),
+            null,
+            UUID.randomUUID(),
+            timestamp = Instant.now())
         processor.onNext(Record("", holdingIdentity.toAvro(), newVirtualNodeInfo.toAvro()), null, emptyMap())
         return holdingIdentity
     }
@@ -43,6 +49,8 @@ class VirtualNodeInfoProcessorTest {
     private fun newVirtualNodeInfo(holdingIdentity: HoldingIdentity, cpiIdentifier: CpiIdentifier) = VirtualNodeInfo(
         holdingIdentity,
         cpiIdentifier,
+        null,
+        UUID.randomUUID(),
         null,
         UUID.randomUUID(),
         null,
