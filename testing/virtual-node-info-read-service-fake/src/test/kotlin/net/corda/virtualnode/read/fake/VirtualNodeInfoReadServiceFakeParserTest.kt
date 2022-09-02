@@ -24,6 +24,7 @@ internal class VirtualNodeInfoReadServiceFakeParserTest {
               groupId: ${vnode.holdingIdentity.groupId}
               x500Name: ${vnode.holdingIdentity.x500Name}
             vaultDmlConnectionId: ${vnode.vaultDmlConnectionId}
+            uniquenessDmlConnectionId: ${vnode.uniquenessDmlConnectionId}
             timestamp: ${vnode.timestamp}
         """.trimIndent())
 
