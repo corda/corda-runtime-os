@@ -3,8 +3,8 @@ package net.corda.flow.application.sessions
 import net.corda.flow.BOB_X500_NAME
 import net.corda.flow.application.services.MockFlowFiberService
 import net.corda.flow.application.sessions.factory.FlowSessionFactoryImpl
+import net.corda.flow.fiber.FlowFiberSerializationService
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.serialization.SerializedBytes
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -22,20 +22,19 @@ class FlowSessionFactoryImplTest {
         const val HI = "hi"
     }
 
-    private val serializationService = mock<SerializationService>().apply {
-        whenever(serialize(HI)).thenReturn(SerializedBytes(HI.toByteArray()))
-    }
+
 
     private val mockFlowFiberService = MockFlowFiberService()
-    private val sandboxGroupContext = mockFlowFiberService.sandboxGroupContext
-
     private val flowFiber = mockFlowFiberService.flowFiber
-    private val flowSessionFactory = FlowSessionFactoryImpl(mockFlowFiberService)
+    private val flowFiberSerializationService = mock<FlowFiberSerializationService>()
+    private val flowSessionFactory = FlowSessionFactoryImpl(mockFlowFiberService, flowFiberSerializationService)
 
     @Suppress("Unused")
     @BeforeEach
     fun setup(){
-        whenever(sandboxGroupContext.amqpSerializer).thenReturn(serializationService)
+        flowFiberSerializationService.apply {
+            whenever(serialize(HI)).thenReturn(SerializedBytes(HI.toByteArray()))
+        }
     }
 
     @Test
