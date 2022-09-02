@@ -12,6 +12,7 @@ import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkManifest
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
+import net.corda.libs.packaging.core.exception.CordappManifestException
 import net.corda.libs.packaging.core.exception.UnknownFormatVersionException
 import net.corda.libs.packaging.hash
 import net.corda.libs.packaging.internal.CpkImpl
@@ -72,6 +73,7 @@ class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
         }
 
         // Read manifest
+        if (manifest == null) throw CordappManifestException("manifest must not be null")
         val cordappManifest = CordappManifest.fromManifest(manifest)
         val cpkManifest = CpkManifest(FormatVersionReader.readCpkFormatVersion(Manifest(manifest)))
         val cpkType = manifest.mainAttributes.getValue(CpkLoaderV1.CPK_TYPE)?.let { CpkType.parse(it) } ?: CpkType.UNKNOWN
