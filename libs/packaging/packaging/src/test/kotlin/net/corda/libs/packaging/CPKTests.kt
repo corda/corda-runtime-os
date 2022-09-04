@@ -77,6 +77,7 @@ class CPKTests {
     }
 
     @BeforeAll
+    @Suppress("MaxLineLength")
     fun setup(@TempDir junitTestDir: Path) {
         testDir = junitTestDir
 
