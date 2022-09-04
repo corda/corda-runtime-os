@@ -1,4 +1,4 @@
-package net.corda.testing.sandboxes.impl.packaging.v2
+package net.corda.libs.packaging.testutils.cpb.packaging.v2
 
 import java.nio.file.Path
 import net.corda.libs.packaging.testutils.TestUtils.ALICE
@@ -13,7 +13,7 @@ class CpbReaderV2Test {
     lateinit var tmp: Path
 
     @Test
-    fun `reads Cpb V2 into Cpi V2 but without Cpi fields`() {
+    fun `reads cpb file V2 into Cpi V2 but without cpi fields`() {
         val cpbStream = TestCpbV2Builder()
             .signers(ALICE)
             .build()
