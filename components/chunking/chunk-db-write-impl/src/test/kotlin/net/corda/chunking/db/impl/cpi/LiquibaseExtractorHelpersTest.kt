@@ -4,7 +4,6 @@ import net.corda.chunking.db.impl.cpi.liquibase.LiquibaseExtractor
 import net.corda.chunking.db.impl.cpi.liquibase.LiquibaseExtractorHelpers
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.packaging.Cpi
-import net.corda.libs.packaging.CpiReader
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkMetadata
@@ -21,7 +20,7 @@ import java.io.FileNotFoundException
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
-import net.corda.libs.packaging.testutils.cpb.CpbReaderV2
+import net.corda.libs.packaging.testutils.cpb.packaging.v2.CpbReaderV2
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class LiquibaseExtractorHelpersTest {

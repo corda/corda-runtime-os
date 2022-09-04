@@ -3,7 +3,6 @@ package net.corda.chunking.db.impl.cpi
 import net.corda.chunking.db.impl.cpi.liquibase.LiquibaseExtractor
 import net.corda.db.admin.LiquibaseXmlConstants
 import net.corda.libs.packaging.Cpi
-import net.corda.libs.packaging.CpiReader
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -12,7 +11,7 @@ import org.junit.jupiter.api.io.TempDir
 import java.io.FileNotFoundException
 import java.io.InputStream
 import java.nio.file.Path
-import net.corda.libs.packaging.testutils.cpb.CpbReaderV2
+import net.corda.libs.packaging.testutils.cpb.packaging.v2.CpbReaderV2
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class LiquibaseExtractorTest {
