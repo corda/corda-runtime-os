@@ -51,7 +51,7 @@ internal class LiquibaseExtractorTest {
         assertThat(entities.size).isEqualTo(expectedLiquibaseFileCount)
 
         entities.forEach {
-            // TODO: CpbReaderV2 just reads .cpb into a [Cpi], meaning there is no group policy file at this level
+            // TODO CpbReaderV2 just reads .cpb into a [Cpi], meaning there is no group policy file at this level
             //  we need to tackle this by building a proper .cpi file with a group policy with sufficient information
             //  for cpkSignerSummaryHash to be populated out of it.
 //            assertThat(it.id.cpkSignerSummaryHash.isNotEmpty()).isTrue
