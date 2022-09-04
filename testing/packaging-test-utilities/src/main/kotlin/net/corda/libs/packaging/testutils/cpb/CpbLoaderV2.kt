@@ -1,4 +1,4 @@
-package net.corda.testing.sandboxes.impl.packaging.v2
+package net.corda.libs.packaging.testutils.cpb
 
 import java.io.ByteArrayInputStream
 import java.nio.file.Path

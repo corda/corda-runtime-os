@@ -1,4 +1,4 @@
-package net.corda.testing.sandboxes.impl.packaging.v2
+package net.corda.libs.packaging.testutils.cpb
 
 import java.io.ByteArrayInputStream
 import java.io.InputStream
@@ -14,7 +14,7 @@ import net.corda.libs.packaging.readCpbFormatVersion
  * in testing cases where we have a .cpb file and we are only interested in testing at CPB level and
  * not interested in CPI fields.
  */
-internal object CpbReaderV2 {
+object CpbReaderV2 {
     private val version2 = CpkFormatVersion(2, 0)
 
     fun readCpi(

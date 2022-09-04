@@ -25,13 +25,10 @@ dependencies {
     implementation project(':components:virtual-node:cpi-info-read-service')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
     implementation project(':components:virtual-node:cpk-read-service')
-    implementation project(':libs:utilities')
+    implementation project(":testing:packaging-test-utilities")
 
     runtimeOnly "org.apache.felix:org.apache.felix.configadmin:$felixConfigAdminVersion"
     runtimeOnly project(':libs:sandbox-internal')
-
-    testImplementation project(":testing:packaging-test-utilities")
-    testImplementation project(':testing:test-utilities')
 }
 
 tasks.named('jar', Jar) {

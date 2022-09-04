@@ -19,7 +19,7 @@ import java.io.InputStream
 import java.nio.file.Paths
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
-import net.corda.testing.sandboxes.impl.packaging.v2.CpbReaderV2
+import net.corda.libs.packaging.testutils.cpb.CpbReaderV2
 import net.corda.v5.crypto.SecureHash
 
 @Suppress("unused")
