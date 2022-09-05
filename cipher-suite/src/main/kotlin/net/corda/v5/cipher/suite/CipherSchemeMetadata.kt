@@ -13,12 +13,12 @@ import java.util.Collections
 
 /**
  * Service which provides metadata about cipher suite, such as available key schemes,
- * digests, security providers, key factories, and [SecureRandom] instance.
+ * digests, security providers, key factories, and [SecureRandom] instance as well as some utility methods.
  */
 interface CipherSchemeMetadata : KeyEncodingService, AlgorithmParameterSpecEncodingService {
     companion object {
         /**
-         * List of digest algorithms that must not be used due their vulnerabilities.
+         * List of digest algorithms that must not be used nor implemented due their vulnerabilities.
          */
         @JvmField
         val BANNED_DIGESTS: Set<String> = Collections.unmodifiableSet(setOf(
@@ -32,7 +32,7 @@ interface CipherSchemeMetadata : KeyEncodingService, AlgorithmParameterSpecEncod
     }
 
     /**
-     * The map of initialized security providers where the key is the provider name.
+     * The map of initialized security providers used by the cipher suite where the key is the provider name.
      */
     val providers: Map<String, Provider>
 
@@ -42,11 +42,13 @@ interface CipherSchemeMetadata : KeyEncodingService, AlgorithmParameterSpecEncod
     val schemes: List<KeyScheme>
 
     /**
-     * The list of all available digest algorithms for the cipher suite with the provider name which implements it.
+     * The list of all available digest algorithms for the cipher suite.
      */
     val digests: List<DigestScheme>
 
-    /** Get an instance of [SecureRandom] */
+    /**
+     * Returns an instance of [SecureRandom] which should be used to generate cryptographically secure random value.
+     */
     val secureRandom: SecureRandom
 
     /**
@@ -57,29 +59,30 @@ interface CipherSchemeMetadata : KeyEncodingService, AlgorithmParameterSpecEncod
     fun findKeyScheme(algorithm: AlgorithmIdentifier): KeyScheme
 
     /**
-     * Find the corresponding [KeyScheme] based on the type of the input [PublicKey].
+     * Find the corresponding [KeyScheme] based on the type of the [PublicKey].
      *
-     * @throws CryptoKeySchemeUnsupportedException if the requested key type is not supported.
+     * @throws IllegalArgumentException if the key type is not supported.
      */
     fun findKeyScheme(key: PublicKey): KeyScheme
 
     /**
      * Find the corresponding [KeyScheme] based on the code name.
      *
-     * @throws CryptoKeySchemeUnsupportedException if the requested key type is not supported.
+     * @throws IllegalArgumentException if the scheme is not supported.
      */
     fun findKeyScheme(codeName: String): KeyScheme
 
     /**
      * Find the corresponding [KeyFactory] based on the [KeyScheme].
      *
-     * @throws CryptoKeySchemeUnsupportedException if the requested key type is not supported.
+     * @throws IllegalArgumentException if the scheme is not supported.
      */
     fun findKeyFactory(scheme: KeyScheme): KeyFactory
 
     /**
-     * Infers the signature spec from the [PublicKey] and [DigestAlgorithmName]. If the [publicKey] is 'EdDSA'
-     * then the [digest] is ignored and signatureName is set to "EdDSA".
+     * Infers the signature spec from the [PublicKey] and [DigestAlgorithmName]. The [digest] may be ignored for some
+     * public key types as the digest is integral part of the signing/verification, e.g. if the [publicKey] is 'EdDSA'
+     * hen the [digest] is set to "EdDSA" by the platform's default implementation.
      *
      * @return [SignatureSpec] with the signatureName formatted like "SHA256withECDSA" if that can be inferred or
      * otherwise null.

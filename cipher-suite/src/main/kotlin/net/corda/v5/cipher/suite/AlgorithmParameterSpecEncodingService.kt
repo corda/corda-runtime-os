@@ -5,6 +5,7 @@ import java.security.spec.AlgorithmParameterSpec
 
 /**
  * Encoding service which can encode and decode signature parameters.
+ * The service is required as almost all [AlgorithmParameterSpec] implementations are not serializable.
  */
 interface AlgorithmParameterSpecEncodingService {
     /**

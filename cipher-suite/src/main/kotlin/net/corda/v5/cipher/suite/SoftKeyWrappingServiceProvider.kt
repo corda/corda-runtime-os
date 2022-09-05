@@ -1,9 +1,9 @@
 package net.corda.v5.cipher.suite
 
 /**
- * Factory to create new instances of the [EncryptionService].
+ * Factory to create new instances of the [SoftKeyWrappingService].
  */
-interface EncryptionServiceProvider<T : Any> {
+interface SoftKeyWrappingServiceProvider<T : Any> {
     /**
      * The name used to resolve current provider by crypto service factory.
      */
@@ -16,7 +16,7 @@ interface EncryptionServiceProvider<T : Any> {
     val configType: Class<T>
 
     /**
-     * Returns an instance of the [EncryptionService].
+     * Returns an instance of the [SoftKeyWrappingService].
      * @param config crypto service configuration
      * @param secrets provides access to decrypting the secrets
      *
@@ -24,16 +24,18 @@ interface EncryptionServiceProvider<T : Any> {
      * in the example bellow for the property called 'passphrase'
      *
      * POJO (Kotlin):
+     *```
      *  val passphrase: Map<String, Any>
-     *
+     *```
      * JSON:
+     *```
      *  "passphrase": {
      *      "configSecret": {
      *          "encryptedSecret": "<encrypted-value>"
      *      }
      *  }
-     *
-     * @throws [net.corda.v5.crypto.failures.CryptoException] for general cryptographic exceptions.
+     *```
+     * @throws [net.corda.v5.crypto.exceptions.CryptoException] for general cryptographic exceptions.
      */
     fun getInstance(config: T, secrets: ConfigurationSecrets): CryptoService
 }

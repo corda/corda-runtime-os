@@ -42,7 +42,7 @@ interface SigningService {
     * Decodes public key from PEM encoded string.
     *
     * @throws IllegalArgumentException if the key scheme is not supported.
-    * @throws net.corda.v5.crypto.failures.CryptoException for general cryptographic exceptions.
+    * @throws net.corda.v5.crypto.exceptions.CryptoException for general cryptographic exceptions.
     */
     @Suspendable
     fun decodePublicKey(encodedKey: String): PublicKey

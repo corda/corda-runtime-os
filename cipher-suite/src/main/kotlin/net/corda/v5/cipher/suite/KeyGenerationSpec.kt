@@ -15,7 +15,7 @@ import net.corda.v5.cipher.suite.schemes.KeyScheme
  * @property masterKeyAlias The wrapping key alias which can be used when generating the wrapped keys, the value
  * could be null for HSMs which use built-in wrapping keys.
  *
- * Note about key aliases. Corda always uses single alias to identify a key pair however some HSMs need separate
+ * The Corda Platform always uses single alias to identify a key pair however some HSMs need separate
  * aliases for public and private keys, in such cases their names have to be derived from the single key pair alias.
  * It could be suffixes or whatever internal naming scheme is used.
  */

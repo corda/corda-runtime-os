@@ -1,7 +1,7 @@
 package net.corda.v5.cipher.suite.schemes
 
 /**
- * Represents the result of [AlgorithmParameterSpec] serialization.
+ * Represents the result of [java.security.spec.AlgorithmParameterSpec] serialization.
  *
  * @property clazz the fully qualified name of the parameters class which was serialized
  * @property bytes the byte array containing the result of the serialization

@@ -5,6 +5,7 @@ import java.security.spec.AlgorithmParameterSpec
 /**
  * Custom serializer for [AlgorithmParameterSpec] as most of the implementations are not serializable and throw
  * an exception when trying to use default constructors so the JSON cannot be used as well.
+ * Te implementations are used by [net.corda.v5.cipher.suite.AlgorithmParameterSpecEncodingService].
  */
 interface AlgorithmParameterSpecSerializer<T : AlgorithmParameterSpec> {
     /**

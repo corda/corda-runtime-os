@@ -4,13 +4,13 @@ import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
 
 /**
- * Crypto service which can sign as well as create new key pairs.
+ * Crypto service which can be used to sign and generate new key pairs.
  *
- * Note about key aliases. Corda always uses single alias to identify a key pair however some HSMs need separate
+ * Corda always uses single alias to identify a key pair however some HSMs need separate
  * aliases for public and private keys, in such cases their names have to be derived from the single key pair alias.
- * It could be suffixes or whatever internal naming scheme is used.
+ * It could be suffixes or whatever internal naming convention is used.
  *
- * Also note that it is not required to keep a public key in the HSM as that will be kept by the upstream Crypto Services.
+ * Also, it is not required to keep a public key in the HSM as that will be kept by the upstream Crypto Services.
  *
  * Exception handling.
  *
@@ -23,42 +23,52 @@ import net.corda.v5.crypto.SignatureSpec
  * - if the internal state is wrong for an operation then the most appropriate exception would be [IllegalStateException]
  * - any other what is appropriate for the condition.
  *
- * If service encountered throttling situation and the downstream library doesn't handle that then it should throw one
- * of concrete implementations of [net.corda.v5.crypto.failures.CryptoThrottlingException]
- * (such as [net.corda.v5.crypto.failures.CryptoExponentialThrottlingException]) so the upstream service
- * can handle it appropriately.
+ * If service encountered throttling situation and the downstream library doesn't handle that then it should throw
+ * [net.corda.v5.crypto.exceptions.CryptoThrottlingException]
  *
  * The following exceptions are retried - [java.util.concurrent.TimeoutException],
- * [net.corda.v5.crypto.failures.CryptoException] (with the isRecoverable flag set to true),
+ * [net.corda.v5.crypto.exceptions.CryptoException] (with the isRecoverable flag set to true),
  * some persistence exceptions like [javax.persistence.LockTimeoutException], [javax.persistence.QueryTimeoutException],
  * [javax.persistence.OptimisticLockException], [javax.persistence.PessimisticLockException] and some others.
  * Throw [java.util.concurrent.TimeoutException] only if the service want's that to be handled before
  * the upstream library detects it.
+ *
+ * About service extensions.
+ *
+ * The implementation of the [CryptoService] consist of the method which implementation is required and some optional
+ * methods, which are called extensions. It's done this way, instead of breaking the functionality into
+ * several interfaces because the platform uses decorators to handle some common failure scenarios where using
+ * extension interfaces would be awkward. If not stated explicitly in the description then the method is required.
  */
 interface CryptoService {
     /**
-     * Returns list of crypto service extensions, such as REQUIRE_WRAPPING_KEY, DELETE_KEYS.
+     * Returns list of crypto service extensions which are supported by this implementation of [CryptoService],
+     * such as REQUIRE_WRAPPING_KEY, DELETE_KEYS.
      */
     val extensions: List<CryptoServiceExtensions>
 
     /**
      * Key schemes and signature specs for each key which this implementation of [CryptoService] supports.
-     * Note that the service can actually support more signature specs than reported. The data is more of a guidance.
      */
     val supportedSchemes: Map<KeyScheme, List<SignatureSpec>>
 
     /**
-     * Generates and optionally stores an asymmetric key pair.
+     * Generates and optionally stores a key pair. The implementation is free to decide how the generated key
+     * is stored - either in the corresponding HSM or wrapped and exported. The rule of thumb would be in the [spec]
+     * has the [KeyGenerationSpec.alias] defined then it's expected that the key will be stored in the HSM otherwise
+     * wrapped and exported but as mentioned above it's up to the concrete implementation. Such behaviour have to be
+     * defined beforehand and advertised. TIf the key is exported then its key material will be persisted
+     * on the platform side.
      *
-     * @param spec parameters to generate key pair.
+     * @param spec parameters to generate the key pair.
      * @param context the optional key/value operation context. The context will have at least two variables defined -
      * 'tenantId' and 'category'.
      *
-     * Returns information about the generated key, could be either [GeneratedPublicKey] or [GeneratedWrappedKey]
-     * depending on the generated key type.
+     * @return Information about the generated key, could be either [GeneratedPublicKey] or [GeneratedWrappedKey]
+     * depending on how the key is generated and persisted or wrapped and exported.
      *
      * @throws IllegalArgumentException the key scheme is not supported or in general the input parameters are wrong
-     * @throws net.corda.v5.crypto.failures.CryptoException, non-recoverable
+     * @throws net.corda.v5.crypto.exceptions.CryptoException, non-recoverable
      */
     fun generateKeyPair(
         spec: KeyGenerationSpec,
@@ -67,16 +77,17 @@ interface CryptoService {
 
     /**
      * Sign a byte array using the private key identified by the input arguments.
-     * Returns the signature bytes formatted according to the default signature spec.
      *
      * @param spec (either [SigningAliasSpec] or [SigningWrappedSpec]) to be used for signing.
      * @param data the data to be signed.
      * @param context the optional key/value operation context. The context will have at least one variable defined -
      * 'tenantId'.
      *
+     * @return the signature bytes formatted according to the default signature spec.
+     *
      * @throws IllegalArgumentException if the key is not found, the key scheme is not supported, the signature spec
      * is not supported or in general the input parameters are wrong
-     * @throws net.corda.v5.crypto.failures.CryptoException, non-recoverable
+     * @throws net.corda.v5.crypto.exceptions.CryptoException, non-recoverable
      */
     fun sign(
         spec: SigningSpec,
@@ -85,7 +96,7 @@ interface CryptoService {
     ): ByteArray
 
     /**
-     * Generates a new key to be used as a wrapping key. Some implementations may not have the notion of
+     * Optional, generates a new key to be used as a wrapping key. Some implementations may not have the notion of
      * the wrapping key in such cases the implementation should do nothing (note that REQUIRE_WRAPPING_KEY should not
      * be listed for such implementations).
      *
@@ -96,7 +107,7 @@ interface CryptoService {
      *
      * @throws IllegalArgumentException if the [failIfExists] is set to true and the key exists
      * @throws UnsupportedOperationException if the operation is not supported
-     * @throws net.corda.v5.crypto.failures.CryptoException, non-recoverable
+     * @throws net.corda.v5.crypto.exceptions.CryptoException, non-recoverable
      */
     fun createWrappingKey(
         masterKeyAlias: String,
@@ -105,7 +116,7 @@ interface CryptoService {
     )
 
     /**
-     * Deletes the key corresponding to the input alias of the service supports the operations .
+     * Optional, deletes the key corresponding to the input alias of the service supports the operations .
      * This method doesn't throw if the alias is not found, instead it has to return 'false'.
      *
      * @param alias the alias (as it stored in HSM) of the key being deleted.
@@ -115,13 +126,14 @@ interface CryptoService {
      * @return true if the key was deleted false otherwise
      *
      * @throws UnsupportedOperationException if the operation is not supported
-     * @throws net.corda.v5.crypto.failures.CryptoException, non-recoverable
+     * @throws net.corda.v5.crypto.exceptions.CryptoException, non-recoverable
      */
     fun delete(alias: String, context: Map<String, String>): Boolean
 
     /**
-     * Derive Diffie–Hellman key agreement shared secret by using the private key associated with [publicKey]
-     * and [otherPublicKey], note that the key schemes of the [publicKey] and [otherPublicKey] must be the same and
+     * Optional, derives Diffie–Hellman key agreement shared secret by using the private key associated
+     * with [SharedSecretSpec.publicKey] and [SharedSecretSpec.otherPublicKey], note that the key schemes
+     * of the [SharedSecretSpec.publicKey] and [SharedSecretSpec.otherPublicKey] must be the same and
      * the scheme must support the key agreement secret derivation.
      *
      * @param spec the operation parameters, see [SharedSecretAliasSpec] and [SharedSecretWrappedSpec]
@@ -134,7 +146,7 @@ interface CryptoService {
      * @throws IllegalArgumentException if the key is not found, the key scheme is not supported, the signature spec
      * is not supported, the key schemes of the public keys are not matching or in general the input parameters are wrong
      * @throws UnsupportedOperationException if the operation is not supported
-     * @throws net.corda.v5.crypto.failures.CryptoException, non-recoverable
+     * @throws net.corda.v5.crypto.exceptions.CryptoException, non-recoverable
      */
     fun deriveSharedSecret(
         spec: SharedSecretSpec,

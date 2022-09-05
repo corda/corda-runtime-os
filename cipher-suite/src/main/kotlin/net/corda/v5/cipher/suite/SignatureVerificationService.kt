@@ -16,7 +16,7 @@ interface SignatureVerificationService {
      * @param signatureSpec the signature spec.
      * @param clearData the clear data/message that was signed (usually the Merkle root).
      *
-     * @throws net.corda.v5.crypto.failures.CryptoSignatureException if verification fails.
+     * @throws net.corda.v5.crypto.exceptions.CryptoSignatureException if verification fails.
      * @throws IllegalArgumentException if any of the clear or signature data is empty, key is invalid,
      * the signature scheme is not supported or in general arguments are wrong
      */
@@ -31,7 +31,7 @@ interface SignatureVerificationService {
      * @param digest is used together with the [PublicKey] to infer the [SignatureSpec] to use when verifying this signature.
      * @param clearData the clear data/message that was signed (usually the Merkle root).
      *
-     * @throws net.corda.v5.crypto.failures.CryptoSignatureException if verification fails.
+     * @throws net.corda.v5.crypto.exceptions.CryptoSignatureException if verification fails.
      * @throws IllegalArgumentException if any of the clear or signature data is empty, key is invalid,
      * the signature scheme is not supported, the [SignatureSpec] cannot
      * be inferred from the parameters - e.g. EdDSA supports only 'NONEwithEdDSA' signatures so if the SHA-256 will

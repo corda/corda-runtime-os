@@ -5,7 +5,7 @@ import net.corda.v5.crypto.SecureHash
 import java.io.InputStream
 
 /**
- * Basic hashing service, handling hashing of bytes.
+ * Digital digest calculation service.
  */
 interface DigestService {
 
@@ -15,7 +15,7 @@ interface DigestService {
      * @param bytes The [ByteArray] to hash.
      * @param digestAlgorithmName The digest algorithm to be used for hashing.
      *
-     * @throws [CryptoDigestUnsupportedException] if the digest algorithm is not supported.
+     * @throws [IllegalArgumentException] if the digest algorithm is not supported.
      */
     fun hash(bytes: ByteArray, digestAlgorithmName: DigestAlgorithmName): SecureHash
 
@@ -25,7 +25,7 @@ interface DigestService {
      * @param inputStream The [InputStream] to hash.
      * @param digestAlgorithmName The digest algorithm to be used for hashing.
      *
-     * @throws [CryptoDigestUnsupportedException] if the digest algorithm is not supported.
+     * @throws [IllegalArgumentException] if the digest algorithm is not supported.
      */
     fun hash(inputStream : InputStream, digestAlgorithmName: DigestAlgorithmName): SecureHash
 
@@ -34,7 +34,7 @@ interface DigestService {
      *
      * @param digestAlgorithmName The digest algorithm to get the digest length for.
      *
-     * @throws [CryptoDigestUnsupportedException] if the digest algorithm is not supported.
+     * @throws [IllegalArgumentException] if the digest algorithm is not supported.
      */
     fun digestLength(digestAlgorithmName: DigestAlgorithmName): Int
 }

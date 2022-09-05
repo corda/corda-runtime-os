@@ -1,9 +1,10 @@
 package net.corda.v5.cipher.suite
 
 /**
- * Crypto service which can encrypt and decrypt data. The key will have to be created outside the scope of the service.
+ * Crypto service which can encrypt and decrypt key used by SOFT HSM.
+ * The key will have to be created outside the scope of the service.
  */
-interface EncryptionService {
+interface SoftKeyWrappingService {
     /**
      * Encrypts a byte array using the key identified by the alias.
      *
@@ -15,9 +16,9 @@ interface EncryptionService {
      * @return the encrypted data.
      *
      * @throws IllegalArgumentException if the key is not found or in general the input parameters are wrong
-     * @throws net.corda.v5.crypto.failures.CryptoException, non-recoverable
+     * @throws net.corda.v5.crypto.exceptions.CryptoException, non-recoverable
      */
-    fun encrypt(alias: String, clearText: ByteArray, context: Map<String, String>): ByteArray
+    fun wrap(alias: String, clearText: ByteArray, context: Map<String, String>): ByteArray
 
     /**
      * Decrypt a byte array using the key identified by the alias.
@@ -30,7 +31,7 @@ interface EncryptionService {
      * @return the clear text data.
      *
      * @throws IllegalArgumentException if the key is not found or in general the input parameters are wrong
-     * @throws net.corda.v5.crypto.failures.CryptoException, non-recoverable
+     * @throws net.corda.v5.crypto.exceptions.CryptoException, non-recoverable
      */
-    fun decrypt(alias: String, cipherText: ByteArray, context: Map<String, String>): ByteArray
+    fun unwrap(alias: String, cipherText: ByteArray, context: Map<String, String>): ByteArray
 }
