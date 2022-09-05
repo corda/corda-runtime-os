@@ -1,7 +1,7 @@
 package net.corda.httprpc.client.stream
 
-import net.corda.v5.base.stream.PositionManager
-import net.corda.v5.base.stream.PositionManager.Companion.MIN_POSITION
+import net.corda.httprpc.durablestream.api.PositionManager
+import net.corda.httprpc.durablestream.api.PositionManager.Companion.MIN_POSITION
 import net.corda.v5.base.util.contextLogger
 import java.nio.ByteBuffer
 import java.nio.channels.FileChannel

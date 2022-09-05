@@ -19,4 +19,4 @@ package net.corda.lifecycle
  * guaranteed that no further events for that registration will be delivered to the coordinator that originally
  * requested the registration.
  */
-interface RegistrationHandle : AutoCloseable
+interface RegistrationHandle : Resource

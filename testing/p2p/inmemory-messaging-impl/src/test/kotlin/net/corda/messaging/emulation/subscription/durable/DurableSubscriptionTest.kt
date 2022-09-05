@@ -74,7 +74,7 @@ class DurableSubscriptionTest {
     fun `stop will stop any running consumption`() {
         subscription.start()
 
-        subscription.stop()
+        subscription.close()
 
         verify(runningConsumption).stop()
     }
@@ -83,8 +83,8 @@ class DurableSubscriptionTest {
     fun `second stop will stop only once`() {
         subscription.start()
 
-        subscription.stop()
-        subscription.stop()
+        subscription.close()
+        subscription.close()
 
         verify(runningConsumption, times(1)).stop()
     }

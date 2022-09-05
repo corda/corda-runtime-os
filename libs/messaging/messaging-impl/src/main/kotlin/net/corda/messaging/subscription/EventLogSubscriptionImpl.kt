@@ -105,15 +105,8 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
     }
 
     /**
-     * Stop the subscription.
+     * Close the subscription.
      */
-    override fun stop() {
-        if (!stopped) {
-            stopConsumeLoop()
-            lifecycleCoordinator.stop()
-        }
-    }
-
     override fun close() {
         if (!stopped) {
             stopConsumeLoop()
@@ -178,7 +171,7 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                             "$errorMsg Attempts: $attempts. Closing subscription.", ex
                         )
                         lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, errorMsg)
-                        stop()
+                        close()
                     }
                 }
             }

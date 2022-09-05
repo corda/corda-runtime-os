@@ -147,7 +147,7 @@ class InMemoryCompactedSubscriptionIntegrationTest {
         )
 
         // Stop the subscriber
-        subscription.stop()
+        subscription.close()
         assertThat(subscription.isRunning).isFalse
     }
 }

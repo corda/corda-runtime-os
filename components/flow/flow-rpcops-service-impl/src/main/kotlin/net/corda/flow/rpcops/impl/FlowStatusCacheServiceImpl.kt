@@ -131,7 +131,7 @@ class FlowStatusCacheServiceImpl @Activate constructor(
         clientRequestId: String,
         holdingIdentity: HoldingIdentity,
         listener: FlowStatusUpdateListener
-    ) {
+    ): AutoCloseable {
         val flowKey = FlowKey(clientRequestId, holdingIdentity)
 
         validateMaxConnectionsPerFlowKey(flowKey)
@@ -149,9 +149,10 @@ class FlowStatusCacheServiceImpl @Activate constructor(
         // If the status is already known for a particular flow - deliver it to the listener
         // This can be the case when flow is already completed.
         cache[flowKey]?.let { listener.updateReceived(it) }
+        return AutoCloseable { unregisterFlowStatusListener(clientRequestId, holdingIdentity, listener) }
     }
 
-    override fun unregisterFlowStatusListener(
+    private fun unregisterFlowStatusListener(
         clientRequestId: String,
         holdingIdentity: HoldingIdentity,
         listener: FlowStatusUpdateListener
