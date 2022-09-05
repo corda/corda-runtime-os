@@ -126,7 +126,7 @@ class RpcSmokeTestFlow : RPCStartableFlow {
 
     @Suspendable
     private fun persistenceMergeDogs(input: RpcSmokeTestInput): String {
-        val dogs = getDogIds(input).map { id -> Dog(id, "dog-$id", Instant.now(), "updated") }
+        val dogs = getDogIds(input).map { id -> Dog(id, "dog-$id", Instant.now(), "merged") }
         persistenceService.merge(dogs)
         return "dogs ${dogs.map { it.id }} merged"
     }
