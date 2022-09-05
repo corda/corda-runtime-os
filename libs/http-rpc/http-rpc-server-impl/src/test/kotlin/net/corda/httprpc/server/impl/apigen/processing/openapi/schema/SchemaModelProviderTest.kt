@@ -13,7 +13,7 @@ import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.Sche
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.SchemaRefObjectModel
 import net.corda.httprpc.server.impl.apigen.processing.streams.DurableReturnResult
 import net.corda.httprpc.server.impl.apigen.processing.streams.FiniteDurableReturnResult
-import net.corda.v5.base.stream.Cursor
+import net.corda.httprpc.durablestream.api.Cursor
 import net.corda.v5.base.types.MemberX500Name
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull

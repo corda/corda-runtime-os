@@ -13,4 +13,6 @@ dependencies {
     implementation "net.corda:corda-application"
 
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
 }

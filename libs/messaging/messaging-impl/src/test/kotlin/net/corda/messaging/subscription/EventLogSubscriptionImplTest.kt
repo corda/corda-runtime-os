@@ -101,7 +101,7 @@ class EventLogSubscriptionImplTest {
 
         eventsLatch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
 
-        kafkaEventLogSubscription.stop()
+        kafkaEventLogSubscription.close()
         verify(cordaConsumerBuilder, times(1)).createConsumer<String, ByteBuffer>(
             any(),
             any(),
