@@ -2,6 +2,7 @@ package net.corda.libs.packaging.verify
 
 import net.corda.libs.packaging.core.exception.CordappManifestException
 import net.corda.libs.packaging.core.exception.InvalidSignatureException
+import net.corda.libs.packaging.core.exception.PackagingException
 import net.corda.libs.packaging.signerInfo
 import java.io.InputStream
 import java.security.CodeSigner
@@ -11,6 +12,8 @@ import java.util.jar.JarEntry
 import java.util.jar.JarInputStream
 import java.util.jar.Manifest
 import net.corda.libs.packaging.verify.SigningHelpers.isSigningRelated
+import net.corda.v5.base.types.MemberX500Name
+import java.lang.IllegalArgumentException
 
 /**
  * Verifies JAR by performing following checks:
@@ -66,6 +69,13 @@ class JarVerifier(
                 it.closeEntry()
                 if (jarEntry.codeSigners == null)
                     throw InvalidSignatureException("File ${jarEntry.name} is not signed in package \"$jarName\"")
+
+                val signer = jarEntry.codeSigners.first().signerCertPath.certificates.first() as X509Certificate
+                try {
+                    MemberX500Name.parse(signer.subjectX500Principal.name)
+                } catch (e : IllegalArgumentException){
+                    throw PackagingException("Error parsing X500 name \"${signer.subjectX500Principal.name}\"", e)
+                }
 
                 // All signed files should have the same signers
                 if (firstSignedEntry == null) {
