@@ -110,6 +110,11 @@ final class OSGiFrameworkMain {
      * @param args passed by the OS when invoking JVM to run this bootable JAR.
      */
     public static void main(String[] args) throws Exception {
+        Thread.setDefaultUncaughtExceptionHandler((t, e) ->{
+                System.out.println("QQQ uncaught exception in thread " + t.getName());
+                e.printStackTrace();
+                e.printStackTrace(System.out);
+        });
         /**
          * Set the Java security policy programmatically, as required by OSGi Security.
          * @see <a href="https://felix.apache.org/documentation/subprojects/apache-felix-framework-security.html">Felix Framework Security</a>
