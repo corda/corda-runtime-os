@@ -25,6 +25,7 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
@@ -77,7 +78,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import kotlin.test.assertFailsWith
 
@@ -124,7 +125,7 @@ class MgmSynchronisationServiceImplTest {
         on { createCoordinator(any(), lifecycleHandlerCaptor.capture()) } doReturn coordinator
     }
 
-    private val configHandle: AutoCloseable = mock()
+    private val configHandle: Resource = mock()
     private val configurationReadService: ConfigurationReadService = mock {
         on { registerComponentForUpdates(eq(coordinator), any()) } doReturn configHandle
     }
