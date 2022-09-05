@@ -11,7 +11,7 @@ import org.junit.jupiter.api.io.TempDir
 import java.io.FileNotFoundException
 import java.io.InputStream
 import java.nio.file.Path
-import net.corda.libs.packaging.testutils.cpb.packaging.v2.CpbReaderV2
+import net.corda.libs.packaging.testutils.cpb.packaging.v2.TestCpbReaderV2
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class LiquibaseExtractorTest {
@@ -32,7 +32,7 @@ internal class LiquibaseExtractorTest {
 
     @Test
     fun `test real cpb via validation function`() {
-        val cpi: Cpi = getInputStream(EXTENDABLE_CPB).use { CpbReaderV2.readCpi(it, testDir) }
+        val cpi: Cpi = getInputStream(EXTENDABLE_CPB).use { TestCpbReaderV2.readCpi(it, testDir) }
         val obj = LiquibaseExtractor()
         assertThat(obj.extractLiquibaseEntitiesFromCpi(cpi).isNotEmpty()).isTrue
 
@@ -42,7 +42,7 @@ internal class LiquibaseExtractorTest {
 
     @Test
     fun `check content`() {
-        val cpi: Cpi = getInputStream(EXTENDABLE_CPB).use { CpbReaderV2.readCpi(it, testDir) }
+        val cpi: Cpi = getInputStream(EXTENDABLE_CPB).use { TestCpbReaderV2.readCpi(it, testDir) }
         val obj = LiquibaseExtractor()
         val entities = obj.extractLiquibaseEntitiesFromCpi(cpi)
         assertThat(entities.isNotEmpty()).isTrue

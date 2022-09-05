@@ -14,7 +14,7 @@ import net.corda.libs.packaging.readCpbFormatVersion
  * in testing cases where we have a .cpb file and we are only interested in testing at CPB level and
  * not interested in CPI fields.
  */
-object CpbReaderV2 {
+object TestCpbReaderV2 {
     private val version2 = CpkFormatVersion(2, 0)
 
     fun readCpi(
@@ -32,7 +32,7 @@ object CpbReaderV2 {
         val formatVersion = readCpbFormatVersion(manifest)
         require(formatVersion == version2)
 
-        return CpbLoaderV2()
+        return TestCpbLoaderV2()
             .loadCpi(
                 cpbBytes,
                 expansionLocation,

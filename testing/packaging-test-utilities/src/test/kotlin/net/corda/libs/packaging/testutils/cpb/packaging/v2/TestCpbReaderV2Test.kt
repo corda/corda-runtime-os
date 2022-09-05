@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 
-class CpbReaderV2Test {
+class TestCpbReaderV2Test {
 
     @TempDir
     lateinit var tmp: Path
@@ -20,7 +20,7 @@ class CpbReaderV2Test {
             .inputStream()
 
 
-        val cpi = CpbReaderV2.readCpi(
+        val cpi = TestCpbReaderV2.readCpi(
             cpbStream,
             tmp,
             ""

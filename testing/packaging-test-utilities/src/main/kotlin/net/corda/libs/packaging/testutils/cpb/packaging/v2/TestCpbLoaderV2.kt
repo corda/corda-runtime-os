@@ -21,7 +21,7 @@ import net.corda.libs.packaging.core.exception.PackagingException
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 
-internal class CpbLoaderV2(private val clock: Clock = UTCClock()) {
+internal class TestCpbLoaderV2(private val clock: Clock = UTCClock()) {
 
     fun loadCpi(
         byteArray: ByteArray,

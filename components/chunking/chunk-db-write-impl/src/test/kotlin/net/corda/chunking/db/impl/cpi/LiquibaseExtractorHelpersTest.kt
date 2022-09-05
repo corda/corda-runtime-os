@@ -20,7 +20,7 @@ import java.io.FileNotFoundException
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
-import net.corda.libs.packaging.testutils.cpb.packaging.v2.CpbReaderV2
+import net.corda.libs.packaging.testutils.cpb.packaging.v2.TestCpbReaderV2
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class LiquibaseExtractorHelpersTest {
@@ -205,7 +205,7 @@ internal class LiquibaseExtractorHelpersTest {
     @Test
     fun `test real cpb and parse it`() {
         val obj = LiquibaseExtractorHelpers()
-        val cpi: Cpi = getInputStream(EXTENDABLE_CPB).use { CpbReaderV2.readCpi(it, testDir) }
+        val cpi: Cpi = getInputStream(EXTENDABLE_CPB).use { TestCpbReaderV2.readCpi(it, testDir) }
 
         val entities = mutableListOf<CpkDbChangeLogEntity>()
         cpi.cpks.forEach { cpk ->
@@ -221,7 +221,7 @@ internal class LiquibaseExtractorHelpersTest {
 
     @Test
     fun `test real cpb via validation function`() {
-        val cpi: Cpi = getInputStream(EXTENDABLE_CPB).use { CpbReaderV2.readCpi(it, testDir) }
+        val cpi: Cpi = getInputStream(EXTENDABLE_CPB).use { TestCpbReaderV2.readCpi(it, testDir) }
 
         val obj = LiquibaseExtractor()
         assertThat(obj.extractLiquibaseEntitiesFromCpi(cpi).isNotEmpty()).isTrue
