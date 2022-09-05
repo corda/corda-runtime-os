@@ -13,6 +13,9 @@ internal class CryptoProtocolFactory: ProtocolFactory {
 
     override fun createResponder(sessionId: String,
                                  supportedModes: Set<ProtocolMode>, ourMaxMessageSize: Int): AuthenticationProtocolResponder {
-        return AuthenticationProtocolResponder(sessionId, supportedModes, ourMaxMessageSize)
+        println("QQQ in createResponder")
+        return AuthenticationProtocolResponder(sessionId, supportedModes, ourMaxMessageSize).also {
+            println("QQQ created: $it")
+        }
     }
 }

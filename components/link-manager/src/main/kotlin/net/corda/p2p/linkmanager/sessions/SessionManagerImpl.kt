@@ -586,18 +586,37 @@ internal class SessionManagerImpl(
         }
 
         val session = pendingInboundSessions.computeIfAbsent(message.header.sessionId) { sessionId ->
-            println("QQQ in computeIfAbsent sessionId -> $sessionId")
-            println("QQQ in computeIfAbsent groupInfo -> $groupInfo")
-            println("QQQ in computeIfAbsent sessionManagerConfig -> $sessionManagerConfig")
-            println("QQQ in computeIfAbsent protocolFactory -> $protocolFactory")
-            val session = protocolFactory.createResponder(
-                sessionId,
-                groupInfo.protocolModes,
-                sessionManagerConfig.maxMessageSize
-            )
-            println("QQQ in computeIfAbsent session -> $session")
-            session.receiveInitiatorHello(message)
-            session
+            try {
+                println("QQQ in computeIfAbsent sessionId -> $sessionId")
+                println("QQQ in computeIfAbsent groupInfo -> $groupInfo")
+                println("QQQ in computeIfAbsent groupInfo.protocolModes -> ${groupInfo.protocolModes}")
+                println("QQQ in computeIfAbsent sessionManagerConfig -> $sessionManagerConfig")
+                println("QQQ in computeIfAbsent sessionManagerConfig.maxMessageSize -> ${sessionManagerConfig.maxMessageSize}")
+                println("QQQ in computeIfAbsent protocolFactory -> $protocolFactory")
+                println("QQQ Going to sleep...")
+                Thread.sleep(10)
+                println("QQQ woke up...")
+                println("QQQ after in computeIfAbsent sessionId -> $sessionId")
+                println("QQQ after in computeIfAbsent groupInfo.protocolModes -> ${groupInfo.protocolModes}")
+                println("QQQ after in computeIfAbsent sessionManagerConfig.maxMessageSize -> ${sessionManagerConfig.maxMessageSize}")
+                println("QQQ after in computeIfAbsent protocolFactory -> $protocolFactory")
+                println("QQQ in computeIfAbsent protocolFactory -> $protocolFactory")
+
+                val session = protocolFactory.createResponder(
+                    sessionId,
+                    groupInfo.protocolModes,
+                    sessionManagerConfig.maxMessageSize
+                )
+                println("QQQ in computeIfAbsent session -> $session")
+                session.receiveInitiatorHello(message)
+                session
+            } catch (e: Throwable) {
+                println("QQQ gor Exception!!!")
+                e.printStackTrace()
+                e.printStackTrace(System.out)
+                println("QQQ Bye now")
+                throw e
+            }
         }
         val responderHello = session.generateResponderHello()
 

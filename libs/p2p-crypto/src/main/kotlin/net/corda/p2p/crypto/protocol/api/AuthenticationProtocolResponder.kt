@@ -55,8 +55,10 @@ class AuthenticationProtocolResponder(val sessionId: String,
                                       private val ourMaxMessageSize: Int): AuthenticationProtocol() {
 
     init {
+        println("QQQ AuthenticationProtocolResponder creating")
         require(supportedModes.isNotEmpty()) { "At least one supported mode must be provided." }
         require(ourMaxMessageSize >= MIN_PACKET_SIZE) { "max message size needs to be at least $MIN_PACKET_SIZE bytes." }
+        println("QQQ AuthenticationProtocolResponder created")
     }
 
     private var step = Step.INIT
