@@ -101,7 +101,8 @@ class FlowEventExceptionProcessorImplTest {
             flowMessageFactory.createFlowFailedStatusMessage(
                 flowCheckpoint,
                 FlowProcessingExceptionTypes.FLOW_FAILED,
-                "Execution failed with \"${error.message}\" after ${flowConfig.getInt(FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS)} retry attempts.",
+                "Execution failed with \"${error.message}\" after " +
+                        "${flowConfig.getInt(FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS)} retry attempts.",
             )
         ).thenReturn(flowStatusUpdate)
         whenever(flowRecordFactory.createFlowStatusRecord(flowStatusUpdate)).thenReturn(flowStatusUpdateRecord)
