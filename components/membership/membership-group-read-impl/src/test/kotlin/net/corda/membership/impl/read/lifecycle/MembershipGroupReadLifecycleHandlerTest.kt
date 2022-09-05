@@ -8,6 +8,7 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
@@ -27,7 +28,7 @@ class MembershipGroupReadLifecycleHandlerTest {
     lateinit var handler: MembershipGroupReadLifecycleHandler
 
     val componentRegistrationHandle: RegistrationHandle = mock()
-    val configRegistrationHandle: AutoCloseable = mock()
+    val configRegistrationHandle: Resource = mock()
 
     val configurationReadService: ConfigurationReadService = mock {
         on { registerComponentForUpdates(any(), any()) } doReturn configRegistrationHandle

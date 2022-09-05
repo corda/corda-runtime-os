@@ -15,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.framework.BundleContext
+import org.osgi.framework.BundleException
 import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
@@ -52,5 +53,8 @@ class SandboxIrresolvableBundleTest {
         assertThat(e)
             .hasMessageStartingWith("Failed to resolve bundles: ")
             .hasMessageContaining("com.example.sandbox.sandbox-irresolvable-cpk")
+        assertThat(e.suppressed)
+            .allMatch { it is BundleException }
+            .hasSize(1)
     }
 }

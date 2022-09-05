@@ -23,6 +23,7 @@ dependencies {
     implementation project(':components:membership:membership-p2p')
     implementation project(':components:membership:membership-persistence-client')
     implementation project(":components:membership:synchronisation")
+    implementation project(':components:membership:membership-group-read')
 
     implementation project(':libs:chunking:chunking-core')
     implementation project(":libs:lifecycle:lifecycle")
@@ -33,7 +34,6 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
-    testImplementation project(':libs:crypto:merkle-impl')
     testImplementation project(":libs:membership:membership-impl")
     testImplementation project(':testing:layered-property-map-testkit')
     testImplementation project(':testing:test-utilities')
@@ -50,6 +50,8 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
+    integrationTestRuntimeOnly project(':libs:crypto:merkle-impl')
+    integrationTestRuntimeOnly project(':libs:crypto:cipher-suite-impl')
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"

@@ -13,6 +13,7 @@ import net.corda.lifecycle.LifecycleException
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.domino.logic.DominoTileState.Created
@@ -118,7 +119,7 @@ class ComplexDominoTile(
     @Volatile
     private var configReady = false
     @Volatile
-    private var configRegistration: AutoCloseable? = null
+    private var configRegistration: Resource? = null
 
     private sealed class ConfigUpdateResult {
         object Success : ConfigUpdateResult()

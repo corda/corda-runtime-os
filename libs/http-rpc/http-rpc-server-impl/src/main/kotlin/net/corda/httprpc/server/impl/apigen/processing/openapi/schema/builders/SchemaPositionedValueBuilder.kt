@@ -6,7 +6,7 @@ import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.SchemaMode
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.SchemaModel
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.SchemaPositionedValueModel
 import net.corda.httprpc.server.impl.apigen.processing.toEndpointParameterParameterizedType
-import net.corda.v5.base.stream.Cursor
+import net.corda.httprpc.durablestream.api.Cursor
 import kotlin.reflect.KClass
 import kotlin.reflect.KProperty1
 import kotlin.reflect.KVisibility

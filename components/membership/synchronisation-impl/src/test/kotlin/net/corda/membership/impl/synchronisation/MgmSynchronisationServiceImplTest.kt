@@ -5,7 +5,6 @@ import net.corda.chunking.toCorda
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.crypto.merkle.impl.MerkleTreeImpl
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHash
@@ -26,6 +25,7 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
@@ -58,6 +58,7 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
@@ -77,7 +78,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import kotlin.test.assertFailsWith
 
@@ -124,7 +125,7 @@ class MgmSynchronisationServiceImplTest {
         on { createCoordinator(any(), lifecycleHandlerCaptor.capture()) } doReturn coordinator
     }
 
-    private val configHandle: AutoCloseable = mock()
+    private val configHandle: Resource = mock()
     private val configurationReadService: ConfigurationReadService = mock {
         on { registerComponentForUpdates(eq(coordinator), any()) } doReturn configHandle
     }
@@ -168,10 +169,10 @@ class MgmSynchronisationServiceImplTest {
     private val syncId = UUID.randomUUID().toString()
     private val byteBuffer = "1234".toByteBuffer()
     private val secureHash = createSecureHash("algorithm1")
-    private val matchingMerkleTree: MerkleTreeImpl = mock {
+    private val matchingMerkleTree: MerkleTree = mock {
         on { root } doReturn secureHash.toCorda()
     }
-    private val nonMatchingMerkleTree: MerkleTreeImpl = mock {
+    private val nonMatchingMerkleTree: MerkleTree = mock {
         on { root } doReturn createSecureHash("algorithm2").toCorda()
     }
     private val merkleTreeGenerator: MerkleTreeGenerator = mock {

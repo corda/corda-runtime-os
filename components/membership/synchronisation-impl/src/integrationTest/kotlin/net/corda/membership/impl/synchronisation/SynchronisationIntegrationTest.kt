@@ -435,9 +435,10 @@ class SynchronisationIntegrationTest {
                 .setMgmSignature(dummySignature)
                 .build()
         }
+        val hash = merkleTreeGenerator.generateTree(members).root
         val membership = SignedMemberships.newBuilder()
             .setMemberships(signedMembers)
-            .setHashCheck(SecureHash("SHA-256", ByteBuffer.wrap("1234567890".toByteArray())))
+            .setHashCheck(hash.toAvro())
             .build()
 
         val membershipPackage = MembershipPackage.newBuilder()
