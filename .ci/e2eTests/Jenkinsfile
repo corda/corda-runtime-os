@@ -139,11 +139,7 @@ pipeline {
                       script {
                          env.BASE_IMAGE = params.BUILD_REV ? "preTest-${params.BUILD_REV}" : "unstable"
                       }
-                      sh '''
-                            helm install alice-db bitnami/postgresql -f ./.ci/e2eTests/postgres.yaml -n $NAMESPACE --wait --timeout 600s
-                            export SASL_SECRET=$(kubectl get secret -n $NAMESPACE prereqs-kafka-jaas -o=jsonpath='{.data.client-passwords}' | base64 --decode)
-                            helm install corda-alice ./charts/corda -f .ci/e2eTests/corda.yaml --set kafka.sasl.password=$SASL_SECRET --set image.tag=$BASE_IMAGE --set nameOverride=alice --set kafka.topicPrefix=alice --set db.cluster.host=alice-db-postgresql --set db.cluster.existingSecret=alice-db-postgresql -n $NAMESPACE --wait --timeout 600s
-                        '''
+                      deployCorda("alice", $NAMESPACE, $BASE_IMAGE)
                   }
                }
                stage("Deploy Bob cluster") {
@@ -151,11 +147,7 @@ pipeline {
                       script {
                          env.BASE_IMAGE = params.BUILD_REV ? "preTest-${params.BUILD_REV}" : "unstable"
                       }
-                      sh '''
-                            helm install bob-db bitnami/postgresql -f ./.ci/e2eTests/postgres.yaml -n $NAMESPACE --wait --timeout 600s
-                            export SASL_SECRET=$(kubectl get secret -n $NAMESPACE prereqs-kafka-jaas -o=jsonpath='{.data.client-passwords}' | base64 --decode)
-                            helm install corda-bob ./charts/corda -f .ci/e2eTests/corda.yaml --set kafka.sasl.password=$SASL_SECRET --set image.tag=$BASE_IMAGE --set nameOverride=bob --set kafka.topicPrefix=bob --set db.cluster.host=bob-db-postgresql --set db.cluster.existingSecret=bob-db-postgresql -n $NAMESPACE --wait --timeout 600s
-                        '''
+                      deployCorda("bob", $NAMESPACE, $BASE_IMAGE)
                   }
                }
                stage("Deploy Caroline cluster") {
@@ -163,11 +155,7 @@ pipeline {
                       script {
                          env.BASE_IMAGE = params.BUILD_REV ? "preTest-${architectureTag}${params.BUILD_REV}" : "${architectureTag}unstable"
                       }
-                      sh '''
-                            helm install caroline-db bitnami/postgresql -f ./.ci/e2eTests/postgres.yaml -n $NAMESPACE --wait --timeout 600s
-                            export SASL_SECRET=$(kubectl get secret -n $NAMESPACE prereqs-kafka-jaas -o=jsonpath='{.data.client-passwords}' | base64 --decode)
-                            helm install corda-caroline ./charts/corda -f .ci/e2eTests/corda.yaml --set kafka.sasl.password=$SASL_SECRET --set image.tag=$BASE_IMAGE --set nameOverride=caroline --set kafka.topicPrefix=caroline --set db.cluster.host=caroline-db-postgresql --set db.cluster.existingSecret=caroline-db-postgresql -n $NAMESPACE --wait --timeout 600s
-                        '''
+                      deployCorda("caroline", $NAMESPACE, $BASE_IMAGE)
                   }
                }
            }
@@ -246,4 +234,24 @@ def portForwarding(def name, def port, def portMapping = 0){
     } else {
         sh "nohup kubectl port-forward -n ${NAMESPACE} $name $port:$portMapping >> forward.txt 2>&1 &"
     }
+}
+
+def deployCorda(def name, def namespace, def base_image){
+    sh """\
+       helm install $name-db bitnami/postgresql -f ./.ci/e2eTests/postgres.yaml -n $namespace --wait --timeout 600s
+       SASL_SECRET=\$(kubectl get secret \
+                               --namespace $namespace prereqs-kafka-jaas \
+                               --output=jsonpath='{.data.client-passwords}' | base64 --decode)
+       helm install corda-${name} ./charts/corda \
+       -f .ci/e2eTests/corda.yaml \
+       --set kafka.sasl.password=$SASL_SECRET \
+       --set image.tag=$base_image \
+       --set nodeSelector.kubernetes\\\\.io/os=linux \
+       --set nodeSelector.kubernetes\\\\.io/arch=${E2E_WORKER_ARCH} \
+       --set nameOverride=$name \
+       --set kafka.topicPrefix=$name \
+       --set db.cluster.host=$name-db-postgresql \
+       --set db.cluster.existingSecret=$name-db-postgresql \
+       -n $namespace --wait --timeout 600s
+    """.stripIndent()
 }
