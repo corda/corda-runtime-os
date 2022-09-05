@@ -12,12 +12,13 @@ dependencies {
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation 'net.corda:corda-base'
     implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-ledger-utxo"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation project(":components:uniqueness:uniqueness-checker")
     implementation project(":components:uniqueness:backing-store")
     implementation project(":components:uniqueness:backing-store-impl")
-    implementation project(":libs:uniqueness:common")
+    implementation project(":libs:uniqueness:datamodel-impl")
     implementation project(":libs:utilities")
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"

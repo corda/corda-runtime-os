@@ -1,14 +1,14 @@
 package net.corda.uniqueness.checker.impl.fake
 
-import net.corda.data.uniqueness.UniquenessCheckExternalRequest
-import net.corda.data.uniqueness.UniquenessCheckExternalResponse
-import net.corda.data.uniqueness.UniquenessCheckExternalResultInputStateConflict
-import net.corda.data.uniqueness.UniquenessCheckExternalResultInputStateUnknown
-import net.corda.data.uniqueness.UniquenessCheckExternalResultMalformedRequest
-import net.corda.data.uniqueness.UniquenessCheckExternalResultReferenceStateConflict
-import net.corda.data.uniqueness.UniquenessCheckExternalResultReferenceStateUnknown
-import net.corda.data.uniqueness.UniquenessCheckExternalResultSuccess
-import net.corda.data.uniqueness.UniquenessCheckExternalResultTimeWindowOutOfBounds
+import net.corda.data.uniqueness.UniquenessCheckRequestAvro
+import net.corda.data.uniqueness.UniquenessCheckResponseAvro
+import net.corda.data.uniqueness.UniquenessCheckResultInputStateConflictAvro
+import net.corda.data.uniqueness.UniquenessCheckResultInputStateUnknownAvro
+import net.corda.data.uniqueness.UniquenessCheckResultMalformedRequestAvro
+import net.corda.data.uniqueness.UniquenessCheckResultReferenceStateConflictAvro
+import net.corda.data.uniqueness.UniquenessCheckResultReferenceStateUnknownAvro
+import net.corda.data.uniqueness.UniquenessCheckResultSuccessAvro
+import net.corda.data.uniqueness.UniquenessCheckResultTimeWindowOutOfBoundsAvro
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -52,7 +52,7 @@ class UniquenessCheckerImplFake(
         private val log: Logger = contextLogger()
     }
 
-    private val responseCache = HashMap<String, UniquenessCheckExternalResponse>()
+    private val responseCache = HashMap<String, UniquenessCheckResponseAvro>()
 
     // Value of state cache is populated with the consuming tx id when spent, null if unspent
     private val stateCache = HashMap<String, String?>()
@@ -76,8 +76,8 @@ class UniquenessCheckerImplFake(
     @Synchronized
     @Suppress("ComplexMethod", "LongMethod")
     override fun processRequests(
-        requests: List<UniquenessCheckExternalRequest>
-    ): List<UniquenessCheckExternalResponse> {
+        requests: List<UniquenessCheckRequestAvro>
+    ): List<UniquenessCheckResponseAvro> {
         return requests.map { request ->
             responseCache[request.txId] ?: run {
                 val (knownInputStates, unknownInputStates) =
@@ -92,39 +92,39 @@ class UniquenessCheckerImplFake(
 
                 val response = when {
                     request.numOutputStates < 0 -> {
-                        UniquenessCheckExternalResponse(
+                        UniquenessCheckResponseAvro(
                             request.txId,
-                            UniquenessCheckExternalResultMalformedRequest(
+                            UniquenessCheckResultMalformedRequestAvro(
                                 "Number of output states cannot be less than 0."
                             )
                         )
                     }
 
                     unknownInputStates.isNotEmpty() -> {
-                        UniquenessCheckExternalResponse(
+                        UniquenessCheckResponseAvro(
                             request.txId,
-                            UniquenessCheckExternalResultInputStateUnknown(unknownInputStates)
+                            UniquenessCheckResultInputStateUnknownAvro(unknownInputStates)
                         )
                     }
 
                     unknownReferenceStates.isNotEmpty() -> {
-                        UniquenessCheckExternalResponse(
+                        UniquenessCheckResponseAvro(
                             request.txId,
-                            UniquenessCheckExternalResultReferenceStateUnknown(unknownReferenceStates)
+                            UniquenessCheckResultReferenceStateUnknownAvro(unknownReferenceStates)
                         )
                     }
 
                     inputStateConflicts.isNotEmpty() -> {
-                        UniquenessCheckExternalResponse(
+                        UniquenessCheckResponseAvro(
                             request.txId,
-                            UniquenessCheckExternalResultInputStateConflict(inputStateConflicts)
+                            UniquenessCheckResultInputStateConflictAvro(inputStateConflicts)
                         )
                     }
 
                     referenceStateConflicts.isNotEmpty() -> {
-                        UniquenessCheckExternalResponse(
+                        UniquenessCheckResponseAvro(
                             request.txId,
-                            UniquenessCheckExternalResultReferenceStateConflict(referenceStateConflicts)
+                            UniquenessCheckResultReferenceStateConflictAvro(referenceStateConflicts)
                         )
                     }
 
@@ -133,9 +133,9 @@ class UniquenessCheckerImplFake(
                         request.timeWindowLowerBound,
                         request.timeWindowUpperBound
                     ) -> {
-                        UniquenessCheckExternalResponse(
+                        UniquenessCheckResponseAvro(
                             request.txId,
-                            UniquenessCheckExternalResultTimeWindowOutOfBounds(
+                            UniquenessCheckResultTimeWindowOutOfBoundsAvro(
                                 timeWindowEvaluationTime,
                                 request.timeWindowLowerBound,
                                 request.timeWindowUpperBound
@@ -150,9 +150,9 @@ class UniquenessCheckerImplFake(
                         }
                         // Write spent states - overwrites any earlier entries for unspent states
                         stateCache.putAll(request.inputStates.associateWith { request.txId })
-                        UniquenessCheckExternalResponse(
+                        UniquenessCheckResponseAvro(
                             request.txId,
-                            UniquenessCheckExternalResultSuccess(clock.instant())
+                            UniquenessCheckResultSuccessAvro(clock.instant())
                         )
                     }
                 }

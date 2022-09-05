@@ -21,17 +21,23 @@ import net.corda.uniqueness.backingstore.jpa.datamodel.JPABackingStoreEntities
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessRejectedTransactionEntity
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessStateDetailEntity
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTransactionDetailEntity
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalRequest
-import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
-import net.corda.v5.application.uniqueness.model.UniquenessCheckResult.Companion.RESULT_ACCEPTED_REPRESENTATION
-import net.corda.v5.application.uniqueness.model.UniquenessCheckResult.Companion.RESULT_REJECTED_REPRESENTATION
-import net.corda.v5.application.uniqueness.model.UniquenessCheckError
-import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
-import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
-import net.corda.v5.application.uniqueness.model.UniquenessCheckTransactionDetails
+import net.corda.uniqueness.datamodel.common.UniquenessConstants.RESULT_ACCEPTED_REPRESENTATION
+import net.corda.uniqueness.datamodel.common.UniquenessConstants.RESULT_REJECTED_REPRESENTATION
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckTransactionDetailsImpl
+import net.corda.uniqueness.datamodel.impl.toCharacterRepresentation
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckError
+import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckRequest
+import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckResult
+import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckResultFailure
+import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckStateDetails
+import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckStateRef
+import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckTransactionDetails
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -194,7 +200,7 @@ open class JPABackingStoreImpl @Activate constructor(
                             SecureHash(stateEntity.consumingTxIdAlgo!!, stateEntity.consumingTxId!!)
                         } else null
 
-                    results[state] = UniquenessCheckStateDetails(state, consumingTxId)
+                    results[state] = UniquenessCheckStateDetailsImpl(state, consumingTxId)
                 }
             }
 
@@ -219,12 +225,12 @@ open class JPABackingStoreImpl @Activate constructor(
                 existing.firstOrNull()?.let { txEntity ->
                     val result = when (txEntity.result) {
                         RESULT_ACCEPTED_REPRESENTATION -> {
-                            UniquenessCheckResult.Success(txEntity.commitTimestamp)
+                            UniquenessCheckResultSuccessImpl(txEntity.commitTimestamp)
                         }
                         RESULT_REJECTED_REPRESENTATION -> {
                             // If the transaction is rejected we need to make sure it is also
                             // stored in the rejected tx table
-                            UniquenessCheckResult.Failure(
+                            UniquenessCheckResultFailureImpl(
                                 txEntity.commitTimestamp,
                                 getTransactionError(txEntity) ?: throw IllegalStateException(
                                     "Transaction with id $txId was rejected but no records were " +
@@ -238,7 +244,7 @@ open class JPABackingStoreImpl @Activate constructor(
                         )
                     }
 
-                    results[txId] = UniquenessCheckTransactionDetails(txId, result)
+                    results[txId] = UniquenessCheckTransactionDetailsImpl(txId, result)
                 }
             }
 
@@ -309,7 +315,7 @@ open class JPABackingStoreImpl @Activate constructor(
 
             override fun commitTransactions(
                 transactionDetails: Collection<Pair<
-                        UniquenessCheckInternalRequest, UniquenessCheckResult>>
+                        UniquenessCheckRequest, UniquenessCheckResult>>
             ) {
                 transactionDetails.forEach { (request, result) ->
                     entityManager.persist(
@@ -317,12 +323,12 @@ open class JPABackingStoreImpl @Activate constructor(
                             request.txId.algorithm,
                             request.txId.bytes,
                             request.timeWindowUpperBound,
-                            result.commitTimestamp,
+                            result.resultTimestamp,
                             result.toCharacterRepresentation()
                         )
                     )
 
-                    if (result is UniquenessCheckResult.Failure) {
+                    if (result is UniquenessCheckResultFailure) {
                         entityManager.persist(
                             UniquenessRejectedTransactionEntity(
                                 request.txId.algorithm,
