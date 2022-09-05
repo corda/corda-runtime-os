@@ -84,6 +84,6 @@ internal class HealthMonitorImpl @Activate constructor(
     /** Indicates whether any components exist with at least one of the given [statuses]. */
     private fun componentsWithStatusNotIn(statuses: Set<LifecycleStatus>) =
         lifecycleRegistry.componentStatus().values.filter { coordinatorStatus ->
-            !statuses.contains(coordinatorStatus.status)
+            statuses.contains(coordinatorStatus.status)
         }.map { it.name }
 }
