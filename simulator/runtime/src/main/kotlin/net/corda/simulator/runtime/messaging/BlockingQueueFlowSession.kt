@@ -1,8 +1,7 @@
-package net.corda.simulator.runtime.messaging
+package net.corda.cordapptestutils.internal.messaging
 
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowContextProperties
-import net.corda.v5.application.messaging.FlowInfo
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.UntrustworthyData
 import net.corda.v5.base.types.MemberX500Name
@@ -19,18 +18,12 @@ class BlockingQueueFlowSession(
         TODO("Not yet implemented")
     }
 
-    override fun getCounterpartyFlowInfo(): FlowInfo {
-        TODO("Not yet implemented")
-    }
-
     override val contextProperties: FlowContextProperties
         get() {
             TODO("Not yet implemented")
         }
 
     override fun <R : Any> receive(receiveType: Class<R>): UntrustworthyData<R> {
-
-
         try {
             @Suppress("UNCHECKED_CAST")
             return UntrustworthyData(to.take()) as UntrustworthyData<R>

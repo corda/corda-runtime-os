@@ -4,8 +4,6 @@ import java.nio.ByteBuffer
 import java.time.Instant
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.external.events.factory.ExternalEventFactory
-import net.corda.v5.application.messaging.FlowInfo
-import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
 
 /**
@@ -52,14 +50,6 @@ interface FlowIORequest<out R> {
      * @property sessions the sessions to be closed.
      */
     data class CloseSessions(val sessions: Set<String>) : FlowIORequest<Unit>
-
-    /**
-     * Get the FlowInfo of the specified sessions.
-     *
-     * @property sessions the sessions to get the FlowInfo of.
-     * @return a map from session to FlowInfo.
-     */
-    data class GetFlowInfo(val sessions: Set<FlowSession>) : FlowIORequest<Map<FlowSession, FlowInfo>>
 
     /**
      * Suspend the flow until the specified time.

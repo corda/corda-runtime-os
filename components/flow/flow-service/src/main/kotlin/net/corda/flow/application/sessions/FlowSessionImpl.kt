@@ -7,7 +7,6 @@ import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.state.FlowContext
 import net.corda.v5.application.flows.FlowContextProperties
-import net.corda.v5.application.messaging.FlowInfo
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.UntrustworthyData
 import net.corda.v5.base.annotations.Suspendable
@@ -42,11 +41,6 @@ class FlowSessionImpl(
     }
 
     private val fiber: FlowFiber get() = flowFiberService.getExecutingFiber()
-
-    @Suspendable
-    override fun getCounterpartyFlowInfo(): FlowInfo {
-        TODO()
-    }
 
     @Suspendable
     override fun <R : Any> sendAndReceive(receiveType: Class<R>, payload: Any): UntrustworthyData<R> {
