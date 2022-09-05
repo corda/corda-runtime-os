@@ -20,5 +20,5 @@ dependencies {
     implementation project(":components:uniqueness:uniqueness-checker")
     implementation project(":components:crypto:crypto-client")
     implementation project(':testing:uniqueness:uniqueness-checker-fake')
-    implementation project(':libs:uniqueness:datamodel-impl')
+    implementation project(':libs:uniqueness:common')
 }

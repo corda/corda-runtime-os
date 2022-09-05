@@ -7,10 +7,3 @@ data class UniquenessCheckStateRefImpl(
     override val txHash: SecureHash,
     override val stateIndex: Int
 ) : UniquenessCheckStateRef
-
-fun String.toStateRef() : UniquenessCheckStateRef {
-    return UniquenessCheckStateRefImpl(
-        SecureHash.create(substringBefore(":")),
-        substringAfter(":").toInt()
-    )
-}

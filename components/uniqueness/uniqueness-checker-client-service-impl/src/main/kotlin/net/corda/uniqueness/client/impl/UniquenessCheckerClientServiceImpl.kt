@@ -3,8 +3,8 @@ package net.corda.uniqueness.client.impl
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.data.uniqueness.UniquenessCheckResultSuccessAvro
 import net.corda.uniqueness.checker.UniquenessChecker
+import net.corda.uniqueness.datamodel.common.toUniquenessResult
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResponseImpl
-import net.corda.uniqueness.datamodel.impl.toUniquenessResult
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SigningService
