@@ -46,6 +46,8 @@ class LinkManagerWorker @Activate constructor(
     }
 
     override fun shutdown() {
+        logger.warn("QQQ P2P Link Manager worker stopping!", Exception("QQQ"))
+        Exception("QQQ").printStackTrace()
         logger.info("P2P Link Manager worker stopping.")
         linkManagerProcessor.stop()
         healthMonitor.stop()
