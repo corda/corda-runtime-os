@@ -11,14 +11,19 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
+import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import kotlin.concurrent.thread
 
 internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordinatorFactory,
                                              private val groupPolicyProvider: GroupPolicyProvider,
                                              virtualNodeInfoReadService: VirtualNodeInfoReadService,
                                              cpiInfoReadService: CpiInfoReadService,
                                              membershipQueryClient: MembershipQueryClient): LinkManagerGroupPolicyProvider {
+    private companion object {
+        val logger = contextLogger()
+    }
 
 
     private val dependentChildren = setOf(
@@ -48,8 +53,23 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
 
     override fun registerListener(groupPolicyListener: GroupPolicyListener) {
         groupPolicyProvider.registerListener { holdingIdentity, groupPolicy ->
-            val groupInfo = toGroupInfo(holdingIdentity, groupPolicy)
-            groupPolicyListener.groupAdded(groupInfo)
+            try {
+                val groupInfo = toGroupInfo(holdingIdentity, groupPolicy)
+                groupPolicyListener.groupAdded(groupInfo)
+            } catch (e: Exception) {
+                logger.warn("Could not add group!", e)
+                thread {
+                    println("QQQ Adding thread in a second...")
+                    Thread.sleep(1000)
+                    try {
+                        val groupInfo = toGroupInfo(holdingIdentity, groupPolicy)
+                        groupPolicyListener.groupAdded(groupInfo)
+                    } catch (e: Exception) {
+                        println("QQQ OOPS!!!")
+                        e.printStackTrace()
+                    }
+                }
+            }
         }
     }
 
