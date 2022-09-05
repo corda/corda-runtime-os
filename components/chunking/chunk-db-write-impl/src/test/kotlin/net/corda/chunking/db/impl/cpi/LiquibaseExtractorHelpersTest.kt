@@ -7,6 +7,7 @@ import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkMetadata
+import net.corda.libs.packaging.testutils.cpb.packaging.v2.TestCpbReaderV2
 import net.corda.test.util.InMemoryZipFile
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
@@ -20,7 +21,6 @@ import java.io.FileNotFoundException
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
-import net.corda.libs.packaging.testutils.cpb.packaging.v2.TestCpbReaderV2
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class LiquibaseExtractorHelpersTest {

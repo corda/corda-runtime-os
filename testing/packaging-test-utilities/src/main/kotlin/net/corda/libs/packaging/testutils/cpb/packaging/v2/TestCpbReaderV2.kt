@@ -8,6 +8,7 @@ import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.core.CpkFormatVersion
 import net.corda.libs.packaging.core.exception.CordappManifestException
 import net.corda.libs.packaging.readCpbFormatVersion
+import net.corda.utilities.time.UTCClock
 
 /**
  * Parses a .cpb file V2 into a [Cpi], leaving CPI related fields nulled out. This reader might be useful
@@ -32,7 +33,7 @@ object TestCpbReaderV2 {
         val formatVersion = readCpbFormatVersion(manifest)
         require(formatVersion == version2)
 
-        return TestCpbLoaderV2()
+        return TestCpbLoaderV2(UTCClock())
             .loadCpi(
                 cpbBytes,
                 expansionLocation,

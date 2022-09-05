@@ -5,8 +5,6 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.security.DigestInputStream
 import java.security.MessageDigest
-import net.corda.utilities.time.Clock
-import net.corda.utilities.time.UTCClock
 import java.util.jar.JarInputStream
 import java.util.zip.ZipEntry
 import net.corda.libs.packaging.Cpi
@@ -18,10 +16,11 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.exception.PackagingException
+import net.corda.utilities.time.Clock
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 
-internal class TestCpbLoaderV2(private val clock: Clock = UTCClock()) {
+internal class TestCpbLoaderV2(private val clock: Clock) {
 
     fun loadCpi(
         byteArray: ByteArray,
@@ -70,8 +69,8 @@ internal class TestCpbLoaderV2(private val clock: Clock = UTCClock()) {
                 override val cpks =
                     cpks
 
-                private val cpksMap = cpks.associate { cpk ->
-                    cpk.metadata.cpkId to cpk
+                private val cpksMap = cpks.associateBy { cpk ->
+                    cpk.metadata.cpkId
                 }
                 override fun getCpkById(id: CpkIdentifier) =
                     cpksMap[id]

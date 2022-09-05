@@ -9,11 +9,8 @@ import org.junit.jupiter.api.io.TempDir
 
 class TestCpbReaderV2Test {
 
-    @TempDir
-    lateinit var tmp: Path
-
     @Test
-    fun `reads cpb file V2 into Cpi V2 but without cpi fields`() {
+    fun `reads cpb file V2 into Cpi V2 but without cpi fields`(@TempDir tmp: Path) {
         val cpbStream = TestCpbV2Builder()
             .signers(ALICE)
             .build()

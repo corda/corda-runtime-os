@@ -1,5 +1,7 @@
 package net.corda.libs.packaging
 
+import net.corda.libs.packaging.core.CpkFormatVersion
+import net.corda.libs.packaging.internal.FormatVersionReader
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
@@ -11,8 +13,6 @@ import java.security.cert.X509Certificate
 import java.util.Arrays
 import java.util.jar.JarEntry
 import java.util.jar.Manifest
-import net.corda.libs.packaging.core.CpkFormatVersion
-import net.corda.libs.packaging.internal.FormatVersionReader
 
 internal val secureHashComparator = Comparator.nullsFirst(
     Comparator.comparing(SecureHash::algorithm)
