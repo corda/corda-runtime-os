@@ -119,18 +119,28 @@ fun getFlowClasses(holdingId: String): List<String> {
     }
 }
 
-fun createVirtualNodeFor(x500: String): String {
+fun getOrCreateVirtualNodeFor(x500: String): String {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
         val cpis = cpiList().toJson()["cpis"]
         val json = cpis.toList().first { it["id"]["cpiName"].textValue() == CPI_NAME }
         val hash = truncateLongHash(json["cpiFileChecksum"].textValue())
 
-        val vNodeJson = assertWithRetry {
-            command { vNodeCreate(hash, x500) }
+        val vNodesJson = assertWithRetry {
+            command { vNodeList() }
             condition { it.code == 200 }
-            failMessage("Failed to create the virtual node for '$x500'")
+            failMessage("Failed to retrieve virtual nodes")
         }.toJson()
+
+        val vNodeJson = if (vNodesJson.findValuesAsText("x500Name").contains(x500)) {
+            vNodeList().toJson()["virtualNodes"].toList().first { it["holdingIdentity"]["x500Name"].textValue() == x500 }
+        } else {
+            assertWithRetry {
+                command { vNodeCreate(hash, x500) }
+                condition { it.code == 200 }
+                failMessage("Failed to create the virtual node for '$x500'")
+            }.toJson()
+        }
 
         val holdingId = vNodeJson["holdingIdentity"]["shortHash"].textValue()
         Assertions.assertThat(holdingId).isNotNull.isNotEmpty

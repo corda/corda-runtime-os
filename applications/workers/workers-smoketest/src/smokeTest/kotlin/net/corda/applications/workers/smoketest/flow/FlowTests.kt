@@ -11,7 +11,7 @@ import net.corda.applications.workers.smoketest.X500_DAVID
 import net.corda.applications.workers.smoketest.awaitMultipleRpcFlowFinished
 import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
 import net.corda.applications.workers.smoketest.createKeyFor
-import net.corda.applications.workers.smoketest.createVirtualNodeFor
+import net.corda.applications.workers.smoketest.getOrCreateVirtualNodeFor
 import net.corda.applications.workers.smoketest.getFlowClasses
 import net.corda.applications.workers.smoketest.getHoldingIdShortHash
 import net.corda.applications.workers.smoketest.getRpcFlowResult
@@ -40,6 +40,8 @@ class FlowTests {
         var charlieHoldingId: String = getHoldingIdShortHash(X500_CHARLIE, GROUP_ID)
         var davidHoldingId: String = getHoldingIdShortHash(X500_DAVID, GROUP_ID)
 
+        const val dependencyInjectionTestFlowName =
+            "net.cordapp.flowworker.development.smoketests.flow.DependencyInjectionTestFlow"
         val expectedFlows = listOf(
             "net.cordapp.flowworker.development.smoketests.virtualnode.ReturnAStringFlow",
             "net.cordapp.flowworker.development.smoketests.flow.RpcSmokeTestFlow",
@@ -47,7 +49,8 @@ class FlowTests {
             "net.cordapp.flowworker.development.testflows.TestFlow",
             "net.cordapp.flowworker.development.testflows.BrokenProtocolFlow",
             "net.cordapp.flowworker.development.testflows.MessagingFlow",
-            "net.cordapp.flowworker.development.testflows.PersistenceFlow"
+            "net.cordapp.flowworker.development.testflows.PersistenceFlow",
+            dependencyInjectionTestFlowName
         )
 
         /*
@@ -57,10 +60,9 @@ class FlowTests {
         @BeforeAll
         @JvmStatic
         internal fun beforeAll() {
-
-            val bobActualHoldingId = createVirtualNodeFor(X500_BOB)
-            val charlieActualHoldingId = createVirtualNodeFor(X500_CHARLIE)
-            val davidActualHoldingId = createVirtualNodeFor(X500_DAVID)
+            val bobActualHoldingId = getOrCreateVirtualNodeFor(X500_BOB)
+            val charlieActualHoldingId = getOrCreateVirtualNodeFor(X500_CHARLIE)
+            val davidActualHoldingId = getOrCreateVirtualNodeFor(X500_DAVID)
 
             // Just validate the function and actual vnode holding ID hash are in sync
             // if this fails the X500_BOB formatting could have changed or the hash implementation might have changed
@@ -442,5 +444,15 @@ class FlowTests {
 
         assertThat(flowResult.result)
             .isEqualTo(CONTEXT_JSON)
+    }
+
+    @Test
+    fun flowsCanUseInheritance() {
+        val requestId = startRpcFlow(bobHoldingId, mapOf("id" to X500_CHARLIE), dependencyInjectionTestFlowName)
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        assertThat(result.flowError).isNull()
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(result.flowResult).isEqualTo(X500_CHARLIE)
     }
 }
