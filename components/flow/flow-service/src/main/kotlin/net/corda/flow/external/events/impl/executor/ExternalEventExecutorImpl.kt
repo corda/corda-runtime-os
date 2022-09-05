@@ -4,6 +4,7 @@ import co.paralleluniverse.fibers.Suspendable
 import java.util.*
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.external.events.factory.ExternalEventFactory
+import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.v5.base.util.uncheckedCast
@@ -25,15 +26,26 @@ class ExternalEventExecutorImpl @Activate constructor(
         parameters: PARAMETERS
     ): RESUME {
         return uncheckedCast(
-            flowFiberService.getExecutingFiber().suspend(
-                FlowIORequest.ExternalEvent(
-                    requestId,
-                    factoryClass,
-                    parameters
+            with(flowFiberService.getExecutingFiber()) {
+                suspend(
+                    FlowIORequest.ExternalEvent(
+                        requestId,
+                        factoryClass,
+                        parameters,
+                        externalContext(this)
+                    )
                 )
-            )
+            }
         )
     }
+
+    private fun externalContext(flowFiber: FlowFiber) =
+        with(flowFiber.getExecutionContext().flowCheckpoint.flowContext) {
+            localToExternalContextMapper(
+                userContextProperties = this.flattenUserProperties(),
+                platformContextProperties = this.flattenPlatformProperties()
+            )
+        }
 
     @Suspendable
     override fun <PARAMETERS : Any, RESPONSE : Any, RESUME> execute(

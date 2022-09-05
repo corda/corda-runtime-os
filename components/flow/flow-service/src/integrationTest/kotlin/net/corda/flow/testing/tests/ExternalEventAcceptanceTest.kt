@@ -1,5 +1,6 @@
 package net.corda.flow.testing.tests
 
+import net.corda.data.KeyValuePairList
 import java.nio.ByteBuffer
 import java.util.stream.Stream
 import net.corda.data.flow.event.external.ExternalEventContext
@@ -24,6 +25,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import org.osgi.framework.AdminPermission.CONTEXT
 import org.osgi.service.component.annotations.Component
 import org.osgi.test.junit5.service.ServiceExtension
 
@@ -35,6 +37,8 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
         const val REQUEST_ID = "requestId"
         const val TOPIC = "topic"
         const val KEY = "key"
+        val FLOW_START_CONTEXT = mapOf("key" to "value")
+        val EXTERNAL_EVENT_CONTEXT = FLOW_START_CONTEXT
 
         val BYTES = "bytes".toByteArray()
         val BYTE_BUFFER = ByteBuffer.wrap(BYTES)
@@ -42,7 +46,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
         val ANY_INPUT = EntityRequest(
             ALICE_HOLDING_IDENTITY,
             FindEntity("entity class name", BYTE_BUFFER),
-            ExternalEventContext(REQUEST_ID, FLOW_ID1)
+            ExternalEventContext(REQUEST_ID, FLOW_ID1, KeyValuePairList(emptyList()))
         )
         val ANY_RESPONSE = EntityResponse(listOf(BYTE_BUFFER))
         const val STRING_INPUT = "this is an input string"
@@ -88,8 +92,15 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
         @Suppress("UNUSED_PARAMETER") response: Any
     ) {
         `when` {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(FlowIORequest.ExternalEvent(REQUEST_ID, factory, input))
+            startFlowEventReceived(
+                FLOW_ID1,
+                REQUEST_ID1,
+                ALICE_HOLDING_IDENTITY,
+                CPI1,
+                "flow start data",
+                FLOW_START_CONTEXT
+            )
+                .suspendsWith(FlowIORequest.ExternalEvent(REQUEST_ID, factory, input, EXTERNAL_EVENT_CONTEXT))
         }
 
         then {
@@ -108,8 +119,15 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
     ) {
 
         given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(FlowIORequest.ExternalEvent(REQUEST_ID, factory, input))
+            startFlowEventReceived(
+                FLOW_ID1,
+                REQUEST_ID1,
+                ALICE_HOLDING_IDENTITY,
+                CPI1,
+                "flow start data",
+                FLOW_START_CONTEXT
+            )
+                .suspendsWith(FlowIORequest.ExternalEvent(REQUEST_ID, factory, input, EXTERNAL_EVENT_CONTEXT))
         }
 
         `when` {
@@ -127,12 +145,20 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Receiving an external event response with the wrong request id does not resume the flow and ignores the response`() {
         given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+            startFlowEventReceived(
+                FLOW_ID1,
+                REQUEST_ID1,
+                ALICE_HOLDING_IDENTITY,
+                CPI1,
+                "flow start data",
+                FLOW_START_CONTEXT
+            )
                 .suspendsWith(
                     FlowIORequest.ExternalEvent(
                         REQUEST_ID,
                         AnyResponseReceivedFactory::class.java,
-                        ANY_INPUT
+                        ANY_INPUT,
+                        EXTERNAL_EVENT_CONTEXT
                     )
                 )
         }
@@ -151,12 +177,20 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Given a flow has already received its external event response the flow can send another event and receive a response`() {
         given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+            startFlowEventReceived(
+                FLOW_ID1,
+                REQUEST_ID1,
+                ALICE_HOLDING_IDENTITY,
+                CPI1,
+                "flow start data",
+                FLOW_START_CONTEXT
+            )
                 .suspendsWith(
                     FlowIORequest.ExternalEvent(
                         REQUEST_ID,
                         AnyResponseReceivedFactory::class.java,
-                        ANY_INPUT
+                        ANY_INPUT,
+                        EXTERNAL_EVENT_CONTEXT
                     )
                 )
         }
@@ -167,7 +201,8 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
                     FlowIORequest.ExternalEvent(
                         REQUEST_ID,
                         StringResponseReceivedFactory::class.java,
-                        STRING_INPUT
+                        STRING_INPUT,
+                        EXTERNAL_EVENT_CONTEXT
                     )
                 )
 
@@ -189,12 +224,20 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
     fun `Receiving an event does not resend the external event unless a 'transient' error is received`() {
 
         given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+            startFlowEventReceived(
+                FLOW_ID1,
+                REQUEST_ID1,
+                ALICE_HOLDING_IDENTITY,
+                CPI1,
+                "flow start data",
+                FLOW_START_CONTEXT
+            )
                 .suspendsWith(
                     FlowIORequest.ExternalEvent(
                         REQUEST_ID,
                         AnyResponseReceivedFactory::class.java,
-                        ANY_INPUT
+                        ANY_INPUT,
+                        EXTERNAL_EVENT_CONTEXT
                     )
                 )
         }
@@ -214,12 +257,20 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Receiving a 'transient' error response resends the external event if the retry window has been surpassed`() {
         given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+            startFlowEventReceived(
+                FLOW_ID1,
+                REQUEST_ID1,
+                ALICE_HOLDING_IDENTITY,
+                CPI1,
+                "flow start data",
+                FLOW_START_CONTEXT
+            )
                 .suspendsWith(
                     FlowIORequest.ExternalEvent(
                         REQUEST_ID,
                         AnyResponseReceivedFactory::class.java,
-                        ANY_INPUT
+                        ANY_INPUT,
+                        EXTERNAL_EVENT_CONTEXT
                     )
                 )
         }
@@ -241,12 +292,20 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
         given {
             flowConfiguration(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW, 50000L)
 
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+            startFlowEventReceived(
+                FLOW_ID1,
+                REQUEST_ID1,
+                ALICE_HOLDING_IDENTITY,
+                CPI1,
+                "flow start data",
+                FLOW_START_CONTEXT
+            )
                 .suspendsWith(
                     FlowIORequest.ExternalEvent(
                         REQUEST_ID,
                         AnyResponseReceivedFactory::class.java,
-                        ANY_INPUT
+                        ANY_INPUT,
+                        EXTERNAL_EVENT_CONTEXT
                     )
                 )
         }
@@ -268,12 +327,20 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
         given {
             flowConfiguration(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW, 10.seconds.toMillis())
 
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+            startFlowEventReceived(
+                FLOW_ID1,
+                REQUEST_ID1,
+                ALICE_HOLDING_IDENTITY,
+                CPI1,
+                "flow start data",
+                FLOW_START_CONTEXT
+            )
                 .suspendsWith(
                     FlowIORequest.ExternalEvent(
                         REQUEST_ID,
                         AnyResponseReceivedFactory::class.java,
-                        ANY_INPUT
+                        ANY_INPUT,
+                        EXTERNAL_EVENT_CONTEXT
                     )
                 )
         }
@@ -308,12 +375,20 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
         given {
             flowConfiguration(FlowConfig.EXTERNAL_EVENT_MESSAGE_RESEND_WINDOW, -50000L)
 
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+            startFlowEventReceived(
+                FLOW_ID1,
+                REQUEST_ID1,
+                ALICE_HOLDING_IDENTITY,
+                CPI1,
+                "flow start data",
+                FLOW_START_CONTEXT
+            )
                 .suspendsWith(
                     FlowIORequest.ExternalEvent(
                         REQUEST_ID,
                         AnyResponseReceivedFactory::class.java,
-                        ANY_INPUT
+                        ANY_INPUT,
+                        EXTERNAL_EVENT_CONTEXT
                     )
                 )
 
@@ -336,12 +411,20 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Receiving a 'platform' error response resumes the flow with an error`() {
         given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+            startFlowEventReceived(
+                FLOW_ID1,
+                REQUEST_ID1,
+                ALICE_HOLDING_IDENTITY,
+                CPI1,
+                "flow start data",
+                FLOW_START_CONTEXT
+            )
                 .suspendsWith(
                     FlowIORequest.ExternalEvent(
                         REQUEST_ID,
                         AnyResponseReceivedFactory::class.java,
-                        ANY_INPUT
+                        ANY_INPUT,
+                        EXTERNAL_EVENT_CONTEXT
                     )
                 )
         }
@@ -360,12 +443,20 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Receiving a 'fatal' error response DLQs the flow and does not resume`() {
         given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+            startFlowEventReceived(
+                FLOW_ID1,
+                REQUEST_ID1,
+                ALICE_HOLDING_IDENTITY,
+                CPI1,
+                "flow start data",
+                FLOW_START_CONTEXT
+            )
                 .suspendsWith(
                     FlowIORequest.ExternalEvent(
                         REQUEST_ID,
                         AnyResponseReceivedFactory::class.java,
-                        ANY_INPUT
+                        ANY_INPUT,
+                        EXTERNAL_EVENT_CONTEXT
                     )
                 )
         }

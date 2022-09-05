@@ -3,6 +3,7 @@ package net.corda.entityprocessor.impl.tests
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponse
@@ -75,8 +76,8 @@ import java.util.UUID
 import javax.persistence.EntityManagerFactory
 
 sealed class QuerySetup {
-    data class NamedQuery(val params: Map<String, String>, val query: String = "Dog.summon"): QuerySetup()
-    data class All(val className: String): QuerySetup()
+    data class NamedQuery(val params: Map<String, String>, val query: String = "Dog.summon") : QuerySetup()
+    data class All(val className: String) : QuerySetup()
 }
 
 /**
@@ -94,7 +95,7 @@ sealed class QuerySetup {
 class PersistenceServiceInternalTests {
     private companion object {
         const val TOPIC = "pretend-topic"
-        val EXTERNAL_EVENT_CONTEXT = ExternalEventContext("request id", "flow id")
+        val EXTERNAL_EVENT_CONTEXT = ExternalEventContext("request id", "flow id", KeyValuePairList(emptyList()))
         val logger = contextLogger()
     }
 
@@ -182,7 +183,6 @@ class PersistenceServiceInternalTests {
     }
 
 
-
     private fun noOpPayloadCheck(bytes: ByteBuffer) = bytes
 
     @Test
@@ -230,7 +230,7 @@ class PersistenceServiceInternalTests {
         lbm.updateDb(myDbConnectionManager.getDataSource(animalDbConnection.first).connection, cl)
 
         // create dog using dog-aware sandbox
-        val dog = sandboxOne.createDog("Stray",owner= "Not Known")
+        val dog = sandboxOne.createDog("Stray", owner = "Not Known")
 
         // create persist request for the sandbox that isn't dog-aware
         val request = EntityRequest(
@@ -314,7 +314,7 @@ class PersistenceServiceInternalTests {
         persistDirectInDb(dog.instance)
 
         // change the dog's name, but not changing the ID
-        val bellaTheDog = sandbox.createDog("Bella", id=dog.id)
+        val bellaTheDog = sandbox.createDog("Bella", id = dog.id)
 
         val results = assertMergeEntities(bellaTheDog.instance)
         assertThat(results).isEqualTo(listOf(bellaTheDog.instance))
@@ -332,9 +332,9 @@ class PersistenceServiceInternalTests {
         persistDirectInDb(dog.instance) // don't write dog2 yet so we test what happens when you merge on both existent and non-existent records
 
         // change the dog's name twice, without changing the ID
-        val bellaTheDog = sandbox.createDog("Bella", id=dog.id)
-        val totoTheDog = sandbox.createDog("Toto", id=dog.id)
-        val timmyTheDog = sandbox.createDog("Timmy", id=dog2.id)
+        val bellaTheDog = sandbox.createDog("Bella", id = dog.id)
+        val totoTheDog = sandbox.createDog("Toto", id = dog.id)
+        val timmyTheDog = sandbox.createDog("Timmy", id = dog2.id)
         val results = assertMergeEntities(bellaTheDog.instance, totoTheDog.instance, timmyTheDog.instance)
         // All the merges will compete at once, then the resulting entities are found, so we get [toto, toto, timmy]
         // rather than [bella, toto, timmy]
@@ -352,8 +352,8 @@ class PersistenceServiceInternalTests {
     fun `delete from db`() {
         val dog = sandbox.createDog(
             "Peggy the Pug",
-            date=LocalDate.of(2015, 1, 11).atStartOfDay().toInstant(ZoneOffset.UTC),
-            owner="DanTDM"
+            date = LocalDate.of(2015, 1, 11).atStartOfDay().toInstant(ZoneOffset.UTC),
+            owner = "DanTDM"
         )
         persistDirectInDb(dog.instance)
 
@@ -373,7 +373,7 @@ class PersistenceServiceInternalTests {
         assertThat(missing).isNull()
         val actual = findDogDirectInDb(dogs[2].id)
         assertThat(actual).isEqualTo(dogs[2].instance)
-        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query="Dog.all"))
+        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query = "Dog.all"))
         assertThat(r.size).isEqualTo(dogs.size - 2)
     }
 
@@ -397,7 +397,7 @@ class PersistenceServiceInternalTests {
         val dogs = createDogs(sandbox)
         dogs.map { persistDirectInDb(it.instance) }
         assertDeleteEntitiesById(DOG_CLASS_NAME, dogs[0].id, dogs[2].id, dogs[4].id)
-        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query="Dog.all"))
+        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query = "Dog.all"))
         assertThat(r.size).isEqualTo(5)
         assertThat(dogs[0].toString()).contains("Rover")
         r.forEach {
@@ -413,8 +413,8 @@ class PersistenceServiceInternalTests {
         val dogs = arrayOf("Athos", "Porthos", "Aramis").map {
             val dog = sandbox.createDog(
                 it,
-                date=LocalDate.of(2015, 1, 11).atStartOfDay().toInstant(ZoneOffset.UTC),
-                owner="Musketeer"
+                date = LocalDate.of(2015, 1, 11).atStartOfDay().toInstant(ZoneOffset.UTC),
+                owner = "Musketeer"
             )
             persistDirectInDb(dog.instance)
             dog
@@ -503,7 +503,7 @@ class PersistenceServiceInternalTests {
             if (it.array().size > 50) throw KafkaMessageSizeException("Too large")
             it
         }
-        val request = createRequest(virtualNodeInfo.holdingIdentity,FindAll(DOG_CLASS_NAME, 0, Int.MAX_VALUE))
+        val request = createRequest(virtualNodeInfo.holdingIdentity, FindAll(DOG_CLASS_NAME, 0, Int.MAX_VALUE))
 
         val responses =
             assertFailureResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), request))))
@@ -515,14 +515,15 @@ class PersistenceServiceInternalTests {
 
     @Test
     fun `find exceeds kakfa packet size`() {
-        val dog = sandbox.createDog("K9", owner= "Doctor Who")
+        val dog = sandbox.createDog("K9", owner = "Doctor Who")
         persistDirectInDb(dog.instance)
 
         val processor = EntityMessageProcessor(entitySandboxService, externalEventResponseFactory) {
             if (it.array().size > 4) throw KafkaMessageSizeException("Too large")
             it
         }
-        val request = createRequest(virtualNodeInfo.holdingIdentity, FindEntity(DOG_CLASS_NAME, sandbox.serialize(dog.id)))
+        val request =
+            createRequest(virtualNodeInfo.holdingIdentity, FindEntity(DOG_CLASS_NAME, sandbox.serialize(dog.id)))
 
         val responses =
             assertFailureResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), request))))
@@ -534,16 +535,19 @@ class PersistenceServiceInternalTests {
 
     @Test
     fun `merge exceeds kakfa packet size`() {
-        val dog = sandbox.createDog("K9", owner="Doctor Who Tom Baker")
+        val dog = sandbox.createDog("K9", owner = "Doctor Who Tom Baker")
         persistDirectInDb(dog.instance)
 
-        val modifiedDog = sandbox.createDog("K9", owner="Doctor Who Peter Davidson", id = dog.id)
+        val modifiedDog = sandbox.createDog("K9", owner = "Doctor Who Peter Davidson", id = dog.id)
 
         val processor = EntityMessageProcessor(entitySandboxService, externalEventResponseFactory) {
             if (it.array().size > 4) throw KafkaMessageSizeException("Too large")
             it
         }
-        val request = createRequest(virtualNodeInfo.holdingIdentity, MergeEntities(listOf(sandbox.serialize(modifiedDog.instance))))
+        val request = createRequest(
+            virtualNodeInfo.holdingIdentity,
+            MergeEntities(listOf(sandbox.serialize(modifiedDog.instance)))
+        )
 
         val responses =
             assertFailureResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), request))))
@@ -571,7 +575,7 @@ class PersistenceServiceInternalTests {
     @Test
     fun `persist find and remove with composite key`() {
         val name = "Mr Bigglesworth"
-        val cat = sandbox.createCat(name,colour="hairless", ownerName="Dr Evil", ownerAge=40)
+        val cat = sandbox.createCat(name, colour = "hairless", ownerName = "Dr Evil", ownerAge = 40)
         assertPersistEntities(cat.instance)
         val catKey = sandbox.createCatKeyInstance(cat.id, name)
 
@@ -587,21 +591,21 @@ class PersistenceServiceInternalTests {
     @Test
     fun `find with named query with many results`() {
         persistDogs()
-        val r = assertQuery(QuerySetup.NamedQuery(mapOf("name" to "%o%"), query="Dog.summonLike"))
+        val r = assertQuery(QuerySetup.NamedQuery(mapOf("name" to "%o%"), query = "Dog.summonLike"))
         assertThat(r.size).isEqualTo(4)
     }
 
     @Test
     fun `find with named query with 1 result`() {
         persistDogs()
-        val r = assertQuery(QuerySetup.NamedQuery(mapOf("name" to "Rover 1"), query="Dog.summon"))
+        val r = assertQuery(QuerySetup.NamedQuery(mapOf("name" to "Rover 1"), query = "Dog.summon"))
         assertThat(r.size).isEqualTo(1)
     }
 
     @Test
     fun `find with named query and missing owner`() {
         persistDogs()
-        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query="Dog.independent"))
+        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query = "Dog.independent"))
         assertThat(r.size).isEqualTo(1)
     }
 
@@ -635,32 +639,42 @@ class PersistenceServiceInternalTests {
     @Test
     fun `find with named query with all results`() {
         persistDogs()
-        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query="Dog.all"))
+        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query = "Dog.all"))
         assertThat(r.size).isEqualTo(8)
     }
 
     @Test
     fun `find with named query and zero limit returns no results`() {
         persistDogs()
-        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query="Dog.all"), limit=0)
+        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query = "Dog.all"), limit = 0)
         assertThat(r.size).isEqualTo(0)
     }
 
     @Test
     fun `find with named query and negative pagination produces error`() {
         persistDogs()
-        assertQuery(QuerySetup.NamedQuery(mapOf(), query="Dog.all"), -12, 2, expectFailure = "Invalid negative offset -12")
-        assertQuery(QuerySetup.NamedQuery(mapOf(), query="Dog.all"), 0, -42, expectFailure = "Invalid negative limit -42")
+        assertQuery(
+            QuerySetup.NamedQuery(mapOf(), query = "Dog.all"),
+            -12,
+            2,
+            expectFailure = "Invalid negative offset -12"
+        )
+        assertQuery(
+            QuerySetup.NamedQuery(mapOf(), query = "Dog.all"),
+            0,
+            -42,
+            expectFailure = "Invalid negative limit -42"
+        )
     }
 
     @Test
     fun `find with named query with pagination`() {
         persistDogs()
-        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query="Dog.all"), 0, 2)
+        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query = "Dog.all"), 0, 2)
         assertThat(r.size).isEqualTo(2)
         assertThat(r[0].toString()).contains("Butch 1")
         assertThat(r[1].toString()).contains("Eddie 1")
-        val r2 = assertQuery(QuerySetup.NamedQuery(mapOf(), query="Dog.all"), 2, 2)
+        val r2 = assertQuery(QuerySetup.NamedQuery(mapOf(), query = "Dog.all"), 2, 2)
         assertThat(r.size).isEqualTo(2)
         assertThat(r2[0].toString()).contains("Gromit 1")
         assertThat(r2[1].toString()).contains("Lassie 1")
@@ -669,14 +683,14 @@ class PersistenceServiceInternalTests {
     @Test
     fun `find with named query with excessive pagination`() {
         persistDogs()
-        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query="Dog.all"), 0, 1000)
+        val r = assertQuery(QuerySetup.NamedQuery(mapOf(), query = "Dog.all"), 0, 1000)
         assertThat(r.size).isEqualTo(8)
     }
 
     @Test
     fun `find with named query with 0 results`() {
         persistDogs()
-        val r = assertQuery(QuerySetup.NamedQuery(mapOf("name" to "Topcat"), query="Dog.summon"))
+        val r = assertQuery(QuerySetup.NamedQuery(mapOf("name" to "Topcat"), query = "Dog.summon"))
         assertThat(r.size).isEqualTo(0)
     }
 
@@ -684,7 +698,7 @@ class PersistenceServiceInternalTests {
     @Test
     fun `find with named query result which hits Kafka message size limit`() {
         persistDogs()
-        assertQuery(QuerySetup.NamedQuery(mapOf() , query="Dog.all"), expectFailure="Too large", sizeLimit = 10)
+        assertQuery(QuerySetup.NamedQuery(mapOf(), query = "Dog.all"), expectFailure = "Too large", sizeLimit = 10)
     }
 
 
@@ -704,9 +718,9 @@ class PersistenceServiceInternalTests {
             return it.find(clazz, id)
         }
 
-    private fun persistDirectInDb(vararg any: Any) = entityManagerFactory.createEntityManager().transaction { em->
-            any.forEach { en -> em.persist(en) }
-        }
+    private fun persistDirectInDb(vararg any: Any) = entityManagerFactory.createEntityManager().transaction { em ->
+        any.forEach { en -> em.persist(en) }
+    }
 
     private fun assertSuccessResponses(records: List<Record<*, *>>): List<Record<*, *>> {
         records.forEach {
@@ -746,7 +760,7 @@ class PersistenceServiceInternalTests {
         offset: Int = 0, limit: Int = Int.MAX_VALUE,
         expectFailure: String? = null, sizeLimit: Int = Int.MAX_VALUE
     ): List<*> {
-        val rec = when(querySetup) {
+        val rec = when (querySetup) {
             is QuerySetup.NamedQuery -> {
                 val paramsSerialized = querySetup.params.mapValues { v -> sandbox.serialize(v.value) }
                 FindWithNamedQuery(querySetup.query, paramsSerialized, offset, limit)
@@ -782,6 +796,7 @@ class PersistenceServiceInternalTests {
             return entityResponse.results.map { sandbox.deserialize(it) }
         }
     }
+
     /** Delete entity and assert
      * @return the list of successful responses
      * */
@@ -798,7 +813,10 @@ class PersistenceServiceInternalTests {
                     Record(
                         TOPIC,
                         UUID.randomUUID().toString(),
-                        createRequest(virtualNodeInfo.holdingIdentity, DeleteEntities(objs.map { sandbox.serialize(it)}))
+                        createRequest(
+                            virtualNodeInfo.holdingIdentity,
+                            DeleteEntities(objs.map { sandbox.serialize(it) })
+                        )
                     )
                 )
             )
@@ -884,7 +902,7 @@ class PersistenceServiceInternalTests {
                         createRequest(
                             virtualNodeInfo.holdingIdentity,
                             PersistEntities(entities.map { sandbox.serialize(it) }),
-                            ExternalEventContext(requestId, "flow id")
+                            ExternalEventContext(requestId, "flow id", KeyValuePairList(emptyList()))
                         )
                     )
                 )
@@ -913,13 +931,16 @@ class PersistenceServiceInternalTests {
                     Record(
                         TOPIC,
                         UUID.randomUUID().toString(),
-                        createRequest(virtualNodeInfo.holdingIdentity, MergeEntities(objs.map { sandbox.serialize(it) }))
+                        createRequest(
+                            virtualNodeInfo.holdingIdentity,
+                            MergeEntities(objs.map { sandbox.serialize(it) })
+                        )
                     )
                 )
             )
         )
         assertThat(responses.size).isEqualTo(1)
-        val flowEvent = responses.first().value  as FlowEvent
+        val flowEvent = responses.first().value as FlowEvent
         val response = flowEvent.payload as ExternalEventResponse
         assertThat(response.error).isNull()
         val entityResponse = deserializer.deserialize(response.payload.array())!!
@@ -929,18 +950,19 @@ class PersistenceServiceInternalTests {
 
     /** Persists some dogs DIRECTLY to the database, bypassing the code under test, so that we can then interact
      * with the dog entities in the database */
-    private fun persistDogs(times: Int=1): Int {
+    private fun persistDogs(times: Int = 1): Int {
         val dogs = createDogs(sandbox, times)
         dogs.map { persistDirectInDb(it.instance) }
         return dogs.size
     }
 
     /** Persists some cats DIRECTLY to the database */
-    private fun persistCats(times: Int=1): Int {
+    private fun persistCats(times: Int = 1): Int {
         val cats = createCats(sandbox, times)
         cats.map { persistDirectInDb(it.instance) }
         return cats.size
     }
+
     private fun SandboxGroupContext.serialize(obj: Any) = ByteBuffer.wrap(getSerializer().serialize(obj).bytes)
 
     /** Simple wrapper to deserialize */

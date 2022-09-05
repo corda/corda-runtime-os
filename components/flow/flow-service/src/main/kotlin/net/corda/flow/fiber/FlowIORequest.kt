@@ -106,6 +106,7 @@ interface FlowIORequest<out R> {
     data class ExternalEvent(
         val requestId: String,
         val factoryClass: Class<out ExternalEventFactory<out Any, *, *>>,
-        val parameters: Any
+        val parameters: Any,
+        val contextProperties: Map<String, String>
     ) : FlowIORequest<Any>
 }
