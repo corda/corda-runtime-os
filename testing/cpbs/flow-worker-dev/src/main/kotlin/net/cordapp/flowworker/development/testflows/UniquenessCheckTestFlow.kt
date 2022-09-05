@@ -13,6 +13,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.days
 import net.corda.v5.base.util.seconds
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckerClientService
+import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckResultSuccess
 import java.time.Instant
 
@@ -57,11 +58,12 @@ class UniquenessCheckTestFlow : RPCStartableFlow {
             Instant.now().plusMillis(TX_VALIDITY)
         )
 
-        if (issuanceResult is UniquenessCheckResultSuccess) {
+        if (issuanceResult.result is UniquenessCheckResultSuccess) {
             log.info("Uniqueness check for issuance transaction was successful, " +
                     "signature: ${issuanceResult.signature}")
         } else {
-            log.error("Uniqueness check for issuance transaction was unsuccessful")
+            log.error("Uniqueness check for issuance transaction was unsuccessful, " +
+                    "reason: ${(issuanceResult as UniquenessCheckResultFailure).error}")
             throw CordaRuntimeException("Uniqueness check for issuance transaction was unsuccessful")
         }
 
@@ -76,11 +78,12 @@ class UniquenessCheckTestFlow : RPCStartableFlow {
             Instant.now().plusMillis(TX_VALIDITY)
         )
 
-        if (consumeResult is UniquenessCheckResultSuccess) {
+        if (consumeResult.result is UniquenessCheckResultSuccess) {
             log.info("Uniqueness check for consume transaction was successful, " +
                     "signature: ${consumeResult.signature}")
         } else {
-            log.error("Uniqueness check for consume transaction was unsuccessful")
+            log.error("Uniqueness check for consume transaction was unsuccessful, " +
+                    "reason: ${(consumeResult as UniquenessCheckResultFailure).error}")
             throw CordaRuntimeException("Uniqueness check for issuance transaction was unsuccessful")
         }
 

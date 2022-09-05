@@ -36,6 +36,7 @@ dependencies {
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-application"
+    implementation "net.corda:corda-ledger-utxo"
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-config-schema"
