@@ -67,8 +67,10 @@ class Receiver(private val subscriptionFactory: SubscriptionFactory,
             val now = Instant.now()
             return events.mapNotNull {
                 val authenticatedMessage = it.value!!.message as AuthenticatedMessage
+                val messageId = authenticatedMessage.header.messageId
+                logger.info("Received message with id $messageId")
                 //Only JSON deserialize messages from another app-simulator (not sent by the MGM for example).
-                if (it.key.split(":").last().toIntOrNull() != null) {
+                if (messageId.split(":").last().toIntOrNull() != null) {
                     val payload = objectMapper.readValue<MessagePayload>(authenticatedMessage.payload.array())
                     val messageReceivedEvent = MessageReceivedEvent(payload.sender,
                         authenticatedMessage.header.messageId, payload.sendTimestamp, now, Duration.between(payload.sendTimestamp, now))
