@@ -26,7 +26,6 @@ import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.messaging.api.records.Record
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
