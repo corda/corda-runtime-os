@@ -65,7 +65,7 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
 
-    override val isRunning: Boolean
+    val isRunning: Boolean
         get() = !stopped
 
     override val subscriptionName: LifecycleCoordinatorName
@@ -79,13 +79,6 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                 lifecycleCoordinator.start()
                 threadFactory.invoke(::runConsumeLoop)
             }
-        }
-    }
-
-    override fun stop() {
-        if (!stopped) {
-            stopConsumeLoop()
-            lifecycleCoordinator.stop()
         }
     }
 
@@ -122,7 +115,7 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                     else -> {
                         log.error("$errorMsg. Fatal error occurred. Closing subscription.", ex)
                         lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, errorMsg)
-                        stop()
+                        close()
                     }
                 }
             }
