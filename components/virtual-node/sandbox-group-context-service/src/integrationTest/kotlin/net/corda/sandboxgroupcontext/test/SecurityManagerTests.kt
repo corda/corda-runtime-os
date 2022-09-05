@@ -162,7 +162,7 @@ class SecurityManagerTests {
     fun `Reflection used by json fails when permission denied to json library`() {
         val sandboxGroupContext = virtualNode.loadSandbox(CPB1, SandboxGroupType.FLOW)
 
-        securityManagerService.denyPermissions("FLOW/*/lib/jackson*", listOf(
+        securityManagerService.denyPermissions("FLOW/*/privatelib/jackson*", listOf(
             ReflectPermission("suppressAccessChecks")
         ))
 
@@ -176,7 +176,7 @@ class SecurityManagerTests {
     fun `Reflection allowed to CPK flow but not to json library`() {
         val sandboxGroupContext = virtualNode.loadSandbox(CPB1, SandboxGroupType.FLOW)
 
-        securityManagerService.denyPermissions("FLOW/*/lib/jackson*", listOf(
+        securityManagerService.denyPermissions("FLOW/*/privatelib/jackson*", listOf(
             ReflectPermission("suppressAccessChecks")
         ))
 
