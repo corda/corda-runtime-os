@@ -7,9 +7,6 @@ import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.merger.ConfigMerger
-import java.io.Closeable
-import java.time.Duration
-import java.time.Instant
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
@@ -20,6 +17,9 @@ import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.v5.base.util.contextLogger
+import java.io.Closeable
+import java.time.Duration
+import java.time.Instant
 
 @Suppress("LongParameterList")
 class Receiver(private val subscriptionFactory: SubscriptionFactory,
@@ -53,7 +53,7 @@ class Receiver(private val subscriptionFactory: SubscriptionFactory,
     }
 
     override fun close() {
-        subscriptions.forEach { it.stop() }
+        subscriptions.forEach { it.close() }
     }
 
     private inner class InboundMessageProcessor(val destinationTopic: String): EventLogProcessor<String, AppMessage> {

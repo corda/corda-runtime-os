@@ -58,10 +58,6 @@ internal class DurableSubscriptionImpl<K : Any, V : Any>(
     override val isRunning: Boolean
         get() = subscription.isRunning
 
-    override fun stop() {
-        subscription.stop()
-    }
-
     override fun close() {
         subscription.close()
     }

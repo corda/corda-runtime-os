@@ -10,6 +10,7 @@ import net.corda.lifecycle.LifecycleStatus.ERROR
 import net.corda.lifecycle.LifecycleStatus.UP
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import org.junit.jupiter.api.Test
@@ -138,7 +139,7 @@ class ConfigRPCOpsEventHandlerTests {
 
     /** Creates a [ConfigurationReadService] that returns a static update handle for any registration for updates. */
     private fun getConfigReadServiceAndUpdateHandle(): Pair<ConfigurationReadService, AutoCloseable> {
-        val updateHandle = mock<AutoCloseable>()
+        val updateHandle = mock<Resource>()
         val configReadService = mock<ConfigurationReadService>().apply {
             whenever(registerForUpdates(any())).thenReturn(updateHandle)
         }
