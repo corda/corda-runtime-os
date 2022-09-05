@@ -38,49 +38,7 @@ sealed class ByteSequence(private val _bytes: ByteArray, val offset: Int, val si
     @Suppress("MemberVisibilityCanBePrivate")
     fun subSequence(offset: Int, size: Int): ByteSequence {
         // Intentionally use bytes rather than _bytes, to mirror the copy-or-not behaviour of that property.
-        return if (offset == 0 && size == this.size) this else of(bytes, this.offset + offset, size)
-    }
-
-    companion object {
-
-        /**
-         * Construct a [ByteSequence] given a [ByteArray].
-         *
-         * @param bytes The input [ByteArray].
-         * @param offset The offset.
-         * @param size The size of the array.
-         *
-         * @return A [ByteSequence] representing the input [bytes].
-         */
-        @JvmStatic
-        fun of(bytes: ByteArray, offset: Int, size: Int): ByteSequence {
-            return OpaqueBytesSubSequence(bytes, offset, size)
-        }
-
-        /**
-         * Construct a [ByteSequence] given a [ByteArray].
-         *
-         * @param bytes The input [ByteArray].
-         * @param offset The offset.
-         *
-         * @return A [ByteSequence] representing the input [bytes].
-         */
-        @JvmStatic
-        fun of(bytes: ByteArray, offset: Int): ByteSequence {
-            return OpaqueBytesSubSequence(bytes, offset, bytes.size)
-        }
-
-        /**
-         * Construct a [ByteSequence] given a [ByteArray].
-         *
-         * @param bytes The input [ByteArray].
-         *
-         * @return A [ByteSequence] representing the input [bytes].
-         */
-        @JvmStatic
-        fun of(bytes: ByteArray): ByteSequence {
-            return OpaqueBytesSubSequence(bytes, 0, bytes.size)
-        }
+        return if (offset == 0 && size == this.size) this else OpaqueBytesSubSequence(bytes, this.offset + offset, size)
     }
 
     /**
@@ -115,7 +73,7 @@ sealed class ByteSequence(private val _bytes: ByteArray, val offset: Int, val si
      * Copy this sequence, complete with new backing array.  This can be helpful to break references to potentially
      * large backing arrays from small sub-sequences.
      */
-    fun copy(): ByteSequence = of(copyBytes())
+    fun copy(): ByteSequence = OpaqueBytesSubSequence(copyBytes(), 0, size)
 
     /** Same as [copy] but returns just the new byte array. */
     fun copyBytes(): ByteArray = _bytes.copyOfRange(offset, offset + size)
@@ -204,7 +162,7 @@ open class OpaqueBytes(bytes: ByteArray) : ByteSequence(bytes, 0, bytes.size) {
 /**
  * Wrap [size] bytes from this [ByteArray] starting from [offset] into a new [ByteArray].
  */
-fun ByteArray.sequence(offset: Int = 0, size: Int = this.size) = ByteSequence.of(this, offset, size)
+fun ByteArray.sequence(offset: Int = 0, size: Int = this.size) = OpaqueBytesSubSequence(this, offset, size)
 
 /**
  * Converts this [ByteArray] into a [String] of hexadecimal digits.
