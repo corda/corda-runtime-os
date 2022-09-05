@@ -44,7 +44,7 @@ switch (params.BUILD_ARCH) {
             """.stripIndent()
         break
 }
->>>>>>> 7dbc0ba3d03e5a620ba7f6c8a2f7288dd8f2a4e1
+
 
 pipeline {
     agent {
