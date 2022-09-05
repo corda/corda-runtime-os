@@ -46,7 +46,8 @@ class ChunkWriteToDbProcessor(
             publisher.complete(request.requestId, checksum)
         } catch (e: Exception) {
             when (e) {
-                is DuplicateCpiUploadException -> log.warn("Unable to accept CPI chunk since CPI already uploaded ${e.message} for request ID ${e.requestId}")
+                is DuplicateCpiUploadException ->
+                    log.warn("Unable to accept CPI chunk since CPI already uploaded ${e.message} for request ID ${request.requestId}")
                 is ValidationException -> log.warn("${e.message} for request id ${e.requestId}")
                 else -> log.error("Unable to accept CPI chunk due to chunk $request causing exception", e)
             }
