@@ -1,11 +1,11 @@
 @Library('corda-shared-build-pipeline-steps@5.0') _
 
-<<<<<<< HEAD
+
 import groovy.transform.Field
 
 @Field
 String k8Namespace = "run-${UUID.randomUUID().toString()}"
-=======
+
 /*
  * Jenkins agent label to build on
  */
