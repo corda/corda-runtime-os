@@ -1,6 +1,5 @@
 package net.corda.libs.permissions.manager.impl
 
-import net.corda.utilities.concurrent.getOrThrow
 import java.time.Duration
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.permissions.management.PermissionManagementRequest
@@ -8,6 +7,7 @@ import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.libs.permissions.manager.exception.UnexpectedPermissionResponseException
 import net.corda.libs.permissions.manager.exception.RemotePermissionManagementException
 import net.corda.messaging.api.publisher.RPCSender
+import net.corda.utilities.concurrent.getOrThrow
 
 @Suppress("ThrowsCount")
 inline fun <reified T : Any> sendPermissionWriteRequest(

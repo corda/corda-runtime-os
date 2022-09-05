@@ -1,6 +1,5 @@
 package net.corda.serialization.amqp.test
 
-import net.corda.utilities.toByteSequence
 import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.ObjectAndEnvelope
@@ -16,6 +15,7 @@ import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.utilities.copyTo
 import net.corda.utilities.div
 import net.corda.utilities.reflection.packageName_
+import net.corda.utilities.toByteSequence
 import net.corda.v5.base.types.OpaqueBytes
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
