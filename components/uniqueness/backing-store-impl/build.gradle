@@ -22,6 +22,16 @@ dependencies {
     implementation project(':libs:db:db-admin-impl')
     implementation project(":libs:uniqueness:jpa-backing-store-datamodel")
 
+    // TODO: clean up
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    testImplementation project(":testing:crypto-testkit")
+    testImplementation project(":testing:test-utilities")
+    testImplementation project(":testing:uniqueness:backing-store-fake")
+    testImplementation project(":testing:uniqueness:uniqueness-utilities")
+
+
     // For JSON serialization to DB
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"

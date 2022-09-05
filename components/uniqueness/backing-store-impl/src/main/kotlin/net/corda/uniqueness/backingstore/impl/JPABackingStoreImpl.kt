@@ -6,29 +6,16 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.db.schema.DbSchema
-import net.corda.lifecycle.DependentComponents
-import net.corda.lifecycle.LifecycleCoordinator
-import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.lifecycle.LifecycleEvent
-import net.corda.lifecycle.LifecycleStatus
-import net.corda.lifecycle.RegistrationStatusChangeEvent
-import net.corda.lifecycle.StartEvent
-import net.corda.lifecycle.StopEvent
-import net.corda.lifecycle.createCoordinator
+import net.corda.lifecycle.*
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.uniqueness.backingstore.BackingStore
 import net.corda.uniqueness.backingstore.jpa.datamodel.JPABackingStoreEntities
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessRejectedTransactionEntity
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessStateDetailEntity
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTransactionDetailEntity
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalError
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalRequest
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalResult
+import net.corda.uniqueness.common.datamodel.*
 import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalResult.Companion.RESULT_ACCEPTED_REPRESENTATION
 import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalResult.Companion.RESULT_REJECTED_REPRESENTATION
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalStateDetails
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalStateRef
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalTransactionDetails
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
@@ -36,11 +23,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import javax.persistence.EntityExistsException
-import javax.persistence.EntityManager
-import javax.persistence.EntityManagerFactory
-import javax.persistence.OptimisticLockException
-import javax.persistence.RollbackException
+import javax.persistence.*
 
 @Suppress("ForbiddenComment")
 // TODO: Reimplement metrics, config
@@ -54,7 +37,13 @@ open class JPABackingStoreImpl @Activate constructor(
     @Reference(service = JpaEntitiesRegistry::class)
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
     @Reference(service = DbConnectionManager::class)
-    private val dbConnectionManager: DbConnectionManager
+    private val dbConnectionManager: DbConnectionManager,
+    // NOTE: This is a temporary change for dependency injection for testing convenience around
+    //  createDefaultUniquenessDb(). It can/should be removed when the temporary hack (createDefaultUniquenessDb()) is
+    //  refactored. If createDefaultUniquenessDb() can't be refactored and we want to remove this default parameter,
+    //  revert this change and the only affected test is
+    //  "Registration status change event instantiates entity manager when event status is up"
+    private val schemaMigrator: LiquibaseSchemaMigratorImpl = LiquibaseSchemaMigratorImpl()
 ) : BackingStore {
 
     private companion object {
@@ -342,14 +331,18 @@ open class JPABackingStoreImpl @Activate constructor(
         when (event) {
             is StartEvent -> {
                 dependentComponents.registerAndStartAll(coordinator)
+                // TODO: Review possible missing logic. Refer to FlowRPCOpsServiceImpl.kt.
+//                if(dbConnectionManager.isRunning) coordinator.updateStatus(LifecycleStatus.UP)
             }
             is StopEvent -> {
                 dependentComponents.stopAll()
+                // TODO: Review possible missing logic. Refer to FlowRPCOpsServiceImpl.kt.
+//                if(!dbConnectionManager.isRunning) coordinator.updateStatus(LifecycleStatus.DOWN)
             }
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
 
-                    createDefaultUniquenessDb()
+                    createDefaultUniquenessDb(schemaMigrator)
 
                     entityManagerFactory = dbConnectionManager.getOrCreateEntityManagerFactory(
                         DEFAULT_UNIQUENESS_DB_NAME,
@@ -376,13 +369,13 @@ open class JPABackingStoreImpl @Activate constructor(
      * store uniqueness data. It needs replacing with a solution to retrieve the appropriate DB
      * connection for a given notary service identity, and a mechanism to create the DB connection
      */
-    private fun createDefaultUniquenessDb() {
+    private fun createDefaultUniquenessDb(schemaMigrator: LiquibaseSchemaMigratorImpl) {
         jpaEntitiesRegistry.register(
             CordaDb.Uniqueness.persistenceUnitName,
             JPABackingStoreEntities.classes
         )
 
-        val schemaMigrator = LiquibaseSchemaMigratorImpl()
+//        val schemaMigrator = LiquibaseSchemaMigratorImpl()
         val changeLog = ClassloaderChangeLog(
             linkedSetOf(
                 ClassloaderChangeLog.ChangeLogResourceFiles(
