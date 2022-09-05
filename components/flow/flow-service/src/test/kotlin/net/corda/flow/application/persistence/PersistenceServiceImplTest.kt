@@ -20,6 +20,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import kotlin.math.exp
 
 class PersistenceServiceImplTest {
 
@@ -50,10 +51,18 @@ class PersistenceServiceImplTest {
     }
 
     @Test
-    fun `persist executes`() {
+    fun `persist executes successfully`() {
         persistenceService.persist(TestObject())
 
         verify(flowFiberSerializationService).serialize(any())
+        assertThat(argumentCaptor.firstValue).isEqualTo(PersistExternalEventFactory::class.java)
+    }
+
+    @Test
+    fun `bulk persist executes successfully`() {
+        persistenceService.persist(listOf(TestObject(), TestObject()))
+
+        verify(flowFiberSerializationService, times(2)).serialize(any())
         assertThat(argumentCaptor.firstValue).isEqualTo(PersistExternalEventFactory::class.java)
     }
 
@@ -74,6 +83,29 @@ class PersistenceServiceImplTest {
     }
 
     @Test
+    fun `bulk merge executes successfully`() {
+        whenever(
+            externalEventExecutor.execute(
+                argumentCaptor.capture(),
+                any()
+            )
+        ).thenReturn(listOf(byteBuffer, byteBuffer))
+
+        whenever(
+            flowFiberSerializationService.deserialize<TestObject>(
+                any<ByteArray>(),
+                any()
+            )
+        ).thenReturn(TestObject())
+
+        persistenceService.merge(listOf(TestObject(), TestObject()))
+
+        verify(flowFiberSerializationService, times(2)).deserialize<TestObject>(any<ByteArray>(), any())
+        verify(flowFiberSerializationService, times(2)).serialize<TestObject>(any())
+        assertThat(argumentCaptor.firstValue).isEqualTo(MergeExternalEventFactory::class.java)
+    }
+
+    @Test
     fun `remove executes successfully`() {
         whenever(
             flowFiberSerializationService.deserialize<TestObject>(
@@ -85,8 +117,23 @@ class PersistenceServiceImplTest {
         persistenceService.remove(TestObject())
 
         verify(flowFiberSerializationService, times(0)).deserialize<TestObject>(any<ByteArray>(), any())
-
         verify(flowFiberSerializationService).serialize<TestObject>(any())
+        assertThat(argumentCaptor.firstValue).isEqualTo(RemoveExternalEventFactory::class.java)
+    }
+
+    @Test
+    fun `bulk remove executes successfully`() {
+        whenever(
+            flowFiberSerializationService.deserialize<TestObject>(
+                any<ByteArray>(),
+                any()
+            )
+        ).thenReturn(TestObject())
+
+        persistenceService.remove(listOf(TestObject(), TestObject()))
+
+        verify(flowFiberSerializationService, times(0)).deserialize<TestObject>(any<ByteArray>(), any())
+        verify(flowFiberSerializationService, times(2)).serialize<TestObject>(any())
         assertThat(argumentCaptor.firstValue).isEqualTo(RemoveExternalEventFactory::class.java)
     }
 
@@ -99,6 +146,26 @@ class PersistenceServiceImplTest {
 
         verify(flowFiberSerializationService).deserialize<TestObject>(any<ByteArray>(), any())
         verify(flowFiberSerializationService).serialize<String>(any())
+        assertThat(argumentCaptor.firstValue).isEqualTo(FindExternalEventFactory::class.java)
+    }
+
+    @Test
+    fun `bulk find executes successfully`() {
+        val expectedObj = TestObject()
+
+        whenever(
+            externalEventExecutor.execute(
+                argumentCaptor.capture(),
+                any()
+            )
+        ).thenReturn(listOf(byteBuffer, byteBuffer))
+
+        whenever(flowFiberSerializationService.deserialize<TestObject>(any<ByteArray>(), any())).thenReturn(expectedObj)
+
+        assertThat(persistenceService.find(TestObject::class.java, listOf("a", "b"))).isEqualTo(listOf(expectedObj, expectedObj))
+
+        verify(flowFiberSerializationService, times(2)).deserialize<TestObject>(any<ByteArray>(), any())
+        verify(flowFiberSerializationService, times(2)).serialize<String>(any())
         assertThat(argumentCaptor.firstValue).isEqualTo(FindExternalEventFactory::class.java)
     }
 

@@ -10,7 +10,7 @@ import net.corda.data.persistence.DeleteEntitiesById
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.FindAll
-import net.corda.data.persistence.FindEntity
+import net.corda.data.persistence.FindEntities
 import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.data.persistence.MergeEntities
 import net.corda.data.persistence.PersistEntities
@@ -143,7 +143,7 @@ class EntityMessageProcessor(
                         request.flowExternalEventContext,
                         persistenceServiceInternal.merge(serializationService, it, entityRequest)
                     )
-                    is FindEntity -> successResponse(
+                    is FindEntities -> successResponse(
                         request.flowExternalEventContext,
                         persistenceServiceInternal.find(serializationService, it, entityRequest, holdingIdentity)
                     )

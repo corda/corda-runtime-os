@@ -9,8 +9,8 @@ import org.osgi.service.component.annotations.Component
 class MergeExternalEventFactory : AbstractPersistenceExternalEventFactory<MergeParameters>() {
 
     override fun createRequest(parameters: MergeParameters): Any {
-        return MergeEntities(listOf(parameters.serializedEntity))
+        return MergeEntities(parameters.serializedEntities)
     }
 }
 
-data class MergeParameters(val serializedEntity: ByteBuffer)
+data class MergeParameters(val serializedEntities: List<ByteBuffer>)

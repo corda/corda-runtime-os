@@ -34,7 +34,7 @@ class FlowSessionImpl(
 
     @Suspendable
     override fun <R : Any> sendAndReceive(receiveType: Class<R>, payload: Any): UntrustworthyData<R> {
-        enforceNotPrimitive(receiveType)
+        requireBoxedType(receiveType)
         ensureSessionIsOpen()
         val request = FlowIORequest.SendAndReceive(mapOf(sourceSessionId to serialize(payload)))
         val received = fiber.suspend(request)
@@ -43,7 +43,7 @@ class FlowSessionImpl(
 
     @Suspendable
     override fun <R : Any> receive(receiveType: Class<R>): UntrustworthyData<R> {
-        enforceNotPrimitive(receiveType)
+        requireBoxedType(receiveType)
         ensureSessionIsOpen()
         val request = FlowIORequest.Receive(setOf(sourceSessionId))
         val received = fiber.suspend(request)
@@ -91,7 +91,7 @@ class FlowSessionImpl(
     /**
      * Required to prevent class cast exceptions during AMQP serialization of primitive types.
      */
-    private fun enforceNotPrimitive(type: Class<*>) {
+    private fun requireBoxedType(type: Class<*>) {
         require(!type.isPrimitive) { "Cannot receive primitive type $type" }
     }
 

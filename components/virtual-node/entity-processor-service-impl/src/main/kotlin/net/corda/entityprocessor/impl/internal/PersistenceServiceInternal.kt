@@ -1,10 +1,14 @@
 package net.corda.entityprocessor.impl.internal
 
-import net.corda.data.persistence.DeleteEntitiesById
+import java.nio.ByteBuffer
+import javax.persistence.EntityManager
+import javax.persistence.Query
+import javax.persistence.criteria.Selection
 import net.corda.data.persistence.DeleteEntities
+import net.corda.data.persistence.DeleteEntitiesById
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.FindAll
-import net.corda.data.persistence.FindEntity
+import net.corda.data.persistence.FindEntities
 import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.data.persistence.MergeEntities
 import net.corda.data.persistence.PersistEntities
@@ -14,10 +18,6 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
-import java.nio.ByteBuffer
-import javax.persistence.EntityManager
-import javax.persistence.Query
-import javax.persistence.criteria.Selection
 
 
 /**
@@ -71,16 +71,15 @@ class PersistenceServiceInternal(
     fun find(
         serializationService: SerializationService,
         entityManager: EntityManager,
-        payload: FindEntity,
+        payload: FindEntities,
         holdingIdentity: HoldingIdentity
     ): EntityResponse {
-        val id = serializationService.deserialize(payload.id.array(), Any::class.java)
         val clazz = classProvider(holdingIdentity, payload.entityClassName)
-        val result = when (val entity = entityManager.find(clazz, id)) {
-            null -> emptyList()
-            else -> listOf(payloadCheck(serializationService.toBytes(entity)))
+        val results = payload.ids.mapNotNull { serializedId ->
+            val id = serializationService.deserialize(serializedId.array(), Any::class.java)
+            entityManager.find(clazz, id)?.let { entity -> payloadCheck(serializationService.toBytes(entity)) }
         }
-        return EntityResponse(result)
+        return EntityResponse(results)
     }
 
     fun merge(
