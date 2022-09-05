@@ -38,13 +38,14 @@ dependencies {
     implementation project(':libs:db:db-admin-impl')
     implementation project(':libs:db:db-core')
     implementation project(':libs:db:db-orm')
+    implementation project(':libs:flows:external-event-responses')
+    implementation project(':libs:ledger:ledger-consensual-impl')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(":libs:messaging:messaging")
-    implementation project(':libs:virtual-node:sandbox-group-context')
     implementation project(':libs:serialization:serialization-amqp')
     implementation project(':libs:serialization:serialization-internal')
+    implementation project(':libs:virtual-node:sandbox-group-context')
     implementation project(':libs:utilities')
-    implementation project(':libs:ledger:ledger-consensual-impl')
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation 'javax.persistence:javax.persistence-api'

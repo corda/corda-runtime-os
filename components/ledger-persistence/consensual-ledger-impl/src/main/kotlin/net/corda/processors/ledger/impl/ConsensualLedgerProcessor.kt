@@ -2,26 +2,22 @@ package net.corda.processors.ledger.impl
 
 import java.nio.ByteBuffer
 import javax.persistence.EntityManagerFactory
-import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.consensual.PersistTransaction
-import net.corda.data.persistence.ConsensualLedgerRequest
-import net.corda.data.persistence.EntityResponse
-import net.corda.data.persistence.EntityResponseFailure
-import net.corda.data.persistence.Error
+import net.corda.data.persistence.*
 import net.corda.entityprocessor.impl.internal.EntitySandboxContextTypes
 import net.corda.entityprocessor.impl.internal.EntitySandboxService
 import net.corda.entityprocessor.impl.internal.exceptions.KafkaMessageSizeException
 import net.corda.entityprocessor.impl.internal.exceptions.NotReadyException
 import net.corda.entityprocessor.impl.internal.exceptions.NullParameterException
 import net.corda.entityprocessor.impl.internal.exceptions.VirtualNodeException
+import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey
-import net.corda.schema.Schemas
-import net.corda.utilities.time.Clock
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
@@ -43,7 +39,7 @@ fun EntitySandboxService.getClass(holdingIdentity: HoldingIdentity, fullyQualifi
  */
 class ConsensualLedgerProcessor(
     private val entitySandboxService: EntitySandboxService,
-    private val clock: Clock,
+    private val externalEventResponseFactory: ExternalEventResponseFactory,
     private val payloadCheck: (bytes: ByteBuffer) -> ByteBuffer,
 ) : DurableProcessor<String, ConsensualLedgerRequest> {
     companion object {
@@ -66,22 +62,23 @@ class ConsensualLedgerProcessor(
 
     override fun onNext(events: List<Record<String, ConsensualLedgerRequest>>): List<Record<*, *>> {
         log.debug("onNext processing messages ${events.joinToString(",") { it.key }}")
-        val responses = mutableListOf<Record<String, FlowEvent>>()
-        events.forEach {
-            val response = try {
-                processRequest(it.key, it.value!!)
-            } catch (e: Exception) {
-                // If we're catching at this point, it's an unrecoverable error.
-                failureResponse(it.key, e, Error.FATAL)
+        return events.mapNotNull { event ->
+            val request = event.value
+            if (request == null) {
+                // We received a [null] external event therefore we do not know the flow id to respond to.
+                return@mapNotNull null
+            } else {
+                try {
+                    processRequest(request)
+                } catch (e: Exception) {
+                    // If we're catching at this point, it's an unrecoverable error.
+                    fatalErrorResponse(request.flowExternalEventContext, e)
+                }
             }
-            val flowId = it.value!!.flowId
-            responses.add(Record(Schemas.Flow.FLOW_EVENT_TOPIC, flowId, FlowEvent(flowId, response)))
         }
-
-        return responses
     }
 
-    private fun processRequest(requestId: String, request: ConsensualLedgerRequest): EntityResponse {
+    private fun processRequest(request: ConsensualLedgerRequest): Record<String, FlowEvent> {
         val holdingIdentity = request.holdingIdentity.toCorda()
 
         // Get the sandbox for the given request.
@@ -90,72 +87,80 @@ class ConsensualLedgerProcessor(
             entitySandboxService.get(holdingIdentity)
         } catch (e: NotReadyException) {
             // Flow worker could retry later, but may not be successful.
-            return failureResponse(requestId, e, Error.NOT_READY)
+            return transientErrorResponse(request.flowExternalEventContext, e)
         } catch (e: VirtualNodeException) {
             // Flow worker could retry later, but may not be successful.
-            return failureResponse(requestId, e, Error.VIRTUAL_NODE)
+            return transientErrorResponse(request.flowExternalEventContext, e)
         } catch (e: Exception) {
             throw e // rethrow and handle higher up
         }
 
-        return processRequestWithSandbox(sandbox, requestId, request)
+        return processRequestWithSandbox(sandbox, request)
     }
 
     @Suppress("ComplexMethod")
     private fun processRequestWithSandbox(
         sandbox: SandboxGroupContext,
-        requestId: String,
         request: ConsensualLedgerRequest
-    ): EntityResponse {
+    ): Record<String, FlowEvent> {
         val holdingIdentity = request.holdingIdentity.toCorda()
         log.info("processRequestWithSandbox, request: ${request}, holding identity: ${holdingIdentity}")
 
         // get the per-sandbox entity manager and serialization services
         val entityManagerFactory = sandbox.getEntityManagerFactory()
         // val serializationService = sandbox.getSerializationService()  // TODO: use
-        val consensualLedgerDAO = ConsensualLedgerDAO(requestId, clock::instant, entitySandboxService::getClass)
+        val consensualLedgerDAO = ConsensualLedgerDAO(entitySandboxService::getClass)
 
         // We match on the type, and delegate to the appropriate method in the DAO.
-        val response = try {
+        val response: Record<String, FlowEvent> = try {
             entityManagerFactory.createEntityManager().transaction {
-                val req = request.request
-                when (req) {
-                    is PersistTransaction -> consensualLedgerDAO.persistTransaction(req, it)
+                when (val req = request.request) {
+                    is PersistTransaction -> successResponse(
+                        request.flowExternalEventContext,
+                        consensualLedgerDAO.persistTransaction(req, it)
+                    )
 
                     else -> {
-                        failureResponse(requestId, CordaRuntimeException("Unknown command"), Error.FATAL)
+                        fatalErrorResponse(request.flowExternalEventContext, CordaRuntimeException("Unknown command"))
                     }
                 }
             }
         } catch (e: NotSerializableException) {
-            failureResponse(requestId, e, Error.FATAL)
+            fatalErrorResponse(request.flowExternalEventContext, e)
         } catch (e: KafkaMessageSizeException) {
-            failureResponse(requestId, e, Error.FATAL)
+            fatalErrorResponse(request.flowExternalEventContext, e)
         } catch (e: NullParameterException) {
-            failureResponse(requestId, e, Error.FATAL)
+            fatalErrorResponse(request.flowExternalEventContext, e)
         } catch (e: Exception) {
-            failureResponse(requestId, e, Error.DATABASE)
+            fatalErrorResponse(request.flowExternalEventContext, e)
         }
 
         return response
     }
 
-    private fun failureResponse(requestId: String, e: Exception, errorType: Error): EntityResponse {
-        if (errorType == Error.FATAL) {
-            log.error("Fatal exception occurred (type=$errorType) for flow-worker request $requestId", e)
-        } else {
-            log.warn("Exception occurred (type=$errorType) for flow-worker request $requestId", e)
-        }
-
-        return EntityResponse(
-            clock.instant(),
-            requestId,
-            EntityResponseFailure(
-                errorType,
-                ExceptionEnvelope(e::class.java.simpleName, e.localizedMessage)
-            )
-        )
+    private fun successResponse(
+        flowExternalEventContext: ExternalEventContext,
+        entityResponse: EntityResponse
+    ): Record<String, FlowEvent> {
+        return externalEventResponseFactory.success(flowExternalEventContext, entityResponse)
     }
+
+    private fun transientErrorResponse(
+        flowExternalEventContext: ExternalEventContext,
+        e: Exception
+    ): Record<String, FlowEvent> {
+        log.warn("Error encountered while handling flow event ${flowExternalEventContext.requestId}", e)
+        return externalEventResponseFactory.transientError(flowExternalEventContext, e)
+    }
+
+    private fun fatalErrorResponse(
+        flowExternalEventContext: ExternalEventContext,
+        e: Exception
+    ): Record<String, FlowEvent> {
+        log.error("Fatal error encountered while handling flow event ${flowExternalEventContext.requestId}", e)
+        return externalEventResponseFactory.fatalError(flowExternalEventContext, e)
+    }
+
     override val keyClass: Class<String>
         get() = String::class.java
 

@@ -8,8 +8,6 @@ import java.time.Instant
 import javax.persistence.EntityManager
 
 class ConsensualLedgerDAO(
-    val requestId: String,
-    val clock: () -> Instant,
     val loadClass: (holdingIdentity: net.corda.virtualnode.HoldingIdentity, fullyQualifiedClassName: String) -> Class<*>,
 ) {
     companion object {
@@ -21,8 +19,7 @@ class ConsensualLedgerDAO(
     data class MerkleLeaf(val data: Array<Byte>, val hash: String)
 
     fun persistTransaction(request: PersistTransaction, entityManager: EntityManager): EntityResponse {
-        logger.debug("TMP DEBUG 1. request: $request, requestId: $requestId, loadClass: $loadClass")
-        val now = clock()
+        logger.debug("TMP DEBUG 1. request: $request, loadClass: $loadClass")
         // TODO: deserialise the request data to a real SignedTransaction
         val tx = SignedTransaction(
             "0",
@@ -31,13 +28,14 @@ class ConsensualLedgerDAO(
             listOf(listOf(MerkleLeaf(arrayOf<Byte>(3,4), "5")))
         )
         // do some native queries to insert multiple rows (and across tables)
+        val now = Instant.now()
         writeTransaction(entityManager, now, tx)
         writeTransactionStatus(entityManager, now, tx, "Faked")
         // TODO: when and what do we write to the signatures table?
         // TODO: when and what do we write to the CPKs table?
 
         // construct response
-        return EntityResponse(now, requestId, EntityResponseSuccess())
+        return EntityResponse(emptyList())
     }
 
     private fun writeTransaction(entityManager: EntityManager, timestamp: Instant, tx: SignedTransaction) {
