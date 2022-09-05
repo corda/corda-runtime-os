@@ -201,6 +201,7 @@ class MembershipQueryClientImpl(
     }
 
     override fun queryGroupPolicy(viewOwningIdentity: HoldingIdentity): MembershipQueryResult<LayeredPropertyMap> {
+        println("QQQ in queryGroupPolicy for $viewOwningIdentity")
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             QueryGroupPolicy()

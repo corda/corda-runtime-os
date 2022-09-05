@@ -7,6 +7,7 @@ import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.data.membership.db.response.query.GroupPolicyQueryResponse
 import net.corda.membership.datamodel.GroupPolicyEntity
+import net.corda.v5.base.util.toBase64
 import net.corda.virtualnode.toCorda
 
 internal class QueryGroupPolicyHandler(
@@ -25,6 +26,7 @@ internal class QueryGroupPolicyHandler(
         context: MembershipRequestContext,
         request: QueryGroupPolicy
     ): GroupPolicyQueryResponse {
+        println("QQQ Searching for group policy for identity ${context.holdingIdentity}")
         logger.info("Searching for group policy for identity ${context.holdingIdentity}.")
         return transaction(context.holdingIdentity.toCorda().shortHash) { em ->
             val result = em.createQuery(
@@ -38,7 +40,12 @@ internal class QueryGroupPolicyHandler(
             } else {
                 logger.info("Persisted group policy was found for identity ${context.holdingIdentity}. " +
                         "Returning properties.")
-                GroupPolicyQueryResponse(keyValuePairListDeserializer.deserialize(result.first().properties))
+                println("QQQ result.first().properties -> ${result.first().properties.toBase64()}")
+                val props = keyValuePairListDeserializer.deserialize(result.first().properties)
+                println("QQQ props: $props")
+                GroupPolicyQueryResponse(props).also {
+                    println("QQQ Sent valid value!")
+                }
             }
         }
     }
