@@ -14,18 +14,18 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.uniqueness.backingstore.BackingStore
 import net.corda.uniqueness.checker.UniquenessChecker
+import net.corda.uniqueness.datamodel.common.toExternalError
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateConflictImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateUnknownImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateConflictImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateUnknownImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorTimeWindowOutOfBoundsImpl
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckRequestImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateRefImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckTransactionDetailsImpl
-import net.corda.uniqueness.datamodel.impl.toExternalError
+import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
@@ -110,7 +110,7 @@ class BatchedUniquenessCheckerImpl(
         // the tx id)
         val requestsToProcess = requests.mapNotNull {
             try {
-                UniquenessCheckRequestImpl.create(it)
+                UniquenessCheckRequestInternal.create(it)
             } catch (e: IllegalArgumentException) {
                 results.add(
                     UniquenessCheckResponseAvro(
