@@ -25,7 +25,6 @@ import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
-import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -94,7 +93,6 @@ internal class ConfigRPCOpsImpl @Activate constructor(
     private var rpcSender: RPCSender<ConfigurationManagementRequest, ConfigurationManagementResponse>? = null
 
     // Lifecycle
-    private val dependentComponents = DependentComponents.of(::configurationGetService)
     private val lifecycleCoordinator =
         coordinatorFactory.createCoordinator<ConfigRPCOps> { event: LifecycleEvent, coordinator: LifecycleCoordinator ->
             when (event) {
@@ -107,9 +105,8 @@ internal class ConfigRPCOpsImpl @Activate constructor(
                             )
                         )
                     }
-                    dependentComponents.registerAndStartAll(coordinator)
                     coordinator.updateStatus(LifecycleStatus.UP)
-                    logger.info("${this::javaClass.name} is now Up")
+                    logger.info("${this.javaClass.name} is now Up")
                 }
                 is StopEvent -> coordinator.updateStatus(LifecycleStatus.DOWN)
                 is RegistrationStatusChangeEvent -> {
