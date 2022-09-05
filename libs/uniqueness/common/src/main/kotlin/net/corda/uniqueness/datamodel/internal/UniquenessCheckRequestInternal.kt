@@ -1,6 +1,7 @@
-package net.corda.uniqueness.datamodel.impl
+package net.corda.uniqueness.datamodel.internal
 
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
+import net.corda.uniqueness.datamodel.common.toStateRef
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckRequest
 import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckStateRef
@@ -9,7 +10,7 @@ import java.time.Instant
 /**
  * TODO Rewrite KDocs
  */
-data class UniquenessCheckRequestImpl private constructor(
+data class UniquenessCheckRequestInternal private constructor(
     override val txId: SecureHash,
     override val rawTxId: String,
     override val inputStates: List<UniquenessCheckStateRef>,
@@ -19,13 +20,13 @@ data class UniquenessCheckRequestImpl private constructor(
     override val timeWindowUpperBound: Instant
 ) : UniquenessCheckRequest {
     companion object {
-        fun create(externalRequest: UniquenessCheckRequestAvro): UniquenessCheckRequestImpl {
+        fun create(externalRequest: UniquenessCheckRequestAvro): UniquenessCheckRequest {
             if (externalRequest.numOutputStates < 0) {
                 throw IllegalArgumentException("Number of output states cannot be less than 0.")
             }
 
             with (externalRequest) {
-                return UniquenessCheckRequestImpl(
+                return UniquenessCheckRequestInternal(
                     SecureHash.create(txId),
                     txId,
                     inputStates?.map { it.toStateRef() } ?: emptyList(),
