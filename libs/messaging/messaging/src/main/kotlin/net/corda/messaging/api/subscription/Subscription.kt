@@ -1,8 +1,20 @@
 package net.corda.messaging.api.subscription
 
-import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.Resource
 
+interface SubscriptionBase : Resource {
+    /**
+     * The name of the lifecycle coordinator inside the subscription. You can register a different coordinator to listen
+     * for status changes from this subscription by calling [followStatusChangesByName] and passing in this value.
+     */
+    val subscriptionName: LifecycleCoordinatorName
+
+    /**
+     * Start a subscription.
+     */
+    fun start()
+}
 /**
  * A subscription that can be used to manage the life cycle of consumption of event records from a topic.
  * Records are key/value pairs represented by [K] and [V], respectively, and are analogous to a kafka record.
@@ -15,23 +27,12 @@ import net.corda.lifecycle.LifecycleCoordinatorName
  * A subscription will begin consuming events upon start().
  * A subscription will stop consuming events and close the connection upon close()/stop()
  */
-interface Subscription<K, V> : Lifecycle {
-
-    /**
-     * Start a subscription.
-     */
-    override fun start()
+interface Subscription<K, V> : SubscriptionBase {
 
     /**
      * Check the state of a subscription. true if subscription is still active. false otherwise.
      */
-    override val isRunning: Boolean
-
-    /**
-     * The name of the lifecycle coordinator inside the subscription. You can register a different coordinator to listen
-     * for status changes from this subscription by calling [followStatusChangesByName] and passing in this value.
-     */
-    val subscriptionName: LifecycleCoordinatorName
+    val isRunning: Boolean
 }
 
 /**
@@ -53,15 +54,7 @@ interface Subscription<K, V> : Lifecycle {
  *
  * A subscription will stop consuming events and close the connection upon close()/stop()
  */
-interface RPCSubscription<REQUEST, RESPONSE> : Lifecycle {
-
-    /**
-     * The name of the lifecycle coordinator inside the subscription. You can register a different coordinator to listen
-     * for status changes from this subscription by calling [followStatusChangesByName] and passing in this value.
-     */
-    val subscriptionName: LifecycleCoordinatorName
-
-}
+interface RPCSubscription<REQUEST, RESPONSE> : SubscriptionBase
 
 /**
  * A subscription that can be used to manage the life cycle of consumption of both state and event records from a
@@ -80,13 +73,7 @@ interface RPCSubscription<REQUEST, RESPONSE> : Lifecycle {
  * (that is, within a single _transaction_).  However, records for different keys may be batched up to
  * improve performance.
  */
-interface StateAndEventSubscription<K, S, E> : Lifecycle {
-    /**
-     * The name of the lifecycle coordinator inside the subscription. You can register a different coordinator to listen
-     * for status changes from this subscription by calling [followStatusChangesByName] and passing in this value.
-     */
-    val subscriptionName: LifecycleCoordinatorName
-}
+interface StateAndEventSubscription<K, S, E> : SubscriptionBase
 
 /**
  * This subscription should be used when consuming records from a compacted topic

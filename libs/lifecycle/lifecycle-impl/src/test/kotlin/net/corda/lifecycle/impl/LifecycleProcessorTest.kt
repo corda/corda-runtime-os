@@ -5,6 +5,7 @@ import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
@@ -526,9 +527,9 @@ class LifecycleProcessorTest {
         val state = LifecycleStateManager(5)
         val registry = mock<LifecycleRegistryCoordinatorAccess>()
         val processor = LifecycleProcessor(NAME, state, registry, mock()) { _, _ -> }
-        val resource1 = mock<AutoCloseable>()
-        val resource2 = mock<AutoCloseable>()
-        val resource3 = mock<AutoCloseable>()
+        val resource1 = mock<Resource>()
+        val resource2 = mock<Resource>()
+        val resource3 = mock<Resource>()
 
         processor.addManagedResource("TEST1") { resource1 }
         processor.addManagedResource("TEST2") { resource2 }
@@ -545,9 +546,9 @@ class LifecycleProcessorTest {
         val state = LifecycleStateManager(5)
         val registry = mock<LifecycleRegistryCoordinatorAccess>()
         val processor = LifecycleProcessor(NAME, state, registry, mock()) { _, _ -> }
-        val resource1 = mock<AutoCloseable>()
-        val resource2 = mock<AutoCloseable>()
-        val resource3 = mock<AutoCloseable>()
+        val resource1 = mock<Resource>()
+        val resource2 = mock<Resource>()
+        val resource3 = mock<Resource>()
 
         processor.addManagedResource("TEST1") { resource1 }
         processor.addManagedResource("TEST2") { resource2 }
@@ -565,8 +566,8 @@ class LifecycleProcessorTest {
         val state = LifecycleStateManager(5)
         val registry = mock<LifecycleRegistryCoordinatorAccess>()
         val processor = LifecycleProcessor(NAME, state, registry, mock()) { _, _ -> }
-        val resource1 = mock<AutoCloseable>()
-        val resource2 = mock<AutoCloseable>()
+        val resource1 = mock<Resource>()
+        val resource2 = mock<Resource>()
 
         processor.addManagedResource("TEST") { resource1 }
         processor.addManagedResource("TEST") { resource2 }
