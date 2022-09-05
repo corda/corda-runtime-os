@@ -7,12 +7,10 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipRequestContext
-import net.corda.data.membership.db.request.command.RegistrationStatus
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToDeclined
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.db.connection.manager.VirtualNodeDbType
-import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.datamodel.MemberInfoEntity
@@ -65,8 +63,9 @@ class UpdateMemberAndRegistrationRequestToDeclinedHandlerTest {
             createAvroSerializer<KeyValuePairList>(any())
         } doReturn keyValuePairListSerializer
     }
+    private val vaultDmlConnectionId = UUID(0, 0)
     private val virtualNodeInfo = VirtualNodeInfo(
-        vaultDmlConnectionId = UUID(0, 0),
+        vaultDmlConnectionId = vaultDmlConnectionId,
         cpiIdentifier = CpiIdentifier(
             "", "", null
         ),
@@ -85,9 +84,8 @@ class UpdateMemberAndRegistrationRequestToDeclinedHandlerTest {
     }
     private val dbConnectionManager = mock<DbConnectionManager> {
         on {
-            getOrCreateEntityManagerFactory(
-                VirtualNodeDbType.VAULT.getConnectionName(virtualNodeInfo.holdingIdentity.shortHash),
-                DbPrivilege.DML,
+            createEntityManagerFactory(
+                vaultDmlConnectionId,
                 jpaEntitiesSet
             )
         } doReturn factory

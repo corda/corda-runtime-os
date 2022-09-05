@@ -66,7 +66,7 @@ imagePullSecrets:
 Worker name
 */}}
 {{- define "corda.workerName" -}}
-"{{ include "corda.fullname" . }}-{{ .worker | kebabcase | replace "p-2p" "p2p" }}-worker"
+{{ include "corda.fullname" . }}-{{ .worker | kebabcase | replace "p-2p" "p2p" }}-worker
 {{- end }}
 
 {{/*
@@ -107,6 +107,18 @@ Worker image
 {{- end }}
 
 {{/*
+Worker security context
+*/}}
+{{- define "corda.workerSecurityContext" -}}
+{{- if and ( not .Values.dumpHostPath ) ( not ( get .Values.workers .worker ).profiling.enabled ) }}
+securityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+{{- end }}
+{{- end }}
+
+{{/*
 CLI image
 */}}
 {{- define "corda.bootstrapImage" -}}
@@ -143,6 +155,17 @@ resources:
 {{- end }}
 
 {{/*
+Node selector for the bootstrapper
+*/}}
+
+{{- define "corda.bootstrapNodeSelector" }}
+{{- with .Values.bootstrap.nodeSelector | default .Values.nodeSelector }}
+nodeSelector:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+{{- end }}
+
+{{/*
 Worker environment variables
 */}}
 {{- define "corda.workerEnv" -}}
@@ -170,8 +193,12 @@ Worker environment variables
   value: {{- if ( get .Values.workers .worker ).debug.enabled }}
       -agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend={{ if ( get .Values.workers .worker ).debug.suspend }}y{{ else }}n{{ end }}
     {{- end -}}
-    {{- if ( get .Values.workers .worker ).profiling.enabled }}
-      -agentpath:/opt/override/libyjpagent.so=exceptions=disable,port=10045,listen=all
+    {{- if  ( get .Values.workers .worker ).profiling.enabled }}
+      -agentpath:/opt/override/libyjpagent.so=exceptions=disable,port=10045,listen=all,dir=/dumps/profile/snapshots,logdir=/dumps/profile/logs
+    {{- end -}}
+    {{- if .Values.heapDumpOnOutOfMemoryError }}
+      -XX:+HeapDumpOnOutOfMemoryError
+      -XX:HeapDumpPath=/dumps/heap
     {{- end -}}
     {{- if ( get .Values.workers .worker ).verifyInstrumentation }}
       -Dco.paralleluniverse.fibers.verifyInstrumentation=true
@@ -272,8 +299,8 @@ resources:
     cpu: {{ default .Values.resources.limits.cpu ( get .Values.workers .worker ).resources.limits.cpu }}
   {{- end }}
   {{- if or .Values.resources.limits.memory ( get .Values.workers .worker ).resources.limits.memory }}
-    memory: {{ default .Values.resources.limits.memory ( get .Values.workers .worker ).resources.limits.memory }}  
-  {{- end }} 
+    memory: {{ default .Values.resources.limits.memory ( get .Values.workers .worker ).resources.limits.memory }}
+  {{- end }}
 {{- end }}
 
 {{/*
@@ -289,6 +316,10 @@ Volume mounts for corda workers
 - mountPath: "/etc/config"
   name: "jaas-conf"
   readOnly: true
+{{- end }}
+{{- if .Values.dumpHostPath }}
+- mountPath: /dumps
+  name: dumps
 {{- end }}
 {{- end }}
 
@@ -308,6 +339,12 @@ Volumes for corda workers
 - name: jaas-conf
   secret:
     secretName: {{ include "corda.fullname" . }}-kafka-sasl
+{{- end }}
+{{- if .Values.dumpHostPath }}
+- name: dumps
+  hostPath:
+    path: {{ .Values.dumpHostPath }}/{{ .Release.Namespace }}/{{ (include "corda.workerName" .) }}/
+    type: DirectoryOrCreate
 {{- end }}
 {{- end }}
 

@@ -2,15 +2,21 @@ package net.corda.membership.impl.p2p
 
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.SecureHash
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.member.ProcessMemberVerificationRequest
 import net.corda.data.membership.command.registration.mgm.ProcessMemberVerificationResponse
 import net.corda.data.membership.command.registration.mgm.StartRegistration
+import net.corda.data.membership.command.synchronisation.SynchronisationCommand
+import net.corda.data.membership.command.synchronisation.mgm.ProcessSyncRequest
+import net.corda.data.membership.p2p.DistributionMetaData
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
+import net.corda.data.membership.p2p.MembershipSyncRequest
 import net.corda.data.membership.p2p.VerificationRequest
 import net.corda.data.membership.p2p.VerificationResponse
+import net.corda.data.sync.BloomFilter
 import net.corda.membership.impl.p2p.MembershipP2PProcessor.Companion.MEMBERSHIP_P2P_SUBSYSTEM
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
@@ -19,10 +25,12 @@ import net.corda.p2p.app.AuthenticatedMessageHeader
 import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.app.UnauthenticatedMessageHeader
 import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
+import net.corda.schema.Schemas.Membership.Companion.SYNCHRONISATION_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.test.util.time.TestClock
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -45,13 +53,13 @@ class MembershipP2PProcessorTest {
     private fun String.toByteBuffer() = ByteBuffer.wrap(toByteArray())
     private val avroSchemaRegistry: AvroSchemaRegistry = mock()
 
-    private val memberContext = KeyValuePairList(listOf(KeyValuePair("foo", "bar")))
+    private val memberContext = ByteBuffer.wrap(byteArrayOf(1, 2, 3))
     private val testSig =
         CryptoSignatureWithKey("ABC".toByteBuffer(), "DEF".toByteBuffer(), KeyValuePairList(emptyList()))
     private val registrationId = UUID.randomUUID().toString()
     private val registrationRequest = MembershipRegistrationRequest(
         registrationId,
-        memberContext.toByteBuffer(),
+        memberContext,
         testSig
     )
     private val registrationReqMsgPayload = registrationRequest.toByteBuffer()
@@ -73,6 +81,18 @@ class MembershipP2PProcessorTest {
     )
 
     private val verificationRespMsgPayload = verificationResponse.toByteBuffer()
+
+    private val byteBuffer = "1234".toByteBuffer()
+    private val secureHash = SecureHash("algorithm", byteBuffer)
+    private val syncId = UUID(1, 2).toString()
+    private val syncRequest = MembershipSyncRequest(
+        DistributionMetaData(
+            syncId,
+            clock.instant()
+        ),
+        secureHash, BloomFilter(1, 1, 1, byteBuffer), secureHash, secureHash
+    )
+    private val syncRequestMsgPayload = syncRequest.toByteBuffer()
 
     private lateinit var membershipP2PProcessor: MembershipP2PProcessor
 
@@ -101,19 +121,23 @@ class MembershipP2PProcessorTest {
         }
         val result = membershipP2PProcessor.onNext(listOf(Record(TOPIC, KEY, appMessage)))
 
-        assertThat(result)
-            .isNotEmpty
-            .hasSize(1)
-        assertThat(result.first().topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
-        assertThat(result.first().value).isInstanceOf(RegistrationCommand::class.java)
-        assertThat(result.first().key).isEqualTo("$registrationId-${mgm.toCorda().shortHash}")
+        with(result) {
+            assertSoftly {
+                it.assertThat(this)
+                    .isNotEmpty
+                    .hasSize(1)
+                it.assertThat(this.first().topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
+                it.assertThat(this.first().value).isInstanceOf(RegistrationCommand::class.java)
+                it.assertThat(this.first().key).isEqualTo("$registrationId-${mgm.toCorda().shortHash}")
 
-        val value = result.first().value as RegistrationCommand
-        assertThat(value.command).isInstanceOf(StartRegistration::class.java)
-        val command = value.command as StartRegistration
-        assertThat(command.destination).isEqualTo(mgm)
-        assertThat(command.source).isEqualTo(member)
-        assertThat(command.memberRegistrationRequest).isEqualTo(registrationRequest)
+                val value = this.first().value as RegistrationCommand
+                it.assertThat(value.command).isInstanceOf(StartRegistration::class.java)
+                val command = value.command as StartRegistration
+                it.assertThat(command.destination).isEqualTo(mgm)
+                it.assertThat(command.source).isEqualTo(member)
+                it.assertThat(command.memberRegistrationRequest).isEqualTo(registrationRequest)
+            }
+        }
     }
 
     @Test
@@ -158,17 +182,21 @@ class MembershipP2PProcessorTest {
         }
         val result = membershipP2PProcessor.onNext(listOf(Record(TOPIC, KEY, appMessage)))
 
-        assertThat(result)
-            .isNotEmpty
-            .hasSize(1)
-        assertThat(result.first().topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
-        val command = result.first().value as? RegistrationCommand
-        assertThat(command?.command).isInstanceOf(ProcessMemberVerificationRequest::class.java)
-        assertThat(result.first().key).isEqualTo("$registrationId-${member.toCorda().shortHash}")
-        val request = command?.command as ProcessMemberVerificationRequest
-        assertThat(request.verificationRequest).isEqualTo(verificationRequest)
-        assertThat(request.destination).isEqualTo(member)
-        assertThat(request.source).isEqualTo(mgm)
+        with(result) {
+            assertSoftly {
+                it.assertThat(this)
+                    .isNotEmpty
+                    .hasSize(1)
+                it.assertThat(this.first().topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
+                val command = this.first().value as? RegistrationCommand
+                it.assertThat(command?.command).isInstanceOf(ProcessMemberVerificationRequest::class.java)
+                it.assertThat(this.first().key).isEqualTo("$registrationId-${member.toCorda().shortHash}")
+                val request = command?.command as ProcessMemberVerificationRequest
+                it.assertThat(request.verificationRequest).isEqualTo(verificationRequest)
+                it.assertThat(request.destination).isEqualTo(member)
+                it.assertThat(request.source).isEqualTo(mgm)
+            }
+        }
     }
 
     @Test
@@ -190,20 +218,61 @@ class MembershipP2PProcessorTest {
         }
         val result = membershipP2PProcessor.onNext(listOf(Record(TOPIC, KEY, appMessage)))
 
-        assertThat(result)
-            .isNotEmpty
-            .hasSize(1)
-        assertThat(result.first().topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
-        val command = result.first().value as? RegistrationCommand
-        assertThat(command?.command).isInstanceOf(ProcessMemberVerificationResponse::class.java)
-        assertThat(result.first().key).isEqualTo("$registrationId-${mgm.toCorda().shortHash}")
-        val response = command?.command as ProcessMemberVerificationResponse
-        assertThat(response.verificationResponse).isEqualTo(verificationResponse)
+        with(result) {
+            assertSoftly {
+                it.assertThat(this)
+                    .isNotEmpty
+                    .hasSize(1)
+                it.assertThat(this.first().topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
+                val command = this.first().value as? RegistrationCommand
+                it.assertThat(command?.command).isInstanceOf(ProcessMemberVerificationResponse::class.java)
+                it.assertThat(this.first().key).isEqualTo("$registrationId-${mgm.toCorda().shortHash}")
+                val response = command?.command as ProcessMemberVerificationResponse
+                it.assertThat(response.verificationResponse).isEqualTo(verificationResponse)
+            }
+        }
     }
 
     @Test
     fun `Verification response as unauthenticated message throws exception`() {
         val appMessage = with(verificationRespMsgPayload) {
+            mockPayloadDeserialization()
+            asUnauthenticatedAppMessagePayload()
+        }
+        assertThrows<UnsupportedOperationException> {
+            membershipP2PProcessor.onNext(listOf(Record(TOPIC, KEY, appMessage)))
+        }
+    }
+
+    @Test
+    fun `Sync request as authenticated message is processed as expected`() {
+        val appMessage = with(syncRequestMsgPayload) {
+            mockPayloadDeserialization()
+            asAuthenticatedAppMessagePayload()
+        }
+        val result = membershipP2PProcessor.onNext(listOf(Record(TOPIC, KEY, appMessage)))
+
+        with(result) {
+            assertSoftly {
+                it.assertThat(this)
+                    .isNotEmpty
+                    .hasSize(1)
+                it.assertThat(this.first().topic).isEqualTo(SYNCHRONISATION_TOPIC)
+                it.assertThat(this.first().value).isInstanceOf(SynchronisationCommand::class.java)
+                val command = this.first().value as SynchronisationCommand
+                it.assertThat(command.command).isInstanceOf(ProcessSyncRequest::class.java)
+                val request = command.command as ProcessSyncRequest
+                it.assertThat(request.synchronisationMetaData.mgm).isEqualTo(mgm)
+                it.assertThat(request.synchronisationMetaData.member).isEqualTo(member)
+                it.assertThat(request.syncRequest).isEqualTo(syncRequest)
+                it.assertThat(this.first().key).isEqualTo("$syncId-${member.toCorda().shortHash}")
+            }
+        }
+    }
+
+    @Test
+    fun `Sync request as unauthenticated message throws exception`() {
+        val appMessage = with(syncRequestMsgPayload) {
             mockPayloadDeserialization()
             asUnauthenticatedAppMessagePayload()
         }
@@ -271,5 +340,13 @@ class MembershipP2PProcessorTest {
                 eq(null)
             )
         ).thenReturn(verificationResponse)
+        whenever(avroSchemaRegistry.getClassType(eq(syncRequestMsgPayload))).thenReturn(MembershipSyncRequest::class.java)
+        whenever(
+            avroSchemaRegistry.deserialize(
+                eq(syncRequestMsgPayload),
+                eq(MembershipSyncRequest::class.java),
+                eq(null)
+            )
+        ).thenReturn(syncRequest)
     }
 }

@@ -26,10 +26,6 @@ ALLOW {
 
 (org.osgi.framework.PackagePermission "co.paralleluniverse.fibers.suspend" "import")
 
-# TODO This is required for CalculatorFlow (E2E tests) but will be removed (JIRA CORE-4813)
-(java.lang.RuntimePermission "accessClassInPackage.net.corda.testing.*" "")
-(org.osgi.framework.PackagePermission "net.corda.testing.*" "exportonly,import")
-
 } "Allow public packages and services for FLOW Sandbox"
 
 DENY {
@@ -146,10 +142,6 @@ ALLOW {
 (org.osgi.framework.PackagePermission "net.corda.v5.*" "import")
 (org.osgi.framework.ServicePermission "net.corda.v5.*" "get")
 (org.osgi.framework.ServicePermission "(location=PERSISTENCE/*)" "get")
-
-# TODO This is required for Smoke tests (e.g. net.corda.testing.bundles.dogs) but will be removed (JIRA CORE-4813)
-(java.lang.RuntimePermission "accessClassInPackage.net.corda.testing.*" "")
-(org.osgi.framework.PackagePermission "net.corda.testing.*" "exportonly,import")
 
 } "Allow public packages and services for PERSISTENCE Sandbox"
 

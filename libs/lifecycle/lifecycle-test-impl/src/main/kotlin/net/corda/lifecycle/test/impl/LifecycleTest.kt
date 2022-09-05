@@ -7,6 +7,7 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.Resource
 import org.assertj.core.api.Assertions.assertThat
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
@@ -32,7 +33,7 @@ class LifecycleTest<T : Lifecycle>(
     /**
      * This mock can be used to verify the usage of the config handles by components.
      */
-    var lastConfigHandle = mock<AutoCloseable>()
+    var lastConfigHandle = mock<Resource>()
 
     /**
      * This mock will replace the OSGi injected config read service.
@@ -80,7 +81,7 @@ class LifecycleTest<T : Lifecycle>(
      * @param coordinatorName the name of the coordinator to verify
      */
     fun verifyIsUp(coordinatorName: LifecycleCoordinatorName) {
-        assertThat(registry.getCoordinator(coordinatorName).status).isEqualTo(LifecycleStatus.UP)
+        verifyIsStatus(coordinatorName, LifecycleStatus.UP)
     }
 
     /**
@@ -96,9 +97,7 @@ class LifecycleTest<T : Lifecycle>(
      * @param coordinatorName the name of the coordinator to verify
      */
     fun verifyIsDown(coordinatorName: LifecycleCoordinatorName) {
-        assertThat(registry.getCoordinator(coordinatorName).status)
-            .withFailMessage("$coordinatorName was not DOWN")
-            .isEqualTo(LifecycleStatus.DOWN)
+        verifyIsStatus(coordinatorName, LifecycleStatus.DOWN)
     }
 
     /**
@@ -114,9 +113,7 @@ class LifecycleTest<T : Lifecycle>(
      * @param coordinatorName the name of the coordinator to verify
      */
     fun verifyIsInError(coordinatorName: LifecycleCoordinatorName) {
-        assertThat(registry.getCoordinator(coordinatorName).status)
-            .withFailMessage("$coordinatorName was not in ERROR")
-            .isEqualTo(LifecycleStatus.ERROR)
+        verifyIsStatus(coordinatorName, LifecycleStatus.ERROR)
     }
 
     /**
@@ -125,7 +122,6 @@ class LifecycleTest<T : Lifecycle>(
     inline fun <reified D> verifyIsInError() {
         verifyIsInError(LifecycleCoordinatorName.forComponent<D>())
     }
-
 
     /**
      * Bring all registered dependencies to the [LifecycleStatus.UP]
@@ -271,5 +267,12 @@ class LifecycleTest<T : Lifecycle>(
 
     private fun LifecycleCoordinator.bringDown() {
         this.updateStatus(LifecycleStatus.DOWN)
+    }
+
+    private fun verifyIsStatus(coordinatorName: LifecycleCoordinatorName, expectedStatus: LifecycleStatus) {
+        val status = registry.getCoordinator(coordinatorName).status
+        assertThat(status)
+            .withFailMessage("$coordinatorName was not in $expectedStatus.  Instead it was $status")
+            .isEqualTo(expectedStatus)
     }
 }

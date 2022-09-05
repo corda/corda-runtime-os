@@ -49,7 +49,7 @@ internal class AssembleFromChunksTest {
         }
         val requestId = UUID.randomUUID().toString()
         val expectedFileName = "some.cpi"
-        val expectedChecksum = SecureHash.create("DUMMY:1234567890")
+        val expectedChecksum = SecureHash.parse("DUMMY:1234567890")
         val chunkReader = object : ChunkReader {
             var cb: ChunksCombined? = null
             override fun read(chunk: Chunk) {

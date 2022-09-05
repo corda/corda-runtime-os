@@ -19,10 +19,9 @@ import org.junit.jupiter.api.Assertions.assertTrue
 
 fun useWebsocketConnection(
     path: String,
-    messageQueue: MutableList<String> = LinkedList(),
     block: (wsHandler: InternalWebsocketHandler) -> Unit
 ) {
-    val wsHandler = MessageQueueWebsocketHandler(messageQueue)
+    val wsHandler = MessageQueueWebSocketHandler()
     val client = SmokeTestWebsocketClient()
 
     client.use {

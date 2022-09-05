@@ -37,6 +37,24 @@ internal class SandboxGroupImpl(
         cpk.mainBundle to cpk.cpkMetadata
     })
 
+    override fun loadClassFromPublicBundles(className: String): Class<*>? {
+        val clazz = publicSandboxes
+            .flatMap(Sandbox::publicBundles)
+            .mapNotNullTo(HashSet()) { sandbox ->
+                try {
+                    sandbox.loadClass(className)
+                } catch (e: ClassNotFoundException) {
+                    logger.info("Could not load class $className from sandbox ${sandbox}: ${e.message}")
+                    null
+                }
+            }.singleOrNull()
+        if (clazz == null) {
+            logger.warn("Class $className was not found in any sandbox in the sandbox group.")
+        }
+        return clazz
+    }
+
+
     override fun loadClassFromMainBundles(className: String): Class<*> {
         return cpkSandboxes.mapNotNullTo(HashSet()) { sandbox ->
             try {

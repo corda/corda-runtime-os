@@ -155,7 +155,7 @@ pairs, and we allow that full name to be used in file inclusion tags. E.g.:
                    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
     <include file="migration/cats-migration-v1.0.xml"/>
-    <include file="classloader://net.corda.testing.bundles.cats/migration/owner-migration-v1.0.xml"/>
+    <include file="classloader://net.cordapp.testing.bundles.cats/migration/owner-migration-v1.0.xml"/>
 </databaseChangeLog>
 ```
 

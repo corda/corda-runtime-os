@@ -199,5 +199,7 @@ spec:
         - name: working-volume
           emptyDir: {}
 
+      {{- include "corda.bootstrapNodeSelector" . | nindent 6 }}
+
       restartPolicy: Never
 {{- end }}

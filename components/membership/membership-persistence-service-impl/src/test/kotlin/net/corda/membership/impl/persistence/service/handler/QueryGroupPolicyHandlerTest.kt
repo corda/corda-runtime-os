@@ -6,7 +6,6 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.datamodel.GroupPolicyEntity
@@ -50,10 +49,10 @@ class QueryGroupPolicyHandlerTest {
         on { createEntityManager() } doReturn entityManager
     }
 
+    private val vaultDmlConnectionId = UUID(0, 33)
     private val dbConnectionManager: DbConnectionManager = mock {
-        on { getOrCreateEntityManagerFactory(
-            eq(VirtualNodeDbType.VAULT.getConnectionName(holdingIdentity.shortHash)),
-            any(),
+        on { createEntityManagerFactory(
+            eq(vaultDmlConnectionId),
             any()
         ) } doReturn entityManagerFactory
     }
@@ -78,7 +77,7 @@ class QueryGroupPolicyHandlerTest {
     private val virtualNodeInfo = VirtualNodeInfo(
         holdingIdentity,
         CpiIdentifier("TEST_CPI", "1.0", null),
-        vaultDmlConnectionId = UUID(0, 0),
+        vaultDmlConnectionId = vaultDmlConnectionId,
         cryptoDmlConnectionId = UUID(0, 0),
         timestamp = clock.instant()
     )

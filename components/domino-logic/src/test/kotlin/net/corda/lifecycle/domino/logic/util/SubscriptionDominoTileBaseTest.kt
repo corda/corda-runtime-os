@@ -12,6 +12,8 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.NamedLifecycle
 import net.corda.messaging.api.subscription.Subscription
+import net.corda.messaging.api.subscription.SubscriptionBase
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.times
@@ -22,7 +24,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
-import java.lang.IllegalArgumentException
 
 class SubscriptionDominoTileBaseTest {
 
@@ -53,6 +54,9 @@ class SubscriptionDominoTileBaseTest {
                 }
             }
         }
+        on { getManagedResource<SubscriptionBase>(SubscriptionDominoTileBase.SUBSCRIPTION) } doAnswer {
+            subscription
+        }
         var currentStatus: LifecycleStatus = LifecycleStatus.DOWN
         on { updateStatus(any(), any()) } doAnswer { currentStatus =  it.getArgument(0) }
         on { status } doAnswer { currentStatus }
@@ -62,6 +66,7 @@ class SubscriptionDominoTileBaseTest {
     }
 
     private val subscriptionName = LifecycleCoordinatorName("sub-name", "1")
+    private val subscriptionConfig = SubscriptionConfig("myGroup", "myEvent")
     private val subscription = mock<Subscription<*, *>>() {
         on { subscriptionName } doReturn subscriptionName
     }
@@ -76,7 +81,8 @@ class SubscriptionDominoTileBaseTest {
     fun `subscription tile starts all managed children when started`() {
         val subscriptionTile = SubscriptionDominoTile(
             coordinatorFactory,
-            subscription,
+            { subscription },
+            subscriptionConfig,
             children.map { it.coordinatorName },
             children.map { it.toNamedLifecycle() }
         )
@@ -91,7 +97,8 @@ class SubscriptionDominoTileBaseTest {
     fun `subscription tile stops all managed children when stopped`() {
         val subscriptionTile = SubscriptionDominoTile(
             coordinatorFactory,
-            subscription,
+            { subscription },
+            subscriptionConfig,
             children.map { it.coordinatorName },
             children.map { it.toNamedLifecycle() }
         )
@@ -106,7 +113,8 @@ class SubscriptionDominoTileBaseTest {
     fun `subscription tile waits for dependent children before starting the subscription`() {
         val subscriptionTile = SubscriptionDominoTile(
             coordinatorFactory,
-            subscription,
+            { subscription },
+            subscriptionConfig,
             children.map { it.coordinatorName },
             children.map { it.toNamedLifecycle() }
         )
@@ -124,7 +132,7 @@ class SubscriptionDominoTileBaseTest {
 
     @Test
     fun `if there are no dependent children, subscription is started immediately`() {
-        val subscriptionTile = SubscriptionDominoTile(coordinatorFactory, subscription, emptySet(), emptySet())
+        val subscriptionTile = SubscriptionDominoTile(coordinatorFactory, { subscription }, subscriptionConfig, emptySet(), emptySet())
 
         subscriptionTile.start()
         verify(subscription, times(1)).start()
@@ -138,7 +146,8 @@ class SubscriptionDominoTileBaseTest {
     fun `subscription tile goes down if any of the dependent children goes down`() {
         val subscriptionTile = SubscriptionDominoTile(
             coordinatorFactory,
-            subscription,
+            { subscription },
+            subscriptionConfig,
             children.map { it.coordinatorName },
             children.map { it.toNamedLifecycle() }
         )
@@ -148,7 +157,7 @@ class SubscriptionDominoTileBaseTest {
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(subscriptionRegistration, LifecycleStatus.UP), coordinator)
 
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenRegistration, LifecycleStatus.DOWN), coordinator)
-        verify(subscription, times(1)).stop()
+        verify(subscription, times(1)).close()
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(subscriptionRegistration, LifecycleStatus.DOWN), coordinator)
         assertThat(subscriptionTile.isRunning).isFalse
     }
@@ -157,7 +166,8 @@ class SubscriptionDominoTileBaseTest {
     fun `subscription tile goes down if any of the dependent children errors`() {
         val subscriptionTile = SubscriptionDominoTile(
             coordinatorFactory,
-            subscription,
+            { subscription },
+            subscriptionConfig,
             children.map { it.coordinatorName },
             children.map { it.toNamedLifecycle() }
         )
@@ -167,7 +177,7 @@ class SubscriptionDominoTileBaseTest {
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(subscriptionRegistration, LifecycleStatus.UP), coordinator)
 
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenRegistration, LifecycleStatus.ERROR), coordinator)
-        verify(subscription, times(1)).stop()
+        verify(subscription, times(1)).close()
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(subscriptionRegistration, LifecycleStatus.DOWN), coordinator)
         assertThat(subscriptionTile.isRunning).isFalse
     }
@@ -176,7 +186,8 @@ class SubscriptionDominoTileBaseTest {
     fun `tile errors if subscription errors`() {
         val subscriptionTile = SubscriptionDominoTile(
             coordinatorFactory,
-            subscription,
+            { subscription },
+            subscriptionConfig,
             children.map { it.coordinatorName },
             children.map { it.toNamedLifecycle() }
         )
@@ -198,9 +209,10 @@ class SubscriptionDominoTileBaseTest {
 
     class SubscriptionDominoTile<K, V>(
         coordinatorFactory: LifecycleCoordinatorFactory,
-        subscription: Subscription<K, V>,
+        subscription: () -> Subscription<K, V>,
+        subscriptionConfig: SubscriptionConfig,
         dependentChildren: Collection<LifecycleCoordinatorName>,
         managedChildren: Collection<NamedLifecycle>
-    ): SubscriptionDominoTileBase(coordinatorFactory, subscription, subscription.subscriptionName, dependentChildren, managedChildren)
+    ): SubscriptionDominoTileBase(coordinatorFactory, subscription, subscriptionConfig, dependentChildren, managedChildren)
 
 }

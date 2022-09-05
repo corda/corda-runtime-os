@@ -32,7 +32,7 @@ fun virtualNodeEntitiesToVersionedRecords(virtualNodes: Stream<VirtualNodeEntity
             override val key = holdingIdentity
             override val value by lazy {
                 val signerSummaryHash = if (entity.cpiSignerSummaryHash.isNotBlank()) {
-                    SecureHash.create(entity.cpiSignerSummaryHash)
+                    SecureHash.parse(entity.cpiSignerSummaryHash)
                 } else {
                     null
                 }

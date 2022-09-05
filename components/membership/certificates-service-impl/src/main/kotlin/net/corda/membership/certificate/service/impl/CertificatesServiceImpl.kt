@@ -6,13 +6,13 @@ import net.corda.data.certificates.rpc.request.CertificateRpcRequest
 import net.corda.data.certificates.rpc.response.CertificateRpcResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.helper.getConfig
-import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
@@ -52,14 +52,29 @@ class CertificatesServiceImpl @Activate constructor(
 
     private var registrationHandle: AutoCloseable? = null
     private var subscriptionRegistrationHandle: AutoCloseable? = null
-    private var configHandle: AutoCloseable? = null
-    private var rpcSubscription: Lifecycle? = null
+    private var configHandle: Resource? = null
+    private var rpcSubscription: Resource? = null
     private val processor = CertificatesProcessor(
         dbConnectionManager,
         jpaEntitiesRegistry,
         virtualNodeInfoReadService,
     )
     private val coordinator = coordinatorFactory.createCoordinator<CertificatesService>(::handleEvent)
+
+    override fun importCertificates(tenantId: String, alias: String, certificates: String) =
+        processor.useCertificateProcessor(tenantId) { p -> p.saveCertificates(alias, certificates) }
+
+    override fun retrieveCertificates(tenantId: String, alias: String): String? {
+        var certificates: String? = null
+        processor.useCertificateProcessor(tenantId) { p -> certificates = p.readCertificates(alias) }
+        return certificates
+    }
+
+    override fun retrieveAllCertificates(tenantId: String): List<String> {
+        var certificates = emptyList<String>()
+        processor.useCertificateProcessor(tenantId) { p -> certificates = p.readAllCertificates() }
+        return certificates
+    }
 
     override fun start() {
         logger.info("Starting component.")
@@ -107,7 +122,7 @@ class CertificatesServiceImpl @Activate constructor(
                         )
                     } else {
                         configHandle = null
-                        rpcSubscription?.stop()
+                        rpcSubscription?.close()
                         rpcSubscription = null
                     }
                 } else if (event.registration == subscriptionRegistrationHandle) {
@@ -150,5 +165,5 @@ class CertificatesServiceImpl @Activate constructor(
         }
     }
 
-    override val isRunning = rpcSubscription?.isRunning ?: false
+    override val isRunning = rpcSubscription != null
 }

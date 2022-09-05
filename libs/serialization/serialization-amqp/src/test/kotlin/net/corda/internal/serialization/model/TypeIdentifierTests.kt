@@ -2,7 +2,7 @@ package net.corda.internal.serialization.model
 
 import com.google.common.reflect.TypeToken
 import net.corda.internal.serialization.amqp.currentSandboxGroup
-import net.corda.internal.serialization.amqp.testutils.testSerializationContext
+import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.lang.reflect.Type

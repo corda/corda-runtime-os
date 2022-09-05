@@ -3,7 +3,6 @@ package net.corda.flow.state.impl
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.checkpoint.PipelineState
 import net.corda.flow.state.FlowCheckpoint
-import net.corda.flow.state.FlowCheckpointFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.configuration.FlowConfig
 import org.osgi.service.component.annotations.Component

@@ -1,12 +1,12 @@
 package net.corda.internal.serialization.amqp
 
+import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.internal.serialization.amqp.testutils.TestSerializationOutput
 import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.deserializeAndReturnEnvelope
 import net.corda.internal.serialization.amqp.testutils.serializeAndReturnSchema
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactoryNoEvolution
 import net.corda.internal.serialization.amqp.testutils.testName
-import net.corda.internal.serialization.amqp.testutils.testSerializationContext
 import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.serialization.SerializedBytes

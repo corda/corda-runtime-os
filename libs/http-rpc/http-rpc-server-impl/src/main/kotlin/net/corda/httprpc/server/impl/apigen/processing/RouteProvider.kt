@@ -5,15 +5,15 @@ import net.corda.httprpc.server.impl.apigen.models.Endpoint
 import net.corda.httprpc.server.impl.apigen.models.EndpointMethod
 import net.corda.httprpc.server.impl.apigen.models.EndpointParameter
 import net.corda.httprpc.server.impl.apigen.models.Resource
-import net.corda.httprpc.server.impl.websocket.WebsocketRouteAdaptor
+import net.corda.httprpc.server.impl.websocket.WebSocketRouteAdaptor
 import net.corda.httprpc.server.impl.internal.HttpExceptionMapper
 import net.corda.httprpc.server.impl.security.HttpRpcSecurityManager
 import net.corda.httprpc.server.impl.security.provider.credentials.DefaultCredentialResolver
 import net.corda.httprpc.tools.HttpPathUtils.joinResourceAndEndpointPaths
 import net.corda.httprpc.tools.isDuplexChannel
 import net.corda.httprpc.tools.isStaticallyExposedGet
-import net.corda.v5.base.stream.isFiniteDurableStreamsMethod
-import net.corda.v5.base.stream.returnsDurableCursorBuilder
+import net.corda.httprpc.durablestream.api.isFiniteDurableStreamsMethod
+import net.corda.httprpc.durablestream.api.returnsDurableCursorBuilder
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
@@ -155,17 +155,19 @@ internal class RouteInfo(
     internal fun setupWsCall(
         securityManager: HttpRpcSecurityManager,
         credentialResolver: DefaultCredentialResolver,
-        webSocketCloserService: WebSocketCloserService
+        webSocketCloserService: WebSocketCloserService,
+        adaptors: MutableList<AutoCloseable>
     ): (WsConfig) -> Unit {
         return { wsConfig ->
             log.info("Setting-up WS call for '$fullPath'")
             try {
-                val adaptor = WebsocketRouteAdaptor(this, securityManager, credentialResolver, webSocketCloserService)
+                val adaptor = WebSocketRouteAdaptor(this, securityManager, credentialResolver, webSocketCloserService)
                 wsConfig.onMessage(adaptor)
                 wsConfig.onClose(adaptor)
                 wsConfig.onConnect(adaptor)
                 wsConfig.onError(adaptor)
 
+                adaptors.add(adaptor)
                 log.debug { "Setting-up WS call for '$fullPath' completed." }
             } catch (e: Exception) {
                 log.warn("Error Setting-up WS call for '$fullPath'", e)

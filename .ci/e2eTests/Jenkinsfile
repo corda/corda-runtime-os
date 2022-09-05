@@ -1,15 +1,56 @@
 @Library('corda-shared-build-pipeline-steps@5.0') _
 
+<<<<<<< HEAD
 import groovy.transform.Field
 
 @Field
 String k8Namespace = "run-${UUID.randomUUID().toString()}"
+=======
+/*
+ * Jenkins agent label to build on
+ */
+String agentLabel = 'docker'
+
+/*
+ * Docker label to use with worker base image
+ */
+String dockerLabel = '11'
+
+/*
+ * architecture string for Corda images
+ */
+String architectureTag = ''
+
+/*
+ * architecture for Kuberenetes workers during E2E tests
+ */
+String e2eArchitecture = 'amd64'
+
+switch (params.BUILD_ARCH) {
+    case '':
+    case null:
+    case 'amd64':
+        break;
+    case 'arm64':
+        agentLabel = 'arm64'
+        dockerLabel = 'arm64-11'
+        architectureTag = 'arm64-'
+        e2eArchitecture = 'arm64'
+        break
+    default:
+        error """\
+                Not supported value for pipeline parameter 'BUILD_ARCH': '${params.BUILD_ARCH}'.
+                One of 'amd64' (default) or 'arm64' is allowed.
+            """.stripIndent()
+        break
+}
+>>>>>>> 7dbc0ba3d03e5a620ba7f6c8a2f7288dd8f2a4e1
 
 pipeline {
     agent {
         docker {
-            image 'build-zulu-openjdk:11'
-            label 'docker'
+            image "build-zulu-openjdk:${dockerLabel}"
+            label "${agentLabel}"
             registryUrl 'https://engineering-docker.software.r3.com/'
             registryCredentialsId 'artifactory-credentials'
             // Volume used to mount storage from the host as a volume to persist the cache between builds
@@ -22,13 +63,14 @@ pipeline {
 
     parameters {
         string(name: 'BUILD_REV', defaultValue: '', description: 'Short git hash of the build revision to test - leave blank to test unstable')
+        choice(name: 'BUILD_ARCH', choices: ['amd64', 'arm64'], description: 'Build architecture')
     }
 
     environment {
         ARTIFACTORY_CREDENTIALS = credentials('artifactory-credentials')
         BUILD_CACHE_CREDENTIALS = credentials('gradle-ent-cache-credentials')
         BUILD_CACHE_USERNAME = "${env.BUILD_CACHE_CREDENTIALS_USR}"
-        BUILD_CACHE_PASSWORD = "${env.BUILD_CACHE_CREDENTIALS_PSW}"    
+        BUILD_CACHE_PASSWORD = "${env.BUILD_CACHE_CREDENTIALS_PSW}"
         CORDA_ARTIFACTORY_USERNAME = "${env.ARTIFACTORY_CREDENTIALS_USR}"
         CORDA_ARTIFACTORY_PASSWORD = "${env.ARTIFACTORY_CREDENTIALS_PSW}"
         CORDA_USE_CACHE = "corda-remotes"
@@ -48,6 +90,8 @@ pipeline {
         E2E_CLUSTER_A_P2P_HOST="corda-alice-p2p-gateway-worker.${NAMESPACE}.svc.cluster.local"
         E2E_CLUSTER_B_P2P_HOST="corda-bob-p2p-gateway-worker.${NAMESPACE}.svc.cluster.local"
         E2E_CLUSTER_C_P2P_HOST="corda-caroline-p2p-gateway-worker.${NAMESPACE}.svc.cluster.local"
+        E2E_BRANCH_LABEL = "${sanitizedBranchName()}"
+        E2E_WORKER_ARCH = "${e2eArchitecture}"
     }
 
     options {
@@ -59,11 +103,12 @@ pipeline {
     stages {
         stage ('Create namespace') {
             steps {
-                sh """
-                    kubectl create ns $NAMESPACE
-                    kubectl label ns $NAMESPACE namespace-type=corda-e2e --overwrite=true
-                    kubectl label ns $NAMESPACE branch=${sanitizedBranchName()} --overwrite=true
-                """
+                sh '''\
+                    kubectl create ns "${NAMESPACE}"
+                    kubectl label ns "${NAMESPACE}" namespace-type=corda-e2e --overwrite=true
+                    kubectl label ns "${NAMESPACE}" branch="${E2E_BRANCH_LABEL}" --overwrite=true
+                    kubectl label ns "${NAMESPACE}" arch="${E2E_WORKER_ARCH}" --overwrite=true
+                '''.stripIndent()
             }
         }
         stage('Install kafka as prereqs') {
@@ -78,10 +123,10 @@ pipeline {
             }
             post {
                 always {
-                    sh '''
-                        kubectl logs -lapp.kubernetes.io/instance=prereqs -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > prereqsLogs.txt
-                        kubectl describe all -n ${NAMESPACE} > prereqsDescribe.txt
-                    '''
+                    sh '''\
+                        kubectl logs -lapp.kubernetes.io/instance=prereqs -n "${NAMESPACE}" --all-containers=true --prefix=true --tail=-1 > prereqsLogs.txt
+                        kubectl describe all -n "${NAMESPACE}" > prereqsDescribe.txt
+                    '''.stripIndent()
                     archiveArtifacts artifacts: 'prereqsLogs.txt, prereqsDescribe.txt', allowEmptyArchive: true
                     sh 'rm -f prereqsLogs.txt prereqsDescribe.txt'
                 }
@@ -116,7 +161,7 @@ pipeline {
                stage("Deploy Caroline cluster") {
                   steps {
                       script {
-                         env.BASE_IMAGE = params.BUILD_REV ? "preTest-${params.BUILD_REV}" : "unstable"
+                         env.BASE_IMAGE = params.BUILD_REV ? "preTest-${architectureTag}${params.BUILD_REV}" : "${architectureTag}unstable"
                       }
                       sh '''
                             helm install caroline-db bitnami/postgresql -f ./.ci/e2eTests/postgres.yaml -n $NAMESPACE --wait --timeout 600s
@@ -128,12 +173,12 @@ pipeline {
            }
             post {
                 unsuccessful {
-                    sh '''
+                    sh '''\
                         kubectl logs -lapp.kubernetes.io/instance=corda-alice -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
                         kubectl logs -lapp.kubernetes.io/instance=corda-bob -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 >> logs.txt
                         kubectl logs -lapp.kubernetes.io/instance=corda-caroline -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 >> logs.txt
                         kubectl describe all -n ${NAMESPACE} > describe.txt
-                    '''
+                    '''.stripIndent()
                     archiveArtifacts artifacts: 'logs.txt, describe.txt', allowEmptyArchive: true
                     sh 'rm -f logs.txt describe.txt'
                 }
@@ -160,11 +205,11 @@ pipeline {
             post {
                 always {
                     junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
-                    sh '''
+                    sh '''\
                         kubectl logs -lapp.kubernetes.io/instance=corda -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
                         kubectl describe all -n ${NAMESPACE} > describe.txt
                         pgrep kubectl | xargs kill -9
-                    '''
+                    '''.stripIndent()
                     archiveArtifacts artifacts: 'forward.txt, logs.txt, describe.txt', allowEmptyArchive: true
                     sh 'rm -f forward.txt logs.txt describe.txt'
                 }
@@ -176,7 +221,7 @@ pipeline {
             findBuildScans()
             splunkLogGenerator()
             script{
-                createSummary("yellow.png").appendText("<a href='https://r3ll3.splunkcloud.com/en-US/app/r3_kubernetes_app/kubernetes_overview?form.period.earliest=0&form.period.latest=&form.span=5m&form.cluster=eks-e2e&form.namespace=${NAMESPACE}&form.pod=*'>Splunk K8s E2E Dashboard</a>", false)
+                createSummary("yellow.png").appendText("<a href='https://r3ll3.splunkcloud.com/en-US/app/r3_kubernetes_app/namespace_details?form.namespace=${NAMESPACE}&form.cluster_name=eks-e2e&form.period.earliest=0&form.period.latest=&form.span=5m&form.pod=*&form.event_message=*'>Splunk K8s E2E Dashboard</a>", false)
                 writeFile file: "e2eTestDataForSplunk.log", text: "${env.BUILD_URL}\n${NAMESPACE}"
                 archiveArtifacts artifacts: "e2eTestDataForSplunk.log", fingerprint: true
             }
@@ -188,10 +233,10 @@ pipeline {
     }
 }
 
-// K8s labels can not be greater than 63 characters 
+// K8s labels can not be greater than 63 characters
 // Helper method to sanitize edge cases of very long branch names
 def sanitizedBranchName(){
-    return env.BRANCH_NAME.length() > 60 ? env.BRANCH_NAME.substring(0,60).replace('/','-') : env.BRANCH_NAME.replace('/','-')
+    return (env.BRANCH_NAME.length() > 60 ? env.BRANCH_NAME.substring(0,60).replace('/','-') : env.BRANCH_NAME.replace('/','-')).replaceFirst(/-+$/,'')
 }
 
 // Helper to expose ports prior to test execution

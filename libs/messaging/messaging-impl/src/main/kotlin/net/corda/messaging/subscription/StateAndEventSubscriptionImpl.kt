@@ -91,7 +91,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
     /**
      * Is the subscription running.
      */
-    override val isRunning: Boolean
+    val isRunning: Boolean
         get() = isRunningInternal
 
     override val subscriptionName: LifecycleCoordinatorName
@@ -113,13 +113,6 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     block = ::runConsumeLoop
                 )
             }
-        }
-    }
-
-    override fun stop() {
-        if (!stopped) {
-            stopConsumeLoop()
-            lifecycleCoordinator.stop()
         }
     }
 
@@ -189,7 +182,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                             "$errorMsg Attempts: $attempts. Closing subscription.", ex
                         )
                         lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, errorMsg)
-                        stop()
+                        close()
                     }
                 }
             } finally {

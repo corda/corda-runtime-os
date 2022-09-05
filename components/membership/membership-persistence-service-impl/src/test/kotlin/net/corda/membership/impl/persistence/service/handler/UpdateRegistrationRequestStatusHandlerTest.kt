@@ -3,11 +3,10 @@ package net.corda.membership.impl.persistence.service.handler
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipRequestContext
-import net.corda.data.membership.db.request.command.RegistrationStatus
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.datamodel.RegistrationRequestEntity
@@ -46,10 +45,11 @@ class UpdateRegistrationRequestStatusHandlerTest {
         ourGroupId
     )
 
+    private val vaultDmlConnectionId = UUID(0, 11)
     private val virtualNodeInfo = VirtualNodeInfo(
         ourHoldingIdentity,
         CpiIdentifier("TEST_CPI", "1.0", null),
-        vaultDmlConnectionId = UUID(0, 0),
+        vaultDmlConnectionId = vaultDmlConnectionId,
         cryptoDmlConnectionId = UUID(0, 0),
         timestamp = clock.instant()
     )
@@ -64,9 +64,8 @@ class UpdateRegistrationRequestStatusHandlerTest {
 
     private val dbConnectionManager: DbConnectionManager = mock {
         on {
-            getOrCreateEntityManagerFactory(
-                eq(VirtualNodeDbType.VAULT.getConnectionName(ourHoldingIdentity.shortHash)),
-                any(),
+            createEntityManagerFactory(
+                eq(vaultDmlConnectionId),
                 any()
             )
         } doReturn entityManagerFactory
@@ -114,7 +113,9 @@ class UpdateRegistrationRequestStatusHandlerTest {
     @Test
     fun `invoke updates registration request status`() {
         val registrationId = "regId"
-        val registrationRequestEntity = mock<RegistrationRequestEntity>()
+        val registrationRequestEntity = mock<RegistrationRequestEntity> {
+            on { status } doReturn "NEW"
+        }
         whenever(entityManager.find(eq(RegistrationRequestEntity::class.java), eq(registrationId))).doReturn(registrationRequestEntity)
         val context = MembershipRequestContext(clock.instant(), "ID", ourHoldingIdentity.toAvro())
         val statusUpdate = UpdateRegistrationRequestStatus(registrationId, RegistrationStatus.PENDING_AUTO_APPROVAL)
@@ -124,5 +125,21 @@ class UpdateRegistrationRequestStatusHandlerTest {
         verify(registrationRequestEntity).status = RegistrationStatus.PENDING_AUTO_APPROVAL.name
         verify(registrationRequestEntity).lastModified = Instant.ofEpochMilli(500)
         verify(entityManager, times(1)).merge(registrationRequestEntity)
+    }
+
+    @Test
+    fun `invoke updates fails to downgrade status`() {
+        val registrationId = "regId"
+        val registrationRequestEntity = mock<RegistrationRequestEntity> {
+            on { status } doReturn "APPROVED"
+        }
+        whenever(entityManager.find(eq(RegistrationRequestEntity::class.java), eq(registrationId))).doReturn(registrationRequestEntity)
+        val context = MembershipRequestContext(clock.instant(), "ID", ourHoldingIdentity.toAvro())
+        val statusUpdate = UpdateRegistrationRequestStatus(registrationId, RegistrationStatus.PENDING_AUTO_APPROVAL)
+        clock.setTime(Instant.ofEpochMilli(500))
+
+        assertThrows<MembershipPersistenceException> {
+            updateRegistrationRequestStatusHandler.invoke(context, statusUpdate)
+        }
     }
 }

@@ -1,5 +1,8 @@
 package net.corda.flow.pipeline.sessions.impl
 
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.stream.Stream
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
@@ -37,9 +40,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.stream.Stream
 
 class FlowSessionManagerImplTest {
 
@@ -595,4 +595,83 @@ class FlowSessionManagerImplTest {
 
         assertThat(error.message).isEqualTo("1 of 2 sessions are invalid ['unknown session id'=MISSING]")
     }
+
+    @Test
+    fun `validate next message is close success`() {
+        val closingSessionState = buildSessionState(
+            SessionStateType.CLOSING,
+            1,
+            mutableListOf(buildSessionEvent(MessageDirection.INBOUND, SESSION_ID, 1, SessionClose())),
+            0,
+            mutableListOf(),
+            sessionId = SESSION_ID,
+            counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY
+        )
+
+        whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(closingSessionState)
+
+        val closingList = flowSessionManager.getSessionsWithNextMessageClose(checkpoint, listOf(SESSION_ID))
+        assertThat(closingList).isNotEmpty
+        assertThat(closingList.first().sessionId).isEqualTo(SESSION_ID)
+    }
+
+    @Test
+    fun `validate doesnt find closing state when closing session not listed in given session ids`() {
+        val closingSessionState = buildSessionState(
+            SessionStateType.CLOSING,
+            1,
+            mutableListOf(buildSessionEvent(MessageDirection.INBOUND, SESSION_ID, 1, SessionClose())),
+            0,
+            mutableListOf(),
+            sessionId = SESSION_ID,
+            counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY
+        )
+
+        whenever(checkpoint.sessions).thenReturn(listOf(closingSessionState))
+
+        val closingList = flowSessionManager.getSessionsWithNextMessageClose(checkpoint, listOf(ANOTHER_SESSION_ID))
+        assertThat(closingList).isEmpty()
+    }
+
+    @Test
+    fun `validate next message is not close success`() {
+        val closingSessionState = buildSessionState(
+            SessionStateType.CLOSING,
+            2,
+            mutableListOf(
+                buildSessionEvent(MessageDirection.INBOUND, SESSION_ID, 1, SessionData()),
+                buildSessionEvent(MessageDirection.INBOUND, SESSION_ID, 2, SessionClose()),
+            ),
+            0,
+            mutableListOf(),
+            sessionId = SESSION_ID,
+            counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY
+        )
+
+        whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(closingSessionState)
+
+        val closingList = flowSessionManager.getSessionsWithNextMessageClose(checkpoint, listOf(SESSION_ID))
+        assertThat(closingList).isEmpty()
+    }
+
+    @Test
+    fun `validate out of order close`() {
+        val closingSessionState = buildSessionState(
+            SessionStateType.CLOSING,
+            0,
+            mutableListOf(
+                buildSessionEvent(MessageDirection.INBOUND, SESSION_ID, 2, SessionClose()),
+            ),
+            0,
+            mutableListOf(),
+            sessionId = SESSION_ID,
+            counterpartyIdentity = COUNTERPARTY_HOLDING_IDENTITY
+        )
+
+        whenever(checkpoint.getSessionState(SESSION_ID)).thenReturn(closingSessionState)
+
+        val closingList = flowSessionManager.getSessionsWithNextMessageClose(checkpoint, listOf(SESSION_ID))
+        assertThat(closingList).isEmpty()
+    }
+
 }

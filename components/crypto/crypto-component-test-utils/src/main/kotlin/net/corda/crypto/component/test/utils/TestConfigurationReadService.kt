@@ -10,6 +10,7 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.schema.configuration.ConfigKeys
 import org.mockito.kotlin.mock
@@ -39,13 +40,13 @@ class TestConfigurationReadService(
         }
     }
 
-    override fun registerForUpdates(configHandler: ConfigurationHandler): AutoCloseable =
+    override fun registerForUpdates(configHandler: ConfigurationHandler): Resource =
         mock()
 
     override fun registerComponentForUpdates(
         coordinator: LifecycleCoordinator,
         requiredKeys: Set<String>
-    ): AutoCloseable {
+    ): Resource {
         if(configUpdates.isNotEmpty()) {
             coordinator.postEvent(
                 ConfigChangedEvent(
