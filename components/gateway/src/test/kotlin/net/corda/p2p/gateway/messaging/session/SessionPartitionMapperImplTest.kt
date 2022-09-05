@@ -27,8 +27,10 @@ class SessionPartitionMapperImplTest {
 
     private var processor = argumentCaptor<CompactedProcessor<String, SessionPartitions>>()
     private val dominoTile = Mockito.mockConstruction(ComplexDominoTile::class.java)
-    private val subscriptionTile = Mockito.mockConstruction(SubscriptionDominoTile::class.java) { mock, _ ->
+    private val subscriptionTile = Mockito.mockConstruction(SubscriptionDominoTile::class.java) { mock, context ->
         whenever(mock.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+        @Suppress("UNCHECKED_CAST")
+        (context.arguments()[1] as (() -> CompactedSubscription<String, SessionPartitions>)).invoke()
     }
     private val blockingTile = Mockito.mockConstruction(BlockingDominoTile::class.java) { mock, _ ->
         whenever(mock.toNamedLifecycle()).thenReturn(mock())

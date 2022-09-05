@@ -34,18 +34,22 @@ internal class LinkManagerHostingMapImpl(
     private val keyHasher = KeyHasher()
     private val listeners = ConcurrentHashMap.newKeySet<HostingMapListener>()
     private val ready = CompletableFuture<Unit>()
-    private val subscription = subscriptionFactory.createCompactedSubscription(
-        SubscriptionConfig(
-            GROUP_NAME,
-            P2P_HOSTED_IDENTITIES_TOPIC,
-        ),
-        Processor(),
-        configuration,
+    private val subscriptionConfig = SubscriptionConfig(
+        GROUP_NAME,
+        P2P_HOSTED_IDENTITIES_TOPIC,
     )
+    private val subscription = {
+        subscriptionFactory.createCompactedSubscription(
+            subscriptionConfig,
+            Processor(),
+            configuration,
+        )
+    }
 
     private val subscriptionTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
         subscription,
+        subscriptionConfig,
         emptyList(),
         emptyList(),
     )

@@ -24,6 +24,7 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.client.dto.MemberInfoSubmittedDto
@@ -66,7 +67,7 @@ class MemberOpsClientTest {
     }
 
     private val componentHandle: RegistrationHandle = mock()
-    private val configHandle: AutoCloseable = mock()
+    private val configHandle: Resource = mock()
 
     private var coordinatorIsRunning = false
     private val coordinator: LifecycleCoordinator = mock {

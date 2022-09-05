@@ -1,11 +1,8 @@
 package net.corda.membership.impl.client
 
-import java.util.concurrent.CompletableFuture
-import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.data.membership.rpc.request.MGMGroupPolicyRequest
 import net.corda.data.membership.rpc.request.MembershipRpcRequest
 import net.corda.data.membership.rpc.response.MGMGroupPolicyResponse
@@ -21,6 +18,7 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.MemberInfoExtension
@@ -28,7 +26,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.impl.EndpointInfoImpl
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
-import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
@@ -37,7 +34,17 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.identity.createTestHoldingIdentity
+import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.crypto.SecureHash
+import net.corda.v5.membership.EndpointInfo
+import net.corda.v5.membership.MemberInfo
+import net.corda.virtualnode.ShortHash
+import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -48,19 +55,13 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import net.corda.test.util.time.TestClock
-import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.crypto.SecureHash
-import net.corda.v5.membership.EndpointInfo
-import net.corda.v5.membership.MemberInfo
-import net.corda.virtualnode.ShortHash
-import net.corda.virtualnode.VirtualNodeInfo
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import org.assertj.core.api.Assertions
 import java.security.PublicKey
 import java.time.Instant
 import java.util.*
+import java.util.concurrent.CompletableFuture
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class MGMOpsClientTest {
     companion object {
@@ -161,7 +162,7 @@ class MGMOpsClientTest {
     }
 
     private val componentHandle: RegistrationHandle = mock()
-    private val configHandle: AutoCloseable = mock()
+    private val configHandle: Resource = mock()
 
     private var coordinatorIsRunning = false
     private val coordinator: LifecycleCoordinator = mock {
