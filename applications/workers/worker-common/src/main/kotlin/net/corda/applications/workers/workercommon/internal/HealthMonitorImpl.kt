@@ -34,8 +34,11 @@ internal class HealthMonitorImpl @Activate constructor(
             .create()
             .apply { startServer(this, port) }
             .get(HTTP_HEALTH_ROUTE) { context ->
+                println("QQQ in $HTTP_HEALTH_ROUTE 1")
                 val anyComponentsUnhealthy = existsComponentWithAnyOf(setOf(LifecycleStatus.ERROR))
+                println("QQQ in $HTTP_HEALTH_ROUTE anyComponentsUnhealthy -> $anyComponentsUnhealthy")
                 val status = if (anyComponentsUnhealthy) HTTP_SERVICE_UNAVAILABLE_CODE else HTTP_OK_CODE
+                println("QQQ in $HTTP_HEALTH_ROUTE status -> $status")
                 context.status(status)
             }
             .get(HTTP_STATUS_ROUTE) { context ->
@@ -74,6 +77,7 @@ internal class HealthMonitorImpl @Activate constructor(
     /** Indicates whether any components exist with at least one of the given [statuses]. */
     private fun existsComponentWithAnyOf(statuses: Iterable<LifecycleStatus>) =
         lifecycleRegistry.componentStatus().entries.any { coordinatorStatus ->
+            println("QQQ \t in existsComponentWithAnyOf coordinatorStatus: ${coordinatorStatus.key} -> value ${coordinatorStatus.value}")
             coordinatorStatus.value.status in statuses
         }
 }
