@@ -1,15 +1,14 @@
 package net.corda.uniqueness.client.impl
 
-import net.corda.data.uniqueness.UniquenessCheckExternalRequest
-import net.corda.data.uniqueness.UniquenessCheckExternalResultSuccess
+import net.corda.data.uniqueness.UniquenessCheckRequestAvro
+import net.corda.data.uniqueness.UniquenessCheckResultSuccessAvro
 import net.corda.uniqueness.checker.UniquenessChecker
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckResponseImpl
+import net.corda.uniqueness.datamodel.impl.toUniquenessResult
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.membership.MemberLookup
-import net.corda.v5.application.uniqueness.client.UniquenessCheckerClientService
-import net.corda.v5.application.uniqueness.model.UniquenessCheckResponse
-import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -19,6 +18,8 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_DEFAULT_NAME
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
+import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckerClientService
+import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckResponse
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -26,12 +27,11 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope
 import java.time.Instant
 import java.util.*
-import java.util.concurrent.*
 
 /**
  * TODO Add more specific KDocs once CORE-4730 is finished
  */
-@Component(service = [ UniquenessCheckerClientService::class, SingletonSerializeAsToken::class ], scope = ServiceScope.PROTOTYPE)
+@Component(service = [ LedgerUniquenessCheckerClientService::class, SingletonSerializeAsToken::class ], scope = ServiceScope.PROTOTYPE)
 class UniquenessCheckerClientServiceImpl @Activate constructor(
     // TODO for now uniqueness checker is referenced,
     //  but once CORE-4730 is finished it will be invoked
@@ -48,7 +48,7 @@ class UniquenessCheckerClientServiceImpl @Activate constructor(
     private val merkleTreeFactory: MerkleTreeFactory,
     @Reference(service = MemberLookup::class)
     private val memberLookup: MemberLookup,
-): UniquenessCheckerClientService, SingletonSerializeAsToken {
+): LedgerUniquenessCheckerClientService, SingletonSerializeAsToken {
 
     private companion object {
         val log = contextLogger()
@@ -62,10 +62,10 @@ class UniquenessCheckerClientServiceImpl @Activate constructor(
         numOutputStates: Int,
         timeWindowLowerBound: Instant?,
         timeWindowUpperBound: Instant
-    ): Future<UniquenessCheckResponse> {
+    ): UniquenessCheckResponse {
         log.info("Received request with id: $txId, sending it to Uniqueness Checker")
 
-        val request = UniquenessCheckExternalRequest(
+        val request = UniquenessCheckRequestAvro(
             txId,
             inputStates,
             referenceStates,
@@ -76,25 +76,17 @@ class UniquenessCheckerClientServiceImpl @Activate constructor(
 
         val txIds = listOf(SecureHash.create(request.txId))
 
-        val response = uniquenessChecker.processRequests(listOf(request)).first()
+        val uniquenessCheckResponse = uniquenessChecker.processRequests(listOf(request)).first()
 
-        val result = if (response.result is UniquenessCheckExternalResultSuccess) {
-            UniquenessCheckResponse(
-                UniquenessCheckResult.Success(
-                    Instant.now()
-                ),
-                signBatch(txIds).rootSignature
-            )
-        } else {
-            UniquenessCheckResponse(
-                UniquenessCheckResult.fromExternalError(response),
-                null
-            )
-        }
+        val result = uniquenessCheckResponse.toUniquenessResult()
+        val signature = if (uniquenessCheckResponse.result is UniquenessCheckResultSuccessAvro) {
+            signBatch(txIds).rootSignature
+        } else null
 
-        // TODO For now this is not an actual async call, once we start interacting
-        //  with the message bus this will become an actual async call
-        return CompletableFuture.completedFuture(result)
+        return UniquenessCheckResponseImpl(
+            result,
+            signature
+        )
     }
 
     @Suspendable

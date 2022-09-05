@@ -3,17 +3,16 @@ plugins {
     id 'corda.common-library'
 }
 
-description 'Backing store component internal API'
+description 'Uniqueness API implementation'
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
 
-    api project(':libs:lifecycle:lifecycle')
-
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation 'net.corda:corda-base'
     implementation "net.corda:corda-avro-schema"
-    implementation "net.corda:corda-crypto"
-    implementation "net.corda:corda-ledger-utxo"
+    implementation 'net.corda:corda-crypto'
+    implementation 'net.corda:corda-ledger-utxo'
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation project(":libs:uniqueness:common")
 }

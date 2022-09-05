@@ -7,14 +7,13 @@ import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
-import net.corda.v5.application.uniqueness.client.UniquenessCheckerClientService
-import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.days
 import net.corda.v5.base.util.seconds
+import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckerClientService
+import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckResultSuccess
 import java.time.Instant
 
 @Suppress("unused")
@@ -39,7 +38,7 @@ class UniquenessCheckTestFlow : RPCStartableFlow {
     lateinit var memberLookupService: MemberLookup
 
     @CordaInject
-    lateinit var uniquenessClient: UniquenessCheckerClientService
+    lateinit var uniquenessClient: LedgerUniquenessCheckerClientService
 
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
@@ -49,7 +48,7 @@ class UniquenessCheckTestFlow : RPCStartableFlow {
 
         log.info("Calling Uniqueness check for an issuance transaction with 5 output states, ID: $DUMMY_HASH")
 
-        val issuanceFuture = uniquenessClient.requestUniquenessCheck(
+        val issuanceResult = uniquenessClient.requestUniquenessCheck(
             DUMMY_HASH,
             emptyList(),
             emptyList(),
@@ -58,11 +57,9 @@ class UniquenessCheckTestFlow : RPCStartableFlow {
             Instant.now().plusMillis(TX_VALIDITY)
         )
 
-        val issuanceResult = issuanceFuture.getOrThrow(RESPONSE_TIMEOUT)
-
-        if (issuanceResult.result is UniquenessCheckResult.Success) {
+        if (issuanceResult is UniquenessCheckResultSuccess) {
             log.info("Uniqueness check for issuance transaction was successful, " +
-                    "signature: ${issuanceResult.signatureAndMetadata}")
+                    "signature: ${issuanceResult.signature}")
         } else {
             log.error("Uniqueness check for issuance transaction was unsuccessful")
             throw CordaRuntimeException("Uniqueness check for issuance transaction was unsuccessful")
@@ -70,7 +67,7 @@ class UniquenessCheckTestFlow : RPCStartableFlow {
 
         log.info("Calling Uniqueness check for a consume transaction with 1 input state, ID: $DUMMY_HASH_2")
 
-        val consumeFuture = uniquenessClient.requestUniquenessCheck(
+        val consumeResult = uniquenessClient.requestUniquenessCheck(
             DUMMY_HASH_2,
             listOf("$DUMMY_HASH:0"),
             emptyList(),
@@ -79,11 +76,9 @@ class UniquenessCheckTestFlow : RPCStartableFlow {
             Instant.now().plusMillis(TX_VALIDITY)
         )
 
-        val consumeResult = consumeFuture.getOrThrow(RESPONSE_TIMEOUT)
-
-        if (consumeResult.result is UniquenessCheckResult.Success) {
+        if (consumeResult is UniquenessCheckResultSuccess) {
             log.info("Uniqueness check for consume transaction was successful, " +
-                    "signature: ${consumeResult.signatureAndMetadata}")
+                    "signature: ${consumeResult.signature}")
         } else {
             log.error("Uniqueness check for consume transaction was unsuccessful")
             throw CordaRuntimeException("Uniqueness check for issuance transaction was unsuccessful")
