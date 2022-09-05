@@ -12,6 +12,7 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.messaging.api.processor.RPCResponderProcessor
@@ -110,7 +111,7 @@ class CertificatesServiceImplTest {
                 mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
             )
             handler.firstValue.processEvent(event, coordinator)
-            val configHandle = mock<AutoCloseable>()
+            val configHandle = mock<Resource>()
             whenever(configurationReadService.registerComponentForUpdates(any(), any())).doReturn(configHandle)
             val registrationStatusChangeEvent = RegistrationStatusChangeEvent(
                 registrationHandle,
@@ -130,7 +131,7 @@ class CertificatesServiceImplTest {
             val registrationHandle = mock<RegistrationHandle>()
             whenever(coordinator.followStatusChangesByName(any())).doReturn(registrationHandle)
             handler.firstValue.processEvent(StartEvent(), coordinator)
-            val configHandle = mock<AutoCloseable>()
+            val configHandle = mock<Resource>()
             whenever(configurationReadService.registerComponentForUpdates(any(), any())).doReturn(configHandle)
             handler.firstValue.processEvent(
                 RegistrationStatusChangeEvent(
@@ -190,7 +191,7 @@ class CertificatesServiceImplTest {
                 coordinator
             )
 
-            verify(subscription).stop()
+            verify(subscription).close()
         }
 
         @Test

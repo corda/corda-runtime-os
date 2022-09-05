@@ -10,6 +10,7 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleException
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
@@ -214,11 +215,11 @@ class LifecycleCoordinatorImpl(
         return followStatusChanges(coordinators)
     }
 
-    override fun <T : AutoCloseable> createManagedResource(name: String, generator: () -> T) {
+    override fun <T : Resource> createManagedResource(name: String, generator: () -> T) {
         processor.addManagedResource(name, generator)
     }
 
-    override fun <T: AutoCloseable> getManagedResource(name: String) : T? {
+    override fun <T: Resource> getManagedResource(name: String) : T? {
         return uncheckedCast(processor.getManagedResource(name))
     }
 

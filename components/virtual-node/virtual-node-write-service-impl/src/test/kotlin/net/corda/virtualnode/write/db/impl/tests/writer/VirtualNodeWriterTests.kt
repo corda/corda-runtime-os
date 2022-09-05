@@ -5,13 +5,10 @@ import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriter
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 
 /** Tests of [VirtualNodeWriter]. */
 class VirtualNodeWriterTests {
@@ -42,9 +39,9 @@ class VirtualNodeWriterTests {
         val publisher = mock<Publisher>()
         val configWriter = VirtualNodeWriter(subscription, publisher)
         configWriter.start()
-        configWriter.stop()
+        configWriter.close()
 
-        verify(subscription).stop()
+        verify(subscription).close()
     }
 
     @Test
@@ -57,25 +54,5 @@ class VirtualNodeWriterTests {
 
         verify(subscription).close()
         verify(publisher).close()
-    }
-
-    @Test
-    fun `the config writer is running if the subscription is running`() {
-        val runningSubscription = mock<RPCSubscription<VirtualNodeManagementRequest, VirtualNodeManagementResponse>>()
-            .apply {
-                whenever(isRunning).thenReturn(true)
-            }
-        val configWriter = VirtualNodeWriter(runningSubscription, mock())
-        assertTrue(configWriter.isRunning)
-    }
-
-    @Test
-    fun `the config writer is not running if the subscription is not running`() {
-        val runningSubscription = mock<RPCSubscription<VirtualNodeManagementRequest, VirtualNodeManagementResponse>>()
-            .apply {
-                whenever(isRunning).thenReturn(false)
-            }
-        val configWriter = VirtualNodeWriter(runningSubscription, mock())
-        assertFalse(configWriter.isRunning)
     }
 }
