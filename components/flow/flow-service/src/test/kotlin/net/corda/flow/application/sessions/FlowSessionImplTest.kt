@@ -223,6 +223,7 @@ class FlowSessionImplTest {
         counterparty = ALICE_X500_NAME,
         sourceSessionId = SESSION_ID,
         mockFlowFiberService,
+        flowFiberSerializationService
     )
 
     private fun validateInitiateFlowRequest(request: FlowIORequest.InitiateFlow) {

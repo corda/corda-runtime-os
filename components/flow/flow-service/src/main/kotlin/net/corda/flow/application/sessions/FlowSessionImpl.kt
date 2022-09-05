@@ -30,17 +30,29 @@ class FlowSessionImpl private constructor(
             counterparty: MemberX500Name,
             sourceSessionId: String,
             flowFiberService: FlowFiberService,
-	    flowFiberSerializationService: FlowFiberSerializationService
+            flowFiberSerializationService: FlowFiberSerializationService
         ): FlowSession =
-            FlowSessionImpl(counterparty, sourceSessionId, flowFiberService, flowFiberSerializationService, Direction.INITIATING_SIDE)
+            FlowSessionImpl(
+                counterparty,
+                sourceSessionId,
+                flowFiberService,
+                flowFiberSerializationService,
+                Direction.INITIATING_SIDE
+            )
 
         fun asInitiatedSession(
             counterparty: MemberX500Name,
             sourceSessionId: String,
             flowFiberService: FlowFiberService,
-	    flowFiberSerializationService: FlowFiberSerializationService,
+            flowFiberSerializationService: FlowFiberSerializationService,
             contextProperties: Map<String, String>
-        ) = FlowSessionImpl(counterparty, sourceSessionId, flowFiberService, flowFiberSerializationService, Direction.INITIATED_SIDE).apply {
+        ) = FlowSessionImpl(
+            counterparty,
+            sourceSessionId,
+            flowFiberService,
+            flowFiberSerializationService,
+            Direction.INITIATED_SIDE
+        ).apply {
             sessionLocalFlowContext = FlatSerializableContext(
                 contextUserProperties = emptyMap(),
                 contextPlatformProperties = contextProperties
@@ -95,9 +107,7 @@ class FlowSessionImpl private constructor(
     @Suspendable
     override fun <R : Any> sendAndReceive(receiveType: Class<R>, payload: Any): UntrustworthyData<R> {
         enforceNotPrimitive(receiveType)
-        log.info("sessionId=${sourceSessionId} is init=${initiated}")
         confirmSession()
-        log.info("sessionId=${sourceSessionId} is init=${initiated}")
         val request = FlowIORequest.SendAndReceive(mapOf(sourceSessionId to serialize(payload)))
         val received = fiber.suspend(request)
         return deserializeReceivedPayload(received, receiveType)
@@ -169,7 +179,8 @@ class FlowSessionImpl private constructor(
                             "(${e.deserializedObject})"
                 )
             }
-        } ?: throw CordaRuntimeException("The session [${sourceSessionId}] did not receive a payload when trying to receive one")
+        }
+            ?: throw CordaRuntimeException("The session [${sourceSessionId}] did not receive a payload when trying to receive one")
     }
 
     override fun equals(other: Any?): Boolean =
