@@ -47,7 +47,7 @@ class MemberListProcessorTest {
         private const val knownKeyAsString = "12345"
         private val modifiedTime = clock.instant()
         private val endpoints = listOf(
-            EndpointInfoImpl("https://corda5.r3.com:10000", EndpointInfo.DEFAULT_PROTOCOL_VERSION),
+            EndpointInfoImpl("https://corda5.r3.com:10000"),
             EndpointInfoImpl("https://corda5.r3.com:10001", 10)
         )
         private val ledgerKeys = listOf(knownKey, knownKey)

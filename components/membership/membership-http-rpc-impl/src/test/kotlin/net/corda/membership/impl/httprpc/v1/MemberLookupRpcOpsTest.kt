@@ -71,7 +71,7 @@ class MemberLookupRpcOpsTest {
     private val keys = listOf(knownKey, knownKey)
 
     private val endpoints = listOf(
-        EndpointInfoImpl("https://corda5.r3.com:10000", EndpointInfo.DEFAULT_PROTOCOL_VERSION),
+        EndpointInfoImpl("https://corda5.r3.com:10000"),
         EndpointInfoImpl("https://corda5.r3.com:10001", 10)
     )
 
