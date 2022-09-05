@@ -15,7 +15,7 @@ import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.utilities.copyTo
 import net.corda.utilities.div
 import net.corda.utilities.reflection.packageName_
-import net.corda.v5.base.types.ByteSequence
+import net.corda.utilities.toByteSequence
 import net.corda.v5.base.types.OpaqueBytes
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
@@ -192,7 +192,7 @@ class AMQPwithOSGiSerializationTests {
                 ?: throw RuntimeException("$testResourceName not found")
             val deserialize: Any =
                 DeserializationInput(factory).deserialize(
-                    ByteSequence.of(resource.readAllBytes()),
+                    resource.readAllBytes().toByteSequence(),
                     Any::class.java,
                     context
                 )
@@ -229,7 +229,7 @@ class AMQPwithOSGiSerializationTests {
                 ?: throw RuntimeException("$testResourceName not found")
             val deserialized: Any =
                 DeserializationInput(factory).deserialize(
-                    ByteSequence.of(resource.readAllBytes()),
+                    resource.readAllBytes().toByteSequence(),
                     Any::class.java,
                     context
                 )
