@@ -21,6 +21,7 @@ import net.corda.flow.fiber.factory.FlowFiberFactory
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
 import net.corda.flow.pipeline.runner.impl.FlowRunnerImpl
+import net.corda.flow.pipeline.runner.impl.remoteToLocalContextMapper
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.flow.state.FlowCheckpoint
@@ -28,7 +29,6 @@ import net.corda.flow.state.FlowStack
 import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
-import net.corda.flow.utils.toMap
 import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.ResponderFlow
@@ -145,14 +145,20 @@ class FlowRunnerImplTest {
         }
         val logicAndArgs = InitiatedFlow(initiatedFlow, mock())
 
+        // Map the mock context properties to local context properties in the same way the flow runner should, the exact
+        // content of the mapped local context is out of the scope of this test
+        val localContextProperties = remoteToLocalContextMapper(
+            remoteUserContextProperties = userContext.avro,
+            remotePlatformContextProperties = platformContext.avro
+        )
+
         val context = buildFlowEventContext<Any>(flowCheckpoint, sessionEvent)
         whenever(flowCheckpoint.flowStartContext).thenReturn(flowStartContext)
         whenever(
             flowFactory.createInitiatedFlow(
                 flowStartContext,
                 sandboxGroupContext,
-                // Current behaviour of the FlowRunner is to pass platform context to initiated sessions unaltered
-                platformContext.avro.toMap()
+                localContextProperties.counterpartySessionProperties
             )
         ).thenReturn(logicAndArgs)
         whenever(
@@ -163,7 +169,13 @@ class FlowRunnerImplTest {
             )
         ).thenReturn(fiberFuture)
 
-        whenever(flowStack.pushWithContext(initiatedFlow, userContext.avro, platformContext.avro)).thenReturn(
+        whenever(
+            flowStack.pushWithContext(
+                initiatedFlow,
+                localContextProperties.userProperties,
+                localContextProperties.platformProperties
+            )
+        ).thenReturn(
             flowStackItem
         )
 
