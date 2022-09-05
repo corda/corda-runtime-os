@@ -22,6 +22,7 @@ import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.client.MGMOpsClient
 import net.corda.membership.client.MemberOpsClient
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -73,6 +74,8 @@ class RPCProcessorImpl @Activate constructor(
     private val groupPolicyProvider: GroupPolicyProvider,
     @Reference(service = MembershipQueryClient::class)
     private val membershipQueryClient: MembershipQueryClient,
+    @Reference(service = MembershipPersistenceClient::class)
+    private val membershipPersistenceClient: MembershipPersistenceClient,
 ) : RPCProcessor {
 
     private companion object {
@@ -97,6 +100,7 @@ class RPCProcessorImpl @Activate constructor(
         ::certificatesClient,
         ::groupPolicyProvider,
         ::membershipQueryClient,
+        ::membershipPersistenceClient,
     )
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<RPCProcessorImpl>(dependentComponents, ::eventHandler)
 
