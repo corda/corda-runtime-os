@@ -139,7 +139,7 @@ pipeline {
                       script {
                          env.BASE_IMAGE = params.BUILD_REV ? "preTest-${params.BUILD_REV}" : "unstable"
                       }
-                      deployCorda("alice", $NAMESPACE, $BASE_IMAGE)
+                      deployCorda("alice", "${NAMESPACE}", "${BASE_IMAGE}")
                   }
                }
                stage("Deploy Bob cluster") {
@@ -147,7 +147,7 @@ pipeline {
                       script {
                          env.BASE_IMAGE = params.BUILD_REV ? "preTest-${params.BUILD_REV}" : "unstable"
                       }
-                      deployCorda("bob", $NAMESPACE, $BASE_IMAGE)
+                      deployCorda("bob", "${NAMESPACE}", "${BASE_IMAGE}")
                   }
                }
                stage("Deploy Caroline cluster") {
@@ -155,7 +155,7 @@ pipeline {
                       script {
                          env.BASE_IMAGE = params.BUILD_REV ? "preTest-${architectureTag}${params.BUILD_REV}" : "${architectureTag}unstable"
                       }
-                      deployCorda("caroline", $NAMESPACE, $BASE_IMAGE)
+                      deployCorda("caroline", "${NAMESPACE}", "${BASE_IMAGE}")
                   }
                }
            }
@@ -239,12 +239,12 @@ def portForwarding(def name, def port, def portMapping = 0){
 def deployCorda(def name, def namespace, def base_image){
     sh """\
        helm install $name-db bitnami/postgresql -f ./.ci/e2eTests/postgres.yaml -n $namespace --wait --timeout 600s
-       SASL_SECRET=\$(kubectl get secret \
+       export SASL_SECRET=\$(kubectl get secret \
                                --namespace $namespace prereqs-kafka-jaas \
                                --output=jsonpath='{.data.client-passwords}' | base64 --decode)
-       helm install corda-${name} ./charts/corda \
+       helm install corda-$name ./charts/corda \
        -f .ci/e2eTests/corda.yaml \
-       --set kafka.sasl.password=$SASL_SECRET \
+       --set kafka.sasl.password=\$SASL_SECRET \
        --set image.tag=$base_image \
        --set nodeSelector.kubernetes\\\\.io/os=linux \
        --set nodeSelector.kubernetes\\\\.io/arch=${E2E_WORKER_ARCH} \
