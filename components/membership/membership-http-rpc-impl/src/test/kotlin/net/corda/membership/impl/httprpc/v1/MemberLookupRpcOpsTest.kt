@@ -29,7 +29,6 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -71,7 +70,7 @@ class MemberLookupRpcOpsTest {
     private val keys = listOf(knownKey, knownKey)
 
     private val endpoints = listOf(
-        EndpointInfoImpl("https://corda5.r3.com:10000", EndpointInfo.DEFAULT_PROTOCOL_VERSION),
+        EndpointInfoImpl("https://corda5.r3.com:10000"),
         EndpointInfoImpl("https://corda5.r3.com:10001", 10)
     )
 

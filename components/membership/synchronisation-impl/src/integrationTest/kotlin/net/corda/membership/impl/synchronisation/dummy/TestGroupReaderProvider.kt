@@ -4,7 +4,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StartEvent
-import net.corda.membership.lib.CPIWhiteList
+import net.corda.membership.lib.CPIAllowList
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -79,7 +79,7 @@ class TestGroupReader : MembershipGroupReader {
         get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
     override val groupParameters: GroupParameters
         get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
-    override val cpiWhiteList: CPIWhiteList
+    override val cpiAllowList: CPIAllowList
         get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
 
     private var members = emptyList<MemberInfo>()

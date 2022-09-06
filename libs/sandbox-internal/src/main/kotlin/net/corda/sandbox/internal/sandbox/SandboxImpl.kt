@@ -3,6 +3,7 @@ package net.corda.sandbox.internal.sandbox
 import net.corda.sandbox.SandboxException
 import net.corda.v5.base.util.loggerFor
 import org.osgi.framework.Bundle
+import java.util.Collections.unmodifiableSet
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
@@ -25,8 +26,8 @@ internal open class SandboxImpl(
         hashMap.add(id)
     }
 
-    // All the bundles in the sandbox.
-    private val allBundles = privateBundles + publicBundles
+    // All the bundles in the sandbox; not exposed via API.
+    val allBundles: Set<Bundle> = unmodifiableSet(privateBundles + publicBundles)
 
     override fun containsBundle(bundle: Bundle) = bundle in allBundles
 

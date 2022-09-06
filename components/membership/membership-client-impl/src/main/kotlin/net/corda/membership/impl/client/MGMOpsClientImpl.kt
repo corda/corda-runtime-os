@@ -26,7 +26,7 @@ import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.time.UTCClock
-import net.corda.v5.base.concurrent.getOrThrow
+import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.ShortHash
@@ -35,7 +35,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.util.UUID
+import java.util.*
 
 @Component(service = [MGMOpsClient::class])
 class MGMOpsClientImpl @Activate constructor(

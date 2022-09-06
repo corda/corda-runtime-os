@@ -43,7 +43,7 @@ class InMemoryStateAndEventSubscription<K : Any, S : Any, E : Any>(
         )
     ) { _, _ -> }
 
-    override val isRunning: Boolean
+    val isRunning: Boolean
         get() = lock.withLock {
             eventSubscription.isRunning && stateSubscription.isRunning
         }
@@ -57,11 +57,6 @@ class InMemoryStateAndEventSubscription<K : Any, S : Any, E : Any>(
             lifecycleCoordinator.start()
             lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
         }
-    }
-
-    override fun stop() {
-        stopSubscriptions()
-        lifecycleCoordinator.stop()
     }
 
     override fun close() {

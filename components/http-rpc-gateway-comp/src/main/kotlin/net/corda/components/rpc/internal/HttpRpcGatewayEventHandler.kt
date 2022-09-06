@@ -36,10 +36,10 @@ import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_CONTEXT_DESCRIPTION
 import net.corda.schema.configuration.ConfigKeys.RPC_CONTEXT_TITLE
 import net.corda.schema.configuration.ConfigKeys.RPC_MAX_CONTENT_LENGTH
+import net.corda.utilities.NetworkHostAndPort
 import net.corda.utilities.PathProvider
 import net.corda.utilities.TempPathProvider
 import net.corda.v5.base.annotations.VisibleForTesting
-import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
 import java.util.function.Supplier
 

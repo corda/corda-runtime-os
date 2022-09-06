@@ -1,10 +1,6 @@
 package net.corda.messaging.emulation.subscription.eventlog
 
 import com.typesafe.config.ConfigValueFactory
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicReference
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -21,6 +17,10 @@ import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 
 @ExtendWith(ServiceExtension::class)
 class EventLogSubscriptionIntegrationTest {
@@ -125,44 +125,8 @@ class EventLogSubscriptionIntegrationTest {
         ).hasSize(3)
         assertThat(assigned).contains(9, 10, 1)
 
-        // Stop the subscription
-        subscription.stop()
-        assertThat(subscription.isRunning).isFalse
-
-        // Publish an event
-        processed.clear()
-        publish(Record(topic, "key4", Event("four", 4)))
-
-        // Verify it was not processed
-        Thread.sleep(1000)
-        assertThat(processed).isEmpty()
-
-        // Restart the subscription
-        subscription.start()
-        assertThat(subscription.isRunning).isTrue
-        assertThat(processed).isEmpty()
-
-        // Publish a few events
-        waitForProcessed.set(CountDownLatch(3))
-        publish(
-            Record("another $topic", "keya", Event("five", 5)),
-            Record(topic, "key5", Event("five", 5)),
-            Record(topic, 12, Event("five", 5)),
-            Record(topic, "keyb", 31),
-            Record(topic, "key6", Event("six", 6)),
-        )
-
-        // Wait for the events
-        waitForProcessed.get().await(1, TimeUnit.SECONDS)
-        assertThat(processed.map { it.key })
-            .hasSize(3).contains(
-                "key4",
-                "key5",
-                "key6"
-            )
-
         // Stop the subscriber
-        subscription.stop()
+        subscription.close()
         assertThat(subscription.isRunning).isFalse
     }
 
