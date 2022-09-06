@@ -28,6 +28,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.lifecycle.TimerEvent
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
@@ -47,6 +48,7 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MembershipConfig
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.base.util.minutes
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
@@ -55,6 +57,7 @@ import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
@@ -101,7 +104,7 @@ class MemberSynchronisationServiceImplTest {
     )
 
     private var coordinatorIsRunning = false
-    private var coordinatorStatus: KArgumentCaptor<LifecycleStatus> = argumentCaptor()
+    private var coordinatorStatus = argumentCaptor<LifecycleStatus>()
     private val coordinator: LifecycleCoordinator = mock {
         on { followStatusChangesByName(eq(dependentComponents)) } doReturn componentHandle
         on { isRunning } doAnswer { coordinatorIsRunning }
@@ -491,5 +494,77 @@ class MemberSynchronisationServiceImplTest {
 
         postStopEvent()
         verify(mockPublisher, times(3)).close()
+    }
+
+    @Nested
+    inner class ScheduleSyncTests {
+        @Test
+        fun `processMembershipUpdates schedule a new request`() {
+            val timerDuration = argumentCaptor<Long>()
+            doNothing().whenever(coordinator).setTimer(any(), timerDuration.capture(), any())
+            postConfigChangedEvent()
+            synchronisationService.start()
+
+            synchronisationService.processMembershipUpdates(updates)
+
+            assertThat(timerDuration.firstValue)
+                .isLessThanOrEqualTo(10.minutes.toMillis())
+                .isGreaterThanOrEqualTo(9.minutes.toMillis())
+        }
+
+        @Test
+        fun `second processMembershipUpdates will cancel the current schedual`() {
+            postConfigChangedEvent()
+            synchronisationService.start()
+            val captureKey = argumentCaptor<String>()
+            doNothing().whenever(coordinator).setTimer(captureKey.capture(), any(), any())
+
+            synchronisationService.processMembershipUpdates(updates)
+            synchronisationService.processMembershipUpdates(updates)
+
+            assertThat(captureKey.allValues).hasSize(2).containsExactly(
+                "SendSyncRequest-${member.fullHash}",
+                "SendSyncRequest-${member.fullHash}",
+            )
+        }
+
+        @Test
+        fun `timer create sync request`() {
+            postConfigChangedEvent()
+            synchronisationService.start()
+            val records = argumentCaptor<List<Record<*, *>>>()
+            whenever(mockPublisher.publish(records.capture())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
+            val captureFactory = argumentCaptor<(String) -> TimerEvent>()
+            doNothing().whenever(coordinator).setTimer(any(), any(), captureFactory.capture())
+            synchronisationService.processMembershipUpdates(updates)
+            val event = captureFactory.firstValue.invoke("")
+
+            lifecycleHandlerCaptor.firstValue.processEvent(event, coordinator)
+
+            assertThat(records.allValues).anySatisfy {
+                assertThat(it).hasSize(1)
+                    .containsExactly(synchronisationRequest)
+            }
+        }
+
+        @Test
+        fun `timer after deactivation will not create sync request`() {
+            postConfigChangedEvent()
+            synchronisationService.start()
+            val records = argumentCaptor<List<Record<*, *>>>()
+            whenever(mockPublisher.publish(records.capture())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
+            val captureFactory = argumentCaptor<(String) -> TimerEvent>()
+            doNothing().whenever(coordinator).setTimer(any(), any(), captureFactory.capture())
+            synchronisationService.processMembershipUpdates(updates)
+            val event = captureFactory.firstValue.invoke("")
+            lifecycleHandlerCaptor.firstValue.processEvent(StopEvent(), coordinator)
+
+            lifecycleHandlerCaptor.firstValue.processEvent(event, coordinator)
+
+            assertThat(records.allValues).noneSatisfy {
+                assertThat(it).hasSize(1)
+                    .containsExactly(synchronisationRequest)
+            }
+        }
     }
 }

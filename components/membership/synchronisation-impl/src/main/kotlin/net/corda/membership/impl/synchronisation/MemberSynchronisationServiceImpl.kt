@@ -55,6 +55,7 @@ import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.Random
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
@@ -125,6 +126,10 @@ class MemberSynchronisationServiceImpl internal constructor(
 
         const val PUBLICATION_TIMEOUT_SECONDS = 30L
         const val SERVICE = "MemberSynchronisationService"
+
+        private val random by lazy {
+            Random()
+        }
     }
 
     // for watching the config changes
@@ -194,22 +199,8 @@ class MemberSynchronisationServiceImpl internal constructor(
     private inner class ActiveImpl(
         membershipConfigurations: SmartConfig,
     ) : InnerSynchronisationService {
-
-        override fun cancelCurrentRequestAndScheduleNewOne(
-            memberIdentity: HoldingIdentity,
-            mgm: HoldingIdentity,
-        ): Boolean {
-            coordinator.setTimer(
-                key = "SendSyncRequest-${memberIdentity.fullHash}",
-                delay = delayBetweenRequests // YIFT: Add random to avoid resending all at the same time
-            ) {
-                SendSyncRequest(memberIdentity, mgm, it)
-            }
-            return true
-        }
-
-        private val delayBetweenRequests = membershipConfigurations
-            .getLong(MAX_DURATION_BETWEEN_SYNC_REQUESTS_MINUTES).also {
+        private val maxDelayBetweenRequests = membershipConfigurations
+            .getLong(MAX_DURATION_BETWEEN_SYNC_REQUESTS_MINUTES).let {
                 TimeUnit.MINUTES.toMillis(it)
             }
 
@@ -217,6 +208,25 @@ class MemberSynchronisationServiceImpl internal constructor(
             serializationFactory.createAvroDeserializer({
                 logger.error("Deserialization of KeyValuePairList from MembershipPackage failed while processing membership updates.")
             }, KeyValuePairList::class.java)
+
+        private fun delayToNextRequest() : Long {
+            // Add noise to prevent all the members to ask for sync in the same time
+            return maxDelayBetweenRequests -
+                (random.nextDouble() * 0.1 * maxDelayBetweenRequests).toLong()
+        }
+
+        override fun cancelCurrentRequestAndScheduleNewOne(
+            memberIdentity: HoldingIdentity,
+            mgm: HoldingIdentity,
+        ): Boolean {
+            coordinator.setTimer(
+                key = "SendSyncRequest-${memberIdentity.fullHash}",
+                delay = delayToNextRequest()
+            ) {
+                SendSyncRequest(memberIdentity, mgm, it)
+            }
+            return true
+        }
 
         override fun processMembershipUpdates(updates: ProcessMembershipUpdates) {
             val viewOwningMember = updates.synchronisationMetaData.member.toCorda()
