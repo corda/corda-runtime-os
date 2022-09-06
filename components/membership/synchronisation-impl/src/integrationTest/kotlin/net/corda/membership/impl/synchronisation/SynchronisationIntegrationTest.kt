@@ -445,7 +445,7 @@ class SynchronisationIntegrationTest {
             .setDistributionType(DistributionType.STANDARD)
             .setCurrentPage(0)
             .setPageCount(1)
-            .setCpiWhitelist(null)
+            .setCpiAllowList(null)
             .setGroupParameters(null)
             .setMemberships(
                 membership

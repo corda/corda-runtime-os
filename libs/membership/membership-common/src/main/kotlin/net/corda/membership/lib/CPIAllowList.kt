@@ -1,5 +1,5 @@
 package net.corda.membership.lib
 
-interface CPIWhiteList {
+interface CPIAllowList {
     val cpiVersions: List<CpiVersion>
 }
