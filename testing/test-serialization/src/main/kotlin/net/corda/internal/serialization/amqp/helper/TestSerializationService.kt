@@ -13,29 +13,29 @@ import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 
-fun testDefaultFactoryNoEvolution(
-    registerMoreSerializers: (it: SerializerFactory) -> Unit,
-    schemeMetadata: CipherSchemeMetadata,
-    descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
-        DefaultDescriptorBasedSerializerRegistry(),
-): SerializerFactory =
-    SerializerFactoryBuilder.build(
-        testSerializationContext.currentSandboxGroup(),
-        descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry,
-        allowEvolution = false
-    ).also {
-        registerCustomSerializers(it)
-        it.register(PublicKeySerializer(schemeMetadata), it)
-        registerMoreSerializers(it)
-    }
-
 class TestSerializationService {
     companion object{
+        fun getTestDefaultFactoryNoEvolution(
+            registerMoreSerializers: (it: SerializerFactory) -> Unit,
+            schemeMetadata: CipherSchemeMetadata,
+            descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
+                DefaultDescriptorBasedSerializerRegistry(),
+        ): SerializerFactory =
+            SerializerFactoryBuilder.build(
+                testSerializationContext.currentSandboxGroup(),
+                descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry,
+                allowEvolution = false
+            ).also {
+                registerCustomSerializers(it)
+                it.register(PublicKeySerializer(schemeMetadata), it)
+                registerMoreSerializers(it)
+            }
+
         fun getTestSerializationService(
             registerMoreSerializers: (it: SerializerFactory) -> Unit,
             schemeMetadata: CipherSchemeMetadata
         ) : SerializationService {
-            val factory = testDefaultFactoryNoEvolution(registerMoreSerializers, schemeMetadata)
+            val factory = getTestDefaultFactoryNoEvolution(registerMoreSerializers, schemeMetadata)
             val output = SerializationOutput(factory)
             val input = DeserializationInput(factory)
             val context = testSerializationContext
