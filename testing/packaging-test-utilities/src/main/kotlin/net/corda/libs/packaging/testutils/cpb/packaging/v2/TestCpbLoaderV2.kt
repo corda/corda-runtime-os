@@ -68,7 +68,7 @@ internal class TestCpbLoaderV2(private val clock: Clock) {
             }
 
             requireNotNull(firstCpkEntry) { "No Cpks found in Cpb" }
-            requireNotNull(firstCpkEntry.certificates) { "No Cpks found in Cpb" }
+            requireNotNull(firstCpkEntry.certificates) { "No certificates found for $firstCpkEntry" }
 
             return object : Cpi {
                 override val metadata =
