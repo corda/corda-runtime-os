@@ -7,7 +7,7 @@ import net.corda.flow.fiber.FlowFiberSerializationService
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.state.asFlowContext
 import net.corda.v5.application.flows.set
-import net.corda.v5.application.messaging.FlowContextPropertiesMutator
+import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
@@ -168,7 +168,7 @@ class FlowSessionImplTest {
     }
 
     @Test
-    fun `initiating sessions have immutable context pulled from Corda when no mutator is passed`() {
+    fun `initiating sessions have immutable context pulled from Corda when no builder is passed`() {
         val session = createInitiatingSession()
 
         assertEquals(mockFlowFiberService.platformValue, session.contextProperties[mockFlowFiberService.platformKey])
@@ -232,13 +232,13 @@ class FlowSessionImplTest {
         mapOf("key" to "value")
     )
 
-    private fun createInitiatingSession(mutator: FlowContextPropertiesMutator? = null) =
+    private fun createInitiatingSession(builder: FlowContextPropertiesBuilder? = null) =
         FlowSessionImpl.asInitiatingSession(
             counterparty = ALICE_X500_NAME,
             sourceSessionId = SESSION_ID,
             mockFlowFiberService,
             flowFiberSerializationService,
-            mutator
+            builder
         )
 
     private fun validateInitiateFlowRequest(request: FlowIORequest.InitiateFlow) {

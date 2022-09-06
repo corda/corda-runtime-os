@@ -5,7 +5,7 @@ import net.corda.flow.application.services.MockFlowFiberService
 import net.corda.flow.application.sessions.factory.FlowSessionFactoryImpl
 import net.corda.flow.fiber.FlowFiberSerializationService
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.v5.application.messaging.FlowContextPropertiesMutator
+import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
 import net.corda.v5.serialization.SerializedBytes
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -54,12 +54,12 @@ class FlowSessionFactoryImplTest {
     }
 
     @Test
-    fun `can create an initiating flow session with a context property mutator`() {
-        val mutator = mock<FlowContextPropertiesMutator>()
-        val session = flowSessionFactory.createInitiatingFlowSession(SESSION_ID, BOB_X500_NAME, mutator)
+    fun `can create an initiating flow session with a context property builder`() {
+        val contextBuilder = mock<FlowContextPropertiesBuilder>()
+        val session = flowSessionFactory.createInitiatingFlowSession(SESSION_ID, BOB_X500_NAME, contextBuilder)
         assertEquals(BOB_X500_NAME, session.counterparty)
         session.send(HI)
-        verify(mutator).apply(any())
+        verify(contextBuilder).apply(any())
         verify(flowFiber).suspend(any<FlowIORequest.InitiateFlow>())
     }
 }

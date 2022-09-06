@@ -6,7 +6,7 @@ import java.security.PrivilegedExceptionAction
 import net.corda.flow.application.sessions.FlowSessionImpl
 import net.corda.flow.fiber.FlowFiberSerializationService
 import net.corda.flow.fiber.FlowFiberService
-import net.corda.v5.application.messaging.FlowContextPropertiesMutator
+import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
 import org.osgi.service.component.annotations.Activate
@@ -44,7 +44,7 @@ class FlowSessionFactoryImpl @Activate constructor(
     override fun createInitiatingFlowSession(
         sessionId: String,
         x500Name: MemberX500Name,
-        flowContextPropertiesMutator: FlowContextPropertiesMutator?
+        flowContextPropertiesBuilder: FlowContextPropertiesBuilder?
     ): FlowSession {
         return try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
@@ -53,7 +53,7 @@ class FlowSessionFactoryImpl @Activate constructor(
                     sessionId,
                     flowFiberService,
                     flowFiberSerializationService,
-                    flowContextPropertiesMutator
+                    flowContextPropertiesBuilder
                 )
             })
         } catch (e: PrivilegedActionException) {

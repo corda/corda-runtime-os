@@ -9,7 +9,7 @@ import net.corda.flow.state.FlowContext
 import net.corda.flow.state.impl.FlatSerializableContext
 import net.corda.flow.state.impl.MutableFlatSerializableContext
 import net.corda.v5.application.flows.FlowContextProperties
-import net.corda.v5.application.messaging.FlowContextPropertiesMutator
+import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
 import net.corda.v5.application.messaging.FlowInfo
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.UntrustworthyData
@@ -34,30 +34,30 @@ class FlowSessionImpl private constructor(
             sourceSessionId: String,
             flowFiberService: FlowFiberService,
             flowFiberSerializationService: FlowFiberSerializationService,
-            flowContextPropertiesMutator: FlowContextPropertiesMutator?
+            flowContextPropertiesBuilder: FlowContextPropertiesBuilder?
         ): FlowSession =
             FlowSessionImpl(
                 counterparty,
                 sourceSessionId,
                 flowFiberService,
                 flowFiberSerializationService,
-                createInitiatingFlowContextProperties(flowContextPropertiesMutator, flowFiberService),
+                createInitiatingFlowContextProperties(flowContextPropertiesBuilder, flowFiberService),
                 Direction.INITIATING_SIDE
             )
 
         private fun createInitiatingFlowContextProperties(
-            flowContextPropertiesMutator: FlowContextPropertiesMutator?,
+            flowContextPropertiesBuilder: FlowContextPropertiesBuilder?,
             flowFiberService: FlowFiberService,
         ) = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.flowContext.let { flowContext ->
             // Initiating session always created in a running flow
-            flowContextPropertiesMutator?.let { mutator ->
+            flowContextPropertiesBuilder?.let { contextBuilder ->
                 // Snapshot the parent context
                 MutableFlatSerializableContext(
                     contextUserProperties = flowContext.flattenUserProperties(),
                     contextPlatformProperties = flowContext.flattenPlatformProperties()
                 ).also { mutableContext ->
-                    // Let the mutator modify the context
-                    mutator.apply(mutableContext)
+                    // Let the builder modify the context
+                    contextBuilder.apply(mutableContext)
                 }.let { mutableContext ->
                     // Turn the mutable context into an immutable one for the public api
                     FlatSerializableContext(
@@ -66,7 +66,7 @@ class FlowSessionImpl private constructor(
                     )
                 }
             } ?:
-            // No mutator passed, snapshot the parent context
+            // No context builder passed, snapshot the parent context
             FlatSerializableContext(
                 contextUserProperties = flowContext.flattenUserProperties(),
                 contextPlatformProperties = flowContext.flattenPlatformProperties()

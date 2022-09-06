@@ -4,7 +4,7 @@ import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.ALICE_X500_NAME
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
 import net.corda.flow.utils.mutableKeyValuePairList
-import net.corda.v5.application.messaging.FlowContextPropertiesMutator
+import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -49,7 +49,7 @@ class FlowMessagingImplTest {
     }
 
     @Test
-    fun `initiateFlow mutator overload creates an initiating FlowSession passing a context mutator`() {
+    fun `initiateFlow builder overload creates an initiating FlowSession passing a context builder`() {
         whenever(flowStackService.peek()).thenReturn(
             FlowStackItem(
                 FLOW_NAME,
@@ -60,12 +60,12 @@ class FlowMessagingImplTest {
             )
         )
 
-        val mutator = FlowContextPropertiesMutator {
+        val builder = FlowContextPropertiesBuilder {
             // do nothing
         }
 
-        flowMessaging.initiateFlow(ALICE_X500_NAME, mutator)
-        verify(flowSessionFactory).createInitiatingFlowSession(any(), eq(ALICE_X500_NAME), eq(mutator))
+        flowMessaging.initiateFlow(ALICE_X500_NAME, builder)
+        verify(flowSessionFactory).createInitiatingFlowSession(any(), eq(ALICE_X500_NAME), eq(builder))
     }
 
     @Test
