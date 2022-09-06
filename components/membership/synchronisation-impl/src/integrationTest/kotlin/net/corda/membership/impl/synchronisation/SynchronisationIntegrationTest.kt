@@ -373,7 +373,7 @@ class SynchronisationIntegrationTest {
         )
         val payload = ByteBuffer.wrap(syncRequestSerializer.serialize(syncRequest))
 
-        val requestSender =  publisherFactory.createPublisher(
+        val requestSender = publisherFactory.createPublisher(
             PublisherConfig("membership_sync_request_test_sender"),
             bootConfig
         ).also { it.start() }
@@ -394,31 +394,26 @@ class SynchronisationIntegrationTest {
         )
 
         // Start subscription to gather results of processing synchronisation command
-        val completableResult = CompletableFuture<AppMessage>()
-        val membershipPackageSubscription = subscriptionFactory.createPubSubSubscription(
+        val completableResult = CompletableFuture<MembershipPackage>()
+        val membershipPackage = subscriptionFactory.createPubSubSubscription(
             SubscriptionConfig("membership_sync_request_test_receiver", P2P_OUT_TOPIC),
             getTestProcessor { v ->
-                completableResult.complete(v as AppMessage)
+                val appMessage = v as? AppMessage ?: return@getTestProcessor
+                val authenticatedMessage = appMessage.message as? AuthenticatedMessage ?: return@getTestProcessor
+                val membershipPackage =
+                    membershipPackageDeserializer.deserialize(authenticatedMessage.payload.array()) ?: return@getTestProcessor
+                completableResult.complete(membershipPackage)
             },
             messagingConfig = bootConfig
-        ).also { it.start() }
-
-        val result = assertDoesNotThrow {
+        ).also { it.start() }.use {
             completableResult.getOrThrow(Duration.ofSeconds(5))
         }
-        membershipPackageSubscription.close()
 
         assertSoftly { it ->
-            it.assertThat(result).isNotNull
-            it.assertThat(result)
-                .isNotNull
-                .isInstanceOf(AppMessage::class.java)
-            it.assertThat(result.message).isInstanceOf(AuthenticatedMessage::class.java)
-            val authenticatedMessage = result.message as AuthenticatedMessage
-            with(membershipPackageDeserializer.deserialize(authenticatedMessage.payload.array()) as MembershipPackage) {
-                it.assertThat(this.distributionType).isEqualTo(DistributionType.SYNC)
-                it.assertThat(this.memberships.memberships.size).isEqualTo(2)
-                this.memberships.memberships.forEach {
+            it.assertThat(membershipPackage).isNotNull
+            it.assertThat(membershipPackage.distributionType).isEqualTo(DistributionType.SYNC)
+            it.assertThat(membershipPackage.memberships.memberships).hasSize(2)
+                .allSatisfy {
                     val member = memberInfoFactory.create(
                         keyValueDeserializer.deserialize(it.memberContext.array())!!.toSortedMap(),
                         keyValueDeserializer.deserialize(it.mgmContext.array())!!.toSortedMap()
@@ -427,7 +422,6 @@ class SynchronisationIntegrationTest {
                     assertThat(member.groupId).isEqualTo(groupId)
                     assertThat(member.status).isEqualTo(MEMBER_STATUS_ACTIVE)
                 }
-            }
         }
     }
 
