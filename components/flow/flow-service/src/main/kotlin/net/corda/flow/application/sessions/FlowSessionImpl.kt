@@ -5,9 +5,11 @@ import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberSerializationService
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.state.FlowContext
 import net.corda.flow.state.impl.FlatSerializableContext
 import net.corda.flow.state.impl.MutableFlatSerializableContext
 import net.corda.v5.application.flows.FlowContextProperties
+import net.corda.v5.application.messaging.FlowContextPropertiesMutator
 import net.corda.v5.application.messaging.FlowInfo
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.UntrustworthyData
@@ -22,6 +24,7 @@ class FlowSessionImpl private constructor(
     private val sourceSessionId: String,
     private val flowFiberService: FlowFiberService,
     private val flowFiberSerializationService: FlowFiberSerializationService,
+    private val flowContext: FlowContext,
     direction: Direction
 ) : FlowSession {
 
@@ -30,15 +33,45 @@ class FlowSessionImpl private constructor(
             counterparty: MemberX500Name,
             sourceSessionId: String,
             flowFiberService: FlowFiberService,
-            flowFiberSerializationService: FlowFiberSerializationService
+            flowFiberSerializationService: FlowFiberSerializationService,
+            flowContextPropertiesMutator: FlowContextPropertiesMutator?
         ): FlowSession =
             FlowSessionImpl(
                 counterparty,
                 sourceSessionId,
                 flowFiberService,
                 flowFiberSerializationService,
+                createInitiatingFlowContextProperties(flowContextPropertiesMutator, flowFiberService),
                 Direction.INITIATING_SIDE
             )
+
+        private fun createInitiatingFlowContextProperties(
+            flowContextPropertiesMutator: FlowContextPropertiesMutator?,
+            flowFiberService: FlowFiberService,
+        ) = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.flowContext.let { flowContext ->
+            // Initiating session always created in a running flow
+            flowContextPropertiesMutator?.let { mutator ->
+                // Snapshot the parent context
+                MutableFlatSerializableContext(
+                    contextUserProperties = flowContext.flattenUserProperties(),
+                    contextPlatformProperties = flowContext.flattenPlatformProperties()
+                ).also { mutableContext ->
+                    // Let the mutator modify the context
+                    mutator.apply(mutableContext)
+                }.let { mutableContext ->
+                    // Turn the mutable context into an immutable one for the public api
+                    FlatSerializableContext(
+                        contextUserProperties = mutableContext.flattenUserProperties(),
+                        contextPlatformProperties = mutableContext.flattenPlatformProperties()
+                    )
+                }
+            } ?:
+            // No mutator passed, snapshot the parent context
+            FlatSerializableContext(
+                contextUserProperties = flowContext.flattenUserProperties(),
+                contextPlatformProperties = flowContext.flattenPlatformProperties()
+            )
+        }
 
         fun asInitiatedSession(
             counterparty: MemberX500Name,
@@ -51,16 +84,17 @@ class FlowSessionImpl private constructor(
             sourceSessionId,
             flowFiberService,
             flowFiberSerializationService,
-            Direction.INITIATED_SIDE
-        ).apply {
-            sessionLocalFlowContext = FlatSerializableContext(
+            FlatSerializableContext(
                 contextUserProperties = emptyMap(),
                 contextPlatformProperties = contextProperties
-            )
-        }
+            ),
+            Direction.INITIATED_SIDE
+        )
 
         private val log = contextLogger()
     }
+
+    override val contextProperties: FlowContextProperties = flowContext
 
     private enum class Direction {
         INITIATING_SIDE,
@@ -73,31 +107,6 @@ class FlowSessionImpl private constructor(
     }
 
     private val fiber: FlowFiber get() = flowFiberService.getExecutingFiber()
-
-    /**
-     * This class can be serialized, so we need to ensure all properties support that too. In this case that means we
-     * cannot touch the executing fiber when setting or getting this property, because we might not be in one. Instead
-     * that is done when [contextProperties] is requested or [confirmSession] called, because both of those things can
-     * only happen inside a fiber by contract.
-     */
-    private var sessionLocalFlowContext: FlatSerializableContext? = null
-
-    override val contextProperties: FlowContextProperties
-        get() {
-            initialiseSessionLocalFlowContext()
-            return sessionLocalFlowContext!!
-        }
-
-    private fun initialiseSessionLocalFlowContext() {
-        if (sessionLocalFlowContext == null) {
-            with(fiber.getExecutionContext().flowCheckpoint.flowContext) {
-                sessionLocalFlowContext = MutableFlatSerializableContext(
-                    contextUserProperties = this.flattenUserProperties(),
-                    contextPlatformProperties = this.flattenPlatformProperties()
-                )
-            }
-        }
-    }
 
     @Suspendable
     override fun getCounterpartyFlowInfo(): FlowInfo {
@@ -142,13 +151,12 @@ class FlowSessionImpl private constructor(
     @Suspendable
     private fun confirmSession() {
         if (!isSessionConfirmed) {
-            initialiseSessionLocalFlowContext()
             fiber.suspend(
                 FlowIORequest.InitiateFlow(
                     counterparty,
                     sourceSessionId,
-                    contextUserProperties = sessionLocalFlowContext!!.flattenUserProperties(),
-                    contextPlatformProperties = sessionLocalFlowContext!!.flattenPlatformProperties()
+                    contextUserProperties = flowContext.flattenUserProperties(),
+                    contextPlatformProperties = flowContext.flattenPlatformProperties()
                 )
             )
             isSessionConfirmed = true

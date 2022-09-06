@@ -6,6 +6,7 @@ import net.corda.cordapptestutils.internal.flows.FlowFactory
 import net.corda.cordapptestutils.internal.flows.FlowServicesInjector
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatingFlow
+import net.corda.v5.application.messaging.FlowContextPropertiesMutator
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.UntrustworthyData
@@ -62,16 +63,25 @@ class ConcurrentFlowMessaging(
             x500Name,
             flowClass,
             fromInitiatorToResponder,
-            fromResponderToInitiator)
+            fromResponderToInitiator
+        )
         val recipientSession = BlockingQueueFlowSession(
             x500Name,
             initiator,
             flowClass,
             fromResponderToInitiator,
-            fromInitiatorToResponder)
+            fromInitiatorToResponder
+        )
 
         thread { responderFlow.call(recipientSession) }
         return initiatorSession
+    }
+
+    override fun initiateFlow(
+        x500Name: MemberX500Name,
+        flowContextPropertiesMutator: FlowContextPropertiesMutator
+    ): FlowSession {
+        TODO("Not yet implemented")
     }
 
     override fun <R> receiveAll(receiveType: Class<out R>, sessions: Set<FlowSession>): List<UntrustworthyData<R>> {

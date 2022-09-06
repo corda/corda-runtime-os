@@ -3,6 +3,7 @@ package net.corda.flow.application.services
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
 import net.corda.flow.fiber.FlowFiberService
+import net.corda.v5.application.messaging.FlowContextPropertiesMutator
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.UntrustworthyData
@@ -32,10 +33,26 @@ class FlowMessagingImpl @Activate constructor(
 
     @Suspendable
     override fun initiateFlow(x500Name: MemberX500Name): FlowSession {
+        return doInitiateFlow(x500Name, null)
+    }
+
+    @Suspendable
+    override fun initiateFlow(
+        x500Name: MemberX500Name,
+        flowContextPropertiesMutator: FlowContextPropertiesMutator
+    ): FlowSession {
+        return doInitiateFlow(x500Name, flowContextPropertiesMutator)
+    }
+
+    @Suspendable
+    private fun doInitiateFlow(
+        x500Name: MemberX500Name,
+        flowContextPropertiesMutator: FlowContextPropertiesMutator?
+    ): FlowSession {
         val sessionId = UUID.randomUUID().toString()
         checkFlowCanBeInitiated()
         addSessionIdToFlowStackItem(sessionId)
-        return flowSessionFactory.createInitiatingFlowSession(sessionId, x500Name)
+        return flowSessionFactory.createInitiatingFlowSession(sessionId, x500Name, flowContextPropertiesMutator)
     }
 
     @Suspendable

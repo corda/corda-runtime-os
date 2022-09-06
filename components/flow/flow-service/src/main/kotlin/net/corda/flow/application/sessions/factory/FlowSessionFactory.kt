@@ -1,5 +1,6 @@
 package net.corda.flow.application.sessions.factory
 
+import net.corda.v5.application.messaging.FlowContextPropertiesMutator
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
 
@@ -28,8 +29,13 @@ interface FlowSessionFactory {
      *
      * @param sessionId The session id of the [FlowSession].
      * @param x500Name The X500 name of the counterparty the [FlowSession] interacts with.
+     * @param flowContextPropertiesMutator An optional mutator of context properties
      *
      * @return A [FlowSession].
      */
-    fun createInitiatingFlowSession(sessionId: String, x500Name: MemberX500Name): FlowSession
+    fun createInitiatingFlowSession(
+        sessionId: String,
+        x500Name: MemberX500Name,
+        flowContextPropertiesMutator: FlowContextPropertiesMutator?
+    ): FlowSession
 }
