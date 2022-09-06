@@ -45,8 +45,8 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         "persistence_merge_bulk" to this::persistenceMergeDogs,
         "persistence_find" to this::persistenceFindDog,
         "persistence_find_bulk" to this::persistenceFindDogs,
-        "persistence_findall" to this::persistenceFindAllDogs,
-        "persistence_query" to this::persistenceQueryDogs,
+        "persistence_findall" to  { persistenceFindAllDogs() },
+        "persistence_query" to { persistenceQueryDogs() },
         "throw_platform_error" to this::throwPlatformError,
         "subflow_passed_in_initiated_session" to { createSessionsInInitiatingFlowAndPassToInlineFlow(it, true) },
         "subflow_passed_in_non_initiated_session" to { createSessionsInInitiatingFlowAndPassToInlineFlow(it, false) },
@@ -153,9 +153,8 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         }
     }
 
-    @Suppress("UNUSED_PARAMETER")
     @Suspendable
-    private fun persistenceFindAllDogs(input: RpcSmokeTestInput): String {
+    private fun persistenceFindAllDogs(): String {
         val dogs = persistenceService.findAll(Dog::class.java).execute()
         return if (dogs.isEmpty()) {
             "no dog found"
@@ -164,9 +163,8 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         }
     }
 
-    @Suppress("UNUSED_PARAMETER")
     @Suspendable
-    private fun persistenceQueryDogs(input: RpcSmokeTestInput): String {
+    private fun persistenceQueryDogs(): String {
         val dogs = persistenceService.query("Dog.all", Dog::class.java).execute()
         return if (dogs.isEmpty()) {
             "no dog found"
