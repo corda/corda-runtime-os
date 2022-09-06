@@ -43,7 +43,7 @@ class HttpRpcServerWebsocketTest : AbstractWebsocketTest() {
         @JvmStatic
         fun cleanUpAfterClass() {
             if (isServerInitialized()) {
-                server.stop()
+                server.close()
             }
         }
     }

@@ -83,7 +83,7 @@ import java.security.KeyStore
 import java.security.cert.X509Certificate
 import java.time.Duration
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
@@ -201,7 +201,7 @@ class GatewayIntegrationTest : TestBase() {
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 SigningMode.STUB,
                 mock()
-            ).use {
+            ).also {
                 publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
                 it.startAndWaitForStarted()
                 val httpClient = JavaHttpClient.newBuilder()
@@ -241,7 +241,7 @@ class GatewayIntegrationTest : TestBase() {
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 SigningMode.STUB,
                 mock()
-            ).use {
+            ).also {
                 publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
                 it.startAndWaitForStarted()
                 val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore)
@@ -251,7 +251,7 @@ class GatewayIntegrationTest : TestBase() {
                     NioEventLoopGroup(1),
                     NioEventLoopGroup(1),
                     ConnectionConfiguration(),
-                ).use { client ->
+                ).also { client ->
                     client.start()
                     val httpResponse = client.write(gatewayMessage.toByteBuffer().array()).get()
                     assertThat(httpResponse.statusCode).isEqualTo(HttpResponseStatus.OK)
@@ -338,7 +338,7 @@ class GatewayIntegrationTest : TestBase() {
                     messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                     SigningMode.STUB,
                     mock()
-                ).use { gateway ->
+                ).also { gateway ->
                     gateway.start()
 
                     (1..configurationCount).map {
@@ -371,7 +371,7 @@ class GatewayIntegrationTest : TestBase() {
                             NioEventLoopGroup(1),
                             NioEventLoopGroup(1),
                             ConnectionConfiguration(),
-                        ).use { secondInboundClient ->
+                        ).also { secondInboundClient ->
                             secondInboundClient.start()
 
                             val httpResponse = secondInboundClient.write(gatewayMessage.toByteBuffer().array()).get()
@@ -415,7 +415,7 @@ class GatewayIntegrationTest : TestBase() {
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 SigningMode.STUB,
                 mock()
-            ).use {
+            ).also {
                 it.startAndWaitForStarted()
                 (1..clientNumber).map { index ->
                     val serverInfo = DestinationInfo(serverAddress, aliceSNI[1], null, truststoreKeyStore)
@@ -513,7 +513,7 @@ class GatewayIntegrationTest : TestBase() {
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 SigningMode.STUB,
                 mock()
-            ).use {
+            ).also {
                 publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
                 startTime = Instant.now().toEpochMilli()
                 it.startAndWaitForStarted()
@@ -712,7 +712,7 @@ class GatewayIntegrationTest : TestBase() {
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 SigningMode.STUB,
                 mock()
-            ).use { gateway ->
+            ).also { gateway ->
                 val port = getOpenPort()
                 logger.info("Publishing good config")
                 configPublisher.publishConfig(
@@ -791,7 +791,7 @@ class GatewayIntegrationTest : TestBase() {
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
                 ConnectionConfiguration(),
-            ).use { client ->
+            ).also { client ->
                 client.start()
                 val httpResponse = client.write(gatewayMessage.toByteBuffer().array()).getOrThrow()
                 assertThat(httpResponse.statusCode).isEqualTo(HttpResponseStatus.OK)
@@ -842,7 +842,7 @@ class GatewayIntegrationTest : TestBase() {
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 SigningMode.STUB,
                 mock()
-            ).use { gateway ->
+            ).also { gateway ->
                 gateway.startAndWaitForStarted()
                 val firstCertificatesAuthority = CertificateAuthorityFactory
                     .createMemoryAuthority(RSA_TEMPLATE.toFactoryDefinitions())

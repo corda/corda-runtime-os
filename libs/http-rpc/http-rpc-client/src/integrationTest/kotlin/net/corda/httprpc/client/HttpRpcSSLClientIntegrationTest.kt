@@ -55,7 +55,7 @@ internal class HttpRpcSSLClientIntegrationTest : HttpRpcIntegrationTestBase() {
         @JvmStatic
         fun cleanUpAfterClass() {
             if (isServerInitialized()) {
-                server.stop()
+                server.close()
             }
             sslService.stop()
         }

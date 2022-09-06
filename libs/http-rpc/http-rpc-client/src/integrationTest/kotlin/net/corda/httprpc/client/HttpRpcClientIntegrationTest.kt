@@ -77,7 +77,7 @@ internal class HttpRpcClientIntegrationTest : HttpRpcIntegrationTestBase() {
         @Suppress("Unused")
         fun cleanUpAfterClass() {
             if (isServerInitialized()) {
-                server.stop()
+                server.close()
             }
         }
     }

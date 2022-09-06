@@ -44,7 +44,7 @@ public class HttpRpcJavaClientIntegrationTest extends HttpRpcIntegrationTestBase
 
     @AfterAll
     static void cleanUpAfterClass() {
-        HttpRpcIntegrationTestBase.Companion.getServer().stop();
+        HttpRpcIntegrationTestBase.Companion.getServer().close();
     }
 
     @Test

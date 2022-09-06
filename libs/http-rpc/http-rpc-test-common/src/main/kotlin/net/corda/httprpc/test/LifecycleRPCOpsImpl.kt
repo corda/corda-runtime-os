@@ -1,9 +1,9 @@
 package net.corda.httprpc.test
 
 import net.corda.httprpc.PluggableRPCOps
-import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.Resource
 
-class LifecycleRPCOpsImpl : LifecycleRPCOps, PluggableRPCOps<LifecycleRPCOps>, Lifecycle {
+class LifecycleRPCOpsImpl : LifecycleRPCOps, PluggableRPCOps<LifecycleRPCOps>, Resource {
 
     @Volatile
     private var _running = false
@@ -18,14 +18,11 @@ class LifecycleRPCOpsImpl : LifecycleRPCOps, PluggableRPCOps<LifecycleRPCOps>, L
         return "Hello $param : $pathParam"
     }
 
-    override val isRunning: Boolean
-        get() = _running
-
-    override fun start() {
+    fun start() {
         _running = true
     }
 
-    override fun stop() {
+    override fun close() {
         _running = false
     }
 }

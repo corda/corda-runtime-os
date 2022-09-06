@@ -38,7 +38,7 @@ class HttpRpcServerMaxContentLengthTest : HttpRpcServerTestBase() {
         @JvmStatic
         fun cleanUpAfterClass() {
             if (isServerInitialized()) {
-                server.stop()
+                server.close()
             }
         }
     }

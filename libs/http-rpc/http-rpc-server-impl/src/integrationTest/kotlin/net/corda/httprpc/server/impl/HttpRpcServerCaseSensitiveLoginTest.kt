@@ -41,7 +41,7 @@ class HttpRpcServerCaseSensitiveLoginTest: HttpRpcServerTestBase() {
         @AfterAll
         @JvmStatic
         fun cleanUpAfterClass() {
-            server.stop()
+            server.close()
         }
     }
 

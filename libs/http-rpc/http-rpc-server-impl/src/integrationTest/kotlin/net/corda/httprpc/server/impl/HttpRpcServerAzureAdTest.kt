@@ -48,7 +48,7 @@ class HttpRpcServerAzureAdTest {
 
     @AfterEach
     fun tearDown() {
-        httpRpcServer.stop()
+        httpRpcServer.close()
     }
 
     @Test
