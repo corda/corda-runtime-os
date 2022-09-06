@@ -82,6 +82,9 @@ class PersistenceServiceImpl @Activate constructor(
                     MergeParameters(entities.map { serialize(it) })
                 )
             }
+            // Zips the merged entities with the [entities] passed into [merge] so that [mergedEntities] can be
+            // deserialized into the correct types. This assumes that the order of [mergedEntities] is the same as
+            // [entities].
             entities.zip(mergedEntities).map { (entity, mergedEntity) ->
                 flowFiberSerializationService.deserialize(mergedEntity.array(), entity::class.java)
             }
