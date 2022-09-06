@@ -3,13 +3,11 @@ package net.corda.ledger.common.impl.transaction.serialization
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeFactoryImpl
-import net.corda.internal.serialization.amqp.DeserializationInput
-import net.corda.internal.serialization.amqp.SerializationOutput
-import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
-import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.WireTransaction
+import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import org.junit.jupiter.api.BeforeAll
@@ -20,7 +18,7 @@ class WireTransactionSerializerTest {
     companion object {
         private lateinit var digestService: DigestService
         private lateinit var merkleTreeFactory: MerkleTreeFactory
-        private lateinit var serializerFactory: SerializerFactory
+        private lateinit var serializationService: SerializationService
 
         @BeforeAll
         @JvmStatic
@@ -28,7 +26,7 @@ class WireTransactionSerializerTest {
             val schemeMetadata = CipherSchemeMetadataImpl()
             digestService = DigestServiceImpl(schemeMetadata, null)
             merkleTreeFactory = MerkleTreeFactoryImpl(digestService)
-            serializerFactory = TestSerializationService.getTestDefaultFactoryNoEvolution({
+            serializationService = TestSerializationService.getTestSerializationService({
                 it.register(WireTransactionSerializer(merkleTreeFactory, digestService), it)
             }, schemeMetadata)
         }
@@ -43,8 +41,9 @@ class WireTransactionSerializerTest {
             listOf("abc d efg".toByteArray()),
         )
         val wireTransaction = WireTransaction(merkleTreeFactory, digestService, privacySalt, componentGroupLists)
-        val bytes = SerializationOutput(serializerFactory).serialize(wireTransaction, testSerializationContext)
-        val deserialized = DeserializationInput(serializerFactory).deserialize(bytes, testSerializationContext)
+        val bytes = serializationService.serialize(wireTransaction)
+        println(bytes.size)
+        val deserialized = serializationService.deserialize(bytes)
         assertEquals(wireTransaction, deserialized)
     }
 }

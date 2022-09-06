@@ -15,7 +15,7 @@ import net.corda.v5.cipher.suite.CipherSchemeMetadata
 
 class TestSerializationService {
     companion object{
-        fun getTestDefaultFactoryNoEvolution(
+        private fun getTestDefaultFactoryNoEvolution(
             registerMoreSerializers: (it: SerializerFactory) -> Unit,
             schemeMetadata: CipherSchemeMetadata,
             descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
