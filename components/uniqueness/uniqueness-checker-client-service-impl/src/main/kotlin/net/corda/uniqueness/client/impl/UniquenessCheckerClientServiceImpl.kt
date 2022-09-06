@@ -48,7 +48,7 @@ class UniquenessCheckerClientServiceImpl @Activate constructor(
     private val merkleTreeFactory: MerkleTreeFactory,
     @Reference(service = MemberLookup::class)
     private val memberLookup: MemberLookup,
-): LedgerUniquenessCheckerClientService, SingletonSerializeAsToken {
+): LedgerUniquenessCheckerClientService, /*Lifecycle, */SingletonSerializeAsToken {
 
     private companion object {
         val log = contextLogger()
@@ -116,15 +116,13 @@ class UniquenessCheckerClientServiceImpl @Activate constructor(
             hashDigestProvider
         )
 
-        val merkleTreeRoot = merkleTree.root
-
         val myInfo = memberLookup.myInfo()
 
         // FIXME CORE-6173 this key should be replaced with the notary key
         val signingLedgerKey = myInfo.ledgerKeys.first()
 
         val sig = signingService.sign(
-            merkleTreeRoot.bytes,
+            merkleTree.root.bytes,
             signingLedgerKey,
             SignatureSpec.ECDSA_SHA256
         )

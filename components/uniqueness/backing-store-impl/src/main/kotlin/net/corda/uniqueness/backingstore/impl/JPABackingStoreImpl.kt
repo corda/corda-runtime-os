@@ -28,11 +28,11 @@ import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckTransactionDetailsImpl
+import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckError
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckRequest
 import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckStateDetails
@@ -315,7 +315,7 @@ open class JPABackingStoreImpl @Activate constructor(
 
             override fun commitTransactions(
                 transactionDetails: Collection<Pair<
-                        UniquenessCheckRequest, UniquenessCheckResult>>
+                        UniquenessCheckRequestInternal, UniquenessCheckResult>>
             ) {
                 transactionDetails.forEach { (request, result) ->
                     entityManager.persist(
