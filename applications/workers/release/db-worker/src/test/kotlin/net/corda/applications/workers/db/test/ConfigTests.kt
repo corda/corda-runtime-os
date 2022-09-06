@@ -1,5 +1,6 @@
 package net.corda.applications.workers.db.test
 
+import com.typesafe.config.Config
 import java.io.InputStream
 import net.corda.applications.workers.db.DBWorker
 import net.corda.applications.workers.workercommon.HealthMonitor
@@ -163,5 +164,7 @@ class ConfigTests {
             SmartConfigImpl.empty()
 
         override fun validate(key: String, config: SmartConfig, schemaInput: InputStream, applyDefaults: Boolean) = Unit
+
+        override fun getDefaults(key: String, version: Version): Config = SmartConfigImpl.empty()
     }
 }
