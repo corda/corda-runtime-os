@@ -2,6 +2,8 @@ package net.corda.processors.ledger.impl.tests
 
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.event.external.ExternalEventContext
+import net.corda.data.flow.event.external.ExternalEventResponse
 import net.corda.data.ledger.consensual.PersistTransaction
 import net.corda.data.persistence.*
 import net.corda.db.admin.LiquibaseSchemaMigrator
@@ -13,15 +15,16 @@ import net.corda.entityprocessor.impl.internal.exceptions.KafkaMessageSizeExcept
 import net.corda.entityprocessor.impl.tests.components.VirtualNodeService
 import net.corda.entityprocessor.impl.tests.fake.FakeDbConnectionManager
 import net.corda.entityprocessor.impl.tests.helpers.BasicMocks
-import net.corda.entityprocessor.impl.tests.helpers.DbTestContext
 import net.corda.entityprocessor.impl.tests.helpers.Resources
 import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getCatClass
 import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getDogClass
 import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getOwnerClass
 import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getSerializer
+import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.messaging.api.records.Record
 import net.corda.orm.JpaEntitiesSet
 import net.corda.processors.ledger.impl.ConsensualLedgerProcessor
+import net.corda.processors.ledger.impl.tests.helpers.DbTestContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
@@ -64,7 +67,8 @@ import java.util.UUID
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ConsensualLedgerDAOTests {
     companion object {
-        const val TOPIC = "pretend-topic"
+        const val TOPIC = "consensual-ledger-dummy-topic"
+        val EXTERNAL_EVENT_CONTEXT = ExternalEventContext("request id", "flow id")
         private val logger = contextLogger()
     }
 
@@ -74,9 +78,10 @@ class ConsensualLedgerDAOTests {
     @RegisterExtension
     private val lifecycle = EachTestLifecycle()
 
-    private lateinit var virtualNode: VirtualNodeService
     private lateinit var cpiInfoReadService: CpiInfoReadService
+    private lateinit var virtualNode: VirtualNodeService
     private lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
+    private lateinit var externalEventResponseFactory: ExternalEventResponseFactory
 
     private lateinit var ctx: DbTestContext
 
@@ -92,8 +97,9 @@ class ConsensualLedgerDAOTests {
         logger.info("Setup test (test Directory: $testDirectory)")
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
-            virtualNode = setup.fetchService(timeout = 10000)
+            externalEventResponseFactory = setup.fetchService(timeout = 10000)
             cpiInfoReadService = setup.fetchService(timeout = 10000)
+            virtualNode = setup.fetchService(timeout = 10000)
             virtualNodeInfoReadService = setup.fetchService(timeout = 10000)
         }
     }
@@ -128,8 +134,11 @@ class ConsensualLedgerDAOTests {
         logger.info("request: ${request}")
 
         // send request to message processor
-        logger.info("Creating entity message processor")
-        val processor = ConsensualLedgerProcessor(ctx.entitySandboxService, UTCClock(), this::noOpPayloadCheck)
+        logger.info("Creating message processor")
+        val processor = ConsensualLedgerProcessor(
+            ctx.entitySandboxService,
+            externalEventResponseFactory,
+            this::noOpPayloadCheck)
         val requestId = UUID.randomUUID().toString()
         val records = listOf(Record(TOPIC, requestId, request))
 
@@ -182,24 +191,7 @@ class ConsensualLedgerDAOTests {
             )
         )
 
-        // custom schema...
-        val dogClass = sandbox.sandboxGroup.getDogClass()
-        val catClass = sandbox.sandboxGroup.getCatClass()
-        val customSchema = ClassloaderChangeLog(
-            linkedSetOf(
-                ClassloaderChangeLog.ChangeLogResourceFiles(
-                    dogClass.packageName, listOf("migration/db.changelog-master.xml"),
-                    classLoader = dogClass.classLoader
-                ),
-                ClassloaderChangeLog.ChangeLogResourceFiles(
-                    catClass.packageName, listOf("migration/db.changelog-master.xml"),
-                    classLoader = catClass.classLoader
-                )
-            )
-        )
-
         lbm.updateDb(dbConnectionManager.getDataSource(animalDbConnection.first).connection, vaultSchema)
-        lbm.updateDb(dbConnectionManager.getDataSource(animalDbConnection.first).connection, customSchema)
 
         return DbTestContext(
             virtualNodeInfo,
@@ -209,10 +201,9 @@ class ConsensualLedgerDAOTests {
                 animalDbConnection.first,
                 JpaEntitiesSet.create(
                     animalDbConnection.second,
-                    setOf(dogClass, catClass, sandbox.sandboxGroup.getOwnerClass())
+                    setOf()
                 )
             ),
-            dogClass, catClass,
             schemaName
         )
     }
@@ -220,11 +211,11 @@ class ConsensualLedgerDAOTests {
     private fun assertSuccessResponses(records: List<Record<*, *>>): List<Record<*, *>> {
         records.forEach {
             val flowEvent = it.value as FlowEvent
-            val response = flowEvent.payload as EntityResponse
-            if (response.responseType is EntityResponseFailure) {
-                logger.error("$response.responseType")
+            val response = flowEvent.payload as ExternalEventResponse
+            if (response.error != null) {
+                logger.error("Incorrect error response: ${response.error}")
             }
-            assertThat(response.responseType).isInstanceOf(EntityResponseSuccess::class.java)
+            assertThat(response.error).isNull()
         }
         return records
     }
@@ -232,28 +223,20 @@ class ConsensualLedgerDAOTests {
     private fun assertFailureResponses(records: List<Record<*, *>>): List<Record<*, *>> {
         records.forEach {
             val flowEvent = it.value as FlowEvent
-            val response = flowEvent.payload as EntityResponse
-            if (response.responseType is EntityResponseSuccess) {
-                logger.error("$response.responseType")
+            val response = flowEvent.payload as ExternalEventResponse
+            if (response.error == null) {
+                logger.error("Incorrect successful response: ${response.error}")
             }
-            assertThat(response.responseType).isInstanceOf(EntityResponseFailure::class.java)
+            assertThat(response.error).isNotNull()
         }
         return records
     }
 
-    private fun assertThatResponseIsAList(entityResponse: EntityResponse): List<*> {
-        val entityResponseSuccess = entityResponse.responseType as EntityResponseSuccess
-        val bytes = entityResponseSuccess.result as ByteBuffer
-        val results = ctx.deserialize(bytes)
-
-        // We have a list
-        assertThat(results as List<*>).isInstanceOf(List::class.java)
-
-        return results
-    }
-
-    private fun createRequest(holdingId: net.corda.virtualnode.HoldingIdentity, entity: Any): ConsensualLedgerRequest {
-        logger.info("Entity Request - entity: ${entity.javaClass.simpleName} $entity")
-        return ConsensualLedgerRequest(Instant.now(), UUID.randomUUID().toString(), holdingId.toAvro(), entity)
+    private fun createRequest(holdingId: net.corda.virtualnode.HoldingIdentity,
+                              request: Any,
+                              externalEventContext: ExternalEventContext = EXTERNAL_EVENT_CONTEXT
+    ): ConsensualLedgerRequest {
+        logger.info("Consensual ledger persistence request: ${request.javaClass.simpleName} $request")
+        return ConsensualLedgerRequest(Instant.now(), holdingId.toAvro(), request, externalEventContext)
     }
 }

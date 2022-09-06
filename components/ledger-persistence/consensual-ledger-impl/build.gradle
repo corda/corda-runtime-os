@@ -93,6 +93,7 @@ dependencies {
     integrationTestImplementation project(':components:ledger-persistence:consensual-ledger-impl')
     integrationTestImplementation project(':testing:test-utilities')
 
+    integrationTestRuntimeOnly project(':libs:flows:external-event-responses-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')

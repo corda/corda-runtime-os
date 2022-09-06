@@ -1,4 +1,4 @@
-package net.corda.entityprocessor.impl.tests.helpers
+package net.corda.processors.ledger.impl.tests.helpers
 
 import net.corda.entityprocessor.impl.internal.EntitySandboxServiceImpl
 import net.corda.orm.utils.transaction
@@ -13,14 +13,8 @@ data class DbTestContext(
     val entitySandboxService: EntitySandboxServiceImpl,
     val sandbox: SandboxGroupContext,
     private val entityManagerFactory: EntityManagerFactory,
-    private val dogClass: Class<*>,
-    private val catClass: Class<*>,
     val schemaName: String
 ) {
-    fun findDog(dogId: UUID): Any? {
-        return find(dogId, dogClass)
-    }
-
     fun find(id: Any, clazz: Class<*>): Any? {
         entityManagerFactory.createEntityManager().use {
             return it.find(clazz, id)
@@ -35,14 +29,11 @@ data class DbTestContext(
     }
 
     /**
-     * Deletes table content.
-     *
-     * IMPORTANT:  update this if you add other tables.
+     * Deletes table content (manually).
      */
     fun deleteFromTables() {
         entityManagerFactory.createEntityManager().transaction {
-            it.createQuery("DELETE FROM ${dogClass.simpleName}").executeUpdate()
-            it.createQuery("DELETE FROM ${catClass.simpleName}").executeUpdate()
+            // it.createQuery("DELETE FROM ${dogClass.simpleName}").executeUpdate()
         }
     }
 }
