@@ -78,7 +78,7 @@ class MembershipPackageFactory(
             .setDistributionType(type)
             .setCurrentPage(0)
             .setPageCount(1)
-            .setCpiWhitelist(null)
+            .setCpiAllowList(null)
             .setGroupParameters(null)
             .setMemberships(
                 membership

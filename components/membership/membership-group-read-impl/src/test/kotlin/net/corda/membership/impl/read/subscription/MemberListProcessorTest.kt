@@ -26,7 +26,6 @@ import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.messaging.api.records.Record
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
@@ -47,7 +46,7 @@ class MemberListProcessorTest {
         private const val knownKeyAsString = "12345"
         private val modifiedTime = clock.instant()
         private val endpoints = listOf(
-            EndpointInfoImpl("https://corda5.r3.com:10000", EndpointInfo.DEFAULT_PROTOCOL_VERSION),
+            EndpointInfoImpl("https://corda5.r3.com:10000"),
             EndpointInfoImpl("https://corda5.r3.com:10001", 10)
         )
         private val ledgerKeys = listOf(knownKey, knownKey)
