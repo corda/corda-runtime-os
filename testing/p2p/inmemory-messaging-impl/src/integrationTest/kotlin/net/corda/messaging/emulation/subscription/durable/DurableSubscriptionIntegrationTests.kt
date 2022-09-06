@@ -116,7 +116,7 @@ class DurableSubscriptionIntegrationTests {
         counter.await(10, TimeUnit.SECONDS)
 
         subscriptions.forEach {
-            it.stop()
+            it.close()
         }
 
         assertThat(receivedValues).containsAll((1..(numberOfMessagesToSend * numberOfMessagesToReplyForEachMessage)))

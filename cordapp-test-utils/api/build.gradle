@@ -2,10 +2,12 @@
 plugins {
     id 'org.jetbrains.kotlin.plugin.jpa'
     id 'org.jetbrains.kotlin.plugin.allopen'
+    id 'corda.common-publishing'
 }
 
-group = "net.corda"
-version = "$cordaApiVersion"
+ext {
+    releasable = true
+}
 
 dependencies {
 

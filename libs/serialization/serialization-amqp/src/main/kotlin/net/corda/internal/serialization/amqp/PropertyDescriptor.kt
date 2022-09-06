@@ -5,7 +5,6 @@ import net.corda.internal.serialization.amqp.MethodClassifier.GET
 import net.corda.internal.serialization.amqp.MethodClassifier.IS
 import net.corda.internal.serialization.amqp.MethodClassifier.SET
 import net.corda.utilities.reflection.isPublic
-import net.corda.v5.base.annotations.SerializableCalculatedProperty
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.lang.reflect.Type
@@ -101,22 +100,8 @@ internal fun Class<out Any?>.propertyDescriptors(validateProperties: Boolean = t
             }
 }
 
-/**
- * Obtain [PropertyDescriptor]s for those calculated properties of a class which are annotated with
- * [SerializableCalculatedProperty]
- */
-internal fun Class<out Any?>.calculatedPropertyDescriptors(): Map<String, PropertyDescriptor> =
-        superclassChain().withInterfaces().declaredMethods()
-                .thatArePublic()
-                .thatAreCalculated()
-                .toCalculatedProperties()
-
 // Generate the sequence of classes starting with this class and ascending through it superclasses.
 private fun Class<*>.superclassChain() = generateSequence(this, Class<*>::getSuperclass)
-
-private fun Sequence<Class<*>>.withInterfaces() = flatMap {
-    sequenceOf(it) + it.genericInterfaces.asSequence().map { it.asClass() }
-}
 
 // Obtain the fields declared by all classes in this sequence of classes.
 private fun Sequence<Class<*>>.declaredFields() = flatMap { it.declaredFields.asSequence() }
@@ -129,31 +114,6 @@ private fun Sequence<Field>.byFieldName() = map { it.name to it }.toMap()
 
 // Select only those methods that are public (and are not the "getClass" method).
 private fun Sequence<Method>.thatArePublic() = filter { it.isPublic && it.name != "getClass" }
-
-// Select only those methods that are annotated with [SerializableCalculatedProperty].
-private fun Sequence<Method>.thatAreCalculated() = filter {
-    it.isAnnotationPresent(SerializableCalculatedProperty::class.java)
-}
-
-// Convert a sequence of calculated property methods to a map of property descriptors by property name.
-private fun Sequence<Method>.toCalculatedProperties(): Map<String, PropertyDescriptor> {
-    val methodsByName = mutableMapOf<String, Method>()
-    for (method in this) {
-        val propertyNamedMethod = getPropertyNamedMethod(method)
-                ?: throw IllegalArgumentException("Calculated property method must have a name beginning with 'get' or 'is'")
-
-        require(propertyNamedMethod.hasValidSignature()) {
-            "Calculated property name must have no parameters, and a non-void return type"
-        }
-
-        val propertyName = propertyNamedMethod.fieldName.replaceFirstChar { it.lowercase(Locale.getDefault()) }
-        methodsByName.compute(propertyName) { _, existingMethod ->
-            if (existingMethod == null) method
-            else leastGenericBy({ genericReturnType }, existingMethod, method)
-        }
-    }
-    return methodsByName.mapValues { (_, method) -> PropertyDescriptor(null, null, method) }
-}
 
 // Select only those methods that are isX/getX/setX methods
 private fun Sequence<Method>.thatArePropertyMethods() = mapNotNull(::getPropertyNamedMethod)

@@ -18,7 +18,7 @@ class RPCSubscriptionImpl<REQUEST, RESPONSE>(
 
     private var running = false
 
-    override val isRunning get() = running
+    val isRunning get() = running
 
     override val subscriptionName: LifecycleCoordinatorName
         get() = lifecycleCoordinator.name
@@ -35,11 +35,6 @@ class RPCSubscriptionImpl<REQUEST, RESPONSE>(
         rpcTopicService.subscribe(rpcConfig.requestTopic,responderProcessor)
         lifecycleCoordinator.start()
         lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
-    }
-
-    override fun stop() {
-        unsubscribe()
-        lifecycleCoordinator.stop()
     }
 
     override fun close() {
