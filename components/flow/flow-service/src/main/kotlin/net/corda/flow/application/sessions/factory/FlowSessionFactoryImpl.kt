@@ -6,6 +6,8 @@ import java.security.PrivilegedExceptionAction
 import net.corda.flow.application.sessions.FlowSessionImpl
 import net.corda.flow.fiber.FlowFiberSerializationService
 import net.corda.flow.fiber.FlowFiberService
+import net.corda.flow.state.impl.FlatSerializableContext
+import net.corda.flow.state.impl.MutableFlatSerializableContext
 import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
@@ -28,12 +30,16 @@ class FlowSessionFactoryImpl @Activate constructor(
     ): FlowSession {
         return try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
-                FlowSessionImpl.asInitiatedSession(
+                FlowSessionImpl(
                     counterparty = x500Name,
                     sessionId,
                     flowFiberService,
                     flowFiberSerializationService,
-                    contextProperties
+                    FlatSerializableContext(
+                        contextUserProperties = emptyMap(),
+                        contextPlatformProperties = contextProperties
+                    ),
+                    FlowSessionImpl.Direction.INITIATED_SIDE
                 )
             })
         } catch (e: PrivilegedActionException) {
@@ -48,16 +54,48 @@ class FlowSessionFactoryImpl @Activate constructor(
     ): FlowSession {
         return try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
-                FlowSessionImpl.asInitiatingSession(
+                FlowSessionImpl(
                     counterparty = x500Name,
                     sessionId,
                     flowFiberService,
                     flowFiberSerializationService,
-                    flowContextPropertiesBuilder
+                    createInitiatingFlowContextProperties(
+                        flowContextPropertiesBuilder,
+                        flowFiberService
+                    ),
+                    FlowSessionImpl.Direction.INITIATING_SIDE
                 )
             })
         } catch (e: PrivilegedActionException) {
             throw e.exception
         }
+    }
+
+    private fun createInitiatingFlowContextProperties(
+        flowContextPropertiesBuilder: FlowContextPropertiesBuilder?,
+        flowFiberService: FlowFiberService,
+    ) = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.flowContext.let { flowContext ->
+        // Initiating session always created in a running flow
+        flowContextPropertiesBuilder?.let { contextBuilder ->
+            // Snapshot the current flow context
+            MutableFlatSerializableContext(
+                contextUserProperties = flowContext.flattenUserProperties(),
+                contextPlatformProperties = flowContext.flattenPlatformProperties()
+            ).also { mutableContext ->
+                // Let the builder modify the context
+                contextBuilder.apply(mutableContext)
+            }.let { mutableContext ->
+                // Turn the mutable context into an immutable one for the public api
+                FlatSerializableContext(
+                    contextUserProperties = mutableContext.flattenUserProperties(),
+                    contextPlatformProperties = mutableContext.flattenPlatformProperties()
+                )
+            }
+        } ?:
+        // No context builder passed, snapshot the current flow context
+        FlatSerializableContext(
+            contextUserProperties = flowContext.flattenUserProperties(),
+            contextPlatformProperties = flowContext.flattenPlatformProperties()
+        )
     }
 }

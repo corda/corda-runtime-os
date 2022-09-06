@@ -5,9 +5,7 @@ import net.corda.flow.application.services.MockFlowFiberService
 import net.corda.flow.fiber.DeserializedWrongAMQPObjectException
 import net.corda.flow.fiber.FlowFiberSerializationService
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.state.asFlowContext
-import net.corda.v5.application.flows.set
-import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
+import net.corda.flow.state.FlowContext
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
@@ -45,6 +43,23 @@ class FlowSessionImplTest {
     private val flowFiber = mockFlowFiberService.flowFiber.apply {
         whenever(suspend(any<FlowIORequest.SendAndReceive>())).thenReturn(received)
         whenever(suspend(any<FlowIORequest.Receive>())).thenReturn(received)
+    }
+
+    private val userKey = "userKey"
+    private val userValue = "userValue"
+
+    private val platformKey = "platformKey"
+    private val platformValue = "platformValue"
+
+    private val userContext = mapOf(userKey to userValue)
+    private val platformContext = mapOf(platformKey to platformValue)
+
+    private val flowContext = mock<FlowContext>().apply {
+        whenever(flattenUserProperties()).thenReturn(userContext)
+        whenever(flattenPlatformProperties()).thenReturn(platformContext)
+
+        whenever(get(userKey)).thenReturn(userValue)
+        whenever(get(platformKey)).thenReturn(platformValue)
     }
 
     @Test
@@ -156,95 +171,35 @@ class FlowSessionImplTest {
     }
 
     @Test
-    fun `initiated sessions have immutable context`() {
-        val session = createInitiatedSession()
-        assertEquals("value", session.contextProperties["key"])
-        assertThrows<CordaRuntimeException> { session.contextProperties["key2"] = "value2" }
-
-        // Platform context via the Corda internal extension function should also be immutable
-        assertThrows<CordaRuntimeException> {
-            session.contextProperties.asFlowContext.platformProperties["key2"] = "value2"
-        }
-    }
-
-    @Test
-    fun `initiating sessions have immutable context pulled from Corda when no builder is passed`() {
+    fun `initiating session exposes context passed to constructor`() {
         val session = createInitiatingSession()
 
-        assertEquals(mockFlowFiberService.platformValue, session.contextProperties[mockFlowFiberService.platformKey])
-        assertEquals(mockFlowFiberService.userValue, session.contextProperties[mockFlowFiberService.userKey])
-
-        // Immutable
-        assertThrows<CordaRuntimeException> { session.contextProperties["key2"] = "value2" }
-
-        // Platform context via the Corda internal extension function should also be immutable
-        assertThrows<CordaRuntimeException> {
-            session.contextProperties.asFlowContext.platformProperties["key2"] = "value2"
-        }
+        assertEquals(platformValue, session.contextProperties[platformKey])
+        assertEquals(userValue, session.contextProperties[userKey])
     }
 
-    @Test
-    fun `initiating sessions can mutate their context on instantiation`() {
-        val session = createInitiatingSession { flowContextProperties ->
-            // Additional user context
-            flowContextProperties["extraUserKey"] = "extraUserValue"
-            // Addition platform context via the Corda internal extension function
-            flowContextProperties.asFlowContext.platformProperties["extraPlatformKey"] = "extraPlatformValue"
-        }
-
-        // Validate mutated
-        assertEquals("extraUserValue", session.contextProperties["extraUserKey"])
-        assertEquals("extraPlatformValue", session.contextProperties["extraPlatformKey"])
-
-        // Validate from Corda
-        assertEquals(mockFlowFiberService.platformValue, session.contextProperties[mockFlowFiberService.platformKey])
-        assertEquals(mockFlowFiberService.userValue, session.contextProperties[mockFlowFiberService.userKey])
-
-        // The session context properties (user and platform) should be immutable once set
-        assertThrows<CordaRuntimeException> { session.contextProperties["key2"] = "value2" }
-        assertThrows<CordaRuntimeException> {
-            session.contextProperties.asFlowContext.platformProperties["key2"] = "value2"
-        }
-
-        // Verify the mutated context makes it into the request
-        session.send(HI)
-
-        val flowIORequestCapture = argumentCaptor<FlowIORequest<*>>()
-        verify(flowFiber, times(2)).suspend(flowIORequestCapture.capture())
-
-        val mutatedUserMap = mockFlowFiberService.userContext.toMutableMap()
-        mutatedUserMap["extraUserKey"] = "extraUserValue"
-
-        val mutatedPlatformMap = mockFlowFiberService.platformContext.toMutableMap()
-        mutatedPlatformMap["extraPlatformKey"] = "extraPlatformValue"
-
-        with(flowIORequestCapture.firstValue as FlowIORequest.InitiateFlow) {
-            assertThat(contextUserProperties).isEqualTo(mutatedUserMap)
-            assertThat(contextPlatformProperties).isEqualTo(mutatedPlatformMap)
-        }
-    }
-
-    private fun createInitiatedSession(): FlowSessionImpl = FlowSessionImpl.asInitiatedSession(
+    private fun createInitiatedSession() = FlowSessionImpl(
         counterparty = ALICE_X500_NAME,
         sourceSessionId = SESSION_ID,
         mockFlowFiberService,
         flowFiberSerializationService,
-        mapOf("key" to "value")
+        flowContext,
+        FlowSessionImpl.Direction.INITIATED_SIDE
     )
 
-    private fun createInitiatingSession(builder: FlowContextPropertiesBuilder? = null) =
-        FlowSessionImpl.asInitiatingSession(
-            counterparty = ALICE_X500_NAME,
-            sourceSessionId = SESSION_ID,
-            mockFlowFiberService,
-            flowFiberSerializationService,
-            builder
-        )
+    private fun createInitiatingSession() = FlowSessionImpl(
+        counterparty = ALICE_X500_NAME,
+        sourceSessionId = SESSION_ID,
+        mockFlowFiberService,
+        flowFiberSerializationService,
+        flowContext,
+        FlowSessionImpl.Direction.INITIATING_SIDE
+    )
 
     private fun validateInitiateFlowRequest(request: FlowIORequest.InitiateFlow) {
         with(request) {
-            assertThat(contextUserProperties).isEqualTo(mockFlowFiberService.userContext)
-            assertThat(contextPlatformProperties).isEqualTo(mockFlowFiberService.platformContext)
+            assertThat(contextUserProperties).isEqualTo(userContext)
+            assertThat(contextPlatformProperties).isEqualTo(platformContext)
             assertThat(sessionId).isEqualTo(SESSION_ID)
             assertThat(x500Name).isEqualTo(ALICE_X500_NAME)
         }

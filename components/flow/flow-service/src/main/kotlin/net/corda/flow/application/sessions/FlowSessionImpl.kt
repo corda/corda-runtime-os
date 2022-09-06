@@ -6,10 +6,7 @@ import net.corda.flow.fiber.FlowFiberSerializationService
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.state.FlowContext
-import net.corda.flow.state.impl.FlatSerializableContext
-import net.corda.flow.state.impl.MutableFlatSerializableContext
 import net.corda.v5.application.flows.FlowContextProperties
-import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
 import net.corda.v5.application.messaging.FlowInfo
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.UntrustworthyData
@@ -18,8 +15,8 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 
-@Suppress("TooManyFunctions", "LongParameterList")
-class FlowSessionImpl private constructor(
+@Suppress("LongParameterList")
+class FlowSessionImpl(
     override val counterparty: MemberX500Name,
     private val sourceSessionId: String,
     private val flowFiberService: FlowFiberService,
@@ -29,74 +26,12 @@ class FlowSessionImpl private constructor(
 ) : FlowSession {
 
     companion object {
-        fun asInitiatingSession(
-            counterparty: MemberX500Name,
-            sourceSessionId: String,
-            flowFiberService: FlowFiberService,
-            flowFiberSerializationService: FlowFiberSerializationService,
-            flowContextPropertiesBuilder: FlowContextPropertiesBuilder?
-        ): FlowSession =
-            FlowSessionImpl(
-                counterparty,
-                sourceSessionId,
-                flowFiberService,
-                flowFiberSerializationService,
-                createInitiatingFlowContextProperties(flowContextPropertiesBuilder, flowFiberService),
-                Direction.INITIATING_SIDE
-            )
-
-        private fun createInitiatingFlowContextProperties(
-            flowContextPropertiesBuilder: FlowContextPropertiesBuilder?,
-            flowFiberService: FlowFiberService,
-        ) = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.flowContext.let { flowContext ->
-            // Initiating session always created in a running flow
-            flowContextPropertiesBuilder?.let { contextBuilder ->
-                // Snapshot the parent context
-                MutableFlatSerializableContext(
-                    contextUserProperties = flowContext.flattenUserProperties(),
-                    contextPlatformProperties = flowContext.flattenPlatformProperties()
-                ).also { mutableContext ->
-                    // Let the builder modify the context
-                    contextBuilder.apply(mutableContext)
-                }.let { mutableContext ->
-                    // Turn the mutable context into an immutable one for the public api
-                    FlatSerializableContext(
-                        contextUserProperties = mutableContext.flattenUserProperties(),
-                        contextPlatformProperties = mutableContext.flattenPlatformProperties()
-                    )
-                }
-            } ?:
-            // No context builder passed, snapshot the parent context
-            FlatSerializableContext(
-                contextUserProperties = flowContext.flattenUserProperties(),
-                contextPlatformProperties = flowContext.flattenPlatformProperties()
-            )
-        }
-
-        fun asInitiatedSession(
-            counterparty: MemberX500Name,
-            sourceSessionId: String,
-            flowFiberService: FlowFiberService,
-            flowFiberSerializationService: FlowFiberSerializationService,
-            contextProperties: Map<String, String>
-        ) = FlowSessionImpl(
-            counterparty,
-            sourceSessionId,
-            flowFiberService,
-            flowFiberSerializationService,
-            FlatSerializableContext(
-                contextUserProperties = emptyMap(),
-                contextPlatformProperties = contextProperties
-            ),
-            Direction.INITIATED_SIDE
-        )
-
         private val log = contextLogger()
     }
 
     override val contextProperties: FlowContextProperties = flowContext
 
-    private enum class Direction {
+    enum class Direction {
         INITIATING_SIDE,
         INITIATED_SIDE
     }
