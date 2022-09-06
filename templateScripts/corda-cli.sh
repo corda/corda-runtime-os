@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # get path to script
-SCRIPTPATH=$(dirname "$0")
+SCRIPTPATH="$(dirname "$(readlink -f "$0")")"
 
 rootDir="$SCRIPTPATH/../.."
 binDir="$rootDir/app/build/libs"
