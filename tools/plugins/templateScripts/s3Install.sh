@@ -5,7 +5,7 @@ cliHome="/opt/corda/cli"
 # cli symlink for script
 cliSymlink="/usr/bin/corda-cli.sh"
 # temp dir
-tempDir="/tmp/corda/cli/"
+tempDir=$(mktemp -d)
 # base s3 url
 s3Bucket=TEMPLATE_URL
 
@@ -21,28 +21,43 @@ while getopts "v" opt; do
 done
 
 # download package to tmp and verify if requested
-wget "${s3Bucket}/cliInstall.zip" -O "${tempDir}/cliInstall.zip"
+wget "${s3Bucket}.zip" -P "$tempDir"
 
 if [ "$verify" = true ]; then
-  wget "${s3Bucket}/cliInstall.zip.md5" -O "${tempDir}/cliInstall.zip.md5"
-  if md5sum -c "${tempDir}/cliInstall.zip.mpd5"; then
-    echo "md5 checksum verified!"
+  wget "${s3Bucket}.zip.md5" -O "${tempDir}.zip.md5"
+
+  str=$(md5sum corda-cli*.zip)
+  sum=$(cat corda-cli*.zip.md5)
+
+  if [[ "$str" == *"$sum"* ]];
+  then
+    echo "Checksums match!"
   else
-    echo "Unable to verify md5 checksum"
+    echo "Checksums do not match"
     exit 1
   fi
 fi
 
 # unzip the archive
-cd $tempDir
+cd "$tempDir" || exit
 unzip corda-cli-dist.zip
 
-# install to /opt/corda/cli
 cd corda-cli-dist
-cp -R . $cliHome
 
+usr=$(id -u)
+grp=$(id -g)
 # generate script
-echo "java -Dpf4j.pluginsDir=$cliHome/plugins -jar $cliHome/corda-cli.jar $@" > $cliHome/corda-cli.sh
+# shellcheck disable=SC2145
+echo "java -Dpf4j.pluginsDir=$cliHome/plugins -jar $cliHome/corda-cli.jar $@" > corda-cli.sh
+chmod 755 corda-cli.sh
+
+sudo bash -c """
+# install to /opt/corda/cli
+mkdir -p $cliHome
+cp -R . $cliHome
 
 # symlink to /usr/bin
 ln -s $cliHome/corda-cli.sh $cliSymlink
+
+chown $usr:$grp -R $cliHome
+"""
