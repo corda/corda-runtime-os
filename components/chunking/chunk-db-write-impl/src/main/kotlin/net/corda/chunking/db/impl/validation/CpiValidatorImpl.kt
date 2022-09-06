@@ -6,7 +6,7 @@ import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.cpiinfo.write.CpiInfoWriteService
-import net.corda.libs.cpiupload.ValidationException
+import net.corda.libs.cpiupload.ReUsedGroupIdException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.verify.verifyCpi
@@ -114,9 +114,9 @@ class CpiValidatorImpl constructor(
                 cpi.metadata.cpiId.version
             )
         ) {
-            throw ValidationException(
+            throw ReUsedGroupIdException(
                 "Group id ($groupId) in use with another CPI.  " +
-                        "Cannot upload ${cpi.metadata.cpiId.name} ${cpi.metadata.cpiId.version}"
+                    "Cannot upload ${cpi.metadata.cpiId.name} ${cpi.metadata.cpiId.version}"
             )
         }
     }

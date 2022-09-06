@@ -133,7 +133,7 @@ fun CpiPersistence.persistCpiToDatabase(
         } else {
             throw ValidationException(
                 "CPI has already been inserted with cpks for " +
-                        "${cpi.metadata.cpiId.name} ${cpi.metadata.cpiId.version} with groupId=$groupId"
+                    "${cpi.metadata.cpiId.name} ${cpi.metadata.cpiId.version} with groupId=$groupId"
             )
         }
     } catch (ex: Exception) {
@@ -201,7 +201,8 @@ fun CpiPersistence.verifyGroupIdIsUniqueForCpi(cpi: Cpi) {
         // Carefully constructed message because the "409/conflict" exception:
         // ResourceAlreadyExistsException
         // just wants "the resource".
-        val resource = "${cpi.metadata.cpiId.name} ${cpi.metadata.cpiId.version} (groupId=$groupIdInDatabase)"
+        val resource = "CPI ${cpi.metadata.cpiId.name} ${cpi.metadata.cpiId.version} " +
+            "already uploaded with groupId(groupId=$groupIdInDatabase)"
         throw DuplicateCpiUploadException(resource)
     }
 }
