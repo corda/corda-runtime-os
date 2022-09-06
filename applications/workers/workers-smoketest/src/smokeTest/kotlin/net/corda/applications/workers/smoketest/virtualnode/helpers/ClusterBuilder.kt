@@ -23,10 +23,19 @@ class ClusterBuilder {
 
     fun get(cmd: String) = client!!.get(cmd)
 
-    private fun uploadCpiResource(cmd: String, resourceName: String, groupId: String): SimpleResponse {
+    private fun uploadCpiResource(
+        cmd: String,
+        resourceName: String,
+        groupId: String,
+        requestParameters: Map<String, String> = emptyMap()
+    ): SimpleResponse {
         val fileName = Paths.get(resourceName).fileName.toString()
         return CpiLoader.get(resourceName, groupId).use {
-            client!!.postMultiPart(cmd, emptyMap(), mapOf("upload" to HttpsClientFileUpload(it, fileName)))
+            client!!.postMultiPart(
+                "$cmd${requestParameters.toUrlParameters()}",
+                emptyMap(),
+                mapOf("upload" to HttpsClientFileUpload(it, fileName))
+            )
         }
     }
 
@@ -41,14 +50,20 @@ class ClusterBuilder {
     fun cpbUpload(resourceName: String) = uploadUnmodifiedResource("/api/v1/cpi/", resourceName)
 
     /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
-    fun cpiUpload(resourceName: String, groupId: String) = uploadCpiResource("/api/v1/cpi/", resourceName, groupId)
+    fun cpiUpload(
+        resourceName: String,
+        groupId: String
+    ) = uploadCpiResource("/api/v1/cpi/", resourceName, groupId)
 
     fun updateVirtualNodeState(holdingIdHash: String, newState: String) =
         put("/api/v1/maintenance/virtualnode/$holdingIdHash/state/$newState", "")
 
     /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
-    fun forceCpiUpload(resourceName: String, groupId: String) =
-        uploadCpiResource("/api/v1/maintenance/virtualnode/forcecpiupload/", resourceName, groupId)
+    fun forceCpiUpload(
+        resourceName: String,
+        groupId: String,
+        requestParameters: Map<String, String> = emptyMap()
+    ) = uploadCpiResource("/api/v1/maintenance/virtualnode/forcecpiupload", resourceName, groupId, requestParameters)
 
     /** Return the status for the given request id */
     fun cpiStatus(id: String) = client!!.get("/api/v1/cpi/status/$id")
@@ -110,6 +125,13 @@ class ClusterBuilder {
         """{ "clientRequestId" : "$clientRequestId", "flowClassName" : "$flowClassName", "requestData" : 
             |"$requestData" }""".trimMargin()
 
+}
+
+private fun <K, V> Map<K, V>.toUrlParameters(): String {
+    val params = this.entries.joinToString("&") {
+        "${it.key}=${it.value}"
+    }
+    return "?${params}"
 }
 
 fun <T> cluster(initialize: ClusterBuilder.() -> T):T = ClusterBuilder().let(initialize)

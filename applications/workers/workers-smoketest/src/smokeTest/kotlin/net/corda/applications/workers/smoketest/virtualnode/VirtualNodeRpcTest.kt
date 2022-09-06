@@ -25,9 +25,12 @@ import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
+import java.util.UUID
 
 // The CPB we're using in this test
 const val TEST_CPB = "/META-INF/flow-worker-dev.cpb"
+const val MIGRATION_ONE_CPB = "/META-INF/reset-migration-testing/one/reset.cpb"
+const val MIGRATION_TWO_CPB = "/META-INF/reset-migration-testing/two/reset.cpb"
 const val CACHE_INVALIDATION_TEST_CPB = "/META-INF/cache-invalidation-testing/flow-worker-dev.cpb"
 
 fun SimpleResponse.toJson(): JsonNode = ObjectMapper().readTree(this.body)!!
@@ -374,6 +377,53 @@ class VirtualNodeRpcTest {
             }
 
             runReturnAStringFlow("original-cpi")
+        }
+    }
+
+    @Test
+    @Order(100)
+    fun `working title`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+            val requestOne = cpiUpload(MIGRATION_ONE_CPB, GROUP_ID).let { it.toJson()["id"].textValue() }
+            assertThat(requestOne).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
+
+            // BUG:  returning "OK" feels 'weakly' typed
+            val jsonOne = assertWithRetry {
+                // CPI upload can be slow in the combined worker, especially after it has just started up.
+                timeout(Duration.ofSeconds(100))
+                interval(Duration.ofSeconds(2))
+                command { cpiStatus(requestOne) }
+                condition {
+                    it.code == 200 && it.toJson()["status"].textValue() == "OK"
+                }
+                immediateFailCondition {
+                    it.code == 400 &&
+                        null != it.toJson()["details"] &&
+                        it.toJson()["details"]["errorMessage"].textValue()
+                            .startsWith("CPI already uploaded")
+                }
+            }.toJson()
+            val requestTwo = forceCpiUpload(MIGRATION_TWO_CPB, GROUP_ID, mapOf("resetDb" to "false")).let { it.toJson()["id"].textValue() }
+            assertThat(requestTwo).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
+            // BUG:  returning "OK" feels 'weakly' typed
+            val jsonTwo = assertWithRetry {
+                // CPI upload can be slow in the combined worker, especially after it has just started up.
+                timeout(Duration.ofSeconds(100))
+                interval(Duration.ofSeconds(2))
+                command { cpiStatus(requestTwo) }
+                condition {
+                    it.code == 200 && it.toJson()["status"].textValue() == "OK"
+                }
+                immediateFailCondition {
+                    it.code == 400 &&
+                        null != it.toJson()["details"] &&
+                        it.toJson()["details"]["errorMessage"].textValue()
+                            .startsWith("CPI already uploaded")
+                }
+            }.toJson()
+            println(jsonOne)
+            println(jsonTwo)
         }
     }
 

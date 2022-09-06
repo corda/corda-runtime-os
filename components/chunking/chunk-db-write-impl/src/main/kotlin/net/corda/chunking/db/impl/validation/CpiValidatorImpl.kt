@@ -111,6 +111,7 @@ class CpiValidatorImpl constructor(
         cpiInfoWriteService.put(cpiMetadata.cpiId, cpiMetadata)
 
         val resetDB = fileInfo.forceUpload && fileInfo.resetDb
+        log.info("forceUpload: ${fileInfo.forceUpload} ${fileInfo.resetDb}")
         if (nodes.isNotEmpty() && resetDB) {
             // update vnode
             publisher.update(requestId, "Performing reset of virtual node DBs and Re-running migrations")

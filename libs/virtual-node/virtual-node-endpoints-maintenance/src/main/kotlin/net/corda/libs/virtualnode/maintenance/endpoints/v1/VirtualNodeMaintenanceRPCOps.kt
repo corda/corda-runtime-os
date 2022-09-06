@@ -43,7 +43,7 @@ interface VirtualNodeMaintenanceRPCOps : RpcOps {
             description = "Set whether we want to reset the node db when we upload the new CPI",
             required = false
         )
-        resetDb: String = "true"
+        resetDb: String
     ): CpiUploadRPCOps.CpiUploadResponse
 
     /**

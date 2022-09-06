@@ -68,6 +68,13 @@ class ResetCommand : Runnable {
     )
     var wait: Boolean = false
 
+    @Option(
+        names = ["-r", "--reset-db"],
+        required = false,
+        description = ["reset the vnode db as part of the upload process"]
+    )
+    var reset: String = "true"
+
     override fun run() {
         var virtualNodeMaintenanceResult: String
         val virtualNodeMaintenance = createHttpRpcClient(VirtualNodeMaintenanceRPCOps::class)
@@ -82,7 +89,7 @@ class ResetCommand : Runnable {
                 }
                 try {
                     println("Uploading CPI to host: $targetUrl")
-                    virtualNodeMaintenanceResult = this.forceCpiUpload(HttpFileUpload(cpi.inputStream(), cpi.name)).id
+                    virtualNodeMaintenanceResult = this.forceCpiUpload(HttpFileUpload(cpi.inputStream(), cpi.name), reset).id
                 } catch (e: Exception) {
                     println(e.message)
                     logger.error(e.stackTrace.toString())

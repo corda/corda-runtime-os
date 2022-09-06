@@ -13,6 +13,14 @@ configurations {
         canBeConsumed = false
         transitive = false
     }
+    cpiOneForMigrationTesting {
+        canBeConsumed = false
+        transitive = false
+    }
+    cpiTwoForMigrationTesting {
+        canBeConsumed = false
+        transitive = false
+    }
 }
 
 sourceSets {
@@ -55,6 +63,8 @@ dependencies {
     // But building a cpb for use in a test is ok.
     cpis project(path: ':testing:cpbs:flow-worker-dev', configuration: 'cordaCPB')
     cpiForFlowCacheTest project(path: ':testing:cpbs:flow-worker-dev-for-cache-testing', configuration: 'cordaCPB')
+    cpiOneForMigrationTesting project(path: ':testing:cpbs:with-migrations-one:reset', configuration: 'cordaCPB')
+    cpiTwoForMigrationTesting project(path: ':testing:cpbs:with-migrations-two:reset', configuration: 'cordaCPB')
 
     smokeTestImplementation "com.konghq:unirest-java:$unirestVersion"
     smokeTestImplementation "com.konghq:unirest-objectmapper-jackson:$unirestVersion"
@@ -86,6 +96,19 @@ def smokeTestResources = tasks.named('processSmokeTestResources', ProcessResourc
     from(cpiForFlowCacheTest) {
         into cacheTestingDir
         rename "(.+)-\\d+.+-package.cpb", "flow-worker-dev.cpb"
+    }
+
+    // Put the migration cpbs into a different folder
+    def cpiOneForMigrationTesting = configurations.cpiOneForMigrationTesting
+    def cpiTwoForMigrationTesting = configurations.cpiTwoForMigrationTesting
+    def migrationTestingDir = "META-INF" + File.separator + "reset-migration-testing"
+    from(cpiOneForMigrationTesting) {
+        into "$migrationTestingDir/one"
+        rename '(.+)-\\d+.+-package.cpb', 'reset.cpb'
+    }
+    from(cpiTwoForMigrationTesting) {
+        into "$migrationTestingDir/two"
+        rename '(.+)-\\d+.+-package.cpb', 'reset.cpb'
     }
 }
 
