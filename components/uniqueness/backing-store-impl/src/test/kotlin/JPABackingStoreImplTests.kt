@@ -11,6 +11,7 @@ import org.junit.jupiter.api.*
 import org.mockito.Mockito
 import org.mockito.kotlin.*
 import java.sql.Connection
+import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -32,12 +33,17 @@ class JPABackingStoreImplTests {
         whenever(get(any())) doReturn mock<JpaEntitiesSet>()
     }
 
+    private val entityManager = mock<EntityManager>()
+    private val entityManagerFactory = mock<EntityManagerFactory>().apply {
+        whenever(createEntityManager()) doReturn entityManager
+    }
+
     // NOTE: While expecting refactoring around createDefaultUniquenessDb(), it's mocked for testing
     //  convenience. Since it's a final class, MockMaker's been added under resources with content "mock-maker-inline".
     private val schemaMigrator = mock<LiquibaseSchemaMigratorImpl>()
     private val dbConnectionManager = mock<DbConnectionManager>().apply {
         whenever(getClusterDataSource()) doReturn dummyDataSource
-        whenever(getOrCreateEntityManagerFactory(any(), any(), any())) doReturn mock<EntityManagerFactory>()
+        whenever(getOrCreateEntityManagerFactory(any(), any(), any())) doReturn entityManagerFactory
     }
 
     @BeforeEach
@@ -140,6 +146,34 @@ class JPABackingStoreImplTests {
             assertDoesNotThrow {
                 backingStoreImpl.eventHandler(DummyLifecycle(), mock())
             }
+        }
+    }
+
+    @Nested
+    inner class ClosingSessionTests {
+        @BeforeEach
+        fun initMock() {
+            Mockito.reset(entityManager)
+        }
+
+        @Test
+        fun `Session closes entity manager after use`() {
+            backingStoreImpl.eventHandler(
+                RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), lifecycleCoordinator
+            )
+            backingStoreImpl.session { }
+            Mockito.verify(entityManager).close()
+        }
+
+        @Test
+        fun `Session closes entity manager even when exception occurs`() {
+            backingStoreImpl.eventHandler(
+                RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), lifecycleCoordinator
+            )
+            assertThrows<java.lang.RuntimeException> {
+                backingStoreImpl.session { throw java.lang.RuntimeException("test exception") }
+            }
+            Mockito.verify(entityManager).close()
         }
     }
 }
