@@ -4,10 +4,10 @@ import net.corda.chunking.db.impl.cpi.liquibase.LiquibaseExtractor
 import net.corda.chunking.db.impl.cpi.liquibase.LiquibaseExtractorHelpers
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.packaging.Cpi
-import net.corda.libs.packaging.CpiReader
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkMetadata
+import net.corda.libs.packaging.testutils.cpb.packaging.v2.TestCpbReaderV2
 import net.corda.test.util.InMemoryZipFile
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
@@ -205,7 +205,7 @@ internal class LiquibaseExtractorHelpersTest {
     @Test
     fun `test real cpb and parse it`() {
         val obj = LiquibaseExtractorHelpers()
-        val cpi: Cpi = getInputStream(EXTENDABLE_CPB).use { CpiReader.readCpi(it, testDir) }
+        val cpi: Cpi = getInputStream(EXTENDABLE_CPB).use { TestCpbReaderV2.readCpi(it, testDir) }
 
         val entities = mutableListOf<CpkDbChangeLogEntity>()
         cpi.cpks.forEach { cpk ->
@@ -221,7 +221,7 @@ internal class LiquibaseExtractorHelpersTest {
 
     @Test
     fun `test real cpb via validation function`() {
-        val cpi: Cpi = getInputStream(EXTENDABLE_CPB).use { CpiReader.readCpi(it, testDir) }
+        val cpi: Cpi = getInputStream(EXTENDABLE_CPB).use { TestCpbReaderV2.readCpi(it, testDir) }
 
         val obj = LiquibaseExtractor()
         assertThat(obj.extractLiquibaseEntitiesFromCpi(cpi).isNotEmpty()).isTrue
