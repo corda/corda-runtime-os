@@ -2,8 +2,8 @@ package net.corda.uniqueness.backingstore
 
 import net.corda.lifecycle.Lifecycle
 import net.corda.uniqueness.backingstore.BackingStore.Session
+import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckRequest
 import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckStateDetails
 import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckStateRef
@@ -119,7 +119,7 @@ interface BackingStore : Lifecycle {
              */
             fun commitTransactions(
                 transactionDetails: Collection<Pair<
-                        UniquenessCheckRequest, UniquenessCheckResult>>
+                        UniquenessCheckRequestInternal, UniquenessCheckResult>>
             )
         }
     }
