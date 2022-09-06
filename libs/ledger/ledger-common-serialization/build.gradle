@@ -1,6 +1,5 @@
 plugins {
     id 'corda.common-publishing'
-    id 'corda.osgi-test-conventions'
     id 'corda.common-library'
 }
 
