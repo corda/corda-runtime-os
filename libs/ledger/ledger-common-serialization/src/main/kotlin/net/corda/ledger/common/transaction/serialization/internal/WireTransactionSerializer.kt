@@ -2,13 +2,10 @@ package net.corda.ledger.common.transaction.serialization.internal
 
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.common.transaction.serialization.WireTransactionContainerImpl
-import net.corda.ledger.common.transaction.serialization.WireTransactionType
-import net.corda.ledger.common.transaction.serialization.WireTransactionVersion
 import net.corda.serialization.BaseProxySerializer
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
-import net.corda.v5.ledger.common.transaction.PrivacySalt
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -21,7 +18,6 @@ class WireTransactionSerializer @Activate constructor(
 
     override fun toProxy(obj: WireTransaction): WireTransactionContainerImpl =
         WireTransactionContainerImpl(
-            WireTransactionType.WIRE_TRANSACTION,
             WireTransactionVersion.VERSION_1,
             obj.privacySalt,
             obj.componentGroupLists

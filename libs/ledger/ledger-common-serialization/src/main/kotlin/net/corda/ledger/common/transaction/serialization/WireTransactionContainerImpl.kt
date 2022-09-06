@@ -7,7 +7,6 @@ import net.corda.v5.ledger.common.transaction.PrivacySalt
  */
 
 data class WireTransactionContainerImpl(
-    override val type: WireTransactionType,
     override val version: WireTransactionVersion,
     override val privacySalt: PrivacySalt,
     override val componentGroupLists: List<List<ByteArray>>,

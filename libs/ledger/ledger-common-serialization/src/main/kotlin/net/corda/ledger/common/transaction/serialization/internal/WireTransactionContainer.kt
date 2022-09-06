@@ -4,14 +4,6 @@ import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.ledger.common.transaction.PrivacySalt
 
 /**
- * Enumeration for different WireTransactions.
- */
-@CordaSerializable
-enum class WireTransactionType {
-    WIRE_TRANSACTION
-}
-
-/**
  * Enumeration for WireTransaction version.
  */
 @CordaSerializable
@@ -25,11 +17,6 @@ enum class WireTransactionVersion {
  * A WireTransactionContainer can be obtained from a WireTransaction.
  */
 interface WireTransactionContainer {
-
-    /**
-     * The WireTransaction type that created this container. //TODO
-     */
-    val type: WireTransactionType
 
     /**
      * Version of container.    //TODO
