@@ -37,9 +37,9 @@ class FlowTests {
 
     companion object {
 
-        var bobHoldingId: String = "74144C61B775"
-        var charlieHoldingId: String = "0504150AB2CD"
-        var davidHoldingId: String = "D20209C839AE"
+        var bobHoldingId: String = getHoldingIdShortHash(X500_BOB, GROUP_ID)
+        var charlieHoldingId: String = getHoldingIdShortHash(X500_CHARLIE, GROUP_ID)
+        var davidHoldingId: String = getHoldingIdShortHash(X500_DAVID, GROUP_ID)
 
         val expectedFlows = listOf(
             "net.cordapp.flowworker.development.smoketests.virtualnode.ReturnAStringFlow",
@@ -59,18 +59,18 @@ class FlowTests {
         @JvmStatic
         internal fun beforeAll() {
 
-//            val bobActualHoldingId = createVirtualNodeFor(X500_BOB)
-//            val charlieActualHoldingId = createVirtualNodeFor(X500_CHARLIE)
-//            val davidActualHoldingId = createVirtualNodeFor(X500_DAVID)
-//
-//            // Just validate the function and actual vnode holding ID hash are in sync
-//            // if this fails the X500_BOB formatting could have changed or the hash implementation might have changed
-//            assertThat(bobActualHoldingId).isEqualTo(bobHoldingId)
-//            assertThat(charlieActualHoldingId).isEqualTo(charlieHoldingId)
-//            assertThat(davidActualHoldingId).isEqualTo(davidHoldingId)
-//
-//            registerMember(bobHoldingId)
-//            registerMember(charlieHoldingId)
+            val bobActualHoldingId = createVirtualNodeFor(X500_BOB)
+            val charlieActualHoldingId = createVirtualNodeFor(X500_CHARLIE)
+            val davidActualHoldingId = createVirtualNodeFor(X500_DAVID)
+
+            // Just validate the function and actual vnode holding ID hash are in sync
+            // if this fails the X500_BOB formatting could have changed or the hash implementation might have changed
+            assertThat(bobActualHoldingId).isEqualTo(bobHoldingId)
+            assertThat(charlieActualHoldingId).isEqualTo(charlieHoldingId)
+            assertThat(davidActualHoldingId).isEqualTo(davidHoldingId)
+
+            registerMember(bobHoldingId)
+            registerMember(charlieHoldingId)
         }
     }
 
