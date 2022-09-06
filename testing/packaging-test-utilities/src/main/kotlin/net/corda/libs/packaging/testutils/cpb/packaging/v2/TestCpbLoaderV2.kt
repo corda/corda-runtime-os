@@ -18,6 +18,7 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.exception.PackagingException
+import net.corda.libs.packaging.hash
 import net.corda.libs.packaging.signerSummaryHash
 import net.corda.utilities.time.Clock
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -25,16 +26,18 @@ import net.corda.v5.crypto.SecureHash
 
 internal class TestCpbLoaderV2(private val clock: Clock) {
 
+    @Suppress("ComplexMethod", "NestedBlockDepth", "ThrowsCount")
     fun loadCpi(
         byteArray: ByteArray,
         expansionLocation: Path,
         cpiLocation: String?
     ): Cpi {
 
-        // Calculate file hash
-        val md = MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name)
 
-        JarInputStream(DigestInputStream(ByteArrayInputStream(byteArray), md), true).use { jarInputStream ->
+        // Calculate file hash
+        val hash = calculateHash(byteArray)
+
+        JarInputStream(ByteArrayInputStream(byteArray), true).use { jarInputStream ->
             val mainAttributes = jarInputStream.manifest.mainAttributes
             val cpks = mutableListOf<Cpk>()
 
@@ -80,7 +83,7 @@ internal class TestCpbLoaderV2(private val clock: Clock) {
                                 ?: throw PackagingException("$CPB_VERSION_ATTRIBUTE missing from CPB manifest"),
                                 firstCpkEntry.certificates.asSequence().signerSummaryHash()
                         ),
-                        fileChecksum = SecureHash(DigestAlgorithmName.SHA2_256.name, md.digest()),
+                        fileChecksum = SecureHash(DigestAlgorithmName.SHA2_256.name, hash),
                         cpksMetadata = cpks.map { it.metadata },
                         groupPolicy = null,
                         timestamp = clock.instant()
@@ -97,5 +100,7 @@ internal class TestCpbLoaderV2(private val clock: Clock) {
         }
     }
 }
+
+private fun calculateHash(cpiBytes: ByteArray) = cpiBytes.hash(DigestAlgorithmName.SHA2_256).bytes
 
 private fun isCpk(zipEntry: ZipEntry) = zipEntry.name.endsWith(".jar")
