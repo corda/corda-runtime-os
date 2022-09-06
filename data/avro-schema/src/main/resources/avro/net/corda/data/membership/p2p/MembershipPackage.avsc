@@ -39,9 +39,9 @@
       "type": ["null", "WireGroupParameters"]
     },
     {
-      "name": "cpiWhitelist",
-      "doc": "CpiWhiteList updates.",
-      "type": ["null", "WireCpiWhitelist"]
+      "name": "cpiAllowList",
+      "doc": "CpiAllowList updates.",
+      "type": ["null", "WireCpiAllowList"]
     }
   ]
 }

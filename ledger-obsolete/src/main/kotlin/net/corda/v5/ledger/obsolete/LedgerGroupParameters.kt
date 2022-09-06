@@ -1,10 +1,19 @@
 @file:JvmName("LedgerGroupParameters")
+
 package net.corda.v5.ledger.obsolete
 
 import net.corda.v5.membership.GroupParameters
-import net.corda.v5.membership.getValue
 
-const val NOTARIES_KEY = "corda.notaries"
+private const val NOTARIES_KEY = "corda.notaries"
 
+/**
+ * A list of all available notaries in the group.
+ * This attempts to parse the available notary information from the group parameters internal property map.
+ *
+ * Note: This is due to be reimplemented which is why it is currently in the `obsolete` module.
+ */
 val GroupParameters.notaries: List<NotaryInfo>
-    get() = getValue(NOTARIES_KEY)
+    get() = parseList(
+        NOTARIES_KEY,
+        NotaryInfo::class.java
+    )

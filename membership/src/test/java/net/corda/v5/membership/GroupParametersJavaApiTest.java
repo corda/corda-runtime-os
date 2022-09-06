@@ -4,11 +4,9 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.Set;
 
-import static net.corda.v5.membership.GroupParameters.EPOCH_KEY;
-import static net.corda.v5.membership.GroupParameters.MINIMUM_PLATFORM_VERSION_KEY;
-import static net.corda.v5.membership.GroupParameters.MODIFIED_TIME_KEY;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -19,30 +17,30 @@ public class GroupParametersJavaApiTest {
     @Test
     public void get() {
         final String key = "key";
-        final Object object = new Object();
-        when(groupParameters.get(key)).thenReturn(object);
+        final String value = "value";
+        when(groupParameters.get(key)).thenReturn(value);
 
         final Object obj = groupParameters.get(key);
 
         Assertions.assertThat(obj).isNotNull();
-        Assertions.assertThat(obj).isEqualTo(object);
+        Assertions.assertThat(obj).isEqualTo(value);
     }
 
     @Test
-    public void getKeys() {
-        Set<String> keys = Set.of("key1", "key2");
-        when(groupParameters.getKeys()).thenReturn(keys);
+    public void getEntries() {
+        Map<String, String> values = Map.of("key1", "value1", "key2", "value2");
+        when(groupParameters.getEntries()).thenReturn(values.entrySet());
 
-        final Set<String> keysTest = groupParameters.getKeys();
+        final Set<Map.Entry<String, String>> keysTest = groupParameters.getEntries();
 
         Assertions.assertThat(keysTest).isNotNull();
-        Assertions.assertThat(keysTest).isEqualTo(keys);
+        Assertions.assertThat(keysTest).isEqualTo(values.entrySet());
     }
 
     @Test
     public void minimumPlatformVersion() {
-        when(groupParameters.get(MINIMUM_PLATFORM_VERSION_KEY)).thenReturn(5);
-        final int platformVersion = GroupParameters.getMinimumPlatformVersion(groupParameters);
+        when(groupParameters.getMinimumPlatformVersion()).thenReturn(5);
+        final int platformVersion = groupParameters.getMinimumPlatformVersion();
 
         Assertions.assertThat(platformVersion).isNotNull();
         Assertions.assertThat(platformVersion).isEqualTo(5);
@@ -51,9 +49,9 @@ public class GroupParametersJavaApiTest {
     @Test
     public void modifiedTime() {
         final Instant instant = Instant.now();
-        when(groupParameters.get(MODIFIED_TIME_KEY)).thenReturn(instant);
+        when(groupParameters.getModifiedTime()).thenReturn(instant);
 
-        final Instant instantTest = GroupParameters.getModifiedTime(groupParameters);
+        final Instant instantTest = groupParameters.getModifiedTime();
 
         Assertions.assertThat(instantTest).isNotNull();
         Assertions.assertThat(instantTest).isEqualTo(instant);
@@ -61,9 +59,9 @@ public class GroupParametersJavaApiTest {
 
     @Test
     public void epoch() {
-        when(groupParameters.get(EPOCH_KEY)).thenReturn(669);
+        when(groupParameters.getEpoch()).thenReturn(669);
 
-        final int epoch = GroupParameters.getEpoch(groupParameters);
+        final int epoch = groupParameters.getEpoch();
 
         Assertions.assertThat(epoch).isNotNull();
         Assertions.assertThat(epoch).isEqualTo(669);

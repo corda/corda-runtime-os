@@ -8,6 +8,7 @@ import java.util.List;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.kotlin.MatchersKt.eq;
 
 public class LedgerGroupParametersJavaApiTest {
 
@@ -17,19 +18,12 @@ public class LedgerGroupParametersJavaApiTest {
 
     @Test
     public void getNotaryServiceParty() {
-        when(groupParameters.get(LedgerGroupParameters.NOTARIES_KEY)).thenReturn(notaryInfoList);
+        String notariesKey = "corda.notaries";
+        when(groupParameters.parseList(eq(notariesKey), eq(NotaryInfo.class))).thenReturn(notaryInfoList);
 
         var result = LedgerGroupParameters.getNotaries(groupParameters);
 
         Assertions.assertThat(result).isNotNull();
         Assertions.assertThat(result).isEqualTo(notaryInfoList);
-    }
-
-    @Test
-    public void notaries_Key() {
-        var result = LedgerGroupParameters.NOTARIES_KEY;
-
-        Assertions.assertThat(result).isNotNull();
-        Assertions.assertThat(result).isEqualTo("corda.notaries");
     }
 }
