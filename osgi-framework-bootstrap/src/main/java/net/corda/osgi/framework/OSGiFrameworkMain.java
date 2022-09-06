@@ -1,5 +1,7 @@
 package net.corda.osgi.framework;
 
+import net.corda.libs.configuration.validation.ConfigurationDefaults;
+import net.corda.schema.configuration.ConfigKeys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
@@ -14,6 +16,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import static java.util.stream.Collectors.toUnmodifiableList;
+import static net.corda.libs.configuration.validation.ConfigurationDefaultsKt.getConfigurationDefaults;
+import static net.corda.schema.configuration.DatabaseConfig.JDBC_DRIVER_DIRECTORY;
 
 /**
  * This class provided the main entry point for the applications built with the {@code corda.common-app} plugin.
@@ -194,16 +198,20 @@ final class OSGiFrameworkMain {
      */
     private static Path getDbDriverDirectory(String[] args) {
         final List<String> jdbcValues = Arrays.stream(args)
-            .filter(a -> a.contains("database.jdbc.directory"))
+            .filter(a -> a.contains(JDBC_DRIVER_DIRECTORY + "="))
             .collect(toUnmodifiableList());
-        if (jdbcValues.isEmpty()) {
-            return null;
+
+        if (!jdbcValues.isEmpty()) {
+            final String jdbcValue = jdbcValues.get(0);
+            if (jdbcValue.indexOf('=') != -1) {
+                final String path = jdbcValue.split("=", 2)[1];
+                return Paths.get(path);
+            }
         }
-        final String jdbcValue = jdbcValues.get(0);
-        if (jdbcValue.indexOf('=') == -1) {
-            return null;
-        }
-        final String path = jdbcValue.split("=", 2)[1];
-        return Paths.get(path);
+
+        // Use default value if value not provided via arguments
+        return Paths.get(
+                getConfigurationDefaults(ConfigKeys.DB_CONFIG, ConfigurationDefaults.INSTANCE.getDB_SCHEMA_VER())
+                        .getString(JDBC_DRIVER_DIRECTORY));
     }
 }
