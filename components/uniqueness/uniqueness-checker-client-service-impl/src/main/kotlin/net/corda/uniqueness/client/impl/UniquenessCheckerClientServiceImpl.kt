@@ -91,6 +91,8 @@ class UniquenessCheckerClientServiceImpl @Activate constructor(
 
     @Suspendable
     private fun signBatch(txIds: List<SecureHash>): BatchSignature {
+        // TODO CORE-6615 This validation mechanism needs to be
+        //  reconsidered in the future
         val algorithms = txIds.mapTo(HashSet(), SecureHash::algorithm)
         require(algorithms.size > 0) {
             "Cannot sign an empty batch"
