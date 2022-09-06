@@ -3,7 +3,7 @@ package net.corda.messaging.utils
 import net.corda.messagebus.api.CordaTopicPartition
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import net.corda.test.util.eventually
-import net.corda.v5.base.concurrent.getOrThrow
+import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
 import org.junit.jupiter.api.Assertions
