@@ -13,7 +13,7 @@ import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 
-private fun testDefaultFactoryNoEvolution(
+fun testDefaultFactoryNoEvolution(
     registerMoreSerializers: (it: SerializerFactory) -> Unit,
     schemeMetadata: CipherSchemeMetadata,
     descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =

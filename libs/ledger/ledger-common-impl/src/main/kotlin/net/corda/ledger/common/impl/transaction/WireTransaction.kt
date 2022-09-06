@@ -26,7 +26,6 @@ internal val COMPONENT_MERKLE_TREE_ENTROPY_ALGORITHM_NAME = DigestAlgorithmName.
 
 const val ALL_LEDGER_METADATA_COMPONENT_GROUP_ID = 0
 
-@CordaSerializable
 class WireTransaction(
     private val merkleTreeFactory: MerkleTreeFactory,
     private val digestService: DigestService,
