@@ -91,7 +91,7 @@ fun UniquenessCheckResponseAvro.toUniquenessResult(): UniquenessCheckResult {
             )
         }
         is UniquenessCheckResultSuccessAvro -> {
-            UniquenessCheckResultSuccessImpl(Instant.now())
+            UniquenessCheckResultSuccessImpl(avroResult.commitTimestamp)
         }
         else -> {
             UniquenessCheckResultFailureImpl(
