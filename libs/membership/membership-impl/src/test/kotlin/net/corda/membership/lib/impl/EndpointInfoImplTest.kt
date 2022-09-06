@@ -1,8 +1,8 @@
 package net.corda.membership.lib.impl
 
-import net.corda.v5.base.util.NetworkHostAndPort
+import net.corda.utilities.NetworkHostAndPort
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import kotlin.test.assertEquals
 
 class EndpointInfoImplTest {
     companion object {
@@ -15,24 +15,24 @@ class EndpointInfoImplTest {
     @Test
     fun `creating EndpointInfo using default protocol version`() {
         val endpointInfo = EndpointInfoImpl(URL)
-        assertEquals(URL, endpointInfo.url)
-        assertEquals(DEFAULT_PROTOCOL_VERSION, endpointInfo.protocolVersion)
+        assertThat(endpointInfo.url).isEqualTo(URL)
+        assertThat(endpointInfo.protocolVersion).isEqualTo(DEFAULT_PROTOCOL_VERSION)
     }
 
     @Test
     fun `creating EndpointInfo`() {
         val protocolVersion = 99
         val endpointInfo = EndpointInfoImpl(URL, protocolVersion)
-        assertEquals(URL, endpointInfo.url)
-        assertEquals(protocolVersion, endpointInfo.protocolVersion)
+        assertThat(endpointInfo.url).isEqualTo(URL)
+        assertThat(endpointInfo.protocolVersion).isEqualTo(protocolVersion)
     }
 
     @Test
     fun `NetworkHostAndPort to EndpointInfo works with default protocol version`() {
         val networkHostAndPort = NetworkHostAndPort(HOST, PORT)
         val endpointInfo = networkHostAndPort.toEndpointInfo()
-        assertEquals(URL, endpointInfo.url)
-        assertEquals(DEFAULT_PROTOCOL_VERSION, endpointInfo.protocolVersion)
+        assertThat(endpointInfo.url).isEqualTo(URL)
+        assertThat(endpointInfo.protocolVersion).isEqualTo(DEFAULT_PROTOCOL_VERSION)
     }
 
     @Test
@@ -40,7 +40,7 @@ class EndpointInfoImplTest {
         val protocolVersion = 99
         val networkHostAndPort = NetworkHostAndPort(HOST, PORT)
         val endpointInfo = networkHostAndPort.toEndpointInfo(protocolVersion)
-        assertEquals(URL, endpointInfo.url)
-        assertEquals(protocolVersion, endpointInfo.protocolVersion)
+        assertThat(endpointInfo.url).isEqualTo(URL)
+        assertThat(endpointInfo.protocolVersion).isEqualTo(protocolVersion)
     }
 }
