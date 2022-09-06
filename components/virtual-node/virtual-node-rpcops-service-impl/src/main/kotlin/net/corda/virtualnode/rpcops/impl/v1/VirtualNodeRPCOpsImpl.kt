@@ -200,6 +200,8 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
                     vaultDmlConnection,
                     cryptoDdlConnection,
                     cryptoDmlConnection,
+                    uniquenessDdlConnection,
+                    uniquenessDmlConnection,
                     actor
                 )
             )
@@ -216,6 +218,8 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
                         vaultDmlConnectionId,
                         cryptoDdlConnectionId,
                         cryptoDmlConnectionId,
+                        uniquenessDdlConnectionId,
+                        uniquenessDmlConnectionId,
                         hsmConnectionId,
                         virtualNodeState
                     )
@@ -237,6 +241,8 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
             vaultDmlConnectionId.toString(),
             cryptoDdlConnectionId?.toString(),
             cryptoDmlConnectionId.toString(),
+            uniquenessDdlConnectionId?.toString(),
+            uniquenessDmlConnectionId.toString(),
             hsmConnectionId.toString(),
             state.name
         )

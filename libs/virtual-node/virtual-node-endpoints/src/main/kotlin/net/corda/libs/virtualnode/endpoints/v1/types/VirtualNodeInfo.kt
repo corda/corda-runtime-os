@@ -20,6 +20,10 @@ data class VirtualNodeInfo(
     val cryptoDdlConnectionId: String? = null,
     /** Crypto DML DB connection ID */
     val cryptoDmlConnectionId: String,
+    /** Uniqueness DDL DB connection ID */
+    val uniquenessDdlConnectionId: String? = null,
+    /** Uniqueness DML DB connection ID */
+    val uniquenessDmlConnectionId: String,
     /** HSM connection ID */
     val hsmConnectionId: String? = null,
     /** The virtual node state */

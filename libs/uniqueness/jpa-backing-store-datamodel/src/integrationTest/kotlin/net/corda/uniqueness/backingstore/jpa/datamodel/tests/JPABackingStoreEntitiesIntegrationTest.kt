@@ -37,7 +37,7 @@ class JPABackingStoreEntitiesIntegrationTest {
 
     private companion object {
         private const val MIGRATION_FILE_LOCATION =
-            "net/corda/db/schema/uniqueness/migration/uniqueness-creation-v1.0.xml"
+            "net/corda/db/schema/vnode-uniqueness/migration/vnode-uniqueness-creation-v1.0.xml"
     }
 
     /**
