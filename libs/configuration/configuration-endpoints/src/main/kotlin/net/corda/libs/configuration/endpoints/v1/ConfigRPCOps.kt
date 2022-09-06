@@ -27,7 +27,7 @@ interface ConfigRPCOps : RpcOps {
     @HttpRpcPUT(
         title = "Update cluster configuration",
         description = "Updates a section of the cluster configuration.",
-        responseDescription = "The updated cluster configuration for the specified section."
+        responseDescription = "The updated cluster configuration for the specified section123."
     )
     fun updateConfig(
         @HttpRpcRequestBodyParameter(description = "Details of the updated configuration")

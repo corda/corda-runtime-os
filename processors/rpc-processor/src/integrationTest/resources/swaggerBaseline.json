@@ -233,7 +233,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "The updated cluster configuration for the specified section.",
+            "description" : "The updated cluster configuration for the specified section123.",
             "content" : {
               "application/json" : {
                 "schema" : {
