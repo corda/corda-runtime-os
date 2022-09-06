@@ -3545,7 +3545,7 @@
         }
       },
       "VirtualNodeInfo" : {
-        "required" : [ "cpiIdentifier", "cryptoDmlConnectionId", "holdingIdentity", "state", "vaultDmlConnectionId" ],
+        "required" : [ "cpiIdentifier", "cryptoDmlConnectionId", "holdingIdentity", "state", "uniquenessDmlConnectionId", "vaultDmlConnectionId" ],
         "type" : "object",
         "properties" : {
           "cpiIdentifier" : {
@@ -3570,6 +3570,16 @@
             "example" : "string"
           },
           "state" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          },
+          "uniquenessDdlConnectionId" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "uniquenessDmlConnectionId" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"
@@ -3601,6 +3611,16 @@
             "example" : "string"
           },
           "cryptoDmlConnection" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "uniquenessDdlConnection" : {
+            "type" : "string",
+            "nullable" : true,
+            "example" : "string"
+          },
+          "uniquenessDmlConnection" : {
             "type" : "string",
             "nullable" : true,
             "example" : "string"

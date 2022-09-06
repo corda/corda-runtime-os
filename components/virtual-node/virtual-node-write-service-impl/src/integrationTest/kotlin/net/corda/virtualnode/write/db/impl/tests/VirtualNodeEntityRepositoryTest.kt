@@ -169,8 +169,17 @@ internal class VirtualNodeEntityRepositoryTest {
 
         val holdingIdentityEntity = with(expectedHoldingIdentity) {
             HoldingIdentityEntity(
-                shortHash.value, fullHash, x500Name.toString(), groupId, null, null,
-                null, null, null
+                shortHash.value,
+                fullHash,
+                x500Name.toString(),
+                groupId,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
             )
         }
 
@@ -210,8 +219,19 @@ internal class VirtualNodeEntityRepositoryTest {
         val cryptoDmlConnection = DbConnectionConfig(
             UUID.randomUUID(), "Crypto DML 1", DML, Instant.now(), updateActor, description, config
         )
+        val uniquenessDdlConnection = DbConnectionConfig(
+            UUID.randomUUID(), "Uniqueness DDL 1", DDL, Instant.now(), updateActor, description, config
+        )
+        val uniquenessDmlConnection = DbConnectionConfig(
+            UUID.randomUUID(), "Uniqueness DML 1", DML, Instant.now(), updateActor, description, config
+        )
         val expectedConnections = VirtualNodeDbConnections(
-            vaultDdlConnection.id, vaultDmlConnection.id, cryptoDdlConnection.id, cryptoDmlConnection.id
+            vaultDdlConnection.id,
+            vaultDmlConnection.id,
+            cryptoDdlConnection.id,
+            cryptoDmlConnection.id,
+            uniquenessDdlConnection.id,
+            uniquenessDmlConnection.id
         )
 
         entityManager.transaction {
@@ -219,6 +239,8 @@ internal class VirtualNodeEntityRepositoryTest {
             it.persist(vaultDmlConnection)
             it.persist(cryptoDdlConnection)
             it.persist(cryptoDmlConnection)
+            it.persist(uniquenessDdlConnection)
+            it.persist(uniquenessDmlConnection)
             repository.putHoldingIdentity(it, expectedHoldingIdentity, expectedConnections)
         }
 
@@ -260,8 +282,19 @@ internal class VirtualNodeEntityRepositoryTest {
         val cryptoDmlConnection = DbConnectionConfig(
             UUID.randomUUID(), "Crypto DML 2", DML, Instant.now(), updateActor, description, config
         )
+        val uniquenessDdlConnection = DbConnectionConfig(
+            UUID.randomUUID(), "Uniqueness DDL 2", DDL, Instant.now(), updateActor, description, config
+        )
+        val uniquenessDmlConnection = DbConnectionConfig(
+            UUID.randomUUID(), "Uniqueness DML 2", DML, Instant.now(), updateActor, description, config
+        )
         val dbConnections = VirtualNodeDbConnections(
-            vaultDdlConnection.id, vaultDmlConnection.id, cryptoDdlConnection.id, cryptoDmlConnection.id
+            vaultDdlConnection.id,
+            vaultDmlConnection.id,
+            cryptoDdlConnection.id,
+            cryptoDmlConnection.id,
+            uniquenessDdlConnection.id,
+            uniquenessDmlConnection.id
         )
 
         entityManagerFactory.transaction {
@@ -269,6 +302,8 @@ internal class VirtualNodeEntityRepositoryTest {
             it.persist(vaultDmlConnection)
             it.persist(cryptoDdlConnection)
             it.persist(cryptoDmlConnection)
+            it.persist(uniquenessDdlConnection)
+            it.persist(uniquenessDmlConnection)
             repository.putHoldingIdentity(it, expectedHoldingIdentity, dbConnections)
         }
 
@@ -286,9 +321,20 @@ internal class VirtualNodeEntityRepositoryTest {
         val newCryptoDmlConnection = DbConnectionConfig(
             UUID.randomUUID(), "Crypto DML 3", DML, Instant.now(), updateActor, description, config
         )
+        val newUniquenessDdlConnection = DbConnectionConfig(
+            UUID.randomUUID(), "Uniqueness DDL 3", DDL, Instant.now(), updateActor, description, config
+        )
+        val newUniquenessDmlConnection = DbConnectionConfig(
+            UUID.randomUUID(), "Uniqueness DML 3", DML, Instant.now(), updateActor, description, config
+        )
 
         val expectedConnections = VirtualNodeDbConnections(
-            newVaultDdlConnection.id, newVaultDmlConnection.id, newCryptoDdlConnection.id, newCryptoDmlConnection.id
+            newVaultDdlConnection.id,
+            newVaultDmlConnection.id,
+            newCryptoDdlConnection.id,
+            newCryptoDmlConnection.id,
+            newUniquenessDdlConnection.id,
+            newUniquenessDmlConnection.id
         )
 
         entityManagerFactory.transaction {
@@ -296,6 +342,8 @@ internal class VirtualNodeEntityRepositoryTest {
             it.persist(newVaultDmlConnection)
             it.persist(newCryptoDdlConnection)
             it.persist(newCryptoDmlConnection)
+            it.persist(newUniquenessDdlConnection)
+            it.persist(newUniquenessDmlConnection)
             repository.putHoldingIdentity(it, expectedHoldingIdentity, expectedConnections)
         }
 
@@ -340,8 +388,17 @@ internal class VirtualNodeEntityRepositoryTest {
         }
         val holdingIdentityEntity = with(holdingIdentity) {
             HoldingIdentityEntity(
-                shortHash.value, fullHash, x500Name.toString(), groupId, null, null,
-                null, null, null
+                shortHash.value,
+                fullHash,
+                x500Name.toString(),
+                groupId,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
             )
         }
         val virtualNodeEntity =
@@ -384,8 +441,17 @@ internal class VirtualNodeEntityRepositoryTest {
         }
         val holdingIdentityEntity = with(holdingIdentity) {
             HoldingIdentityEntity(
-                shortHash.value, fullHash, x500Name.toString(), groupId, null, null,
-                null, null, null
+                shortHash.value,
+                fullHash,
+                x500Name.toString(),
+                groupId,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
             )
         }
 
