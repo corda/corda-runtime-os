@@ -18,7 +18,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 class FlowSessionImpl private constructor(
     override val counterparty: MemberX500Name,
     private val sourceSessionId: String,

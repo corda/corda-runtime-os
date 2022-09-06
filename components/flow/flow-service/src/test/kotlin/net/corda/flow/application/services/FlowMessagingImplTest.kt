@@ -4,7 +4,6 @@ import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.ALICE_X500_NAME
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
 import net.corda.flow.utils.mutableKeyValuePairList
-import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.messaging.FlowContextPropertiesMutator
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.exceptions.CordaRuntimeException
