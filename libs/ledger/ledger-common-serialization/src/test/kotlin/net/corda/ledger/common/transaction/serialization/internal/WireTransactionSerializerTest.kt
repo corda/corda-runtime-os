@@ -6,7 +6,6 @@ import net.corda.crypto.merkle.impl.MerkleTreeFactoryImpl
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.WireTransaction
-import net.corda.ledger.common.transaction.serialization.internal.WireTransactionSerializer
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.cipher.suite.DigestService
