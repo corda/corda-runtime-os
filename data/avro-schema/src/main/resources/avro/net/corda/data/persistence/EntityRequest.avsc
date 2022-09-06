@@ -1,7 +1,7 @@
 {
   "type": "record",
   "name": "EntityRequest",
-  "doc": "Make a persistence request for some entity type.  The action is determined by the type of the {@link EntityRequest#request} payload.  See also: {@link EntityResponse}, {@link PersistEntities}, {@link MergeEntities}, {@link DeleteEntities}, {@link DeleteEntitiesById}, {@link FindEntity}, {@link FindAll}",
+  "doc": "Make a persistence request for some entity type.  The action is determined by the type of the {@link EntityRequest#request} payload.  See also: {@link EntityResponse}, {@link PersistEntities}, {@link MergeEntities}, {@link DeleteEntities}, {@link DeleteEntitiesById}, {@link FindEntities}, {@link FindAll}",
   "namespace": "net.corda.data.persistence",
   "fields": [
     {
@@ -13,13 +13,13 @@
       "name": "request",
       "doc": "The 'request' that we wish to make to the persistence API.",
       "type": [
-        "net.corda.data.persistence.PersistEntities",
-        "net.corda.data.persistence.MergeEntities",
+        "net.corda.data.persistence.FindAll",
+        "net.corda.data.persistence.FindEntities",
+        "net.corda.data.persistence.FindWithNamedQuery",
         "net.corda.data.persistence.DeleteEntities",
         "net.corda.data.persistence.DeleteEntitiesById",
-        "net.corda.data.persistence.FindEntity",
-        "net.corda.data.persistence.FindAll",
-        "net.corda.data.persistence.FindWithNamedQuery"
+        "net.corda.data.persistence.MergeEntities",
+        "net.corda.data.persistence.PersistEntities"
       ]
     },
     {

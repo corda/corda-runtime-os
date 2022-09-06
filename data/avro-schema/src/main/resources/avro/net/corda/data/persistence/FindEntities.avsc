@@ -1,0 +1,21 @@
+{
+  "type": "record",
+  "name": "FindEntities",
+  "doc": "Find the specified entities. See also {@link EntityRequest#request}",
+  "namespace": "net.corda.data.persistence",
+  "fields": [
+    {
+      "name": "entityClassName",
+      "type": "string",
+      "doc": "The fully qualified entity class name"
+    },
+    {
+      "name": "ids",
+      "type": {
+        "type" : "array",
+        "items": "bytes"
+      },
+      "doc": "The serialized ids of the entities to find, each in AMQP format"
+    }
+  ]
+}

@@ -14,7 +14,7 @@ open class DigitalSignature(bytes: ByteArray) : OpaqueBytes(bytes) {
      * of the [CompositeKey] is passed to the sign operation it may contain keys which are not actually owned by
      * the member).
      * @param bytes signature.
-     * @param context the context which was passed to the signing operation, not that this context is not signed over
+     * @param context the context which was passed to the signing operation, note that this context is not signed over
      */
     open class WithKey(
         val by: PublicKey,
