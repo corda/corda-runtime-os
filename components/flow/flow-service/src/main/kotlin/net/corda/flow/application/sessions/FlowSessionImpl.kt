@@ -25,7 +25,7 @@ class FlowSessionImpl(
     direction: Direction
 ) : FlowSession {
 
-    companion object {
+    private companion object {
         private val log = contextLogger()
     }
 
