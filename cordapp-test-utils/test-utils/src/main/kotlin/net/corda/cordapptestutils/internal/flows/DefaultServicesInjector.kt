@@ -2,8 +2,13 @@ package net.corda.cordapptestutils.internal.flows
 
 import net.corda.cordapptestutils.internal.messaging.ConcurrentFlowMessaging
 import net.corda.cordapptestutils.internal.messaging.SimFiber
+import net.corda.cordapptestutils.internal.signing.KeyStore
+import net.corda.cordapptestutils.internal.signing.SimWithJsonSignatureVerificationService
+import net.corda.cordapptestutils.internal.signing.SimWithJsonSigningService
 import net.corda.cordapptestutils.internal.tools.SimpleJsonMarshallingService
 import net.corda.cordapptestutils.internal.utils.injectIfRequired
+import net.corda.v5.application.crypto.DigitalSignatureVerificationService
+import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -36,6 +41,7 @@ class DefaultServicesInjector : FlowServicesInjector {
         member: MemberX500Name,
         fiber: SimFiber,
         flowFactory: FlowFactory,
+        keyStore: KeyStore
     ) {
         val flowClass = flow.javaClass
         flow.injectIfRequired(JsonMarshallingService::class.java,
@@ -47,10 +53,23 @@ class DefaultServicesInjector : FlowServicesInjector {
         flow.injectIfRequired(
             PersistenceService::class.java,
             getOrCreatePersistenceService(member, fiber))
-
         flow.injectIfRequired(
             MemberLookup::class.java,
             getOrCreateMemberLookup(member, fiber))
+        flow.injectIfRequired(
+            SigningService::class.java,
+            getOrCreateSigningService(createJsonMarshallingService(), keyStore))
+        flow.injectIfRequired(
+            DigitalSignatureVerificationService::class.java,
+            SimWithJsonSignatureVerificationService()
+        )
+    }
+
+    private fun getOrCreateSigningService(
+        jsonMarshallingService: JsonMarshallingService,
+        keyStore: KeyStore
+    ): SigningService {
+        return SimWithJsonSigningService(jsonMarshallingService, keyStore)
     }
 
     private fun getOrCreateMemberLookup(member: MemberX500Name, fiber: SimFiber): MemberLookup {

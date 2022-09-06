@@ -8,6 +8,7 @@ import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MemberInfo
+import java.security.PublicKey
 
 /**
  * Registers, and looks up, responder flows via their protocol.
@@ -20,9 +21,9 @@ class SimFiberBase(
     private val nodeClasses = HashMap<MemberX500Name, HashMap<String, Class<out ResponderFlow>>>()
     private val nodeInstances = HashMap<MemberX500Name, HashMap<String, ResponderFlow>>()
     private val persistenceServices = HashMap<MemberX500Name, CloseablePersistenceService>()
-    private val memberInfos = HashMap<MemberX500Name, MemberInfo>()
+    private val memberInfos = HashMap<MemberX500Name, BaseMemberInfo>()
 
-    override val members
+    override val members : Map<MemberX500Name, MemberInfo>
         get() = memberInfos
 
     override fun registerInitiator(initiator: MemberX500Name) {
@@ -94,6 +95,13 @@ class SimFiberBase(
 
     override fun createMemberLookup(member: MemberX500Name): MemberLookup {
         return memberLookUpFactory.createMemberLookup(member, this)
+    }
+
+    override fun registerKey(member: MemberX500Name, publicKey: PublicKey) {
+        val memberInfo = checkNotNull(
+            memberInfos[member]
+        ) { "MemberInfo for \"$member\" was not created; this should never happen" }
+        memberInfos[member] = memberInfo.copy(ledgerKeys = memberInfo.ledgerKeys.plus(publicKey))
     }
 
     override fun close() {

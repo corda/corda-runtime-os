@@ -1,7 +1,9 @@
 package net.corda.cordapptestutils
 
+import net.corda.cordapptestutils.crypto.HsmCategory
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
+import java.security.PublicKey
 
 interface SimulatedVirtualNode {
     val holdingIdentity: HoldingIdentity
@@ -21,4 +23,9 @@ interface SimulatedVirtualNode {
      * Retrieves the persistence service associated with this node's member
      */
     fun getPersistenceService(): PersistenceService
+
+    /**
+     * Generates a key for this node with the given alias, HSM category and scheme.
+     */
+    fun generateKey(alias: String, hsmCategory: HsmCategory, scheme: String) : PublicKey
 }

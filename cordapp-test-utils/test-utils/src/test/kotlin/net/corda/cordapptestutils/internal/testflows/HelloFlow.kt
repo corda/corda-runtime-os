@@ -1,5 +1,7 @@
 package net.corda.cordapptestutils.internal.testflows
 
+import net.corda.v5.application.crypto.DigitalSignatureVerificationService
+import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.RPCRequestData
@@ -28,6 +30,12 @@ class HelloFlow : RPCStartableFlow {
 
     @CordaInject
     lateinit var memberLookup: MemberLookup
+
+    @CordaInject
+    lateinit var signingService: SigningService
+
+    @CordaInject
+    lateinit var signatureVerificationService: DigitalSignatureVerificationService
 
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {

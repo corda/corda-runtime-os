@@ -10,8 +10,8 @@ production-like implementation of Corda.
 ## Simulator
 
 The main class for testing your CorDapps is `Simulator`. "Uploading" your flow for a given party will create a
-simulated "virtual node" which can then be invoked using the same party name (in the real Corda this would be done using
-the `CPI_HASH`).
+simulated "virtual node" which can then be invoked using the initiating flow class (in the real Corda this would 
+be done using the `CPI_HASH`).
 
 ```kotlin
   val corda = Simulator()
@@ -71,8 +71,8 @@ val requestBody = RequestData.create(
 ## Instance vs Class upload
 
 Simulator has two methods of creating nodes with responder flows:
-- via a class, which will be constructed when a response flow is initialized.
-- via an instance, which must be uploaded against a protocol.
+- via a flow class, which will be constructed when a response flow is initialized.
+- via a flow instance, which must be uploaded against a protocol.
 
 Uploading an instance allows flows to be constructed containing other mocks, injected logic, etc. It also
 allows mocks to be used in place of a real flow. For instance, using Mockito:
@@ -85,19 +85,60 @@ whenever(responder.call(any())).then {
     session.send(RollCallResponse(""))
 }
 
-corda.createVirtualNode(
+val node = corda.createVirtualNode(
     HoldingIdentity.create(MemberX500Name.parse(studentId)),
     "roll-call",
     responder)
 ```
 
+Note that uploading an instance of a flow bypasses all the checks that Simulator would normally carry out on
+the flow class.
+
+## Key Management and Signing
+
+In real Corda, an endpoint is available for generating keys with different schemes and different HSM categories.
+Currently, only signing with ledger keys is supported. These can be accessed through `MemberInfo` available in 
+the `MemberLookup` service.
+
+In Simulator, keys can be generated via a method on the virtual node:
+
+```kotlin
+val publicKey = node.generateKey("my-alias", HsmCategory.LEDGER, "CORDA.ECDSA.SECP256R1")
+```
+
+Simulator's `SigningService` mimics the real thing by wrapping the bytes provided in a readable JSON wrapper, using
+the key, alias, HSM category and signature scheme.
+
+```json
+{
+  "clearData":"<clear data bytes>",
+  "encodedKey":"<PEM encoded public key>",
+  "signatureSpecName":"<signature spec name>",
+  "keyParameters":{"alias":"<alias>","hsmCategory":"LEDGER","scheme":"<scheme>"}
+}
+```
+
+The equivalent `DigitalVerificationService` simply looks to see if the clear data, signature spec and key are a match.
+
+Note that as with real Corda, private keys are contained within their own node, so keys generated in one 
+node cannot be used to sign data in another (though all public keys are accessible through `MemberInfo`).
+
+Note also that Simulator does not check to see if any given scheme is supported, and will only
+ever generate an RSA key, regardless of parameters. To verify that your chosen key scheme and signature spec
+are supported and work together, test using a real Corda deployment.
+
+> **⚠ Warning**
+> 
+> Simulator never actually encrypts anything, and should not be used with sensitive data or in a production
+> environment.
+
 ## Standalone tools and services
 
-The CordaSim has several components which can also be used independently:
+Simulator has several components which can also be used independently:
 
 - A `FlowChecker` which checks your flow for a default constructor and required Corda annotations.
 - A `JsonMarshallingService` which can be used to convert objects to JSON and vice-versa, available through the  
-  `JsonMarshallingServiceFactory`
+  `JsonMarshallingServiceFactory`.
 
 ## TODO:
 

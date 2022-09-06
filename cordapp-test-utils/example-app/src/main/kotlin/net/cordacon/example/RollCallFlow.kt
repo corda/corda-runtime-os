@@ -1,5 +1,6 @@
 package net.cordacon.example
 
+import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatingFlow
@@ -14,13 +15,11 @@ import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SignatureSpec
 import net.cordacon.example.utils.createScript
 import net.cordacon.example.utils.findStudents
 import net.cordacon.example.utils.rollCallName
-import java.util.UUID
-import javax.persistence.Column
-import javax.persistence.Entity
-import javax.persistence.Id
 
 
 @InitiatingFlow("roll-call")
@@ -49,12 +48,20 @@ class RollCallFlow: RPCStartableFlow {
     @CordaInject
     lateinit var memberLookup: MemberLookup
 
+    @CordaInject
+    lateinit var signingService: SigningService
+
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
         log.info("Flow invoked")
         log.info("Initiating roll call")
 
         val students = findStudents(memberLookup)
+
+        val truancyOffice = MemberX500Name.parse(requestBody.getRequestBodyAs(
+            jsonMarshallingService,
+            RollCallInitiationRequest::class.java
+        ).truancyOfficeX500)
 
         val sessionsAndRecipients = students.map {
             SessionAndRecipient(flowMessaging.initiateFlow(it.name), it.name)
@@ -66,12 +73,37 @@ class RollCallFlow: RPCStartableFlow {
             val absenteeSessions = firstResponses.filter { r -> r.response.isEmpty() }
                 .map { (flowSession) -> flowSession }
             val rechecks = sendRetries(absenteeSessions)
+            sendTruancyRecord(truancyOffice, getTruantsFromRetryResults(rechecks))
             firstResponses + rechecks
         }.flatten()
 
         val studentsAndResponses = responses
             .map { Pair(it.flowSession.counterparty, it.response) }
         return createScript(studentsAndResponses, flowEngine.virtualNodeName)
+    }
+
+    private fun getTruantsFromRetryResults(rechecks: List<SessionAndResponse>): List<MemberX500Name> {
+        val candidateTruants = rechecks.map { it.flowSession.counterparty }.toSet()
+        val truants = candidateTruants.filter { candidate ->
+            rechecks.none {
+                    allpairs -> allpairs.flowSession.counterparty == candidate && allpairs.response.isNotEmpty()
+            }
+        }
+        return truants
+    }
+
+    @Suspendable
+    private fun sendTruancyRecord(truancyOffice : MemberX500Name, truants: List<MemberX500Name>) {
+        if (truants.isNotEmpty()) {
+            val unsignedTruants = jsonMarshallingService.format(truants.map { it.toString() })
+            val signedTruants = signingService.sign(
+                unsignedTruants.toByteArray(),
+                memberLookup.myInfo().ledgerKeys[0],
+                SignatureSpec.ECDSA_SHA256
+            )
+            val truancySubFlow = TruancySubFlow(truancyOffice, TruancyRecord(truants, signedTruants))
+            flowEngine.subFlow(truancySubFlow)
+        }
     }
 
     @Suspendable
@@ -91,7 +123,7 @@ class RollCallFlow: RPCStartableFlow {
         absenteeSessions.map { session ->
                 val absenceResponses = retryRollCall(session)
                 if (absenceResponses.none { (response) -> response.isNotEmpty() }) {
-                    persistenceService.persist(AbsenceRecordEntity(name = session.counterparty.rollCallName))
+                    persistenceService.persist(TruancyEntity(name = session.counterparty.rollCallName))
                     absenceResponses.map { SessionAndResponse(session, "") }
                 } else {
                     listOf(
@@ -114,6 +146,8 @@ class RollCallFlow: RPCStartableFlow {
         return responses
     }
 }
+@CordaSerializable
+data class RollCallInitiationRequest(val truancyOfficeX500: String)
 
 @CordaSerializable
 data class RollCallRequest(val recipientX500: String)
@@ -124,11 +158,4 @@ data class RollCallResponse(val response: String)
 data class AbsenceResponse(val response: String)
 
 @CordaSerializable
-@Entity
-data class AbsenceRecordEntity(
-    @Id
-    @Column
-    val id: UUID = UUID.randomUUID(),
-    @Column
-    val name: String
-)
+data class TruancyRecord(val absentees: List<MemberX500Name>, val signature: DigitalSignature.WithKey)

@@ -9,6 +9,7 @@ import net.corda.cordapptestutils.internal.flows.FlowFactory
 import net.corda.cordapptestutils.internal.flows.FlowServicesInjector
 import net.corda.cordapptestutils.internal.messaging.SimFiber
 import net.corda.cordapptestutils.internal.messaging.SimFiberBase
+import net.corda.cordapptestutils.internal.signing.BaseKeyStore
 import net.corda.cordapptestutils.internal.tools.CordaFlowChecker
 import net.corda.cordapptestutils.tools.FlowChecker
 import net.corda.v5.application.flows.Flow
@@ -29,6 +30,7 @@ class SimulatedCordaNetworkBase  (
         holdingIdentity: HoldingIdentity,
         vararg flowClasses: Class<out Flow>
     ): SimulatedVirtualNode {
+        require(flowClasses.isNotEmpty()) { "No flow classes provided" }
         flowClasses.forEach {
             flowChecker.check(it)
             registerWithFiber(holdingIdentity.member, it)
@@ -65,7 +67,7 @@ class SimulatedCordaNetworkBase  (
         responderFlow: ResponderFlow
     ): SimulatedVirtualNode {
         fiber.registerResponderInstance(responder.member, protocol, responderFlow)
-        return SimulatedVirtualNodeBase(responder, fiber, injector, flowFactory)
+        return SimulatedVirtualNodeBase(responder, fiber, injector, flowFactory, BaseKeyStore())
     }
 
     override fun close() {
