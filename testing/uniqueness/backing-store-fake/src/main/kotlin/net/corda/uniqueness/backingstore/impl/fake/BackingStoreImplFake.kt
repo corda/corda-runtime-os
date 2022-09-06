@@ -15,13 +15,15 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.uniqueness.backingstore.BackingStore
-import net.corda.uniqueness.datamodel.internal.UniquenessCheckInternalRequest
-import net.corda.uniqueness.datamodel.internal.UniquenessCheckInternalTransactionDetails
-import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
-import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
-import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckTransactionDetailsImpl
+import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckResult
+import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckStateDetails
+import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckStateRef
+import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckTransactionDetails
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -50,13 +52,13 @@ open class BackingStoreImplFake @Activate constructor(
     private val persistedStateData =
         HashMap<UniquenessCheckStateRef, UniquenessCheckStateDetails>()
     private val persistedTxnData =
-        HashMap<SecureHash, UniquenessCheckInternalTransactionDetails>()
+        HashMap<SecureHash, UniquenessCheckTransactionDetails>()
 
     // Temporary cache of data created / updated during the current session
     private val sessionStateData =
         HashMap<UniquenessCheckStateRef, UniquenessCheckStateDetails>()
     private val sessionTxnData =
-        HashMap<SecureHash, UniquenessCheckInternalTransactionDetails>()
+        HashMap<SecureHash, UniquenessCheckTransactionDetails>()
 
     @Synchronized
     override fun session(block: (BackingStore.Session) -> Unit) = block(SessionImpl())
@@ -107,7 +109,7 @@ open class BackingStoreImplFake @Activate constructor(
             ) {
                 sessionStateData.putAll(
                     stateRefs.map {
-                        Pair(it, UniquenessCheckStateDetails(it, null))
+                        Pair(it, UniquenessCheckStateDetailsImpl(it, null))
                     }
                 )
             }
@@ -139,7 +141,7 @@ open class BackingStoreImplFake @Activate constructor(
 
                         Pair(
                             existingState.stateRef,
-                            UniquenessCheckStateDetails(existingState.stateRef, consumingTxId)
+                            UniquenessCheckStateDetailsImpl(existingState.stateRef, consumingTxId)
                         )
                     }
                 )
@@ -147,14 +149,13 @@ open class BackingStoreImplFake @Activate constructor(
 
             @Synchronized
             override fun commitTransactions(
-                transactionDetails: Collection<Pair<
-                        UniquenessCheckInternalRequest, UniquenessCheckResult>>
+                transactionDetails: Collection<Pair<UniquenessCheckRequestInternal, UniquenessCheckResult>>
             ) {
                 sessionTxnData.putAll(
                     transactionDetails.map {
                         Pair(
                             it.first.txId,
-                            UniquenessCheckInternalTransactionDetails(it.first.txId, it.second)
+                            UniquenessCheckTransactionDetailsImpl(it.first.txId, it.second)
                         )
                     }
                 )

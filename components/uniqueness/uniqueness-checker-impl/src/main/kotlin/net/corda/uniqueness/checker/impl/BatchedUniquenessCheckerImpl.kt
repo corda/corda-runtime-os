@@ -31,7 +31,6 @@ import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckError
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckRequest
 import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckResultSuccess
@@ -149,11 +148,11 @@ class BatchedUniquenessCheckerImpl(
 
     @Suppress("ComplexMethod", "LongMethod")
     private fun processBatch(
-        batch: List<UniquenessCheckRequest>
-    ): List<Pair<UniquenessCheckRequest, UniquenessCheckResult>> {
+        batch: List<UniquenessCheckRequestInternal>
+    ): List<Pair<UniquenessCheckRequestInternal, UniquenessCheckResult>> {
 
         val resultsToRespondWith =
-            mutableListOf<Pair<UniquenessCheckRequest, UniquenessCheckResult>>()
+            mutableListOf<Pair<UniquenessCheckRequestInternal, UniquenessCheckResult>>()
 
         // DB operations are retried, removing conflicts from the batch on each attempt.
         backingStore.transactionSession { session, transactionOps ->
@@ -176,7 +175,7 @@ class BatchedUniquenessCheckerImpl(
             //    subset of resultsToRespondWith and reflects only those results that need to be
             //    written to the backing store
             val resultsToCommit = LinkedList<Pair<
-                    UniquenessCheckRequest, UniquenessCheckResult>>()
+                    UniquenessCheckRequestInternal, UniquenessCheckResult>>()
 
             batch.forEach { request ->
                 // Already processed -> Return same result as in DB (idempotency) but no need to
@@ -263,9 +262,9 @@ class BatchedUniquenessCheckerImpl(
     }
 
     private fun handleRejectedRequest(
-        request: UniquenessCheckRequest,
+        request: UniquenessCheckRequestInternal,
         error: UniquenessCheckError
-    ): Pair<UniquenessCheckRequest, UniquenessCheckResult> {
+    ): Pair<UniquenessCheckRequestInternal, UniquenessCheckResult> {
 
         val rejectedResult = UniquenessCheckResultFailureImpl(clock.instant(), error)
 
@@ -278,8 +277,8 @@ class BatchedUniquenessCheckerImpl(
     }
 
     private fun handleSuccessfulRequest(
-        request: UniquenessCheckRequest
-    ): Pair<UniquenessCheckRequest, UniquenessCheckResult> {
+        request: UniquenessCheckRequestInternal
+    ): Pair<UniquenessCheckRequestInternal, UniquenessCheckResult> {
 
         val txDetails = UniquenessCheckTransactionDetailsImpl(
             request.txId,
@@ -312,7 +311,7 @@ class BatchedUniquenessCheckerImpl(
      */
     private fun commitResults(
         txOps: BackingStore.Session.TransactionOps,
-        results: List<Pair<UniquenessCheckRequest, UniquenessCheckResult>>
+        results: List<Pair<UniquenessCheckRequestInternal, UniquenessCheckResult>>
     ) {
         txOps.commitTransactions(results)
 
