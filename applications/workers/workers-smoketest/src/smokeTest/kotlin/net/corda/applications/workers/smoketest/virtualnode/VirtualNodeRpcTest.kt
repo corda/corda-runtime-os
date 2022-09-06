@@ -157,7 +157,7 @@ class VirtualNodeRpcTest {
     fun `cannot upload same CPI with different groupId`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-            val requestId = cpiUpload(TEST_CPB, "SOMETHING ELSE").let { it.toJson()["id"].textValue() }
+            val requestId = cpiUpload(TEST_CPB, "differentGroupId").let { it.toJson()["id"].textValue() }
             assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
 
             assertWithRetry {
