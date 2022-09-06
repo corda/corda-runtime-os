@@ -223,6 +223,12 @@
             <column name="crypto_dml_connection_id" type="UUID">
                 <constraints nullable="true"/>
             </column>
+            <column name="uniqueness_ddl_connection_id" type="UUID">
+                <constraints nullable="true"/>
+            </column>
+            <column name="uniqueness_dml_connection_id" type="UUID">
+            <constraints nullable="true"/>
+            </column>
             <column name="hsm_connection_id" type="UUID">
                 <constraints nullable="true"/>
             </column>
@@ -247,6 +253,16 @@
         <addForeignKeyConstraint baseTableName="holding_identity" baseColumnNames="crypto_dml_connection_id"
                                  referencedTableName="db_connection" referencedColumnNames="connection_id"
                                  constraintName="FK__holding_identity__crypto_dml_connection_id"
+                                 baseTableSchemaName="${schema.name}"
+                                 referencedTableSchemaName="${schema.name}"/>
+        <addForeignKeyConstraint baseTableName="holding_identity" baseColumnNames="uniqueness_ddl_connection_id"
+                                 referencedTableName="db_connection" referencedColumnNames="connection_id"
+                                 constraintName="FK__holding_identity__uniqueness_ddl_connection_id"
+                                 baseTableSchemaName="${schema.name}"
+                                 referencedTableSchemaName="${schema.name}"/>
+        <addForeignKeyConstraint baseTableName="holding_identity" baseColumnNames="uniqueness_dml_connection_id"
+                                 referencedTableName="db_connection" referencedColumnNames="connection_id"
+                                 constraintName="FK__holding_identity__uniqueness_dml_connection_id"
                                  baseTableSchemaName="${schema.name}"
                                  referencedTableSchemaName="${schema.name}"/>
 

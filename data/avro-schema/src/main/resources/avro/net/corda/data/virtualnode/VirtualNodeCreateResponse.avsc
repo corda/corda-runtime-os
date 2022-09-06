@@ -74,7 +74,23 @@
         "null",
         "string"
       ],
-      "doc": "ID of virtual node Vault DB connection for DML operations."
+      "doc": "ID of virtual node Crypto DB connection for DML operations."
+    },
+    {
+      "name": "uniquenessDdlConnectionId",
+      "type": [
+        "null",
+        "string"
+      ],
+      "doc": "ID of virtual node Uniqueness DB connection for DDL operations. Null value means that DB is managed externally."
+    },
+    {
+      "name": "uniquenessDmlConnectionId",
+      "type": [
+        "null",
+        "string"
+      ],
+      "doc": "ID of virtual node Uniqueness DB connection for DML operations."
     },
     {
       "name": "hsmConnectionId",

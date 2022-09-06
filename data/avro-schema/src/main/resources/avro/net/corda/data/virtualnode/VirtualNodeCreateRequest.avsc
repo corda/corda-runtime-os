@@ -33,6 +33,16 @@
       "doc": "Connection details for virtual node Crypto DB to be used for DML operations. If null is passed for both crypto connections, cluster DB will be used."
     },
     {
+      "name": "uniquenessDdlConnection",
+      "type": ["null", "string"],
+      "doc": "Connection details for virtual node Uniqueness DB to be used for DDL operations. If null is passed for both uniqueness connections, cluster DB will be used."
+    },
+    {
+      "name": "uniquenessDmlConnection",
+      "type": ["null", "string"],
+      "doc": "Connection details for virtual node Uniqueness DB to be used for DML operations. If null is passed for both uniqueness connections, cluster DB will be used."
+    },
+    {
       "name": "updateActor",
       "type": "string",
       "doc": "ID of RPC user that requested the virtual node creation."
