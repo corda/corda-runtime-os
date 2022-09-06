@@ -64,7 +64,7 @@ class LinkManagerIntegrationTest {
         lateinit var configReadService: ConfigurationReadService
 
         @InjectService(timeout = 4000)
-        lateinit var lifecycleCoordinatorFactory : LifecycleCoordinatorFactory
+        lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 
         @InjectService(timeout = 4000)
         lateinit var cryptoOpsClient: CryptoOpsClient
@@ -96,19 +96,24 @@ class LinkManagerIntegrationTest {
     }
 
     private val bootstrapConfig = SmartConfigFactory.create(ConfigFactory.empty())
-        .create(ConfigFactory.empty()
-            .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
-            .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("INMEMORY"))
-            .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
+        .create(
+            ConfigFactory.empty()
+                .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1))
+                .withValue(BUS_TYPE, ConfigValueFactory.fromAnyRef("INMEMORY"))
+                .withValue(TOPIC_PREFIX, ConfigValueFactory.fromAnyRef(""))
         )
 
     private fun Publisher.publishLinkManagerConfig(config: Config) {
         val configSource = config.root().render(ConfigRenderOptions.concise())
-        this.publish(listOf(Record(
-            Schemas.Config.CONFIG_TOPIC,
-            ConfigKeys.P2P_LINK_MANAGER_CONFIG,
-            Configuration(configSource, configSource, 0, ConfigurationSchemaVersion(1, 0))
-        ))).forEach { it.get() }
+        this.publish(
+            listOf(
+                Record(
+                    Schemas.Config.CONFIG_TOPIC,
+                    ConfigKeys.P2P_LINK_MANAGER_CONFIG,
+                    Configuration(configSource, configSource, 0, ConfigurationSchemaVersion(1, 0))
+                )
+            )
+        ).forEach { it.get() }
     }
 
     @BeforeEach
@@ -145,7 +150,7 @@ class LinkManagerIntegrationTest {
             ThirdPartyComponentsMode.STUB
         )
 
-        linkManager.use {
+        linkManager.also {
             linkManager.start()
 
             logger.info("Publishing valid configuration")

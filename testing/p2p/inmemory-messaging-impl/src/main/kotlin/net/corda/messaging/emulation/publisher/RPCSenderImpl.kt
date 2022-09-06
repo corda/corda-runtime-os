@@ -32,14 +32,10 @@ class RPCSenderImpl<REQUEST, RESPONSE>(
         lifecycleCoordinator.updateStatus(LifecycleStatus.UP)
     }
 
-    override fun stop() {
+    override fun close() {
         running = false
         lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         lifecycleCoordinator.stop()
-    }
-
-    override fun close() {
-        running = false
         lifecycleCoordinator.close()
     }
 

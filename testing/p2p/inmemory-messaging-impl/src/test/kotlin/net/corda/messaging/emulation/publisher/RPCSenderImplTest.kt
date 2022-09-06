@@ -50,7 +50,7 @@ class RPCSenderImplTest {
 
         rpcSender.start()
         Assertions.assertThat(rpcSender.isRunning).isTrue
-        rpcSender.stop()
+        rpcSender.close()
         Assertions.assertThat(rpcSender.isRunning).isFalse
     }
 

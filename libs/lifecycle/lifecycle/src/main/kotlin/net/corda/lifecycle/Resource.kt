@@ -11,14 +11,6 @@ package net.corda.lifecycle
  * When the resource goes out of scope, [close] is automatically called
  */
 interface Resource : AutoCloseable {
-
-    /**
-     * Override to define how the resource starts.
-     *
-     * It should be safe to call start multiple times without side effects.
-     */
-//    fun start() {}
-
     /**
      * Automatically called when this resource is out of try-with-resource scope.
      *

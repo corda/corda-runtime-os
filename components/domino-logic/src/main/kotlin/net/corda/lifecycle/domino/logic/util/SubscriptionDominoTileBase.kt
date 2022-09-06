@@ -98,10 +98,6 @@ abstract class SubscriptionDominoTileBase(
 
     override fun stop() {
         managedChildren.forEach { it.lifecycle.stop() }
-    }
-
-    override fun close() {
-        stop()
         isOpen.set(false)
     }
 

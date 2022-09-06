@@ -818,7 +818,7 @@ class ComplexDominoTileTest {
                 tile.start()
 
                 tile.close()
-                verify(children[0].first.dominoTile).close()
+                verify(children[0].first.dominoTile).stop()
             }
 
             @Test

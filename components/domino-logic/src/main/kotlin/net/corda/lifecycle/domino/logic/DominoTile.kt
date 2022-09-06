@@ -40,7 +40,7 @@ abstract class DominoTile: Lifecycle {
         coordinator.start()
     }
 
-    override fun close() {
+    open fun close() {
         coordinator.close()
     }
 

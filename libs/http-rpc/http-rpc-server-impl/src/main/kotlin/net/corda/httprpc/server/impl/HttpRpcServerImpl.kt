@@ -1,29 +1,29 @@
 package net.corda.httprpc.server.impl
 
+import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.RpcOps
 import net.corda.httprpc.security.read.RPCSecurityManager
 import net.corda.httprpc.server.HttpRpcServer
+import net.corda.httprpc.server.config.HttpRpcSettingsProvider
+import net.corda.httprpc.server.config.impl.HttpRpcObjectSettingsProvider
+import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.impl.apigen.models.Resource
 import net.corda.httprpc.server.impl.apigen.processing.APIStructureRetriever
 import net.corda.httprpc.server.impl.apigen.processing.JavalinRouteProviderImpl
 import net.corda.httprpc.server.impl.apigen.processing.openapi.OpenApiInfoProvider
-import net.corda.httprpc.server.config.HttpRpcSettingsProvider
-import net.corda.httprpc.server.config.impl.HttpRpcObjectSettingsProvider
-import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.impl.internal.HttpRpcServerInternal
 import net.corda.httprpc.server.impl.security.SecurityManagerRPCImpl
 import net.corda.httprpc.server.impl.security.provider.AuthenticationProvider
 import net.corda.httprpc.server.impl.security.provider.basic.UsernamePasswordAuthenticationProvider
 import net.corda.httprpc.server.impl.security.provider.bearer.azuread.AzureAdAuthenticationProvider
+import net.corda.httprpc.server.impl.websocket.deferred.DeferredWebSocketCloserService
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
-import net.corda.httprpc.PluggableRPCOps
-import net.corda.httprpc.RpcOps
 import java.nio.file.Path
 import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.write
-import net.corda.httprpc.server.impl.websocket.deferred.DeferredWebSocketCloserService
 import java.util.function.Supplier
+import kotlin.concurrent.write
 
 @SuppressWarnings("TooGenericExceptionThrown", "LongParameterList")
 class HttpRpcServerImpl(
@@ -40,10 +40,6 @@ class HttpRpcServerImpl(
     @Volatile
     private var running = false
     private val startStopLock = ReentrantReadWriteLock()
-
-    override val isRunning: Boolean
-        get() = running
-
 
     private val resources = getResources(rpcOpsImpls)
     private val httpRpcObjectConfigProvider = HttpRpcObjectSettingsProvider(httpRpcSettings, devMode)
@@ -72,7 +68,7 @@ class HttpRpcServerImpl(
         }
     }
 
-    override fun stop() {
+    override fun close() {
         startStopLock.write {
             if (running) {
                 log.info("Stop the server.")

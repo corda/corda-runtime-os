@@ -25,6 +25,7 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 
@@ -123,7 +124,8 @@ class ChunkReadServiceImpl @Activate constructor(
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 
-    override fun close() {
+    @Deactivate
+    fun close() {
         configSubscription?.close()
         registration?.close()
         chunkDbWriter?.close()

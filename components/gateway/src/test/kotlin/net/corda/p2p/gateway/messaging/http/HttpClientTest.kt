@@ -188,7 +188,7 @@ class HttpClientTest {
         client.start()
         client.onClose(HttpConnectionEvent(channel))
 
-        client.close()
+        client.stop()
 
         verify(future).cancel(true)
     }

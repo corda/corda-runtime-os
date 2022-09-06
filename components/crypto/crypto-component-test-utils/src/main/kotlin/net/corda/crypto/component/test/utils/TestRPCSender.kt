@@ -47,7 +47,7 @@ class TestRPCSender<REQUEST, RESPONSE>(
         lifecycleCoordinator.start()
     }
 
-    override fun stop() {
+    override fun close() {
         lifecycleCoordinator.stop()
         stopped.incrementAndGet()
     }

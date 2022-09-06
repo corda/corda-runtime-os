@@ -99,7 +99,7 @@ internal class LifecycleCoordinatorImplTest {
                     unexpectedEventCount++
                 }
             }
-        }.use { coordinator ->
+        }.also { coordinator ->
             coordinator.start()
             assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             for (i in 0 until n) {
@@ -137,7 +137,7 @@ internal class LifecycleCoordinatorImplTest {
                     unexpectedEventCount++
                 }
             }
-        }.use { coordinator ->
+        }.also { coordinator ->
             coordinator.start()
             assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             for (i in 0 until n) {
@@ -173,7 +173,7 @@ internal class LifecycleCoordinatorImplTest {
                     deliveredTimerEvents++
                 }
             }
-        }.use { coordinator ->
+        }.also { coordinator ->
             coordinator.start()
             assertTrue(startLatch.await(TIMEOUT * 2, TimeUnit.MILLISECONDS))
             coordinator.setTimer(key, TIMER_DELAY) {
@@ -215,7 +215,7 @@ internal class LifecycleCoordinatorImplTest {
                     stopLatch.countDown()
                 }
             }
-        }.use { coordinator ->
+        }.also { coordinator ->
             for (i in 0..NUM_LOOPS) {
                 startLatch = CountDownLatch(1)
                 stopLatch = CountDownLatch(1)
@@ -260,7 +260,7 @@ internal class LifecycleCoordinatorImplTest {
                     stopLatch.countDown()
                 }
             }
-        }.use { coordinator ->
+        }.also { coordinator ->
             for (i in 0..NUM_LOOPS) {
                 startLatch = CountDownLatch(1)
                 stopLatch = CountDownLatch(1)
@@ -304,7 +304,7 @@ internal class LifecycleCoordinatorImplTest {
                     stopLatch.countDown()
                 }
             }
-        }.use { coordinator ->
+        }.also { coordinator ->
             for (i in 0..NUM_LOOPS) {
                 startLatch = CountDownLatch(1)
                 stopLatch = CountDownLatch(1)
@@ -334,7 +334,7 @@ internal class LifecycleCoordinatorImplTest {
                 }
                 is StopEvent -> stopLatch.countDown()
             }
-        }.use { coordinator ->
+        }.also { coordinator ->
             coordinator.start()
             assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             coordinator.setTimer(key, TIMER_DELAY) {
@@ -344,6 +344,7 @@ internal class LifecycleCoordinatorImplTest {
                 }
             }
             assertTrue(timerLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            coordinator.close()
         }
         assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
         assertEquals(key, deliveredKey)
@@ -366,7 +367,7 @@ internal class LifecycleCoordinatorImplTest {
                     stoppedRunningLatch.countDown()
                 }
             }
-        }.use { coordinator ->
+        }.also { coordinator ->
             for (i in 0..NUM_LOOPS) {
                 startedRunningLatch = CountDownLatch(1)
                 stoppedRunningLatch = CountDownLatch(1)
@@ -399,7 +400,7 @@ internal class LifecycleCoordinatorImplTest {
                     stopLatch.countDown()
                 }
             }
-        }.use {
+        }.also {
             it.stop()
             it.start()
             it.start()
@@ -427,7 +428,7 @@ internal class LifecycleCoordinatorImplTest {
                     stopLatch.countDown()
                 }
             }
-        }.use {
+        }.also {
             it.start()
             assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             // For sanity
@@ -470,7 +471,7 @@ internal class LifecycleCoordinatorImplTest {
                     stopLatch.countDown()
                 }
             }
-        }.use {
+        }.also {
             it.start()
             assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
         }
@@ -495,7 +496,7 @@ internal class LifecycleCoordinatorImplTest {
                     stopLatch.countDown()
                 }
             }
-        }.use {
+        }.also {
             it.start()
             it.stop()
             assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
@@ -538,7 +539,7 @@ internal class LifecycleCoordinatorImplTest {
                     throw exception
                 }
             }
-        }.use {
+        }.also {
             it.start()
             it.stop()
             assertTrue(exceptionLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
@@ -579,7 +580,7 @@ internal class LifecycleCoordinatorImplTest {
                     }
                 }
             }
-        }.use {
+        }.also {
             it.postEvent(whileStopped)
             it.start()
             assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
@@ -626,7 +627,7 @@ internal class LifecycleCoordinatorImplTest {
                     throw exception
                 }
             }
-        }.use {
+        }.also {
             it.start()
             assertTrue(exceptionLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
@@ -657,7 +658,7 @@ internal class LifecycleCoordinatorImplTest {
                     flushingLatch.countDown()
                 }
             }
-        }.use {
+        }.also {
             it.start()
             assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             assertEquals(LifecycleStatus.DOWN, it.status)
@@ -699,7 +700,7 @@ internal class LifecycleCoordinatorImplTest {
                     stopLatch.countDown()
                 }
             }
-        }.use {
+        }.also {
             it.updateStatus(LifecycleStatus.UP)
             it.start()
             assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
@@ -732,7 +733,7 @@ internal class LifecycleCoordinatorImplTest {
                     regLatch.countDown()
                 }
             }
-        }.use {
+        }.also {
             it.start()
             assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             val handle = it.followStatusChanges(setOf(dependent1, dependent2))
@@ -803,7 +804,7 @@ internal class LifecycleCoordinatorImplTest {
                     regLatch.countDown()
                 }
             }
-        }.use {
+        }.also {
             it.start()
             assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             val handle = it.followStatusChanges(setOf(dependent1, dependent2))
@@ -851,7 +852,7 @@ internal class LifecycleCoordinatorImplTest {
                     regLatch.countDown()
                 }
             }
-        }.use {
+        }.also {
             it.start()
             dependent1.start()
             dependent2.start()
@@ -918,7 +919,7 @@ internal class LifecycleCoordinatorImplTest {
                     regLatch.countDown()
                 }
             }
-        }.use {
+        }.also {
             dependent1.start()
             dependent2.start()
             val handle = it.followStatusChanges(setOf(dependent1, dependent2))
@@ -954,7 +955,7 @@ internal class LifecycleCoordinatorImplTest {
                     stopLatch.countDown()
                 }
             }
-        }.use {
+        }.also {
             it.start()
             assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             it.postEvent(object : ThrowException {})
@@ -997,7 +998,7 @@ internal class LifecycleCoordinatorImplTest {
                     registrationLatch.countDown()
                 }
             }
-        }.use {
+        }.also {
             it.start()
             assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             val handle = it.followStatusChangesByName(setOf(nameA, nameB))
@@ -1034,7 +1035,7 @@ internal class LifecycleCoordinatorImplTest {
                     startLatch.countDown()
                 }
             }
-        }.use {
+        }.also {
             it.start()
             assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
             assertThrows<LifecycleException> {
@@ -1103,9 +1104,10 @@ internal class LifecycleCoordinatorImplTest {
                 }
             }
         }
-        coordinator.use {
+        coordinator.also {
             it.start()
             assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            it.close()
         }
         assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
         verify(registry).removeCoordinator(coordinator.name)

@@ -191,5 +191,5 @@ interface LifecycleCoordinator : Lifecycle {
      *
      * @throws LifecycleException if there are any registrations involving this coordinator.
      */
-    override fun close()
+    fun close()
 }

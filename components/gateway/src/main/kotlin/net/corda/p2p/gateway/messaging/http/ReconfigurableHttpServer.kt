@@ -85,7 +85,7 @@ class ReconfigurableHttpServer(
                     serverLock.write {
                         val oldServer = httpServer
                         httpServer = null
-                        oldServer?.stop()
+                        oldServer?.close()
                         val newServer = HttpServer(
                             listener,
                             newConfiguration,
@@ -110,7 +110,7 @@ class ReconfigurableHttpServer(
                     serverLock.write {
                         val oldServer = httpServer
                         httpServer = null
-                        oldServer?.stop()
+                        oldServer?.close()
                         httpServer = newServer
                     }
                 }
