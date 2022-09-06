@@ -6,7 +6,7 @@ import net.corda.crypto.merkle.impl.MerkleTreeFactoryImpl
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactory
-import net.corda.internal.serialization.amqp.helper.testDefaultFactoryNoEvolution
+import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.WireTransaction
@@ -28,7 +28,7 @@ class WireTransactionSerializerTest {
             val schemeMetadata = CipherSchemeMetadataImpl()
             digestService = DigestServiceImpl(schemeMetadata, null)
             merkleTreeFactory = MerkleTreeFactoryImpl(digestService)
-            serializerFactory = testDefaultFactoryNoEvolution({
+            serializerFactory = TestSerializationService.getTestDefaultFactoryNoEvolution({
                 it.register(WireTransactionSerializer(merkleTreeFactory, digestService), it)
             }, schemeMetadata)
         }
