@@ -32,13 +32,6 @@ object ConfigKeys {
     const val SECRETS_PASSPHRASE = "passphrase"
     const val SECRETS_SALT = "salt"
 
-    // DB
-    const val JDBC_DRIVER = "database.jdbc.driver"
-    const val JDBC_URL = "database.jdbc.url"
-    const val DB_USER = "database.user"
-    const val DB_PASS = "database.pass"
-    const val DB_POOL_MAX_SIZE = "database.pool.max_size"
-
     const val WORKSPACE_DIR = "dir.workspace"
     const val TEMP_DIR = "dir.tmp"
 
