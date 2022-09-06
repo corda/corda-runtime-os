@@ -12,6 +12,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.condpermadmin.ConditionalPermissionAdmin
 import org.osgi.service.condpermadmin.ConditionalPermissionInfo
+import org.osgi.service.permissionadmin.PermissionInfo
 import java.io.IOException
 import java.io.InputStream
 import java.security.Security
@@ -29,6 +30,13 @@ class SecurityManagerServiceImpl @Activate constructor(
         private val log = contextLogger()
         const val PACKAGE_ACCESS_PROPERTY = "package.access"
         private const val DEFAULT_SECURITY_POLICY = "high_security.policy"
+        private val ALL_PERMISSION_POLICY = listOf(
+            ConditionalPermission(
+            null,
+            null,
+            arrayOf(PermissionInfo("java.security.AllPermission", "", "")),
+            ALLOW)
+        )
     }
 
     // The OSGi security manager that is installed at framework start.
@@ -40,10 +48,7 @@ class SecurityManagerServiceImpl @Activate constructor(
     init {
         enablePackageAccessPermission("net.corda.")
         startRestrictiveMode()
-        val url = bundleContext.bundle.getResource(DEFAULT_SECURITY_POLICY)
-        log.info("Applying default security policy ($DEFAULT_SECURITY_POLICY)")
-        val policy = readPolicy(url.openConnection().getInputStream())
-        updatePermissions(policy, clear = true)
+        applyDefaultSecurityPolicy(bundleContext)
     }
 
     /**
@@ -55,6 +60,22 @@ class SecurityManagerServiceImpl @Activate constructor(
         val packageAccess = Security.getProperty(PACKAGE_ACCESS_PROPERTY)
         val separator = if (packageAccess.isNotBlank()) "," else ""
         Security.setProperty(PACKAGE_ACCESS_PROPERTY, packageAccess + separator + packageName)
+    }
+
+    /**
+     * Applies default security policy. If system property "securityPolicyAllPermissions" is set to "true",
+     * a policy that allows all permissions will be applied (this should be used only for development purposes).
+     */
+    private fun applyDefaultSecurityPolicy(bundleContext: BundleContext) {
+        val policy = if (System.getProperty("securityPolicyAllPermissions").toBoolean()) {
+            log.warn("Applying default security policy that allows all permissions")
+            ALL_PERMISSION_POLICY
+        } else {
+            val url = bundleContext.bundle.getResource(DEFAULT_SECURITY_POLICY)
+            log.info("Applying default security policy ($DEFAULT_SECURITY_POLICY)")
+            readPolicy(url.openConnection().getInputStream())
+        }
+        updatePermissions(policy, clear = true)
     }
 
     override fun startRestrictiveMode() {
