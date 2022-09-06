@@ -5,7 +5,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.security.DigestInputStream
 import java.security.MessageDigest
-import java.util.*
+import java.util.Arrays
 import java.util.jar.JarEntry
 import java.util.jar.JarInputStream
 import java.util.zip.ZipEntry
