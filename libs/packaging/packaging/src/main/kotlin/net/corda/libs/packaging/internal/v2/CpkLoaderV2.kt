@@ -66,7 +66,6 @@ class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
     override fun loadMetadata(source: ByteArray, cpkLocation: String?, verifySignature: Boolean): CpkMetadata =
         readCpkMetadata(source)
 
-    @Suppress("ComplexMethod", "ThrowsCount")
     private fun readCpkMetadata(cpkBytes: ByteArray): CpkMetadata {
 
         val (manifest, cpkEntries) = JarInputStream(cpkBytes.inputStream(), true).use {
