@@ -28,30 +28,6 @@ spec:
             - mountPath: /tmp/working_dir
               name: working-volume
       initContainers:
-      {{ if .Values.db.create }}
-        - name: create-db
-          image: {{ include "corda.dbClientImage" . }}
-        - name: create-db
-          image: {{ include "corda.dbClientImage" . }}
-          command:
-            - 'sh'
-            - '-c'
-            - |
-              DBUSER={{ include "corda.clusterDbUser" . }}
-              DBPORT={{ include "corda.clusterDbPort" . }}
-              DBNAME={{ include "corda.clusterDbName" . }}
-              if psql -h {{ required "A db host is required" .Values.db.cluster.host }} -U $DBUSER -lqt | cut -d \| -f 1 | grep -qw $DBNAME; then
-                echo "DB exists already"
-              else
-                psql -h {{ required "A db host is required" .Values.db.cluster.host }} -U $DBUSER -c "CREATE DATABASE $DBNAME WITH OWNER='$DBUSER' ENCODING='UTF8'" $DBUSER
-              fi
-          env:
-            - name: PGPASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "corda.clusterDbSecretName" . }}
-                  key: password
-      {{ end }}
         - name: create-db-schemas
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
