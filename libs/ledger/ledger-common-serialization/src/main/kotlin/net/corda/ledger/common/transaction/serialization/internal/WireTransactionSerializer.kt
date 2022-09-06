@@ -1,4 +1,4 @@
-package net.corda.ledger.common.impl.transaction.serialization
+package net.corda.ledger.common.transaction.serialization.internal
 
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.serialization.BaseProxySerializer
