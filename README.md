@@ -2,14 +2,25 @@
 
 ## Setup/Build
 
-run `./gradlew build`
+Run `./gradlew build`
 
 * This will produce:
-  * one jar, named corda-cli.jar, located in the `app/build/libs/` directory
-  * two plugins zips located in `build/plugins` directory.
-* The plugins are:
-  * `plugin-example-plugin-one-0.0.1.zip`
-  * `plugin-example-plugin-two-0.0.1.zip`
+  * one jar, named `corda-cli.jar`, located in the `app/build/libs/` directory
+  * one plugin ZIP, named  `plugin-example-plugin-0.0.1.zip` plugin zips in `build/plugins` directory
+  * wrapper scripts, including `corda-cli.sh` in `build/generatedScripts`
+  
+So far, there's basically nothing very useful, all you have is way to run plugins.
+To get useful functionality, you will need to then go and build plugins from other repositories, and 
+copy them in to `build/plugins`. Plugin JARs can be placed into `build/plugins` without rebuilding this plugin host project; they will be picked up dynamically, and
+you do not have to list them out or do anything more than just copy them in to this directory. To work with Corda 5 you will need
+[corda-runtime-os/tools/plugins/package](https://github.com/corda/corda-runtime-os/tree/release/os/5.0/tools/plugins/package) and
+[corda-runtime-os/tools/plugins/mgm](https://github.com/corda/corda-runtime-os/tree/release/os/5.0/tools/plugins/mgm), so execute:
+
+```
+(cd .. && git clone https://github.com/corda/corda-runtime-os.git)
+(cd ../corda-runtime-os && ./gradlew :tools:plugins:package:build  :tools:plugins:mgm:build)
+cp ../corda-runtime-os/tools/plugins/package/build/libs/package-cli-plugin-*.jar ../corda-runtime-os/tools/plugins/mgm/build/libs/mgm-cli*.jar build/plugins/
+```
 
 ## Running The CLI Script
 
@@ -19,20 +30,18 @@ In the build/generatedScripts directory there is a windows cmd and shell command
 
 ## The Plugins
 
-### Example Plugin One
+Please refer to the detailed documemntation for each plugin:
+
+* [mgm plugin README.md](https://github.com/corda/corda-runtime-os/tree/release/os/5.0/tools/plugins/mgm) for generating group policy files which are required to make CPIs, which are required to run a CorDapp. 
+* [package plugin README.md](https://github.com/corda/corda-runtime-os/tree/release/os/5.0/tools/plugins/package) for generating CPB and CPI files
+
+### Example Plugin
 
 Root Command: `pluginOne`
 Sub Commands included:
 
 1. `basicExample` - Prints a welcome message.
 2. `serviceExample` - Uses and injected service.
-
-### Example Plugin Two
-
-Root Command: `pluginTwo`
-Sub Commands included:
-
-1. `subCommand` - Prints a welcome message.
 
 ## Writing Your Own Plugin
 
