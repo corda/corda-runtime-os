@@ -2,7 +2,7 @@ package net.corda.libs.cpiupload
 
 /**
  * Exception type that is thrown if there is an attempt to upload a
- * duplicate CPI .
+ * CPI with a groupID that's already in use.
  *
  * This exception is passed via a kafka envelope message and then
  * "checked" in the rpc ops layer when received.
