@@ -1,4 +1,4 @@
-package net.corda.ledger.common.transaction.serialization
+package net.corda.ledger.common.transaction.serialization.internal
 
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.ledger.common.transaction.PrivacySalt
