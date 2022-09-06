@@ -41,8 +41,8 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas.Config.Companion.CONFIG_MGMT_REQUEST_TOPIC
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.annotations.VisibleForTesting
-import net.corda.v5.base.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.versioning.Version

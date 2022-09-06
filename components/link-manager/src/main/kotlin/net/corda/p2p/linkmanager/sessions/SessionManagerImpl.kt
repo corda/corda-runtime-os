@@ -551,16 +551,23 @@ internal class SessionManagerImpl(
     private fun processInitiatorHello(message: InitiatorHelloMessage): LinkOutMessage? {
         logger.info("Processing ${message::class.java.simpleName} for session ${message.header.sessionId}.")
         //This will be adjusted so that we use the group policy coming from the CPI with the latest version deployed locally (CORE-5323).
-        val hostedIdentityInSameGroup = linkManagerHostingMap.allLocallyHostedIdentities()
-            .find { it.groupId == message.source.groupId }
-        if (hostedIdentityInSameGroup == null) {
+        val hostedIdentitiesInSameGroup = linkManagerHostingMap.allLocallyHostedIdentities()
+            .filter { it.groupId == message.source.groupId }
+        if (hostedIdentitiesInSameGroup.isEmpty()) {
             logger.warn("There is no locally hosted identity in group ${message.source.groupId}. The initiator message was discarded.")
             return null
         }
 
         val sessionManagerConfig = config.get()
-        val peer = members.getMemberInfo(hostedIdentityInSameGroup, message.source.initiatorPublicKeyHash.array())
-        if (peer == null) {
+        val (hostedIdentityInSameGroup, peer) = hostedIdentitiesInSameGroup
+            .firstNotNullOfOrNull { hostedIdentityInSameGroup ->
+                val member = members.getMemberInfo(hostedIdentityInSameGroup, message.source.initiatorPublicKeyHash.array())
+                if (member == null) {
+                    null
+                } else {
+                    hostedIdentityInSameGroup to member
+                }
+            } ?: let {
             logger.peerHashNotInMembersMapWarning(
                 message::class.java.simpleName,
                 message.header.sessionId,
@@ -599,15 +606,18 @@ internal class SessionManagerImpl(
         }
 
         val initiatorIdentityData = session.getInitiatorIdentity()
-        val hostedIdentityInSameGroup = linkManagerHostingMap.allLocallyHostedIdentities()
-            .find { it.groupId == initiatorIdentityData.groupId }
-        if (hostedIdentityInSameGroup == null) {
+        val hostedIdentitiesInSameGroup = linkManagerHostingMap.allLocallyHostedIdentities()
+            .filter { it.groupId == initiatorIdentityData.groupId }
+        if (hostedIdentitiesInSameGroup.isEmpty()) {
             logger.warn("There is no locally hosted identity in group ${initiatorIdentityData.groupId}. The initiator handshake message" +
                     " was discarded.")
             return null
         }
 
-        val peer = members.getMemberInfo(hostedIdentityInSameGroup, initiatorIdentityData.initiatorPublicKeyHash.array())
+        val peer = hostedIdentitiesInSameGroup
+            .firstNotNullOfOrNull { hostedIdentityInSameGroup ->
+                members.getMemberInfo(hostedIdentityInSameGroup, initiatorIdentityData.initiatorPublicKeyHash.array())
+            }
         if (peer == null) {
             logger.peerHashNotInMembersMapWarning(
                 message::class.java.simpleName,

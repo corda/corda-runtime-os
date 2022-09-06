@@ -4,7 +4,6 @@ import net.corda.internal.serialization.NotSerializableDetailedException
 import net.corda.internal.serialization.amqp.PropertyDescriptor
 import net.corda.internal.serialization.amqp.TransformsAnnotationProcessor
 import net.corda.internal.serialization.amqp.asClass
-import net.corda.internal.serialization.amqp.calculatedPropertyDescriptors
 import net.corda.internal.serialization.amqp.componentType
 import net.corda.internal.serialization.amqp.propertyDescriptors
 import net.corda.internal.serialization.model.LocalTypeInformation.ACollection
@@ -387,7 +386,7 @@ internal data class LocalTypeInformationBuilder(val lookup: LocalTypeLookup,
             }.sortedBy { (name, _) -> name }.toMap(LinkedHashMap())
 
     private fun buildObjectProperties(rawType: Class<*>, constructorInformation: LocalConstructorInformation): Map<PropertyName, LocalPropertyInformation> =
-            (calculatedProperties(rawType) + nonCalculatedProperties(rawType, constructorInformation))
+            nonCalculatedProperties(rawType, constructorInformation)
                     .sortedBy { (name, _) -> name }
                     .toMap(LinkedHashMap())
 
@@ -457,15 +456,6 @@ internal data class LocalTypeInformationBuilder(val lookup: LocalTypeLookup,
                             paramTypeInformation,
                             isMandatory)
                 }
-            }
-
-    private fun calculatedProperties(rawType: Class<*>): Sequence<Pair<String, LocalPropertyInformation>> =
-            rawType.calculatedPropertyDescriptors().asSequence().map { (name, v) ->
-                val paramType = v.getter!!.genericReturnType
-                val paramTypeInformation = resolveAndBuild(paramType)
-                val isMandatory = paramType.asClass().isPrimitive || !v.getter.returnsNullable()
-
-                name to LocalPropertyInformation.CalculatedProperty(v.getter, paramTypeInformation, isMandatory)
             }
 
     private fun buildTypeParameterInformation(type: ParameterizedType): List<LocalTypeInformation> =
