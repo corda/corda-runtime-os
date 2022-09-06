@@ -8,7 +8,7 @@ import net.corda.db.core.PostgresDataSourceFactory
 import net.corda.orm.DbEntityManagerConfiguration
 import net.corda.orm.DdlManage
 import net.corda.orm.EntityManagerConfiguration
-import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.DatabaseConfig
 import net.corda.test.util.LoggingUtils.emphasise
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -112,16 +112,16 @@ object DbUtils {
                 jdbcUrl = "$jdbcUrl?currentSchema=$schemaName"
             }
             return ConfigFactory.empty()
-                .withValue(ConfigKeys.JDBC_URL, ConfigValueFactory.fromAnyRef(jdbcUrl))
-                .withValue(ConfigKeys.DB_USER, ConfigValueFactory.fromAnyRef(user))
-                .withValue(ConfigKeys.DB_PASS, ConfigValueFactory.fromAnyRef(password))
+                .withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef(jdbcUrl))
+                .withValue(DatabaseConfig.DB_USER, ConfigValueFactory.fromAnyRef(user))
+                .withValue(DatabaseConfig.DB_PASS, ConfigValueFactory.fromAnyRef(password))
         } else {
             // in memory
             return ConfigFactory.empty()
-                .withValue(ConfigKeys.JDBC_DRIVER, ConfigValueFactory.fromAnyRef("org.hsqldb.jdbc.JDBCDriver"))
-                .withValue(ConfigKeys.JDBC_URL, ConfigValueFactory.fromAnyRef("jdbc:hsqldb:mem:$inMemoryDbName"))
-                .withValue(ConfigKeys.DB_USER, ConfigValueFactory.fromAnyRef(user))
-                .withValue(ConfigKeys.DB_PASS, ConfigValueFactory.fromAnyRef(password))
+                .withValue(DatabaseConfig.JDBC_DRIVER, ConfigValueFactory.fromAnyRef("org.hsqldb.jdbc.JDBCDriver"))
+                .withValue(DatabaseConfig.JDBC_URL, ConfigValueFactory.fromAnyRef("jdbc:hsqldb:mem:$inMemoryDbName"))
+                .withValue(DatabaseConfig.DB_USER, ConfigValueFactory.fromAnyRef(user))
+                .withValue(DatabaseConfig.DB_PASS, ConfigValueFactory.fromAnyRef(password))
         }
     }
 

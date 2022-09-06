@@ -24,7 +24,7 @@ import net.corda.processors.p2p.linkmanager.LinkManagerProcessor
 import net.corda.processors.rpc.RPCProcessor
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
-import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.DatabaseConfig
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -88,13 +88,13 @@ class CombinedWorker @Activate constructor(
 
         val superUser = System.getenv("CORDA_DEV_POSTGRES_USER") ?: "postgres"
         val superUserPassword = System.getenv("CORDA_DEV_POSTGRES_PASSWORD") ?: "password"
-        val dbUrl = if(config.getConfig(BOOT_DB_PARAMS).hasPath(ConfigKeys.JDBC_URL))
-            config.getConfig(BOOT_DB_PARAMS).getString(ConfigKeys.JDBC_URL) else "jdbc:postgresql://localhost:5432/cordacluster"
+        val dbUrl = if(config.getConfig(BOOT_DB_PARAMS).hasPath(DatabaseConfig.JDBC_URL))
+            config.getConfig(BOOT_DB_PARAMS).getString(DatabaseConfig.JDBC_URL) else "jdbc:postgresql://localhost:5432/cordacluster"
         val dbName = dbUrl.split("/").last().split("?").first()
-        val dbAdmin = if(config.getConfig(BOOT_DB_PARAMS).hasPath(ConfigKeys.DB_USER))
-            config.getConfig(BOOT_DB_PARAMS).getString(ConfigKeys.DB_USER) else "user"
-        val dbAdminPassword = if(config.getConfig(BOOT_DB_PARAMS).hasPath(ConfigKeys.DB_PASS))
-            config.getConfig(BOOT_DB_PARAMS).getString(ConfigKeys.DB_PASS) else "password"
+        val dbAdmin = if(config.getConfig(BOOT_DB_PARAMS).hasPath(DatabaseConfig.DB_USER))
+            config.getConfig(BOOT_DB_PARAMS).getString(DatabaseConfig.DB_USER) else "user"
+        val dbAdminPassword = if(config.getConfig(BOOT_DB_PARAMS).hasPath(DatabaseConfig.DB_PASS))
+            config.getConfig(BOOT_DB_PARAMS).getString(DatabaseConfig.DB_PASS) else "password"
         val secretsSalt = params.defaultParams.secretsParams["salt"] ?: "salt"
         val secretsPassphrase = params.defaultParams.secretsParams["passphrase"] ?: "passphrase"
 

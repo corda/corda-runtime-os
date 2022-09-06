@@ -8,10 +8,12 @@ import com.networknt.schema.JsonSchemaFactory
 import com.networknt.schema.SchemaValidatorsConfig
 import com.networknt.schema.SpecVersion
 import com.networknt.schema.ValidationMessage
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
 import java.io.InputStream
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.validation.ConfigurationSchemaFetchException
 import net.corda.libs.configuration.validation.ConfigurationValidationException
 import net.corda.libs.configuration.validation.ConfigurationValidator
@@ -45,6 +47,27 @@ internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProv
 
     override fun validate(key: String, config: SmartConfig, schemaInput: InputStream, applyDefaults: Boolean) {
         validateConfigAndGetJSONNode(key, config, schemaInput, null, applyDefaults)
+    }
+
+    override fun getDefaults(key: String, version: Version) : Config {
+        val schemaInput = try {
+            schemaProvider.getSchema(key, version)
+        } catch (e: Exception) {
+            val message = "Could not retrieve the schema for key $key at schema version $version: ${e.message}"
+            logger.error(message, e)
+            throw ConfigurationSchemaFetchException(message, e)
+        }
+        val configAsJSONNode = objectMapper.createObjectNode()
+        val errors = try {
+            val schema = getSchema(schemaInput, applyDefaults = true)
+            schema.walk(configAsJSONNode, false).validationMessages
+        } catch (e: Exception) {
+            val message = "Could not retrieve schema defaults for key $key at schema version $version: ${e.message}"
+            logger.error(message, e)
+            throw ConfigurationSchemaFetchException(message, e)
+        }
+        handleErrors(errors, key, version, SmartConfigImpl.empty())
+        return ConfigFactory.parseString(configAsJSONNode.toString())
     }
 
     private fun validateConfigAndGetJSONNode(

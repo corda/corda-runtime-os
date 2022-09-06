@@ -23,9 +23,9 @@ import net.corda.permissions.management.cache.PermissionManagementCacheService
 import net.corda.permissions.validation.cache.PermissionValidationCacheService
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
-import net.corda.schema.configuration.ConfigKeys.DB_PASS
-import net.corda.schema.configuration.ConfigKeys.DB_USER
-import net.corda.schema.configuration.ConfigKeys.JDBC_URL
+import net.corda.schema.configuration.DatabaseConfig.DB_PASS
+import net.corda.schema.configuration.DatabaseConfig.DB_USER
+import net.corda.schema.configuration.DatabaseConfig.JDBC_URL
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
 import net.corda.schema.configuration.ReconciliationConfig
