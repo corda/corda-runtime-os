@@ -5,6 +5,8 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.security.DigestInputStream
 import java.security.MessageDigest
+import java.util.*
+import java.util.jar.JarEntry
 import java.util.jar.JarInputStream
 import java.util.zip.ZipEntry
 import net.corda.libs.packaging.Cpi
@@ -16,6 +18,7 @@ import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.exception.PackagingException
+import net.corda.libs.packaging.signerSummaryHash
 import net.corda.utilities.time.Clock
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
@@ -31,12 +34,14 @@ internal class TestCpbLoaderV2(private val clock: Clock) {
         // Calculate file hash
         val md = MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name)
 
-        JarInputStream(DigestInputStream(ByteArrayInputStream(byteArray), md), false).use { jarInputStream ->
+        JarInputStream(DigestInputStream(ByteArrayInputStream(byteArray), md), true).use { jarInputStream ->
             val mainAttributes = jarInputStream.manifest.mainAttributes
             val cpks = mutableListOf<Cpk>()
 
+            var firstCpkEntry: JarEntry? = null
+
             while (true) {
-                val jarEntry = jarInputStream.nextEntry ?: break
+                val jarEntry = jarInputStream.nextJarEntry ?: break
                 if (isCpk(jarEntry)) {
                     val cpkBytes = jarInputStream.readAllBytes()
                     val cpk = CpkReader.readCpk(
@@ -47,9 +52,23 @@ internal class TestCpbLoaderV2(private val clock: Clock) {
                         cpkFileName = Paths.get(jarEntry.name).fileName.toString()
                     )
                     cpks.add(cpk)
+
+                    jarInputStream.closeEntry()
+                    if (firstCpkEntry == null) {
+                        firstCpkEntry = jarEntry
+                    } else {
+                        if (!Arrays.equals(firstCpkEntry.codeSigners, jarEntry.codeSigners)) {
+                            // TODO enrich exception message with signers
+                            throw IllegalStateException("Mismatch in signers between ${firstCpkEntry.name} and ${jarEntry.name}")
+                        }
+                    }
+                } else {
+                    jarInputStream.closeEntry()
                 }
-                jarInputStream.closeEntry()
             }
+
+            requireNotNull(firstCpkEntry) { "No Cpks found in Cpb" }
+            requireNotNull(firstCpkEntry.certificates) { "No Cpks found in Cpb" }
 
             return object : Cpi {
                 override val metadata =
@@ -59,7 +78,7 @@ internal class TestCpbLoaderV2(private val clock: Clock) {
                                 ?: throw PackagingException("$CPB_NAME_ATTRIBUTE missing from CPB manifest"),
                             mainAttributes.getValue(CPB_VERSION_ATTRIBUTE)
                                 ?: throw PackagingException("$CPB_VERSION_ATTRIBUTE missing from CPB manifest"),
-                            null // signerSummaryHash comes from group policy file which is not present in CPB
+                                firstCpkEntry.certificates.asSequence().signerSummaryHash()
                         ),
                         fileChecksum = SecureHash(DigestAlgorithmName.SHA2_256.name, md.digest()),
                         cpksMetadata = cpks.map { it.metadata },
