@@ -1,6 +1,9 @@
 package net.corda.ledger.common.transaction.serialization.internal
 
 import net.corda.ledger.common.impl.transaction.WireTransaction
+import net.corda.ledger.common.transaction.serialization.WireTransactionContainerImpl
+import net.corda.ledger.common.transaction.serialization.WireTransactionType
+import net.corda.ledger.common.transaction.serialization.WireTransactionVersion
 import net.corda.serialization.BaseProxySerializer
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.cipher.suite.DigestService
@@ -14,28 +17,31 @@ import org.osgi.service.component.annotations.Reference
 class WireTransactionSerializer @Activate constructor(
     @Reference(service = MerkleTreeFactory::class) private val merkleTreeFactory: MerkleTreeFactory,
     @Reference(service = DigestService::class) private val digestService: DigestService
-) : BaseProxySerializer<WireTransaction, WireTransactionSerializer.WireTransactionProxy>() {
+) : BaseProxySerializer<WireTransaction, WireTransactionContainerImpl>() {
 
-    override fun toProxy(obj: WireTransaction): WireTransactionProxy =
-        WireTransactionProxy(
+    override fun toProxy(obj: WireTransaction): WireTransactionContainerImpl =
+        WireTransactionContainerImpl(
+            WireTransactionType.WIRE_TRANSACTION,
+            WireTransactionVersion.VERSION_1,
             obj.privacySalt,
             obj.componentGroupLists
         )
 
-    override fun fromProxy(proxy: WireTransactionProxy): WireTransaction =
-        WireTransaction(
+    override fun fromProxy(proxy: WireTransactionContainerImpl): WireTransaction {
+        //TODO(check metadata)
+
+        return WireTransaction(
             merkleTreeFactory,
             digestService,
             proxy.privacySalt,
             proxy.componentGroupLists
         )
+    }
 
-    override val proxyType: Class<WireTransactionProxy>
-        get() = WireTransactionProxy::class.java
+    override val proxyType: Class<WireTransactionContainerImpl>
+        get() = WireTransactionContainerImpl::class.java
     override val type: Class<WireTransaction>
         get() = WireTransaction::class.java
     override val withInheritance: Boolean
         get() = true
-
-    data class WireTransactionProxy(val privacySalt: PrivacySalt, val componentGroupLists: List<List<ByteArray>>)
 }
