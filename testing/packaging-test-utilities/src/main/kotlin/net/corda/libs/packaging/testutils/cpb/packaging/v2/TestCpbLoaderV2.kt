@@ -3,8 +3,6 @@ package net.corda.libs.packaging.testutils.cpb.packaging.v2
 import java.io.ByteArrayInputStream
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.security.DigestInputStream
-import java.security.MessageDigest
 import java.util.Arrays
 import java.util.jar.JarEntry
 import java.util.jar.JarInputStream
