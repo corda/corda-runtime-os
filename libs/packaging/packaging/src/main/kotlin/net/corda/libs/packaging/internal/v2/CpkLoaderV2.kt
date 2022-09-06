@@ -2,6 +2,7 @@ package net.corda.libs.packaging.internal.v2
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.core.JacksonException
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.PackagingConstants.CPK_DEPENDENCIES_FILE_ENTRY_V2
@@ -92,28 +93,8 @@ class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
         // Read CPK dependencies
         val cpkDependenciesBytes: ByteArray = readCpkDependencies(cpkEntries)
         val jacksonObjectMapper = jacksonObjectMapper()
-        val cpkDependenciesFormatVersion = try {
-            jacksonObjectMapper.readValue(
-                cpkDependenciesBytes,
-                CPKDependencyFormatVersion::class.java
-            )
-        } catch (e: JacksonException) {
-            throw DependencyMetadataException("Error reading CPKDependencies.json", e)
-        }
-        val cpkDependencies = try {
-            when (cpkDependenciesFormatVersion.formatVersion) {
-                CPK_DEPENDENCIES_FORMAT_VERSION2 -> jacksonObjectMapper.readValue(
-                    cpkDependenciesBytes,
-                    CPKDependencyFileV2::class.java
-                )
-                else -> throw UnknownFormatVersionException("$CPK_DEPENDENCIES_FILE_ENTRY_V2 has an unknown " +
-                            "format version \"${cpkDependenciesFormatVersion.formatVersion}\""
-                )
-            }
-        } catch (e: JacksonException) {
-            throw DependencyMetadataException("Error reading CPKDependencies.json", e)
-        }
-
+        val cpkDependenciesFormatVersion = readCpkDependencyFormatVersion(jacksonObjectMapper, cpkDependenciesBytes)
+        val cpkDependencies = readCpkDependencies(jacksonObjectMapper, cpkDependenciesBytes, cpkDependenciesFormatVersion)
 
         return CpkMetadata(
             cpkId = CpkIdentifier(
@@ -136,6 +117,37 @@ class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
                 .toList(), // Add file hash option
             timestamp = clock.instant()
         )
+    }
+
+    private fun readCpkDependencyFormatVersion(
+        jacksonObjectMapper: ObjectMapper,
+        cpkDependenciesBytes: ByteArray,
+    ): CPKDependencyFormatVersion = try {
+        jacksonObjectMapper.readValue(
+            cpkDependenciesBytes,
+            CPKDependencyFormatVersion::class.java
+        )
+    } catch (e: JacksonException) {
+        throw DependencyMetadataException("Error reading CPKDependencies.json", e)
+    }
+
+    private fun readCpkDependencies(
+        jacksonObjectMapper: ObjectMapper,
+        cpkDependenciesBytes: ByteArray,
+        cpkDependenciesFormatVersion: CPKDependencyFormatVersion,
+    ): CPKDependencyFileV2 = try {
+        when (cpkDependenciesFormatVersion.formatVersion) {
+            CPK_DEPENDENCIES_FORMAT_VERSION2 -> jacksonObjectMapper.readValue(
+                cpkDependenciesBytes,
+                CPKDependencyFileV2::class.java
+            )
+            else -> throw UnknownFormatVersionException(
+                "$CPK_DEPENDENCIES_FILE_ENTRY_V2 has an unknown " +
+                        "format version \"${cpkDependenciesFormatVersion.formatVersion}\""
+            )
+        }
+    } catch (e: JacksonException) {
+        throw DependencyMetadataException("Error reading CPKDependencies.json", e)
     }
 
     private fun calculateFileHash(bytes: ByteArray) = bytes.hash(DigestAlgorithmName.SHA2_256)
