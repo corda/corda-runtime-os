@@ -127,7 +127,7 @@ publishing {
             artifact cliInstallArchive
         }
         maven(MavenPublication) {
-            artifactId "corda-cli-installer-s3"
+            artifactId "corda-cli-installer-script"
             groupId project.group
             artifact s3Script
         }
