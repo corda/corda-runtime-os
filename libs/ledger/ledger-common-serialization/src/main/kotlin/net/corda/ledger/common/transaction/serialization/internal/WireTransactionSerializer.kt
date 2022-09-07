@@ -6,6 +6,7 @@ import net.corda.ledger.common.transaction.serialization.WireTransactionVersion
 import net.corda.serialization.BaseProxySerializer
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import org.osgi.service.component.annotations.Activate
@@ -26,14 +27,15 @@ class WireTransactionSerializer @Activate constructor(
         )
 
     override fun fromProxy(proxy: WireTransactionContainer): WireTransaction {
-        //TODO(check metadata)
-
-        return WireTransaction(
-            merkleTreeFactory,
-            digestService,
-            proxy.privacySalt,
-            proxy.componentGroupLists
-        )
+        if (proxy.version == WireTransactionVersion.VERSION_1) {
+            return WireTransaction(
+                merkleTreeFactory,
+                digestService,
+                proxy.privacySalt,
+                proxy.componentGroupLists
+            )
+        }
+        throw CordaRuntimeException("Unable to create WireTransaction with Version='${proxy.version}'")
     }
 
     override val proxyType: Class<WireTransactionContainer>

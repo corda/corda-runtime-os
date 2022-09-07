@@ -8,7 +8,7 @@ import net.corda.v5.ledger.common.transaction.PrivacySalt
 
 data class WireTransactionContainer(
     /**
-     * Version of container.    //TODO
+     * Version of container.
      */
     val version: WireTransactionVersion,
 
