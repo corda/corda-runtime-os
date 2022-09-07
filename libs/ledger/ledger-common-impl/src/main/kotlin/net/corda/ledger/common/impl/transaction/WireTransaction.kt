@@ -7,7 +7,12 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.PrivacySalt
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import net.corda.v5.crypto.merkle.*
+import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION
+import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION
+import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_ENTROPY_OPTION
+import net.corda.v5.crypto.merkle.MerkleTree
+import net.corda.v5.crypto.merkle.MerkleTreeFactory
+import net.corda.v5.crypto.merkle.MerkleTreeHashDigestProvider
 import java.util.Base64
 
 const val ALL_LEDGER_METADATA_COMPONENT_GROUP_ID = 0
@@ -26,7 +31,8 @@ class WireTransaction(
         check(componentGroupLists.all { it.isNotEmpty() }) { "Empty component groups are not allowed" }
         check(componentGroupLists.all { i -> i.all { j-> j.isNotEmpty() } }) { "Empty components are not allowed" }
         check(getMetadata().getDigestSettings() == WireTransactionDigestSettings.defaultValues) {
-            "Only the default digest settings are acceptable now! ${getMetadata().getDigestSettings()} vs ${WireTransactionDigestSettings.defaultValues}"
+            "Only the default digest settings are acceptable now! ${getMetadata().getDigestSettings()} vs " +
+                    "${WireTransactionDigestSettings.defaultValues}"
         }
     }
 
