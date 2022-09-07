@@ -12,6 +12,7 @@ import de.javakaffee.kryoserializers.BitSetSerializer
 import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer
 import net.corda.kryoserialization.resolver.CordaClassResolver
 import net.corda.kryoserialization.serializers.AutoCloseableSerializer
+import net.corda.kryoserialization.serializers.AvroRecordSerializer
 import net.corda.kryoserialization.serializers.CertPathSerializer
 import net.corda.kryoserialization.serializers.ClassSerializer
 import net.corda.kryoserialization.serializers.CordaClosureSerializer
@@ -27,6 +28,7 @@ import net.corda.kryoserialization.serializers.X509CertificateSerializer
 import net.corda.kryoserialization.serializers.NonSerializableSerializer
 import net.corda.serialization.checkpoint.NonSerializable
 import net.corda.utilities.LazyMappedList
+import org.apache.avro.specific.SpecificRecordBase
 import org.objenesis.instantiator.ObjectInstantiator
 import org.objenesis.strategy.InstantiatorStrategy
 import org.objenesis.strategy.StdInstantiatorStrategy
@@ -104,6 +106,9 @@ class DefaultKryoCustomizer {
 
                 addDefaultSerializer(AutoCloseable::class.java, AutoCloseableSerializer)
                 addDefaultSerializer(NonSerializable::class.java, NonSerializableSerializer)
+
+                // Do not kryo serialize avro generated classes
+                addDefaultSerializer(SpecificRecordBase::class.java, AvroRecordSerializer)
 
                 //Add external serializers
                 for ((clazz, serializer) in serializers.toSortedMap(compareBy { it.name })) {
