@@ -7,6 +7,7 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.event.registration.MgmOnboarded
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.toAvro
 import net.corda.libs.configuration.helper.getConfig
@@ -48,6 +49,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
+import net.corda.schema.Schemas.Membership.Companion.EVENT_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.time.UTCClock
@@ -296,6 +298,8 @@ class MGMRegistrationService @Activate constructor(
                     "Registration failed. Reason: ${e.message}"
                 )
             }
+
+            publisher.publish(listOf(Record(EVENT_TOPIC, "${member.shortHash}", MgmOnboarded(member.toAvro()))))
 
             return MembershipRequestRegistrationResult(MembershipRequestRegistrationOutcome.SUBMITTED)
         }

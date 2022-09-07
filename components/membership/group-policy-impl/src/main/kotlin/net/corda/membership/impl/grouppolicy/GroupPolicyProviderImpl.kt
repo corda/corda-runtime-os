@@ -1,11 +1,17 @@
 package net.corda.membership.impl.grouppolicy
 
+import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.data.membership.event.MembershipEvent
+import net.corda.data.membership.event.registration.MgmOnboarded
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
@@ -14,13 +20,24 @@ import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
+import net.corda.membership.lib.grouppolicy.MGMGroupPolicy
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
+import net.corda.messaging.api.processor.DurableProcessor
+import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.Subscription
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.schema.Schemas.Membership.Companion.EVENT_TOPIC
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -39,6 +56,10 @@ class GroupPolicyProviderImpl @Activate constructor(
     private val groupPolicyParser: GroupPolicyParser,
     @Reference(service = MembershipQueryClient::class)
     private val membershipQueryClient: MembershipQueryClient,
+    @Reference(service = SubscriptionFactory::class)
+    private val subscriptionFactory: SubscriptionFactory,
+    @Reference(service = ConfigurationReadService::class)
+    private val configurationReadService: ConfigurationReadService,
 ) : GroupPolicyProvider {
 
     /**
@@ -48,16 +69,23 @@ class GroupPolicyProviderImpl @Activate constructor(
         fun getGroupPolicy(holdingIdentity: HoldingIdentity): GroupPolicy?
     }
 
-    companion object {
+    private companion object {
         val logger = contextLogger()
+        const val CONSUMER_GROUP = "membership.group.policy.provider.group"
+
+        val groupPolicies: MutableMap<HoldingIdentity, GroupPolicy?> = ConcurrentHashMap()
     }
 
-    private var registrationHandle: AutoCloseable? = null
+    private var dependencyServiceRegistration: AutoCloseable? = null
+    private var configHandle: AutoCloseable? = null
 
     private val coordinator = lifecycleCoordinatorFactory
         .createCoordinator<GroupPolicyProvider>(::handleEvent)
 
     private var impl: InnerGroupPolicyProvider = InactiveImpl
+
+    private var subRegistration: RegistrationHandle? = null
+    private var subscription: Subscription<String, MembershipEvent>? = null
 
     override fun getGroupPolicy(holdingIdentity: HoldingIdentity) = impl.getGroupPolicy(holdingIdentity)
     override fun registerListener(callback: (HoldingIdentity, GroupPolicy) -> Unit) {
@@ -81,8 +109,8 @@ class GroupPolicyProviderImpl @Activate constructor(
         when (event) {
             is StartEvent -> {
                 logger.info("Group policy provider starting.")
-                registrationHandle?.close()
-                registrationHandle = coordinator.followStatusChangesByName(
+                dependencyServiceRegistration?.close()
+                dependencyServiceRegistration = coordinator.followStatusChangesByName(
                     setOf(
                         LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
                         LifecycleCoordinatorName.forComponent<CpiInfoReadService>(),
@@ -93,21 +121,53 @@ class GroupPolicyProviderImpl @Activate constructor(
             is StopEvent -> {
                 logger.info("Group policy provider stopping.")
                 deactivate("Stopping component.")
-                registrationHandle?.close()
+                dependencyServiceRegistration?.close()
+                subRegistration?.close()
+                subRegistration = null
+                configHandle?.close()
+                configHandle = null
+                subscription?.close()
+                subscription = null
             }
             is RegistrationStatusChangeEvent -> {
                 logger.info("Group policy provider handling registration change. Event status: ${event.status}")
-                when (event.status) {
-                    LifecycleStatus.UP -> {
-                        swapImpl(ActiveImpl())
-                        coordinator.updateStatus(LifecycleStatus.UP, "All dependencies are UP.")
+                if (event.status == LifecycleStatus.UP) {
+                    if (event.registration == dependencyServiceRegistration) {
+                        logger.info("Dependency services are UP. Registering to receive configuration.")
+                        configHandle?.close()
+                        configHandle = configurationReadService.registerComponentForUpdates(
+                            coordinator,
+                            setOf(MESSAGING_CONFIG, BOOT_CONFIG)
+                        )
+                    } else if (event.registration == subRegistration) {
+                        activate()
+
                     }
-                    else -> {
+                } else {
                         deactivate("All dependencies are not UP.")
-                    }
+                        subscription?.close()
+                }
+            }
+            is ConfigChangedEvent -> {
+                val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+                subscription?.close()
+                subscription = subscriptionFactory.createDurableSubscription(
+                    SubscriptionConfig(CONSUMER_GROUP, EVENT_TOPIC),
+                    Processor(),
+                    messagingConfig,
+                    null
+                ).also {
+                    it.start()
+                    subRegistration?.close()
+                    subRegistration = coordinator.followStatusChangesByName(setOf(it.subscriptionName))
                 }
             }
         }
+    }
+
+    private fun activate() {
+        coordinator.updateStatus(LifecycleStatus.UP, "Received config, started subscriptions and setting status to UP.")
+        swapImpl(ActiveImpl())
     }
 
     private fun deactivate(reason: String) {
@@ -129,8 +189,6 @@ class GroupPolicyProviderImpl @Activate constructor(
     }
 
     private inner class ActiveImpl : InnerGroupPolicyProvider {
-        private val groupPolicies: MutableMap<HoldingIdentity, GroupPolicy?> = ConcurrentHashMap()
-
         private var virtualNodeInfoCallbackHandle: AutoCloseable = startVirtualNodeHandle()
 
         override fun getGroupPolicy(
@@ -152,54 +210,6 @@ class GroupPolicyProviderImpl @Activate constructor(
         }
 
         /**
-         * Parse the group policy string to a [GroupPolicy] object.
-         *
-         * [VirtualNodeInfoReadService] is used to get the [VirtualNodeInfo], unless provided as a parameter. It may be
-         * the case in a virtual node info callback where we are given the changed virtual node info.
-         *
-         * [CpiInfoReadService] is used to get the CPI metadata containing the group policy for the CPI installed on
-         * the virtual node.
-         *
-         * The group policy is cached to simplify lookups later.
-         *
-         * @param holdingIdentity The holding identity of the member retrieving the group policy.
-         * @param virtualNodeInfo if the VirtualNodeInfo is known, it can be passed in instead of getting this from the
-         *  virtual node info reader.
-         */
-        private fun parseGroupPolicy(
-            holdingIdentity: HoldingIdentity,
-            virtualNodeInfo: VirtualNodeInfo? = null,
-        ): GroupPolicy? {
-            val vNodeInfo = virtualNodeInfo ?: virtualNodeInfoReadService.get(holdingIdentity)
-            if (vNodeInfo == null) {
-                logger.warn("Could not get virtual node info for holding identity [${holdingIdentity}]")
-            }
-            val metadata = vNodeInfo?.cpiIdentifier?.let { cpiInfoReader.get(it) }
-            if (metadata == null) {
-                logger.warn(
-                    "Could not get CPI metadata for holding identity [${holdingIdentity}] and CPI with " +
-                            "identifier [${vNodeInfo?.cpiIdentifier.toString()}]"
-                )
-            }
-            fun persistedPropertyQuery(): LayeredPropertyMap? = try {
-                membershipQueryClient.queryGroupPolicy(holdingIdentity).getOrThrow()
-            } catch (e: MembershipQueryResult.QueryException) {
-                logger.warn("Failed to retrieve persisted group policy properties.", e)
-                null
-            }
-            return try {
-                groupPolicyParser.parse(
-                    holdingIdentity,
-                    metadata?.groupPolicy,
-                    ::persistedPropertyQuery
-                )
-            } catch (e: BadGroupPolicyException) {
-                logger.warn("Failed to parse group policy. Returning null.", e)
-                null
-            }
-        }
-
-        /**
          * Register callback so that if a holding identity modifies their virtual node information, the
          * group policy for that holding identity will be parsed in case the virtual node change affected the
          * group policy file.
@@ -207,7 +217,12 @@ class GroupPolicyProviderImpl @Activate constructor(
         private fun startVirtualNodeHandle(): AutoCloseable =
             virtualNodeInfoReadService.registerCallback { changed, snapshot ->
                 logger.info("Processing new snapshot after change in virtual node information.")
-                changed.filter { snapshot[it] != null }.forEach {
+                changed.filter {
+                    snapshot[it] != null
+                }.filter {
+                    val gp = parseGroupPolicy(it, virtualNodeInfo = snapshot[it])!! // TODO null check?
+                    gp !is MGMGroupPolicy
+                }.forEach {
                     groupPolicies.compute(it) { _, _ ->
                         try {
                             parseGroupPolicy(it, virtualNodeInfo = snapshot[it])
@@ -227,7 +242,92 @@ class GroupPolicyProviderImpl @Activate constructor(
                     synchronized(listeners) {
                         listeners.forEach { callback -> callback(it, groupPolicies[it]!!) }
                     }
+                    logger.info("Returning new group policy after change in virtual node information.")
                 }
             }
+    }
+
+    /**
+     * Parse the group policy string to a [GroupPolicy] object.
+     *
+     * [VirtualNodeInfoReadService] is used to get the [VirtualNodeInfo], unless provided as a parameter. It may be
+     * the case in a virtual node info callback where we are given the changed virtual node info.
+     *
+     * [CpiInfoReadService] is used to get the CPI metadata containing the group policy for the CPI installed on
+     * the virtual node.
+     *
+     * The group policy is cached to simplify lookups later.
+     *
+     * @param holdingIdentity The holding identity of the member retrieving the group policy.
+     * @param virtualNodeInfo if the VirtualNodeInfo is known, it can be passed in instead of getting this from the
+     *  virtual node info reader.
+     */
+    private fun parseGroupPolicy(
+        holdingIdentity: HoldingIdentity,
+        virtualNodeInfo: VirtualNodeInfo? = null,
+    ): GroupPolicy? {
+        val vNodeInfo = virtualNodeInfo ?: virtualNodeInfoReadService.get(holdingIdentity)
+        if (vNodeInfo == null) {
+            logger.warn("Could not get virtual node info for holding identity [${holdingIdentity}]")
+        }
+        val metadata = vNodeInfo?.cpiIdentifier?.let { cpiInfoReader.get(it) }
+        if (metadata == null) {
+            logger.warn(
+                "Could not get CPI metadata for holding identity [${holdingIdentity}] and CPI with " +
+                        "identifier [${vNodeInfo?.cpiIdentifier.toString()}]"
+            )
+        }
+        fun persistedPropertyQuery(): LayeredPropertyMap? = try {
+            membershipQueryClient.queryGroupPolicy(holdingIdentity).getOrThrow()
+        } catch (e: MembershipQueryResult.QueryException) {
+            logger.warn("Failed to retrieve persisted group policy properties.", e)
+            null
+        }
+        return try {
+            groupPolicyParser.parse(
+                holdingIdentity,
+                metadata?.groupPolicy,
+                ::persistedPropertyQuery
+            )
+        } catch (e: BadGroupPolicyException) {
+            logger.warn("Failed to parse group policy. Returning null.", e)
+            null
+        }
+    }
+
+    inner class Processor : DurableProcessor<String, MembershipEvent> {
+        override fun onNext(events: List<Record<String, MembershipEvent>>): List<Record<*, *>> {
+            events.forEach {record ->
+                try {
+                    record.value
+                        ?: throw CordaRuntimeException("MembershipEvent with record key: ${record.key} was null.")
+                    when(record.value!!.event) {
+                        is MgmOnboarded -> {
+                            logger.info("Received mgm onboarded event.")
+                            val event = record.value!!.event as MgmOnboarded
+                            val holdingIdentity = event.onboardedMgm.toCorda()
+                            val gp = parseGroupPolicy(holdingIdentity)
+                                ?: throw CordaRuntimeException("Unable to get group policy for ${holdingIdentity.shortHash}.")
+                            if(gp !is MGMGroupPolicy) throw CordaRuntimeException("MGM Group Policy was expected.")
+                            groupPolicies.compute(holdingIdentity) { _, _ ->
+                                gp
+                            }
+                            synchronized(listeners) {
+                                listeners.forEach { callback -> callback(holdingIdentity, gp) }
+                            }
+                        }
+                        else -> { logger.warn("Unhandled MembershipEvent was received.") }
+                    }
+                } catch(e: Exception) {
+                    logger.warn("Could not process onboarding events, caused by: $e")
+                }
+            }
+
+            // no need to publish new records after processing in our scenario
+            return emptyList()
+        }
+
+        override val keyClass = String::class.java
+        override val valueClass = MembershipEvent::class.java
     }
 }
