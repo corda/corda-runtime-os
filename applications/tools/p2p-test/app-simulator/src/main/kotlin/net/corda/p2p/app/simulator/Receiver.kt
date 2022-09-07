@@ -5,6 +5,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.typesafe.config.ConfigValueFactory
+import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.merger.ConfigMerger
 import java.io.Closeable
@@ -18,14 +19,15 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
+import net.corda.p2p.app.simulator.AppSimulatorTopicCreator.Companion.APP_RECEIVED_MESSAGES_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.v5.base.util.contextLogger
 
 @Suppress("LongParameterList")
 class Receiver(private val subscriptionFactory: SubscriptionFactory,
                private val configMerger: ConfigMerger,
+               private val topicAdmin: KafkaTopicAdmin,
                private val receiveTopic: String,
-               private val metadataTopic: String,
                private val bootConfig: SmartConfig,
                private val clients: Int,
                private val instanceId: String,
@@ -39,13 +41,14 @@ class Receiver(private val subscriptionFactory: SubscriptionFactory,
     private val subscriptions = mutableListOf<Subscription<*, *>>()
 
     fun start() {
+        AppSimulatorTopicCreator(bootConfig, topicAdmin).createTopic()
         (1..clients).forEach { client ->
             val subscriptionConfig = SubscriptionConfig("app-simulator-receiver", receiveTopic, )
             val configWithInstanceId = bootConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef("$instanceId-$client".hashCode()))
             val messagingConfig = configMerger.getMessagingConfig(configWithInstanceId)
 
             val subscription = subscriptionFactory.createEventLogSubscription(subscriptionConfig,
-                InboundMessageProcessor(metadataTopic), messagingConfig, null)
+                InboundMessageProcessor(APP_RECEIVED_MESSAGES_TOPIC), messagingConfig, null)
             subscription.start()
             subscriptions.add(subscription)
         }

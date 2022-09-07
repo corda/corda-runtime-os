@@ -16,7 +16,6 @@ import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_MARKERS
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
-import net.corda.testschema.TestSchema.Companion.APP_RECEIVED_MESSAGES_TOPIC
 import java.io.File
 import java.io.StringWriter
 import java.lang.Integer.min
@@ -41,7 +40,6 @@ class KafkaSetup(
             "cleanup" to mapOf("policy" to "delete"),
         )
         private val topicsToConfig = mapOf(
-            APP_RECEIVED_MESSAGES_TOPIC to simpleConfig,
             CONFIG_TOPIC to compactedConfig,
             CRYPTO_KEYS_TOPIC to compactedConfig,
             GATEWAY_TLS_CERTIFICATES to compactedConfig,

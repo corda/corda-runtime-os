@@ -3,6 +3,7 @@ package net.corda.p2p.app.simulator
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -12,6 +13,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
+import net.corda.p2p.app.simulator.AppSimulatorTopicCreator.Companion.APP_RECEIVED_MESSAGES_TOPIC
 import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getDbParameter
 import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getEnumOrNull
 import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getIntOrNull
@@ -24,7 +26,6 @@ import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.MessagingConfig
-import net.corda.testschema.TestSchema.Companion.APP_RECEIVED_MESSAGES_TOPIC
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
@@ -49,6 +50,8 @@ class AppSimulator @Activate constructor(
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = ConfigMerger::class)
     private val configMerger: ConfigMerger,
+    @Reference(service = KafkaTopicAdmin::class)
+    private var topicAdmin: KafkaTopicAdmin,
 ) : Application {
 
     companion object {
@@ -110,13 +113,13 @@ class AppSimulator @Activate constructor(
         }
         when (simulatorMode) {
             SimulationMode.SENDER -> {
-                runSender(configFromFile, parameters, publisherFactory, bootConfig, clients, parameters.instanceId)
+                runSender(configFromFile, parameters, bootConfig, clients, parameters.instanceId)
             }
             SimulationMode.RECEIVER -> {
-                runReceiver(parameters, subscriptionFactory, bootConfig, clients, parameters.instanceId)
+                runReceiver(parameters, bootConfig, clients, parameters.instanceId)
             }
             SimulationMode.DB_SINK -> {
-                runSink(configFromFile, parameters, subscriptionFactory, bootConfig, clients, parameters.instanceId)
+                runSink(configFromFile, parameters, bootConfig, clients, parameters.instanceId)
             }
             else -> throw IllegalStateException("Invalid value for simulator mode: $simulatorMode")
         }
@@ -126,7 +129,6 @@ class AppSimulator @Activate constructor(
     private fun runSender(
         configFromFile: Config,
         parameters: CliParameters,
-        publisherFactory: PublisherFactory,
         bootConfig: SmartConfig,
         clients: Int,
         instanceId: String,
@@ -157,7 +159,6 @@ class AppSimulator @Activate constructor(
 
     private fun runReceiver(
         parameters: CliParameters,
-        subscriptionFactory: SubscriptionFactory,
         bootConfig: SmartConfig,
         clients: Int,
         instanceId: String,
@@ -166,8 +167,8 @@ class AppSimulator @Activate constructor(
         val receiver = Receiver(
             subscriptionFactory,
             configMerger,
+            topicAdmin,
             receiveTopic,
-            APP_RECEIVED_MESSAGES_TOPIC,
             bootConfig,
             clients,
             instanceId
@@ -180,7 +181,6 @@ class AppSimulator @Activate constructor(
     private fun runSink(
         configFromFile: Config,
         parameters: CliParameters,
-        subscriptionFactory: SubscriptionFactory,
         bootConfig: SmartConfig,
         clients: Int,
         instanceId: String,

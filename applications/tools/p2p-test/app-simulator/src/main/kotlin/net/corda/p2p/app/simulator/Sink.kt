@@ -14,8 +14,8 @@ import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.p2p.app.simulator.AppSimulatorTopicCreator.Companion.APP_RECEIVED_MESSAGES_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
-import net.corda.testschema.TestSchema.Companion.APP_RECEIVED_MESSAGES_TOPIC
 import net.corda.v5.base.util.contextLogger
 
 @Suppress("LongParameterList")
