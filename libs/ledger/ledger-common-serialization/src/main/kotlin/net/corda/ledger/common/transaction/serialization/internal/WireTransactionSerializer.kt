@@ -15,8 +15,7 @@ import org.osgi.service.component.annotations.Reference
 @Component(service = [InternalCustomSerializer::class])
 class WireTransactionSerializer @Activate constructor(
     @Reference(service = MerkleTreeFactory::class) private val merkleTreeFactory: MerkleTreeFactory,
-    @Reference(service = DigestService::class) private val digestService: DigestService,
-    private val serializer: SerializationService, //TODO(where will this come from???)
+    @Reference(service = DigestService::class) private val digestService: DigestService
 ) : BaseProxySerializer<WireTransaction, WireTransactionContainer>() {
 
     override fun toProxy(obj: WireTransaction): WireTransactionContainer =
@@ -32,7 +31,6 @@ class WireTransactionSerializer @Activate constructor(
         return WireTransaction(
             merkleTreeFactory,
             digestService,
-            serializer,
             proxy.privacySalt,
             proxy.componentGroupLists
         )

@@ -5,7 +5,9 @@ import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeFactoryImpl
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
+import net.corda.ledger.common.impl.transaction.TransactionMetaData
 import net.corda.ledger.common.impl.transaction.WireTransaction
+import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.cipher.suite.DigestService
@@ -13,6 +15,8 @@ import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import org.junit.jupiter.api.Assertions
 
 class WireTransactionSerializerTest {
     companion object {
@@ -33,7 +37,7 @@ class WireTransactionSerializerTest {
     }
 
     @Test
-    fun `Should serialize and then deserialize wire Tx`() {
+    fun `Should serialize and then deserialize wire Tx (regardless that its metadata is garbage)`() {
         val privacySalt = PrivacySaltImpl("1".repeat(32).toByteArray())
         val componentGroupLists = listOf(
             listOf("123".toByteArray(), "45678".toByteArray()),
@@ -43,13 +47,43 @@ class WireTransactionSerializerTest {
         val wireTransaction = WireTransaction(
             merkleTreeFactory,
             digestService,
-            serializationService,
             privacySalt,
             componentGroupLists
         )
         val bytes = serializationService.serialize(wireTransaction)
-        println(bytes.size)
         val deserialized = serializationService.deserialize(bytes)
         assertEquals(wireTransaction, deserialized)
+        Assertions.assertThrows(com.fasterxml.jackson.databind.exc.MismatchedInputException::class.java) {
+            deserialized.id
+        }
+    }
+
+    @Test
+    fun `Should serialize and then deserialize wire Tx and proper metadata lets us calculate the txIds`() {
+        val mapper = jacksonObjectMapper()
+        val transactionMetaData = TransactionMetaData(
+            mapOf(
+                TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues
+            )
+        )
+        val privacySalt = PrivacySaltImpl("1".repeat(32).toByteArray())
+        val componentGroupLists = listOf(
+            listOf(mapper.writeValueAsBytes(transactionMetaData)),
+            listOf(".".toByteArray()),
+            listOf("abc d efg".toByteArray()),
+        )
+        val wireTransaction = WireTransaction(
+            merkleTreeFactory,
+            digestService,
+            privacySalt,
+            componentGroupLists
+        )
+        val bytes = serializationService.serialize(wireTransaction)
+        val deserialized = serializationService.deserialize(bytes)
+        assertEquals(wireTransaction, deserialized)
+        Assertions.assertDoesNotThrow{
+            wireTransaction.id
+        }
+        assertEquals(wireTransaction.id, deserialized.id)
     }
 }
