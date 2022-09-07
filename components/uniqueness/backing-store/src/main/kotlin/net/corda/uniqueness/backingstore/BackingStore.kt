@@ -3,10 +3,10 @@ package net.corda.uniqueness.backingstore
 import net.corda.lifecycle.Lifecycle
 import net.corda.uniqueness.backingstore.BackingStore.Session
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
+import net.corda.uniqueness.datamodel.internal.UniquenessCheckTransactionDetailsInternal
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
-import net.corda.v5.application.uniqueness.model.UniquenessCheckTransactionDetails
 import net.corda.v5.crypto.SecureHash
 
 /**
@@ -91,7 +91,7 @@ interface BackingStore : Lifecycle {
          */
         fun getTransactionDetails(
             txIds: Collection<SecureHash>
-        ): Map<SecureHash, UniquenessCheckTransactionDetails>
+        ): Map<SecureHash, UniquenessCheckTransactionDetailsInternal>
 
         /**
          * Provides the set of operations that may be performed within the context of a transaction.
