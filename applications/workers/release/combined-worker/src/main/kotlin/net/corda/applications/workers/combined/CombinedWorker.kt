@@ -9,8 +9,8 @@ import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBo
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setUpHealthMonitor
-import net.corda.crypto.config.impl.addDefaultBootCryptoConfig
-import net.corda.crypto.core.aes.KeyCredentials
+import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
+import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
@@ -75,15 +75,17 @@ class CombinedWorker @Activate constructor(
 
         val params = getParams(args, CombinedWorkerParams())
         if (printHelpOrVersion(params.defaultParams, CombinedWorker::class.java, shutDownService)) return
-
+        if (params.hsmId.isBlank()) {
+            // the combined worker may use SOFT HSM by default unlike the crypto worker
+            params.hsmId = SOFT_HSM_ID
+            return
+        }
         val databaseConfig = PathAndConfig(BOOT_DB_PARAMS, params.databaseParams)
-        val cryptoConfig = PathAndConfig(BOOT_CRYPTO, params.cryptoParams)
+        val cryptoConfig = PathAndConfig(BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId))
         val config = getBootstrapConfig(
             params.defaultParams,
             configurationValidatorFactory.createConfigValidator(),
             listOf(databaseConfig, cryptoConfig)
-        ).addDefaultBootCryptoConfig(
-            fallbackMasterWrappingKey = KeyCredentials("soft-passphrase", "soft-salt")
         )
 
         val superUser = System.getenv("CORDA_DEV_POSTGRES_USER") ?: "postgres"
@@ -152,6 +154,6 @@ private class CombinedWorkerParams {
     @Option(names = ["-r", "--rpcParams"], description = ["RPC parameters for the worker."])
     var rpcParams = emptyMap<String, String>()
 
-    @Option(names = ["--cryptoParams"], description = ["Crypto parameters for the worker."])
-    var cryptoParams = emptyMap<String, String>()
+    @Option(names = ["--hsm-id"], description = ["HSM ID which is handled by this worker instance."])
+    var hsmId = ""
 }

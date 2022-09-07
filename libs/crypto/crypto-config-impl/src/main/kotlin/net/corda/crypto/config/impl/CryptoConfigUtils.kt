@@ -4,17 +4,17 @@ package net.corda.crypto.config.impl
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
+import net.corda.crypto.core.CryptoConsts.SOFT_HSM_SERVICE_NAME
 import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.v5.cipher.suite.ConfigurationSecrets
 import net.corda.v5.crypto.exceptions.CryptoException
 import java.util.UUID
 
+// NOTE: hsmId is part of the bootstrap configuration
 
 /*
 {
@@ -31,7 +31,6 @@ import java.util.UUID
     "hsmService": {
         "downstreamMaxAttempts": 3
     },
-    "hsmId": "SOFT",
     "hsmMap": {
         "SOFT": {
             "workerTopicSuffix": "",
@@ -155,25 +154,17 @@ import java.util.UUID
 }
  */
 
+private const val HSM_ID = "hsmId"
 private const val CRYPTO_CONNECTION_FACTORY_OBJ = "cryptoConnectionFactory"
 private const val SIGNING_SERVICE_OBJ = "signingService"
 private const val HSM_SERVICE_OBJ = "hsmService"
-private const val HSM_ID = "hsmId"
 private const val HSM_MAP = "hsmMap"
 private const val HSM_MAP_ITEM_OBJ = "hsmMap.%s"
-private val DEFAULT_HSM_OBJ = String.format(HSM_MAP_ITEM_OBJ, SOFT_HSM_ID)
-private val MASTER_WRAPPING_KEY_SALT = DEFAULT_HSM_OBJ +
-        CryptoHSMConfig::hsm.name +
-        CryptoHSMConfig.HSMConfig::cfg.name +
-        "wrappingKeyMap.salt"
-private val MASTER_WRAPPING_KEY_PASSPHRASE = DEFAULT_HSM_OBJ +
-        CryptoHSMConfig::hsm.name +
-        CryptoHSMConfig.HSMConfig::cfg.name +
-        "wrappingKeyMap.passphrase"
 private const val BUS_PROCESSORS_OBJ = "busProcessors"
 private const val OPS_BUS_PROCESSOR_OBJ = "ops"
 private const val FLOW_BUS_PROCESSOR_OBJ = "flow"
 private const val HSM_REGISTRATION_BUS_PROCESSOR_OBJ = "registration"
+private val DEFAULT_HSM_OBJ = String.format(HSM_MAP_ITEM_OBJ, SOFT_HSM_ID)
 
 fun Map<String, SmartConfig>.toCryptoConfig(): SmartConfig =
     this[CRYPTO_CONFIG] ?: throw IllegalStateException(
@@ -196,13 +187,6 @@ fun SmartConfig.signingService(): CryptoSigningServiceConfig =
         throw IllegalStateException("Failed to get $SIGNING_SERVICE_OBJ.", e)
     }
 
-fun SmartConfig.hsmId(): String =
-    try {
-        getString(HSM_ID)
-    } catch (e: Throwable) {
-        throw IllegalStateException("Failed to get $HSM_ID.", e)
-    }
-
 fun SmartConfig.hsmMap(): Map<String, CryptoHSMConfig> =
     try {
         val set = getConfig(HSM_MAP)
@@ -221,8 +205,6 @@ fun SmartConfig.hsm(id: String): CryptoHSMConfig {
         throw IllegalStateException("Failed to get $path.", e)
     }
 }
-
-fun SmartConfig.hsm(): CryptoHSMConfig = hsm(hsmId())
 
 fun SmartConfig.hsmService(): CryptoHSMServiceConfig =
     try {
@@ -252,16 +234,17 @@ fun SmartConfig.hsmRegistrationBusProcessor(): CryptoBusProcessorConfig =
         throw IllegalStateException("Failed to get BusProcessorConfig for hsm registration operations.", e)
     }
 
-fun createDefaultCryptoConfig(smartFactoryKey: KeyCredentials): SmartConfig =
-    createDefaultCryptoConfig(
-        smartFactoryKey = smartFactoryKey,
-        masterWrappingKey = KeyCredentials(
-            UUID.randomUUID().toString(),
-            UUID.randomUUID().toString()
-        )
-    )
+fun SmartConfig.bootstrapHsmId(): String =
+    try {
+        getString(HSM_ID)
+    } catch (e: Throwable) {
+        throw IllegalStateException("Failed to get $HSM_ID.", e)
+    }
 
-fun createDefaultCryptoConfig(smartFactoryKey: KeyCredentials, masterWrappingKey: KeyCredentials): SmartConfig =
+fun createCryptoBootstrapParamsMap(hsmId: String): Map<String, String> =
+    mapOf(HSM_ID to hsmId)
+
+fun createTestCryptoConfig(smartFactoryKey: KeyCredentials): SmartConfig =
     SmartConfigFactory.create(
         ConfigFactory.parseString(
             """
@@ -269,35 +252,12 @@ fun createDefaultCryptoConfig(smartFactoryKey: KeyCredentials, masterWrappingKey
             ${SmartConfigFactory.SECRET_SALT_KEY}=${smartFactoryKey.salt}
         """.trimIndent()
         )
-    ).createDefaultCryptoConfig(masterWrappingKey)
-
-fun SmartConfig.addDefaultBootCryptoConfig(fallbackMasterWrappingKey: KeyCredentials): SmartConfig {
-    val cryptoLibrary = if (hasPath(BOOT_CRYPTO)) {
-        getConfig(BOOT_CRYPTO)
-    } else {
-        null
-    }
-    val masterWrappingKeySalt = if (cryptoLibrary?.hasPath(MASTER_WRAPPING_KEY_SALT) == true) {
-        cryptoLibrary.getString(MASTER_WRAPPING_KEY_SALT)
-    } else {
-        fallbackMasterWrappingKey.salt
-    }
-    val masterWrappingKeyPassphrase =
-        if (cryptoLibrary?.hasPath(MASTER_WRAPPING_KEY_PASSPHRASE) == true) {
-            cryptoLibrary.getString(MASTER_WRAPPING_KEY_PASSPHRASE)
-        } else {
-            fallbackMasterWrappingKey.passphrase
-        }
-    val masterWrappingKey = KeyCredentials(masterWrappingKeyPassphrase, masterWrappingKeySalt)
-    return withFallback(
-        withValue(
-            BOOT_CRYPTO,
-            ConfigValueFactory.fromMap(
-                factory.createDefaultCryptoConfig(masterWrappingKey).root().unwrapped()
-            )
+    ).createDefaultCryptoConfig(
+        KeyCredentials(
+            UUID.randomUUID().toString(),
+            UUID.randomUUID().toString()
         )
     )
-}
 
 fun SmartConfigFactory.createDefaultCryptoConfig(masterWrappingKey: KeyCredentials): SmartConfig = try {
     this.create(
@@ -326,9 +286,6 @@ fun SmartConfigFactory.createDefaultCryptoConfig(masterWrappingKey: KeyCredentia
                         CryptoHSMServiceConfig::downstreamMaxAttempts.name to "3"
                     )
                 )
-            )
-            .withValue(
-                HSM_ID, ConfigValueFactory.fromAnyRef(SOFT_HSM_ID)
             )
             .withValue(
                 DEFAULT_HSM_OBJ, ConfigValueFactory.fromMap(
@@ -390,15 +347,27 @@ fun SmartConfigFactory.createDefaultCryptoConfig(masterWrappingKey: KeyCredentia
                     mapOf(
                         OPS_BUS_PROCESSOR_OBJ to mapOf(
                             CryptoBusProcessorConfig::maxAttempts.name to "3",
-                            CryptoBusProcessorConfig::waitBetweenMills.name to ConfigValueFactory.fromIterable(listOf(200)),
+                            CryptoBusProcessorConfig::waitBetweenMills.name to ConfigValueFactory.fromIterable(
+                                listOf(
+                                    200
+                                )
+                            ),
                         ),
                         FLOW_BUS_PROCESSOR_OBJ to mapOf(
                             CryptoBusProcessorConfig::maxAttempts.name to "3",
-                            CryptoBusProcessorConfig::waitBetweenMills.name to ConfigValueFactory.fromIterable(listOf(200)),
+                            CryptoBusProcessorConfig::waitBetweenMills.name to ConfigValueFactory.fromIterable(
+                                listOf(
+                                    200
+                                )
+                            ),
                         ),
                         HSM_REGISTRATION_BUS_PROCESSOR_OBJ to mapOf(
                             CryptoBusProcessorConfig::maxAttempts.name to "3",
-                            CryptoBusProcessorConfig::waitBetweenMills.name to ConfigValueFactory.fromIterable(listOf(200)),
+                            CryptoBusProcessorConfig::waitBetweenMills.name to ConfigValueFactory.fromIterable(
+                                listOf(
+                                    200
+                                )
+                            ),
                         )
                     ),
                 )

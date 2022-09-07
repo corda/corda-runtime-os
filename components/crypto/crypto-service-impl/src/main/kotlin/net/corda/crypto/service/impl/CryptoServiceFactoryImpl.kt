@@ -14,10 +14,10 @@ import net.corda.crypto.component.impl.FatalActivationException
 import net.corda.crypto.component.impl.LifecycleNameProvider
 import net.corda.crypto.component.impl.lifecycleNameAsSet
 import net.corda.crypto.config.impl.CryptoHSMConfig
+import net.corda.crypto.config.impl.bootstrapHsmId
 import net.corda.crypto.config.impl.toConfigurationSecrets
 import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.config.impl.hsm
-import net.corda.crypto.config.impl.hsmId
 import net.corda.crypto.impl.decorators.CryptoServiceDecorator
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.CryptoServiceRef
@@ -86,9 +86,10 @@ class CryptoServiceFactoryImpl @Activate constructor(
 
     @Suppress("UNCHECKED_CAST")
     override fun createActiveImpl(event: ConfigChangedEvent): Impl = Impl(
-        event,
-        hsmService,
-        cryptoServiceProvider as CryptoServiceProvider<Any>
+        bootConfig = bootConfig ?: throw IllegalStateException("The bootstrap configuration haven't been received yet."),
+        event = event,
+        hsmService = hsmService,
+        cryptoServiceProvider = cryptoServiceProvider as CryptoServiceProvider<Any>
     )
 
     override fun findInstance(tenantId: String, category: String): CryptoServiceRef =
@@ -97,7 +98,14 @@ class CryptoServiceFactoryImpl @Activate constructor(
     override fun getInstance(hsmId: String): CryptoService =
         impl.getInstance(hsmId)
 
+    override fun bootstrapConfig(config: SmartConfig) {
+        lifecycleCoordinator.postEvent(BootstrapConfigProvided(config))
+    }
+
+    override fun isReady(): Boolean = bootConfig != null
+
     class Impl(
+        bootConfig: SmartConfig,
         event: ConfigChangedEvent,
         private val hsmService: HSMService,
         private val cryptoServiceProvider: CryptoServiceProvider<Any>
@@ -111,7 +119,7 @@ class CryptoServiceFactoryImpl @Activate constructor(
 
         init {
             cryptoConfig = event.config.toCryptoConfig()
-            hsmId = cryptoConfig.hsmId()
+            hsmId = bootConfig.bootstrapHsmId()
             hsmConfig = cryptoConfig.hsm(hsmId)
             if(hsmConfig.hsm.name != cryptoServiceProvider.name) {
                 throw FatalActivationException(
