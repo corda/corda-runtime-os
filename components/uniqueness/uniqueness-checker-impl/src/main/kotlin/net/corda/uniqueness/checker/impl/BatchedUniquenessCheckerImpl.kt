@@ -24,7 +24,7 @@ import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateRefImpl
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckTransactionDetailsImpl
+import net.corda.uniqueness.datamodel.internal.UniquenessCheckTransactionDetailsInternal
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
@@ -34,7 +34,6 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
-import net.corda.v5.application.uniqueness.model.UniquenessCheckTransactionDetails
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate
@@ -81,7 +80,7 @@ class BatchedUniquenessCheckerImpl(
     // In-memory caches of transaction and state details. When processing a batch, these are
     // initially seeded from the backing store, but are updated as we iterate through a batch
     private val transactionDetailsCache =
-        HashMap<SecureHash, UniquenessCheckTransactionDetails>()
+        HashMap<SecureHash, UniquenessCheckTransactionDetailsInternal>()
     private val stateDetailsCache =
         HashMap<UniquenessCheckStateRef, UniquenessCheckStateDetails>()
 
@@ -268,7 +267,7 @@ class BatchedUniquenessCheckerImpl(
 
         val rejectedResult = UniquenessCheckResultFailureImpl(clock.instant(), error)
 
-        transactionDetailsCache[request.txId] = UniquenessCheckTransactionDetailsImpl(
+        transactionDetailsCache[request.txId] = UniquenessCheckTransactionDetailsInternal(
             request.txId,
             rejectedResult
         )
@@ -280,7 +279,7 @@ class BatchedUniquenessCheckerImpl(
         request: UniquenessCheckRequestInternal
     ): Pair<UniquenessCheckRequestInternal, UniquenessCheckResult> {
 
-        val txDetails = UniquenessCheckTransactionDetailsImpl(
+        val txDetails = UniquenessCheckTransactionDetailsInternal(
             request.txId,
             UniquenessCheckResultSuccessImpl(clock.instant())
         )

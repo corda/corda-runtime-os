@@ -27,14 +27,13 @@ import net.corda.uniqueness.datamodel.common.toCharacterRepresentation
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckTransactionDetailsImpl
+import net.corda.uniqueness.datamodel.internal.UniquenessCheckTransactionDetailsInternal
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.v5.application.uniqueness.model.UniquenessCheckError
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
-import net.corda.v5.application.uniqueness.model.UniquenessCheckTransactionDetails
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
@@ -209,9 +208,9 @@ open class JPABackingStoreImpl @Activate constructor(
 
         override fun getTransactionDetails(
             txIds: Collection<SecureHash>
-        ): Map<SecureHash, UniquenessCheckTransactionDetails> {
+        ): Map<SecureHash, UniquenessCheckTransactionDetailsInternal> {
 
-            val results = HashMap<SecureHash, UniquenessCheckTransactionDetails>()
+            val results = HashMap<SecureHash, UniquenessCheckTransactionDetailsInternal>()
 
             txIds.forEach { txId ->
                 val existing = entityManager.createNamedQuery(
@@ -244,7 +243,7 @@ open class JPABackingStoreImpl @Activate constructor(
                         )
                     }
 
-                    results[txId] = UniquenessCheckTransactionDetailsImpl(txId, result)
+                    results[txId] = UniquenessCheckTransactionDetailsInternal(txId, result)
                 }
             }
 
