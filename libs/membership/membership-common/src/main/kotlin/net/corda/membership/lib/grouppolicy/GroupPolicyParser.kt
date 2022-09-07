@@ -22,10 +22,9 @@ interface GroupPolicyParser {
         fun groupIdFromJson(groupPolicyJson: String): String {
             try {
                 return ObjectMapper().readTree(groupPolicyJson).get(GROUP_ID)?.asText()
-                    ?: throw CordaRuntimeException("Failed to parse group policy file. " +
-                            "Could not find `$GROUP_ID` in the JSON")
+                    ?: throw GroupPolicyIdNotFoundException()
             } catch (e: JsonParseException) {
-                throw CordaRuntimeException("Failed to parse group policy file", e)
+                throw GroupPolicyParseException(e.originalMessage, e)
             }
         }
     }
