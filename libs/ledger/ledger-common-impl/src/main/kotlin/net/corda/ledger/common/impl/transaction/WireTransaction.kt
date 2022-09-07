@@ -36,7 +36,7 @@ class WireTransaction(
     fun getMetadata(): TransactionMetaData {
         val mapper = jacksonObjectMapper()
         val metadataBytes = componentGroupLists[ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first()
-        return mapper.readValue(metadataBytes, TransactionMetaData::class.java)
+        return mapper.readValue(metadataBytes, TransactionMetaData::class.java) // CORE-5940
     }
 
     fun getWrappedLedgerTransactionClassName(): String {
