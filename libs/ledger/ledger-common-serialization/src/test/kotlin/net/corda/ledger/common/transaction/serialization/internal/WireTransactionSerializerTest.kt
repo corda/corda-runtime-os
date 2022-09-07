@@ -46,7 +46,7 @@ class WireTransactionSerializerTest {
         )
         val privacySalt = PrivacySaltImpl("1".repeat(32).toByteArray())
         val componentGroupLists = listOf(
-            listOf(mapper.writeValueAsBytes(transactionMetaData)),
+            listOf(mapper.writeValueAsBytes(transactionMetaData)), // CORE-5940
             listOf(".".toByteArray()),
             listOf("abc d efg".toByteArray()),
         )

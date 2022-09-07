@@ -80,7 +80,7 @@ class ConsensualTransactionBuilderImpl(
         for (componentGroupIndex in ConsensualComponentGroupEnum.values()) {
             componentGroupLists += when (componentGroupIndex) {
                 ConsensualComponentGroupEnum.METADATA ->
-                    listOf(mapper.writeValueAsBytes(calculateMetaData()))
+                    listOf(mapper.writeValueAsBytes(calculateMetaData())) // CORE-5940
                 ConsensualComponentGroupEnum.TIMESTAMP ->
                     listOf(serializer.serialize(Instant.now()).bytes)
                 ConsensualComponentGroupEnum.REQUIRED_SIGNING_KEYS ->
