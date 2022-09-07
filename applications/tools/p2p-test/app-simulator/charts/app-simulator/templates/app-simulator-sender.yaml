@@ -53,7 +53,9 @@ spec:
             - "--lexpireAfterTime={{ .Values.appSimulators.sender.expireAfterTimeS }}"
             {{- end }}
             {{- include "appSimulator.kafkaArgs" . | nindent 12 }}
+            {{- if .Values.appSimulators.sender.sendMessagesToDatabase }}
             {{- include "appSimulator.databaseArgs" . | nindent 12 }}
+            {{- end }}
           volumeMounts:
           {{- include "appSimulator.volumeMounts" . | nindent 10 }}
           {{- if .Values.appSimulators.sender.debug.enabled }}

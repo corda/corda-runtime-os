@@ -31,13 +31,16 @@ spec:
             - "-lourX500Name={{ .Values.appSimulators.sender.ourX500Name }}"
             - "-lourGroupId={{ .Values.appSimulators.sender.ourGroupId }}"
             - "-lbatchSize={{ .Values.appSimulators.sender.batchSize }}"
+            - "-ltotalNumberOfMessages={{ .Values.appSimulators.sender.totalNumberOfMessages}}"
             - "-linterBatchDelay={{ .Values.appSimulators.sender.interBatchDelay }}"
             - "-lmessageSizeBytes={{ .Values.appSimulators.sender.messageSizeBytes }}"
             {{- if .Values.appSimulators.sender.expireMessages.enabled }}
             - "--lexpireAfterTime={{ .Values.appSimulators.sender.expireAfterTimeS }}"
             {{- end }}
             {{- include "appSimulator.kafkaArgs" . | nindent 12 }}
+            {{- if .Values.appSimulators.sender.sendMessagesToDatabase }}
             {{- include "appSimulator.databaseArgs" . | nindent 12 }}
+            {{- end }}
           volumeMounts:
           {{- include "appSimulator.volumeMounts" . | nindent 10 }}
           {{- if .Values.appSimulators.sender.debug.enabled }}

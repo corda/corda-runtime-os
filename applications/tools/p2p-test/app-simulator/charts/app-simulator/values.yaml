@@ -111,6 +111,8 @@ kafka:
 appSimulators:
   sender:
     enabled: true
+    # -- should we write metadata into the database
+    sendMessagesToDatabase: true
     # -- peer x500Name
     peerX500Name: ""
     # -- peer groupId
@@ -131,6 +133,8 @@ appSimulators:
     interBatchDelay: "PT0S"
     # -- The number of messages sent in parallel on every batch.
     batchSize: 50
+    # -- The total number of messages to send (only used when loadGenerationType is ONE_OFF).
+    totalNumberOfMessages: 50
     expireMessages:
       # -- Enable message expiry.
       enabled: false
