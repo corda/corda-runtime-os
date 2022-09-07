@@ -7,10 +7,10 @@ import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.serializeAndReturnSchema
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.amqp.testutils.testName
+import net.corda.v5.base.annotations.ConstructorForDeserialization
 import net.corda.v5.base.annotations.CordaSerializable
+import net.corda.v5.base.annotations.DeprecatedConstructorForDeserialization
 import net.corda.v5.serialization.SerializedBytes
-import net.corda.v5.serialization.annotations.ConstructorForDeserialization
-import net.corda.v5.serialization.annotations.DeprecatedConstructorForDeserialization
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
