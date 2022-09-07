@@ -30,8 +30,8 @@ class WireTransaction(
     init {
         check(componentGroupLists.all { it.isNotEmpty() }) { "Empty component groups are not allowed" }
         check(componentGroupLists.all { i -> i.all { j-> j.isNotEmpty() } }) { "Empty components are not allowed" }
-        check(getMetadata().getDigestSettings() == WireTransactionDigestSettings.defaultValues) {
-            "Only the default digest settings are acceptable now! ${getMetadata().getDigestSettings()} vs " +
+        check(metadata.getDigestSettings() == WireTransactionDigestSettings.defaultValues) {
+            "Only the default digest settings are acceptable now! ${metadata.getDigestSettings()} vs " +
                     "${WireTransactionDigestSettings.defaultValues}"
         }
     }
@@ -39,47 +39,66 @@ class WireTransaction(
     fun getComponentGroupList(componentGroupId: Int): List<ByteArray> =
         componentGroupLists[componentGroupId]
 
-    fun getMetadata(): TransactionMetaData {
-        val mapper = jacksonObjectMapper()
-        val metadataBytes = componentGroupLists[ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first()
-        return mapper.readValue(metadataBytes, TransactionMetaData::class.java) // CORE-5940
-    }
+    val metadata: TransactionMetaData
+        get() {
+            val mapper = jacksonObjectMapper()
+            val metadataBytes = componentGroupLists[ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first()
+            return mapper.readValue(metadataBytes, TransactionMetaData::class.java) // CORE-5940
+        }
 
-    fun getWrappedLedgerTransactionClassName(): String {
-        return this.getMetadata().getLedgerModel()
-    }
+    val wrappedLedgerTransactionClassName: String
+        get() {
+            return this.metadata.getLedgerModel()
+        }
 
     private fun getDigestSetting(settingKey: String): Any {
-        return this.getMetadata().getDigestSettings().get(settingKey)!!
+        return this.metadata.getDigestSettings()[settingKey]!!
     }
 
-    private fun getRootMerkleTreeDigestProviderName() =
+    private val rootMerkleTreeDigestProviderName get() =
         getDigestSetting(ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY) as String
 
-    private fun getRootMerkleTreeDigestAlgorithmName() =
-        DigestAlgorithmName(getDigestSetting(ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY) as String)
+    private val rootMerkleTreeDigestAlgorithmName
+        get() = DigestAlgorithmName(
+            getDigestSetting(
+                ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY
+            ) as String
+        )
 
-    private fun getRootMerkleTreeDigestOptionsLeafPrefix() =
-        Base64.getDecoder().decode(getDigestSetting(ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY) as String)
+    private val rootMerkleTreeDigestOptionsLeafPrefix
+        get() = Base64.getDecoder()
+            .decode(getDigestSetting(ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY) as String)
 
-    private fun getRootMerkleTreeDigestOptionsNodePrefix() =
-        Base64.getDecoder().decode(getDigestSetting(ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY) as String)
+    private val rootMerkleTreeDigestOptionsNodePrefix
+        get() = Base64.getDecoder()
+            .decode(getDigestSetting(ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY) as String)
 
-    private fun getComponentMerkleTreeEntropyAlgorithmName() =
-        DigestAlgorithmName(getDigestSetting(COMPONENT_MERKLE_TREE_ENTROPY_ALGORITHM_NAME_KEY) as String)
+    private val componentMerkleTreeEntropyAlgorithmName
+        get() = DigestAlgorithmName(
+            getDigestSetting(
+                COMPONENT_MERKLE_TREE_ENTROPY_ALGORITHM_NAME_KEY
+            ) as String
+        )
 
-    private fun getComponentMerkleTreeDigestProviderName() =
-        getDigestSetting(COMPONENT_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY) as String
+    private val componentMerkleTreeDigestProviderName
+        get() = getDigestSetting(
+            COMPONENT_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY
+        ) as String
 
-    private fun getComponentMerkleTreeDigestAlgorithmName() =
-        DigestAlgorithmName(getDigestSetting(COMPONENT_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY) as String)
+    private val componentMerkleTreeDigestAlgorithmName
+        get() = DigestAlgorithmName(
+            getDigestSetting(
+                COMPONENT_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY
+            ) as String
+        )
 
-    private fun getRootMerkleTreeDigestProvider() : MerkleTreeHashDigestProvider = merkleTreeFactory.createHashDigestProvider(
-        getRootMerkleTreeDigestProviderName(),
-        getRootMerkleTreeDigestAlgorithmName(),
+    private fun getRootMerkleTreeDigestProvider() : MerkleTreeHashDigestProvider =
+        merkleTreeFactory.createHashDigestProvider(
+        rootMerkleTreeDigestProviderName,
+        rootMerkleTreeDigestAlgorithmName,
         mapOf(
-            HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION to getRootMerkleTreeDigestOptionsLeafPrefix(),
-            HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION to getRootMerkleTreeDigestOptionsNodePrefix()
+            HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION to rootMerkleTreeDigestOptionsLeafPrefix,
+            HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION to rootMerkleTreeDigestOptionsNodePrefix
         )
     )
 
@@ -89,7 +108,7 @@ class WireTransaction(
     ): ByteArray =
         digestService.hash(
             concatByteArrays(privacySalt.bytes, componentGroupIndexBytes),
-            getComponentMerkleTreeEntropyAlgorithmName()
+            componentMerkleTreeEntropyAlgorithmName
         ).bytes
 
     private fun getComponentGroupMerkleTreeDigestProvider(
@@ -97,8 +116,8 @@ class WireTransaction(
         componentGroupIndex: Int
     ) : MerkleTreeHashDigestProvider =
         merkleTreeFactory.createHashDigestProvider(
-            getComponentMerkleTreeDigestProviderName(),
-            getComponentMerkleTreeDigestAlgorithmName(),
+            componentMerkleTreeDigestProviderName,
+            componentMerkleTreeDigestAlgorithmName,
             mapOf(
                 HASH_DIGEST_PROVIDER_ENTROPY_OPTION to
                     getComponentGroupEntropy(privacySalt, componentGroupIndex.toByteArray())
