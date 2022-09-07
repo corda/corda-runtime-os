@@ -24,8 +24,6 @@ class RPCSenderImpl<REQUEST, RESPONSE>(
         )
     ) { _, _ -> }
 
-    override val isRunning get() = running
-
     override fun start() {
         running = true
         lifecycleCoordinator.start()

@@ -40,9 +40,6 @@ class TestRPCSender<REQUEST, RESPONSE>(
         return future
     }
 
-    override val isRunning: Boolean
-        get() = lifecycleCoordinator.isRunning
-
     override fun start() {
         lifecycleCoordinator.start()
     }

@@ -69,9 +69,6 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
 
-    override val isRunning: Boolean
-        get() = !stopped
-
     override val subscriptionName: LifecycleCoordinatorName
         get() = lifecycleCoordinator.name
 

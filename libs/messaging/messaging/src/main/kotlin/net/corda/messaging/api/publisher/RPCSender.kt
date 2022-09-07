@@ -23,8 +23,6 @@ interface RPCSender<REQUEST, RESPONSE> : Resource {
      */
     val subscriptionName: LifecycleCoordinatorName
 
-    val isRunning: Boolean
-
     fun start()
 
     /**
