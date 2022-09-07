@@ -7,6 +7,7 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.event.MembershipEvent
 import net.corda.data.membership.event.registration.MgmOnboarded
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.toAvro
@@ -299,7 +300,7 @@ class MGMRegistrationService @Activate constructor(
                 )
             }
 
-            publisher.publish(listOf(Record(EVENT_TOPIC, "${member.shortHash}", MgmOnboarded(member.toAvro()))))
+            publisher.publish(listOf(Record(EVENT_TOPIC, "${member.shortHash}", MembershipEvent(MgmOnboarded(member.toAvro())))))
 
             return MembershipRequestRegistrationResult(MembershipRequestRegistrationOutcome.SUBMITTED)
         }
