@@ -62,7 +62,10 @@ class TlsCertificatesPublisherTest {
     private val publisherFactory = mock<PublisherFactory>()
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()
     private val configuration = mock<SmartConfig>()
-    private val subscriptionDominoTile = mockConstruction(SubscriptionDominoTile::class.java)
+    private val subscriptionDominoTile = mockConstruction(SubscriptionDominoTile::class.java) { _, context ->
+        @Suppress("UNCHECKED_CAST")
+        (context.arguments()[1] as (() -> CompactedSubscription<String, GatewayTlsCertificates>)).invoke()
+    }
     private val identityInfo = HostingMapListener.IdentityInfo(
         createTestHoldingIdentity("CN=Alice, O=Bob Corp, L=LDN, C=GB", "Group1",),
         listOf("one", "two"),

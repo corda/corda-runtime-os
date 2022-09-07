@@ -1,13 +1,14 @@
 package net.corda.lifecycle.domino.logic.util
 
-import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.domino.logic.DominoTile
 import net.corda.lifecycle.domino.logic.DominoTileState
@@ -18,10 +19,10 @@ import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToBadConfig
 import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToChildStopped
 import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToError
 import net.corda.lifecycle.domino.logic.NamedLifecycle
-import net.corda.messaging.api.subscription.CompactedSubscription
-import net.corda.messaging.api.subscription.RPCSubscription
-import net.corda.messaging.api.subscription.StateAndEventSubscription
-import net.corda.messaging.api.subscription.Subscription
+import net.corda.messaging.api.subscription.SubscriptionBase
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
@@ -34,37 +35,30 @@ import java.util.concurrent.atomic.AtomicReference
  * In the event that any of the [dependentChildren] goes down, it will stop the subscription. It will start it again if they all recover.
  * If the subscription goes down ([LifecycleStatus.DOWN] or [LifecycleStatus.ERROR]), it will propagate the error upstream.
  *
- * @param subscription the subscription that will be controlled (started/stopped) by this class.
- * @param subscriptionName the coordinator name of the provided subscription.
- * @param dependentChildren the children the subscription will depend on for processing messages
- *   (it will be processing messages only if they are all up).
+ * @param subscriptionGenerator lambda to generate the subscriptions that will be controlled (started or regenerated) by this class.
+ * @param subscriptionConfig configuration object for the subscription. Should be the same as the one used inside the subscriptionGenerator
+ * lambda.
+ * @param dependentChildren the children the subscription will depend on for processing messages (it will be processing messages only if
+ * they are all up).
  * @param managedChildren the children that the class will start, when it is started.
  */
 abstract class SubscriptionDominoTileBase(
     coordinatorFactory: LifecycleCoordinatorFactory,
-    // Lifecycle type is used, because there is no single type capturing all subscriptions. Type checks are executed at runtime.
-    private val subscription: Lifecycle,
-    private val subscriptionName: LifecycleCoordinatorName,
+    private val subscriptionGenerator: () -> SubscriptionBase,
+    private val subscriptionConfig: SubscriptionConfig,
     final override val dependentChildren: Collection<LifecycleCoordinatorName>,
     final override val managedChildren: Collection<NamedLifecycle>
 ): DominoTile() {
 
     companion object {
         private val instancesIndex = ConcurrentHashMap<String, Int>()
-    }
-
-    init {
-        require(
-            subscription is Subscription<*,*> ||
-            subscription is RPCSubscription<*,*> ||
-            subscription is StateAndEventSubscription<*,*,*> ||
-            subscription is CompactedSubscription<*,*>
-        ) { "Expected subscription type, but got ${subscription.javaClass.simpleName}" }
+        @VisibleForTesting
+        internal const val SUBSCRIPTION = "SUBSCRIPTION"
     }
 
     final override val coordinatorName: LifecycleCoordinatorName by lazy {
         LifecycleCoordinatorName(
-            "$subscriptionName-tile",
+            "${subscriptionConfig.groupName}-${subscriptionConfig.eventTopic}-subscription-tile",
             instancesIndex.compute(this::class.java.simpleName) { _, last ->
                 if (last == null) {
                     1
@@ -75,7 +69,7 @@ abstract class SubscriptionDominoTileBase(
         )
     }
 
-    final override val coordinator = coordinatorFactory.createCoordinator(coordinatorName, EventHandler())
+    override val coordinator = coordinatorFactory.createCoordinator(coordinatorName, EventHandler())
 
     private val currentState = AtomicReference(Created)
 
@@ -86,8 +80,8 @@ abstract class SubscriptionDominoTileBase(
     override val isRunning: Boolean
         get() = internalState == Started
 
-    private val dependentChildrenRegistration = coordinator.followStatusChangesByName(dependentChildren.map { it }.toSet())
-    private val subscriptionRegistration = coordinator.followStatusChangesByName(setOf(subscriptionName))
+    private val dependentChildrenRegistration = coordinator.followStatusChangesByName(dependentChildren.toSet())
+    private var subscriptionRegistration = AtomicReference<RegistrationHandle>(null)
 
     private val logger = LoggerFactory.getLogger(coordinatorName.toString())
 
@@ -98,7 +92,7 @@ abstract class SubscriptionDominoTileBase(
     private fun startTile() {
         managedChildren.forEach { it.lifecycle.start() }
         if (dependentChildren.isEmpty()) {
-            subscription.start()
+            createAndStartSubscription()
         }
     }
 
@@ -125,6 +119,14 @@ abstract class SubscriptionDominoTileBase(
         }
     }
 
+    private fun createAndStartSubscription() {
+        coordinator.createManagedResource(SUBSCRIPTION, subscriptionGenerator)
+        val subscriptionName = coordinator.getManagedResource<SubscriptionBase>(SUBSCRIPTION)?.subscriptionName
+            ?: throw CordaRuntimeException("Subscription could not be extracted from the lifecycle coordinator.")
+        subscriptionRegistration.set(coordinator.followStatusChangesByName(setOf(subscriptionName)))
+        coordinator.getManagedResource<SubscriptionBase>(SUBSCRIPTION)?.start()
+    }
+
     private inner class EventHandler : LifecycleEventHandler {
         override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
             if (!isOpen.get()) {
@@ -141,7 +143,7 @@ abstract class SubscriptionDominoTileBase(
                 }
                 is RegistrationStatusChangeEvent -> {
                     when(event.registration) {
-                        subscriptionRegistration -> {
+                        subscriptionRegistration.get() -> {
                             when(event.status) {
                                 LifecycleStatus.UP -> {
                                     updateState(Started)
@@ -158,15 +160,15 @@ abstract class SubscriptionDominoTileBase(
                             when(event.status) {
                                 LifecycleStatus.UP -> {
                                     logger.info("All dependencies are started now, starting subscription.")
-                                    subscription.start()
+                                    createAndStartSubscription()
                                 }
                                 LifecycleStatus.DOWN -> {
                                     logger.info("One of the dependencies went down, stopping subscription.")
-                                    subscription.stop()
+                                    coordinator.getManagedResource<Resource>(SUBSCRIPTION)?.close()
                                 }
                                 LifecycleStatus.ERROR -> {
                                     logger.info("One of the dependencies had an error, stopping subscription.")
-                                    subscription.stop()
+                                    coordinator.getManagedResource<Resource>(SUBSCRIPTION)?.close()
                                 }
                             }
                         }
