@@ -47,13 +47,12 @@ tasks.register("cleanDir", Delete) {
     delete 'build/generatedScripts'
 }
 
-
-tasks.register("cliInstallScriptsS3", Copy){
-
-    mustRunAfter cleanDir
+tasks.register("cliInstallScriptsS3", Copy) {
+    dependsOn cleanDir
     description 'Copy corda-cli install scripts to a location in build dir and update to use correct version'
-
-    if (project.hasProperty('s3Url')) {
+    if (project.hasProperty('maven.repo.s3')) {
+        def s3Url = project.findProperty("maven.repo.s3").replace('s3://','https://')+ "/" +
+                project.group.replace('.','/') + "/corda-cli-installer/$version/corda-cli-installer-$version"
         from 'templateScripts'
         into 'build/generatedScripts'
         filter {
@@ -61,9 +60,10 @@ tasks.register("cliInstallScriptsS3", Copy){
         }
     }
     else {
-        throw new GradleException("parameter 's3Url' is required! e.g. -Ps3Url=https://demo.s3.com/example/bucket")
+        logger.info("parameter 'maven.repo.s3' is required! e.g. -Pmaven.repo.s3=https://demo.s3.com/example/bucket, Taking no action for :cliInstallScriptsS3")
     }
 }
+
 
 artifacts {
     cliInstallArchive
@@ -115,7 +115,7 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
     }
 }
 
-def s3Script = artifacts.add('archives', file("$project.buildDir/generatedScripts/s3Install.sh")) {
+def s3Script = artifacts.add('archives', file("$project.buildDir/generatedScripts/corda-cli-installer-script.sh")) {
     builtBy('cliInstallScriptsS3')
 }
 
