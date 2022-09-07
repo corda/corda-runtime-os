@@ -48,7 +48,7 @@ tasks.register("cleanDir", Delete) {
 }
 
 
-tasks.register("cliInstallScriptsS3", Copy){
+tasks.register("cliInstallScriptsS3", Copy) {
 
     mustRunAfter cleanDir
     description 'Copy corda-cli install scripts to a location in build dir and update to use correct version'
