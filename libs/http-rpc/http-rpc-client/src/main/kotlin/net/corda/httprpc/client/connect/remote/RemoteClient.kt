@@ -125,7 +125,6 @@ internal class RemoteUnirestClient(override val baseAddress: String, private val
             )
                 .also { log.trace { """Do call "$verb $path" completed.""" } }
         } catch (e: UnirestException) {
-            e.printStackTrace()
             throw InternalErrorException(e.message ?: "No message provided")
         }
     }

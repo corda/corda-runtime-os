@@ -2,14 +2,15 @@
 
 cordaPipeline(
     nexusAppId: 'flow-worker-5.0',
-    runIntegrationTests: false,
+    runIntegrationTests: true,
     publishRepoPrefix: 'corda-ent-maven',
-    createPostgresDb: false,
+    createPostgresDb: true,
     publishOSGiImage: true,
     publishPreTestImage: true,
-    publishHelmChart: false,
+    publishHelmChart: true,
     e2eTestName: 'corda-runtime-os-e2e-tests',
-    runE2eTests: false,
-    combinedWorkere2eTests: false,
-    publishToMavenS3Repository: true
+    runE2eTests: true,
+    combinedWorkere2eTests: true,
+    // allow publishing artifacts to S3 bucket
+    publishToMavenS3Repository: true,
     )
