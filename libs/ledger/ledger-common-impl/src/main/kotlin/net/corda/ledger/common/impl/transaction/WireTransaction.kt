@@ -3,7 +3,6 @@ package net.corda.ledger.common.impl.transaction
 import net.corda.crypto.core.concatByteArrays
 import net.corda.crypto.core.toByteArray
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
