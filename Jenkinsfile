@@ -4,5 +4,6 @@ cordaPipeline(
     runIntegrationTests: false,
     publishOSGiImage: true,
     dailyBuildCron: 'H 03 * * *',
-    publishRepoPrefix: 'engineering-tools-maven'
+    publishRepoPrefix: 'engineering-tools-maven',
+    nexusAppId: 'net.corda-cli-host-0.0.1'
 )

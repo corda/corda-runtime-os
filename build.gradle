@@ -88,6 +88,23 @@ subprojects {
             html.required.set(false)
         }
     }
+
+    tasks.register('releasableArtifacts') {
+        description = "Prints a list of all modules which will be released externally"
+        group = "Release"
+        if (project.hasProperty('releasable') && project.releasable.toBoolean()) {
+            logArtifacts(project)
+        }
+    }
+
+    tasks.register('unReleasableArtifacts') {
+        description = "Prints a list of all modules which will not be released externally"
+        group = "Release"
+        if (!project.hasProperty('releasable') || !project.releasable.toBoolean()) {
+            logArtifacts(project)
+        }
+    }
+
 }
 
 wrapper {
@@ -130,3 +147,13 @@ tasks.named("dependencyUpdates").configure {
 
 // Automatically ran as part of build process
 assemble.finalizedBy(generateVersionedScripts)
+
+// helper to log artifacts we will or will not publish during a release process
+def logArtifacts(Project project) {
+    project.publishing.publications.each { publication ->
+        logger.quiet("\n${publication.groupId}:${publication.artifactId}:${publication.version} [${project.path}]")
+        publication.artifacts.each { artifact ->
+            logger.quiet(" * ${artifact.file.name}")
+        }
+    }
+}
