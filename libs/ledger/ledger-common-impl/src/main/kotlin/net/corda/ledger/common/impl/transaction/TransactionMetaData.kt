@@ -17,6 +17,7 @@ class TransactionMetaData(
         const val LEDGER_MODEL_KEY = "ledgerModel"
         const val LEDGER_VERSION_KEY = "ledgerVersion"
         const val CPK_IDENTIFIERS_KEY = "cpkIdentifiers"
+        const val DIGEST_SETTINGS_KEY = "digestSettings"
     }
 
     override fun equals(other: Any?): Boolean {
@@ -35,5 +36,9 @@ class TransactionMetaData(
     }
     fun cpkIdentifiers(){
         this[CPK_IDENTIFIERS_KEY]
+    }
+    fun getDigestSettings(): Map<String, Any>{
+        @Suppress("UNCHECKED_CAST")
+        return this[DIGEST_SETTINGS_KEY] as Map<String, Any>
     }
 }

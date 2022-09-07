@@ -5,6 +5,7 @@ import net.corda.ledger.common.transaction.serialization.WireTransactionContaine
 import net.corda.ledger.common.transaction.serialization.WireTransactionVersion
 import net.corda.serialization.BaseProxySerializer
 import net.corda.serialization.InternalCustomSerializer
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import org.osgi.service.component.annotations.Activate
@@ -14,7 +15,8 @@ import org.osgi.service.component.annotations.Reference
 @Component(service = [InternalCustomSerializer::class])
 class WireTransactionSerializer @Activate constructor(
     @Reference(service = MerkleTreeFactory::class) private val merkleTreeFactory: MerkleTreeFactory,
-    @Reference(service = DigestService::class) private val digestService: DigestService
+    @Reference(service = DigestService::class) private val digestService: DigestService,
+    private val serializer: SerializationService, //TODO(where will this come from???)
 ) : BaseProxySerializer<WireTransaction, WireTransactionContainer>() {
 
     override fun toProxy(obj: WireTransaction): WireTransactionContainer =
@@ -30,6 +32,7 @@ class WireTransactionSerializer @Activate constructor(
         return WireTransaction(
             merkleTreeFactory,
             digestService,
+            serializer,
             proxy.privacySalt,
             proxy.componentGroupLists
         )

@@ -2,9 +2,11 @@ package net.corda.ledger.consensual.impl.transaction
 
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.TransactionMetaData
+import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.DIGEST_SETTINGS_KEY
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.LEDGER_MODEL_KEY
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.LEDGER_VERSION_KEY
 import net.corda.ledger.common.impl.transaction.WireTransaction
+import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SigningService
@@ -54,11 +56,14 @@ class ConsensualTransactionBuilderImpl(
         this.copy(states = this.states + states)
 
     private fun calculateMetaData(): TransactionMetaData {
-        return TransactionMetaData(mapOf(
-            LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
-            LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
-            // CORE-5940 set CPK identifier/etc
-        ))
+        return TransactionMetaData(
+            mapOf(
+                LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
+                LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
+                DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.DefaultValues
+                // CORE-5940 set CPK identifier/etc
+            )
+        )
     }
 
     private fun calculateComponentGroupLists(serializer: SerializationService): List<List<ByteArray>>
@@ -111,6 +116,7 @@ class ConsensualTransactionBuilderImpl(
         return WireTransaction(
             merkleTreeFactory,
             digestService,
+            serializer,
             privacySalt,
             componentGroupLists
         )

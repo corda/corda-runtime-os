@@ -40,7 +40,13 @@ class WireTransactionSerializerTest {
             listOf(".".toByteArray()),
             listOf("abc d efg".toByteArray()),
         )
-        val wireTransaction = WireTransaction(merkleTreeFactory, digestService, privacySalt, componentGroupLists)
+        val wireTransaction = WireTransaction(
+            merkleTreeFactory,
+            digestService,
+            serializationService,
+            privacySalt,
+            componentGroupLists
+        )
         val bytes = serializationService.serialize(wireTransaction)
         println(bytes.size)
         val deserialized = serializationService.deserialize(bytes)
