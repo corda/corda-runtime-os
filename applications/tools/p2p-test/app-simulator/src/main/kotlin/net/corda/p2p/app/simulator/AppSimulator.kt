@@ -13,7 +13,6 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
-import net.corda.p2p.app.simulator.AppSimulatorTopicCreator.Companion.APP_RECEIVED_MESSAGES_TOPIC
 import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getDbParameter
 import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getEnumOrNull
 import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getIntOrNull
@@ -65,6 +64,7 @@ class AppSimulator @Activate constructor(
         const val DEFAULT_BATCH_SIZE = 50
         val DEFAULT_INTER_BATCH_DELAY = Duration.ZERO
         const val DEFAULT_MESSAGE_SIZE_BYTES = 10_000
+        internal const val APP_SIMULATOR_SUBSYSTEM = "app-simulator"
     }
 
     private val resources = mutableListOf<AutoCloseable>()

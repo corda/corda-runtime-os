@@ -16,6 +16,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
+import net.corda.p2p.app.simulator.AppSimulator.Companion.APP_SIMULATOR_SUBSYSTEM
 import net.corda.p2p.app.simulator.AppSimulatorTopicCreator.Companion.APP_RECEIVED_MESSAGES_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.v5.base.util.contextLogger
@@ -70,9 +71,8 @@ class Receiver(private val subscriptionFactory: SubscriptionFactory,
             val now = Instant.now()
             return events.mapNotNull {
                 val authenticatedMessage = it.value!!.message as AuthenticatedMessage
-                val messageId = authenticatedMessage.header.messageId
                 //Only JSON deserialize messages from another app-simulator (not sent by the MGM for example).
-                if (messageId.split(":").last().toIntOrNull() != null) {
+                if (authenticatedMessage.header.subsystem == APP_SIMULATOR_SUBSYSTEM) {
                     val payload = objectMapper.readValue<MessagePayload>(authenticatedMessage.payload.array())
                     val messageReceivedEvent = MessageReceivedEvent(payload.sender,
                         authenticatedMessage.header.messageId, payload.sendTimestamp, now, Duration.between(payload.sendTimestamp, now))

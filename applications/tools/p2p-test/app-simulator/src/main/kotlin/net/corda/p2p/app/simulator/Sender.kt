@@ -24,6 +24,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.app.AuthenticatedMessageHeader
+import net.corda.p2p.app.simulator.AppSimulator.Companion.APP_SIMULATOR_SUBSYSTEM
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PRODUCER_CLIENT_ID
 import net.corda.utilities.time.Clock
@@ -165,7 +166,7 @@ class Sender(private val publisherFactory: PublisherFactory,
             ttl,
             messageId,
             messageId,
-            "app-simulator"
+            APP_SIMULATOR_SUBSYSTEM
         )
         val randomData = ByteArray(messageSize).apply {
             random.nextBytes(this)
