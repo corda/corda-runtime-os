@@ -198,6 +198,10 @@ workers:
       requests: {}
       # -- the CPU/memory resource limits for the crypto worker containers
       limits: {}
+    # crypto worker JDBC connection pool configuration
+    jdbcPool:
+      # -- crypto worker maximum JDBC connection pool size
+      maxSize: 5
 
   # DB worker configuration
   db:
@@ -234,6 +238,10 @@ workers:
       requests: {}
       # -- the CPU/memory resource limits for the DB worker containers
       limits: {}
+    # DB worker JDBC connection pool configuration
+    jdbcPool:
+      # -- DB worker maximum JDBC connection pool size
+      maxSize: 5
 
   # flow worker configuration
   flow:
