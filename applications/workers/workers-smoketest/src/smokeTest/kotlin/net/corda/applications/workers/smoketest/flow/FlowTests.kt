@@ -1,6 +1,7 @@
 package net.corda.applications.workers.smoketest.flow
 
 import java.util.UUID
+import net.corda.applications.workers.smoketest.FlowStatus
 import net.corda.applications.workers.smoketest.GROUP_ID
 import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_FAILED
 import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_SUCCESS
@@ -194,11 +195,21 @@ class FlowTests {
     }
 
     @Test
-    fun `Persistence - insert a record`() {
+    fun `Persistence - persist a single entity`() {
         val id = UUID.randomUUID()
+        val result = persistDog(id)
+        val flowResult = result.getRpcFlowResult()
+        assertThat(flowResult.result).isEqualTo("dog '${id}' saved")
+    }
+
+    @Test
+    fun `Persistence - persist multiple entities`() {
+        val id = UUID.randomUUID()
+        val id2 = UUID.randomUUID()
+
         val requestBody = RpcSmokeTestInput().apply {
-            command = "persist_insert"
-            data = mapOf("id" to id.toString())
+            command = "persistence_persist_bulk"
+            data = mapOf("ids" to "$id;$id2")
         }
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
@@ -207,90 +218,183 @@ class FlowTests {
 
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         val flowResult = result.getRpcFlowResult()
-        assertThat(flowResult.command).isEqualTo("persist_insert")
-        assertThat(flowResult.result).isEqualTo("dog '${id}' saved")
+        assertThat(flowResult.result).isEqualTo("dogs ${listOf(id, id2)} saved")
     }
 
     @Test
-    fun `Flow persistence`() {
+    fun `Persistence - merge a single entity`() {
+        val id = UUID.randomUUID()
+        persistDog(id)
+        val result = mergeDog(id, "dog2")
+        val flowResult = result.getRpcFlowResult()
+        assertThat(flowResult.result).isEqualTo("dog '${id}' merged")
+    }
+
+    @Test
+    fun `Persistence - merge multiple entities`() {
+        val id = UUID.randomUUID()
+        val id2 = UUID.randomUUID()
+        persistDog(id)
+        persistDog(id2)
+
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "persistence_merge_bulk"
+            data = mapOf(
+                "ids" to "$id;$id2",
+                "name" to "dog2",
+            )
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+
+        val flowResult = result.getRpcFlowResult()
+        assertThat(flowResult.result).isEqualTo("dogs ${listOf(id, id2)} merged")
+    }
+
+    @Test
+    fun `Persistence - find a single entity`() {
+        val id = UUID.randomUUID()
+        val name = "new name"
+        persistDog(id)
+        mergeDog(id, name)
+
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "persistence_find"
+            data = mapOf(
+                "id" to id.toString()
+            )
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        val flowResult = result.getRpcFlowResult()
+        assertThat(flowResult.result).isEqualTo("found dog id='$id' name='$name")
+    }
+
+    @Test
+    fun `Persistence - find multiple entities`() {
+        val id = UUID.randomUUID()
+        val id2 = UUID.randomUUID()
+        val name = "new name"
+        persistDog(id)
+        persistDog(id2)
+        mergeDog(id, name)
+        mergeDog(id2, name)
+
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "persistence_find_bulk"
+            data = mapOf("ids" to "$id;$id2")
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        val flowResult = result.getRpcFlowResult()
+        assertThat(flowResult.result).contains("id='$id' name='$name")
+        assertThat(flowResult.result).contains("id='$id2' name='$name")
+    }
+
+    @Test
+    fun `Persistence - find all entities`() {
+        persistDog(UUID.randomUUID())
+
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "persistence_findall"
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        val flowResult = result.getRpcFlowResult()
+        assertThat(flowResult.result).isEqualTo("found one or more dogs")
+    }
+
+    @Test
+    fun `Persistence - delete a single entity`() {
         val id = UUID.randomUUID()
 
-        // Insert a dog
-        var requestBody = RpcSmokeTestInput().apply {
-            command = "persist_insert"
+        persistDog(id)
+
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "persistence_delete"
+            data = mapOf(
+                "id" to id.toString()
+            )
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        val flowResult = result.getRpcFlowResult()
+        assertThat(flowResult.result).isEqualTo("dog '${id}' deleted")
+    }
+
+    @Test
+    fun `Persistence - delete multiple entities`() {
+        val id = UUID.randomUUID()
+        val id2 = UUID.randomUUID()
+
+        persistDog(id)
+        persistDog(id2)
+
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "persistence_delete_bulk"
+            data = mapOf("ids" to "$id;$id2")
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        val flowResult = result.getRpcFlowResult()
+        assertThat(flowResult.result).isEqualTo("dogs ${listOf(id, id2)} deleted")
+    }
+
+    private fun persistDog(id: UUID): FlowStatus {
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "persistence_persist"
             data = mapOf("id" to id.toString())
         }
 
-        var requestId = startRpcFlow(bobHoldingId, requestBody)
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
 
-        var result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
 
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        var flowResult = result.getRpcFlowResult()
-        assertThat(flowResult.result).isEqualTo("dog '${id}' saved")
 
-        // Update a dog
-        val newDogName = "dog2"
-        requestBody = RpcSmokeTestInput().apply {
-            command = "persist_update"
+        return result
+    }
+
+    private fun mergeDog(id: UUID, name: String): FlowStatus {
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "persistence_merge"
             data = mapOf(
                 "id" to id.toString(),
-                "name" to newDogName,
+                "name" to name,
             )
         }
 
-        requestId = startRpcFlow(bobHoldingId, requestBody)
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
 
-        result = awaitRpcFlowFinished(bobHoldingId, requestId)
-
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        flowResult = result.getRpcFlowResult()
-        assertThat(flowResult.result).isEqualTo("dog '${id}' updated")
-
-        // find a dog
-        requestBody = RpcSmokeTestInput().apply {
-            command = "persist_find"
-            data = mapOf(
-                "id" to id.toString()
-            )
-        }
-
-        requestId = startRpcFlow(bobHoldingId, requestBody)
-
-        result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
 
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        flowResult = result.getRpcFlowResult()
-        assertThat(flowResult.result).isEqualTo("found dog id='${id}' name='${newDogName}")
 
-        // find all dogs
-        requestBody = RpcSmokeTestInput().apply {
-            command = "persist_findall"
-        }
-
-        requestId = startRpcFlow(bobHoldingId, requestBody)
-
-        result = awaitRpcFlowFinished(bobHoldingId, requestId)
-
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        flowResult = result.getRpcFlowResult()
-        assertThat(flowResult.result).isEqualTo("found one or more dogs")
-
-        // delete a dog
-        requestBody = RpcSmokeTestInput().apply {
-            command = "persist_delete"
-            data = mapOf(
-                "id" to id.toString()
-            )
-        }
-
-        requestId = startRpcFlow(bobHoldingId, requestBody)
-
-        result = awaitRpcFlowFinished(bobHoldingId, requestId)
-
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        flowResult = result.getRpcFlowResult()
-        assertThat(flowResult.result).isEqualTo("dog '${id}' deleted")
+        return result
     }
 
     @Test
