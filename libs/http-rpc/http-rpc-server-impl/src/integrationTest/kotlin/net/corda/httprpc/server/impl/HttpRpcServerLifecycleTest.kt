@@ -56,6 +56,7 @@ class HttpRpcServerLifecycleTest : HttpRpcServerTestBase() {
 
         // Should report unavailable when RPC implementation is not started
         with(client.call(GET, WebRequest<Any>("lifecycle/hello/world?id=1"), userName, password)) {
+            println("### $responseStatus")
             assertEquals(HttpStatus.SC_SERVICE_UNAVAILABLE, responseStatus)
         }
 
@@ -63,11 +64,12 @@ class HttpRpcServerLifecycleTest : HttpRpcServerTestBase() {
         lifecycleRPCOpsImpl.start()
 
         // Assert functions normally
-        lifecycleRPCOpsImpl.use {
+        lifecycleRPCOpsImpl.also {
             with(client.call(GET, WebRequest<Any>("lifecycle/hello/world?id=1"), userName, password)) {
                 assertEquals(HttpStatus.SC_OK, responseStatus)
                 assertEquals("Hello 1 : world", body)
             }
+            lifecycleRPCOpsImpl.stop()
         }
 
         // Assert back to unavailable after stop/close
