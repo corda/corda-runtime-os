@@ -1,7 +1,6 @@
 package net.corda.flow.state
 
 import net.corda.data.KeyValuePairList
-import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.serialization.checkpoint.NonSerializable
 import net.corda.v5.application.flows.Flow
 
@@ -48,15 +47,16 @@ interface FlowStack : NonSerializable {
     /**
      * Returns the item at the top of the stack without removing it.
      *
-     * @return the [FlowStackItem] at the top of the stack of null if the stack is empty
+     * @return the [FlowStackItem] at the top of the stack or null if the stack is empty
      */
     fun peek(): FlowStackItem?
 
     /**
-     * @return the first [FlowStackItem] on the stack
-     * @throws [IllegalStateException] if the stack is empty
+     * Returns the first item of the stack without removing it.
+     *
+     * @return the first [FlowStackItem] on the stack or null if the stack is empty
      */
-    fun peekFirst(): FlowStackItem
+    fun peekFirst(): FlowStackItem?
 
     /**
      * Removes and returns the [FlowStackItem] at the top of the stack

@@ -4,13 +4,12 @@ import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.session.SessionAck
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
-import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.state.FlowStackItem
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.StepSetup
 import net.corda.flow.testing.context.flowResumedWithError
 import net.corda.flow.testing.context.initiateFlowMessage
-import net.corda.flow.utils.mutableKeyValuePairList
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -765,10 +764,10 @@ class SubFlowFinishedAcceptanceTest : FlowServiceTestBase() {
     }
 
     private fun initiatingFlowStackItem(vararg sessionIds: String): FlowStackItem =
-        FlowStackItem(FLOW_NAME, true, sessionIds.toList(), mutableKeyValuePairList(), mutableKeyValuePairList())
+        FlowStackItem(FLOW_NAME, true, sessionIds.toMutableList(), mutableMapOf(), mutableMapOf())
 
     private fun nonInitiatingFlowStackItem(): FlowStackItem =
         FlowStackItem(
-            FLOW_NAME, false, listOf(INITIATED_SESSION_ID_1), mutableKeyValuePairList(), mutableKeyValuePairList()
+            FLOW_NAME, false, mutableListOf(INITIATED_SESSION_ID_1), mutableMapOf(), mutableMapOf()
         )
 }

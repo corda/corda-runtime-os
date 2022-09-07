@@ -3,9 +3,9 @@ package net.corda.flow.fiber
 import co.paralleluniverse.concurrent.util.ScheduledSingleThreadExecutor
 import co.paralleluniverse.fibers.FiberExecutorScheduler
 import co.paralleluniverse.fibers.FiberScheduler
-import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.state.FlowStack
+import net.corda.flow.state.FlowStackItem
 import net.corda.serialization.checkpoint.CheckpointSerializer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
@@ -89,7 +89,7 @@ class FlowFiberImplTest {
     private fun expectItemInFlowStack() {
         whenever(mockFlowStack.size).thenReturn(1)
         val mockStackItem = mock<FlowStackItem>()
-        whenever(mockStackItem.sessionIds).thenReturn(listOf("stack item"))
+        whenever(mockStackItem.sessionIds).thenReturn(mutableListOf("stack item"))
         whenever(mockFlowStack.peek()).thenReturn(mockStackItem)
     }
 

@@ -1,10 +1,9 @@
 package net.corda.flow.testing.tests
 
-import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.state.FlowStackItem
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.initiateFlowMessage
-import net.corda.flow.utils.mutableKeyValuePairList
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -267,14 +266,14 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
     }
 
     private fun initiatingFlowStackItem(vararg sessionIds: String) =
-        FlowStackItem(FLOW_NAME, true, sessionIds.toList(), mutableKeyValuePairList(), mutableKeyValuePairList())
+        FlowStackItem(FLOW_NAME, true, sessionIds.toMutableList(), mutableMapOf(), mutableMapOf())
 
     private fun nonInitiatingFlowStackItem(): FlowStackItem =
         FlowStackItem(
             FLOW_NAME,
             false,
-            listOf(INITIATED_SESSION_ID_1),
-            mutableKeyValuePairList(),
-            mutableKeyValuePairList()
+            mutableListOf(INITIATED_SESSION_ID_1),
+            mutableMapOf(),
+            mutableMapOf()
         )
 }

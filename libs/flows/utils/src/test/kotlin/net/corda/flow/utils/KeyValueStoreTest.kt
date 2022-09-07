@@ -109,4 +109,14 @@ class KeyValueStoreTest {
 
         assertThat(keyValuePairList.items.size).isEqualTo(2)
     }
+
+    @Test
+    fun `toMutableMap creates a map representation of the keyValuePairList`() {
+        val map = mapOf("key1" to "value1", "key2" to "value2", "key3" to "value3")
+        val keyValuePairList = keyValuePairListOf(map)
+
+        assertThat(keyValuePairList.toMutableMap())
+            .isEqualTo(map)
+            .isInstanceOf(MutableMap::class.java)
+    }
 }

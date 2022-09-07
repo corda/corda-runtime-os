@@ -2,7 +2,6 @@ package net.corda.flow.pipeline.handlers.requests
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
-import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.SessionConfirmation
@@ -11,7 +10,7 @@ import net.corda.flow.RequestHandlerTestContext
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
-import net.corda.flow.utils.mutableKeyValuePairList
+import net.corda.flow.state.FlowStackItem
 import net.corda.messaging.api.records.Record
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -55,13 +54,7 @@ class SubFlowFinishedRequestHandlerTest {
     private val handler = SubFlowFinishedRequestHandler(flowSessionManager, testContext.flowRecordFactory)
 
     private fun createFlowStackItem(isInitiatingFlow: Boolean, sessions: List<String> = SESSIONS) =
-        FlowStackItem.newBuilder()
-            .setFlowName(FLOW_NAME)
-            .setIsInitiatingFlow(isInitiatingFlow)
-            .setSessionIds(sessions)
-            .setContextPlatformProperties(mutableKeyValuePairList())
-            .setContextUserProperties(mutableKeyValuePairList())
-            .build()
+        FlowStackItem(FLOW_NAME, isInitiatingFlow, sessions.toMutableList(), mutableMapOf(), mutableMapOf())
 
     @BeforeEach
     fun setup() {

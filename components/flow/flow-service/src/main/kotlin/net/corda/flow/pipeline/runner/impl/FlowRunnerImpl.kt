@@ -4,7 +4,6 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.session.SessionInit
-import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.fiber.FiberFuture
 import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.fiber.FlowLogicAndArgs
@@ -13,9 +12,9 @@ import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
 import net.corda.flow.pipeline.runner.FlowRunner
+import net.corda.flow.state.FlowStackItem
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -29,10 +28,6 @@ class FlowRunnerImpl @Activate constructor(
     @Reference(service = FlowFiberExecutionContextFactory::class)
     private val flowFiberExecutionContextFactory: FlowFiberExecutionContextFactory
 ) : FlowRunner {
-    private companion object {
-        val log = contextLogger()
-    }
-
     override fun runFlow(
         context: FlowEventContext<Any>,
         flowContinuation: FlowContinuation

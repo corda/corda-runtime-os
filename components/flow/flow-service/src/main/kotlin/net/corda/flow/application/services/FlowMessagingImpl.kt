@@ -1,9 +1,9 @@
 package net.corda.flow.application.services
 
-import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
+import net.corda.flow.state.FlowStackItem
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable

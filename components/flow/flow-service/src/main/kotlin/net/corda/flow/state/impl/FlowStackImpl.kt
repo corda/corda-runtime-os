@@ -1,14 +1,32 @@
 package net.corda.flow.state.impl
 
 import net.corda.data.KeyValuePairList
-import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.state.FlowStack
+import net.corda.flow.state.FlowStackItem
+import net.corda.data.flow.state.checkpoint.FlowStackItem as AvroFlowStackItem
 import net.corda.flow.utils.emptyKeyValuePairList
-import net.corda.flow.utils.mutableKeyValuePairListOf
+import net.corda.flow.utils.keyValuePairListOf
+import net.corda.flow.utils.toMutableMap
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatingFlow
 
-class FlowStackImpl(val flowStackItems: MutableList<FlowStackItem>) : FlowStack {
+/**
+ * Even though the [FlowStackImpl] works with both types of the [FlowStackItem] internally (Avro and non Avro
+ * serializable), only the non-serializable version is exposed so Avro generated types don't end in the stack
+ * of an executing flow.
+ */
+class FlowStackImpl(stackItems: MutableList<AvroFlowStackItem>) : FlowStack {
+    val flowStackItems = mutableListOf<FlowStackItem>().apply {
+        addAll(stackItems.map {
+            FlowStackItem(
+                it.flowName,
+                it.isInitiatingFlow,
+                it.sessionIds.toMutableList(),
+                it.contextUserProperties.toMutableMap(),
+                it.contextPlatformProperties.toMutableMap()
+            )
+        })
+    }
 
     override val size: Int get() = flowStackItems.size
 
@@ -22,8 +40,8 @@ class FlowStackImpl(val flowStackItems: MutableList<FlowStackItem>) : FlowStack 
                 flow::class.java.name,
                 flow::class.java.getIsInitiatingFlow(),
                 mutableListOf(),
-                mutableKeyValuePairListOf(contextUserProperties),
-                mutableKeyValuePairListOf(contextPlatformProperties)
+                contextUserProperties.toMutableMap(),
+                contextPlatformProperties.toMutableMap(),
             )
 
         flowStackItems.add(stackItem)
@@ -42,9 +60,8 @@ class FlowStackImpl(val flowStackItems: MutableList<FlowStackItem>) : FlowStack 
         return flowStackItems.lastOrNull()
     }
 
-    override fun peekFirst(): FlowStackItem {
-        val firstItem = flowStackItems.firstOrNull()
-        return checkNotNull(firstItem) { "peekFirst() was called on an empty stack." }
+    override fun peekFirst(): FlowStackItem? {
+        return flowStackItems.firstOrNull()
     }
 
     override fun pop(): FlowStackItem? {
@@ -58,5 +75,24 @@ class FlowStackImpl(val flowStackItems: MutableList<FlowStackItem>) : FlowStack 
 
     private fun Class<*>.getIsInitiatingFlow(): Boolean {
         return this.getDeclaredAnnotation(InitiatingFlow::class.java) != null
+    }
+
+    /**
+     * Transforms the current list of kryo serializable items into a list of avro serializable items.
+     *
+     * @return the list of avro serializable [FlowStackItem]s
+     */
+    fun toAvro(): List<AvroFlowStackItem> {
+        return mutableListOf<AvroFlowStackItem>().apply {
+            addAll(flowStackItems.map {
+                AvroFlowStackItem.newBuilder()
+                    .setFlowName(it.flowName)
+                    .setIsInitiatingFlow(it.isInitiatingFlow)
+                    .setSessionIds(it.sessionIds.toList())
+                    .setContextUserProperties(keyValuePairListOf(it.contextUserProperties))
+                    .setContextPlatformProperties(keyValuePairListOf(it.contextPlatformProperties))
+                    .build()
+            })
+        }
     }
 }
