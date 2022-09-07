@@ -58,6 +58,7 @@ class CpiUploadRPCOpsImpl @Activate constructor(
         logger.info("Uploading CPI: ${upload.fileName}")
         requireRunning()
         val cpiUploadRequestId = cpiUploadManager.uploadCpi(upload.fileName, upload.content)
+        logger.info("Request ID for uploading CPI ${upload.fileName} is ${cpiUploadRequestId}")
         return CpiUploadRPCOps.CpiUploadResponse(cpiUploadRequestId.requestId)
     }
 
