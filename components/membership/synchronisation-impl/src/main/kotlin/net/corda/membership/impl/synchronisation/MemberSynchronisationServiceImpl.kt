@@ -45,6 +45,7 @@ import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.toBase64
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
@@ -180,6 +181,8 @@ class MemberSynchronisationServiceImpl internal constructor(
 
         override fun processMembershipUpdates(updates: ProcessMembershipUpdates) {
             val viewOwningMember = updates.synchronisationMetaData.member.toCorda()
+            println("QQQ in processMembershipUpdates, viewOwningMember= ${viewOwningMember.x500Name}" +
+                " hash = ${updates.membershipPackage.memberships.hashCheck.serverHash.array().toBase64()}")
 
             try {
                 val updateMembersInfo = updates.membershipPackage.memberships.memberships.map { update ->
@@ -195,6 +198,7 @@ class MemberSynchronisationServiceImpl internal constructor(
 
                 val persistentMemberInfoRecords = updateMembersInfo.entries.map { (id, memberInfo) ->
                     // TODO - CORE-5811 - verify signatures in signed member infos.
+                    println("QQQ for $viewOwningMember persisting ${memberInfo.name}")
                     val persistentMemberInfo = PersistentMemberInfo(
                         viewOwningMember.toAvro(),
                         memberInfo.memberProvidedContext.toWire(),
@@ -213,9 +217,12 @@ class MemberSynchronisationServiceImpl internal constructor(
                     persistentMemberInfoRecords + createSynchronisationRequestMessage(groupReader, updates)
                 } else {
                     val knownMembers = groupReader.lookup().filter { !it.isMgm }.associateBy { it.id }
+                    println("QQQ \t knownMembers => ${knownMembers.values.map { it.name }}")
                     val allMembers = knownMembers + updateMembersInfo
+                    println("QQQ \t allMembers => ${allMembers.values.map { it.name }}")
                     val expectedHash = merkleTreeGenerator.generateTree(allMembers.values).root
                     if (packageHash != expectedHash) {
+                        println("QQQ \t Wrong hash!!!")
                         persistentMemberInfoRecords + createSynchronisationRequestMessage(groupReader, updates)
                     } else {
                         persistentMemberInfoRecords

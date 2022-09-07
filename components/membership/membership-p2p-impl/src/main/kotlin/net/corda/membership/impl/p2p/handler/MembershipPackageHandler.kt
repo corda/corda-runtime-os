@@ -3,12 +3,14 @@ package net.corda.membership.impl.p2p.handler
 import net.corda.data.membership.command.synchronisation.SynchronisationCommand
 import net.corda.data.membership.command.synchronisation.SynchronisationMetaData
 import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
+import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AuthenticatedMessageHeader
 import net.corda.schema.Schemas.Membership.Companion.SYNCHRONISATION_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.deserialize
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.toBase64
 import net.corda.virtualnode.toCorda
 import java.nio.ByteBuffer
 
@@ -24,6 +26,11 @@ internal class MembershipPackageHandler(
         payload: ByteBuffer
     ): Record<String, SynchronisationCommand> {
         logger.info("Received membership data package. Publishing to topic $SYNCHRONISATION_TOPIC.")
+        val message: MembershipPackage = avroSchemaRegistry.deserialize(payload)
+        println(
+            "QQQ got MembershipPackage from ${header.source.x500Name} to ${header.destination.x500Name}," +
+            "hash ${message.memberships.hashCheck.serverHash.array().toBase64()}"
+        )
         return Record(
             SYNCHRONISATION_TOPIC,
             header.destination.toCorda().shortHash.value,
@@ -33,7 +40,7 @@ internal class MembershipPackageHandler(
                         header.source,
                         header.destination
                     ),
-                    avroSchemaRegistry.deserialize(payload)
+                    message
                 )
             )
         )

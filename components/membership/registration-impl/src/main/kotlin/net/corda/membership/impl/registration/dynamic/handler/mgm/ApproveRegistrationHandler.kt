@@ -27,6 +27,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.util.toBase64
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.membership.MemberInfo
@@ -97,7 +98,12 @@ internal class ApproveRegistrationHandler(
         )
 
         // Send all approved members from the same group to the newly approved member over P2P
+        println("QQQ Member ${approvedMember.x500Name} was approved by ${approvedBy.x500Name}")
         val allMembersPackage = membershipPackageFactory.invoke(members)
+        println(
+            "QQQ Sending ${members.map { it.name }} to ${approvedMember.x500Name} - " +
+                    "signature ${allMembersPackage.memberships.hashCheck.serverHash.array().toBase64()}"
+        )
         val allMembersToNewMember = p2pRecordsFactory.createAuthenticatedMessageRecord(
             source = approvedBy,
             destination = approvedMember,
@@ -109,6 +115,10 @@ internal class ApproveRegistrationHandler(
         val memberToAllMembers = members.filter {
             it.holdingIdentity != approvedMember.toCorda()
         }.map { memberToSendUpdateTo ->
+            println(
+                "QQQ Sending ${memberInfo.name} to ${memberToSendUpdateTo.holdingIdentity.x500Name} - " +
+                        "signature ${memberPackage.memberships.hashCheck.serverHash.array().toBase64()}"
+            )
             p2pRecordsFactory.createAuthenticatedMessageRecord(
                 source = approvedBy,
                 destination = memberToSendUpdateTo.holdingIdentity.toAvro(),
