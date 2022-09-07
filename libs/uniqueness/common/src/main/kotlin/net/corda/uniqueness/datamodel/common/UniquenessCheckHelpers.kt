@@ -18,17 +18,17 @@ import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateRefImpl
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorGeneral
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorInputStateConflict
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorInputStateUnknown
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateConflict
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateUnknown
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorTimeWindowOutOfBounds
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
+import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckErrorGeneral
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckErrorInputStateConflict
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckErrorInputStateUnknown
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckErrorReferenceStateConflict
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckErrorReferenceStateUnknown
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckErrorTimeWindowOutOfBounds
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckResult
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckResultFailure
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckResultSuccess
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckStateRef
 import org.apache.avro.specific.SpecificRecord
 import java.time.Instant
 
