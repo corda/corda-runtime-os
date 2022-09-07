@@ -7,8 +7,8 @@ import net.corda.cordapptestutils.crypto.HsmCategory
 import net.corda.cordapptestutils.internal.flows.FlowFactory
 import net.corda.cordapptestutils.internal.flows.FlowServicesInjector
 import net.corda.cordapptestutils.internal.messaging.SimFiber
-import net.corda.cordapptestutils.internal.signing.BaseKeyStore
-import net.corda.cordapptestutils.internal.signing.KeyStore
+import net.corda.cordapptestutils.internal.signing.BaseSimKeyStore
+import net.corda.cordapptestutils.internal.signing.SimKeyStore
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
 import java.security.PublicKey
@@ -18,7 +18,7 @@ class SimulatedVirtualNodeBase(
     private val fiber: SimFiber,
     private val injector: FlowServicesInjector,
     private val flowFactory: FlowFactory,
-    private val keyStore: KeyStore = BaseKeyStore()
+    private val keyStore: SimKeyStore = BaseSimKeyStore()
 ) : SimulatedVirtualNode {
 
     override val member : MemberX500Name = holdingIdentity.member

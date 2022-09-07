@@ -6,7 +6,7 @@ import net.corda.cordapptestutils.factories.RequestDataFactory
 import net.corda.cordapptestutils.internal.flows.FlowFactory
 import net.corda.cordapptestutils.internal.flows.FlowServicesInjector
 import net.corda.cordapptestutils.internal.messaging.SimFiber
-import net.corda.cordapptestutils.internal.signing.KeyStore
+import net.corda.cordapptestutils.internal.signing.SimKeyStore
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.persistence.PersistenceService
 import org.hamcrest.MatcherAssert.assertThat
@@ -29,7 +29,7 @@ class SimulatedVirtualNodeBaseTest {
     private lateinit var fiber : SimFiber
     private lateinit var flowFactory : FlowFactory
     private lateinit var injector : FlowServicesInjector
-    private lateinit var keyStore : KeyStore
+    private lateinit var keyStore : SimKeyStore
     private val holdingId = HoldingIdentity.create("IRunCordapps")
 
     @Test
@@ -105,7 +105,7 @@ class SimulatedVirtualNodeBaseTest {
         )
 
         // And a key store which will give us a new key
-        val publicKey = KeyPairGenerator.getInstance("RSA").generateKeyPair().public
+        val publicKey = KeyPairGenerator.getInstance("EC").generateKeyPair().public
         whenever(keyStore.generateKey("my-key", HsmCategory.LEDGER, "CORDA.ECDSA.SECP256R"))
             .thenReturn(publicKey)
 

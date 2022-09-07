@@ -8,7 +8,7 @@ import java.security.PublicKey
 
 class SimWithJsonSigningService(
     private val jsonMarshallingService: JsonMarshallingService,
-    private val keyStore: KeyStore) : SigningService {
+    private val keyStore: SimKeyStore) : SigningService {
     override fun decodePublicKey(encodedKey: String): PublicKey {
         TODO()
     }

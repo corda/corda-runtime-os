@@ -13,7 +13,7 @@ import java.security.spec.X509EncodedKeySpec
 
 
 fun pemEncode(publicKey: PublicKey): String {
-    val pemObject = PemObject("RSA PUBLIC KEY", publicKey.encoded)
+    val pemObject = PemObject("ECDSA PUBLIC KEY", publicKey.encoded)
     val byteStream = ByteArrayOutputStream()
     val pemWriter = PemWriter(OutputStreamWriter(byteStream))
     pemWriter.writeObject(pemObject)
@@ -26,5 +26,5 @@ fun pemDecode(pemEncodedPublicKey: String) : PublicKey {
     val pemObject = PemReader(InputStreamReader(byteStream)).readPemObject()
     val content = pemObject.content
     val pubKeySpec = X509EncodedKeySpec(content)
-    return KeyFactory.getInstance("RSA").generatePublic(pubKeySpec) as PublicKey
+    return KeyFactory.getInstance("EC").generatePublic(pubKeySpec) as PublicKey
 }

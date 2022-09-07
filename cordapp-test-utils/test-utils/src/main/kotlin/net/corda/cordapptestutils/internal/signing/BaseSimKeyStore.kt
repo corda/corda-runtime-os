@@ -3,14 +3,16 @@ package net.corda.cordapptestutils.internal.signing
 import net.corda.cordapptestutils.crypto.HsmCategory
 import java.security.KeyPairGenerator
 import java.security.PublicKey
+import java.security.SecureRandom
+import java.security.spec.ECGenParameterSpec
 
-class BaseKeyStore : KeyStore {
+class BaseSimKeyStore : SimKeyStore {
 
     private val keys = HashMap<PublicKey, KeyParameters>()
-    private val keyGenerator = KeyPairGenerator.getInstance("RSA")
+    private val keyGenerator = KeyPairGenerator.getInstance("EC")
 
     init {
-        keyGenerator.initialize(2048)
+        keyGenerator.initialize(ECGenParameterSpec("secp256k1"), SecureRandom())
     }
 
     override fun generateKey(alias: String, hsmCategory: HsmCategory, scheme: String) : PublicKey {

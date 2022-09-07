@@ -9,7 +9,7 @@ class PemUtilsTest {
 
     @Test
     fun `should be able to pem encode and decode a key`() {
-        val publicKey = KeyPairGenerator.getInstance("RSA").generateKeyPair().public
+        val publicKey = KeyPairGenerator.getInstance("EC").generateKeyPair().public
 
         val encoded = pemEncode(publicKey)
         val decoded = pemDecode(encoded)

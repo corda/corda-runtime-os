@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "net.cordacon"
-version = "3"
+version = "$cordaApiVersion"
 
 dependencies {
 

@@ -7,12 +7,12 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import java.security.KeyPairGenerator
 
-class BaseKeyStoreTest {
+class BaseSimKeyStoreTest {
 
     @Test
     fun `should generate and store a public key`() {
         // Given a key store
-        val keyStore = BaseKeyStore()
+        val keyStore = BaseSimKeyStore()
 
         // When I generate a key
         val publicKey = keyStore.generateKey("my-alias", HsmCategory.LEDGER, "Any scheme will do")
@@ -25,8 +25,8 @@ class BaseKeyStoreTest {
 
     @Test
     fun `should return null if public key was not created by key store`() {
-        val keyStore = BaseKeyStore()
-        val publicKey = KeyPairGenerator.getInstance("RSA").generateKeyPair().public
+        val keyStore = BaseSimKeyStore()
+        val publicKey = KeyPairGenerator.getInstance("EC").generateKeyPair().public
 
         assertNull(keyStore.getParameters(publicKey))
     }

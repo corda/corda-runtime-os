@@ -10,7 +10,7 @@ import org.junit.jupiter.api.assertThrows
 
 class SimWithJsonSignAndVerifyTest {
 
-    private val keyStore = BaseKeyStore()
+    private val keyStore = BaseSimKeyStore()
     private val key = keyStore.generateKey("my-alias", HsmCategory.LEDGER, "any scheme will do")
 
     @Test
@@ -52,7 +52,7 @@ class SimWithJsonSignAndVerifyTest {
         assertThrows<CryptoSignatureException> {
             SimWithJsonSignatureVerificationService().verify(
                 key,
-                SignatureSpec.RSA_SHA256,
+                SignatureSpec.ECDSA_SHA384,
                 signed.bytes,
                 "Hello!".toByteArray()
             )

@@ -124,7 +124,7 @@ Note that as with real Corda, private keys are contained within their own node, 
 node cannot be used to sign data in another (though all public keys are accessible through `MemberInfo`).
 
 Note also that Simulator does not check to see if any given scheme is supported, and will only
-ever generate an RSA key, regardless of parameters. To verify that your chosen key scheme and signature spec
+ever generate an ECDSA key, regardless of parameters. To verify that your chosen key scheme and signature spec
 are supported and work together, test using a real Corda deployment.
 
 > **⚠ Warning**

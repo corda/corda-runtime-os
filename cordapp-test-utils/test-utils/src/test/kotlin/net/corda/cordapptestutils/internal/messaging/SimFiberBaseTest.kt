@@ -171,7 +171,7 @@ class SimFiberBaseTest {
         assertThat(fiber.members[member]?.ledgerKeys, `is`(listOf()))
 
         // When we register a key then the memberInfo should have the key
-        val key = KeyPairGenerator.getInstance("RSA").generateKeyPair().public
+        val key = KeyPairGenerator.getInstance("EC").generateKeyPair().public
         fiber.registerKey(member, key)
         assertThat(fiber.members[member]?.ledgerKeys, `is`(listOf(key)))
     }

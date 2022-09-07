@@ -2,7 +2,7 @@ package net.corda.cordapptestutils.internal.flows
 
 import net.corda.cordapptestutils.internal.messaging.ConcurrentFlowMessaging
 import net.corda.cordapptestutils.internal.messaging.SimFiber
-import net.corda.cordapptestutils.internal.signing.KeyStore
+import net.corda.cordapptestutils.internal.signing.SimKeyStore
 import net.corda.cordapptestutils.internal.signing.SimWithJsonSignatureVerificationService
 import net.corda.cordapptestutils.internal.signing.SimWithJsonSigningService
 import net.corda.cordapptestutils.internal.tools.SimpleJsonMarshallingService
@@ -41,7 +41,7 @@ class DefaultServicesInjector : FlowServicesInjector {
         member: MemberX500Name,
         fiber: SimFiber,
         flowFactory: FlowFactory,
-        keyStore: KeyStore
+        keyStore: SimKeyStore
     ) {
         val flowClass = flow.javaClass
         flow.injectIfRequired(JsonMarshallingService::class.java,
@@ -67,7 +67,7 @@ class DefaultServicesInjector : FlowServicesInjector {
 
     private fun getOrCreateSigningService(
         jsonMarshallingService: JsonMarshallingService,
-        keyStore: KeyStore
+        keyStore: SimKeyStore
     ): SigningService {
         return SimWithJsonSigningService(jsonMarshallingService, keyStore)
     }
