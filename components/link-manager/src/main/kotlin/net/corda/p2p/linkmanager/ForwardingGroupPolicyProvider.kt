@@ -70,7 +70,7 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
         }
 
         val trustedCertificates = groupPolicy.p2pParameters.tlsTrustRoots.toList()
-        logger.info("size of trustroots: ${trustedCertificates.size}")
+        logger.info("size of trustroots for identity: ${holdingIdentity.x500Name} is ${trustedCertificates.size}")
 
         return GroupPolicyListener.GroupInfo(holdingIdentity, networkType, protocolModes, trustedCertificates)
     }
