@@ -167,6 +167,7 @@ class GroupPolicyProviderImpl @Activate constructor(
     }
 
     private fun activate() {
+        logger.info("Received config, started subscriptions and setting status to UP.")
         coordinator.updateStatus(LifecycleStatus.UP, "Received config, started subscriptions and setting status to UP.")
         swapImpl(ActiveImpl())
     }
@@ -226,6 +227,7 @@ class GroupPolicyProviderImpl @Activate constructor(
                 }.forEach {
                     groupPolicies.compute(it) { _, _ ->
                         try {
+                            logger.info("Parsing group policy for member.")
                             parseGroupPolicy(it, virtualNodeInfo = snapshot[it])
                         } catch (e: Exception) {
                             logger.error(
@@ -299,6 +301,7 @@ class GroupPolicyProviderImpl @Activate constructor(
     inner class Processor : DurableProcessor<String, MembershipEvent> {
         @Suppress("NestedBlockDepth")
         override fun onNext(events: List<Record<String, MembershipEvent>>): List<Record<*, *>> {
+            logger.info("Received event after mgm registration.")
             events.forEach {record ->
                 try {
                     record.value
