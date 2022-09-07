@@ -18,10 +18,10 @@ dependencies {
     implementation project(":libs:ledger:ledger-common-impl")
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 
     testImplementation project(':testing:test-serialization')
     testImplementation project(":libs:serialization:serialization-amqp")
     testImplementation project(":libs:crypto:cipher-suite-impl")
     testImplementation project(":libs:crypto:merkle-impl")
-
 }

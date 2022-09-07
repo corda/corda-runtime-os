@@ -20,6 +20,7 @@ import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
 import java.security.PublicKey
 import java.security.SecureRandom
 import java.time.Instant
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 
 @Suppress("LongParameterList")
 class ConsensualTransactionBuilderImpl(
@@ -60,7 +61,7 @@ class ConsensualTransactionBuilderImpl(
             mapOf(
                 LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
                 LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
-                DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.DefaultValues
+                DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues
                 // CORE-5940 set CPK identifier/etc
             )
         )
@@ -68,6 +69,7 @@ class ConsensualTransactionBuilderImpl(
 
     private fun calculateComponentGroupLists(serializer: SerializationService): List<List<ByteArray>>
     {
+        val mapper = jacksonObjectMapper()
         val requiredSigningKeys = states
             .map{it.participants}
             .flatten()
@@ -78,7 +80,7 @@ class ConsensualTransactionBuilderImpl(
         for (componentGroupIndex in ConsensualComponentGroupEnum.values()) {
             componentGroupLists += when (componentGroupIndex) {
                 ConsensualComponentGroupEnum.METADATA ->
-                    listOf(serializer.serialize(calculateMetaData()).bytes)
+                    listOf(mapper.writeValueAsBytes(calculateMetaData()))
                 ConsensualComponentGroupEnum.TIMESTAMP ->
                     listOf(serializer.serialize(Instant.now()).bytes)
                 ConsensualComponentGroupEnum.REQUIRED_SIGNING_KEYS ->
@@ -116,7 +118,6 @@ class ConsensualTransactionBuilderImpl(
         return WireTransaction(
             merkleTreeFactory,
             digestService,
-            serializer,
             privacySalt,
             componentGroupLists
         )
