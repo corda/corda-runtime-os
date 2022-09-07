@@ -27,11 +27,6 @@ class FlowMessagingImpl @Activate constructor(
 ) : FlowMessaging, SingletonSerializeAsToken {
 
     @Suspendable
-    override fun close(sessions: Set<FlowSession>) {
-        TODO("Not yet implemented")
-    }
-
-    @Suspendable
     override fun initiateFlow(x500Name: MemberX500Name): FlowSession {
         return doInitiateFlow(x500Name, null)
     }
@@ -53,26 +48,6 @@ class FlowMessagingImpl @Activate constructor(
         checkFlowCanBeInitiated()
         addSessionIdToFlowStackItem(sessionId)
         return flowSessionFactory.createInitiatingFlowSession(sessionId, x500Name, flowContextPropertiesBuilder)
-    }
-
-    @Suspendable
-    override fun <R> receiveAll(receiveType: Class<out R>, sessions: Set<FlowSession>): List<UntrustworthyData<R>> {
-        TODO("Not yet implemented")
-    }
-
-    @Suspendable
-    override fun receiveAllMap(sessions: Map<FlowSession, Class<out Any>>): Map<FlowSession, UntrustworthyData<Any>> {
-        TODO("Not yet implemented")
-    }
-
-    @Suspendable
-    override fun sendAll(payload: Any, sessions: Set<FlowSession>) {
-        TODO("Not yet implemented")
-    }
-
-    @Suspendable
-    override fun sendAllMap(payloadsPerSession: Map<FlowSession, *>) {
-        TODO("Not yet implemented")
     }
 
     private fun checkFlowCanBeInitiated() {
