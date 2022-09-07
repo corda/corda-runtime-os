@@ -24,6 +24,7 @@ class VirtualNodeDbReconcilerReaderTest {
         const val groupId = "123456"
         val vaultDmlConnectionId = UUID.randomUUID()
         val cryptoDmlConnectionId = UUID.randomUUID()
+        val uniquenessDmlConnectionId = UUID.randomUUID()
         val timestamp = Instant.now()
         const val entityVersion = 999
     }
@@ -50,6 +51,8 @@ class VirtualNodeDbReconcilerReaderTest {
             whenever(it.vaultDDLConnectionId).then { null }
             whenever(it.cryptoDMLConnectionId).then { cryptoDmlConnectionId }
             whenever(it.cryptoDDLConnectionId).then { null }
+            whenever(it.uniquenessDMLConnectionId).then { uniquenessDmlConnectionId }
+            whenever(it.uniquenessDDLConnectionId).then { null }
             whenever(it.hsmConnectionId).then { null }
         }
     }
@@ -72,6 +75,8 @@ class VirtualNodeDbReconcilerReaderTest {
             vaultDmlConnectionId = vaultDmlConnectionId,
             cryptoDdlConnectionId = null,
             cryptoDmlConnectionId = cryptoDmlConnectionId,
+            uniquenessDdlConnectionId = null,
+            uniquenessDmlConnectionId = uniquenessDmlConnectionId,
             hsmConnectionId = null,
             version = entityVersion,
             timestamp = timestamp

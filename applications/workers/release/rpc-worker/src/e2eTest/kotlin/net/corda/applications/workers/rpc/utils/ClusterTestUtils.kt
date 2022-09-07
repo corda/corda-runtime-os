@@ -80,6 +80,8 @@ fun E2eCluster.createVirtualNode(
                     vaultDmlConnection = null,
                     cryptoDdlConnection = null,
                     cryptoDmlConnection = null,
+                    uniquenessDdlConnection = null,
+                    uniquenessDmlConnection = null
                 )
             ).holdingIdentity.shortHash.also {
                 member.holdingId = it

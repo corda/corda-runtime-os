@@ -26,6 +26,10 @@ data class VirtualNodeInfo(
     val cryptoDdlConnectionId: UUID? = null,
     /** Crypto DML DB connection ID */
     val cryptoDmlConnectionId: UUID,
+    /** Uniqueness DDL DB connection ID */
+    val uniquenessDdlConnectionId: UUID? = null,
+    /** Uniqueness DML DB connection ID */
+    val uniquenessDmlConnectionId: UUID,
     /** HSM connection ID */
     val hsmConnectionId: UUID? = null,
     /** Current state of the virtual node instance */
@@ -52,6 +56,8 @@ fun VirtualNodeInfo.toAvro(): VirtualNodeInfoAvro =
             vaultDmlConnectionId.toString(),
             cryptoDdlConnectionId?.let{ cryptoDdlConnectionId.toString() },
             cryptoDmlConnectionId.toString(),
+            uniquenessDdlConnectionId?.let{ uniquenessDdlConnectionId.toString() },
+            uniquenessDmlConnectionId.toString(),
             hsmConnectionId?.let { hsmConnectionId.toString() },
             state.name,
             version,
@@ -68,6 +74,8 @@ fun VirtualNodeInfoAvro.toCorda(): VirtualNodeInfo {
         UUID.fromString(vaultDmlConnectionId),
         cryptoDdlConnectionId?.let { UUID.fromString(cryptoDdlConnectionId) },
         UUID.fromString(cryptoDmlConnectionId),
+        uniquenessDdlConnectionId?.let { UUID.fromString(uniquenessDdlConnectionId) },
+        UUID.fromString(uniquenessDmlConnectionId),
         hsmConnectionId?.let { UUID.fromString(hsmConnectionId) },
         VirtualNodeState.valueOf(virtualNodeState),
         version,

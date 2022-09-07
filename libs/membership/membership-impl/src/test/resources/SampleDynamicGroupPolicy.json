@@ -2,7 +2,7 @@
   "fileFormatVersion": 1,
   "groupId": "2a7bbd3a-1230-4525-9857-0b2cda113580",
   "registrationProtocol": "net.corda.membership.impl.registration.dynamic.MemberRegistrationService",
-  "synchronisationProtocol": "net.corda.membership.impl.sync.dynamic.MemberSyncService",
+  "synchronisationProtocol": "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
   "protocolParameters": {
     "sessionKeyPolicy": "Combined"
   },

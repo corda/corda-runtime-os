@@ -4,6 +4,7 @@ import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
+import net.cordacon.example.utils.rollCallName
 
 class ResponderFlowDelegate {
 

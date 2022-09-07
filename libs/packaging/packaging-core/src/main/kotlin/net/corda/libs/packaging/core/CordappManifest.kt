@@ -43,7 +43,6 @@ data class CordappManifest(
         const val CORDAPP_RPC_STARTABLE_FLOWS = "Corda-RPCStartableFlow-Classes"
         const val CORDAPP_INITIATED_FLOWS = "Corda-InitiatedFlow-Classes"
         const val CORDAPP_SUBFLOW_FLOWS = "Corda-Subflow-Classes"
-        const val CORDAPP_WHITELISTS = "Corda-SerializationWhitelist-Classes"
         const val CORDAPP_SCHEMAS = "Corda-MappedSchema-Classes"
         const val CORDAPP_SERIALIZERS = "Corda-SerializationCustomSerializer-Classes"
         const val CORDAPP_CHECKPOINT_SERIALIZERS = "Corda-CheckpointCustomSerializer-Classes"
@@ -169,7 +168,6 @@ data class CordappManifest(
     val rpcStartableFlows: Set<String> get() = parseSet(CORDAPP_RPC_STARTABLE_FLOWS)
     val initiatedFlows: Set<String> get() = parseSet(CORDAPP_INITIATED_FLOWS)
     val subflows: Set<String> get() = parseSet(CORDAPP_SUBFLOW_FLOWS)
-    val whitelists: Set<String> get() = parseSet(CORDAPP_WHITELISTS)
     val schemas: Set<String> get() = parseSet(CORDAPP_SCHEMAS)
     val serializers: Set<String> get() = parseSet(CORDAPP_SERIALIZERS)
     val checkpointSerializers: Set<String> get() = parseSet(CORDAPP_CHECKPOINT_SERIALIZERS)
