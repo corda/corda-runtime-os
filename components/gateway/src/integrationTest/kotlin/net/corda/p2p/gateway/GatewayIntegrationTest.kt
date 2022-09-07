@@ -431,7 +431,7 @@ class GatewayIntegrationTest : TestBase() {
                     assertThat(httpResponse.payload).isNotNull
                     val gatewayResponse = GatewayResponse.fromByteBuffer(ByteBuffer.wrap(httpResponse.payload))
                     assertThat(gatewayResponse.id).isEqualTo(gatewayMessage.id)
-                    client.stop()
+                    client.close()
                 }
             }
 

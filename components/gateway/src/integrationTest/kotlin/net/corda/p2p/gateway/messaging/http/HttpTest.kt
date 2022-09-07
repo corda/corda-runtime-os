@@ -9,7 +9,7 @@ import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.handler.codec.http.HttpResponseStatus
 import io.netty.handler.ssl.SslHandler
-import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.Resource
 import net.corda.p2p.NetworkType
 import net.corda.p2p.gateway.LoggingInterceptor
 import net.corda.p2p.gateway.TestBase
@@ -83,10 +83,11 @@ class HttpTest : TestBase() {
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
                 ConnectionConfiguration(),
-            ).also { client ->
+            ).use { client ->
                 client.start()
                 val response = client.write(clientMessageContent.toByteArray(Charsets.UTF_8)).get()
                 assertThat(response.statusCode).isEqualTo(HttpResponseStatus.OK)
+                client.close()
             }
         }
     }
@@ -126,7 +127,7 @@ class HttpTest : TestBase() {
                         threadPool,
                         ConnectionConfiguration(),
                     )
-                    httpClient.also {
+                    httpClient.use {
                         httpClient.start()
 
                         val start = Instant.now().toEpochMilli()
@@ -183,7 +184,7 @@ class HttpTest : TestBase() {
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
                 ConnectionConfiguration(),
-            ).also { client ->
+            ).use { client ->
                 client.start()
                 val response = client.write(hugePayload).get()
                 assertThat(response.statusCode).isEqualTo(HttpResponseStatus.OK)
@@ -218,7 +219,7 @@ class HttpTest : TestBase() {
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
                 ConnectionConfiguration(),
-            ).also { client ->
+            ).use { client ->
                 client.start()
                 val response = client.write(ByteArray(0)).get()
                 assertThat(response.statusCode).isEqualTo(HttpResponseStatus.OK)
@@ -263,7 +264,7 @@ class HttpTest : TestBase() {
     @Test
     @Timeout(30)
     fun `tls handshake fails - server identity check fails C4`() {
-        MitmServer(serverAddress.host, serverAddress.port, c4sslKeyStore).also { server ->
+        MitmServer(serverAddress.host, serverAddress.port, c4sslKeyStore).use { server ->
             server.start()
             val expectedX500Name = "O=Test,L=London,C=GB"
             val sni = SniCalculator.calculateSni("O=Test,L=London,C=GB", NetworkType.CORDA_4, serverAddress.host)
@@ -273,7 +274,7 @@ class HttpTest : TestBase() {
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
                 ConnectionConfiguration(),
-            ).also { client ->
+            ).use { client ->
 
                 client.start()
                 val future = client.write(ByteArray(0))
@@ -297,7 +298,7 @@ class HttpTest : TestBase() {
     @Test
     @Timeout(30)
     fun `tls handshake fails - server identity check fails C5`() {
-        MitmServer(serverAddress.host, serverAddress.port, chipKeyStore).also { server ->
+        MitmServer(serverAddress.host, serverAddress.port, chipKeyStore).use { server ->
             server.start()
             HttpClient(
                 DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore),
@@ -305,7 +306,7 @@ class HttpTest : TestBase() {
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
                 ConnectionConfiguration(),
-            ).also { client ->
+            ).use { client ->
                 client.start()
                 val future = client.write(ByteArray(0))
                 assertThatThrownBy {
@@ -348,7 +349,7 @@ class HttpTest : TestBase() {
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
                 ConnectionConfiguration(),
-            ).also { client ->
+            ).use { client ->
                 client.start()
                 val future = client.write(ByteArray(0))
                 assertThatThrownBy {
@@ -391,7 +392,7 @@ class HttpTest : TestBase() {
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
                 ConnectionConfiguration(),
-            ).also { client ->
+            ).use { client ->
                 client.start()
                 val future = client.write(ByteArray(0))
                 assertThatThrownBy {
@@ -417,7 +418,7 @@ class HttpTest : TestBase() {
         private val host: String,
         private val port: Int,
         val keyStoreWithPassword: KeyStoreWithPassword,
-    ) : Lifecycle {
+    ) : Resource {
 
         private val lock = ReentrantLock()
         private var bossGroup: EventLoopGroup? = null
@@ -425,10 +426,10 @@ class HttpTest : TestBase() {
         private var serverChannel: Channel? = null
 
         private var started = false
-        override val isRunning: Boolean
+        val isRunning: Boolean
             get() = started
 
-        override fun start() {
+        fun start() {
             lock.withLock {
                 bossGroup = NioEventLoopGroup(1)
                 workerGroup = NioEventLoopGroup(4)
@@ -442,7 +443,7 @@ class HttpTest : TestBase() {
             }
         }
 
-        override fun stop() {
+        override fun close() {
             lock.withLock {
                 try {
                     serverChannel?.close()
