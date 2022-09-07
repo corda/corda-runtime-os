@@ -44,6 +44,7 @@ import org.osgi.service.component.annotations.Reference
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 
+@Suppress("LongParameterList")
 @Component(service = [GroupPolicyProvider::class])
 class GroupPolicyProviderImpl @Activate constructor(
     @Reference(service = VirtualNodeInfoReadService::class)
@@ -296,6 +297,7 @@ class GroupPolicyProviderImpl @Activate constructor(
     }
 
     inner class Processor : DurableProcessor<String, MembershipEvent> {
+        @Suppress("NestedBlockDepth")
         override fun onNext(events: List<Record<String, MembershipEvent>>): List<Record<*, *>> {
             events.forEach {record ->
                 try {
