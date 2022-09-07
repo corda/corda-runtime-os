@@ -1,8 +1,8 @@
 package net.corda.uniqueness.datamodel.impl
 
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckError
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckResultFailure
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckResultSuccess
+import net.corda.v5.application.uniqueness.model.UniquenessCheckError
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import java.time.Instant
 
 data class UniquenessCheckResultSuccessImpl(

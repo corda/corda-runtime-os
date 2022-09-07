@@ -9,6 +9,7 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.membership.MemberLookup
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResponse
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -19,7 +20,6 @@ import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_DEFAULT_NAME
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckerClientService
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckResponse
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -48,7 +48,7 @@ class UniquenessCheckerClientServiceImpl @Activate constructor(
     private val merkleTreeFactory: MerkleTreeFactory,
     @Reference(service = MemberLookup::class)
     private val memberLookup: MemberLookup,
-): LedgerUniquenessCheckerClientService, /*Lifecycle, */SingletonSerializeAsToken {
+): LedgerUniquenessCheckerClientService, SingletonSerializeAsToken {
 
     private companion object {
         val log = contextLogger()

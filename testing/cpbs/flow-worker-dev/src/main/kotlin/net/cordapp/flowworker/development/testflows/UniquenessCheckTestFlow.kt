@@ -7,14 +7,14 @@ import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.days
 import net.corda.v5.base.util.seconds
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckerClientService
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckResultFailure
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckResultSuccess
 import java.time.Instant
 
 @Suppress("unused")
