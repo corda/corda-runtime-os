@@ -9,5 +9,6 @@ package net.corda.libs.cpiupload
  *
  * @param resourceName Must be the 'resource name' rather than the message so we
  * can pass it back to [net.corda.httprpc.exception.ResourceAlreadyExistsException]
+ * @param requestId The ID of the request that tried to reuse a group ID.
  */
-class ReUsedGroupIdException(resourceName: String) : Exception(resourceName)
+class ReUsedGroupIdException(resourceName: String, val requestId: String) : Exception(resourceName)
