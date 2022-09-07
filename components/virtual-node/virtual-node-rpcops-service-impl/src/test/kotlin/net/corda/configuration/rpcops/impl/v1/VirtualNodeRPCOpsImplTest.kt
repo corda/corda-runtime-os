@@ -55,7 +55,7 @@ class VirtualNodeRPCOpsImplTest {
 
         @Test
         fun `verify coordinator is started on start`() {
-            val vnodeRpcOps = VirtualNodeRPCOpsImpl(mockCoordinatorFactory, mock(), mock(), mock(), mock())
+            val vnodeRpcOps = VirtualNodeRPCOpsImpl(mockCoordinatorFactory, mock(), mock(), mock(), mockClockFactory)
             vnodeRpcOps.start()
 
             verify(mockCoordinator).start()
@@ -63,7 +63,7 @@ class VirtualNodeRPCOpsImplTest {
 
         @Test
         fun `verify coordinator is stopped on stop`() {
-            val vnodeRpcOps = VirtualNodeRPCOpsImpl(mockCoordinatorFactory, mock(), mock(), mock(), mock())
+            val vnodeRpcOps = VirtualNodeRPCOpsImpl(mockCoordinatorFactory, mock(), mock(), mock(), mockClockFactory)
             vnodeRpcOps.stop()
 
             verify(mockCoordinator).stop()
@@ -71,7 +71,7 @@ class VirtualNodeRPCOpsImplTest {
 
         @Test
         fun `verify coordinator isRunning defers to the coordinator`() {
-            val vnodeRpcOps = VirtualNodeRPCOpsImpl(mockCoordinatorFactory, mock(), mock(), mock(), mock())
+            val vnodeRpcOps = VirtualNodeRPCOpsImpl(mockCoordinatorFactory, mock(), mock(), mock(), mockClockFactory)
             vnodeRpcOps.isRunning
 
             verify(mockCoordinator).isRunning
@@ -79,7 +79,7 @@ class VirtualNodeRPCOpsImplTest {
 
         @Test
         fun `verify exception throw if getAllVirtualNodes is performed while coordinator is not running`() {
-            val vnodeMaintenanceRpcOps = VirtualNodeRPCOpsImpl(mockDownCoordinatorFactory, mock(), mock(), mock(), mock())
+            val vnodeMaintenanceRpcOps = VirtualNodeRPCOpsImpl(mockDownCoordinatorFactory, mock(), mock(), mock(), mockClockFactory)
             assertThrows<IllegalStateException> {
                 vnodeMaintenanceRpcOps.getAllVirtualNodes()
             }
