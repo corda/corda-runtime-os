@@ -1,20 +1,19 @@
 {{- if and (.Values.appSimulators.sender.enabled) (eq .Values.appSimulators.sender.loadGenerationType "CONTINUOUS") }}
-{{- $_ := set . "type" "sender" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "appSimulator.typeName" . }}
+  name: {{ include "appSimulator.fullname" . }}-sender
   labels:
-    {{- include "appSimulator.typeLabels" . | nindent 4 }}
+    app.kubernetes.io/component: sender
 spec:
   replicas: {{ .Values.appSimulators.sender.replicaCount }}
   selector:
     matchLabels:
-      {{- include "appSimulator.typeSelectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: sender
   template:
     metadata:
       labels:
-        {{- include "appSimulator.typeSelectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: sender
     spec:
       securityContext:
         runAsUser: 1000
@@ -34,13 +33,13 @@ spec:
                         - receiver
                 topologyKey: "kubernetes.io/hostname"
       containers:
-        - name: {{ include "appSimulator.typeName" . }}
+        - name: {{ include "appSimulator.fullname" . }}-sender
           image: {{ include "appSimulator.image" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           securityContext:
             allowPrivilegeEscalation: false
           args:
-            - "--mode {{ .type | snakecase | upper }}"
+            - "--mode SENDER"
             - "--clients {{ .Values.appSimulators.sender.parallelClientsPerReplica }}"
             - "-lloadGenerationType=CONTINUOUS"
             - "-lpeerX500Name={{ .Values.appSimulators.sender.peerX500Name }}"

@@ -1,20 +1,19 @@
 {{- if .Values.appSimulators.receiver.enabled }}
-{{- $_ := set . "type" "receiver" }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "appSimulator.typeName" . }}
+  name: {{ include "appSimulator.fullname" . }}-receiver
   labels:
-    {{- include "appSimulator.typeLabels" . | nindent 4 }}
+    app.kubernetes.io/component: receiver
 spec:
   replicas: {{ .Values.appSimulators.receiver.replicaCount }}
   selector:
     matchLabels:
-      {{- include "appSimulator.typeSelectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: receiver
   template:
     metadata:
       labels:
-        {{- include "appSimulator.typeSelectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: receiver
     spec:
       securityContext:
         runAsUser: 1000
@@ -34,13 +33,13 @@ spec:
                         - receiver
                 topologyKey: "kubernetes.io/hostname"
       containers:
-        - name: {{ include "appSimulator.typeName" . }}
+        - name: {{ include "appSimulator.fullname" . }}-receiver
           image: {{ include "appSimulator.image" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           securityContext:
             allowPrivilegeEscalation: false
           args:
-            - "--mode {{ .type | snakecase | upper }}"
+            - "--mode RECEIVER"
             - "--clients {{ .Values.appSimulators.receiver.parallelClientsPerReplica }}"
             {{- include "appSimulator.kafkaArgs" . | nindent 12 }}
           volumeMounts:

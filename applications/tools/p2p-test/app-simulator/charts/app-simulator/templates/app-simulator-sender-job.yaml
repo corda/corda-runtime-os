@@ -3,9 +3,9 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "appSimulator.typeName" . }}
+  name: {{ include "appSimulator.fullname" . }}-sender
   labels:
-    {{- include "appSimulator.typeLabels" . | nindent 4 }}
+    app.kubernetes.io/component: sender
   annotations:
     "helm.sh/hook": post-install
 spec:
@@ -13,17 +13,17 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "appSimulator.typeSelectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: sender
     spec:
       {{- include "appSimulator.imagePullSecrets" . | nindent 6 }}
       containers:
-        - name: {{ include "appSimulator.typeName" . }}
+        - name: {{ include "appSimulator.fullname" . }}-sender
           image: {{ include "appSimulator.image" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           securityContext:
             allowPrivilegeEscalation: false
           args:
-            - "--mode {{ .type | snakecase | upper }}"
+            - "--mode SENDER"
             - "--clients {{ .Values.appSimulators.sender.parallelClientsPerReplica }}"
             - "-lloadGenerationType=ONE_OFF"
             - "-lpeerX500Name={{ .Values.appSimulators.sender.peerX500Name }}"

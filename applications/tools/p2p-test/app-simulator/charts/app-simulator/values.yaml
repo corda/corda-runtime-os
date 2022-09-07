@@ -76,49 +76,20 @@ db:
     # -- tag for image containing a db client, used to set up the db
     tag: 14.4
 
-# Configuration for cluster bootstrap
-bootstrap:
-  # Configuration for Kafka bootstrap
-  kafka:
-    # -- Indicates whether Kafka bootstrap is enabled as part of installation
-    enabled: true
-    # -- Specifies whether existing topics with the given prefix should be deleted before trying to create new ones (deletes all existing topics if no prefix is given)
-    cleanup: false
-    # -- Kafka topic partitions
-    partitions: 10
-    # -- Kafka topic replicas
-    replicas: 3
-    # --
-    schema: "net/corda/testschema"
-  # Configuration for CLI image used for bootstrap
-  image:
-    # -- CLI image registry; defaults to image.registry
-    registry: ""
-    # -- CLI image repository
-    repository: "corda-os-plugins"
-    # -- CLI default tag; defaults to image.tag
-    tag: ""
-  # resource limits and requests configuration for the bootstrap containers
-  resources:
-    # -- the CPU/memory resource requests for the bootstrap containers
-    requests: { }
-    # -- the CPU/memory resource limits for the bootstrap containers
-    limits: { }
-
 # Kafka configuration
 kafka:
   # -- comma-separated list of Kafka bootstrap servers (required)
-  bootstrapServers: "prereqs-kafka:9092"
+  bootstrapServers: ""
   # TLS configuration for client connections to Kafka
   tls:
     # -- indicates whether TLS should be used for client connections to Kafka
-    enabled: true
+    enabled: false
     # if TLS is enabled, the truststore configuration for client connections to Kafka
     truststore:
       # if TLS is enabled, details of an existing Kubernetes secret containing the truststore for client connections to Kafka
       secretRef:
         # -- if TLS is enabled, the name of an existing Kubernetes secret containing the truststore for client connections to Kafka; blank if no truststore is required
-        name: "prereqs-kafka-0-tls"
+        name: ""
         # -- if TLS is enabled, the name of an existing Kubernetes secret containing the truststore for client connections to Kafka
         key: "ca.crt"
       # -- if TLS is enabled, the type of the truststore for client connections to Kafka; one of PEM or JKS

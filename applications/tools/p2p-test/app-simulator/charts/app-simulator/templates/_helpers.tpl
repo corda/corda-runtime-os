@@ -63,36 +63,6 @@ imagePullSecrets:
 {{- end }}
 
 {{/*
-Type name
-*/}}
-{{- define "appSimulator.typeName" -}}
-"{{ include "appSimulator.fullname" . }}-{{ .type | kebabcase }}"
-{{- end }}
-
-{{/*
-Type common labels
-*/}}
-{{- define "appSimulator.typeLabels" -}}
-{{ include "appSimulator.labels" . }}
-{{ include "appSimulator.typeComponentLabel" . }}
-{{- end }}
-
-{{/*
-Type selector labels
-*/}}
-{{- define "appSimulator.typeSelectorLabels" -}}
-{{ include "appSimulator.selectorLabels" . }}
-{{ include "appSimulator.typeComponentLabel" . }}
-{{- end }}
-
-{{/*
-Type component label
-*/}}
-{{- define "appSimulator.typeComponentLabel" -}}
-app.kubernetes.io/component: {{ .type }}
-{{- end }}
-
-{{/*
 AppSimulator image
 */}}
 {{- define "appSimulator.image" -}}
@@ -151,29 +121,7 @@ CLI image
 {{- end }}
 
 {{/*
-Resources for the bootstrapper
-*/}}
-{{- define "appSimulator.bootstrapResources" }}
-
-resources:
-  requests:
-  {{- if or .Values.resources.requests.cpu .Values.bootstrap.resources.requests.cpu }}
-    cpu: {{ default .Values.resources.requests.cpu .Values.bootstrap.resources.requests.cpu }}
-  {{- end }}
-  {{- if or .Values.resources.requests.memory .Values.bootstrap.resources.requests.memory }}
-    memory: {{ default .Values.resources.requests.memory .Values.bootstrap.resources.requests.memory }}
-  {{- end}}
-  limits:
-  {{- if or .Values.resources.limits.cpu .Values.bootstrap.resources.limits.cpu }}
-    cpu: {{ default .Values.resources.limits.cpu .Values.bootstrap.resources.limits.cpu }}
-  {{- end }}
-  {{- if or .Values.resources.limits.memory .Values.bootstrap.resources.limits.memory }}
-    memory: {{ default .Values.resources.limits.memory .Values.bootstrap.resources.limits.memory }}
-  {{- end }}
-{{- end }}
-
-{{/*
-Volume mounts for corda workers
+Volume mounts for the appSimulator
 */}}
 {{- define "appSimulator.volumeMounts" }}
 {{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
@@ -193,7 +141,7 @@ Volume mounts for corda workers
 {{- end }}
 
 {{/*
-Volumes for corda workers
+Volumes for the appSimulator
 */}}
 {{- define "appSimulator.workerVolumes" }}
 {{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}

@@ -200,9 +200,7 @@ class AppSimulator @Activate constructor(
         val password = getDbParameter("password", config, parameters, ::logErrorAndShutdown) ?: return null
         val host = getDbParameter("host", config, parameters, ::logErrorAndShutdown) ?: return null
         val db = getDbParameter("db", config, parameters, ::logErrorAndShutdown) ?: return null
-        val dbParams = DBParams(username, password, host, db)
-        logger.info("$dbParams")
-        return dbParams
+        return DBParams(username, password, host, db)
     }
 
     private fun readLoadGenParams(configFromFile: Config, parameters: CliParameters): LoadGenerationParams {
