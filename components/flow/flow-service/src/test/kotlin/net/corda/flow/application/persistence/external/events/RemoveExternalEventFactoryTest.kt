@@ -26,7 +26,7 @@ class RemoveExternalEventFactoryTest {
         val externalEventRecord = RemoveExternalEventFactory().createExternalEvent(
             checkpoint,
             externalEventContext,
-            RemoveParameters(ByteBuffer.wrap(byteArrayOf(1)))
+            RemoveParameters(listOf(ByteBuffer.wrap(byteArrayOf(1))))
         )
         assertEquals(Schemas.VirtualNode.ENTITY_PROCESSOR, externalEventRecord.topic)
         assertNull(externalEventRecord.key)

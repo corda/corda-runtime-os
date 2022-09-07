@@ -35,68 +35,110 @@ class PersistenceServiceImpl @Activate constructor(
 
     @Suspendable
     override fun <R : Any> find(entityClass: Class<R>, primaryKey: Any): R? {
+        requireBoxedType(entityClass)
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
                 FindExternalEventFactory::class.java,
-                FindParameters(entityClass, serialize(primaryKey))
+                FindParameters(entityClass, listOf(serialize(primaryKey)))
             )
         }.firstOrNull()?.let { flowFiberSerializationService.deserialize(it.array(), entityClass) }
     }
 
     @Suspendable
     override fun <R : Any> find(entityClass: Class<R>, primaryKeys: List<Any>): List<R> {
-        TODO("Not yet implemented")
+        requireBoxedType(entityClass)
+        return wrapWithPersistenceException {
+            externalEventExecutor.execute(
+                FindExternalEventFactory::class.java,
+                FindParameters(entityClass, primaryKeys.map { serialize(it) })
+            )
+        }.map { flowFiberSerializationService.deserialize(it.array(), entityClass) }
     }
 
     @Suspendable
     override fun <R : Any> findAll(entityClass: Class<R>): PagedQuery<R> {
+        requireBoxedType(entityClass)
         return pagedQueryFactory.createPagedFindQuery(entityClass)
     }
 
-
     @Suspendable
     override fun <R : Any> merge(entity: R): R? {
+        requireBoxedType(entity.javaClass)
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
                 MergeExternalEventFactory::class.java,
-                MergeParameters(serialize(entity))
+                MergeParameters(listOf(serialize(entity)))
             )
         }.firstOrNull()?.let { flowFiberSerializationService.deserialize(it.array(), entity::class.java) }
     }
 
     @Suspendable
     override fun <R : Any> merge(entities: List<R>): List<R> {
-        TODO("Not yet implemented")
+        return if (entities.isNotEmpty()) {
+            requireBoxedType(entities)
+            val mergedEntities = wrapWithPersistenceException {
+                externalEventExecutor.execute(
+                    MergeExternalEventFactory::class.java,
+                    MergeParameters(entities.map { serialize(it) })
+                )
+            }
+            // Zips the merged entities with the [entities] passed into [merge] so that [mergedEntities] can be
+            // deserialized into the correct types. This assumes that the order of [mergedEntities] is the same as
+            // [entities].
+            entities.zip(mergedEntities).map { (entity, mergedEntity) ->
+                flowFiberSerializationService.deserialize(mergedEntity.array(), entity::class.java)
+            }
+        } else {
+            emptyList()
+        }
     }
 
     @Suspendable
     override fun persist(entity: Any) {
+        requireBoxedType(entity.javaClass)
         wrapWithPersistenceException {
             externalEventExecutor.execute(
                 PersistExternalEventFactory::class.java,
-                PersistParameters(serialize(entity))
+                PersistParameters(listOf(serialize(entity)))
             )
         }
     }
 
+    @Suspendable
     override fun persist(entities: List<Any>) {
-        TODO("Not yet implemented")
+        if (entities.isNotEmpty()) {
+            requireBoxedType(entities)
+            wrapWithPersistenceException {
+                externalEventExecutor.execute(
+                    PersistExternalEventFactory::class.java,
+                    PersistParameters(entities.map { serialize(it) })
+                )
+            }
+        }
     }
 
     @Suspendable
     override fun remove(entity: Any) {
-        enforceNotPrimitive(entity::class.java)
+        requireBoxedType(entity.javaClass)
         wrapWithPersistenceException {
             externalEventExecutor.execute(
                 RemoveExternalEventFactory::class.java,
-                RemoveParameters(serialize(entity))
+                RemoveParameters(listOf(serialize(entity)))
             )
         }
     }
 
     @Suspendable
     override fun remove(entities: List<Any>) {
-        TODO("Not yet implemented")
+        if (entities.isNotEmpty()) {
+            requireBoxedType(entities)
+            wrapWithPersistenceException {
+                externalEventExecutor.execute(
+                    RemoveExternalEventFactory::class.java,
+                    RemoveParameters(entities.map { serialize(it) })
+                )
+            }
+        }
     }
 
     @Suspendable
@@ -104,14 +146,21 @@ class PersistenceServiceImpl @Activate constructor(
         queryName: String,
         entityClass: Class<T>
     ): ParameterisedQuery<T> {
+        requireBoxedType(entityClass)
         return pagedQueryFactory.createNamedParameterizedQuery(queryName, entityClass)
     }
 
     /**
      * Required to prevent class cast exceptions during AMQP serialization of primitive types.
      */
-    private fun enforceNotPrimitive(type: Class<*>) {
-        require(!type.isPrimitive) { "Cannot receive primitive type $type" }
+    private fun requireBoxedType(type: Class<*>) {
+        require(!type.isPrimitive) { "Cannot perform persistence operation on primitive type ${type.name}" }
+    }
+
+    private fun requireBoxedType(objects: List<Any>) {
+        for (obj in objects) {
+            requireBoxedType(obj.javaClass)
+        }
     }
 
     private fun serialize(payload: Any): ByteBuffer {

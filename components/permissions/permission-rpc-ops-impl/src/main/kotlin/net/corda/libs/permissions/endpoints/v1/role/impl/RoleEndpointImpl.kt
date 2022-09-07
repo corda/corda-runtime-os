@@ -47,7 +47,7 @@ class RoleEndpointImpl @Activate constructor(
     override fun getRoles(): Set<RoleResponseType> {
         val allRoles = withPermissionManager(permissionManagementService.permissionManager, logger) {
             getRoles()
-        }!!
+        }
         return allRoles.map { it.convertToEndpointType() }.toSet()
     }
 
@@ -59,7 +59,7 @@ class RoleEndpointImpl @Activate constructor(
             createRole(createRoleType.convertToDto(principal))
         }
 
-        return ResponseEntity.created(createRoleResult!!.convertToEndpointType())
+        return ResponseEntity.created(createRoleResult.convertToEndpointType())
     }
 
     override fun getRole(id: String): RoleResponseType {
@@ -81,7 +81,7 @@ class RoleEndpointImpl @Activate constructor(
             addPermissionToRole(roleId, permissionId, principal)
         }
 
-        return ResponseEntity.updated(updatedRoleResult!!.convertToEndpointType())
+        return ResponseEntity.updated(updatedRoleResult.convertToEndpointType())
     }
 
     override fun removePermission(roleId: String, permissionId: String): ResponseEntity<RoleResponseType> {
@@ -92,7 +92,7 @@ class RoleEndpointImpl @Activate constructor(
             removePermissionFromRole(roleId, permissionId, principal)
         }
 
-        return ResponseEntity.deleted(updatedRoleResult!!.convertToEndpointType())
+        return ResponseEntity.deleted(updatedRoleResult.convertToEndpointType())
     }
 
     override val isRunning: Boolean

@@ -16,7 +16,7 @@ const val SIGNATURE_SPEC = "SHA256withECDSA"
 fun createMGMGroupPolicyJson(
     fileFormatVersion: Int = 1,
     registrationProtocol: String = "net.corda.membership.impl.registration.dynamic.mgm.MGMRegistrationService",
-    syncProtocol: String = "net.corda.membership.impl.sync.dynamic.MemberSyncService"
+    syncProtocol: String = "net.corda.membership.impl.synchronisation.MgmSynchronisationServiceImpl"
 ): ByteArray {
     val groupPolicy = mapOf(
         "fileFormatVersion" to fileFormatVersion,

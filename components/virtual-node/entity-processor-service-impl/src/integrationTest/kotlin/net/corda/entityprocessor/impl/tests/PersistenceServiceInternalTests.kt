@@ -12,7 +12,6 @@ import net.corda.data.persistence.DeleteEntitiesById
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.FindAll
-import net.corda.data.persistence.FindEntity
 import net.corda.data.persistence.MergeEntities
 import net.corda.data.persistence.PersistEntities
 import net.corda.data.persistence.FindWithNamedQuery
@@ -73,6 +72,7 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
+import net.corda.data.persistence.FindEntities
 
 sealed class QuerySetup {
     data class NamedQuery(val params: Map<String, String>, val query: String = "Dog.summon"): QuerySetup()
@@ -280,17 +280,26 @@ class PersistenceServiceInternalTests {
         // use our 'find' code to find the cat, which has a *composite key*
         // (that we also need to create via reflection)
         val catKey = sandbox.createCatKeyInstance(cat.id, "Larry")
-        val result = assertFindEntity(CAT_CLASS_NAME, catKey)
+        val result = assertFindEntities(CAT_CLASS_NAME, catKey)
 
-        assertThat(result).isEqualTo(cat.instance) // It's the cat we persisted.
+        assertThat(result).containsOnly(cat.instance) // It's the cat we persisted.
     }
 
     @Test
     fun `find in db`() {
         val basilTheDog = sandbox.createDog("Basil")
         persistDirectInDb(basilTheDog.instance)     // write the dog *directly* to the database (don't use 'our' code).
-        val result = assertFindEntity(DOG_CLASS_NAME, basilTheDog.id) // use API to find it
-        assertThat(result).isEqualTo(basilTheDog.instance)
+        val result = assertFindEntities(DOG_CLASS_NAME, basilTheDog.id) // use API to find it
+        assertThat(result).containsOnly(basilTheDog.instance)
+    }
+
+    @Test
+    fun `find multiple by ids`() {
+        val basilTheDog = sandbox.createDog("Basil", UUID.randomUUID())
+        val cloverTheDog = sandbox.createDog("Clover", UUID.randomUUID())
+        persistDirectInDb(basilTheDog.instance, cloverTheDog.instance)     // write the dog *directly* to the database (don't use 'our' code).
+        val result = assertFindEntities(DOG_CLASS_NAME, basilTheDog.id, cloverTheDog.id) // use API to find it
+        assertThat(result).containsOnly(basilTheDog.instance, cloverTheDog.instance)
     }
 
     @Test
@@ -298,10 +307,10 @@ class PersistenceServiceInternalTests {
         val basilTheDog = sandbox.createDog("Basil")
         val lassieTheDog = sandbox.createDog("Lassie")
         persistDirectInDb(basilTheDog.instance, lassieTheDog.instance)
-        val result = assertFindEntity(DOG_CLASS_NAME, basilTheDog.id) // use API to find it
-        assertThat(result).isEqualTo(basilTheDog.instance)
-        val result2 = assertFindEntity(DOG_CLASS_NAME, lassieTheDog.id) // use API to find it
-        assertThat(result2).isEqualTo(lassieTheDog.instance)
+        val result = assertFindEntities(DOG_CLASS_NAME, basilTheDog.id) // use API to find it
+        assertThat(result).containsOnly(basilTheDog.instance)
+        val result2 = assertFindEntities(DOG_CLASS_NAME, lassieTheDog.id) // use API to find it
+        assertThat(result2).containsOnly(lassieTheDog.instance)
     }
 
     @Test
@@ -522,7 +531,10 @@ class PersistenceServiceInternalTests {
             if (it.array().size > 4) throw KafkaMessageSizeException("Too large")
             it
         }
-        val request = createRequest(virtualNodeInfo.holdingIdentity, FindEntity(DOG_CLASS_NAME, sandbox.serialize(dog.id)))
+        val request = createRequest(
+            virtualNodeInfo.holdingIdentity,
+            FindEntities(DOG_CLASS_NAME, listOf(sandbox.serialize(dog.id)))
+        )
 
         val responses =
             assertFailureResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), request))))
@@ -575,13 +587,13 @@ class PersistenceServiceInternalTests {
         assertPersistEntities(cat.instance)
         val catKey = sandbox.createCatKeyInstance(cat.id, name)
 
-        val actualCat = assertFindEntity(CAT_CLASS_NAME, catKey)
+        val actualCat = assertFindEntities(CAT_CLASS_NAME, catKey)
 
-        assertThat(cat.instance).isEqualTo(actualCat)
+        assertThat(actualCat).containsOnly(cat.instance)
         assertDeleteEntities(cat.instance)
 
-        val result = assertFindEntity(CAT_CLASS_NAME, catKey)
-        assertThat(result).isNull()
+        val result = assertFindEntities(CAT_CLASS_NAME, catKey)
+        assertThat(result).isEmpty()
     }
 
     @Test
@@ -833,7 +845,7 @@ class PersistenceServiceInternalTests {
     /** Find an entity and do some asserting
      * @return the list of successful responses
      * */
-    private fun assertFindEntity(className: String, obj: Any): Any? {
+    private fun assertFindEntities(className: String, vararg obj: Any): List<*> {
         val processor = EntityMessageProcessor(
             entitySandboxService,
             externalEventResponseFactory,
@@ -848,7 +860,7 @@ class PersistenceServiceInternalTests {
                         UUID.randomUUID().toString(),
                         createRequest(
                             virtualNodeInfo.holdingIdentity,
-                            FindEntity(className, sandbox.serialize(obj))
+                            FindEntities(className, obj.map { sandbox.serialize(it) })
                         )
                     )
                 )
@@ -858,11 +870,7 @@ class PersistenceServiceInternalTests {
         val flowEvent = responses.first().value as FlowEvent
         val response = deserializer.deserialize((flowEvent.payload as ExternalEventResponse).payload.array())!!
 
-        return if (response.results.size == 0) {
-            null
-        } else {
-            response.results.first().let { sandbox.deserialize(it) }
-        }
+        return response.results.map { sandbox.deserialize(it) }
     }
 
     /** Persist an entity and do some asserting
