@@ -11,14 +11,15 @@ import net.corda.v5.base.types.MemberX500Name
 class TruancySubFlow(
         private val truancyOffice: MemberX500Name,
         private val truancyRecord: TruancyRecord
-    ) : SubFlow<Unit> {
+    ) : SubFlow<String> {
 
     @CordaInject
     lateinit var flowMessaging : FlowMessaging
 
     @Suspendable
-    override fun call() {
+    override fun call(): String {
         val session = flowMessaging.initiateFlow(truancyOffice)
         session.send(truancyRecord)
+        return ""
     }
 }

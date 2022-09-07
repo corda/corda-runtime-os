@@ -9,6 +9,7 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SignatureSpec
 import java.util.UUID
 import javax.persistence.Column
@@ -17,6 +18,10 @@ import javax.persistence.Id
 
 @InitiatedBy("truancy-record")
 class TruancyResponderFlow : ResponderFlow {
+
+    private companion object {
+        val log = contextLogger()
+    }
 
     @CordaInject
     lateinit var persistenceService: PersistenceService
@@ -29,12 +34,16 @@ class TruancyResponderFlow : ResponderFlow {
 
     @Suspendable
     override fun call(session: FlowSession) {
+        log.info("Received request; persisting records")
+
         val record = session.receive(TruancyRecord::class.java).unwrap {it}
 
         verificationService.verify(record.signature.by, SignatureSpec.ECDSA_SHA256, record.signature.bytes,
             jsonMarshallingService.format(record.absentees.map{it.toString()}).toByteArray())
 
         persistenceService.persist(record.absentees.map { TruancyEntity(name = it.toString()) })
+
+        log.info("Records persisted")
     }
 
 }
