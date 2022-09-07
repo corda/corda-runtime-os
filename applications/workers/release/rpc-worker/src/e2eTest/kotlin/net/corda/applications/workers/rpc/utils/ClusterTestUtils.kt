@@ -274,8 +274,9 @@ fun E2eCluster.onboardMembers(
                 MemberX500Name.parse(it.holdingIdentity.x500Name) to it.holdingIdentity.shortHash
             }
         }
-    members.
-        filter {
+    members
+        .filter { !it.isMgm }
+        .filter {
             val hash = exists[MemberX500Name.parse(it.name)]
             if(hash != null) {
                 it.holdingId = hash

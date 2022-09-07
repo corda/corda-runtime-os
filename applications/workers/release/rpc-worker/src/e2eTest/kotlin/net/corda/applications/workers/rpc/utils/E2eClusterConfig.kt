@@ -21,8 +21,8 @@ abstract class E2eClusterConfig {
             it.localPort
         }
         println("for $clusterName - will use port $port")
-        val output = File.createTempFile("forward", "txt")
-        val err = File.createTempFile("forward", "err")
+        val output = File.createTempFile("forward", ".txt")
+        val err = File.createTempFile("forward", ".err")
         val process = ProcessBuilder(
             "kubectl",
             "port-forward",
@@ -38,7 +38,7 @@ abstract class E2eClusterConfig {
         Runtime.getRuntime().addShutdownHook(
             thread(start = false) {
                 println("Killing forward for $clusterName ($process)")
-                if(process.isAlive) {
+                if (process.isAlive) {
                     process.destroyForcibly()
                 }
             }
@@ -53,13 +53,13 @@ abstract class E2eClusterConfig {
 }
 
 internal object E2eClusterAConfig : E2eClusterConfig() {
-    override val clusterName = "yift-cluster-a"
+    override val clusterName = "demo-cluster-a"
 }
 
 internal object E2eClusterBConfig : E2eClusterConfig() {
-    override val clusterName = "yift-cluster-b"
+    override val clusterName = "demo-cluster-b"
 }
 
 internal object E2eClusterCConfig : E2eClusterConfig() {
-    override val clusterName = "yift-cluster-mgm"
+    override val clusterName = "demo-cluster-c"
 }

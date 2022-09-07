@@ -15,10 +15,12 @@ import net.corda.applications.workers.rpc.utils.onboardMgm
 import net.corda.httprpc.HttpFileUpload
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
 import net.corda.libs.virtualnode.endpoints.v1.VirtualNodeRPCOps
+import net.corda.membership.httprpc.v1.MemberLookupRpcOps
 import net.corda.test.util.eventually
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
+import org.bouncycastle.asn1.x500.X500Name
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.io.File
@@ -30,17 +32,16 @@ class CordaConMultiClusterDynamicNetworkTest {
     private val clusterA = E2eClusterFactory.getE2eCluster(E2eClusterCConfig).also { cluster ->
         cluster.addMembers(
             listOf(
+                E2eClusterMember("O=Alan, L=London, C=GB"),
+                E2eClusterMember("O=Alexander, L=London, C=GB"),
                 E2eClusterMember("O=Alice, L=London, C=GB"),
-                E2eClusterMember("O=Bob, L=London, C=GB"),
-                E2eClusterMember("O=Charlie, L=London, C=GB"),
-                E2eClusterMember("O=Dustin, L=London, C=GB"),
-                E2eClusterMember("O=Elaine, L=London, C=GB"),
-                E2eClusterMember("O=Fred, L=London, C=GB"),
-                E2eClusterMember("O=Ginny, L=London, C=GB"),
-                E2eClusterMember("O=Harry, L=London, C=GB"),
-                E2eClusterMember("O=Isabel, L=London, C=GB"),
-                E2eClusterMember("O=Jimmy, L=London, C=GB"),
-                E2eClusterMember("O=Ernest, L=Bristol, C=GB"),
+                E2eClusterMember("O=Andrea, L=London, C=GB"),
+                E2eClusterMember("O=Bart, L=London, C=GB"),
+                E2eClusterMember("O=Blake, L=London, C=GB"),
+                E2eClusterMember("O=Carter, L=London, C=GB"),
+                E2eClusterMember("O=Claire, L=London, C=GB"),
+                E2eClusterMember("O=Diane, L=London, C=GB"),
+                E2eClusterMember("O=Elly, L=London, C=GB"),
             )
         )
     }
@@ -48,17 +49,16 @@ class CordaConMultiClusterDynamicNetworkTest {
     private val clusterB = E2eClusterFactory.getE2eCluster(E2eClusterBConfig).also { cluster ->
         cluster.addMembers(
             listOf(
-                E2eClusterMember("O=Kate, L=London, C=GB"),
-                E2eClusterMember("O=Loki, L=London, C=GB"),
-                E2eClusterMember("O=Morgan, L=London, C=GB"),
-                E2eClusterMember("O=Nick, L=London, C=GB"),
-                E2eClusterMember("O=Olivia, L=London, C=GB"),
-                E2eClusterMember("O=Peter, L=London, C=GB"),
-                E2eClusterMember("O=Quinn, L=London, C=GB"),
-                E2eClusterMember("O=Ronan, L=London, C=GB"),
-                E2eClusterMember("O=Sally, L=London, C=GB"),
-                E2eClusterMember("O=Thor, L=London, C=GB"),
-                E2eClusterMember("O=David, L=Bristol, C=GB"),
+                E2eClusterMember("O=Erin, L=London, C=GB"),
+                E2eClusterMember("O=Evelynn, L=London, C=GB"),
+                E2eClusterMember("O=Francesca, L=London, C=GB"),
+                E2eClusterMember("O=George, L=London, C=GB"),
+                E2eClusterMember("O=Hank, L=London, C=GB"),
+                E2eClusterMember("O=Harvey, L=London, C=GB"),
+                E2eClusterMember("O=Liam, L=London, C=GB"),
+                E2eClusterMember("O=Lillian, L=London, C=GB"),
+                E2eClusterMember("O=Luke, L=London, C=GB"),
+                E2eClusterMember("O=Manuel, L=London, C=GB"),
             )
         )
     }
@@ -66,26 +66,19 @@ class CordaConMultiClusterDynamicNetworkTest {
     private val clusterC = E2eClusterFactory.getE2eCluster(E2eClusterAConfig).also { cluster ->
         cluster.addMembers(
             listOf(
-                E2eClusterMember("O=Una, L=London, C=GB"),
-                E2eClusterMember("O=Victor, L=London, C=GB"),
-                E2eClusterMember("O=Wanda, L=London, C=GB"),
-                E2eClusterMember("O=Xavier, L=London, C=GB"),
-                E2eClusterMember("O=Yelena, L=London, C=GB"),
-                E2eClusterMember("O=Zack, L=London, C=GB"),
-                E2eClusterMember("O=Alfred, L=Bristol, C=GB"),
-                E2eClusterMember("O=Becky, L=Bristol, C=GB"),
-                E2eClusterMember("O=Carol, L=Bristol, C=GB"),
+                E2eClusterMember("O=Marigold, L=London, C=GB"),
+                E2eClusterMember("O=Melinda, L=London, C=GB"),
+                E2eClusterMember("O=Piper, L=London, C=GB"),
+                E2eClusterMember("O=Rita, L=London, C=GB"),
+                E2eClusterMember("O=Sebastian, L=London, C=GB"),
+                E2eClusterMember("O=MGM, L=London, C=GB", isMgm = true),
             )
         )
     }
 
-    private val mgmCluster = E2eClusterFactory.getE2eCluster(E2eClusterAConfig).also { cluster ->
-        cluster.addMembers(
-            listOf(E2eClusterMember("O=MGM, L=London, C=GB"))
-        )
-    }
+    private val mgmCluster = clusterC
 
-    private val memberClusters = listOf(clusterA, clusterB, clusterC)
+    private val memberClusters = listOf(clusterB, clusterA, clusterC,)
 
     @Test
     fun `Create mgm print group policy file`() {
@@ -120,15 +113,15 @@ class CordaConMultiClusterDynamicNetworkTest {
     ) : File {
         val temp = File.createTempFile("work", "cpi").also {
             it.deleteRecursively()
-            //it.deleteOnExit()
+            it.deleteOnExit()
             it.mkdirs()
         }
         val groupPolicyFile = File(temp, "GroupPolicy.json").also {
-            //it.deleteOnExit()
+            it.deleteOnExit()
         }
         groupPolicyFile.writeText(groupPolicy)
         val cpi = cpb.copyTo(File(temp, "$name.cpi")).also {
-            //it.deleteOnExit()
+            it.deleteOnExit()
         }
         println("CPI for $name is $cpi")
         exec(
@@ -267,9 +260,9 @@ class CordaConMultiClusterDynamicNetworkTest {
     private fun onboardMgmVnode(cpiHash: String) {
         // For the purposes of this test, the MGM cluster is
         // expected to have only one MGM (in reality there can be more on a cluster).
-        assertThat(mgmCluster.members).hasSize(1)
+        //assertThat(mgmCluster.members).hasSize(1)
 
-        val mgm = mgmCluster.members[0]
+        val mgm = mgmCluster.members.first { it.isMgm }
 
         mgmCluster.disableCLRChecks()
         mgmCluster.onboardMgm(mgm, cpiHash)
@@ -279,7 +272,7 @@ class CordaConMultiClusterDynamicNetworkTest {
     }
 
     private fun onboardMembers() {
-        val mgm = mgmCluster.members[0]
+        val mgm = mgmCluster.members.first { it.isMgm }
 
         memberClusters.forEach { cordaCluster ->
             cordaCluster.disableCLRChecks()
@@ -305,5 +298,30 @@ class CordaConMultiClusterDynamicNetworkTest {
                 cordaCluster.assertAllMembersAreInMemberList(it, allMembers)
             }
         }
+    }
+
+    @Test
+    fun verifyAllMembers() {
+        val allMembers = memberClusters.flatMap { it.members }
+        (memberClusters).forEach { cordaCluster ->
+            println("Looking at ${cordaCluster.clusterConfig.clusterName}")
+            cordaCluster.testToolkit.httpClientFor(VirtualNodeRPCOps::class.java).use {
+                it.start().proxy.getAllVirtualNodes().virtualNodes.forEach {
+                    val name = it.holdingIdentity.x500Name
+                    val hash = it.holdingIdentity.shortHash
+                    cordaCluster.members.forEach {
+                        if(name == it.name) {
+                            println("Setting hash $hash to $name")
+                            it.holdingId = hash
+                        }
+                    }
+                }
+            }
+            cordaCluster.members.forEach {
+                println("\t Looking at ${it.name}")
+                cordaCluster.assertAllMembersAreInMemberList(it, allMembers)
+            }
+        }
+
     }
 }
