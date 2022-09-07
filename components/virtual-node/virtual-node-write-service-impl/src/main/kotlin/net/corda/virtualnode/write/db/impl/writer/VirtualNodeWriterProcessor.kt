@@ -307,8 +307,8 @@ internal class VirtualNodeWriterProcessor(
         updateActor: String
     ): VirtualNodeDbConnections {
         try {
-            return dbConnectionManager.getClusterEntityManagerFactory().createEntityManager()
-                .transaction { entityManager ->
+            return dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().use {
+                it.transaction { entityManager ->
                     val dbConnections =
                         VirtualNodeDbConnections(
                             putConnection(entityManager, vNodeDbs, VAULT, DDL, updateActor),
@@ -322,6 +322,7 @@ internal class VirtualNodeWriterProcessor(
                     virtualNodeEntityRepository.putVirtualNode(entityManager, holdingIdentity, cpiId)
                     dbConnections
                 }
+            }
         } catch (e: Exception) {
             throw VirtualNodeWriteServiceException(
                 "Error persisting virtual node for holding identity $holdingIdentity",
