@@ -87,7 +87,6 @@ class HttpTest : TestBase() {
                 client.start()
                 val response = client.write(clientMessageContent.toByteArray(Charsets.UTF_8)).get()
                 assertThat(response.statusCode).isEqualTo(HttpResponseStatus.OK)
-                client.close()
             }
         }
     }
@@ -253,7 +252,7 @@ class HttpTest : TestBase() {
                 NioEventLoopGroup(1),
                 NioEventLoopGroup(1),
                 ConnectionConfiguration(),
-            ).also { client ->
+            ).use { client ->
                 client.start()
                 val response = client.write(ByteArray(0)).get()
                 assertThat(response.statusCode).isEqualTo(HttpResponseStatus.OK)
