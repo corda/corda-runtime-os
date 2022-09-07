@@ -1,13 +1,13 @@
 package net.corda.uniqueness.datamodel.impl
 
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckErrorGeneral
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckErrorInputStateConflict
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckErrorInputStateUnknown
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckErrorReferenceStateConflict
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckErrorReferenceStateUnknown
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckErrorTimeWindowOutOfBounds
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckStateDetails
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckStateRef
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorGeneral
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorInputStateConflict
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorInputStateUnknown
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateConflict
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateUnknown
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorTimeWindowOutOfBounds
+import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
+import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import java.time.Instant
 
 // TODO JSON de-/serialisation needs to be solved for these classes in the future

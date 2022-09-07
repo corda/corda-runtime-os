@@ -18,12 +18,12 @@ import net.corda.uniqueness.backingstore.BackingStore
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckTransactionDetailsImpl
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
+import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
+import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
+import net.corda.v5.application.uniqueness.model.UniquenessCheckTransactionDetails
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckResult
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckStateDetails
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckStateRef
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckTransactionDetails
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

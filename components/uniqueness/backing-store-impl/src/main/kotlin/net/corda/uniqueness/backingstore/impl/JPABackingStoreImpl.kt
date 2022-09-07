@@ -29,15 +29,15 @@ import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckTransactionDetailsImpl
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
+import net.corda.v5.application.uniqueness.model.UniquenessCheckError
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
+import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
+import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
+import net.corda.v5.application.uniqueness.model.UniquenessCheckTransactionDetails
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckError
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckResult
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckResultFailure
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckStateDetails
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckStateRef
-import net.corda.v5.ledger.utxo.uniqueness.model.UniquenessCheckTransactionDetails
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -180,7 +180,7 @@ open class JPABackingStoreImpl @Activate constructor(
         ): Map<UniquenessCheckStateRef, UniquenessCheckStateDetails> {
 
             val results = HashMap<
-                UniquenessCheckStateRef, UniquenessCheckStateDetails>()
+                    UniquenessCheckStateRef, UniquenessCheckStateDetails>()
 
             states.forEach { state ->
                 val txId = state.txHash
