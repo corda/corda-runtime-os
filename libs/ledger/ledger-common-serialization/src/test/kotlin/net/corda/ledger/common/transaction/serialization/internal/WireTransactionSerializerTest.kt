@@ -37,29 +37,7 @@ class WireTransactionSerializerTest {
     }
 
     @Test
-    fun `Should serialize and then deserialize wire Tx (regardless that its metadata is garbage)`() {
-        val privacySalt = PrivacySaltImpl("1".repeat(32).toByteArray())
-        val componentGroupLists = listOf(
-            listOf("123".toByteArray(), "45678".toByteArray()),
-            listOf(".".toByteArray()),
-            listOf("abc d efg".toByteArray()),
-        )
-        val wireTransaction = WireTransaction(
-            merkleTreeFactory,
-            digestService,
-            privacySalt,
-            componentGroupLists
-        )
-        val bytes = serializationService.serialize(wireTransaction)
-        val deserialized = serializationService.deserialize(bytes)
-        assertEquals(wireTransaction, deserialized)
-        Assertions.assertThrows(com.fasterxml.jackson.databind.exc.MismatchedInputException::class.java) {
-            deserialized.id
-        }
-    }
-
-    @Test
-    fun `Should serialize and then deserialize wire Tx and proper metadata lets us calculate the txIds`() {
+    fun `Should serialize and then deserialize wire Tx`() {
         val mapper = jacksonObjectMapper()
         val transactionMetaData = TransactionMetaData(
             mapOf(
@@ -82,7 +60,7 @@ class WireTransactionSerializerTest {
         val deserialized = serializationService.deserialize(bytes)
         assertEquals(wireTransaction, deserialized)
         Assertions.assertDoesNotThrow{
-            wireTransaction.id
+            deserialized.id
         }
         assertEquals(wireTransaction.id, deserialized.id)
     }

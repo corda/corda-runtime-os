@@ -25,7 +25,9 @@ class WireTransaction(
     init {
         check(componentGroupLists.all { it.isNotEmpty() }) { "Empty component groups are not allowed" }
         check(componentGroupLists.all { i -> i.all { j-> j.isNotEmpty() } }) { "Empty components are not allowed" }
-        //TODO check if digest settings match with the defaults for now.
+        check(getMetadata().getDigestSettings() == WireTransactionDigestSettings.defaultValues) {
+            "Only the default digest settings are acceptable now! ${getMetadata().getDigestSettings()} vs ${WireTransactionDigestSettings.defaultValues}"
+        }
     }
 
     fun getComponentGroupList(componentGroupId: Int): List<ByteArray> =
@@ -52,10 +54,10 @@ class WireTransaction(
         DigestAlgorithmName(getDigestSetting(ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY) as String)
 
     private fun getRootMerkleTreeDigestOptionsLeafPrefix() =
-        Base64.getDecoder().decode(getDigestSetting(ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_KEY) as String)
+        Base64.getDecoder().decode(getDigestSetting(ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY) as String)
 
     private fun getRootMerkleTreeDigestOptionsNodePrefix() =
-        Base64.getDecoder().decode(getDigestSetting(ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_KEY) as String)
+        Base64.getDecoder().decode(getDigestSetting(ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY) as String)
 
     private fun getComponentMerkleTreeEntropyAlgorithmName() =
         DigestAlgorithmName(getDigestSetting(COMPONENT_MERKLE_TREE_ENTROPY_ALGORITHM_NAME_KEY) as String)
