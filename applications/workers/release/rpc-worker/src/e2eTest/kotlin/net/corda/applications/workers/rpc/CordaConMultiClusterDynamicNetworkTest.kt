@@ -29,7 +29,7 @@ import java.io.File
  * Three clusters are required for running this test. See `resources/RunNetworkTests.md` for more details.
  */
 class CordaConMultiClusterDynamicNetworkTest {
-    private val clusterA = E2eClusterFactory.getE2eCluster(E2eClusterCConfig).also { cluster ->
+    private val clusterA = E2eClusterFactory.getE2eCluster(E2eClusterAConfig).also { cluster ->
         cluster.addMembers(
             listOf(
                 E2eClusterMember("O=Alan, L=London, C=GB"),
@@ -63,7 +63,7 @@ class CordaConMultiClusterDynamicNetworkTest {
         )
     }
 
-    private val clusterC = E2eClusterFactory.getE2eCluster(E2eClusterAConfig).also { cluster ->
+    private val clusterC = E2eClusterFactory.getE2eCluster(E2eClusterCConfig).also { cluster ->
         cluster.addMembers(
             listOf(
                 E2eClusterMember("O=Marigold, L=London, C=GB"),
@@ -78,7 +78,7 @@ class CordaConMultiClusterDynamicNetworkTest {
 
     private val mgmCluster = clusterC
 
-    private val memberClusters = listOf(clusterB, clusterA, clusterC,)
+    private val memberClusters = listOf(clusterC, clusterB, clusterA)
 
     @Test
     fun `Create mgm print group policy file`() {

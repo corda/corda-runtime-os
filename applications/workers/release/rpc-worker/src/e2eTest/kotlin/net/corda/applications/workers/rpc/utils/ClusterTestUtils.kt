@@ -403,13 +403,13 @@ fun E2eCluster.assertAllMembersAreInMemberList(
         lookupMembers(member.holdingId).also { result ->
             val expectedList = allMembers.map { member -> member.name }
             assertThat(result)
-                .hasSize(allMembers.size)
+                //.hasSize(allMembers.size)
                 .allSatisfy { memberInfo ->
                     assertThat(memberInfo.status).isEqualTo("ACTIVE")
                     assertThat(memberInfo.groupId).isEqualTo(groupId)
                 }
             assertThat(result.map { memberInfo -> memberInfo.name })
-                .hasSize(allMembers.size)
+                //.hasSize(allMembers.size)
                 .containsExactlyInAnyOrderElementsOf(expectedList)
         }
     }
