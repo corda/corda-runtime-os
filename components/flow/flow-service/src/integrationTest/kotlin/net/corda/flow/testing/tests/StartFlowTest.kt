@@ -144,13 +144,9 @@ class StartFlowTest : FlowServiceTestBase() {
                 flowStatus(
                     state = FlowStates.FAILED,
                     errorType = FlowProcessingExceptionTypes.FLOW_FAILED,
-                    errorMessage = "Max retry attempts '1' has been reached."
+                    errorMessage = "Execution failed with \"Failed to create the sandbox: Failed to find the virtual node info for holder 'HoldingIdentity(x500Name=${BOB_HOLDING_IDENTITY.x500Name}, groupId=${BOB_HOLDING_IDENTITY.groupId})'\" after 1 retry attempts."
                 )
             }
         }
     }
 }
-
-
-
-

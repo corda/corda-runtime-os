@@ -163,7 +163,7 @@ class GroupPolicyParserImplTest {
             it.assertThat(result.registrationProtocol)
                 .isEqualTo("net.corda.membership.impl.registration.dynamic.mgm.MGMRegistrationService")
             it.assertThat(result.synchronisationProtocol)
-                .isEqualTo("net.corda.membership.impl.sync.dynamic.MemberSyncService")
+                .isEqualTo("net.corda.membership.impl.synchronisation.MgmSynchronisationServiceImpl")
             it.assertThat(result.protocolParameters.sessionKeyPolicy).isEqualTo(DISTINCT)
             it.assertThat(result.p2pParameters.sessionPki).isEqualTo(SessionPkiMode.STANDARD_EV3)
             it.assertThat(result.p2pParameters.sessionTrustRoots).isNotNull

@@ -26,7 +26,7 @@ class MergeExternalEventFactoryTest {
         val externalEventRecord = MergeExternalEventFactory().createExternalEvent(
             checkpoint,
             externalEventContext,
-            MergeParameters(ByteBuffer.wrap(byteArrayOf(1)))
+            MergeParameters(listOf(ByteBuffer.wrap(byteArrayOf(1))))
         )
         assertEquals(Schemas.VirtualNode.ENTITY_PROCESSOR, externalEventRecord.topic)
         assertNull(externalEventRecord.key)

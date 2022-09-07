@@ -8,7 +8,6 @@ import net.corda.internal.serialization.amqp.testutils.serializeAndReturnSchema
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.amqp.testutils.testName
 import net.corda.v5.base.annotations.CordaSerializable
-import net.corda.v5.base.annotations.SerializableCalculatedProperty
 import net.corda.v5.serialization.SerializedBytes
 import net.corda.v5.serialization.annotations.ConstructorForDeserialization
 import net.corda.v5.serialization.annotations.DeprecatedConstructorForDeserialization
@@ -206,7 +205,6 @@ class EvolvabilityTests {
 
         @CordaSerializable
         data class CC(val b: String, val d: Int) {
-            @get:SerializableCalculatedProperty
             val e: String get() = "$b sailor"
         }
 
@@ -672,13 +670,6 @@ class EvolvabilityTests {
         assertEquals(4, deserializedC.d)
         assertEquals(5, deserializedC.e)
     }
-
-    // Class as it was serialized, with additional enum field.
-    // enum class NewEnum { ONE, TWO, BUCKLE_MY_SHOE }
-    // data class Evolved(val fnord: String, val newEnum: NewEnum)
-
-    // Class before evolution
-    data class Evolved(val fnord: String)
 
     // Container class
     @CordaSerializable

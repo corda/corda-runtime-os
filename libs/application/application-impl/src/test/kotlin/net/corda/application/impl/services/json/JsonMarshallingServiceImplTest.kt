@@ -1,5 +1,6 @@
 package net.corda.application.impl.services.json
 
+import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -35,6 +36,23 @@ class JsonMarshallingServiceImplTest {
         assertThat(dtoList[0].quantity).isEqualTo(1)
         assertThat(dtoList[1].name).isEqualTo("n2")
         assertThat(dtoList[1].quantity).isEqualTo(2)
+    }
+
+    @Test
+    fun `Can deserialize member X500 name`() {
+        val name = JsonMarshallingServiceImpl().parse(
+            "\"C=GB, O=Alice, L=London\"",
+            MemberX500Name::class.java
+        )
+
+        assertThat(name.organisation).isEqualTo("Alice")
+    }
+
+    @Test
+    fun `Can serialize member X500 name`() {
+        val json = JsonMarshallingServiceImpl().format(MemberX500Name.parse("C=GB, O=Alice, L=London"))
+
+        assertThat(json).isEqualTo("\"O=Alice, L=London, C=GB\"")
     }
 
     class SimpleDto {

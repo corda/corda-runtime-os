@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import net.corda.common.json.serializers.standardTypesModule
 import net.corda.cordapptestutils.RequestData
 import net.corda.cordapptestutils.internal.RPCRequestDataWrapper
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -18,6 +19,7 @@ class SimpleJsonMarshallingService : JsonMarshallingService{
         val module = SimpleModule()
         module.addDeserializer(RequestData::class.java, RequestDataSerializer())
         objectMapper.registerModule(module)
+        objectMapper.registerModule(standardTypesModule())
     }
 
     override fun format(data: Any): String {

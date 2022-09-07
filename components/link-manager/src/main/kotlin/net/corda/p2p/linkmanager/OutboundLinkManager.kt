@@ -52,16 +52,21 @@ internal class OutboundLinkManager(
         clock = clock
     ) { outboundMessageProcessor.processReplayedAuthenticatedMessage(it) }
 
-    private val outboundMessageSubscription = subscriptionFactory.createEventLogSubscription(
-        SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schemas.P2P.P2P_OUT_TOPIC),
-        outboundMessageProcessor,
-        messagingConfiguration,
-        partitionAssignmentListener = null
-    )
+    private val subscriptionConfig = SubscriptionConfig(OUTBOUND_MESSAGE_PROCESSOR_GROUP, Schemas.P2P.P2P_OUT_TOPIC)
+
+    private val outboundMessageSubscription = {
+        subscriptionFactory.createEventLogSubscription(
+            subscriptionConfig,
+            outboundMessageProcessor,
+            messagingConfiguration,
+            partitionAssignmentListener = null
+        )
+    }
 
     override val dominoTile = SubscriptionDominoTile(
         lifecycleCoordinatorFactory,
         outboundMessageSubscription,
+        subscriptionConfig,
         dependentChildren = listOf(
             deliveryTracker.dominoTile.coordinatorName,
             commonComponents.dominoTile.coordinatorName,

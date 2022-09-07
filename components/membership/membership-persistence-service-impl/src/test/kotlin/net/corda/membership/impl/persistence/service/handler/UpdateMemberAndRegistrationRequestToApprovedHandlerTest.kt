@@ -72,6 +72,7 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
             "", "", null
         ),
         cryptoDmlConnectionId = UUID(0, 0),
+        uniquenessDmlConnectionId = UUID(0, 0),
         holdingIdentity = HoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "").toCorda(),
         timestamp = clock.instant(),
     )

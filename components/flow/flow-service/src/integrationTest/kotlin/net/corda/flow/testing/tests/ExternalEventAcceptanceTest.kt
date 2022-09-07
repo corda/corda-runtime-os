@@ -6,7 +6,7 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.EntityResponse
-import net.corda.data.persistence.FindEntity
+import net.corda.data.persistence.FindEntities
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.fiber.FlowIORequest
@@ -41,7 +41,7 @@ class ExternalEventAcceptanceTest : FlowServiceTestBase() {
 
         val ANY_INPUT = EntityRequest(
             ALICE_HOLDING_IDENTITY,
-            FindEntity("entity class name", BYTE_BUFFER),
+            FindEntities("entity class name", listOf(BYTE_BUFFER)),
             ExternalEventContext(REQUEST_ID, FLOW_ID1)
         )
         val ANY_RESPONSE = EntityResponse(listOf(BYTE_BUFFER))
