@@ -1,5 +1,5 @@
 package net.corda.membership.impl.grouppolicy
-
+/*
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.libs.packaging.core.CpiIdentifier
@@ -435,3 +435,4 @@ class GroupPolicyProviderImplTest {
         assertThat(argCap.firstValue.invoke()).isEqualTo(properties)
     }
 }
+*/
