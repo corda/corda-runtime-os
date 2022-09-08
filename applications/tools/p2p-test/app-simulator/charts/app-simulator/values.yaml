@@ -70,17 +70,17 @@ db:
 # Kafka configuration
 kafka:
   # -- comma-separated list of Kafka bootstrap servers (required)
-  bootstrapServers: ""
+  bootstrapServers: "prereqs-kafka:9092"
   # TLS configuration for client connections to Kafka
   tls:
     # -- indicates whether TLS should be used for client connections to Kafka
-    enabled: false
+    enabled: true
     # if TLS is enabled, the truststore configuration for client connections to Kafka
     truststore:
       # if TLS is enabled, details of an existing Kubernetes secret containing the truststore for client connections to Kafka
       secretRef:
         # -- if TLS is enabled, the name of an existing Kubernetes secret containing the truststore for client connections to Kafka; blank if no truststore is required
-        name: ""
+        name: "prereqs-kafka-0-tls"
         # -- if TLS is enabled, the name of an existing Kubernetes secret containing the truststore for client connections to Kafka
         key: "ca.crt"
       # -- if TLS is enabled, the type of the truststore for client connections to Kafka; one of PEM or JKS
