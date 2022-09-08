@@ -47,6 +47,7 @@ class TestInitialConfigPluginCrypto {
         assertThat(outText).contains("Salt for the SOFT HSM root wrapping key.")
     }
 
+    @Suppress("MaxLineLength")
     private val expectedPrefix =
         "insert into CONFIG.config (config, is_deleted, schema_version_major, schema_version_minor, section, update_actor, update_ts, version) values ('"
 
