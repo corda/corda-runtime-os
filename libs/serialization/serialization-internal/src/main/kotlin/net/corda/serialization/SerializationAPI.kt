@@ -7,7 +7,7 @@ typealias SerializationMagic = ByteSequence
 
 interface SerializationEncoding
 
-interface EncodingWhitelist {
+interface EncodingAllowList {
     fun acceptEncoding(encoding: SerializationEncoding): Boolean
 }
 

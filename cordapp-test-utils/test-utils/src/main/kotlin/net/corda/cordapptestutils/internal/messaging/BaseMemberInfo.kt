@@ -8,11 +8,10 @@ import java.security.PublicKey
 
 data class BaseMemberInfo(
     override val name: MemberX500Name,
+    override val ledgerKeys: List<PublicKey> = listOf()
 ) : MemberInfo {
 
     override val isActive: Boolean = true
-    override val ledgerKeys: List<PublicKey>
-        get() { TODO("Not yet implemented") }
     override val memberProvidedContext: MemberContext
         get() { TODO("Not yet implemented") }
     override val mgmProvidedContext: MGMContext

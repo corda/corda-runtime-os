@@ -1,6 +1,8 @@
 package net.corda.cordapptestutils.internal.flows
 
 import net.corda.cordapptestutils.internal.messaging.SimFiber
+import net.corda.cordapptestutils.internal.signing.BaseSimKeyStore
+import net.corda.cordapptestutils.internal.signing.SimKeyStore
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.base.types.MemberX500Name
 
@@ -18,6 +20,7 @@ interface FlowServicesInjector {
         flow: Flow,
         member: MemberX500Name,
         fiber: SimFiber,
-        flowFactory: FlowFactory = BaseFlowFactory()
+        flowFactory: FlowFactory = BaseFlowFactory(),
+        keyStore: SimKeyStore = BaseSimKeyStore()
     )
 }

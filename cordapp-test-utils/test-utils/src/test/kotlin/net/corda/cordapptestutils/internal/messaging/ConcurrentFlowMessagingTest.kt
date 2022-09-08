@@ -10,6 +10,8 @@ import net.corda.v5.base.types.MemberX500Name
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -48,7 +50,13 @@ class ConcurrentFlowMessagingTest {
         val sendingSession = flowMessaging.initiateFlow(receiverX500)
 
         // Then it should have injected the services into the responder
-        verify(injector, times(1)).injectServices(responderFlow, receiverX500, fiber, flowFactory)
+        verify(injector, times(1)).injectServices(
+            eq(responderFlow),
+            eq(receiverX500),
+            eq(fiber),
+            eq(flowFactory),
+            any()
+        )
 
         // When we send and receive the message
         thread { sendingSession.send(message) }
@@ -89,7 +97,13 @@ class ConcurrentFlowMessagingTest {
         val sendingSession = flowMessaging.initiateFlow(receiverX500)
 
         // Then it should have injected the services into the responder
-        verify(injector, times(1)).injectServices(responderFlow, receiverX500, flowAndServiceLookUp, flowFactory)
+        verify(injector, times(1)).injectServices(
+            eq(responderFlow),
+            eq(receiverX500),
+            eq(flowAndServiceLookUp),
+            eq(flowFactory),
+            any()
+        )
 
         // When we send and receive the message
         thread { sendingSession.send(message) }

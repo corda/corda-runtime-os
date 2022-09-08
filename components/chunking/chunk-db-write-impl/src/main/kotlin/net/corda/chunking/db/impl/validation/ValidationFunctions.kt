@@ -18,7 +18,6 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyParseException
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.Logger
-import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import javax.persistence.PersistenceException
@@ -174,21 +173,6 @@ fun Cpi.validateAndGetGroupId(requestId: String, getGroupIdFromJson: (String) ->
     }
     if (groupId.isBlank()) throw ValidationException("Unable to upload CPI due to group ID being blank", requestId)
     return groupId
-}
-
-/**
- * Return a boolean indicating whether the signature is
- */
-fun FileInfo.checkSignature() = Files.newInputStream(this.path).use { isSigned(it) }
-
-/**
- * STUB - this needs to be implemented
- */
-@Suppress("UNUSED_PARAMETER")
-private fun isSigned(cpiInputStream: InputStream): Boolean {
-    // STUB:  we need to implement this (can change function argument to Path).
-    // The CPI loading code has some signature validation in it, so this stub may be unnecessary.
-    return true
 }
 
 /**
