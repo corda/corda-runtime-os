@@ -144,6 +144,7 @@ class MemberProcessorTestUtils {
                 cpiIdentifier = cpiMetadata.cpiId,
                 vaultDmlConnectionId = UUID.randomUUID(),
                 cryptoDmlConnectionId = cryptoConnectionId,
+                uniquenessDmlConnectionId = UUID.randomUUID(),
                 timestamp = clock.instant()
             )
 

@@ -77,7 +77,7 @@ internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProv
         version: Version?,
         applyDefaults: Boolean
     ): JsonNode {
-        logger.debug { "Configuration to validate: ${config.toSafeConfig().root().render(ConfigRenderOptions.concise())}" }
+        logger.info("Configuration to validate: ${config.toSafeConfig().root().render(ConfigRenderOptions.concise())}")
         //jsonNode is updated in place by walker when [applyDefaults] is true
         val configAsJSONNode = config.toJsonNode()
         val secretsNode = configSecretHelper.hideSecrets(configAsJSONNode)
@@ -85,7 +85,7 @@ internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProv
             // Note that the JSON schema library does lazy schema loading, so schema retrieval issues may not manifest
             // until the validation stage.
             val schema = getSchema(schemaInput, applyDefaults)
-            logger.debug { "Schema to validate against: $schema" }
+            logger.info("Schema to validate against: $schema")
             schema.walk(configAsJSONNode, true).validationMessages
         } catch (e: Exception) {
             val message = "Could not retrieve the schema for key $key at schema version $version: ${e.message}"

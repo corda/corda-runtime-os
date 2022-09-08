@@ -192,7 +192,7 @@ class MGMRegistrationServiceTest {
         "corda.session.key.id" to SESSION_KEY_ID,
         "corda.ecdh.key.id" to ECDH_KEY_ID,
         "corda.group.protocol.registration" to "net.corda.membership.impl.registration.dynamic.MemberRegistrationService",
-        "corda.group.protocol.synchronisation" to "net.corda.membership.impl.sync.dynamic.MemberSyncService",
+        "corda.group.protocol.synchronisation" to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
         "corda.group.protocol.p2p.mode" to "AUTHENTICATION_ENCRYPTION",
         "corda.group.key.session.policy" to "Combined",
         "corda.group.pki.session" to "Standard",
@@ -337,7 +337,7 @@ class MGMRegistrationServiceTest {
             .containsExactlyInAnyOrderElementsOf(
                 mapOf(
                     "protocol.registration" to "net.corda.membership.impl.registration.dynamic.MemberRegistrationService",
-                    "protocol.synchronisation" to "net.corda.membership.impl.sync.dynamic.MemberSyncService",
+                    "protocol.synchronisation" to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
                     "protocol.p2p.mode" to "AUTHENTICATION_ENCRYPTION",
                     "key.session.policy" to "Combined",
                     "pki.session" to "Standard",

@@ -6,6 +6,7 @@ import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.chunking.db.impl.validation.CpiValidator
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.chunking.Chunk
+import net.corda.libs.cpiupload.DuplicateCpiUploadException
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
@@ -34,7 +35,7 @@ class ChunkWriteToDbProcessor(
             if (allChunksReceived == AllChunksReceived.NO) return
 
             if (!persistence.checksumIsValid(request.requestId)) {
-                throw ValidationException("Checksum of CPI for ${request.requestId} does not match")
+                throw ValidationException("Checksum of CPI does not match", request.requestId)
             }
 
             // We validate the CPI, persist it to the database, and publish CPI info.
@@ -44,7 +45,12 @@ class ChunkWriteToDbProcessor(
 
             publisher.complete(request.requestId, checksum)
         } catch (e: Exception) {
-            log.error("Could not persist chunk $request", e)
+            when (e) {
+                is DuplicateCpiUploadException ->
+                    log.warn("Unable to accept CPI chunk since CPI already uploaded ${e.message} for request ID ${request.requestId}")
+                is ValidationException -> log.warn("${e.message} for request id ${e.requestId}")
+                else -> log.error("Unable to accept CPI chunk due to chunk $request causing exception", e)
+            }
             publisher.error(request.requestId, ExceptionEnvelope(e::class.java.name, e.message), e.message ?: "Error")
         }
     }
