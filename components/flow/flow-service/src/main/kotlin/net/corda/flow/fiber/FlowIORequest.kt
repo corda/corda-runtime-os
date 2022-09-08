@@ -100,7 +100,7 @@ interface FlowIORequest<out R> {
                 return SubFlowFinished(
                     flowStackItem.flowName,
                     flowStackItem.isInitiatingFlow,
-                    flowStackItem.sessionIds,
+                    flowStackItem.sessionIds.toList(),
                     flattenKeyValuePairList(flowStackItem.contextUserProperties),
                     flattenKeyValuePairList(flowStackItem.contextPlatformProperties)
                 )
@@ -122,7 +122,7 @@ interface FlowIORequest<out R> {
                     throwable,
                     flowStackItem.flowName,
                     flowStackItem.isInitiatingFlow,
-                    flowStackItem.sessionIds,
+                    flowStackItem.sessionIds.toList(),
                     flattenKeyValuePairList(flowStackItem.contextUserProperties),
                     flattenKeyValuePairList(flowStackItem.contextPlatformProperties)
                 )
