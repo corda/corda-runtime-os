@@ -17,6 +17,8 @@ dependencies {
 
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-datamodel')
+    implementation project(":libs:crypto:crypto-config-impl")
+    implementation project(":libs:crypto:crypto-core")
     implementation project(':libs:db:db-admin')
     implementation project(':libs:db:db-admin-impl')
     implementation project(':libs:db:db-core')
