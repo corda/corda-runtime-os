@@ -27,7 +27,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.utilities.clock.ClockFactory
+import net.corda.utilities.time.ClockFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
