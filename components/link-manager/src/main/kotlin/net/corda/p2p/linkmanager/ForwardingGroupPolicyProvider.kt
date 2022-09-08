@@ -46,13 +46,16 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
     )
 
     override fun getGroupInfo(holdingIdentity: HoldingIdentity): GroupPolicyListener.GroupInfo? {
-       return groupPolicyProvider.getGroupPolicy(holdingIdentity)?.let { toGroupInfo(holdingIdentity, it) }
+       return groupPolicyProvider.getGroupPolicy(holdingIdentity)?.let { toGroupInfo(holdingIdentity, it) }.also {
+           logger.info("Get group info called.")
+       }
     }
 
     override fun registerListener(groupPolicyListener: GroupPolicyListener) {
         groupPolicyProvider.registerListener { holdingIdentity, groupPolicy ->
             val groupInfo = toGroupInfo(holdingIdentity, groupPolicy)
             groupPolicyListener.groupAdded(groupInfo)
+            logger.info("Listener called.")
         }
     }
 
@@ -70,7 +73,6 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
         }
 
         val trustedCertificates = groupPolicy.p2pParameters.tlsTrustRoots.toList()
-        logger.info("size of trustroots for identity: ${holdingIdentity.x500Name} is ${trustedCertificates.size}")
 
         return GroupPolicyListener.GroupInfo(holdingIdentity, networkType, protocolModes, trustedCertificates)
     }
