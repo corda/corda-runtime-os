@@ -22,7 +22,7 @@ class SingleClusterDynamicNetworkTest {
     }
 
     private val mgm = E2eClusterMember(
-        "O=Caroline, L=London, C=GB, OU=${cordaCluster.testToolkit.uniqueName}"
+        "O=Mgm, L=London, C=GB, OU=${cordaCluster.testToolkit.uniqueName}"
     )
 
     @Test
