@@ -8,6 +8,7 @@ package net.corda.flow.external.events.impl.executor
  *
  * @param userContextProperties User context properties of the current flow
  * @param platformContextProperties Platform context properties of the current flow
+ *
  * @return Context properties for an external event translated to a single map. External processors do not need to
  * understand the distinction between user and platform properties, being only readers of context.
  */
