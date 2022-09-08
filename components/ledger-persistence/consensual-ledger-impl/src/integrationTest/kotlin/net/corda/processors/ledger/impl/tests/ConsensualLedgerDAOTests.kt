@@ -11,16 +11,14 @@ import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.db.schema.DbSchema
 import net.corda.entityprocessor.impl.internal.EntitySandboxServiceImpl
-import net.corda.entityprocessor.impl.internal.exceptions.KafkaMessageSizeException
 import net.corda.entityprocessor.impl.tests.components.VirtualNodeService
 import net.corda.entityprocessor.impl.tests.fake.FakeDbConnectionManager
 import net.corda.entityprocessor.impl.tests.helpers.BasicMocks
 import net.corda.entityprocessor.impl.tests.helpers.Resources
-import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getCatClass
-import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getDogClass
-import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getOwnerClass
 import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getSerializer
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
+import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
+import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.messaging.api.records.Record
 import net.corda.orm.JpaEntitiesSet
 import net.corda.processors.ledger.impl.ConsensualLedgerProcessor
@@ -29,8 +27,16 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
-import net.corda.utilities.time.UTCClock
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.util.contextLogger
+//import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.DigestService
+import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_ENTROPY_OPTION
+import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NONCE_NAME
+import net.corda.v5.crypto.merkle.MerkleTreeFactory
+import net.corda.v5.crypto.merkle.MerkleTreeHashDigestProvider
+import net.corda.v5.ledger.common.transaction.PrivacySalt
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
@@ -73,15 +79,19 @@ class ConsensualLedgerDAOTests {
     }
 
     @InjectService
-    lateinit var lbm: LiquibaseSchemaMigrator
+    private lateinit var lbm: LiquibaseSchemaMigrator
 
     @RegisterExtension
     private val lifecycle = EachTestLifecycle()
 
+    // For sandboxing
     private lateinit var cpiInfoReadService: CpiInfoReadService
     private lateinit var virtualNode: VirtualNodeService
     private lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
     private lateinit var externalEventResponseFactory: ExternalEventResponseFactory
+
+    private lateinit var digestService: DigestService
+    private lateinit var merkleTreeFactory: MerkleTreeFactory
 
     private lateinit var ctx: DbTestContext
 
@@ -94,14 +104,32 @@ class ConsensualLedgerDAOTests {
         @TempDir
         testDirectory: Path
     ) {
-        logger.info("Setup test (test Directory: $testDirectory)")
+        logger.info("Setup test (test directory: $testDirectory)")
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
             externalEventResponseFactory = setup.fetchService(timeout = 10000)
             cpiInfoReadService = setup.fetchService(timeout = 10000)
             virtualNode = setup.fetchService(timeout = 10000)
             virtualNodeInfoReadService = setup.fetchService(timeout = 10000)
+
+            logger.info("loading digestService")
+            digestService = setup.fetchService(timeout = 10000)
+            logger.info("loading merkleTreeFactory")
+            merkleTreeFactory = setup.fetchService(timeout = 10000)
         }
+
+        /* TODO: Can we avoid directly depending on all these things? Seems like a lot of implementation-leakage.
+                 Also, this doesn't work at all because they're not exported packages, and SerializationService is
+                 not injectable. There is an open PR that adds an injectable SerializationService though.
+         */
+        /*
+        val schemeMetadata = CipherSchemeMetadataImpl()
+        digestService = DigestServiceImpl(schemeMetadata, null)
+        merkleTreeFactory = MerkleTreeFactoryImpl(digestService)
+        serializationService = TestSerializationService.getTestSerializationService({
+            it.register(WireTransactionSerializer(merkleTreeFactory, digestService), it)
+        }, schemeMetadata)
+         */
     }
 
     @BeforeEach
@@ -111,27 +139,42 @@ class ConsensualLedgerDAOTests {
         // We can't trust deleting the tables because tests can run concurrently.
     }
 
-    /** Simple wrapper to serialize bytes correctly during test */
+    /* Simple wrapper to serialize bytes correctly during test */
     private fun SandboxGroupContext.serialize(obj: Any) = ByteBuffer.wrap(getSerializer().serialize(obj).bytes)
 
-    /** Simple wrapper to serialize bytes correctly during test */
+    /* Simple wrapper to serialize bytes correctly during test */
     private fun DbTestContext.serialize(obj: Any) = sandbox.serialize(obj)
 
-    /** Simple wrapper to deserialize */
+    /* Simple wrapper to deserialize */
     private fun SandboxGroupContext.deserialize(bytes: ByteBuffer) =
         getSerializer().deserialize(bytes.array(), Any::class.java)
 
-    /** Simple wrapper to deserialize */
+    /* Simple wrapper to deserialize */
     private fun DbTestContext.deserialize(bytes: ByteBuffer) = sandbox.deserialize(bytes)
 
     private fun noOpPayloadCheck(bytes: ByteBuffer) = bytes
 
     @Test
-    fun `persistTransaction for consensual ledger actually persists`() {
+    fun `persistTransaction for consensual ledger deserialises the tx and persists`() {
         val payload = ByteBuffer.allocate(1)
         logger.info("Creating request")
+        // create ConsensualSignedTransactionImpl instance (or WireTransaction at first)
+        val privacySalt: PrivacySalt = PrivacySaltImpl("1".repeat(32).toByteArray())
+        val componentGroupLists = listOf(
+            listOf("123".toByteArray(), "45678".toByteArray()),
+            listOf(".".toByteArray()),
+            listOf("abc d efg".toByteArray()),
+        )
+        val wireTransaction = WireTransaction(merkleTreeFactory, digestService, privacySalt, componentGroupLists)
+        // val txBytes = serializationService.serialize(wireTransaction)
+        // logger.info(txBytes.summary)
+        logger.info("WireTransaction: ", wireTransaction)
+
+        // serialise tx into bytebuffer and add to PersistTransaction payload
+
+        // create request
         val request = createRequest(ctx.virtualNodeInfo.holdingIdentity, PersistTransaction(payload))
-        logger.info("request: ${request}")
+        logger.info("request: $request")
 
         // send request to message processor
         logger.info("Creating message processor")
@@ -142,22 +185,14 @@ class ConsensualLedgerDAOTests {
         val requestId = UUID.randomUUID().toString()
         val records = listOf(Record(TOPIC, requestId, request))
 
-        // Process the messages. This should result in ConsensualStateDAO persisting things to the DB
+        // process the messages. This should result in ConsensualStateDAO persisting things to the DB
         logger.info("Sending request to processor")
         val responses = assertSuccessResponses(processor.onNext(records))
-
-        // assert persisted
         assertThat(responses.size).isEqualTo(1)
 
-        // TODO: check what happened in the DB. What exactly are we looking for?
-        /*
-        // check the db directly (rather than using our code)
-        val findDog = ctx.findDog(dogId)
-
-        // It's the dog we persisted.
-        assertThat(findDog).isEqualTo(dog)
-        logger.info("Woof $findDog")
-         */
+        // check that we wrote the expected things to the DB
+        // val retrievedTx = ctx.findTxById(1)
+        // assertThat(retrievedTx.id.isEqualTo(1))
     }
 
     private fun createDbTestContext(): DbTestContext {

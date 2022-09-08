@@ -39,6 +39,8 @@ dependencies {
     implementation project(':libs:db:db-core')
     implementation project(':libs:db:db-orm')
     implementation project(':libs:flows:external-event-responses')
+    implementation project(':libs:ledger:ledger-common-impl')
+    implementation "net.corda:corda-ledger-common"
     implementation project(':libs:ledger:ledger-consensual-impl')
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(":libs:messaging:messaging")
@@ -90,8 +92,11 @@ dependencies {
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation project(':components:virtual-node:cpk-read-service')
     integrationTestImplementation project(':components:virtual-node:sandbox-group-context-service')
-    integrationTestImplementation project(':components:ledger-persistence:consensual-ledger-impl')
     integrationTestImplementation project(':testing:test-utilities')
+    integrationTestImplementation project(':libs:crypto:merkle-impl')
+    integrationTestImplementation project(':libs:ledger:ledger-common-serialization')
+    integrationTestImplementation project(':testing:test-serialization')
+    integrationTestImplementation "net.corda:corda-cipher-suite"
 
     integrationTestRuntimeOnly project(':libs:flows:external-event-responses-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
