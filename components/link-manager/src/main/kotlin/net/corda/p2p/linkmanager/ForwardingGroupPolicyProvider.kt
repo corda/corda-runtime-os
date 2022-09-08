@@ -11,7 +11,6 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
-import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 
@@ -20,9 +19,7 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
                                              virtualNodeInfoReadService: VirtualNodeInfoReadService,
                                              cpiInfoReadService: CpiInfoReadService,
                                              membershipQueryClient: MembershipQueryClient): LinkManagerGroupPolicyProvider {
-    private companion object {
-        val logger = contextLogger()
-    }
+
 
     private val dependentChildren = setOf(
         LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
@@ -46,16 +43,13 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
     )
 
     override fun getGroupInfo(holdingIdentity: HoldingIdentity): GroupPolicyListener.GroupInfo? {
-       return groupPolicyProvider.getGroupPolicy(holdingIdentity)?.let { toGroupInfo(holdingIdentity, it) }.also {
-           logger.info("Get group info called.")
-       }
+       return groupPolicyProvider.getGroupPolicy(holdingIdentity)?.let { toGroupInfo(holdingIdentity, it) }
     }
 
     override fun registerListener(groupPolicyListener: GroupPolicyListener) {
         groupPolicyProvider.registerListener { holdingIdentity, groupPolicy ->
             val groupInfo = toGroupInfo(holdingIdentity, groupPolicy)
             groupPolicyListener.groupAdded(groupInfo)
-            logger.info("Listener called.")
         }
     }
 
