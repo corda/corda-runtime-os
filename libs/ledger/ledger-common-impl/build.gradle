@@ -16,6 +16,13 @@ dependencies {
 
     implementation project(":libs:crypto:crypto-core")
 
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    testImplementation "com.esotericsoftware:kryo:$kryoVersion"
     testImplementation project(":libs:crypto:merkle-impl")
+    testImplementation project(":libs:crypto:cipher-suite-impl")
+    testImplementation project(":libs:serialization:serialization-kryo")
+    testImplementation project(":libs:sandbox")
+    testImplementation project(":libs:serialization:serialization-checkpoint-api")
 
 }
