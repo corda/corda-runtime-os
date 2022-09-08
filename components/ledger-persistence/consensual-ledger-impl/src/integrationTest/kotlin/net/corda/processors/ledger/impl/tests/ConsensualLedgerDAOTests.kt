@@ -118,14 +118,10 @@ class ConsensualLedgerDAOTests {
             merkleTreeFactory = setup.fetchService(timeout = 10000)
         }
 
-        /* TODO: Can we avoid directly depending on all these things? Seems like a lot of implementation-leakage.
-                 Also, this doesn't work at all because they're not exported packages, and SerializationService is
-                 not injectable. There is an open PR that adds an injectable SerializationService though.
+        /* TODO: This doesn't work yet because SerializationService is not injectable. There is an open PR that adds
+            an injectable SerializationService though.
          */
         /*
-        val schemeMetadata = CipherSchemeMetadataImpl()
-        digestService = DigestServiceImpl(schemeMetadata, null)
-        merkleTreeFactory = MerkleTreeFactoryImpl(digestService)
         serializationService = TestSerializationService.getTestSerializationService({
             it.register(WireTransactionSerializer(merkleTreeFactory, digestService), it)
         }, schemeMetadata)
