@@ -118,14 +118,10 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
     }
 }
 
-def s3Script = null
-
 if (project.hasProperty('maven.repo.s3')) {
-    s3Script = artifacts.add('archives', file("$project.buildDir/generatedScripts/corda-cli-installer-script.sh")) {
-        builtBy('cliInstallScriptsS3')
-    }
     artifacts {
         cliInstallArchive
+        cliInstallScriptsS3
     }
 }
 
