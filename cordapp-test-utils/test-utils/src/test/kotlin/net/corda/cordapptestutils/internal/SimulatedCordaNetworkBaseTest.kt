@@ -99,6 +99,12 @@ class SimulatedCordaNetworkBaseTest {
         // Then it should close the fiber too
         verify(fiber, times(1)).close()
     }
+
+    @Test
+    fun `should error if no flows are provided`() {
+        val corda = SimulatedCordaNetworkBase()
+        assertThrows<java.lang.IllegalArgumentException> { corda.createVirtualNode(holdingId) }
+    }
 }
 
 
