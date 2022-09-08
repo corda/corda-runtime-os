@@ -1,5 +1,6 @@
 package net.corda.flow.fiber
 
+import net.corda.flow.application.serialization.SerializationServiceImpl
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -14,7 +15,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
-class FlowFiberSerializationServiceImplTest {
+class SerializationServiceImplTest {
 
     private class TestObject
     private val flowFiberService : FlowFiberService = mock()
@@ -28,7 +29,7 @@ class FlowFiberSerializationServiceImplTest {
     private val byteArray = "bytes".toByteArray()
 
 
-    private val flowFiberSerializationService = FlowFiberSerializationServiceImpl(flowFiberService)
+    private val flowFiberSerializationService = SerializationServiceImpl(flowFiberService)
 
     @BeforeEach
     fun setup() {

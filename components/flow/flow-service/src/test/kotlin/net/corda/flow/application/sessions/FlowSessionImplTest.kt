@@ -1,9 +1,9 @@
 package net.corda.flow.application.sessions
 
 import net.corda.flow.ALICE_X500_NAME
+import net.corda.flow.application.serialization.DeserializedWrongAMQPObjectException
+import net.corda.flow.application.serialization.SerializationServiceInternal
 import net.corda.flow.application.services.MockFlowFiberService
-import net.corda.flow.fiber.DeserializedWrongAMQPObjectException
-import net.corda.flow.fiber.FlowFiberSerializationService
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.state.FlowContext
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -33,7 +33,7 @@ class FlowSessionImplTest {
     }
 
     private val mockFlowFiberService = MockFlowFiberService()
-    private val flowFiberSerializationService = mock<FlowFiberSerializationService>().apply {
+    private val serializationService = mock<SerializationServiceInternal>().apply {
         whenever(serialize(HELLO_THERE)).thenReturn(SerializedBytes(HELLO_THERE.toByteArray()))
         whenever(serialize(HI)).thenReturn(SerializedBytes(HI.toByteArray()))
         whenever(deserializeAndCheckType(HELLO_THERE.toByteArray(), String::class.java)).thenReturn(HELLO_THERE)
@@ -87,7 +87,7 @@ class FlowSessionImplTest {
 
     @Test
     fun `receiving the wrong object type in sendAndReceive throws an exception`() {
-        whenever(flowFiberSerializationService.deserializeAndCheckType(eq(HELLO_THERE.toByteArray()), any<Class<*>>()))
+        whenever(serializationService.deserializeAndCheckType(eq(HELLO_THERE.toByteArray()), any<Class<*>>()))
             .thenThrow(DeserializedWrongAMQPObjectException(String::class.java, Int::class.java, 1, "wrong"))
 
         val session = createInitiatedSession()
@@ -126,7 +126,7 @@ class FlowSessionImplTest {
 
     @Test
     fun `receiving the wrong object type in receive throws an exception`() {
-        whenever(flowFiberSerializationService.deserializeAndCheckType(eq(HELLO_THERE.toByteArray()), any<Class<*>>()))
+        whenever(serializationService.deserializeAndCheckType(eq(HELLO_THERE.toByteArray()), any<Class<*>>()))
             .thenThrow(DeserializedWrongAMQPObjectException(String::class.java, Int::class.java, 1, "wrong"))
 
         val session = createInitiatedSession()
@@ -182,7 +182,7 @@ class FlowSessionImplTest {
         counterparty = ALICE_X500_NAME,
         sourceSessionId = SESSION_ID,
         mockFlowFiberService,
-        flowFiberSerializationService,
+        serializationService,
         flowContext,
         FlowSessionImpl.Direction.INITIATED_SIDE
     )
@@ -191,7 +191,7 @@ class FlowSessionImplTest {
         counterparty = ALICE_X500_NAME,
         sourceSessionId = SESSION_ID,
         mockFlowFiberService,
-        flowFiberSerializationService,
+        serializationService,
         flowContext,
         FlowSessionImpl.Direction.INITIATING_SIDE
     )

@@ -1,14 +1,14 @@
-package net.corda.flow.fiber
+package net.corda.flow.application.serialization
 
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.serialization.SerializedBytes
 
 /**
- * [FlowFiberSerializationService] provides simplified access to the AMQP [SerializationService] assigned to the
+ * [SerializationServiceInternal] provides simplified access to the AMQP [SerializationService] assigned to the
  * currently executing flow's sandbox.
  */
-interface FlowFiberSerializationService : SerializationService {
+interface SerializationServiceInternal : SerializationService {
 
     /**
      * Deserializes the input serialized bytes into an object of type [T].

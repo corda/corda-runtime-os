@@ -3,8 +3,8 @@ package net.corda.flow.application.sessions.factory
 import java.security.AccessController
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
+import net.corda.flow.application.serialization.SerializationServiceInternal
 import net.corda.flow.application.sessions.FlowSessionImpl
-import net.corda.flow.fiber.FlowFiberSerializationService
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.state.impl.FlatSerializableContext
 import net.corda.flow.state.impl.MutableFlatSerializableContext
@@ -19,8 +19,8 @@ import org.osgi.service.component.annotations.Reference
 class FlowSessionFactoryImpl @Activate constructor(
     @Reference(service = FlowFiberService::class)
     private val flowFiberService: FlowFiberService,
-    @Reference(service = FlowFiberSerializationService::class)
-    private val flowFiberSerializationService: FlowFiberSerializationService
+    @Reference(service = SerializationServiceInternal::class)
+    private val serializationService: SerializationServiceInternal
 ) : FlowSessionFactory {
 
     override fun createInitiatedFlowSession(
@@ -34,7 +34,7 @@ class FlowSessionFactoryImpl @Activate constructor(
                     counterparty = x500Name,
                     sessionId,
                     flowFiberService,
-                    flowFiberSerializationService,
+                    serializationService,
                     FlatSerializableContext(
                         contextUserProperties = emptyMap(),
                         contextPlatformProperties = contextProperties
@@ -58,7 +58,7 @@ class FlowSessionFactoryImpl @Activate constructor(
                     counterparty = x500Name,
                     sessionId,
                     flowFiberService,
-                    flowFiberSerializationService,
+                    serializationService,
                     createInitiatingFlowContextProperties(
                         flowContextPropertiesBuilder,
                         flowFiberService
