@@ -4,6 +4,7 @@ import java.nio.ByteBuffer
 import java.time.Instant
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.external.events.factory.ExternalEventFactory
+import net.corda.flow.utils.flattenKeyValuePairList
 import net.corda.v5.application.messaging.FlowInfo
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
@@ -87,9 +88,47 @@ interface FlowIORequest<out R> {
 
     data class FlowFinished(val result: String?) : FlowIORequest<String?>
 
-    data class SubFlowFinished(val flowStackItem: FlowStackItem) : FlowIORequest<FlowStackItem?>
+    data class SubFlowFinished(
+        val flowName: String,
+        val isInitiatingFlow: Boolean,
+        val sessionIds: List<String>,
+        val contextUserProperties: Map<String, String>,
+        val contextPlatformProperties: Map<String, String>
+    ) : FlowIORequest<Unit?> {
+        companion object {
+            fun from(flowStackItem: FlowStackItem): SubFlowFinished {
+                return SubFlowFinished(
+                    flowStackItem.flowName,
+                    flowStackItem.isInitiatingFlow,
+                    flowStackItem.sessionIds,
+                    flattenKeyValuePairList(flowStackItem.contextUserProperties),
+                    flattenKeyValuePairList(flowStackItem.contextPlatformProperties)
+                )
+            }
+        }
+    }
 
-    data class SubFlowFailed(val throwable: Throwable, val flowStackItem: FlowStackItem) : FlowIORequest<Unit>
+    data class SubFlowFailed(
+        val throwable: Throwable,
+        val flowName: String,
+        val isInitiatingFlow: Boolean,
+        val sessionIds: List<String>,
+        val contextUserProperties: Map<String, String>,
+        val contextPlatformProperties: Map<String, String>
+    ) : FlowIORequest<Unit> {
+        companion object {
+            fun from(throwable: Throwable, flowStackItem: FlowStackItem): SubFlowFailed {
+                return SubFlowFailed(
+                    throwable,
+                    flowStackItem.flowName,
+                    flowStackItem.isInitiatingFlow,
+                    flowStackItem.sessionIds,
+                    flattenKeyValuePairList(flowStackItem.contextUserProperties),
+                    flattenKeyValuePairList(flowStackItem.contextPlatformProperties)
+                )
+            }
+        }
+    }
 
     data class FlowFailed(val exception: Throwable) : FlowIORequest<Unit>
 

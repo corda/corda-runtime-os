@@ -81,7 +81,7 @@ class FlowEngineImpl @Activate constructor(
     @Suspendable
     private fun finishSubFlow() {
         try {
-            flowFiberService.getExecutingFiber().suspend(FlowIORequest.SubFlowFinished(peekCurrentFlowStackItem()))
+            flowFiberService.getExecutingFiber().suspend(FlowIORequest.SubFlowFinished.from(peekCurrentFlowStackItem()))
         } finally {
             popCurrentFlowStackItem()
         }
@@ -90,7 +90,7 @@ class FlowEngineImpl @Activate constructor(
     @Suspendable
     private fun failSubFlow(t: Throwable) {
         try {
-            flowFiberService.getExecutingFiber().suspend(FlowIORequest.SubFlowFailed(t, peekCurrentFlowStackItem()))
+            flowFiberService.getExecutingFiber().suspend(FlowIORequest.SubFlowFailed.from(t, peekCurrentFlowStackItem()))
         } finally {
             popCurrentFlowStackItem()
         }

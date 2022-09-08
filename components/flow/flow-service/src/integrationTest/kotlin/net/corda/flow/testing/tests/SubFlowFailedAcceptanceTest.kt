@@ -46,7 +46,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
         `when` {
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
                 .suspendsWith(
-                    FlowIORequest.SubFlowFailed(
+                    FlowIORequest.SubFlowFailed.from(
                         RuntimeException(),
                         initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2)
                     )
@@ -78,7 +78,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
         `when` {
             sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 2)
                 .suspendsWith(
-                    FlowIORequest.SubFlowFailed(
+                    FlowIORequest.SubFlowFailed.from(
                         RuntimeException(),
                         initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2)
                     )
@@ -112,7 +112,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
         `when` {
             sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 2)
                 .suspendsWith(
-                    FlowIORequest.SubFlowFailed(
+                    FlowIORequest.SubFlowFailed.from(
                         RuntimeException(),
                         initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2)
                     )
@@ -146,7 +146,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
         `when` {
             sessionErrorEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 2)
                 .suspendsWith(
-                    FlowIORequest.SubFlowFailed(
+                    FlowIORequest.SubFlowFailed.from(
                         RuntimeException(),
                         initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2)
                     )
@@ -173,7 +173,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
 
         `when` {
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.SubFlowFailed(RuntimeException(), initiatingFlowStackItem()))
+                .suspendsWith(FlowIORequest.SubFlowFailed.from(RuntimeException(), initiatingFlowStackItem()))
         }
 
         then {
@@ -194,7 +194,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
         `when` {
             sessionInitEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, CPI1, PROTOCOL_2)
                 .suspendsWith(
-                    FlowIORequest.SubFlowFailed(
+                    FlowIORequest.SubFlowFailed.from(
                         RuntimeException(),
                         nonInitiatingFlowStackItem()
                     )
@@ -223,7 +223,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
         `when` {
             sessionCloseEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 2)
                 .suspendsWith(
-                    FlowIORequest.SubFlowFailed(
+                    FlowIORequest.SubFlowFailed.from(
                         RuntimeException(),
                         nonInitiatingFlowStackItem()
                     )
@@ -251,7 +251,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
         `when` {
             sessionErrorEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1)
                 .suspendsWith(
-                    FlowIORequest.SubFlowFailed(
+                    FlowIORequest.SubFlowFailed.from(
                         RuntimeException(),
                         nonInitiatingFlowStackItem()
                     )

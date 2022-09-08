@@ -7,6 +7,15 @@ fun mutableKeyValuePairList() = KeyValuePairList(mutableListOf())
 
 fun emptyKeyValuePairList() = KeyValuePairList(emptyList())
 
+fun flattenKeyValuePairList(keyValuePairList: KeyValuePairList): Map<String, String> {
+    val flattenedKeyValueStore = mutableMapOf<String, String>()
+    keyValuePairList.items.forEach {
+        flattenedKeyValueStore[it.key] = it.value
+    }
+
+    return flattenedKeyValueStore
+}
+
 /**
  * Creates a mutable [KeyValuePairList] (this is a [KeyValuePairList] backed by a mutable list) out of another
  * [KeyValuePairList]. This method can be used to create a new [KeyValuePairList] with a new backing list which contains

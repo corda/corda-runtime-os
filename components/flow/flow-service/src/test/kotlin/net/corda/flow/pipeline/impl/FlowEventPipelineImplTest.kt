@@ -18,6 +18,7 @@ import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.test.utils.buildFlowEventContext
+import net.corda.flow.utils.emptyKeyValuePairList
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -133,7 +134,15 @@ class FlowEventPipelineImplTest {
     @ParameterizedTest(name = "runOrContinue runs a flow when {0} is returned by the FlowWaitingForHandler with suspend result")
     @MethodSource("runFlowContinuationConditions")
     fun `runOrContinue runs a flow with suspend result`(outcome: FlowContinuation) {
-        val flowResult = FlowIORequest.SubFlowFinished(FlowStackItem())
+        val flowResult = FlowIORequest.SubFlowFinished.from(
+            FlowStackItem.newBuilder()
+                .setFlowName(FLOW_ID_1)
+                .setIsInitiatingFlow(true)
+                .setSessionIds(listOf())
+                .setContextUserProperties(emptyKeyValuePairList())
+                .setContextPlatformProperties(emptyKeyValuePairList())
+                .build()
+        )
         val expectedFiber = ByteBuffer.wrap(byteArrayOf(1))
         val suspendRequest = FlowIORequest.FlowSuspended(expectedFiber, flowResult)
 
