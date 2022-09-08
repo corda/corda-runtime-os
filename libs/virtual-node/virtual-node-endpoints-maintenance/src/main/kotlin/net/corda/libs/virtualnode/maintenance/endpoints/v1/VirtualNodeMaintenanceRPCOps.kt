@@ -26,8 +26,8 @@ interface VirtualNodeMaintenanceRPCOps : RpcOps {
      *
      * Even if CPI with the same metadata has already been previously uploaded, this endpoint will overwrite earlier
      * stored CPI record.
-     * The plugin purges any sandboxes running an overwritten version of a CPI and optionally deletes vault data for the affected Virtual Nodes.
-     * the affected Virtual Nodes deleted.
+     * The plugin purges any sandboxes running an overwritten version of a CPI and optionally deletes vault data for
+     * the affected Virtual Nodes.
      */
     @HttpRpcPOST(
         path = "forceCpiUpload",
