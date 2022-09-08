@@ -28,7 +28,7 @@ import net.corda.kryoserialization.serializers.X509CertificateSerializer
 import net.corda.kryoserialization.serializers.NonSerializableSerializer
 import net.corda.serialization.checkpoint.NonSerializable
 import net.corda.utilities.LazyMappedList
-import org.apache.avro.specific.SpecificRecordBase
+import org.apache.avro.specific.SpecificRecord
 import org.objenesis.instantiator.ObjectInstantiator
 import org.objenesis.strategy.InstantiatorStrategy
 import org.objenesis.strategy.StdInstantiatorStrategy
@@ -108,7 +108,7 @@ class DefaultKryoCustomizer {
                 addDefaultSerializer(NonSerializable::class.java, NonSerializableSerializer)
 
                 // Do not kryo serialize avro generated classes
-                addDefaultSerializer(SpecificRecordBase::class.java, AvroRecordSerializer)
+                addDefaultSerializer(SpecificRecord::class.java, AvroRecordSerializer)
 
                 //Add external serializers
                 for ((clazz, serializer) in serializers.toSortedMap(compareBy { it.name })) {
