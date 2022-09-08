@@ -1,14 +1,20 @@
 @file:JvmName("FlowSessionUtils")
+
 package net.corda.v5.application.messaging
 
+import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 
 /**
  * A [FlowSession] is a handle on a communication sequence between two paired flows, possibly running on separate nodes.
  *
  * It is used to send and receive messages between the flows as well as to query information about the counter-flow.
+ * Sessions have their own local flow context which can be accessed via the [contextProperties] property. Note that the
+ * parent context is snapshotted at the point the [contextProperties] is first accessed, after which no other changes to
+ * the parent context will be reflected in them, see [contextProperties] for more information.
  *
  * There are two ways of obtaining such a session:
  *
@@ -30,6 +36,23 @@ interface FlowSession {
      * @see destination
      */
     val counterparty: MemberX500Name
+
+    /**
+     * Session local [FlowContextProperties].
+     *
+     * If this session is part of an initiating flow, i.e. was obtained from [FlowMessaging] then this is a read only
+     * set of context properties which will be used to determine context on the initiated side. Modifying this set is
+     * only possible when session are initiated, see [FlowMessaging].
+     *
+     * If this session was passed to an initiated flow by Corda, the context properties are associated with the
+     * initiating flow at the other end of the connection. They differ from the [FlowContextProperties] available to all
+     * flows via the [FlowEngine] in that they are not a description of the context of the currently executing flow, but
+     * instead the flow which initiated it.
+     *
+     * Any calls to modify these contextProperties will throw a [CordaRuntimeException], they should be considered
+     * immutable.
+     */
+    val contextProperties: FlowContextProperties
 
     /**
      * Returns a [FlowInfo] object describing the flow [counterparty] is using. With [FlowInfo.flowVersion] it provides the necessary

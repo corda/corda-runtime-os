@@ -1,5 +1,8 @@
 @file:JvmName("FlowUtils")
+
 package net.corda.v5.application.flows
+
+import net.corda.v5.application.flows.FlowContextProperties.Companion.CORDA_RESERVED_PREFIX
 
 /**
  * Context properties of a [Flow] are key value pairs of Strings. They are comprised of two sets of properties, those
@@ -8,13 +11,21 @@ package net.corda.v5.application.flows
  * set.
  */
 interface FlowContextProperties {
+    companion object {
+        /**
+         * A constant containing the Corda reserved prefix.
+         */
+        @JvmField
+        val CORDA_RESERVED_PREFIX = "corda." // constant must be lowercase
+    }
+
     /**
      * Puts a user value into the context property store.
      *
      * Where keys exist as platform properties already, setting user properties with the same key will throw. It is
      * highly advisable to scope user property keys with some unique prefix, e.g. package name. Corda's platform keys
-     * will usually be prefixed with "corda." which is reserved, meaning that an attempt to prefix a user key with
-     * "corda." will also throw whether it exists already or not.
+     * will usually be prefixed with [CORDA_RESERVED_PREFIX] which is reserved, meaning that an attempt to prefix a user
+     * key with [CORDA_RESERVED_PREFIX] will also throw whether it exists already or not.
      *
      * Both sets of context properties are propagated automatically from the originating [Flow] to all sub-flows
      * initiated flows, and services. Where sub-flows and initiated flows have extra user properties added, these are
@@ -24,10 +35,11 @@ interface FlowContextProperties {
      * flow, and also any further down the chain. When execution returns to a flow higher up the stack (a parent or one
      * that initiated it) the overwritten properties are not visible.
      *
-     * @param key The property key
-     * @param value The property value
+     * @param key The property key.
+     * @param value The property value.
+     *
      * @throws IllegalArgumentException if a platform property already exists for this key or if the key is prefixed by
-     * "corda."
+     * [CORDA_RESERVED_PREFIX].
      */
     fun put(key: String, value: String)
 
@@ -35,8 +47,9 @@ interface FlowContextProperties {
      * Gets a value from the context property store.
      * Also opens up [] operator access for getting values in Kotlin.
      *
-     * @param key The property key
-     * @return The property value
+     * @param key The property key.
+     *
+     * @return The property value.
      */
     operator fun get(key: String): String?
 }
@@ -46,8 +59,8 @@ interface FlowContextProperties {
  *
  * Where keys exist as platform properties already, setting user properties with the same key will throw. It is highly
  * advisable to scope user property keys with some unique prefix, e.g. package name. Corda's platform keys will usually
- * be prefixed with "corda." which is reserved, meaning that an attempt to prefix a user key with "corda." will also
- * throw whether it exists already or not.
+ * be prefixed with [CORDA_RESERVED_PREFIX] which is reserved, meaning that an attempt to prefix a user key with
+ * [CORDA_RESERVED_PREFIX] will also throw whether it exists already or not.
  *
  * Both sets of context properties are propagated automatically from the originating [Flow] to all sub-flows, initiated
  * flows, and services. Where sub-flows and initiated flows have extra user properties added, these are only visible in
@@ -59,9 +72,10 @@ interface FlowContextProperties {
  *
  * Opens up [] operator access for setting values in Kotlin.
  *
- * @param key The property key
- * @param value The property value
+ * @param key The property key.
+ * @param value The property value.
+ *
  * @throws IllegalArgumentException if a platform property already exists for this key or if the key is prefixed by
- * "corda."
+ * [CORDA_RESERVED_PREFIX].
  */
 operator fun FlowContextProperties.set(key: String, value: String) = put(key, value)
