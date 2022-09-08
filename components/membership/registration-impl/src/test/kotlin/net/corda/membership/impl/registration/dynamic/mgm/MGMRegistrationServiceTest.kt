@@ -12,6 +12,8 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.event.MembershipEvent
+import net.corda.data.membership.event.registration.MgmOnboarded
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
 import net.corda.libs.configuration.SmartConfigFactory
@@ -53,13 +55,15 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas
+import net.corda.schema.Schemas.Membership.Companion.EVENT_TOPIC
+import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.assertj.core.api.SoftAssertions.assertSoftly
@@ -260,17 +264,22 @@ class MGMRegistrationServiceTest {
 
         val result = registrationService.register(registrationRequest, mgm, properties)
 
-        verify(mockPublisher, times(1)).publish(capturedPublishedList.capture())
+        verify(mockPublisher, times(2)).publish(capturedPublishedList.capture())
         val publishedMgmInfoList = capturedPublishedList.firstValue
+        val publishedEventList = capturedPublishedList.secondValue
         assertSoftly {
             it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.SUBMITTED)
             it.assertThat(publishedMgmInfoList).hasSize(1)
+            it.assertThat(publishedEventList).hasSize(1)
 
             val publishedMgmInfo = publishedMgmInfoList.first()
-            it.assertThat(publishedMgmInfo.topic).isEqualTo(Schemas.Membership.MEMBER_LIST_TOPIC)
+            val publishedEvent = publishedEventList.first()
+            it.assertThat(publishedMgmInfo.topic).isEqualTo(MEMBER_LIST_TOPIC)
+            it.assertThat(publishedEvent.topic).isEqualTo(EVENT_TOPIC)
 
             val expectedRecordKey = "$mgmId-$mgmId"
             it.assertThat(publishedMgmInfo.key).isEqualTo(expectedRecordKey)
+            it.assertThat(publishedEvent.key).isEqualTo(mgmId.value)
 
             val persistedMgm = publishedMgmInfo.value as PersistentMemberInfo
 
@@ -314,6 +323,11 @@ class MGMRegistrationServiceTest {
             it.assertThat(getProperty(IS_MGM)).isEqualTo("true")
             it.assertThat(statusUpdate.firstValue.status).isEqualTo(RegistrationStatus.APPROVED)
             it.assertThat(statusUpdate.firstValue.registrationId).isEqualTo(registrationRequest.toString())
+
+            val membershipEvent = publishedEvent.value as MembershipEvent
+            it.assertThat(membershipEvent.event).isInstanceOf(MgmOnboarded::class.java)
+            val mgmOnboardedEvent = membershipEvent.event as MgmOnboarded
+            it.assertThat(mgmOnboardedEvent.onboardedMgm).isEqualTo(mgm.toAvro())
         }
         registrationService.stop()
     }
