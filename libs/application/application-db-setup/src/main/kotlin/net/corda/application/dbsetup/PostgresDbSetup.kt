@@ -214,7 +214,9 @@ class PostgresDbSetup(
             updateTimestamp = Instant.now(),
             updateActor = "init",
             isDeleted = false
-        )
+        ).apply {
+            version = 0
+        }
 
         adminConnection()
             .use { connection ->

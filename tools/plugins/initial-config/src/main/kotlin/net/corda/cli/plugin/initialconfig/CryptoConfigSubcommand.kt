@@ -79,7 +79,9 @@ class CryptoConfigSubcommand : Runnable {
             updateTimestamp = Instant.now(),
             updateActor = "init",
             isDeleted = false
-        )
+        ).apply {
+            version = 0
+        }
 
         val output = entity.toInsertStatement()
 
