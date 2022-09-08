@@ -171,7 +171,7 @@ pipeline {
                 script {
                     def workers = ['crypto-worker', 'rpc-worker', 'flow-worker','db-worker']
                     def clusters = ['alice','bob','caroline']
-                    sh 'sleep 10'
+                    
                     portForwarding("prereqs-kafka-0", 9092)
 
                     clusters.eachWithIndex {c, index  ->
