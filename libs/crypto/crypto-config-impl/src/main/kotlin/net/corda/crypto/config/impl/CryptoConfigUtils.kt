@@ -244,7 +244,7 @@ fun SmartConfig.bootstrapHsmId(): String =
 fun createCryptoBootstrapParamsMap(hsmId: String): Map<String, String> =
     mapOf(HSM_ID to hsmId)
 
-fun createTestCryptoConfig(smartFactoryKey: KeyCredentials): SmartConfig =
+fun createCryptoSmartConfigFactory(smartFactoryKey: KeyCredentials): SmartConfigFactory =
     SmartConfigFactory.create(
         ConfigFactory.parseString(
             """
@@ -252,7 +252,10 @@ fun createTestCryptoConfig(smartFactoryKey: KeyCredentials): SmartConfig =
             ${SmartConfigFactory.SECRET_SALT_KEY}=${smartFactoryKey.salt}
         """.trimIndent()
         )
-    ).createDefaultCryptoConfig(
+    )
+
+fun createTestCryptoConfig(smartFactoryKey: KeyCredentials): SmartConfig =
+    createCryptoSmartConfigFactory(smartFactoryKey).createDefaultCryptoConfig(
         KeyCredentials(
             UUID.randomUUID().toString(),
             UUID.randomUUID().toString()
