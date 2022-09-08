@@ -2838,7 +2838,7 @@
         }
       },
       "GenerateCsrWrapperRequest" : {
-        "required" : [ "certificateRole", "x500name" ],
+        "required" : [ "certificateRole", "x500Name" ],
         "properties" : {
           "certificateRole" : {
             "type" : "string",
@@ -2865,7 +2865,7 @@
               "example" : "string"
             }
           },
-          "x500name" : {
+          "x500Name" : {
             "type" : "string",
             "description" : "The X500 name",
             "nullable" : false,
