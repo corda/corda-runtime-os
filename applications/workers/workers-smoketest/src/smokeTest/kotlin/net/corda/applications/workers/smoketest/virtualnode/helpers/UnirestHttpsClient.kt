@@ -1,5 +1,6 @@
 package net.corda.applications.workers.smoketest.virtualnode.helpers
 
+import kong.unirest.MultipartBody
 import kong.unirest.Unirest
 import kong.unirest.apache.ApacheClient
 import org.apache.http.conn.ssl.NoopHostnameVerifier
@@ -17,20 +18,12 @@ class UnirestHttpsClient(private val endpoint: URI, private val username: String
     override fun postMultiPart(cmd: String, fields: Map<String, String>, files: Map<String, HttpsClientFileUpload>): SimpleResponse {
         val url = endpoint.resolve(cmd).toURL().toString()
 
-        var request = Unirest.post(url)
+        val response = Unirest.post(url)
             .basicAuth(username, password)
             .multiPartContent()
-
-        fields.keys.map { name ->
-            request = request.field(name, fields[name])
-        }
-
-        files.keys.map { name ->
-            val file = files[name]!!
-            request = request.field(name, file.content, file.filename)
-        }
-
-        val response = request.asString()
+            .fields(fields)
+            .files(files)
+            .asString()
 
         return SimpleResponse(response.status, response.body, url)
     }
@@ -50,6 +43,19 @@ class UnirestHttpsClient(private val endpoint: URI, private val username: String
 
         val response = Unirest.put(url).basicAuth(username, password)
             .body(body)
+            .asString()
+
+        return SimpleResponse(response.status, response.body, url)
+    }
+
+    override fun putMultiPart(cmd: String, fields: Map<String, String>, files: Map<String, HttpsClientFileUpload>): SimpleResponse {
+        val url = endpoint.resolve(cmd).toURL().toString()
+
+        val response = Unirest.put(url)
+            .basicAuth(username, password)
+            .multiPartContent()
+            .fields(fields)
+            .files(files)
             .asString()
 
         return SimpleResponse(response.status, response.body, url)
@@ -75,5 +81,15 @@ class UnirestHttpsClient(private val endpoint: URI, private val username: String
         Unirest.config().let { config ->
             config.httpClient(ApacheClient.builder(httpClient).apply(config))
         }
+    }
+
+    private fun MultipartBody.fields(fields: Map<String, String>): MultipartBody {
+        fields.entries.forEach { (name, value) -> field(name, value) }
+        return this
+    }
+
+    private fun MultipartBody.files(files: Map<String, HttpsClientFileUpload>): MultipartBody {
+        files.entries.forEach { (name, file) -> field(name, file.content, file.filename) }
+        return this
     }
 }
