@@ -93,10 +93,13 @@ dependencies {
     integrationTestImplementation project(':components:virtual-node:cpk-read-service')
     integrationTestImplementation project(':components:virtual-node:sandbox-group-context-service')
     integrationTestImplementation project(':testing:test-utilities')
+    integrationTestImplementation "net.corda:corda-cipher-suite"
+    integrationTestImplementation project(":libs:crypto:cipher-suite-impl")
     integrationTestImplementation project(':libs:crypto:merkle-impl')
+    integrationTestRuntimeOnly project(":libs:crypto:crypto-serialization-impl")
     integrationTestImplementation project(':libs:ledger:ledger-common-serialization')
     integrationTestImplementation project(':testing:test-serialization')
-    integrationTestImplementation "net.corda:corda-cipher-suite"
+    integrationTestImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 
     integrationTestRuntimeOnly project(':libs:flows:external-event-responses-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')

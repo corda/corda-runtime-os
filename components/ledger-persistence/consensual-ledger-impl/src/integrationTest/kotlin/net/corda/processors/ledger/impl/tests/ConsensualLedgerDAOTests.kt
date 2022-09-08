@@ -18,7 +18,9 @@ import net.corda.entityprocessor.impl.tests.helpers.Resources
 import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getSerializer
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
+import net.corda.ledger.common.impl.transaction.TransactionMetaData
 import net.corda.ledger.common.impl.transaction.WireTransaction
+import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
 import net.corda.messaging.api.records.Record
 import net.corda.orm.JpaEntitiesSet
 import net.corda.processors.ledger.impl.ConsensualLedgerProcessor
@@ -27,16 +29,10 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
-import net.corda.v5.application.serialization.SerializationService
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import net.corda.v5.base.util.contextLogger
-//import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_ENTROPY_OPTION
-import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NONCE_NAME
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
-import net.corda.v5.crypto.merkle.MerkleTreeHashDigestProvider
-import net.corda.v5.ledger.common.transaction.PrivacySalt
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
@@ -79,7 +75,7 @@ class ConsensualLedgerDAOTests {
     }
 
     @InjectService
-    private lateinit var lbm: LiquibaseSchemaMigrator
+    lateinit var lbm: LiquibaseSchemaMigrator
 
     @RegisterExtension
     private val lifecycle = EachTestLifecycle()
@@ -90,8 +86,10 @@ class ConsensualLedgerDAOTests {
     private lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
     private lateinit var externalEventResponseFactory: ExternalEventResponseFactory
 
-    private lateinit var digestService: DigestService
-    private lateinit var merkleTreeFactory: MerkleTreeFactory
+    @InjectService
+    lateinit var digestService: DigestService
+    @InjectService
+    lateinit var merkleTreeFactory: MerkleTreeFactory
 
     private lateinit var ctx: DbTestContext
 
@@ -111,11 +109,6 @@ class ConsensualLedgerDAOTests {
             cpiInfoReadService = setup.fetchService(timeout = 10000)
             virtualNode = setup.fetchService(timeout = 10000)
             virtualNodeInfoReadService = setup.fetchService(timeout = 10000)
-
-            logger.info("loading digestService")
-            digestService = setup.fetchService(timeout = 10000)
-            logger.info("loading merkleTreeFactory")
-            merkleTreeFactory = setup.fetchService(timeout = 10000)
         }
 
         /* TODO: This doesn't work yet because SerializationService is not injectable. There is an open PR that adds
@@ -155,13 +148,20 @@ class ConsensualLedgerDAOTests {
         val payload = ByteBuffer.allocate(1)
         logger.info("Creating request")
         // create ConsensualSignedTransactionImpl instance (or WireTransaction at first)
-        val privacySalt: PrivacySalt = PrivacySaltImpl("1".repeat(32).toByteArray())
+        val mapper = jacksonObjectMapper()
+        val transactionMetaData = TransactionMetaData(
+            mapOf(
+                TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues
+            )
+        )
+        val privacySalt = PrivacySaltImpl("1".repeat(32).toByteArray())
         val componentGroupLists = listOf(
-            listOf("123".toByteArray(), "45678".toByteArray()),
+            listOf(mapper.writeValueAsBytes(transactionMetaData)),
             listOf(".".toByteArray()),
             listOf("abc d efg".toByteArray()),
         )
         val wireTransaction = WireTransaction(merkleTreeFactory, digestService, privacySalt, componentGroupLists)
+
         // val txBytes = serializationService.serialize(wireTransaction)
         // logger.info(txBytes.summary)
         logger.info("WireTransaction: ", wireTransaction)
