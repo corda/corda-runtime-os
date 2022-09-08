@@ -18,7 +18,7 @@ import kotlin.reflect.KClass
     name = "reset",
     description = ["Upload and overwrite earlier stored CPI record.",
         "Any sandboxes running an overwritten version of CPI will be purged and optionally",
-        "vault data for the affected Virtual Nodes wiped out."]
+        "vault data for the affected Virtual Nodes deleted."]
 )
 class ResetCommand : Runnable {
 
