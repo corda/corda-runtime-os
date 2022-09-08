@@ -177,7 +177,7 @@ pipeline {
                 script {
                     def workers = ['crypto-worker', 'rpc-worker', 'flow-worker','db-worker']
                     def clusters = ['alice','bob','caroline']
-                    sh 'sleep 10'
+                    
                     portForwarding("prereqs-kafka-0", 9092)
 
                     clusters.eachWithIndex {c, index  ->
@@ -231,7 +231,7 @@ def sanitizedBranchName(){
 
 // Helper to expose ports prior to test execution
 def portForwarding(def name, def port, def portMapping = null){
-    sh "nohup kubectl port-forward -n ${NAMESPACE} $name $port ${portMapping == null ? "" : ":$portMapping"} >> forward.txt 2>&1 &"
+    sh "nohup kubectl port-forward -n ${NAMESPACE} $name $port${portMapping == null ? "" : ":$portMapping"} >> forward.txt 2>&1 &"
 }
 
 def deployCorda(def name, def namespace, def base_image){
