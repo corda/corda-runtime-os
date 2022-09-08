@@ -3,6 +3,7 @@ package net.corda.httprpc.server.impl.apigen.processing.openapi.schema
 import io.swagger.v3.oas.models.media.ArraySchema
 import io.swagger.v3.oas.models.media.Schema
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.DataType
+import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.JsonSchemaModel
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.SchemaCollectionModel
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.SchemaEnumModel
 import net.corda.httprpc.server.impl.apigen.processing.openapi.schema.model.SchemaMapModel
@@ -82,5 +83,15 @@ internal class SchemaModelToOpenApiSchemaConverterTest {
         val result = SchemaModelToOpenApiSchemaConverter.convert(model)
 
         assertNull(result.enum)
+    }
+
+    @Test
+    fun `convert JsonObject succeeds`() {
+        val model = JsonSchemaModel()
+
+        val result = SchemaModelToOpenApiSchemaConverter.convert(model)
+
+        assertEquals("{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}", result.example)
+        assertEquals("Can be any value - string, number, boolean, array or object.", result.description)
     }
 }

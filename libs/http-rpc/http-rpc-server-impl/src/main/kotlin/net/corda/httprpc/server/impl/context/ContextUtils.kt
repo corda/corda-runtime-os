@@ -99,7 +99,7 @@ internal object ContextUtils {
                 @Suppress("SpreadOperator")
                 val result = invokeDelegatedMethod(*paramValues.toTypedArray())
 
-                buildJsonResult(result, ctx, this)
+                ctx.buildJsonResult(result, this.method.method.returnType)
 
                 ctx.header(Header.CACHE_CONTROL, "no-cache")
                 log.debug { "Invoke method \"${this.method.method.name}\" for route info completed." }
@@ -134,21 +134,6 @@ internal object ContextUtils {
                 part.delete()
             } catch (e: Exception) {
                 log.warn("Could not delete part: ${part.name}", e)
-            }
-        }
-    }
-
-    private fun buildJsonResult(result: Any?, ctx: Context, routeInfo: RouteInfo) {
-        when {
-            (result as? String) != null ->
-                ctx.contentType(contentTypeApplicationJson).result(result)
-            result != null ->
-                ctx.json(result)
-            else -> {
-                // if the method has no return type we don't return null
-                if (routeInfo.method.method.returnType != Void.TYPE) {
-                    ctx.result("null")
-                }
             }
         }
     }

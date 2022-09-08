@@ -3,6 +3,7 @@ package net.corda.membership.registration
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.virtualnode.HoldingIdentity
+import java.util.UUID
 
 /**
  * Handles the registration process on the member side.
@@ -23,11 +24,16 @@ interface MemberRegistrationService : Lifecycle {
      * This is the first step to take for a virtual node to become a fully
      * qualified member within a membership group.
      *
+     * @param registrationId The registration ID
      * @param member The holding identity of the virtual node requesting registration.
      * @param context The member or MGM context required for on-boarding within a group.
      *
      * @return The status of the registration request. NOT_SUBMITTED is returned when
      * something went wrong during creating the request.
      */
-    fun register(member: HoldingIdentity, context: Map<String, String>): MembershipRequestRegistrationResult
+    fun register(
+        registrationId: UUID,
+        member: HoldingIdentity,
+        context: Map<String, String>
+    ): MembershipRequestRegistrationResult
 }

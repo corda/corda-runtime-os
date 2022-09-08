@@ -69,6 +69,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.atLeast
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -508,6 +509,31 @@ class SessionManagerTest {
     }
 
     @Test
+    fun `when an initiator hello is received, we do a lookup for the public key hash, using all the locally hosted identities`() {
+        val sessionId = "some-session-id"
+        val responderHello = mock<ResponderHelloMessage>()
+        val carol = createTestHoldingIdentity("CN=Carol, O=Alice Corp, L=LDN, C=GB", GROUP_ID)
+        val david = createTestHoldingIdentity("CN=David, O=Alice Corp, L=LDN, C=GB", GROUP_ID)
+        whenever(linkManagerHostingMap.allLocallyHostedIdentities()).thenReturn(
+            listOf(
+                carol,
+                david,
+                OUR_PARTY,
+            )
+        )
+        whenever(protocolResponder.generateResponderHello()).thenReturn(responderHello)
+
+        val header = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
+        val initiatorHelloMsg = InitiatorHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded),
+            PROTOCOL_MODES, InitiatorHandshakeIdentity(ByteBuffer.wrap(messageDigest.hash(PEER_KEY.public.encoded)), GROUP_ID))
+
+        sessionManager.processSessionMessage(LinkInMessage(initiatorHelloMsg))
+
+        verify(members).getMemberInfo(eq(carol), any<ByteArray>())
+        verify(members).getMemberInfo(eq(david), any<ByteArray>())
+    }
+
+    @Test
     fun `when an initiator hello is received, but peer's member info is missing from network map, then message is dropped`() {
         val initiatorKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
         val sessionId = "some-session-id"
@@ -733,6 +759,48 @@ class SessionManagerTest {
         assertThat(sessionManager.getSessionById(sessionId)).isInstanceOfSatisfying(SessionManager.SessionDirection.Inbound::class.java) {
             assertThat(it.session).isEqualTo(session)
         }
+    }
+
+    @Test
+    fun `when initiator handshake is received, we do a lookup for the public key hash, using all the locally hosted identities`() {
+        val sessionId = "some-session-id"
+        val initiatorPublicKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
+        val responderPublicKeyHash = messageDigest.hash(OUR_KEY.public.encoded)
+        whenever(protocolResponder.generateResponderHello()).thenReturn(mock())
+        val carol = createTestHoldingIdentity("CN=Carol, O=Alice Corp, L=LDN, C=GB", GROUP_ID)
+        val david = createTestHoldingIdentity("CN=David, O=Alice Corp, L=LDN, C=GB", GROUP_ID)
+        whenever(linkManagerHostingMap.allLocallyHostedIdentities()).thenReturn(
+            listOf(
+                carol,
+                david,
+                OUR_PARTY,
+            )
+        )
+
+        val initiatorHelloHeader = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
+        val initiatorHelloMessage = InitiatorHelloMessage(initiatorHelloHeader, ByteBuffer.wrap(PEER_KEY.public.encoded),
+            PROTOCOL_MODES, InitiatorHandshakeIdentity(ByteBuffer.wrap(messageDigest.hash(PEER_KEY.public.encoded)), GROUP_ID))
+        sessionManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))
+
+        val initiatorHandshakeHeader = CommonHeader(MessageType.INITIATOR_HANDSHAKE, 1, sessionId, 3, Instant.now().toEpochMilli())
+        val initiatorHandshakeMessage = InitiatorHandshakeMessage(initiatorHandshakeHeader, RANDOM_BYTES, RANDOM_BYTES)
+        whenever(protocolResponder.getInitiatorIdentity())
+            .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
+        whenever(
+            protocolResponder.validatePeerHandshakeMessage(
+                initiatorHandshakeMessage,
+                PEER_KEY.public,
+                SignatureSpec.ECDSA_SHA256,
+            )
+        ).thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
+        val responderHandshakeMsg = mock<ResponderHandshakeMessage>()
+        whenever(protocolResponder.generateOurHandshakeMessage(eq(OUR_KEY.public), any())).thenReturn(responderHandshakeMsg)
+        val session = mock<Session>()
+        whenever(protocolResponder.getSession()).thenReturn(session)
+        sessionManager.processSessionMessage(LinkInMessage(initiatorHandshakeMessage))
+
+        verify(members, atLeast(1)).getMemberInfo(eq(carol), any<ByteArray>())
+        verify(members, atLeast(1)).getMemberInfo(eq(david), any<ByteArray>())
     }
 
     @Test

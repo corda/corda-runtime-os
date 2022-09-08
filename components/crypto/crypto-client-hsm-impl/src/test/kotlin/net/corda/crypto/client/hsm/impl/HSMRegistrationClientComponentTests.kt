@@ -25,7 +25,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.toHex
-import net.corda.v5.crypto.failures.CryptoException
+import net.corda.v5.crypto.exceptions.CryptoException
 import net.corda.v5.crypto.sha256Bytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach

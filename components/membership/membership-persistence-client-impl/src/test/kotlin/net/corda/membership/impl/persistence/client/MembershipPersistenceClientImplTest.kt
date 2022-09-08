@@ -6,11 +6,11 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.command.PersistGroupPolicy
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
-import net.corda.data.membership.db.request.command.RegistrationStatus
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToDeclined
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
@@ -24,6 +24,7 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.MemberInfoFactory
@@ -72,7 +73,7 @@ class MembershipPersistenceClientImplTest {
     private val clock = TestClock(Instant.ofEpochSecond(0))
 
     private val registrationHandle: RegistrationHandle = mock()
-    private val configHandle: AutoCloseable = mock()
+    private val configHandle: Resource = mock()
     private val rpcSender: RPCSender<MembershipPersistenceRequest, MembershipPersistenceResponse> = mock()
     private val coordinator: LifecycleCoordinator = mock {
         on { followStatusChangesByName(any()) } doReturn registrationHandle
@@ -148,7 +149,11 @@ class MembershipPersistenceClientImplTest {
     @BeforeEach
     fun setUp() {
         membershipPersistenceClient = MembershipPersistenceClientImpl(
-            coordinatorFactory, publisherFactory, configurationReadService, memberInfoFactory, clock
+            coordinatorFactory,
+            publisherFactory,
+            configurationReadService,
+            memberInfoFactory,
+            clock
         )
 
         verify(coordinatorFactory).createCoordinator(any(), lifecycleEventCaptor.capture())

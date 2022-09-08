@@ -21,6 +21,7 @@ import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRe
 import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -152,6 +153,21 @@ class VirtualNodeRpcTest {
     }
 
     @Test
+    @Order(31)
+    fun `cannot upload same CPI with different groupId`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+            val requestId = cpiUpload(TEST_CPB, "differentGroupId").let { it.toJson()["id"].textValue() }
+            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
+
+            assertWithRetry {
+                command { cpiStatus(requestId) }
+                condition { it.code == 409 }
+            }
+        }
+    }
+
+    @Test
     @Order(33)
     fun `list cpis`() {
         cluster {
@@ -206,7 +222,7 @@ class VirtualNodeRpcTest {
 
             assertWithRetry {
                 command { vNodeCreate(hash, X500_ALICE) }
-                condition { it.code == 500 }
+                condition { it.code == 409 }
             }
         }
     }
@@ -216,11 +232,17 @@ class VirtualNodeRpcTest {
     fun `list virtual nodes`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-            val nodes = vNodeList().toJson()["virtualNodes"].map {
-                it["holdingIdentity"]["x500Name"].textValue()
-            }
 
-            assertThat(nodes).contains(X500_ALICE)
+            assertWithRetry {
+                timeout(Duration.of(30, ChronoUnit.SECONDS))
+                command { vNodeList() }
+                condition { response ->
+                    val nodes = vNodeList().toJson()["virtualNodes"].map {
+                        it["holdingIdentity"]["x500Name"].textValue()
+                    }
+                    response.code == 200 && nodes.contains(X500_ALICE)
+                }
+            }
         }
     }
 
@@ -392,10 +414,14 @@ class VirtualNodeRpcTest {
         return Instant.parse(this.asText())
     }
 
-    fun ClusterBuilder.getCpiChecksum(cpiName: String): String {
-        val cpis = cpiList().toJson()["cpis"]
-        val cpiJson = cpis.toList().first { it["id"]["cpiName"].textValue() == cpiName }
-        return truncateLongHash(cpiJson["cpiFileChecksum"].textValue())
+    private fun ClusterBuilder.getCpiChecksum(cpiName: String): String {
+        val cpiFileChecksum = eventually {
+            val cpis = cpiList().toJson()["cpis"]
+            val cpiJson = cpis.toList().find { it["id"]["cpiName"].textValue() == cpiName }
+            assertNotNull(cpiJson, "Cpi with name $cpiName not yet found in cpi list.")
+            truncateLongHash(cpiJson!!["cpiFileChecksum"].textValue())
+        }
+        return cpiFileChecksum
     }
 
     private fun String.toJson(): JsonNode = ObjectMapper().readTree(this)

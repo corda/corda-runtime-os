@@ -7,6 +7,7 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.crypto.wire.CryptoSigningKey
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -15,10 +16,14 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.registration.RegistrationRequest
+import net.corda.membership.persistence.client.MembershipPersistenceClient
+import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
@@ -41,6 +46,7 @@ import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.KArgumentCaptor
@@ -57,6 +63,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.PublicKey
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
 class DynamicMemberRegistrationServiceTest {
@@ -73,6 +80,7 @@ class DynamicMemberRegistrationServiceTest {
     }
 
     private val memberProvidedContext: MemberContext = mock()
+    private val registrationResultId = UUID(3, 4)
     private val mgmProvidedContext: MGMContext = mock()
     private val mgmName = MemberX500Name("Corda MGM", "London", "GB")
     private val mgm = HoldingIdentity(mgmName, GROUP_NAME)
@@ -131,7 +139,7 @@ class DynamicMemberRegistrationServiceTest {
     }
 
     private val componentHandle: RegistrationHandle = mock()
-    private val configHandle: AutoCloseable = mock()
+    private val configHandle: Resource = mock()
     private val testConfig =
         SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.parseString("instanceId=1"))
     private val dependentComponents = setOf(
@@ -179,6 +187,7 @@ class DynamicMemberRegistrationServiceTest {
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider = mock {
         on { getGroupReader(any()) } doReturn groupReader
     }
+    private val membershipPersistenceClient = mock<MembershipPersistenceClient>()
     private val registrationService = DynamicMemberRegistrationService(
         publisherFactory,
         configurationReadService,
@@ -187,6 +196,7 @@ class DynamicMemberRegistrationServiceTest {
         keyEncodingService,
         serializationFactory,
         membershipGroupReaderProvider,
+        membershipPersistenceClient,
     )
 
     private val context = mapOf(
@@ -251,7 +261,7 @@ class DynamicMemberRegistrationServiceTest {
         postConfigChangedEvent()
         registrationService.start()
         val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
-        val result = registrationService.register(member, context)
+        val result = registrationService.register(registrationResultId, member, context)
         verify(mockPublisher, times(1)).publish(capturedPublishedList.capture())
         val publishedMessageList = capturedPublishedList.firstValue
         SoftAssertions.assertSoftly {
@@ -270,8 +280,27 @@ class DynamicMemberRegistrationServiceTest {
     }
 
     @Test
+    fun `registration successfully persist the status to new`() {
+        postConfigChangedEvent()
+        registrationService.start()
+        val status = argumentCaptor<RegistrationRequest>()
+        whenever(
+            membershipPersistenceClient.persistRegistrationRequest(
+                eq(member),
+                status.capture()
+            )
+        ).doReturn(
+            MembershipPersistenceResult.success()
+        )
+
+        registrationService.register(registrationResultId, member, context)
+
+        assertThat(status.firstValue.status).isEqualTo(RegistrationStatus.NEW)
+    }
+
+    @Test
     fun `registration fails when coordinator is not running`() {
-        val registrationResult = registrationService.register(member, mock())
+        val registrationResult = registrationService.register(registrationResultId, member, mock())
         Assertions.assertThat(registrationResult).isEqualTo(
             MembershipRequestRegistrationResult(
                 MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
@@ -287,7 +316,7 @@ class DynamicMemberRegistrationServiceTest {
         registrationService.start()
         context.entries.apply {
             for (index in indices) {
-                val result = registrationService.register(member, testProperties)
+                val result = registrationService.register(registrationResultId, member, testProperties)
                 SoftAssertions.assertSoftly {
                     it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
                 }
@@ -305,7 +334,7 @@ class DynamicMemberRegistrationServiceTest {
                 "corda.ledger.keys.100.id" to "9999"
             )
         registrationService.start()
-        val result = registrationService.register(member, testProperties)
+        val result = registrationService.register(registrationResultId, member, testProperties)
         SoftAssertions.assertSoftly {
             it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
             it.assertThat(result.message)

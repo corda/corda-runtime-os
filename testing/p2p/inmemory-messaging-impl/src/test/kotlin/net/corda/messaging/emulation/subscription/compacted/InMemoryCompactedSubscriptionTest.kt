@@ -224,7 +224,7 @@ class InMemoryCompactedSubscriptionTest {
     fun `stop will stop the lifecycle`() {
         subscription.start()
 
-        subscription.stop()
+        subscription.close()
 
         verify(consumption).stop()
     }
@@ -233,9 +233,9 @@ class InMemoryCompactedSubscriptionTest {
     fun `second stop will stop the lifecycle only once`() {
         subscription.start()
 
-        subscription.stop()
-        subscription.stop()
-        subscription.stop()
+        subscription.close()
+        subscription.close()
+        subscription.close()
 
         verify(consumption, times(1)).stop()
     }
@@ -243,7 +243,7 @@ class InMemoryCompactedSubscriptionTest {
     @Test
     fun `isRunning will return false after stop`() {
         subscription.start()
-        subscription.stop()
+        subscription.close()
 
         assertThat(subscription.isRunning).isFalse
     }

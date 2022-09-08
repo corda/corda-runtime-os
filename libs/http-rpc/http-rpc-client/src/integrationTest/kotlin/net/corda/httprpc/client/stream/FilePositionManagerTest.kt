@@ -2,7 +2,7 @@ package net.corda.httprpc.client.stream
 
 import net.corda.utilities.deleteRecursively
 import net.corda.utilities.div
-import net.corda.v5.base.stream.PositionManager
+import net.corda.httprpc.durablestream.api.PositionManager
 import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.AbstractThrowableAssert
 import org.assertj.core.api.Assertions

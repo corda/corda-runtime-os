@@ -100,7 +100,7 @@ class InMemoryStateAndEventSubscriptionTest {
     fun `stop will stop the event consumption`() {
         subscription.start()
 
-        subscription.stop()
+        subscription.close()
 
         verify(eventsConsumption).stop()
     }
@@ -109,7 +109,7 @@ class InMemoryStateAndEventSubscriptionTest {
     fun `stop will stop the state consumption`() {
         subscription.start()
 
-        subscription.stop()
+        subscription.close()
 
         verify(statesConsumption).stop()
     }

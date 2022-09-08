@@ -10,7 +10,7 @@ interface CertificatesClient : Lifecycle {
     /**
      * Import certificate chain.
      *
-     * @param tenantId 'p2p', 'rpc-api', or holding identity identity ID.
+     * @param tenantId 'codesigner', 'p2p', 'rpc-api', or holding identity identity ID.
      * @param alias Unique alias of the certificate.
      * @param certificates The certificates in PEM format
      * @throws Exception in case of network or persistent error.

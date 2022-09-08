@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.membership.command.synchronisation.SynchronisationCommand
 import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
+import net.corda.data.membership.command.synchronisation.mgm.ProcessSyncRequest
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -18,9 +19,12 @@ import net.corda.lifecycle.createCoordinator
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
 import net.corda.membership.lib.exceptions.SynchronisationProtocolSelectionException
+import net.corda.membership.lib.exceptions.SynchronisationProtocolTypeException
 import net.corda.membership.synchronisation.MemberSynchronisationService
+import net.corda.membership.synchronisation.MgmSynchronisationService
 import net.corda.membership.synchronisation.SynchronisationException
 import net.corda.membership.synchronisation.SynchronisationProxy
+import net.corda.membership.synchronisation.SynchronisationService
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
@@ -30,6 +34,7 @@ import net.corda.schema.Schemas.Membership.Companion.SYNCHRONISATION_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -49,22 +54,42 @@ class SynchronisationProxyImpl @Activate constructor(
     @Reference(service = GroupPolicyProvider::class)
     private val groupPolicyProvider: GroupPolicyProvider,
     @Reference(
-        service = MemberSynchronisationService::class,
+        service = SynchronisationService::class,
         cardinality = ReferenceCardinality.AT_LEAST_ONE,
         policyOption = ReferencePolicyOption.GREEDY
     )
-    private val synchronisationServices: List<MemberSynchronisationService>
+    private val synchronisationServices: List<SynchronisationService>
 ) : SynchronisationProxy {
 
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
      */
     private interface InnerSynchronisationProxy {
+        /**
+         * Retrieves the appropriate instance of [MemberSynchronisationService] for a holding identity as specified in the CPI
+         * configuration, and delegates the processing of membership updates to it.
+         *
+         * @param updates Data package distributed by the MGM containing membership updates.
+         *
+         * @throws [SynchronisationProtocolSelectionException] if the synchronisation protocol could not be selected.
+         * @throws [SynchronisationProtocolTypeException] if the configured protocol is not an [MemberSynchronisationService].
+         */
         fun processMembershipUpdates(updates: ProcessMembershipUpdates)
+
+        /**
+         * Retrieves the appropriate instance of [MgmSynchronisationService] for a holding identity as specified in the CPI
+         * configuration, and delegates the processing of membership sync requests to it.
+         *
+         * @param request The sync request which needs to be processed.
+         *
+         * @throws [SynchronisationProtocolSelectionException] if the synchronisation protocol could not be selected.
+         * @throws [SynchronisationProtocolTypeException] if the configured protocol is not an [MgmSynchronisationService].
+         */
+        fun processSyncRequest(request: ProcessSyncRequest)
     }
 
     private companion object {
-        private val logger = contextLogger()
+        val logger = contextLogger()
 
         const val SERVICE_STARTING_LOG = "Synchronisation proxy starting."
         const val SERVICE_STOPPING_LOG = "Synchronisation proxy stopping."
@@ -72,8 +97,9 @@ class SynchronisationProxyImpl @Activate constructor(
         const val SERVICE_NOT_FOUND_ERROR =
             "Could not load synchronisation service: \"%s\". Service not found."
         const val DOWN_REASON_STOPPED = "SynchronisationProxy was stopped."
-
-        private const val CONSUMER_GROUP = "membership.synchronisation.group"
+        const val CONSUMER_GROUP = "membership.synchronisation.group"
+        const val FAILED_SYNC_MSG = "Failed to process synchronisation event."
+        const val INACTIVE_SERVICE = "SynchronisationProxy currently inactive."
     }
 
     private val coordinator =
@@ -91,8 +117,11 @@ class SynchronisationProxyImpl @Activate constructor(
 
     private var impl: InnerSynchronisationProxy = InactiveImpl
 
-    override fun processMembershipUpdates(updates: ProcessMembershipUpdates) =
+    fun processMembershipUpdates(updates: ProcessMembershipUpdates) =
         impl.processMembershipUpdates(updates)
+
+    fun processSyncRequest(request: ProcessSyncRequest) =
+        impl.processSyncRequest(request)
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
@@ -116,7 +145,7 @@ class SynchronisationProxyImpl @Activate constructor(
                 logger.info(
                     synchronisationServices
                         .joinToString(
-                            prefix = "Loaded member synchronisation services: [",
+                            prefix = "Loaded synchronisation services: [",
                             postfix = "]",
                             transform = { it.javaClass.name }
                         )
@@ -186,14 +215,32 @@ class SynchronisationProxyImpl @Activate constructor(
 
     private object InactiveImpl : InnerSynchronisationProxy {
         override fun processMembershipUpdates(updates: ProcessMembershipUpdates) =
-            throw IllegalStateException("SynchronisationProxy currently inactive.")
+            throw IllegalStateException(INACTIVE_SERVICE)
+
+        override fun processSyncRequest(request: ProcessSyncRequest) =
+            throw IllegalStateException(INACTIVE_SERVICE)
 
     }
 
     private inner class ActiveImpl: InnerSynchronisationProxy {
         override fun processMembershipUpdates(updates: ProcessMembershipUpdates) {
-            val viewOwningMember = updates.destination.toCorda()
-            val protocol = try {
+            val service = getSynchronisationService(
+                updates.synchronisationMetaData.member.toCorda(),
+                MemberSynchronisationService::class.java
+            )
+            service.processMembershipUpdates(updates)
+        }
+
+        override fun processSyncRequest(request: ProcessSyncRequest) {
+            val service = getSynchronisationService(
+                request.synchronisationMetaData.mgm.toCorda(),
+                MgmSynchronisationService::class.java
+            )
+            service.processSyncRequest(request)
+        }
+
+        private fun selectSynchronisationProtocol(viewOwningMember: HoldingIdentity): String =
+            try {
                 groupPolicyProvider.getGroupPolicy(viewOwningMember)?.synchronisationProtocol
             } catch (e: BadGroupPolicyException) {
                 val err =
@@ -204,10 +251,9 @@ class SynchronisationProxyImpl @Activate constructor(
                 "Could not find group policy file for holding identity: [${viewOwningMember.shortHash}]"
             )
 
-            getSynchronisationService(protocol).processMembershipUpdates(updates)
-        }
-
-        private fun getSynchronisationService(protocol: String): MemberSynchronisationService {
+        @Suppress("unchecked_cast")
+        private fun <T: SynchronisationService> getSynchronisationService(viewOwningMember: HoldingIdentity, serviceType: Class<T>): T {
+            val protocol = selectSynchronisationProtocol(viewOwningMember)
             logger.debug(String.format(LOADING_SERVICE_LOG, protocol))
             val service = synchronisationServices.find { it.javaClass.name == protocol }
             if (service == null) {
@@ -215,14 +261,17 @@ class SynchronisationProxyImpl @Activate constructor(
                 logger.error(err)
                 throw SynchronisationProtocolSelectionException(err)
             }
-            return service
+            if(!serviceType.isAssignableFrom(service::class.java)) {
+                throw SynchronisationProtocolTypeException("Wrong synchronisation service type was configured in group policy file.")
+            }
+            return service as T
         }
     }
 
     private inner class Processor : DurableProcessor<String, SynchronisationCommand> {
-
         private val handlers = mapOf<Class<*>, SynchronisationHandler<*>>(
             ProcessMembershipUpdates::class.java to ProcessMembershipUpdatesHandler(),
+            ProcessSyncRequest::class.java to ProcessSyncRequestHandler(),
         )
 
         override fun onNext(events: List<Record<String, SynchronisationCommand>>): List<Record<*, *>> {
@@ -235,12 +284,18 @@ class SynchronisationProxyImpl @Activate constructor(
                             logger.info("Received process membership updates command.")
                             handlers[ProcessMembershipUpdates::class.java]?.invoke(record)
                         }
+                        is ProcessSyncRequest -> {
+                            logger.info("Received process synchronisation updates command.")
+                            handlers[ProcessSyncRequest::class.java]?.invoke(record)
+                        }
                         else -> {
                             logger.warn("Unhandled synchronisation command received.")
                         }
                     }
+                } catch (e: SynchronisationProtocolTypeException) {
+                    logger.warn(FAILED_SYNC_MSG, e)
                 } catch (e: Exception) {
-                    logger.error("Failed to process synchronisation event.", e)
+                    logger.error(FAILED_SYNC_MSG, e)
                 }
             }
             return emptyList()
@@ -273,6 +328,16 @@ class SynchronisationProxyImpl @Activate constructor(
 
         override val commandType: Class<ProcessMembershipUpdates>
             get() = ProcessMembershipUpdates::class.java
+
+    }
+
+    private inner class ProcessSyncRequestHandler : SynchronisationHandler<ProcessSyncRequest> {
+        override fun invoke(command: ProcessSyncRequest) {
+            processSyncRequest(command)
+        }
+
+        override val commandType: Class<ProcessSyncRequest>
+            get() = ProcessSyncRequest::class.java
 
     }
 }

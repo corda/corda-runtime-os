@@ -17,6 +17,7 @@ import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
 import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
+import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.v5.cipher.suite.AlgorithmParameterSpecEncodingService
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature
@@ -48,7 +49,11 @@ class CryptoFlowOpsTransformerImpl(
     private val requestValidityWindowSeconds: Long = 300
 ) : CryptoFlowOpsTransformer {
 
-    override fun createFilterMyKeys(tenantId: String, candidateKeys: Collection<PublicKey>): FlowOpsRequest {
+    override fun createFilterMyKeys(
+        tenantId: String,
+        candidateKeys: Collection<PublicKey>,
+        flowExternalEventContext: ExternalEventContext
+    ): FlowOpsRequest {
         return createRequest(
             requestId = UUID.randomUUID().toString(),
             tenantId = tenantId,
@@ -56,7 +61,8 @@ class CryptoFlowOpsTransformerImpl(
                 candidateKeys.map {
                     ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(it))
                 }
-            )
+            ),
+            flowExternalEventContext = flowExternalEventContext
         )
     }
 
@@ -66,17 +72,19 @@ class CryptoFlowOpsTransformerImpl(
         publicKey: PublicKey,
         signatureSpec: SignatureSpec,
         data: ByteArray,
-        context: Map<String, String>
+        context: Map<String, String>,
+        flowExternalEventContext: ExternalEventContext
     ): FlowOpsRequest {
         return createRequest(
-            requestId,
-            tenantId,
-            SignFlowCommand(
+            requestId = requestId,
+            tenantId = tenantId,
+            request = SignFlowCommand(
                 ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(publicKey)),
                 signatureSpec.toWire(serializer),
                 ByteBuffer.wrap(data),
                 context.toWire()
-            )
+            ),
+            flowExternalEventContext = flowExternalEventContext
         )
     }
 
@@ -99,7 +107,8 @@ class CryptoFlowOpsTransformerImpl(
             SignFlowCommand::class.java -> transformCryptoSignatureWithKey(response)
             FilterMyKeysFlowQuery::class.java -> transformCryptoSigningKeys(response)
             else -> throw IllegalArgumentException(
-                "Unknown request type: $REQUEST_OP_KEY=${response.getContextValue(REQUEST_OP_KEY)}")
+                "Unknown request type: $REQUEST_OP_KEY=${response.getContextValue(REQUEST_OP_KEY)}"
+            )
         }
     }
 
@@ -128,16 +137,24 @@ class CryptoFlowOpsTransformerImpl(
     /**
      * Creates [FlowOpsRequest] for specified tenant and operation
      */
-    private fun createRequest(requestId: String, tenantId: String, request: Any): FlowOpsRequest =
+    private fun createRequest(
+        requestId: String,
+        tenantId: String,
+        request: Any,
+        flowExternalEventContext: ExternalEventContext
+    ): FlowOpsRequest =
         FlowOpsRequest(
-            createWireRequestContext(requestingComponent, requestId, tenantId, KeyValuePairList(
-                listOf(
-                    KeyValuePair(REQUEST_OP_KEY, request::class.java.simpleName),
-                    KeyValuePair(RESPONSE_TOPIC, responseTopic),
-                    KeyValuePair(REQUEST_TTL_KEY, requestValidityWindowSeconds.toString())
+            createWireRequestContext(
+                requestingComponent, requestId, tenantId, KeyValuePairList(
+                    listOf(
+                        KeyValuePair(REQUEST_OP_KEY, request::class.java.simpleName),
+                        KeyValuePair(RESPONSE_TOPIC, responseTopic),
+                        KeyValuePair(REQUEST_TTL_KEY, requestValidityWindowSeconds.toString())
+                    )
                 )
-            )),
-            request
+            ),
+            request,
+            flowExternalEventContext
         )
 
     /**
@@ -150,6 +167,7 @@ class CryptoFlowOpsTransformerImpl(
             }
         )
     }
+
     /**
      * Returns the value of the context key or null if it's not found.
      */

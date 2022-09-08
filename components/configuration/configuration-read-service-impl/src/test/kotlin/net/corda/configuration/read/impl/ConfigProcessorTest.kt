@@ -10,7 +10,7 @@ import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleEvent
 import net.corda.messaging.api.records.Record
-import net.corda.schema.configuration.ConfigKeys.JDBC_URL
+import net.corda.schema.configuration.DatabaseConfig.JDBC_URL
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals

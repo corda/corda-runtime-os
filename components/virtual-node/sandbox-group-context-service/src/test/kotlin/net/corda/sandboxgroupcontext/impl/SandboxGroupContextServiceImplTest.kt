@@ -216,7 +216,7 @@ class SandboxGroupContextServiceImplTest {
         val cpks1 = setOf(Helpers.mockTrivialCpk("MAIN1", "example", "1.0.0"))
         val ctx1 = createVirtualNodeContextForFlow(
             holdingIdentity1,
-            cpks1.map { SecureHash.create("DUMMY:1234567890abcdef") }.toSet()
+            cpks1.map { SecureHash.parse("DUMMY:1234567890abcdef") }.toSet()
         )
         val sandboxCreationService = Helpers.mockSandboxCreationService(listOf(cpks1))
         val cpkService = CpkReadServiceFake(cpks1)

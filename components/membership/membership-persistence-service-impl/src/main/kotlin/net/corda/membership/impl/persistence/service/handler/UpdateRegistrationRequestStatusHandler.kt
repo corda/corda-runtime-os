@@ -1,5 +1,6 @@
 package net.corda.membership.impl.persistence.service.handler
 
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.UpdateRegistrationRequestStatus
 import net.corda.membership.datamodel.RegistrationRequestEntity
@@ -15,9 +16,17 @@ internal class UpdateRegistrationRequestStatusHandler(
                 RegistrationRequestEntity::class.java,
                 request.registrationId
             ) ?: throw MembershipPersistenceException("Could not find registration request: ${request.registrationId}")
-            registrationRequest.status = request.registrationStatus.name
-            registrationRequest.lastModified = clock.instant()
-            em.merge(registrationRequest)
+            val currentStatus = RegistrationStatus.valueOf(registrationRequest.status)
+            if (currentStatus.ordinal > request.registrationStatus.ordinal) {
+                logger.info(
+                    "Could not update status of registration ${request.registrationId} from $currentStatus to " +
+                        "${request.registrationStatus}, will ignore the update"
+                )
+            } else {
+                registrationRequest.status = request.registrationStatus.name
+                registrationRequest.lastModified = clock.instant()
+                em.merge(registrationRequest)
+            }
         }
     }
 }

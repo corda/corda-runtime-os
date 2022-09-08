@@ -3,6 +3,10 @@ plugins {
     id 'java'
 }
 
+ext {
+    releasable = true
+}
+
 group 'net.corda.cli.deployment'
 
 configurations {
@@ -29,7 +33,7 @@ tasks.register('copyCliFiles') {
     }
 }
 
-task cliInstallArchive(type: Zip) {
+tasks.register("cliInstallArchive", Zip) {
     dependsOn tasks.named('copyCliFiles')
     from "$buildDir/cli"
     include '*'
@@ -77,8 +81,8 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
         baseImageName = (cordaCliIncluded) ? "corda-os-docker-dev.software.r3.com/corda-os-cli" : "corda-os-docker.software.r3.com/corda-os-cli"
     }
 
-    if (project.hasProperty('cliBasebaseTag')) {
-        baseImageTag = cliBasebaseTag
+    if (project.hasProperty('cliBaseTag')) {
+        baseImageTag = cliBaseTag
     } else {
         it.baseImageTag = (cordaCliIncluded) ? "latest-local" : "unstable"
     }
@@ -94,6 +98,20 @@ publishing {
             artifactId "corda-cli-installer"
             groupId project.group
             artifact cliInstallArchive
+        }
+    }
+    if (project.hasProperty('maven.repo.s3') && project.hasProperty('releasable')) {
+        publishing {
+            repositories {
+                maven {
+                    url = project.findProperty('maven.repo.s3')
+                    credentials(AwsCredentials) {
+                        accessKey "${System.getenv('AWS_ACCESS_KEY_ID')}"
+                        secretKey "${System.getenv('AWS_SECRET_ACCESS_KEY')}"
+                        sessionToken "${System.getenv('AWS_SESSION_TOKEN')}"
+                    }
+                }
+            }
         }
     }
 }

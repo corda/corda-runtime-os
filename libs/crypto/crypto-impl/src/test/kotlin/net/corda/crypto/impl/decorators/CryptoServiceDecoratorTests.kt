@@ -12,10 +12,10 @@ import net.corda.v5.cipher.suite.SigningSpec
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.failures.CryptoException
-import net.corda.v5.crypto.failures.CryptoRetryException
-import net.corda.v5.crypto.failures.CryptoSignatureException
-import net.corda.v5.crypto.failures.CryptoThrottlingException
+import net.corda.v5.crypto.exceptions.CryptoException
+import net.corda.v5.crypto.exceptions.CryptoRetryException
+import net.corda.v5.crypto.exceptions.CryptoSignatureException
+import net.corda.v5.crypto.exceptions.CryptoThrottlingException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows

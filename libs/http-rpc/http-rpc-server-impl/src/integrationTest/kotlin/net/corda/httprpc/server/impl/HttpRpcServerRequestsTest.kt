@@ -13,7 +13,7 @@ import net.corda.httprpc.tools.HttpVerb.DELETE
 import net.corda.httprpc.tools.HttpVerb.GET
 import net.corda.httprpc.tools.HttpVerb.POST
 import net.corda.httprpc.tools.HttpVerb.PUT
-import net.corda.v5.base.util.NetworkHostAndPort
+import net.corda.utilities.NetworkHostAndPort
 import org.apache.http.HttpStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
@@ -127,9 +127,9 @@ class HttpRpcServerRequestsTest : HttpRpcServerTestBase() {
     }
 
     @Test
-    fun `GET void returns nothing`() {
+    fun `GET void returns NO_CONTENT and no body`() {
         val pingResponse = client.call(GET, WebRequest<Any>("health/void"), userName, password)
-        assertEquals(HttpStatus.SC_OK, pingResponse.responseStatus)
+        assertEquals(HttpStatus.SC_NO_CONTENT, pingResponse.responseStatus)
         assertEquals("", pingResponse.body)
     }
 

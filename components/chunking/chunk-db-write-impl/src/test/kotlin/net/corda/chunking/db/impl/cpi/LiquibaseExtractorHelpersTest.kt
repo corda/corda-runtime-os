@@ -88,8 +88,8 @@ internal class LiquibaseExtractorHelpersTest {
         val cpk = mockCpk(
             "Test",
             "1.0",
-            SecureHash.create("ALGO:1234567890"),
-            SecureHash.create("ALGO:0987654321")
+            SecureHash.parse("ALGO:1234567890"),
+            SecureHash.parse("ALGO:0987654321")
         )
 
         val obj = LiquibaseExtractorHelpers()
@@ -103,8 +103,8 @@ internal class LiquibaseExtractorHelpersTest {
         val cpk = mockCpk(
             "Test",
             "1.0",
-            SecureHash.create("ALGO:1234567890"),
-            SecureHash.create("ALGO:0987654321")
+            SecureHash.parse("ALGO:1234567890"),
+            SecureHash.parse("ALGO:0987654321")
         )
 
         val obj = LiquibaseExtractorHelpers()
@@ -118,8 +118,8 @@ internal class LiquibaseExtractorHelpersTest {
         val cpk = mockCpk(
             "Test",
             "1.1",
-            SecureHash.create("ALGO:1234567890"),
-            SecureHash.create("ALGO:0987654321")
+            SecureHash.parse("ALGO:1234567890"),
+            SecureHash.parse("ALGO:0987654321")
         )
 
         val obj = LiquibaseExtractorHelpers()
@@ -133,8 +133,8 @@ internal class LiquibaseExtractorHelpersTest {
         val cpk = mockCpk(
             "Test",
             "1.2",
-            SecureHash.create("ALGO:1234567890"),
-            SecureHash.create("ALGO:0987654321")
+            SecureHash.parse("ALGO:1234567890"),
+            SecureHash.parse("ALGO:0987654321")
         )
 
         val obj = LiquibaseExtractorHelpers()
@@ -148,8 +148,8 @@ internal class LiquibaseExtractorHelpersTest {
         val cpk = mockCpk(
             "Test",
             "1.2",
-            SecureHash.create("ALGO:1234567890"),
-            SecureHash.create("ALGO:0987654321")
+            SecureHash.parse("ALGO:1234567890"),
+            SecureHash.parse("ALGO:0987654321")
         )
 
 
@@ -184,8 +184,8 @@ internal class LiquibaseExtractorHelpersTest {
         val cpk = mockCpk(
             "Test",
             "1.2",
-            SecureHash.create("ALGO:1234567890"),
-            SecureHash.create("ALGO:0987654321")
+            SecureHash.parse("ALGO:1234567890"),
+            SecureHash.parse("ALGO:0987654321")
         )
 
         val obj = LiquibaseExtractorHelpers()

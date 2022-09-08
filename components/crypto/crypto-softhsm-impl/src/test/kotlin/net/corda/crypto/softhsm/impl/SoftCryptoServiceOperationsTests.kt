@@ -19,6 +19,7 @@ import net.corda.v5.cipher.suite.CRYPTO_TENANT_ID
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.CryptoService
 import net.corda.v5.cipher.suite.CryptoServiceExtensions
+import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.GeneratedWrappedKey
 import net.corda.v5.cipher.suite.KeyGenerationSpec
 import net.corda.v5.cipher.suite.KeyMaterialSpec
@@ -27,7 +28,6 @@ import net.corda.v5.cipher.suite.SigningWrappedSpec
 import net.corda.v5.cipher.suite.schemes.COMPOSITE_KEY_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.cipher.suite.schemes.KeySchemeCapability
-import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME

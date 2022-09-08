@@ -22,6 +22,11 @@ object CryptoTenants {
     const val RPC_API: String = "rpc-api"
 
     /**
+     * Tenant id of the packaging services
+     */
+    const val CODE_SIGNER: String = "codesigner"
+
+    /**
      * Lists all cluster level tenants which can own asymmetric key pairs
      */
     val allClusterTenants: Set<String> = setOf(

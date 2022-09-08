@@ -88,15 +88,8 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
     }
 
     /**
-     * Stop the subscription.
+     * Close the subscription.
      */
-    override fun stop() {
-        if (!stopped) {
-            stopConsumeLoop()
-            lifecycleCoordinator.stop()
-        }
-    }
-
     override fun close() {
         if (!stopped) {
             stopConsumeLoop()
@@ -154,13 +147,13 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
                     "$errorMsg Fatal error occurred. Closing subscription.", ex
                 )
                 lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, errorMsg)
-                stop()
+                close()
             } catch (ex: Exception) {
                 log.error(
                     "$errorMsg Attempts: $attempts. Unexpected error occurred. Closing subscription.", ex
                 )
                 lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, errorMsg)
-                stop()
+                close()
             }
         }
         lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)

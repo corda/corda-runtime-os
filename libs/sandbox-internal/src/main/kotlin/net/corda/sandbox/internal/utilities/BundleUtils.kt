@@ -48,4 +48,11 @@ internal class BundleUtils @Activate constructor(
     fun refreshBundles(bundles: Collection<Bundle>, refreshListener: FrameworkListener) {
         systemBundle.adapt(FrameworkWiring::class.java).refreshBundles(bundles, refreshListener)
     }
+
+    /**
+     * Resolve all unresolved members of [bundles].
+     */
+    fun resolveBundles(bundles: Collection<Bundle>): Boolean {
+        return systemBundle.adapt(FrameworkWiring::class.java).resolveBundles(bundles)
+    }
 }

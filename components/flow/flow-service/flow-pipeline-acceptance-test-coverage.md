@@ -58,6 +58,7 @@ This document should be maintained so that we can ensure that we have quick visi
 - Given two sessions receiving a session data event for one session and a session close event for the other resumes the flow with an error ✅
 - Given two sessions receiving session close events for both sessions resumes the flow with an error ✅
 - Given two sessions receiving a session data and then close event for one session and a session data event for the other resumes the flow  ✅
+- Given a session, if it receives an out of order close and then an ordered data event, the flow resumes  ✅
 
 ## Closing
 
@@ -68,6 +69,7 @@ This document should be maintained so that we can ensure that we have quick visi
 - Calling 'close' on a closed and errored session schedules a wakeup event and sends no session close events ✅
 - Calling 'close' on errored sessions schedules a wakeup event and sends no session close events ✅
 - Receiving an out-of-order session close events does not resume the flow and sends a session ack ✅
+  Receiving an ordered session close event when waiting to receive data errors the flow ✅
 - Receiving a wakeup or session ack event does not resume the flow and resends any unacknowledged events ✅ (Still requires the resends to be asserted)
 - Receiving a session event for an unrelated session does not resume the flow and sends a session ack ✅
 - Receiving a session data event instead of a close resumes the flow with an error ✅
@@ -135,52 +137,16 @@ This document should be maintained so that we can ensure that we have quick visi
 - An initiated flow failing removes the flow's checkpoint publishes a failed flow status and schedules flow cleanup ✅
 - Given the flow has a WAIT_FOR_FINAL_ACK session receiving a session close event and then failing the flow schedules flow and session cleanup ✅
 
-## Crypto
+## External events
 
-### Signing
-
-- Requesting a signature sends a signing event and resumes after receiving the response ✅
-- Receiving a user error response resumes the flow with an error ✅
-- Receiving a retriable error response when the retry count is below the threshold resends the signing request and does not resume the flow ✅
-- Receiving a retriable error response when the retry count is above the threshold resumes the flow with an error ✅
-- Receive a retriable error response, retry the request, receive wakeup events, successful response received, flow continues ✅
-- Receiving a platform error response resumes the flow with an error ✅
-- Receiving a non-crypto event does not resume the flow ✅
-
-## Persistence
-
-### Persist Requests
-- Calling 'persist' on a flow sends an EntityRequest with payload PersistEntity ✅
-- Receiving a Unit response from a persist request resumes the flow ✅
-
-### Find Requests
-- Calling 'find' on a flow sends an EntityRequest with payload FindEntity ✅
-- Receiving a null response from a Find request resumes the flow ✅
-- Receiving bytes response from a Find request resumes the flow ✅
-
-### FindAll Requests
-
-- Calling 'findAll' on a flow sends an EntityRequest with payload FindAll ✅
-- Receiving a null response from a FindAll request resumes the flow ✅
-- Receiving bytes response from a FindAll request resumes the flow ✅
-
-### Merge Requests
-- Calling 'merge' on a flow sends an EntityRequest with payload MergeEntity ✅
-- Receiving a null response from a merge request resumes the flow ✅
-- Receiving bytes response from a Merge request resumes the flow ✅
-
-### Delete Requests
-- Calling 'delete' on a flow sends an EntityRequest with payload DeleteEntity ✅
-- Receiving a Unit response from a persist request resumes the flow ✅
-
-### Resend Logic 
-- Given a request has been sent with no response within the resend window, the request is not resent ✅
-- Given a request has been sent and the resend window has been surpased, the request is resent ✅
-
-### Error Handling
-- Given an entity request has been sent, if a response is received that does not match the request, ignore it ✅
-- Receive a 'retriable' error response, retry the request, successful response received, flow continues ✅
-- Receive a 'retriable' error response, retry the request max times, error response received always, flow errors ✅
-- Receive a 'retriable' error response, retry the request, receive wakeup events, successful response received, flow continues ✅
-- Receive a 'not ready' response, retry the request multiple times, success received eventually, flow continues ✅
-- Receive a 'fatal' response, does not retry the request, flow errors ✅
+- Sending an external event sends a payload created by an external event factory ✅
+- Receiving an external event response with the correct request id resumes the flow ✅
+- Receiving an external event response with the wrong request id does not resume the flow and ignores the response ✅
+- Given a flow has already received its external event response the flow can send another event and receive a response ✅
+- Receiving an event does not resend the external event unless a 'transient' error is received ✅
+- Receiving a 'transient' error response resends the external event if the retry window has been surpassed ✅
+- Receiving a 'transient' error response does not resend the external event if the retry window has not been surpassed ✅
+- Given a 'transient' error response has been received receiving an event will resend the external event if the retry window has been surpassed ✅
+- Given a 'transient' error response has been received receiving a successful response resumes the flow and does not resend the event ✅
+- Receiving a 'platform' error response resumes the flow with an error ✅
+- Receiving a 'fatal' error response DLQs the flow and does not resume ✅

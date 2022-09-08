@@ -4,21 +4,23 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.DistributionType
 import net.corda.data.membership.p2p.MembershipPackage
+import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
-import net.corda.membership.impl.registration.dynamic.handler.helpers.MembershipPackageFactory
-import net.corda.membership.impl.registration.dynamic.handler.helpers.MerkleTreeGenerator
-import net.corda.membership.impl.registration.dynamic.handler.helpers.P2pRecordsFactory
-import net.corda.membership.impl.registration.dynamic.handler.helpers.SignerFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
+import net.corda.membership.p2p.helpers.MembershipPackageFactory
+import net.corda.membership.p2p.helpers.MerkleTreeGenerator
+import net.corda.membership.p2p.helpers.SignerFactory
+import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.messaging.api.records.Record
@@ -114,9 +116,18 @@ internal class ApproveRegistrationHandler(
             )
         }
 
+        val persistApproveMessage = p2pRecordsFactory.createAuthenticatedMessageRecord(
+            source = approvedBy,
+            destination = approvedMember,
+            content = SetOwnRegistrationStatus(
+                registrationId,
+                RegistrationStatus.APPROVED
+            )
+        )
+
         return RegistrationHandlerResult(
             RegistrationState(registrationId, approvedMember, approvedBy),
-            memberToAllMembers + memberRecord + allMembersToNewMember
+            memberToAllMembers + memberRecord + allMembersToNewMember + persistApproveMessage
         )
     }
 

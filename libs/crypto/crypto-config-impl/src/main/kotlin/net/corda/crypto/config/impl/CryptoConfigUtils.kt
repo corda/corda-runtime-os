@@ -12,7 +12,7 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.v5.cipher.suite.ConfigurationSecrets
-import net.corda.v5.crypto.failures.CryptoException
+import net.corda.v5.crypto.exceptions.CryptoException
 import java.util.UUID
 
 

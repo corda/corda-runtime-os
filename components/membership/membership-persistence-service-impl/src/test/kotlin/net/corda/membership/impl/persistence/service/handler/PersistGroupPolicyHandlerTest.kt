@@ -9,8 +9,6 @@ import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistGroupPolicy
 import net.corda.data.membership.db.response.command.PersistGroupPolicyResponse
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.db.connection.manager.VirtualNodeDbType
-import net.corda.db.core.DbPrivilege
 import net.corda.db.schema.CordaDb
 import net.corda.membership.datamodel.GroupPolicyEntity
 import net.corda.orm.JpaEntitiesRegistry
@@ -26,6 +24,7 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import java.time.Instant
+import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
@@ -38,9 +37,11 @@ class PersistGroupPolicyHandlerTest {
     private val serializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
     }
-    val identity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group").toCorda()
+    private val identity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group").toCorda()
+    private val vaultDmlConnectionId = UUID(1, 2)
     private val nodeInfo = mock<VirtualNodeInfo> {
         on { holdingIdentity } doReturn identity
+        on { vaultDmlConnectionId } doReturn vaultDmlConnectionId
     }
     private val nodeInfoReadService = mock<VirtualNodeInfoReadService> {
         on { getByHoldingIdentityShortHash(any()) } doReturn nodeInfo
@@ -62,9 +63,8 @@ class PersistGroupPolicyHandlerTest {
     }
     private val connectionManager = mock<DbConnectionManager> {
         on {
-            getOrCreateEntityManagerFactory(
-                VirtualNodeDbType.VAULT.getConnectionName(identity.shortHash),
-                DbPrivilege.DML,
+            createEntityManagerFactory(
+                vaultDmlConnectionId,
                 entitySet
             )
         } doReturn entityManagerFactory

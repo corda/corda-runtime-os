@@ -12,7 +12,6 @@ dependencies {
     compileOnly "org.osgi:org.osgi.service.component.annotations"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation project(":libs:utilities")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "net.corda:corda-avro-schema:$cordaApiVersion"
     implementation "net.corda:corda-config-schema:$cordaApiVersion"
@@ -25,6 +24,7 @@ dependencies {
     implementation project(":libs:configuration:configuration-merger")
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:lifecycle:lifecycle")
+    implementation project(":libs:utilities")
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jacksonVersion"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
