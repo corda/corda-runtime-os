@@ -5,6 +5,7 @@ import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.config.impl.createCryptoSmartConfigFactory
 import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.libs.configuration.datamodel.ConfigEntity
+import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import picocli.CommandLine
 import java.io.File
 import java.io.FileWriter
@@ -71,7 +72,7 @@ class CryptoConfigSubcommand : Runnable {
         ).root().render(ConfigRenderOptions.concise())
 
         val entity = ConfigEntity(
-            section = "",
+            section = CRYPTO_CONFIG,
             config = config,
             schemaVersionMajor = 1,
             schemaVersionMinor = 0,

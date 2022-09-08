@@ -14,6 +14,7 @@ import net.corda.libs.configuration.datamodel.ConfigEntity
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceImpl
 import net.corda.libs.configuration.secret.SecretsCreateService
+import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.v5.base.util.contextLogger
 import java.security.SecureRandom
 import java.time.Instant
@@ -206,7 +207,7 @@ class PostgresDbSetup(
         ).root().render(ConfigRenderOptions.concise())
 
         val entity = ConfigEntity(
-            section = "",
+            section = CRYPTO_CONFIG,
             config = config,
             schemaVersionMajor = 1,
             schemaVersionMinor = 0,
