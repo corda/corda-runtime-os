@@ -153,10 +153,10 @@ class ContextPropagationMainSubFlow : SubFlow<MainSubFlowOutput> {
 
         val user1 = flowEngine.flowContextProperties.get("user1") ?: ERROR_VALUE
 
-        val session = flowMessaging.initiateFlow(flowEngine.virtualNodeName)
-
-        // user facing session specific context property
-        session.contextProperties["user3"] = "user3-set"
+        val session = flowMessaging.initiateFlow(flowEngine.virtualNodeName) { flowContextProperties ->
+            // user session specific context property
+            flowContextProperties["user3"] = "user3-set"
+        }
 
         // Initiated flow will send its context back via a message
         val initiatedFlowOutput = session.receive<InitiatedFlowOutput>().unwrap { it }

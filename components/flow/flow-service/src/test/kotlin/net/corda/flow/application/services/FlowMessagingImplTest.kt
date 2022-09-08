@@ -4,6 +4,7 @@ import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.ALICE_X500_NAME
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
 import net.corda.flow.utils.mutableKeyValuePairList
+import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -27,13 +28,13 @@ class FlowMessagingImplTest {
     private val flowSession = mock<FlowSession>()
 
     private val flowSessionFactory = mock<FlowSessionFactory>().apply {
-        whenever(createInitiatingFlowSession(any(), eq(ALICE_X500_NAME))).thenReturn(flowSession)
+        whenever(createInitiatingFlowSession(any(), eq(ALICE_X500_NAME), any())).thenReturn(flowSession)
     }
 
     private val flowMessaging = FlowMessagingImpl(mockFlowFiberService, flowSessionFactory)
 
     @Test
-    fun `initiateFlow creates an uninitiated FlowSession when the current flow stack item represents an initiating flow`() {
+    fun `initiateFlow creates an initiating FlowSession when the current flow stack item represents an initiating flow`() {
         whenever(flowStackService.peek()).thenReturn(
             FlowStackItem(
                 FLOW_NAME,
@@ -44,7 +45,27 @@ class FlowMessagingImplTest {
             )
         )
         flowMessaging.initiateFlow(ALICE_X500_NAME)
-        verify(flowSessionFactory).createInitiatingFlowSession(any(), eq(ALICE_X500_NAME))
+        verify(flowSessionFactory).createInitiatingFlowSession(any(), eq(ALICE_X500_NAME), eq(null))
+    }
+
+    @Test
+    fun `initiateFlow builder overload creates an initiating FlowSession passing a context builder`() {
+        whenever(flowStackService.peek()).thenReturn(
+            FlowStackItem(
+                FLOW_NAME,
+                true,
+                mutableListOf(),
+                mutableKeyValuePairList(),
+                mutableKeyValuePairList()
+            )
+        )
+
+        val builder = FlowContextPropertiesBuilder {
+            // do nothing
+        }
+
+        flowMessaging.initiateFlow(ALICE_X500_NAME, builder)
+        verify(flowSessionFactory).createInitiatingFlowSession(any(), eq(ALICE_X500_NAME), eq(builder))
     }
 
     @Test

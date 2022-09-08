@@ -11,6 +11,7 @@ import net.corda.flow.fiber.FlowLogicAndArgs;
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext;
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector;
 import net.corda.flow.state.FlowCheckpoint;
+import net.corda.flow.state.FlowContext;
 import net.corda.membership.read.MembershipGroupReader;
 import net.corda.serialization.checkpoint.CheckpointSerializer;
 import net.corda.v5.application.messaging.FlowSession;
@@ -45,13 +46,15 @@ public class FlowSessionImplJavaTest {
     );
     private final FlowFiber flowFiber = new FakeFiber(flowFiberExecutionContext);
     private final FlowFiberService flowFiberService = mock(FlowFiberService.class);
+    private final FlowContext flowContext = mock(FlowContext.class);
 
-    private final FlowSession session = FlowSessionImpl.Companion.asInitiatedSession(
+    private final FlowSession session = new FlowSessionImpl(
             new MemberX500Name("Alice", "Alice Corp", "LDN", "GB"),
             "session id",
             flowFiberService,
             flowFiberSerializationService,
-            new HashMap<String, String>()
+            flowContext,
+            FlowSessionImpl.Direction.INITIATED_SIDE
     );
 
     private static class FakeFiber implements FlowFiber {
@@ -103,7 +106,7 @@ public class FlowSessionImplJavaTest {
     public void beforeEach() {
         Map<String, byte[]> received = new HashMap<>();
         received.put("session id", new byte[]{1, 2, 3});
-        when(flowFiberSerializationService.serialize(any())).thenReturn(new SerializedBytes(new byte[]{ 1, 2, 3 }));
+        when(flowFiberSerializationService.serialize(any())).thenReturn(new SerializedBytes(new byte[]{1, 2, 3}));
         when(flowFiberSerializationService.deserialize(any(byte[].class), any())).thenReturn(1);
         when(flowSandboxGroupContext.getDependencyInjector()).thenReturn(sandboxDependencyInjector);
         when(flowSandboxGroupContext.getCheckpointSerializer()).thenReturn(checkpointSerializer);

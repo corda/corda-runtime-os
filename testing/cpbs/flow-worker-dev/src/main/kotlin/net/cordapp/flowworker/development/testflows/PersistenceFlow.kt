@@ -36,10 +36,18 @@ class PersistenceFlow : RPCStartableFlow {
         try {
             val inputs = requestBody.getRequestBodyAs<TestFlowInput>(jsonMarshallingService)
 
+            persistenceService.persist(123)
+            persistenceService.remove(123)
+
             val id = UUID.randomUUID()
             val dog = Dog(id, "Penny", Instant.now(), "Alice")
             persistenceService.persist(dog)
             log.info("Persisted Dog: $dog")
+
+            val id2 = UUID.randomUUID()
+            val dog2 = Dog(id2, "Lenard", Instant.now(), "Alice")
+            persistenceService.persist(listOf(dog2))
+            log.info("Persisted Dog (bulk): $dog2")
 
             if (inputs.throwException) {
                 try {
@@ -53,6 +61,8 @@ class PersistenceFlow : RPCStartableFlow {
 
             val foundDog = persistenceService.find(Dog::class.java, id)
             log.info("Found Dog: $foundDog")
+            val foundDogs = persistenceService.find(Dog::class.java, listOf(id, id2))
+            log.info("Found Dogs (bulk): $foundDogs")
 
             log.info("Launching name query")
             val namedQueryDog = persistenceService.query("Dog.summon", Dog::class.java)
@@ -72,16 +82,23 @@ class PersistenceFlow : RPCStartableFlow {
             val mergeDog = Dog(id, "Penny", Instant.now(), "Bob")
             val updatedDog = persistenceService.merge(mergeDog)
             log.info("Updated Dog: $updatedDog")
+            val mergeDog2 = Dog(id2, "Lenard", Instant.now(), "Bob")
+            val updatedDog2 = persistenceService.merge(listOf(mergeDog2))
+            log.info("Updated Dog (bulk): $updatedDog2")
 
             val findDogAfterMerge = persistenceService.find(Dog::class.java, id)
             log.info("Found Updated Dog: $findDogAfterMerge")
+            val findDogsAfterMerge = persistenceService.find(Dog::class.java, listOf(id, id2))
+            log.info("Found Updated Dogs (bulk): $findDogsAfterMerge")
 
             if (findDogAfterMerge != null && inputs.inputValue == "delete") {
                 persistenceService.remove(findDogAfterMerge)
                 log.info("Deleted Dog")
+                persistenceService.remove(findDogsAfterMerge)
+                log.info("Deleted Dogs (bulk)")
 
-                val dogFindNull = persistenceService.find(Dog::class.java, id)
-                log.info("Query for deleted dog returned: $dogFindNull")
+                val findDeletedDogs = persistenceService.find(Dog::class.java, listOf(id, id2))
+                log.info("Query for deleted dog returned: $findDeletedDogs")
             }
 
             return jsonMarshallingService.format("Dog operations are complete")

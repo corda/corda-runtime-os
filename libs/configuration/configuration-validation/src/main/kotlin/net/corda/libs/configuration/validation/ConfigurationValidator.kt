@@ -1,5 +1,6 @@
 package net.corda.libs.configuration.validation
 
+import com.typesafe.config.Config
 import java.io.InputStream
 import net.corda.libs.configuration.SmartConfig
 import net.corda.v5.base.versioning.Version
@@ -54,4 +55,17 @@ interface ConfigurationValidator {
      * to the defaults defined in the schema for this config [key]
      */
     fun validate(key: String, config: SmartConfig, schemaInput: InputStream, applyDefaults: Boolean = false)
+
+    /**
+     * Retrieves default values from configuration schema.
+     *
+     * @param key The configuration key
+     * @param version The schema version
+     *
+     * @throws ConfigurationValidationException If the configuration defaults retrieval fails
+     * @throws ConfigurationSchemaFetchException If some or all of the requested schema does not exist. This is most
+     *                                           likely to happen due to an incorrect version being provided
+     * @return default values from configuration schema
+     */
+    fun getDefaults(key: String, version: Version) : Config
 }

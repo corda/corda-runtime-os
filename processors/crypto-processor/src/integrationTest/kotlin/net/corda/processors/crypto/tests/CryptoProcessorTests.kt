@@ -298,6 +298,7 @@ class CryptoProcessorTests {
                         signerSummaryHash = null
                     ),
                     cryptoDmlConnectionId = connectionIds.getValue(vnodeDb.name),
+                    uniquenessDmlConnectionId = UUID.randomUUID(),
                     vaultDmlConnectionId = UUID.randomUUID(),
                     timestamp = Instant.now()
                 )

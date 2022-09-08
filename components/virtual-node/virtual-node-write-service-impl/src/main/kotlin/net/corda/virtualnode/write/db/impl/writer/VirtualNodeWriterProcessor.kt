@@ -12,6 +12,7 @@ import net.corda.data.virtualnode.VirtualNodeStateChangeResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.connection.manager.VirtualNodeDbType.CRYPTO
+import net.corda.db.connection.manager.VirtualNodeDbType.UNIQUENESS
 import net.corda.db.connection.manager.VirtualNodeDbType.VAULT
 import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.DDL
@@ -182,6 +183,8 @@ internal class VirtualNodeWriterProcessor(
                     this.holdingIdentity.vaultDMLConnectionId!!,
                     this.holdingIdentity.cryptoDDLConnectionId,
                     this.holdingIdentity.cryptoDMLConnectionId!!,
+                    this.holdingIdentity.uniquenessDDLConnectionId,
+                    this.holdingIdentity.uniquenessDMLConnectionId!!,
                     this.holdingIdentity.hsmConnectionId,
                     VirtualNodeState.valueOf(this.virtualNodeState),
                     this.entityVersion,
@@ -260,6 +263,10 @@ internal class VirtualNodeWriterProcessor(
             return "If Crypto DDL connection is provided, Crypto DML connection needs to be provided as well."
         }
 
+        if (!uniquenessDdlConnection.isNullOrBlank() && uniquenessDmlConnection.isNullOrBlank()) {
+            return "If Uniqueness DDL connection is provided, Uniqueness DML connection needs to be provided as well."
+        }
+
         try {
             MemberX500Name.parse(x500Name)
         } catch (e: Exception) {
@@ -307,7 +314,9 @@ internal class VirtualNodeWriterProcessor(
                             putConnection(entityManager, vNodeDbs, VAULT, DDL, updateActor),
                             putConnection(entityManager, vNodeDbs, VAULT, DML, updateActor)!!,
                             putConnection(entityManager, vNodeDbs, CRYPTO, DDL, updateActor),
-                            putConnection(entityManager, vNodeDbs, CRYPTO, DML, updateActor)!!
+                            putConnection(entityManager, vNodeDbs, CRYPTO, DML, updateActor)!!,
+                            putConnection(entityManager, vNodeDbs, UNIQUENESS, DDL, updateActor),
+                            putConnection(entityManager, vNodeDbs, UNIQUENESS, DML, updateActor)!!,
                         )
                     virtualNodeEntityRepository.putHoldingIdentity(entityManager, holdingIdentity, dbConnections)
                     virtualNodeEntityRepository.putVirtualNode(entityManager, holdingIdentity, cpiId)
@@ -393,6 +402,8 @@ internal class VirtualNodeWriterProcessor(
                 vaultDmlConnectionId,
                 cryptoDdlConnectionId,
                 cryptoDmlConnectionId,
+                uniquenessDdlConnectionId,
+                uniquenessDmlConnectionId,
                 timestamp = clock.instant(),
                 state = VirtualNodeInfo.DEFAULT_INITIAL_STATE
             )
@@ -463,6 +474,8 @@ internal class VirtualNodeWriterProcessor(
                 dbConnections.vaultDmlConnectionId.toString(),
                 dbConnections.cryptoDdlConnectionId?.toString(),
                 dbConnections.cryptoDmlConnectionId.toString(),
+                dbConnections.uniquenessDdlConnectionId?.toString(),
+                dbConnections.uniquenessDmlConnectionId.toString(),
                 null,
                 VirtualNodeInfo.DEFAULT_INITIAL_STATE.name
             )

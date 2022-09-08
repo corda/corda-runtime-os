@@ -124,7 +124,7 @@ class MembershipPackageFactoryTest {
                     clock.instant(),
                 )
             )
-            it.assertThat(membershipPackage.cpiWhitelist).isNull()
+            it.assertThat(membershipPackage.cpiAllowList).isNull()
             it.assertThat(membershipPackage.groupParameters).isNull()
         }
     }

@@ -5,8 +5,7 @@ import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberSerializationService
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.state.impl.FlatSerializableContext
-import net.corda.flow.state.impl.MutableFlatSerializableContext
+import net.corda.flow.state.FlowContext
 import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.messaging.FlowInfo
 import net.corda.v5.application.messaging.FlowSession
@@ -16,53 +15,23 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 
-@Suppress("TooManyFunctions")
-class FlowSessionImpl private constructor(
+@Suppress("LongParameterList")
+class FlowSessionImpl(
     override val counterparty: MemberX500Name,
     private val sourceSessionId: String,
     private val flowFiberService: FlowFiberService,
     private val flowFiberSerializationService: FlowFiberSerializationService,
+    private val flowContext: FlowContext,
     direction: Direction
 ) : FlowSession {
 
-    companion object {
-        fun asInitiatingSession(
-            counterparty: MemberX500Name,
-            sourceSessionId: String,
-            flowFiberService: FlowFiberService,
-            flowFiberSerializationService: FlowFiberSerializationService
-        ): FlowSession =
-            FlowSessionImpl(
-                counterparty,
-                sourceSessionId,
-                flowFiberService,
-                flowFiberSerializationService,
-                Direction.INITIATING_SIDE
-            )
-
-        fun asInitiatedSession(
-            counterparty: MemberX500Name,
-            sourceSessionId: String,
-            flowFiberService: FlowFiberService,
-            flowFiberSerializationService: FlowFiberSerializationService,
-            contextProperties: Map<String, String>
-        ) = FlowSessionImpl(
-            counterparty,
-            sourceSessionId,
-            flowFiberService,
-            flowFiberSerializationService,
-            Direction.INITIATED_SIDE
-        ).apply {
-            sessionLocalFlowContext = FlatSerializableContext(
-                contextUserProperties = emptyMap(),
-                contextPlatformProperties = contextProperties
-            )
-        }
-
+    private companion object {
         private val log = contextLogger()
     }
 
-    private enum class Direction {
+    override val contextProperties: FlowContextProperties = flowContext
+
+    enum class Direction {
         INITIATING_SIDE,
         INITIATED_SIDE
     }
@@ -74,31 +43,6 @@ class FlowSessionImpl private constructor(
 
     private val fiber: FlowFiber get() = flowFiberService.getExecutingFiber()
 
-    /**
-     * This class can be serialized, so we need to ensure all properties support that too. In this case that means we
-     * cannot touch the executing fiber when setting or getting this property, because we might not be in one. Instead
-     * that is done when [contextProperties] is requested or [confirmSession] called, because both of those things can
-     * only happen inside a fiber by contract.
-     */
-    private var sessionLocalFlowContext: FlatSerializableContext? = null
-
-    override val contextProperties: FlowContextProperties
-        get() {
-            initialiseSessionLocalFlowContext()
-            return sessionLocalFlowContext!!
-        }
-
-    private fun initialiseSessionLocalFlowContext() {
-        if (sessionLocalFlowContext == null) {
-            with(fiber.getExecutionContext().flowCheckpoint.flowContext) {
-                sessionLocalFlowContext = MutableFlatSerializableContext(
-                    contextUserProperties = this.flattenUserProperties(),
-                    contextPlatformProperties = this.flattenPlatformProperties()
-                )
-            }
-        }
-    }
-
     @Suspendable
     override fun getCounterpartyFlowInfo(): FlowInfo {
         TODO()
@@ -106,7 +50,7 @@ class FlowSessionImpl private constructor(
 
     @Suspendable
     override fun <R : Any> sendAndReceive(receiveType: Class<R>, payload: Any): UntrustworthyData<R> {
-        enforceNotPrimitive(receiveType)
+        requireBoxedType(receiveType)
         confirmSession()
         val request = FlowIORequest.SendAndReceive(mapOf(sourceSessionId to serialize(payload)))
         val received = fiber.suspend(request)
@@ -115,7 +59,7 @@ class FlowSessionImpl private constructor(
 
     @Suspendable
     override fun <R : Any> receive(receiveType: Class<R>): UntrustworthyData<R> {
-        enforceNotPrimitive(receiveType)
+        requireBoxedType(receiveType)
         confirmSession()
         val request = FlowIORequest.Receive(setOf(sourceSessionId))
         val received = fiber.suspend(request)
@@ -142,13 +86,12 @@ class FlowSessionImpl private constructor(
     @Suspendable
     private fun confirmSession() {
         if (!isSessionConfirmed) {
-            initialiseSessionLocalFlowContext()
             fiber.suspend(
                 FlowIORequest.InitiateFlow(
                     counterparty,
                     sourceSessionId,
-                    contextUserProperties = sessionLocalFlowContext!!.flattenUserProperties(),
-                    contextPlatformProperties = sessionLocalFlowContext!!.flattenPlatformProperties()
+                    contextUserProperties = flowContext.flattenUserProperties(),
+                    contextPlatformProperties = flowContext.flattenPlatformProperties()
                 )
             )
             isSessionConfirmed = true
@@ -158,7 +101,7 @@ class FlowSessionImpl private constructor(
     /**
      * Required to prevent class cast exceptions during AMQP serialization of primitive types.
      */
-    private fun enforceNotPrimitive(type: Class<*>) {
+    private fun requireBoxedType(type: Class<*>) {
         require(!type.isPrimitive) { "Cannot receive primitive type $type" }
     }
 
