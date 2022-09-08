@@ -2,7 +2,7 @@
 
 Uploads and replaces a previously stored CPI record.
 The plugin purges any sandboxes running an overwritten version of a CPI and optionally
-vault data for the affected Virtual Nodes deleted.
+deletes vault data for the affected Virtual Nodes.
 
 ## commands
  - reset
