@@ -1,26 +1,10 @@
 {
     "$schema": "https://json-schema.org/draft/2019-09/schema",
-    "$id": "http://example.com/example.json",
+    "$id": "http://corda.net/corda-helm.json",
     "type": "object",
     "default": {},
     "title": "CORDA HELMCHART SCHEMA",
-    "required": [
-        "fullnameOverride",
-        "nameOverride",
-        "image",
-        "imagePullSecrets",
-        "imagePullPolicy",
-        "resources",
-        "logging",
-        "dumpHostPath",
-        "heapDumpOnOutOfMemoryError",
-        "openTelemetry",
-        "nodeSelector",
-        "db",
-        "kafka",
-        "bootstrap",
-        "workers"
-    ],
+    "additionalProperties": false,
     "properties": {
         "fullnameOverride": {
             "type": "string",
@@ -65,7 +49,9 @@
             "type": "array",
             "default": [],
             "title": "image pull secrets",
-            "items": {},
+            "items": {
+                "type":"string"
+            },
             "examples": [
                 []
             ]
@@ -73,8 +59,8 @@
         "imagePullPolicy": {
             "type": "string",
             "default": "Always",
-            "title": "imagePullPolicy",
-            "pattern":"^(Always|Never|IfNotPresent)$",
+            "title": "image pull policy",
+            "enum": ["Always", "Never", "IfNotPresent"],
             "examples": [
                 "Always"
             ]
@@ -93,21 +79,30 @@
                     "default": {},
                     "title": "the default CPU/memory resource limits for the Corda containers",
                     "required": [],
-                    "properties": {},
+                    "properties": {
+                        "cpu": {"type": "string"},
+                        "memory": {"type": "string"}
+                    },
+                    "additionalProperties": false,
                     "examples": [{
                         "cpu": "1",
-                        "memory": "20Gi"
+                        "memory": "2048Mi"
                     }]
+                    
                 },
                 "requests": {
                     "type": "object",
                     "default": {},
                     "title": "the default CPU/memory resource request for the Corda containers",
                     "required": [],
-                    "properties": {},
+                    "properties": {
+                        "cpu": {"type": "string"},
+                        "memory": {"type": "string"}
+                    },
+                    "additionalProperties": false,
                     "examples": [{
                         "cpu": "1",
-                        "memory": "20Gi"
+                        "memory": "2048Mi"
                     }]
                 }
             }
@@ -116,6 +111,7 @@
             "type": "object",
             "default": {},
             "title": "Logging configuration",
+            "additionalProperties": false,
             "required": [
                 "format",
                 "level"
@@ -128,7 +124,7 @@
                     "examples": [
                         "json"
                     ],
-                    "pattern": "^(json|text)$"
+                    "enum": ["json"]
 
                 },
                 "level": {
@@ -138,7 +134,7 @@
                     "examples": [
                         "warn"
                     ],
-                    "pattern": "^(all|trace|debug|info|warn|error|fatal|off)$"
+                    "enum": ["all","trace","debug","info","warn","error","fatal","off"]
                 }
             },
             "examples": [{
@@ -157,7 +153,7 @@
         "heapDumpOnOutOfMemoryError": {
             "type": "boolean",
             "default": false,
-            "title": "Enables capturing JVM heap dumps from Corda workers on an OutOfMemory error",
+            "title": "enables capturing JVM heap dumps from Corda workers on an OutOfMemory error",
             "examples": [
                 false,
                 true
@@ -167,7 +163,7 @@
         "openTelemetry": {
             "type": "object",
             "default": {},
-            "title": "Open Telemetry configuration",
+            "title": "open Telemetry configuration",
             "required": [
                 "enabled",
                 "endpoint",
@@ -183,6 +179,7 @@
                         true
                     ]
                 },
+                "additionalProperties": false,
                 "endpoint": {
                     "type": "string",
                     "default": "",
@@ -198,7 +195,7 @@
                     "examples": [
                         "grpc"
                     ],
-                    "pattern":"^(grpc|http/protobuf)$" 
+                    "enum": ["grpc","http/protobuf"]
                 }
             },
             "examples": [{
@@ -218,16 +215,17 @@
         "db": {
             "type": "object",
             "default": {},
-            "title": "Cluster database configuration",
+            "title": "cluster database configuration",
             "required": [
                 "cluster",
                 "clientImage"
             ],
+            "additionalProperties": false,
             "properties": {
                 "cluster": {
                     "type": "object",
                     "default": {},
-                    "title": "Cluster database configuration",
+                    "title": "cluster database configuration",
                     "required": [
                         "host",
                         "type",
@@ -239,6 +237,7 @@
                     ],
                     "properties": {
                         "host": {
+                            "format": "hostname",
                             "type": "string",
                             "default": "",
                             "title": "the cluster database host",
@@ -246,6 +245,7 @@
                                 ""
                             ]
                         },
+                        "additionalProperties": false,
                         "type": {
                             "type": "string",
                             "default": "postgresql",
@@ -268,7 +268,8 @@
                             "title": "the cluster database user",
                             "examples": [
                                 "user"
-                            ]
+                            ],
+                            "minLength": 1
                         },
                         "database": {
                             "type": "string",
@@ -295,8 +296,14 @@
                             ]
                         }
                     },
+                    "oneOf": [
+                        {
+                            "required": ["password","existingSecret"
+                        ]
+                        }
+                    ],
                     "examples": [{
-                        "host": "prereqs-postgresql.$PREREQS_NAMESPACE",
+                        "host": "prereqs-postgresql",
                         "type": "postgresql",
                         "port": 5432,
                         "user": "user",
@@ -312,6 +319,7 @@
                         "repository",
                         "tag"
                     ],
+                    "additionalProperties": false,
                     "properties": {
                         "registry": {
                             "type": "string",
@@ -330,11 +338,11 @@
                             ]
                         },
                         "tag": {
-                            "type": "number",
-                            "default": 14.4,
+                            "type": "string",
+                            "default": "14.4",
                             "title": "tag for image containing a db client, used to set up the db",
                             "examples": [
-                                14.4
+                                "14.4"
                             ]
                         }
                     },
@@ -370,13 +378,14 @@
                 "tls",
                 "sasl"
             ],
+            "additionalProperties": false,
             "properties": {
                 "bootstrapServers": {
                     "type": "string",
                     "default": "",
                     "title": "comma-separated list of Kafka bootstrap servers",
                     "examples": [
-                        "prereqs-kafka.:9092"
+                        "prereqs-kafka:9092"
                     ]
                 },
                 "topicPrefix": {
@@ -390,11 +399,11 @@
                 "tls": {
                     "type": "object",
                     "default": {},
-                    "title": "TLS configuration for client connections to Kafka",
+                    "title": "tls configuration for client connections to Kafka",
                     "required": [
-                        "enabled",
-                        "truststore"
+                        "enabled"
                     ],
+                    "additionalProperties": false,
                     "properties": {
                         "enabled": {
                             "type": "boolean",
@@ -411,9 +420,9 @@
                             "title": "if TLS is enabled, the truststore configuration for client connections to Kafka",
                             "required": [
                                 "secretRef",
-                                "type",
-                                "password"
+                                "type"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "secretRef": {
                                     "type": "object",
@@ -453,7 +462,7 @@
                                     "examples": [
                                         "PEM"
                                     ],
-                                    "pattern":"^(PEM|JKS)$"
+                                    "enum": ["PEM","JKS"]
                                 },
                                 "password": {
                                     "type": "string",
@@ -470,18 +479,19 @@
                 "sasl": {
                     "type": "object",
                     "default": {},
-                    "title": "SASL configuration for client connection to Kafka",
+                    "title": "sasl configuration for client connection to Kafka",
                     "required": [
                         "username",
                         "password",
                         "mechanism",
                         "enabled"
                     ],
+                    "additionalProperties": false,
                     "properties": {
                         "username": {
                             "type": "string",
                             "default": "user",
-                            "title": "SASL username for client connection to Kafka",
+                            "title": "sasl username for client connection to Kafka",
                             "examples": [
                                 "user"
                             ]
@@ -489,7 +499,7 @@
                         "password": {
                             "type": "string",
                             "default": "",
-                            "title": "SASL password for client connection to Kafka",
+                            "title": "sasl password for client connection to Kafka",
                             "examples": [
                                 ""
                             ]
@@ -497,7 +507,7 @@
                         "mechanism": {
                             "type": "string",
                             "default": "",
-                            "title": "SASL mechanism for client connection to Kafka",
+                            "title": "sasl mechanism for client connection to Kafka",
                             "examples": [
                                 "SCRAM-SHA-256"
                             ]
@@ -524,7 +534,7 @@
         "bootstrap": {
             "type": "object",
             "default": {},
-            "title": "Configuration for cluster bootstrap",
+            "title": "configuration for cluster bootstrap",
             "required": [
                 "initialAdminUser",
                 "db",
@@ -533,21 +543,27 @@
                 "resources",
                 "nodeSelector"
             ],
+            "additionalProperties": false,
             "properties": {
                 "initialAdminUser": {
                     "type": "object",
                     "default": {},
-                    "title": "Configuration for the initial user created with admin permissions",
+                    "title": "configuration for the initial user created with admin permissions",
                     "required": [
-                        "username",
-                        "password",
-                        "secretRef"
+                        "username"   
+                    ],
+                    "additionalProperties": false,
+                    "oneOf": [
+                        {
+                            "required": ["password","secretRef"
+                        ]
+                        }
                     ],
                     "properties": {
                         "username": {
                             "type": "string",
                             "default": "admin",
-                            "title": "Username for the initial admin user",
+                            "title": "username for the initial admin user",
                             "examples": [
                                 "admin"
                             ]
@@ -563,17 +579,18 @@
                         "secretRef": {
                             "type": "object",
                             "default": {},
-                            "title": "Reference to a Kubernetes secret that holds the initial admin user credentials to be used in preference to any provided via username and password",
+                            "title": "reference to a Kubernetes secret that holds the initial admin user credentials to be used in preference to any provided via username and password",
                             "required": [
                                 "name",
                                 "usernameKey",
                                 "passwordKey"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "name": {
                                     "type": "string",
                                     "default": "",
-                                    "title": "If specified, the name of an existing secret that contains the initial admin user credentials to be used in preference to any provided via username and password",
+                                    "title": "if specified, the name of an existing secret that contains the initial admin user credentials to be used in preference to any provided via username and password",
                                     "examples": [
                                         ""
                                     ]
@@ -581,7 +598,7 @@
                                 "usernameKey": {
                                     "type": "string",
                                     "default": "username",
-                                    "title": "The key name for the secret entry containing the initial admin user's username",
+                                    "title": "the key name for the secret entry containing the initial admin user's username",
                                     "examples": [
                                         "username"
                                     ]
@@ -589,7 +606,7 @@
                                 "passwordKey": {
                                     "type": "string",
                                     "default": "password",
-                                    "title": "The key name for the secret entry containing the initial admin user's password",
+                                    "title": "the key name for the secret entry containing the initial admin user's password",
                                     "examples": [
                                         "password"
                                     ]
@@ -604,26 +621,30 @@
                     },
                     "examples": [{
                         "username": "admin",
-                        "password": "",
+                        "password": "password"
+                    },
+                    {
                         "secretRef": {
                             "name": "",
                             "usernameKey": "username",
                             "passwordKey": "password"
                         }
-                    }]
+                    }
+                    ]
                 },
                 "db": {
                     "type": "object",
                     "default": {},
-                    "title": "Configuration for database bootstrap",
+                    "title": "configuration for database bootstrap",
                     "required": [
                         "enabled"
                     ],
+                    "additionalProperties": false,
                     "properties": {
                         "enabled": {
                             "type": "boolean",
                             "default": true,
-                            "title": "Indicates whether DB bootstrap is enabled as part of installation",
+                            "title": "indicates whether DB bootstrap is enabled as part of installation",
                             "examples": [
                                 true,
                                 false
@@ -637,7 +658,7 @@
                 "kafka": {
                     "type": "object",
                     "default": {},
-                    "title": "Configuration for Kafka bootstrap",
+                    "title": "configuration for Kafka bootstrap",
                     "required": [
                         "enabled",
                         "cleanup",
@@ -648,7 +669,7 @@
                         "enabled": {
                             "type": "boolean",
                             "default": true,
-                            "title": "Indicates whether Kafka bootstrap is enabled as part of installation",
+                            "title": "indicates whether Kafka bootstrap is enabled as part of installation",
                             "examples": [
                                 true,
                                 false
@@ -657,7 +678,7 @@
                         "cleanup": {
                             "type": "boolean",
                             "default": false,
-                            "title": "Specifies whether existing topics with the given prefix should be deleted before trying to create new ones (deletes all existing topics if no prefix is given)",
+                            "title": "specifies whether existing topics with the given prefix should be deleted before trying to create new ones (deletes all existing topics if no prefix is given)",
                             "examples": [
                                 false,
                                 true
@@ -666,7 +687,7 @@
                         "partitions": {
                             "type": "integer",
                             "default": 10,
-                            "title": "Kafka topic partitions",
+                            "title": "kafka topic partitions",
                             "examples": [
                                 10
                             ]
@@ -674,7 +695,7 @@
                         "replicas": {
                             "type": "integer",
                             "default": 3,
-                            "title": "Kafka topic replicas",
+                            "title": "kafka topic replicas",
                             "examples": [
                                 3
                             ]
@@ -690,17 +711,16 @@
                 "image": {
                     "type": "object",
                     "default": {},
-                    "title": "Configuration for CLI image used for bootstrap",
+                    "title": "configuration for CLI image used for bootstrap",
                     "required": [
-                        "registry",
-                        "repository",
-                        "tag"
+                        "repository"
                     ],
+                    "additionalProperties": false,
                     "properties": {
                         "registry": {
                             "type": "string",
                             "default": "",
-                            "title": "CLI image registry; defaults to image.registry",
+                            "title": "cli image registry; defaults to image.registry",
                             "examples": [
                                 ""
                             ]
@@ -708,7 +728,7 @@
                         "repository": {
                             "type": "string",
                             "default": "corda-os-plugins",
-                            "title": "CLI image repository",
+                            "title": "cli image repository",
                             "examples": [
                                 "corda-os-plugins"
                             ]
@@ -716,7 +736,7 @@
                         "tag": {
                             "type": "string",
                             "default": "",
-                            "title": "CLI default tag; defaults to image.tag",
+                            "title": "cli default tag; defaults to image.tag",
                             "examples": [
                                 ""
                             ]
@@ -736,16 +756,20 @@
                         "requests",
                         "limits"
                     ],
+                    "additionalProperties": false,
                     "properties": {
                         "requests": {
                             "type": "object",
                             "default": {},
                             "title": "the CPU/memory resource requests for the bootstrap containers",
                             "required": [],
-                            "properties": {},
+                            "properties": {
+                                "cpu": {"type": "string"},
+                                "memory": {"type": "string"}
+                            },
                             "examples": [{
                                 "cpu": "1",
-                                "memory": "20Gi"
+                                "memory": "2048Mi"
                             }]
                         },
                         "limits": {
@@ -753,21 +777,25 @@
                             "default": {},
                             "title": "the CPU/memory resource limits for the bootstrap containers",
                             "required": [],
-                            "properties": {},
+                            "properties": {
+                                "cpu": {"type": "string"},
+                                "memory": {"type": "string"}
+                            },
+                            "additionalProperties": false,
                             "examples": [{
                                 "cpu": "1",
-                                "memory": "20Gi"
+                                "memory": "2048Mi"
                             }]
                         }
                     },
                     "examples": [{
                         "requests": {
                             "cpu": "1",
-                            "memory": "20Gi"                            
+                            "memory": "2048Mi"                            
                         },
                         "limits": {
                             "cpu": "1",
-                            "memory": "20Gi"                            
+                            "memory": "2048Mi"                            
                         }
                     }]
                 },
@@ -794,6 +822,7 @@
                 "p2pLinkManager",
                 "p2pGateway"
             ],
+            "additionalProperties": false,
             "properties": {
                 "crypto": {
                     "type": "object",
@@ -807,6 +836,7 @@
                         "profiling",
                         "resources"
                     ],
+                    "additionalProperties": false,
                     "properties": {
                         "image": {
                             "type": "object",
@@ -817,6 +847,7 @@
                                 "repository",
                                 "tag"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "registry": {
                                     "type": "string",
@@ -850,6 +881,7 @@
                             }]
                         },
                         "replicaCount": {
+                            "minimum": 0,
                             "type": "integer",
                             "default": 1,
                             "title": "crypto worker replica count",
@@ -860,16 +892,17 @@
                         "debug": {
                             "type": "object",
                             "default": {},
-                            "title": "DB worker debug configuration",
+                            "title": "db worker debug configuration",
                             "required": [
                                 "enabled",
                                 "suspend"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
                                     "default": false,
-                                    "title": "run DB worker with debug enabled",
+                                    "title": "run crypto worker with debug enabled",
                                     "examples": [
                                         false,
                                         true
@@ -894,9 +927,7 @@
                             "type": "object",
                             "default": {},
                             "title": "logging configuration",
-                            "required": [
-                                "level"
-                            ],
+                            "additionalProperties": false,
                             "properties": {
                                 "level": {
                                     "type": "string",
@@ -915,11 +946,12 @@
                             "required": [
                                 "enabled"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
                                     "default": false,
-                                    "title": "run DB worker with profiling enabled",
+                                    "title": "run crypto worker with profiling enabled",
                                     "examples": [
                                         false,
                                         true
@@ -938,16 +970,21 @@
                                 "requests",
                                 "limits"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "requests": {
                                     "type": "object",
                                     "default": {},
                                     "title": "the CPU/memory resource requests for the crypto worker containers",
                                     "required": [],
-                                    "properties": {},
+                                    "properties": {
+                                        "cpu": {"type": "string"},
+                                        "memory": {"type": "string"}
+                                    },
+                                    "additionalProperties": false,
                                     "examples": [{
                                         "cpu": "1",
-                                        "memory": "20Gi"
+                                        "memory": "2048Mi"
                                     }]
                                 },
                                 "limits": {
@@ -955,21 +992,25 @@
                                     "default": {},
                                     "title": "the CPU/memory resource limits for the crypto worker containers",
                                     "required": [],
-                                    "properties": {},
+                                    "properties": {
+                                        "cpu": {"type": "string"},
+                                        "memory": {"type": "string"}
+                                    },
+                                    "additionalProperties": false,
                                     "examples": [{
                                         "cpu": "1",
-                                        "memory": "20Gi"
+                                        "memory": "2048Mi"
                                     }]
                                 }
                             },
                             "examples": [{
                                 "requests": {
                                     "cpu": "1",
-                                    "memory": "20Gi"
+                                    "memory": "2048Mi"
                                 },
                                 "limits": {
                                     "cpu": "1",
-                                    "memory": "20Gi"
+                                    "memory": "2048Mi"
                                 }
                             }]
                         }
@@ -978,32 +1019,28 @@
                 "db": {
                     "type": "object",
                     "default": {},
-                    "title": "DB worker image configuration",
+                    "title": "db worker image configuration",
                     "required": [
                         "image",
                         "replicaCount",
-                        "debug",
-                        "logging",
-                        "profiling",
-                        "salt",
-                        "passphrase",
                         "resources"
                     ],
                     "properties": {
                         "image": {
                             "type": "object",
                             "default": {},
-                            "title": "DB worker image configuration",
+                            "title": "db worker image configuration",
                             "required": [
                                 "registry",
                                 "repository",
                                 "tag"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "registry": {
                                     "type": "string",
                                     "default": "",
-                                    "title": "DB worker image registry, defaults to image.registry",
+                                    "title": "db worker image registry, defaults to image.registry",
                                     "examples": [
                                         "corda-os-docker.software.r3.com"
                                     ]
@@ -1011,7 +1048,7 @@
                                 "repository": {
                                     "type": "string",
                                     "default": "corda-os-db-worker",
-                                    "title": "DB worker image repository",
+                                    "title": "db worker image repository",
                                     "examples": [
                                         "corda-os-db-worker"
                                     ]
@@ -1019,7 +1056,7 @@
                                 "tag": {
                                     "type": "string",
                                     "default": "",
-                                    "title": "DB worker image tag, defaults to image.tag",
+                                    "title": "db worker image tag, defaults to image.tag",
                                     "examples": [
                                         ""
                                     ]
@@ -1034,7 +1071,7 @@
                         "replicaCount": {
                             "type": "integer",
                             "default": 1,
-                            "title": "DB worker replica count",
+                            "title": "db worker replica count",
                             "examples": [
                                 1
                             ]
@@ -1042,11 +1079,12 @@
                         "debug": {
                             "type": "object",
                             "default": {},
-                            "title": "DB worker debug configuration",
+                            "title": "db worker debug configuration",
                             "required": [
                                 "enabled",
                                 "suspend"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
@@ -1077,6 +1115,7 @@
                             "required": [
                                 "level"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "level": {
                                     "type": "string",
@@ -1098,6 +1137,7 @@
                             "required": [
                                 "enabled"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
@@ -1115,7 +1155,7 @@
                         "salt": {
                             "type": "string",
                             "default": "",
-                            "title": "DB worker salt, defaults to a value randomly-generated on install",
+                            "title": "db worker salt, defaults to a value randomly-generated on install",
                             "examples": [
                                 "password"
                             ]
@@ -1123,7 +1163,7 @@
                         "passphrase": {
                             "type": "string",
                             "default": "",
-                            "title": "DB worker passphrase, defaults to a value randomly-generated on install",
+                            "title": "db worker passphrase, defaults to a value randomly-generated on install",
                             "examples": [
                                 "password"
                             ]
@@ -1136,16 +1176,21 @@
                                 "requests",
                                 "limits"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "requests": {
                                     "type": "object",
                                     "default": {},
                                     "title": "the CPU/memory resource requests for the DB worker containers",
                                     "required": [],
-                                    "properties": {},
+                                    "properties": {
+                                        "cpu": {"type": "string"},
+                                        "memory": {"type": "string"}
+                                    },
+                                    "additionalProperties": false,
                                     "examples": [{
                                         "cpu": "1",
-                                        "memory": "20Gi"
+                                        "memory": "2048Mi"
                                     }]
                                 },
                                 "limits": {
@@ -1153,21 +1198,25 @@
                                     "default": {},
                                     "title": "the CPU/memory resource limits for the DB worker containers",
                                     "required": [],
-                                    "properties": {},
+                                    "properties": {
+                                        "cpu": {"type": "string"},
+                                        "memory": {"type": "string"}
+                                    },
+                                    "additionalProperties": false,
                                     "examples": [{
                                         "cpu": "1",
-                                        "memory": "20Gi"
+                                        "memory": "2048Mi"
                                     }]
                                 }
                             },
                             "examples": [{
                                 "requests": {
                                     "cpu": "1",
-                                    "memory": "20Gi"
+                                    "memory": "2048Mi"
                                 },
                                 "limits": {
                                     "cpu": "1",
-                                    "memory": "20Gi"
+                                    "memory": "2048Mi"
                                 }
                             }]
                         }
@@ -1194,11 +1243,11 @@
                         "resources": {
                             "requests": {
                                 "cpu": "1",
-                                "memory": "20Gi"
+                                "memory": "2048Mi"
                             },
                             "limits": {
                                 "cpu": "1",
-                                "memory": "20Gi"
+                                "memory": "2048Mi"
                             }
                         }
                     }]
@@ -1216,6 +1265,7 @@
                         "resources",
                         "verifyInstrumentation"
                     ],
+                    "additionalProperties": false,
                     "properties": {
                         "image": {
                             "type": "object",
@@ -1226,6 +1276,7 @@
                                 "repository",
                                 "tag"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "registry": {
                                     "type": "string",
@@ -1274,6 +1325,7 @@
                                 "enabled",
                                 "suspend"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
@@ -1306,6 +1358,7 @@
                             "required": [
                                 "level"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "level": {
                                     "type": "string",
@@ -1327,6 +1380,7 @@
                             "required": [
                                 "enabled"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
@@ -1349,16 +1403,21 @@
                                 "requests",
                                 "limits"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "requests": {
                                     "type": "object",
                                     "default": {},
                                     "title": "the CPU/memory resource requests for the flow worker containers",
                                     "required": [],
-                                    "properties": {},
+                                    "properties": {
+                                        "cpu": {"type": "string"},
+                                        "memory": {"type": "string"}
+                                    },
+                                    "additionalProperties": false,
                                     "examples": [{
                                         "cpu": "1",
-                                        "memory": "20Gi"
+                                        "memory": "2048Mi"
                                     }]
                                 },
                                 "limits": {
@@ -1366,21 +1425,25 @@
                                     "default": {},
                                     "title": "the CPU/memory resource limits for the flow worker containers",
                                     "required": [],
-                                    "properties": {},
+                                    "properties": {
+                                        "cpu": {"type": "string"},
+                                        "memory": {"type": "string"}
+                                    },
+                                    "additionalProperties": false,
                                     "examples": [{
                                         "cpu": "1",
-                                        "memory": "20Gi"
+                                        "memory": "2048Mi"
                                     }]
                                 }
                             },
                             "examples": [{
                                 "requests": {
                                     "cpu": "1",
-                                    "memory": "20Gi"
+                                    "memory": "2048Mi"
                                 },
                                 "limits": {
                                     "cpu": "1",
-                                    "memory": "20Gi"
+                                    "memory": "2048Mi"
                                 }
                             }]
                         },
@@ -1413,11 +1476,11 @@
                         "resources": {
                             "requests": {
                                 "cpu": "1",
-                                "memory": "20Gi"
+                                "memory": "2048Mi"
                             },
                             "limits": {
                                 "cpu": "1",
-                                "memory": "20Gi"
+                                "memory": "2048Mi"
                             }
                         },
                         "verifyInstrumentation": false
@@ -1435,6 +1498,7 @@
                         "profiling",
                         "resources"
                     ],
+                    "additionalProperties": false,
                     "properties": {
                         "image": {
                             "type": "object",
@@ -1445,6 +1509,7 @@
                                 "repository",
                                 "tag"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "registry": {
                                     "type": "string",
@@ -1493,6 +1558,7 @@
                                 "enabled",
                                 "suspend"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
@@ -1523,6 +1589,7 @@
                             "required": [
                                 "level"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "level": {
                                     "type": "string",
@@ -1544,6 +1611,7 @@
                             "required": [
                                 "enabled"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
@@ -1566,16 +1634,21 @@
                                 "requests",
                                 "limits"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "requests": {
                                     "type": "object",
                                     "default": {},
                                     "title": "the CPU/memory resource requests for the membership worker containers",
                                     "required": [],
-                                    "properties": {},
+                                    "properties": {
+                                        "cpu": {"type": "string"},
+                                        "memory": {"type": "string"}
+                                    },
+                                    "additionalProperties": false,
                                     "examples": [{
                                         "cpu": "1",
-                                        "memory": "20Gi"
+                                        "memory": "2048Mi"
                                     }]
                                 },
                                 "limits": {
@@ -1583,10 +1656,14 @@
                                     "default": {},
                                     "title": "the CPU/memory resource limits for the membership worker containers",
                                     "required": [],
-                                    "properties": {},
+                                    "properties": {
+                                        "cpu": {"type": "string"},
+                                        "memory": {"type": "string"}
+                                    },
+                                    "additionalProperties": false,
                                     "examples": [{
                                         "cpu": "1",
-                                        "memory": "20Gi"
+                                        "memory": "2048Mi"
                                     }]
                                 }
                             }
@@ -1613,11 +1690,11 @@
                         "resources": {
                             "requests": {
                                 "cpu": "1",
-                                "memory": "20Gi"
+                                "memory": "2048Mi"
                             },
                             "limits": {
                                 "cpu": "1",
-                                "memory": "20Gi"
+                                "memory": "2048Mi"
                             }
                         }
                     }]
@@ -1625,7 +1702,7 @@
                 "rpc": {
                     "type": "object",
                     "default": {},
-                    "title": "RPC worker configuration",
+                    "title": "rpc worker configuration",
                     "required": [
                         "image",
                         "replicaCount",
@@ -1635,11 +1712,12 @@
                         "resources",
                         "service"
                     ],
+                    "additionalProperties": false,
                     "properties": {
                         "image": {
                             "type": "object",
                             "default": {},
-                            "title": "RPC worker image configuration",
+                            "title": "rpc worker image configuration",
                             "required": [
                                 "registry",
                                 "repository",
@@ -1649,7 +1727,7 @@
                                 "registry": {
                                     "type": "string",
                                     "default": "",
-                                    "title": "RPC worker image registry, defaults to image.registry",
+                                    "title": "rpc worker image registry, defaults to image.registry",
                                     "examples": [
                                         "corda-os-docker.software.r3.com"
                                     ]
@@ -1657,7 +1735,7 @@
                                 "repository": {
                                     "type": "string",
                                     "default": "corda-os-rpc-worker",
-                                    "title": "RPC worker image repository",
+                                    "title": "rpc worker image repository",
                                     "examples": [
                                         "corda-os-rpc-worker"
                                     ]
@@ -1665,7 +1743,7 @@
                                 "tag": {
                                     "type": "string",
                                     "default": "",
-                                    "title": "RPC worker image tag, defaults to image.tag",
+                                    "title": "rpc worker image tag, defaults to image.tag",
                                     "examples": [
                                         ""
                                     ]
@@ -1680,7 +1758,7 @@
                         "replicaCount": {
                             "type": "integer",
                             "default": 1,
-                            "title": "RPC worker replica count",
+                            "title": "rpc worker replica count",
                             "examples": [
                                 1
                             ]
@@ -1688,11 +1766,12 @@
                         "debug": {
                             "type": "object",
                             "default": {},
-                            "title": "RPC worker debug configuration",
+                            "title": "rpc worker debug configuration",
                             "required": [
                                 "enabled",
                                 "suspend"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
@@ -1723,6 +1802,7 @@
                             "required": [
                                 "level"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "level": {
                                     "type": "string",
@@ -1740,10 +1820,11 @@
                         "profiling": {
                             "type": "object",
                             "default": {},
-                            "title": "RPC profiling configuration",
+                            "title": "rpc profiling configuration",
                             "required": [
                                 "enabled"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
@@ -1766,16 +1847,21 @@
                                 "requests",
                                 "limits"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "requests": {
                                     "type": "object",
                                     "default": {},
                                     "title": "the CPU/memory resource requests for the RPC worker containers",
                                     "required": [],
-                                    "properties": {},
+                                    "properties": {
+                                        "cpu": {"type": "string"},
+                                        "memory": {"type": "string"}
+                                    },
+                                    "additionalProperties": false,
                                     "examples": [{
                                         "cpu": "1",
-                                        "memory": "20Gi"
+                                        "memory": "2048Mi"
                                     }]
                                 },
                                 "limits": {
@@ -1783,34 +1869,39 @@
                                     "default": {},
                                     "title": "the CPU/memory resource limits for the RPC worker containers",
                                     "required": [],
-                                    "properties": {},
+                                    "properties": {
+                                        "cpu": {"type": "string"},
+                                        "memory": {"type": "string"}
+                                    },
+                                    "additionalProperties": false,
                                     "examples": [{
                                         "cpu": "1",
-                                        "memory": "20Gi"
+                                        "memory": "2048Mi"
                                     }]
                                 }
                             },
                             "examples": [{
                                 "requests": {
                                     "cpu": "1",
-                                    "memory": "20Gi"
+                                    "memory": "2048Mi"
                                 },
                                 "limits": {
                                     "cpu": "1",
-                                    "memory": "20Gi"
+                                    "memory": "2048Mi"
                                 }
                             }]
                         },
                         "service": {
                             "type": "object",
                             "default": {},
-                            "title": "RPC worker service configuration",
+                            "title": "rpc worker service configuration",
                             "required": [
                                 "type",
                                 "externalTrafficPolicy",
                                 "loadBalancerSourceRanges",
                                 "annotations"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "type": {
                                     "type": "string",
@@ -1874,11 +1965,11 @@
                         "resources": {
                             "requests": {
                                 "cpu": "1",
-                                "memory": "20Gi"
+                                "memory": "2048Mi"
                             },
                             "limits": {
                                 "cpu": "1",
-                                "memory": "20Gi"
+                                "memory": "2048Mi"
                             }
                         },
                         "service": {
@@ -1902,6 +1993,7 @@
                         "profiling",
                         "resources"
                     ],
+                    "additionalProperties": false,
                     "properties": {
                         "image": {
                             "type": "object",
@@ -1912,6 +2004,7 @@
                                 "repository",
                                 "tag"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "registry": {
                                     "type": "string",
@@ -1955,7 +2048,7 @@
                         "useStubs": {
                             "type": "boolean",
                             "default": false,
-                            "title": "Use stubbed crypto processor, membership group reader and group policy provider",
+                            "title": "use stubbed crypto processor, membership group reader and group policy provider",
                             "examples": [
                                 false
                             ]
@@ -1968,6 +2061,7 @@
                                 "enabled",
                                 "suspend"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
@@ -2000,6 +2094,7 @@
                             "required": [
                                 "level"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "level": {
                                     "type": "string",
@@ -2021,6 +2116,7 @@
                             "required": [
                                 "enabled"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
@@ -2043,16 +2139,21 @@
                                 "requests",
                                 "limits"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "requests": {
                                     "type": "object",
                                     "default": {},
                                     "title": "the CPU/memory resource requests for the p2p-link-manager worker containers",
                                     "required": [],
-                                    "properties": {},
+                                    "properties": {
+                                        "cpu": {"type": "string"},
+                                        "memory": {"type": "string"}
+                                    },
+                                    "additionalProperties": false,
                                     "examples": [{
                                         "cpu": "1",
-                                        "memory": "20Gi"
+                                        "memory": "2048Mi"
                                     }]
                                 },
                                 "limits": {
@@ -2060,21 +2161,25 @@
                                     "default": {},
                                     "title": "the CPU/memory resource limits for the p2p-link-manager worker containers",
                                     "required": [],
-                                    "properties": {},
+                                    "properties": {
+                                        "cpu": {"type": "string"},
+                                        "memory": {"type": "string"}
+                                    },
+                                    "additionalProperties": false,
                                     "examples": [{
                                         "cpu": "1",
-                                        "memory": "20Gi"
+                                        "memory": "2048Mi"
                                     }]
                                 }
                             },
                             "examples": [{
                                 "requests": {
                                     "cpu": "1",
-                                    "memory": "20Gi"
+                                    "memory": "2048Mi"
                                 },
                                 "limits": {
                                     "cpu": "1",
-                                    "memory": "20Gi"
+                                    "memory": "2048Mi"
                                 }
                             }]
                         }
@@ -2100,11 +2205,11 @@
                         "resources": {
                             "requests": {
                                 "cpu": "1",
-                                "memory": "20Gi"
+                                "memory": "2048Mi"
                             },
                             "limits": {
                                 "cpu": "1",
-                                "memory": "20Gi"
+                                "memory": "2048Mi"
                             }
                         }
                     }]
@@ -2112,7 +2217,7 @@
                 "p2pGateway": {
                     "type": "object",
                     "default": {},
-                    "title": "P2P Gateway worker configuration",
+                    "title": "p2p Gateway worker configuration",
                     "required": [
                         "image",
                         "replicaCount",
@@ -2123,6 +2228,7 @@
                         "resources",
                         "service"
                     ],
+                    "additionalProperties": false,
                     "properties": {
                         "image": {
                             "type": "object",
@@ -2133,6 +2239,7 @@
                                 "repository",
                                 "tag"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "registry": {
                                     "type": "string",
@@ -2176,7 +2283,7 @@
                         "useStubs": {
                             "type": "boolean",
                             "default": false,
-                            "title": "Use stub crypto processor",
+                            "title": "use stub crypto processor",
                             "examples": [
                                 false
                             ]
@@ -2189,6 +2296,7 @@
                                 "enabled",
                                 "suspend"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
@@ -2221,6 +2329,7 @@
                             "required": [
                                 "level"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "level": {
                                     "type": "string",
@@ -2242,6 +2351,7 @@
                             "required": [
                                 "enabled"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "enabled": {
                                     "type": "boolean",
@@ -2264,36 +2374,45 @@
                                 "requests",
                                 "limits"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "requests": {
                                     "type": "object",
                                     "default": {},
                                     "title": "the CPU/memory resource requests for the p2pGateway worker containers",
-                                    "properties": {},
+                                    "properties": {
+                                        "cpu": {"type": "string"},
+                                        "memory": {"type": "string"}
+                                    },
+                                    "additionalProperties": false,
                                     "examples": [{
                                         "cpu": "1",
-                                        "memory": "20Gi"
+                                        "memory": "2048Mi"
                                     }]
                                 },
                                 "limits": {
                                     "type": "object",
                                     "default": {},
                                     "title": "the CPU/memory resource limits for the p2pGateway worker containers",
-                                    "properties": {},
+                                    "properties": {
+                                        "cpu": {"type": "string"},
+                                        "memory": {"type": "string"}
+                                    },
+                                    "additionalProperties": false,
                                     "examples": [{
                                         "cpu": "1",
-                                        "memory": "20Gi"
+                                        "memory": "2048Mi"
                                     }]
                                 }
                             },
                             "examples": [{
                                 "requests": {
                                     "cpu": "1",
-                                    "memory": "20Gi"
+                                    "memory": "2048Mi"
                                 },
                                 "limits": {
                                     "cpu": "1",
-                                    "memory": "20Gi"
+                                    "memory": "2048Mi"
                                 }
                             }]
                         },
@@ -2304,11 +2423,12 @@
                             "required": [
                                 "port"
                             ],
+                            "additionalProperties": false,
                             "properties": {
                                 "port": {
                                     "type": "integer",
                                     "default": 8080,
-                                    "title": "The Gateway HTTP port",
+                                    "title": "the Gateway HTTP port",
                                     "examples": [
                                         8080
                                     ]
@@ -2340,11 +2460,11 @@
                         "resources": {
                             "requests": {
                                 "cpu": "1",
-                                "memory": "20Gi"
+                                "memory": "2048Mi"
                             },
                             "limits": {
                                 "cpu": "1",
-                                "memory": "20Gi"
+                                "memory": "2048Mi"
                             }
                         },
                         "service": {
@@ -2374,11 +2494,11 @@
                     "resources": {
                         "requests": {
                             "cpu": "1",
-                            "memory": "20Gi"
+                            "memory": "2048Mi"
                         },
                         "limits": {
                             "cpu": "1",
-                            "memory": "20Gi"
+                            "memory": "2048Mi"
                         }
                     }
                 },
@@ -2404,11 +2524,11 @@
                     "resources": {
                         "requests": {
                             "cpu": "1",
-                            "memory": "20Gi"
+                            "memory": "2048Mi"
                         },
                         "limits": {
                             "cpu": "1",
-                            "memory": "20Gi"
+                            "memory": "2048Mi"
                         }
                     }
                 },
@@ -2432,11 +2552,11 @@
                     "resources": {
                         "requests": {
                             "cpu": "1",
-                            "memory": "20Gi"
+                            "memory": "2048Mi"
                         },
                         "limits": {
                             "cpu": "1",
-                            "memory": "20Gi"
+                            "memory": "2048Mi"
                         }
                     },
                     "verifyInstrumentation": false
@@ -2461,11 +2581,11 @@
                     "resources": {
                         "requests": {
                             "cpu": "1",
-                            "memory": "20Gi"
+                            "memory": "2048Mi"
                         },
                         "limits": {
                             "cpu": "1",
-                            "memory": "20Gi"
+                            "memory": "2048Mi"
                         }
                     }
                 },
@@ -2489,11 +2609,11 @@
                     "resources": {
                         "requests": {
                             "cpu": "1",
-                            "memory": "20Gi"
+                            "memory": "2048Mi"
                         },
                         "limits": {
                             "cpu": "1",
-                            "memory": "20Gi"
+                            "memory": "2048Mi"
                         }
                     },
                     "service": {
@@ -2524,11 +2644,11 @@
                     "resources": {
                         "requests": {
                             "cpu": "1",
-                            "memory": "20Gi"
+                            "memory": "2048Mi"
                         },
                         "limits": {
                             "cpu": "1",
-                            "memory": "20Gi"
+                            "memory": "2048Mi"
                         }
                     }
                 },
@@ -2553,11 +2673,11 @@
                     "resources": {
                         "requests": {
                             "cpu": "1",
-                            "memory": "20Gi"
+                            "memory": "2048Mi"
                         },
                         "limits": {
                             "cpu": "1",
-                            "memory": "20Gi"
+                            "memory": "2048Mi"
                         }
                     },
                     "service": {
@@ -2568,7 +2688,16 @@
         }
     },
     "examples": [{
-        "imagePullSecrets": ["docker-registry-cred"]
+        "imagePullSecrets": ["docker-registry-cred"],
+        "db": {
+            "cluster": {
+                "existingSecret": "prereqs-postgresql",
+                "host": "db.cluster.host=prereqs-postgresql"
+            }
+        },
+        "kafka": {
+            "bootstrapServers": "prereqs-Kafka"
+        }
     }
     ]
 }
