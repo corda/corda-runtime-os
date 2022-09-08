@@ -41,6 +41,7 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
+import net.corda.virtualnode.ShortHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -69,10 +70,10 @@ class MemberOpsClientImpl @Activate constructor(
     private interface InnerMemberOpsClient : AutoCloseable {
         fun startRegistration(memberRegistrationRequest: MemberRegistrationRequestDto): RegistrationRequestProgressDto
 
-        fun checkRegistrationProgress(holdingIdentityShortHash: String): List<RegistrationRequestStatusDto>
+        fun checkRegistrationProgress(holdingIdentityShortHash: ShortHash): List<RegistrationRequestStatusDto>
 
         fun checkSpecificRegistrationProgress(
-            holdingIdentityShortHash: String,
+            holdingIdentityShortHash: ShortHash,
             registrationRequestId: String
         ): RegistrationRequestStatusDto?
     }
@@ -106,13 +107,13 @@ class MemberOpsClientImpl @Activate constructor(
         impl.startRegistration(memberRegistrationRequest)
 
     override fun checkSpecificRegistrationProgress(
-        holdingIdentityShortHash: String,
+        holdingIdentityShortHash: ShortHash,
         registrationRequestId: String
     ) = impl.checkSpecificRegistrationProgress(
         holdingIdentityShortHash, registrationRequestId
     )
 
-    override fun checkRegistrationProgress(holdingIdentityShortHash: String) =
+    override fun checkRegistrationProgress(holdingIdentityShortHash: ShortHash) =
         impl.checkRegistrationProgress(holdingIdentityShortHash)
 
     private fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -177,11 +178,11 @@ class MemberOpsClientImpl @Activate constructor(
         override fun startRegistration(memberRegistrationRequest: MemberRegistrationRequestDto) =
             throw IllegalStateException(ERROR_MSG)
 
-        override fun checkRegistrationProgress(holdingIdentityShortHash: String) =
+        override fun checkRegistrationProgress(holdingIdentityShortHash: ShortHash) =
             throw IllegalStateException(ERROR_MSG)
 
         override fun checkSpecificRegistrationProgress(
-            holdingIdentityShortHash: String,
+            holdingIdentityShortHash: ShortHash,
             registrationRequestId: String,
         ) =
             throw IllegalStateException(ERROR_MSG)
@@ -199,7 +200,7 @@ class MemberOpsClientImpl @Activate constructor(
                     clock.instant()
                 ),
                 RegistrationRpcRequest(
-                    memberRegistrationRequest.holdingIdentityShortHash,
+                    memberRegistrationRequest.holdingIdentityShortHash.toString(),
                     RegistrationRpcAction.valueOf(memberRegistrationRequest.action.name),
                     memberRegistrationRequest.context.toWire()
                 )
@@ -210,20 +211,20 @@ class MemberOpsClientImpl @Activate constructor(
             return response.toDto()
         }
 
-        override fun checkRegistrationProgress(holdingIdentityShortHash: String): List<RegistrationRequestStatusDto> {
+        override fun checkRegistrationProgress(holdingIdentityShortHash: ShortHash): List<RegistrationRequestStatusDto> {
             val request = MembershipRpcRequest(
                 MembershipRpcRequestContext(
                     UUID.randomUUID().toString(),
                     clock.instant()
                 ),
-                RegistrationStatusRpcRequest(holdingIdentityShortHash)
+                RegistrationStatusRpcRequest(holdingIdentityShortHash.toString())
             )
 
             return registrationsResponse(request.sendRequest())
         }
 
         override fun checkSpecificRegistrationProgress(
-            holdingIdentityShortHash: String,
+            holdingIdentityShortHash: ShortHash,
             registrationRequestId: String,
         ): RegistrationRequestStatusDto? {
             val request = MembershipRpcRequest(
@@ -232,7 +233,7 @@ class MemberOpsClientImpl @Activate constructor(
                     clock.instant()
                 ),
                 RegistrationStatusSpecificRpcRequest(
-                    holdingIdentityShortHash,
+                    holdingIdentityShortHash.toString(),
                     registrationRequestId,
                 )
             )

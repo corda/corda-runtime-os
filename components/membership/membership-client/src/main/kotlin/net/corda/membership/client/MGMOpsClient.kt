@@ -1,6 +1,7 @@
 package net.corda.membership.client
 
 import net.corda.lifecycle.Lifecycle
+import net.corda.virtualnode.ShortHash
 
 /**
  * The MGM ops client to perform group operations.
@@ -13,5 +14,5 @@ interface MGMOpsClient : Lifecycle {
      * @param holdingIdentityShortHash The ID of the holding identity to be checked.
      * @return [String] Generated Group Policy Response.
      */
-    fun generateGroupPolicy(holdingIdentityShortHash: String): String
+    fun generateGroupPolicy(holdingIdentityShortHash: ShortHash): String
 }

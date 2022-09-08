@@ -62,7 +62,7 @@ class MGMOpsClientImpl @Activate constructor(
     }
 
     private interface InnerMGMOpsClient : AutoCloseable {
-        fun generateGroupPolicy(holdingIdentityShortHash: String): String
+        fun generateGroupPolicy(holdingIdentityShortHash: ShortHash): String
     }
 
     private var impl: InnerMGMOpsClient = InactiveImpl
@@ -90,7 +90,7 @@ class MGMOpsClientImpl @Activate constructor(
         coordinator.stop()
     }
 
-    override fun generateGroupPolicy(holdingIdentityShortHash: String) =
+    override fun generateGroupPolicy(holdingIdentityShortHash: ShortHash) =
         impl.generateGroupPolicy(holdingIdentityShortHash)
 
     private fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -154,7 +154,7 @@ class MGMOpsClientImpl @Activate constructor(
     }
 
     private object InactiveImpl : InnerMGMOpsClient {
-        override fun generateGroupPolicy(holdingIdentityShortHash: String) =
+        override fun generateGroupPolicy(holdingIdentityShortHash: ShortHash) =
             throw IllegalStateException(ERROR_MSG)
 
         override fun close() = Unit
@@ -163,10 +163,10 @@ class MGMOpsClientImpl @Activate constructor(
     private inner class ActiveImpl(
         val rpcSender: RPCSender<MembershipRpcRequest, MembershipRpcResponse>
     ) : InnerMGMOpsClient {
-        override fun generateGroupPolicy(holdingIdentityShortHash: String): String {
+        override fun generateGroupPolicy(holdingIdentityShortHash: ShortHash): String {
 
             val holdingIdentity =
-                virtualNodeInfoReadService.getByHoldingIdentityShortHash(ShortHash.of(holdingIdentityShortHash))?.holdingIdentity
+                virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
                     ?: throw CordaRuntimeException("Could not find holding identity associated with member.")
 
             val reader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
@@ -182,7 +182,7 @@ class MGMOpsClientImpl @Activate constructor(
                         UUID.randomUUID().toString(),
                         clock.instant()
                     ),
-                    MGMGroupPolicyRequest(holdingIdentityShortHash)
+                    MGMGroupPolicyRequest(holdingIdentityShortHash.toString())
                 )
 
                 return generateGroupPolicyResponse(request.sendRequest())
@@ -198,7 +198,6 @@ class MGMOpsClientImpl @Activate constructor(
         private fun generateGroupPolicyResponse(response: MGMGroupPolicyResponse): String =
             response.groupPolicy.toString()
 
-        @Suppress("UNCHECKED_CAST")
         private inline fun <reified RESPONSE> MembershipRpcRequest.sendRequest(): RESPONSE {
             try {
                 logger.info("Sending request: $this")
