@@ -27,6 +27,7 @@ import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
@@ -113,25 +114,23 @@ class AppSimulator @Activate constructor(
         }
         when (simulatorMode) {
             SimulationMode.SENDER -> {
-                runSender(configFromFile, parameters, bootConfig, clients, parameters.instanceId)
+                runSender(configFromFile, parameters, bootConfig, clients)
             }
             SimulationMode.RECEIVER -> {
-                runReceiver(parameters, bootConfig, clients, parameters.instanceId)
+                runReceiver(parameters, bootConfig, clients)
             }
             SimulationMode.DB_SINK -> {
-                runSink(configFromFile, parameters, bootConfig, clients, parameters.instanceId)
+                runSink(configFromFile, parameters, bootConfig, clients)
             }
             else -> throw IllegalStateException("Invalid value for simulator mode: $simulatorMode")
         }
     }
 
-    @Suppress("LongParameterList")
     private fun runSender(
         configFromFile: Config,
         parameters: CliParameters,
         bootConfig: SmartConfig,
         clients: Int,
-        instanceId: String,
     ) {
         val sendTopic = parameters.sendTopic ?: P2P_OUT_TOPIC
         val connectionDetails = readDbParams(configFromFile, parameters)
@@ -144,7 +143,7 @@ class AppSimulator @Activate constructor(
             sendTopic,
             bootConfig,
             clients,
-            instanceId,
+            parameters.instanceId,
             clock
         )
         sender.start()
@@ -161,7 +160,6 @@ class AppSimulator @Activate constructor(
         parameters: CliParameters,
         bootConfig: SmartConfig,
         clients: Int,
-        instanceId: String,
     ) {
         val receiveTopic = parameters.receiveTopic ?: P2P_IN_TOPIC
         val receiver = Receiver(
@@ -171,63 +169,55 @@ class AppSimulator @Activate constructor(
             receiveTopic,
             bootConfig,
             clients,
-            instanceId
+            parameters.instanceId
         )
         receiver.start()
         resources.add(receiver)
     }
 
-    @Suppress("LongParameterList")
     private fun runSink(
         configFromFile: Config,
         parameters: CliParameters,
         bootConfig: SmartConfig,
         clients: Int,
-        instanceId: String,
     ) {
         val connectionDetails = readDbParams(configFromFile, parameters)
-        if (connectionDetails == null) {
-            logErrorAndShutdown("dbParams configuration option is mandatory for sink mode.")
-            return
-        }
-        val sink = Sink(subscriptionFactory, configMerger, connectionDetails, bootConfig, clients, instanceId)
+        val sink = Sink(subscriptionFactory, configMerger, connectionDetails, bootConfig, clients, parameters.instanceId)
         sink.start()
         resources.add(sink)
     }
 
-    private fun readDbParams(config: Config, parameters: CliParameters): DBParams? {
-        val username = getDbParameter("username", config, parameters, ::logErrorAndShutdown) ?: return null
-        val password = getDbParameter("password", config, parameters, ::logErrorAndShutdown) ?: return null
-        val host = getDbParameter("host", config, parameters, ::logErrorAndShutdown) ?: return null
-        val db = getDbParameter("db", config, parameters, ::logErrorAndShutdown) ?: return null
+    private fun readDbParams(config: Config, parameters: CliParameters): DBParams {
+        val username = getDbParameter("username", config, parameters)
+        val password = getDbParameter("password", config, parameters)
+        val host = getDbParameter("host", config, parameters)
+        val db = getDbParameter("db", config, parameters)
         return DBParams(username, password, host, db)
     }
 
     private fun readLoadGenParams(configFromFile: Config, parameters: CliParameters): LoadGenerationParams {
-        val peerX500Name = getLoadGenStrParameter("peerX500Name", configFromFile, parameters, ::logErrorAndShutdown)
-        val peerGroupId = getLoadGenStrParameter("peerGroupId", configFromFile, parameters, ::logErrorAndShutdown)
-        val ourX500Name = getLoadGenStrParameter("ourX500Name", configFromFile, parameters, ::logErrorAndShutdown)
-        val ourGroupId = getLoadGenStrParameter("ourGroupId", configFromFile, parameters, ::logErrorAndShutdown)
-        val loadGenerationType: LoadGenerationType? =
-            getLoadGenEnumParameter<LoadGenerationType>("loadGenerationType", configFromFile, parameters, ::logErrorAndShutdown)
+        val peerX500Name = getLoadGenStrParameter("peerX500Name", configFromFile, parameters)
+        MemberX500Name.parse(peerX500Name)
+        val peerGroupId = getLoadGenStrParameter("peerGroupId", configFromFile, parameters)
+        val ourX500Name = getLoadGenStrParameter("ourX500Name", configFromFile, parameters)
+        MemberX500Name.parse(ourX500Name)
+        val ourGroupId = getLoadGenStrParameter("ourGroupId", configFromFile, parameters)
+        val loadGenerationType: LoadGenerationType = getLoadGenEnumParameter("loadGenerationType", configFromFile, parameters)
         val totalNumberOfMessages = when (loadGenerationType) {
             LoadGenerationType.ONE_OFF -> getLoadGenIntParameter(
                 "totalNumberOfMessages",
                 DEFAULT_TOTAL_NUMBER_OF_MESSAGES,
                 configFromFile,
                 parameters,
-                ::logErrorAndShutdown
             )
-
             LoadGenerationType.CONTINUOUS -> null
-            else -> throw IllegalStateException("Invalid value for load generation type: $loadGenerationType")
         }
-        val batchSize = getLoadGenIntParameter("batchSize", DEFAULT_BATCH_SIZE, configFromFile, parameters, ::logErrorAndShutdown)
+        val batchSize = getLoadGenIntParameter("batchSize", DEFAULT_BATCH_SIZE, configFromFile, parameters)
         val interBatchDelay =
-            getLoadGenDuration("interBatchDelay", DEFAULT_INTER_BATCH_DELAY, configFromFile, parameters, ::logErrorAndShutdown)
+            getLoadGenDuration("interBatchDelay", DEFAULT_INTER_BATCH_DELAY, configFromFile, parameters)
         val messageSizeBytes =
-            getLoadGenIntParameter("messageSizeBytes", DEFAULT_MESSAGE_SIZE_BYTES, configFromFile, parameters, ::logErrorAndShutdown)
-        val expireAfterTime = getLoadGenDurationOrNull("expireAfterTime", configFromFile, parameters, ::logErrorAndShutdown)
+            getLoadGenIntParameter("messageSizeBytes", DEFAULT_MESSAGE_SIZE_BYTES, configFromFile, parameters)
+        val expireAfterTime = getLoadGenDurationOrNull("expireAfterTime", configFromFile, parameters)
         return LoadGenerationParams(
             HoldingIdentity(peerX500Name, peerGroupId),
             HoldingIdentity(ourX500Name, ourGroupId),

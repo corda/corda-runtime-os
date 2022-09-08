@@ -10,81 +10,48 @@ import java.time.format.DateTimeParseException
 class ArgParsingUtils {
     companion object {
 
+        class InvalidArgumentException(override val message: String): Exception()
+
         /***
          * Get a database parameter from the command line or the config file. Command line options override options in
          * the config file.
          */
-        fun getDbParameter(
-            path: String,
-            configFromFile: Config,
-            parameters: CliParameters,
-            logErrorAndShutdown: (String) -> Unit
-        ): String? {
-            val parameter = getParameter(
+        fun getDbParameter(path: String, configFromFile: Config, parameters: CliParameters): String {
+            return getParameter(
                 path,
                 configFromFile.getConfigOrEmpty(AppSimulator.DB_PARAMS_PREFIX),
                 parameters.databaseParams
-            )
-            if (parameter == null) {
-                logErrorAndShutdown("Database parameter $path must be specified on the command line, using -d$path, or in a config file.")
-            }
-            return parameter
+            ) ?: throw InvalidArgumentException("Database parameter $path must be specified on the command line, using -d$path, or in a " +
+                    "config file.")
         }
 
         /***
          * Get a load generation parameter from the command line or the config file. Command line options override options in
          * the config file.
          */
-        fun getLoadGenStrParameter(
-            path: String,
-            configFromFile: Config,
-            parameters: CliParameters, logErrorAndShutdown: (String) -> Unit
-        ): String? {
-            val parameter = getParameter(
+        fun getLoadGenStrParameter(path: String, configFromFile: Config, parameters: CliParameters): String {
+            return getParameter(
                 path,
                 configFromFile.getConfigOrEmpty(AppSimulator.LOAD_GEN_PARAMS_PREFIX),
                 parameters.loadGenerationParams
-            )
-            if (parameter == null) {
-                logErrorAndShutdown("Load generation parameter $path must be specified on the command line, using -l$path, or in" +
-                        " a config file.")
-            }
-            return parameter
+            ) ?: throw InvalidArgumentException("Load generation parameter $path must be specified on the command line, using -l$path, " +
+                "or in a config file.")
         }
 
-        inline fun <reified E: Enum<E>> getLoadGenEnumParameter(
-            path: String,
-            configFromFile: Config,
-            parameters: CliParameters, logErrorAndShutdown: (String) -> Unit
-        ): E? {
+        inline fun <reified E: Enum<E>> getLoadGenEnumParameter(path: String, configFromFile: Config, parameters: CliParameters): E {
             val stringParameter = getParameter(
                 path,
                 configFromFile.getConfigOrEmpty(AppSimulator.LOAD_GEN_PARAMS_PREFIX),
                 parameters.loadGenerationParams
-            )
-            if (stringParameter == null) {
-                logErrorAndShutdown("Load generation parameter $path must be specified on the command line, using -l$path, or in a " +
-                        "config file. " + "Must be one of (${E::class.java.enumConstants.map { it.name }.toSet()})."
-                )
-            }
-            val enum = E::class.java.enumConstants.singleOrNull {
+            ) ?: throw InvalidArgumentException("Load generation parameter $path must be specified on the command line, using -l$path," +
+                    " or in a config file. Must be one of (${E::class.java.enumConstants.map { it.name }.toSet()}).")
+            return E::class.java.enumConstants.singleOrNull {
                 it.name == stringParameter
-            }
-            if (enum == null) {
-                logErrorAndShutdown("Load generation parameter $path = $stringParameter is not one of " +
-                        "(${E::class.java.enumConstants.map { it.name }.toSet()})."
-                )
-            }
-            return enum
+            } ?: throw InvalidArgumentException("Load generation parameter $path = $stringParameter is not one of " +
+                "(${E::class.java.enumConstants.map { it.name }.toSet()}).")
         }
 
-        fun getLoadGenIntParameter(
-            path: String,
-            default: Int,
-            configFromFile: Config,
-            parameters: CliParameters,
-            logErrorAndShutdown: (String) -> Unit
-        ): Int {
+        fun getLoadGenIntParameter(path: String, default: Int, configFromFile: Config, parameters: CliParameters, ): Int {
             val stringParameter = getParameter(
                 path,
                 configFromFile.getConfigOrEmpty(AppSimulator.LOAD_GEN_PARAMS_PREFIX),
@@ -93,18 +60,11 @@ class ArgParsingUtils {
             return try {
                 Integer.parseInt(stringParameter)
             } catch (exception: NumberFormatException) {
-                logErrorAndShutdown("Load generation parameter $path = $stringParameter is not an integer.")
-                default
+                throw InvalidArgumentException("Load generation parameter $path = $stringParameter is not an integer.")
             }
         }
 
-        fun getLoadGenDuration(
-            path: String,
-            default: Duration,
-            configFromFile: Config,
-            parameters: CliParameters,
-            logErrorAndShutdown: (String) -> Unit
-        ): Duration {
+        fun getLoadGenDuration(path: String, default: Duration, configFromFile: Config, parameters: CliParameters): Duration {
             val parameterFromCommandLine = parameters.loadGenerationParams[path]
             return if (parameterFromCommandLine == null) {
                 try {
@@ -116,18 +76,13 @@ class ArgParsingUtils {
                 try {
                     Duration.parse(parameterFromCommandLine)
                 } catch (exception: DateTimeParseException) {
-                    logErrorAndShutdown("Load generation parameter $path = $parameterFromCommandLine can not be parsed as a duration. " +
-                            "It must have the ISO-8601 duration format PnDTnHnMn.nS. e.g. PT20.5S gets converted to 20.5 seconds.")
-                    Duration.ofSeconds(0)
+                    throw InvalidArgumentException("Load generation parameter $path = $parameterFromCommandLine can not be parsed as a " +
+                        "duration. It must have the ISO-8601 duration format PnDTnHnMn.nS. e.g. PT20.5S gets converted to 20.5 seconds.")
                 }
             }
         }
 
-        fun getLoadGenDurationOrNull(
-            path: String,
-            configFromFile: Config,
-            parameters: CliParameters, logErrorAndShutdown: (String) -> Unit
-        ): Duration? {
+        fun getLoadGenDurationOrNull(path: String, configFromFile: Config, parameters: CliParameters): Duration? {
             val parameterFromCommandLine = parameters.loadGenerationParams[path]
             return if (parameterFromCommandLine == null) {
                 try {
@@ -139,10 +94,9 @@ class ArgParsingUtils {
                 try {
                     Duration.parse(parameterFromCommandLine)
                 } catch (exception: DateTimeParseException) {
-                    logErrorAndShutdown("Load generation parameter $path = $parameterFromCommandLine can not be parsed " +
+                    throw InvalidArgumentException("Load generation parameter $path = $parameterFromCommandLine can not be parsed " +
                         "as a duration. It must have the ISO-8601 duration format PnDTnHnMn.nS. e.g. PT20.5S gets converted to 20.5 " +
                         "seconds.")
-                    null
                 }
             }
         }
