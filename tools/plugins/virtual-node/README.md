@@ -1,4 +1,4 @@
-# Virtual Node Cli Plugin
+# Virtual Node CLI Plugin
 
 Uploads and replaces a previously stored CPI record.
 Any sandboxes running an overwritten version of CPI will be purged and optionally
