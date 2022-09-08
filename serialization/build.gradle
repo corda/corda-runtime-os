@@ -1,7 +1,7 @@
 plugins {
     id 'corda-api.common-library'
     id 'corda.common-publishing'
-    id 'org.jetbrains.kotlin.jvm'
+    id 'corda.java-only'
 }
 
 description 'Corda Serialization'
@@ -9,8 +9,6 @@ description 'Corda Serialization'
 dependencies {
     api platform(project(':corda-api'))
     api project(":base")
-
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
 
     compileOnly 'org.osgi:osgi.annotation'
 

@@ -1,4 +1,4 @@
-package net.corda.v5.serialization.annotations
+package net.corda.v5.base.annotations
 
 /**
  * Annotation indicating a constructor to be used to reconstruct instances of a class during deserialization.
