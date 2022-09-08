@@ -20,5 +20,5 @@ val AMQP_STORAGE_CONTEXT = SerializationContextImpl(
         true,
         SerializationContext.UseCase.Storage,
         null,
-        AlwaysAcceptEncodingWhitelist
+        AlwaysAcceptEncodingAllowList
 )
