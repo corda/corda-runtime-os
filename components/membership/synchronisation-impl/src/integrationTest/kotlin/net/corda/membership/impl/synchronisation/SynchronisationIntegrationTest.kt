@@ -79,6 +79,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.membership.MemberInfo
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
@@ -138,6 +139,9 @@ class SynchronisationIntegrationTest {
 
         @InjectService(timeout = 5000)
         lateinit var membershipQueryClient: TestMembershipQueryClient
+
+        @InjectService(timeout = 5000)
+        lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
 
         @InjectService(timeout = 5000)
         lateinit var memberInfoFactory: MemberInfoFactory
@@ -278,6 +282,7 @@ class SynchronisationIntegrationTest {
             membershipP2PReadService.start()
             cryptoOpsClient.start()
             membershipQueryClient.start()
+            virtualNodeInfoReadService.start()
             configurationReadService.bootstrapConfig(bootConfig)
 
             eventually {

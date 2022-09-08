@@ -50,6 +50,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
@@ -68,6 +69,7 @@ class MemberSynchronisationServiceImpl internal constructor(
     private val serializationFactory: CordaAvroSerializationFactory,
     private val memberInfoFactory: MemberInfoFactory,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    private val membersReader: LocallyHostedMembersReader,
     private val p2pRecordsFactory: P2pRecordsFactory,
     private val merkleTreeGenerator: MerkleTreeGenerator,
     private val clock: Clock,
@@ -91,6 +93,8 @@ class MemberSynchronisationServiceImpl internal constructor(
         cordaAvroSerializationFactory: CordaAvroSerializationFactory,
         @Reference(service = MerkleTreeFactory::class)
         merkleTreeFactory: MerkleTreeFactory,
+        @Reference(service = VirtualNodeInfoReadService::class)
+        virtualNodeInfoReadService: VirtualNodeInfoReadService,
     ) : this(
         publisherFactory,
         configurationReadService,
@@ -98,6 +102,9 @@ class MemberSynchronisationServiceImpl internal constructor(
         serializationFactory,
         memberInfoFactory,
         membershipGroupReaderProvider,
+        LocallyHostedMembersReader(
+            virtualNodeInfoReadService, membershipGroupReaderProvider
+        ),
         P2pRecordsFactory(
             cordaAvroSerializationFactory,
             UTCClock(),
@@ -170,6 +177,9 @@ class MemberSynchronisationServiceImpl internal constructor(
     private fun activate(membershipConfigurations: SmartConfig) {
         impl = ActiveImpl(membershipConfigurations)
         coordinator.updateStatus(LifecycleStatus.UP)
+        membersReader.readAllLocalMembers().forEach {
+            impl.cancelCurrentRequestAndScheduleNewOne(it.member, it.mgm)
+        }
     }
 
     private fun deactivate(coordinator: LifecycleCoordinator) {
@@ -370,6 +380,7 @@ class MemberSynchronisationServiceImpl internal constructor(
         componentHandle = coordinator.followStatusChangesByName(
             setOf(
                 LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
             )
         )
     }

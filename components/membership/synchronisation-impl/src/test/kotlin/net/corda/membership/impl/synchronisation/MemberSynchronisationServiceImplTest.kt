@@ -54,6 +54,7 @@ import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
@@ -101,6 +102,7 @@ class MemberSynchronisationServiceImplTest {
     }
     private val dependentComponents = setOf(
         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+        LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
     )
 
     private var coordinatorIsRunning = false
@@ -208,6 +210,9 @@ class MemberSynchronisationServiceImplTest {
     private val groupReaderProvider = mock<MembershipGroupReaderProvider> {
         on { getGroupReader(member) } doReturn groupReader
     }
+    private val locallyHostedMembersReader = mock<LocallyHostedMembersReader> {
+        on { readAllLocalMembers() } doReturn emptyList()
+    }
     private val clock = TestClock(Instant.ofEpochSecond(100))
     private val synchronisationService = MemberSynchronisationServiceImpl(
         publisherFactory,
@@ -216,6 +221,7 @@ class MemberSynchronisationServiceImplTest {
         serializationFactory,
         memberInfoFactory,
         groupReaderProvider,
+        locallyHostedMembersReader,
         p2pRecordsFactory,
         merkleTreeGenerator,
         clock,
@@ -338,7 +344,7 @@ class MemberSynchronisationServiceImplTest {
     }
 
     @Test
-    fun `processMembershipUpdates create the correct synch request when hashes are misaligned`() {
+    fun `processMembershipUpdates create the correct sync request when hashes are misaligned`() {
         postConfigChangedEvent()
         synchronisationService.start()
         val capturedPublishedList = argumentCaptor<List<Record<String, *>>>()
@@ -352,6 +358,34 @@ class MemberSynchronisationServiceImplTest {
             it.assertThat(request.membersHash).isEqualTo(hash)
             it.assertThat(request.bloomFilter).isNull()
             it.assertThat(request.distributionMetaData.syncRequested).isEqualTo(clock.instant())
+        }
+    }
+
+    @Test
+    fun `startup schedual sync for all the virtual nodes`() {
+        val mgm = HoldingIdentity(participantName, GROUP_NAME)
+        val records = argumentCaptor<List<Record<*, *>>>()
+        whenever(mockPublisher.publish(records.capture())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
+        val captureFactory = argumentCaptor<(String) -> TimerEvent>()
+        doNothing().whenever(coordinator).setTimer(any(), any(), captureFactory.capture())
+        whenever(locallyHostedMembersReader.readAllLocalMembers()).doReturn(
+            listOf(
+                LocallyHostedMembersReader.LocallyHostedMember(
+                    member, mgm
+                )
+            )
+        )
+
+        postConfigChangedEvent()
+        postStartEvent()
+        synchronisationService.start()
+
+        val event = captureFactory.firstValue.invoke("")
+        lifecycleHandlerCaptor.firstValue.processEvent(event, coordinator)
+
+        assertThat(records.allValues).anySatisfy {
+            assertThat(it).hasSize(1)
+                .containsExactly(synchronisationRequest)
         }
     }
 
