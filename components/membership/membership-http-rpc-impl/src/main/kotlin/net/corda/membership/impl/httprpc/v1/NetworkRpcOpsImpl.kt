@@ -35,7 +35,7 @@ class NetworkRpcOpsImpl @Activate constructor(
     ) {
         try {
             certificatesClient.setupLocallyHostedIdentity(
-                holdingIdentityShortHash,
+                holdingIdentityShortHash.toShortHash(),
                 request.p2pTlsCertificateChainAlias,
                 request.p2pTlsTenantId,
                 request.sessionKeyTenantId,
