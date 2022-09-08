@@ -38,7 +38,7 @@ class MultiClusterDynamicNetworkTest {
 
     private val clusterC = E2eClusterFactory.getE2eCluster(E2eClusterCConfig).also { cluster ->
         cluster.addMembers(
-            listOf(E2eClusterMember("O=Caroline, L=London, C=GB, OU=${cluster.testToolkit.uniqueName}"))
+            listOf(E2eClusterMember("O=Mgm, L=London, C=GB, OU=${cluster.testToolkit.uniqueName}"))
         )
     }
 
