@@ -268,8 +268,8 @@ fun SmartConfigFactory.createDefaultCryptoConfig(masterWrappingKey: KeyCredentia
             .withValue(
                 CRYPTO_CONNECTION_FACTORY_OBJ, ConfigValueFactory.fromMap(
                     mapOf(
-                        CryptoConnectionsFactoryConfig::expireAfterAccessMins.name to "5",
-                        CryptoConnectionsFactoryConfig::maximumSize.name to "3"
+                        CryptoConnectionsFactoryConfig::expireAfterAccessMins.name to 5,
+                        CryptoConnectionsFactoryConfig::maximumSize.name to 3
                     )
                 )
             )
@@ -277,8 +277,8 @@ fun SmartConfigFactory.createDefaultCryptoConfig(masterWrappingKey: KeyCredentia
                 SIGNING_SERVICE_OBJ, ConfigValueFactory.fromMap(
                     mapOf(
                         CryptoSigningServiceConfig::cache.name to mapOf(
-                            CryptoSigningServiceConfig.CacheConfig::expireAfterAccessMins.name to "60",
-                            CryptoSigningServiceConfig.CacheConfig::maximumSize.name to "10000"
+                            CryptoSigningServiceConfig.CacheConfig::expireAfterAccessMins.name to 60,
+                            CryptoSigningServiceConfig.CacheConfig::maximumSize.name to 10000
                         )
                     )
                 )
@@ -286,7 +286,7 @@ fun SmartConfigFactory.createDefaultCryptoConfig(masterWrappingKey: KeyCredentia
             .withValue(
                 HSM_SERVICE_OBJ, ConfigValueFactory.fromMap(
                     mapOf(
-                        CryptoHSMServiceConfig::downstreamMaxAttempts.name to "3"
+                        CryptoHSMServiceConfig::downstreamMaxAttempts.name to 3
                     )
                 )
             )
@@ -295,8 +295,8 @@ fun SmartConfigFactory.createDefaultCryptoConfig(masterWrappingKey: KeyCredentia
                     mapOf(
                         CryptoHSMConfig::workerTopicSuffix.name to "",
                         CryptoHSMConfig::retry.name to mapOf(
-                            CryptoHSMConfig.RetryConfig::maxAttempts.name to "3",
-                            CryptoHSMConfig.RetryConfig::attemptTimeoutMills.name to "20000",
+                            CryptoHSMConfig.RetryConfig::maxAttempts.name to 3,
+                            CryptoHSMConfig.RetryConfig::attemptTimeoutMills.name to 20000,
                         ),
                         CryptoHSMConfig::hsm.name to mapOf(
                             CryptoHSMConfig.HSMConfig::name.name to SOFT_HSM_SERVICE_NAME,
@@ -322,8 +322,8 @@ fun SmartConfigFactory.createDefaultCryptoConfig(masterWrappingKey: KeyCredentia
                                 "keyMap" to mapOf(
                                     "name" to "CACHING",
                                     "cache" to mapOf(
-                                        "expireAfterAccessMins" to "60",
-                                        "maximumSize" to "1000"
+                                        "expireAfterAccessMins" to 60,
+                                        "maximumSize" to 1000
                                     )
                                 ),
                                 "wrappingKeyMap" to mapOf(
@@ -333,8 +333,8 @@ fun SmartConfigFactory.createDefaultCryptoConfig(masterWrappingKey: KeyCredentia
                                         makeSecret(masterWrappingKey.passphrase).root().unwrapped()
                                     ),
                                     "cache" to mapOf(
-                                        "expireAfterAccessMins" to "60",
-                                        "maximumSize" to "1000"
+                                        "expireAfterAccessMins" to 60,
+                                        "maximumSize" to 1000
                                     )
                                 ),
                                 "wrapping" to mapOf(
@@ -349,7 +349,7 @@ fun SmartConfigFactory.createDefaultCryptoConfig(masterWrappingKey: KeyCredentia
                 BUS_PROCESSORS_OBJ, ConfigValueFactory.fromMap(
                     mapOf(
                         OPS_BUS_PROCESSOR_OBJ to mapOf(
-                            CryptoBusProcessorConfig::maxAttempts.name to "3",
+                            CryptoBusProcessorConfig::maxAttempts.name to 3,
                             CryptoBusProcessorConfig::waitBetweenMills.name to ConfigValueFactory.fromIterable(
                                 listOf(
                                     200
@@ -357,7 +357,7 @@ fun SmartConfigFactory.createDefaultCryptoConfig(masterWrappingKey: KeyCredentia
                             ),
                         ),
                         FLOW_BUS_PROCESSOR_OBJ to mapOf(
-                            CryptoBusProcessorConfig::maxAttempts.name to "3",
+                            CryptoBusProcessorConfig::maxAttempts.name to 3,
                             CryptoBusProcessorConfig::waitBetweenMills.name to ConfigValueFactory.fromIterable(
                                 listOf(
                                     200
@@ -365,7 +365,7 @@ fun SmartConfigFactory.createDefaultCryptoConfig(masterWrappingKey: KeyCredentia
                             ),
                         ),
                         HSM_REGISTRATION_BUS_PROCESSOR_OBJ to mapOf(
-                            CryptoBusProcessorConfig::maxAttempts.name to "3",
+                            CryptoBusProcessorConfig::maxAttempts.name to 3,
                             CryptoBusProcessorConfig::waitBetweenMills.name to ConfigValueFactory.fromIterable(
                                 listOf(
                                     200
