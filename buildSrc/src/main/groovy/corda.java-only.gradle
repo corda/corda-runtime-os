@@ -1,3 +1,9 @@
 pluginManager.withPlugin('org.jetbrains.kotlin.jvm') {
     throw new StopExecutionException("Module '${project.path}' should only contain Java classes")
 }
+
+pluginManager.withPlugin('java') {
+    java {
+        withJavadocJar()
+    }
+}

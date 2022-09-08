@@ -15,6 +15,8 @@ public interface SerializationCustomSerializer<OBJ, PROXY> {
     /**
      * Should facilitate the conversion of the third party object into the serializable
      * local class specified by {@code PROXY}
+     * @param obj original object for serialization
+     * @return proxy object to be written to AMQP.
      */
     @NotNull
     PROXY toProxy(@NotNull OBJ obj);
@@ -22,6 +24,8 @@ public interface SerializationCustomSerializer<OBJ, PROXY> {
     /**
      * Should facilitate the conversion of the proxy object into a new instance of the
      * unserializable type
+     * @param proxy object from AMQP
+     * @return original object recreated from {@code proxy}
      */
     @NotNull
     OBJ fromProxy(@NotNull PROXY proxy);

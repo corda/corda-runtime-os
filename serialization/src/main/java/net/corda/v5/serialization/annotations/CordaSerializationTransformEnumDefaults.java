@@ -13,7 +13,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  *
  * NOTE: Order is important, new values should always be added before any others
  *
- * <pre/>
+ * <pre>
  *  // initial implementation
  *  enum class ExampleEnum {
  *    A, B, C
@@ -34,7 +34,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  *    A, B, C, D, E
  *  }
  * </pre>
- * <p/>
+ * <p>
  * IMPORTANT - Once added (and in production) do NOT remove old annotations. See documentation for
  * more discussion on this point!.
  */
