@@ -217,6 +217,7 @@ class GroupPolicyProviderImpl @Activate constructor(
          * Register callback so that if a holding identity modifies their virtual node information, the
          * group policy for that holding identity will be parsed in case the virtual node change affected the
          * group policy file.
+         * Only true for members. For MGM identities we will wait until they are registered.
          */
         private fun startVirtualNodeHandle(): AutoCloseable =
             virtualNodeInfoReadService.registerCallback { changed, snapshot ->
@@ -300,6 +301,10 @@ class GroupPolicyProviderImpl @Activate constructor(
         }
     }
 
+    /**
+     * Registers callback when MGM has finished its registration and has the final group policy persisted.
+     * This will make sure we have the trust stores and other important information in the group policy ready.
+     */
     inner class FinishedRegistrationsProcessor : DurableProcessor<String, MembershipEvent> {
         @Suppress("NestedBlockDepth")
         override fun onNext(events: List<Record<String, MembershipEvent>>): List<Record<*, *>> {
