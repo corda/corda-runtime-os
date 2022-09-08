@@ -36,8 +36,8 @@ class FlowSessionImplTest {
     private val flowFiberSerializationService = mock<FlowFiberSerializationService>().apply {
         whenever(serialize(HELLO_THERE)).thenReturn(SerializedBytes(HELLO_THERE.toByteArray()))
         whenever(serialize(HI)).thenReturn(SerializedBytes(HI.toByteArray()))
-        whenever(deserialize(HELLO_THERE.toByteArray(), String::class.java)).thenReturn(HELLO_THERE)
-        whenever(deserialize(HI.toByteArray(), String::class.java)).thenReturn(HI)
+        whenever(deserializeAndCheckType(HELLO_THERE.toByteArray(), String::class.java)).thenReturn(HELLO_THERE)
+        whenever(deserializeAndCheckType(HI.toByteArray(), String::class.java)).thenReturn(HI)
     }
 
     private val flowFiber = mockFlowFiberService.flowFiber.apply {
@@ -87,7 +87,7 @@ class FlowSessionImplTest {
 
     @Test
     fun `receiving the wrong object type in sendAndReceive throws an exception`() {
-        whenever(flowFiberSerializationService.deserialize(eq(HELLO_THERE.toByteArray()), any<Class<*>>()))
+        whenever(flowFiberSerializationService.deserializeAndCheckType(eq(HELLO_THERE.toByteArray()), any<Class<*>>()))
             .thenThrow(DeserializedWrongAMQPObjectException(String::class.java, Int::class.java, 1, "wrong"))
 
         val session = createInitiatedSession()
@@ -126,7 +126,7 @@ class FlowSessionImplTest {
 
     @Test
     fun `receiving the wrong object type in receive throws an exception`() {
-        whenever(flowFiberSerializationService.deserialize(eq(HELLO_THERE.toByteArray()), any<Class<*>>()))
+        whenever(flowFiberSerializationService.deserializeAndCheckType(eq(HELLO_THERE.toByteArray()), any<Class<*>>()))
             .thenThrow(DeserializedWrongAMQPObjectException(String::class.java, Int::class.java, 1, "wrong"))
 
         val session = createInitiatedSession()

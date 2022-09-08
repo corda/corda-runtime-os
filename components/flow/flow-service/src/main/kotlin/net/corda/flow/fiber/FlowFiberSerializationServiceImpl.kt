@@ -33,8 +33,7 @@ class FlowFiberSerializationServiceImpl @Activate constructor(
 
     override fun <T : Any> deserialize(bytes: ByteArray, clazz: Class<T>): T {
         return try {
-            val deserialized = serializationService.deserialize(bytes, clazz)
-            checkDeserializedObjectIs(deserialized, clazz)
+            serializationService.deserialize(bytes, clazz)
         } catch (e: NotSerializableException) {
             log.info("Failed to deserialize it into a ${clazz.name}", e)
             throw e
@@ -43,6 +42,14 @@ class FlowFiberSerializationServiceImpl @Activate constructor(
 
     override fun <T : Any> deserialize(serializedBytes: SerializedBytes<T>, clazz: Class<T>): T {
         return deserialize(serializedBytes.bytes, clazz)
+    }
+
+    override fun <T : Any> deserializeAndCheckType(bytes: ByteArray, clazz: Class<T>): T {
+        return deserialize(bytes, clazz).also { checkDeserializedObjectIs(it, clazz) }
+    }
+
+    override fun <T : Any> deserializeAndCheckType(serializedBytes: SerializedBytes<T>, clazz: Class<T>): T {
+        return deserialize(serializedBytes, clazz).also { checkDeserializedObjectIs(it, clazz) }
     }
 
     /**

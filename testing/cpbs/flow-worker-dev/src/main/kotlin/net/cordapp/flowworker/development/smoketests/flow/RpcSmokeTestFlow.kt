@@ -1,6 +1,7 @@
 package net.cordapp.flowworker.development.smoketests.flow
 
-import net.cordapp.testing.bundles.dogs.Dog
+import java.time.Instant
+import java.util.UUID
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.CordaInject
@@ -13,17 +14,18 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.sendAndReceive
 import net.corda.v5.application.persistence.PersistenceService
+import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
+import net.cordapp.flowworker.development.smoketests.flow.context.launchContextPropagationFlows
 import net.cordapp.flowworker.development.smoketests.flow.messages.InitiatedSmokeTestMessage
 import net.cordapp.flowworker.development.smoketests.flow.messages.RpcSmokeTestInput
 import net.cordapp.flowworker.development.smoketests.flow.messages.RpcSmokeTestOutput
-import net.cordapp.flowworker.development.smoketests.flow.context.launchContextPropagationFlows
-import java.time.Instant
-import java.util.UUID
+import net.cordapp.testing.bundles.dogs.Dog
 
 @Suppress("unused", "TooManyFunctions")
 @InitiatingFlow(protocol = "smoke-test-protocol")
@@ -52,7 +54,8 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         "subflow_passed_in_non_initiated_session" to { createSessionsInInitiatingFlowAndPassToInlineFlow(it, false) },
         "crypto_sign_and_verify" to this::signAndVerify,
         "crypto_verify_invalid_signature" to this::verifyInvalidSignature,
-        "context_propagation" to this::contextPropagation
+        "context_propagation" to { contextPropagation() },
+        "serialization" to this::serialization
     )
 
     @CordaInject
@@ -69,6 +72,9 @@ class RpcSmokeTestFlow : RPCStartableFlow {
 
     @CordaInject
     lateinit var persistenceService: PersistenceService
+
+    @CordaInject
+    lateinit var serializationService: SerializationService
 
     @CordaInject
     lateinit var signingService: SigningService
@@ -271,8 +277,14 @@ class RpcSmokeTestFlow : RPCStartableFlow {
     }
 
     @Suspendable
-    private fun contextPropagation(@Suppress("UNUSED_PARAMETER") input: RpcSmokeTestInput): String {
+    private fun contextPropagation(): String {
         return launchContextPropagationFlows(flowEngine, jsonMarshallingService)
+    }
+
+    @Suspendable
+    private fun serialization(input: RpcSmokeTestInput): String {
+        val serialized = serializationService.serialize(input.getValue("data"))
+        return serializationService.deserialize(serialized)
     }
 
     @Suspendable

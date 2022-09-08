@@ -115,7 +115,7 @@ class FlowSessionImpl(
     ): UntrustworthyData<R> {
         return received[sourceSessionId]?.let {
             try {
-                UntrustworthyData(flowFiberSerializationService.deserialize(it, receiveType))
+                UntrustworthyData(flowFiberSerializationService.deserializeAndCheckType(it, receiveType))
             } catch (e: DeserializedWrongAMQPObjectException) {
                 throw CordaRuntimeException(
                     "Expecting to receive a ${e.expectedType} but received a ${e.deserializedType} instead, payload: " +
