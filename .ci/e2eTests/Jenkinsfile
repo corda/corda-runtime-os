@@ -162,13 +162,13 @@ pipeline {
             post {
                 unsuccessful {
                     sh '''\
-                        kubectl logs -lapp.kubernetes.io/instance=corda-alice -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
-                        kubectl logs -lapp.kubernetes.io/instance=corda-bob -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 >> logs.txt
-                        kubectl logs -lapp.kubernetes.io/instance=corda-caroline -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 >> logs.txt
+                        kubectl logs -lapp.kubernetes.io/instance=corda-alice -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs-alice.txt
+                        kubectl logs -lapp.kubernetes.io/instance=corda-bob -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 >> logs-bob.txt
+                        kubectl logs -lapp.kubernetes.io/instance=corda-caroline -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 >> logs-caroline.txt
                         kubectl describe all -n ${NAMESPACE} > describe.txt
                     '''.stripIndent()
-                    archiveArtifacts artifacts: 'logs.txt, describe.txt', allowEmptyArchive: true
-                    sh 'rm -f logs.txt describe.txt'
+                    archiveArtifacts artifacts: 'logs-alice.txt, logs-bob.txt, logs-caroline.txt, describe.txt', allowEmptyArchive: true
+                    sh 'rm -f logs-alice.txt logs-bob.txt logs-caroline.txt describe.txt'
                 }
             }
         }
@@ -194,12 +194,14 @@ pipeline {
                 always {
                     junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
                     sh '''\
-                        kubectl logs -lapp.kubernetes.io/instance=corda -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs.txt
+                        kubectl logs -lapp.kubernetes.io/instance=corda-alice -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs-alice.txt
+                        kubectl logs -lapp.kubernetes.io/instance=corda-bob -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs-bob.txt
+                        kubectl logs -lapp.kubernetes.io/instance=corda-caroline -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs-caroline.txt
                         kubectl describe all -n ${NAMESPACE} > describe.txt
                         pgrep kubectl | xargs kill -9
                     '''.stripIndent()
-                    archiveArtifacts artifacts: 'forward.txt, logs.txt, describe.txt', allowEmptyArchive: true
-                    sh 'rm -f forward.txt logs.txt describe.txt'
+                    archiveArtifacts artifacts: 'forward.txt, logs-alice.txt, logs-bob.txt, logs-caroline.txt, describe.txt', allowEmptyArchive: true
+                    sh 'rm -f forward.txt logs-alice.txt logs-bob.txt logs-caroline.txt describe.txt'
                 }
             }
         }
