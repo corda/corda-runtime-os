@@ -1,6 +1,6 @@
 # Virtual Node Cli Plugin
 
-Upload and overwrite earlier stored CPI record.
+Uploads and replaces a previously stored CPI record.
 Any sandboxes running an overwritten version of CPI will be purged and optionally
 vault data for the affected Virtual Nodes wiped out.
 
