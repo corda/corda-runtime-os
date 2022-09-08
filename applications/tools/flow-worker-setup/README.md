@@ -79,7 +79,7 @@ To publish the configuration required by the `LinkManager` which is used by the 
   ],
   "membersToAdd": [
     {
-        "x500Name": "CN=Alice, O=Alice Corp, L=LDN, C=GB",
+      "x500Name": "CN=Alice, O=Alice Corp, L=LDN, C=GB",
       "groupId": "flow-worker-dev",
       "data": {
         "address": "http://alice.com:8085",
