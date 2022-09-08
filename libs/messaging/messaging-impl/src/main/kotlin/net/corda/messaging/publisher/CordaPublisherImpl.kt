@@ -188,11 +188,11 @@ internal class CordaPublisherImpl(
         fatal: Boolean
     ) {
         if (fatal) {
-            log.error("$message. Closing producer.", exception, future)
+            log.error("$message. Closing producer.", exception)
             future.completeExceptionally(CordaMessageAPIFatalException(message, exception))
             close()
         } else {
-            log.warn(message, exception, future)
+            log.warn(message, exception)
             future.completeExceptionally(CordaMessageAPIIntermittentException(message, exception))
         }
     }
