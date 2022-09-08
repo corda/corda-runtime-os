@@ -17,6 +17,8 @@ dependencies {
     cliHostDist "net.corda.cli.host:corda-cli:${pluginHostVersion}"
 }
 
+def S3_BUCKET_URI_PROPERTY = 'maven.repo.s3'
+
 tasks.register('copyCliFiles') {
     copy {
         from configurations.named('cliHostDist')
@@ -50,7 +52,7 @@ tasks.register("cleanDir", Delete) {
 tasks.register("cliInstallScriptsS3", Copy) {
     dependsOn cleanDir
     description 'Copy corda-cli install scripts to a location in build dir and update to use correct version'
-    if (project.hasProperty('maven.repo.s3')) {
+    if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
         def s3Url = project.findProperty("maven.repo.s3").replace('s3://','https://')+ "/" +
                 project.group.replace('.','/') + "/corda-cli-installer/$version/corda-cli-installer-$version"
         from 'templateScripts'
@@ -60,14 +62,14 @@ tasks.register("cliInstallScriptsS3", Copy) {
         }
     }
     else {
-        logger.info("parameter 'maven.repo.s3' is required! e.g. -Pmaven.repo.s3=https://demo.s3.com/example/bucket, Taking no action for :cliInstallScriptsS3")
+        logger.info("parameter S3_BUCKET_URI_PROPERTY is required! e.g. -Pmaven.repo.s3=https://demo.s3.com/example/bucket, Taking no action for :cliInstallScriptsS3")
     }
 }
 
 
 tasks.named('jar').configure {
     finalizedBy cliInstallArchive
-    if (project.hasProperty('maven.repo.s3')) {
+    if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
         finalizedBy cliInstallScriptsS3
     }
 }
@@ -118,7 +120,7 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
     }
 }
 
-if (project.hasProperty('maven.repo.s3')) {
+if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
     artifacts {
         cliInstallArchive
         cliInstallScriptsS3
@@ -132,7 +134,7 @@ publishing {
             groupId project.group
             artifact cliInstallArchive
         }
-        if (project.hasProperty('maven.repo.s3') && s3Script != null) {
+        if (project.hasProperty(S3_BUCKET_URI_PROPERTY) && s3Script != null) {
             maven(MavenPublication) {
                 artifactId "corda-cli-installer-script"
                 groupId project.group
@@ -140,11 +142,11 @@ publishing {
             }
         }
     }
-    if (project.hasProperty('maven.repo.s3') && project.hasProperty('releasable')) {
+    if (project.hasProperty(S3_BUCKET_URI_PROPERTY) && project.hasProperty('releasable')) {
         publishing {
             repositories {
                 maven {
-                    url = project.findProperty('maven.repo.s3')
+                    url = project.findProperty(S3_BUCKET_URI_PROPERTY)
                     credentials(AwsCredentials) {
                         accessKey "${System.getenv('AWS_ACCESS_KEY_ID')}"
                         secretKey "${System.getenv('AWS_SECRET_ACCESS_KEY')}"
