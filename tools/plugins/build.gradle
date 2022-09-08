@@ -50,17 +50,16 @@ tasks.register("cleanDir", Delete) {
 tasks.register("cliInstallScriptsS3", Copy) {
     dependsOn cleanDir
     description 'Copy corda-cli install scripts to a location in build dir and update to use correct version'
-    if (project.hasProperty('maven.repo.s3')) {
-        def s3Url = project.findProperty("maven.repo.s3").replace('s3://','https://')+ "/" +
-                project.group.replace('.','/') + "/corda-cli-installer/$version/corda-cli-installer-$version"
-        from 'templateScripts'
-        into 'build/generatedScripts'
-        filter {
-            String line -> line.replaceAll("TEMPLATE_URL", s3Url)
-        }
-    }
-    else {
-        logger.info("parameter 'maven.repo.s3' is required! e.g. -Pmaven.repo.s3=https://demo.s3.com/example/bucket, Taking no action for :cliInstallScriptsS3")
+    def mavenRepoS3 = project.findProperty("maven.repo.s3") ?: {
+        logger.error("parameter 'maven.repo.s3' is required! e.g. -Pmaven.repo.s3=https://demo.s3.com/example/bucket")
+        "s3://demo.s3.com/example/bucket"
+    }()
+    def s3Url = mavenRepoS3.replace('s3://','https://')+ "/" +
+            project.group.replace('.','/') + "/corda-cli-installer/$version/corda-cli-installer-$version"
+    from 'templateScripts'
+    into 'build/generatedScripts'
+    filter {
+        String line -> line.replaceAll("TEMPLATE_URL", s3Url)
     }
 }
 
