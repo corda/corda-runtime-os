@@ -68,7 +68,7 @@ class CpiValidatorImpl constructor(
                 cpi.metadata.groupPolicy!!
             )
         } catch (ex: MembershipSchemaValidationException) {
-            throw ValidationException("Group policy file in the CPI is invalid. ${ex.getErrorSummary()}", ex)
+            throw ValidationException("Group policy file in the CPI is invalid. ${ex.getErrorSummary()}", null, ex)
         }
 
         publisher.update(requestId, "Checking group id in CPI")

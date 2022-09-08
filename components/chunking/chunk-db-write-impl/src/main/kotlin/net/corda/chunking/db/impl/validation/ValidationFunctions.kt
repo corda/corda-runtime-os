@@ -154,7 +154,7 @@ fun CpiPersistence.persistCpiToDatabase(
  *
  * @throws ValidationException if there is no group policy json.
  */
-private fun Cpi.validateHasGroupPolicy(requestId: String) {
+private fun Cpi.validateHasGroupPolicy(requestId: String? = null) {
     if (this.metadata.groupPolicy.isNullOrEmpty()) throw ValidationException("CPI is missing a group policy file", requestId)
 }
 
