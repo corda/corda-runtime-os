@@ -199,7 +199,7 @@ class MemberSynchronisationServiceImpl internal constructor(
     private inner class ActiveImpl(
         membershipConfigurations: SmartConfig,
     ) : InnerSynchronisationService {
-        private val maxDelayBetweenRequests = membershipConfigurations
+        private val maxDelayBetweenRequestsInMillis = membershipConfigurations
             .getLong(MAX_DURATION_BETWEEN_SYNC_REQUESTS_MINUTES).let {
                 TimeUnit.MINUTES.toMillis(it)
             }
@@ -209,10 +209,10 @@ class MemberSynchronisationServiceImpl internal constructor(
                 logger.error("Deserialization of KeyValuePairList from MembershipPackage failed while processing membership updates.")
             }, KeyValuePairList::class.java)
 
-        private fun delayToNextRequest() : Long {
+        private fun delayToNextRequestInMilliSeconds(): Long {
             // Add noise to prevent all the members to ask for sync in the same time
-            return maxDelayBetweenRequests -
-                (random.nextDouble() * 0.1 * maxDelayBetweenRequests).toLong()
+            return maxDelayBetweenRequestsInMillis -
+                (random.nextDouble() * 0.1 * maxDelayBetweenRequestsInMillis).toLong()
         }
 
         override fun cancelCurrentRequestAndScheduleNewOne(
@@ -221,7 +221,7 @@ class MemberSynchronisationServiceImpl internal constructor(
         ): Boolean {
             coordinator.setTimer(
                 key = "SendSyncRequest-${memberIdentity.fullHash}",
-                delay = delayToNextRequest()
+                delay = delayToNextRequestInMilliSeconds()
             ) {
                 SendSyncRequest(memberIdentity, mgm, it)
             }
@@ -358,6 +358,7 @@ class MemberSynchronisationServiceImpl internal constructor(
             publisher.publish(listOf(syncRequest)).forEach {
                 it.get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             }
+            logger.info("Member ${request.member} had asked the MGM for a sync package.")
         } catch (e: Exception) {
             logger.warn("Sync request for ${request.member} failed!", e)
         }
