@@ -20,7 +20,7 @@ import org.osgi.service.component.annotations.Reference
  */
 internal class IsolatingResolverBundleHook(private val sandboxService: SandboxContextService) : ResolverHook {
     // We do not take any action here, and filter the candidates in `filterMatches` instead. Taking an action here
-    // causes Felix to create a whitelist in `prepareResolverHooks`, which will be missing the system bundle packages.
+    // causes Felix to create an allow list in `prepareResolverHooks`, which will be missing the system bundle packages.
     // This is not the behaviour we want.
     override fun filterResolvable(candidates: MutableCollection<BundleRevision>?) {}
 
