@@ -7,6 +7,7 @@ import net.corda.flow.fiber.InitiatedFlow
 import net.corda.flow.fiber.RPCStartedFlow
 import net.corda.flow.pipeline.factory.FlowFactory
 import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.messaging.FlowInfo
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.UntrustworthyData
@@ -24,7 +25,8 @@ class FakeFlowFactory : FlowFactory {
 
     override fun createInitiatedFlow(
         flowStartContext: FlowStartContext,
-        sandboxGroupContext: SandboxGroupContext
+        sandboxGroupContext: SandboxGroupContext,
+        contextProperties: Map<String, String>
     ): FlowLogicAndArgs {
         return InitiatedFlow(FakeInitiatedFlow(), FakeFlowSession())
     }
@@ -33,6 +35,9 @@ class FakeFlowFactory : FlowFactory {
         override val counterparty: MemberX500Name
             get() = TODO("Not yet implemented")
 
+        override val contextProperties: FlowContextProperties
+            get() = TODO("Not yet implemented")
+        
         override fun getCounterpartyFlowInfo(): FlowInfo {
             TODO("Not yet implemented")
         }

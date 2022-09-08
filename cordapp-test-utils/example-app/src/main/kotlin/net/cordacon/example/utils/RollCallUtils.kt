@@ -6,7 +6,13 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MemberInfo
 
 @Suspendable
-fun findStudents(memberLookup: MemberLookup): List<MemberInfo> = memberLookup.lookup().minus(memberLookup.myInfo())
+fun findStudents(memberLookup: MemberLookup): List<MemberInfo> {
+    val myInfo = memberLookup.myInfo()
+    return memberLookup.lookup()
+        .minus(myInfo)
+        .filter { it.name.organisation == myInfo.name.organisation }
+        .sortedBy { it.name }
+}
 
 fun createScript(
     studentResponses: List<Pair<MemberX500Name, String>>,
@@ -26,7 +32,7 @@ fun createScript(
 
 val MemberX500Name.rollCallName: String
     get() {
-        return this.commonName ?: this.organisation
+        return requireNotNull(this.commonName) { "Students and teacher need a common name for the RollCall to work"}
     }
 
 val MemberX500Name.rollCallOrder: String

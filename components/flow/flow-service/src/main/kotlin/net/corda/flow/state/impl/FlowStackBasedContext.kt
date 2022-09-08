@@ -5,15 +5,17 @@ import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.state.ContextPlatformProperties
 import net.corda.flow.state.FlowContext
 import net.corda.flow.utils.KeyValueStore
+import net.corda.serialization.checkpoint.NonSerializable
+import net.corda.v5.application.flows.FlowContextProperties.Companion.CORDA_RESERVED_PREFIX
 
 /**
- * The FlowContextImpl doesn't have its own KeyValuePairLists because that would present a problem when trying to
- * suspend and resume the executing Fiber. The storage is entirely backed by the FlowStack. This class must remain
- * stateless.
+ * [FlowStackBasedContext] is the core means of interacting with flow context internally in Corda. It is stack based
+ * context, entirely backed by the FlowStack. This class must remain stateless such that suspending and resuming the
+ * stack correctly re-establishes the stack based context.
  */
-class FlowContextImpl(
+class FlowStackBasedContext(
     private val flowStack: FlowStackImpl
-) : FlowContext {
+) : FlowContext, NonSerializable {
 
     override val platformProperties = object : ContextPlatformProperties {
         override fun put(key: String, value: String) {
@@ -28,10 +30,6 @@ class FlowContextImpl(
 
             platformContextKeyValueStore[key] = value
         }
-    }
-
-    companion object {
-        const val CORDA_RESERVED_PREFIX = "corda." // must be lowercase
     }
 
     override fun put(key: String, value: String) {

@@ -18,6 +18,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.security.KeyPairGenerator
 
 class SimFiberBaseTest {
 
@@ -140,7 +141,7 @@ class SimFiberBaseTest {
     }
 
     @Test
-    fun `should provide memberInfos for all members`() {
+    fun `should provide MemberInfos for all members`() {
         // Given a SimFiber
         val fiber = SimFiberBase()
 
@@ -157,8 +158,26 @@ class SimFiberBaseTest {
         assertThat(memberInfos.keys.sortedBy { it.organisation }, `is`(members))
     }
 
-    class Flow1 : ResponderFlow { override fun call(session: FlowSession) {} }
-    class Flow2 : ResponderFlow { override fun call(session: FlowSession) {} }
-    class Flow3InitBy1 : ResponderFlow { override fun call(session: FlowSession) {} }
-    class Flow4InitBy2 : ResponderFlow { override fun call(session: FlowSession) {} }
+    @Test
+    fun `should make registered keys available via MemberInfos`() {
+        // Given a SimFiber
+        val fiber = SimFiberBase()
+
+        // With a member
+        val member = MemberX500Name.parse("O=Alice, L=London, C=GB")
+        fiber.registerInitiator(member)
+
+        // When we get their memberInfos then the keys should be empty
+        assertThat(fiber.members[member]?.ledgerKeys, `is`(listOf()))
+
+        // When we register a key then the memberInfo should have the key
+        val key = KeyPairGenerator.getInstance("EC").generateKeyPair().public
+        fiber.registerKey(member, key)
+        assertThat(fiber.members[member]?.ledgerKeys, `is`(listOf(key)))
+    }
+
+    class Flow1 : ResponderFlow { override fun call(session: FlowSession) = Unit }
+    class Flow2 : ResponderFlow { override fun call(session: FlowSession) = Unit }
+    class Flow3InitBy1 : ResponderFlow { override fun call(session: FlowSession) = Unit }
+    class Flow4InitBy2 : ResponderFlow { override fun call(session: FlowSession) = Unit }
 }

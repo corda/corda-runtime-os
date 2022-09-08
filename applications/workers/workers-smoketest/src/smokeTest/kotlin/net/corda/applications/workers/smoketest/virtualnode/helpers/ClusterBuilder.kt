@@ -1,5 +1,6 @@
 package net.corda.applications.workers.smoketest.virtualnode.helpers
 
+import java.io.FileNotFoundException
 import java.net.URI
 import java.nio.file.Paths
 
@@ -36,6 +37,24 @@ class ClusterBuilder {
             client!!.postMultiPart(cmd, emptyMap(), mapOf("upload" to HttpsClientFileUpload(it, fileName)))
         }
     }
+
+    private fun uploadCertificateResource(cmd: String, resourceName: String, alias: String): SimpleResponse {
+        val fileName = Paths.get(resourceName).fileName.toString()
+        return getInputStream(resourceName).use {
+            client!!.putMultiPart(
+                cmd,
+                mapOf("alias" to alias),
+                mapOf("certificate" to HttpsClientFileUpload(it, fileName))
+            )
+        }
+    }
+
+    private fun getInputStream(resourceName: String) =
+        this::class.java.getResource(resourceName)?.openStream()
+            ?: throw FileNotFoundException("No such resource: '$resourceName'")
+
+    fun importCertificate(resourceName: String, tenant: String, alias: String) =
+        uploadCertificateResource("/api/v1/certificates/${tenant}", resourceName, alias)
 
     /** Assumes the resource *is* a CPB */
     fun cpbUpload(resourceName: String) = uploadUnmodifiedResource("/api/v1/cpi/", resourceName)

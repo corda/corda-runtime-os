@@ -6,8 +6,8 @@ import net.corda.flow.application.persistence.external.events.NamedQueryExternal
 import net.corda.flow.application.persistence.external.events.NamedQueryParameters
 import net.corda.flow.application.persistence.wrapWithPersistenceException
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.flow.fiber.FlowFiberSerializationService
 import net.corda.v5.application.persistence.ParameterisedQuery
+import net.corda.v5.application.serialization.SerializationService
 
 /**
  * [NamedParameterisedQuery] is used to set and execute named queries.
@@ -15,7 +15,7 @@ import net.corda.v5.application.persistence.ParameterisedQuery
 @Suppress("LongParameterList")
 class NamedParameterisedQuery<R : Any>(
     private val externalEventExecutor: ExternalEventExecutor,
-    private val flowFiberSerializationService: FlowFiberSerializationService,
+    private val serializationService: SerializationService,
     private val queryName: String,
     private var parameters: MutableMap<String, Any>,
     private var limit: Int,
@@ -52,7 +52,7 @@ class NamedParameterisedQuery<R : Any>(
                 NamedQueryExternalEventFactory::class.java,
                 NamedQueryParameters(queryName, getSerializedParameters(parameters), offset, limit)
             )
-        }.map { flowFiberSerializationService.deserialize(it.array(), expectedClass) }
+        }.map { serializationService.deserialize(it.array(), expectedClass) }
 
         return deserialized
     }
@@ -60,7 +60,7 @@ class NamedParameterisedQuery<R : Any>(
     @Suspendable
     private fun getSerializedParameters(parameters: Map<String, Any>) : Map<String, ByteBuffer> {
         return parameters.mapValues {
-            ByteBuffer.wrap(flowFiberSerializationService.serialize(it.value).bytes)
+            ByteBuffer.wrap(serializationService.serialize(it.value).bytes)
         }
     }
 }

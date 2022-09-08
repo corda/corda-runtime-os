@@ -26,5 +26,7 @@ class DefaultServicesInjectorTest {
         assertNotNull(flow.persistenceService)
         assertNotNull(flow.flowMessaging)
         assertNotNull(flow.memberLookup)
+        assertNotNull(flow.signingService)
+        assertNotNull(flow.signatureVerificationService)
     }
 }

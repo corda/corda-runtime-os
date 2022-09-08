@@ -217,7 +217,7 @@ class EnumTests {
     }
 
     @Test
-    fun enumNotWhitelistedFails() {
+    fun enumNotOnAllowListFails() {
         data class C(val c: Bras)
 
         val factory = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())

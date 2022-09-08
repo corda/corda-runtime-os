@@ -6,6 +6,7 @@ import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MemberInfo
 import java.io.Closeable
+import java.security.PublicKey
 
 interface SimFiber : Closeable, HasMemberInfos {
     fun registerInitiator(initiator: MemberX500Name)
@@ -15,6 +16,7 @@ interface SimFiber : Closeable, HasMemberInfos {
     fun lookUpResponderInstance(member: MemberX500Name, protocol: String): ResponderFlow?
     fun getOrCreatePersistenceService(member: MemberX500Name): PersistenceService
     fun createMemberLookup(member: MemberX500Name): MemberLookup
+    fun registerKey(member: MemberX500Name, publicKey: PublicKey)
 }
 
 interface HasMemberInfos {

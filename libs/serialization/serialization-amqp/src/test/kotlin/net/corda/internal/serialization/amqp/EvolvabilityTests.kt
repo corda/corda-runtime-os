@@ -311,7 +311,7 @@ class EvolvabilityTests {
             val maxTransactionSize: Int,
             val modifiedTime: Instant,
             val epoch: Int,
-            val whitelistedContractImplementations: Map<String, List<Int>>
+            val onAllowListContractImplementations: Map<String, List<Int>>
         )
 
         val factory = testDefaultFactory().apply {
