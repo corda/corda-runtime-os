@@ -8,7 +8,6 @@ import net.corda.flow.external.events.impl.ExternalEventManager
 import net.corda.flow.external.events.impl.factory.ExternalEventFactoryMap
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
-import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.keyValuePairListOf
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
