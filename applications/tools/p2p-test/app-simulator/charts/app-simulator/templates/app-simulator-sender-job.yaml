@@ -41,6 +41,14 @@ spec:
             {{- if .Values.appSimulators.sender.sendMessagesToDatabase }}
             {{- include "appSimulator.databaseArgs" . | nindent 12 }}
             {{- end }}
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: {{- if .Values.appSimulators.sender.debug.enabled }}
+                -agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend={{ if .Values.appSimulators.sender.debug.suspend }}y{{ else }}n{{ end }}
+              {{- end -}}
+              {{- if .Values.kafka.sasl.enabled }}
+                -Djava.security.auth.login.config=/etc/config/jaas.conf
+              {{- end }}
           volumeMounts:
           {{- include "appSimulator.volumeMounts" . | nindent 10 }}
           {{- if .Values.appSimulators.sender.debug.enabled }}

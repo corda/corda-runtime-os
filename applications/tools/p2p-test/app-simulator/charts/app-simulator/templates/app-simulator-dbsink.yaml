@@ -43,6 +43,15 @@ spec:
             - "--clients {{ .Values.appSimulators.dbSink.parallelClientsPerReplica }}"
             {{- include "appSimulator.kafkaArgs" . | nindent 12 }}
             {{- include "appSimulator.databaseArgs" . | nindent 12 }}
+
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: {{- if .Values.appSimulators.dbSink.debug.enabled }}
+                -agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend={{ if .Values.appSimulators.dbSink.debug.suspend }}y{{ else }}n{{ end }}
+              {{- end -}}
+              {{- if .Values.kafka.sasl.enabled }}
+                -Djava.security.auth.login.config=/etc/config/jaas.conf
+              {{- end }}
           volumeMounts:
           {{- include "appSimulator.volumeMounts" . | nindent 10 }}
           {{- if .Values.appSimulators.dbSink.debug.enabled }}

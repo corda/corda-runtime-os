@@ -155,6 +155,6 @@ Volumes for the appSimulator
 {{- if .Values.kafka.sasl.enabled  }}
 - name: jaas-conf
   secret:
-    secretName: {{ include "corda.fullname" . }}-kafka-sasl
+    secretName: {{ .Values.kafka.sasl.secretName }}
 {{- end }}
 {{- end }}

@@ -36,15 +36,6 @@ logging:
   # -- log level; one of "all", "trace", "debug", "info", "warn" (the default), "error", "fatal", or "off"
   level: "warn"
 
-# Open Telemetry configuration
-openTelemetry:
-  # -- enables the Open Telemetry Java agent for the app simulator
-  enabled: false
-  # -- the Open Telemetry endpoint to use e.g https://otel.example.com:4317; telemetry will be logged locally if this is unset
-  endpoint:
-  # -- the Open Telemetry protocol the endpoint is using; one of `grpc` or `http/protobuf`
-  protocol: "grpc"
-
 # -- node labels for pod assignment, see https://kubernetes.io/docs/user-guide/node-selection/
 nodeSelector: {}
 
@@ -106,6 +97,8 @@ kafka:
     mechanism: "SCRAM-SHA-256"
     # -- enable/disable SASL for client connection to Kafka
     enabled: false
+    # -- name of the SASL secret for client connection to Kafka
+    secretName: ""
 
 # app simulator configuration
 appSimulators:
