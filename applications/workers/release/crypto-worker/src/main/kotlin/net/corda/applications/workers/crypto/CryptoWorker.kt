@@ -49,8 +49,7 @@ class CryptoWorker @Activate constructor(
             return
         }
         if (params.hsmId.isBlank()) {
-            println("Please specify which HSM the worker must handle, like --hsm-id SOFT")
-            return
+            throw IllegalStateException("Please specify which HSM the worker must handle, like --hsm-id SOFT")
         }
         setUpHealthMonitor(healthMonitor, params.defaultParams)
         processor.start(
