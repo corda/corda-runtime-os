@@ -78,7 +78,6 @@ class CombinedWorker @Activate constructor(
         if (params.hsmId.isBlank()) {
             // the combined worker may use SOFT HSM by default unlike the crypto worker
             params.hsmId = SOFT_HSM_ID
-            return
         }
         val databaseConfig = PathAndConfig(BOOT_DB_PARAMS, params.databaseParams)
         val cryptoConfig = PathAndConfig(BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId))
