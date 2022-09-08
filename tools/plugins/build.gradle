@@ -65,8 +65,11 @@ tasks.register("cliInstallScriptsS3", Copy) {
 }
 
 
-artifacts {
-    cliInstallArchive
+tasks.named('jar').configure {
+    finalizedBy cliInstallArchive
+    if (project.hasProperty('maven.repo.s3')) {
+        finalizedBy cliInstallScriptsS3
+    }
 }
 
 tasks.register('publishOSGiImage', DeployableContainerBuilder) {
@@ -115,8 +118,15 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
     }
 }
 
-def s3Script = artifacts.add('archives', file("$project.buildDir/generatedScripts/corda-cli-installer-script.sh")) {
-    builtBy('cliInstallScriptsS3')
+def s3Script = null
+
+if (project.hasProperty('maven.repo.s3')) {
+    s3Script = artifacts.add('archives', file("$project.buildDir/generatedScripts/corda-cli-installer-script.sh")) {
+        builtBy('cliInstallScriptsS3')
+    }
+    artifacts {
+        cliInstallArchive
+    }
 }
 
 publishing {
@@ -126,10 +136,12 @@ publishing {
             groupId project.group
             artifact cliInstallArchive
         }
-        maven(MavenPublication) {
-            artifactId "corda-cli-installer-script"
-            groupId project.group
-            artifact s3Script
+        if (project.hasProperty('maven.repo.s3') && s3Script != null) {
+            maven(MavenPublication) {
+                artifactId "corda-cli-installer-script"
+                groupId project.group
+                artifact s3Script
+            }
         }
     }
     if (project.hasProperty('maven.repo.s3') && project.hasProperty('releasable')) {
