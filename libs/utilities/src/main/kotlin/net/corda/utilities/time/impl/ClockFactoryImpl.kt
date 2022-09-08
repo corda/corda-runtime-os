@@ -1,10 +1,11 @@
-package net.corda.utilities.clock.impl
+package net.corda.utilities.time.impl
 
-import net.corda.utilities.clock.ClockFactory
+import net.corda.utilities.time.ClockFactory
 import net.corda.utilities.time.UTCClock
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 
+@Suppress("unused")
 @Component(
     service = [ClockFactory::class]
 )

@@ -4,7 +4,7 @@ import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.security.RpcAuthContext
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
-import net.corda.utilities.clock.ClockFactory
+import net.corda.utilities.time.ClockFactory
 import net.corda.utilities.time.UTCClock
 import net.corda.virtualnode.rpcops.impl.v1.VirtualNodeRPCOpsImpl
 import org.junit.jupiter.api.BeforeAll
