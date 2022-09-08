@@ -1,8 +1,8 @@
 package net.corda.flow.application.sessions
 
-import net.corda.flow.fiber.DeserializedWrongAMQPObjectException
+import net.corda.flow.application.serialization.DeserializedWrongAMQPObjectException
+import net.corda.flow.application.serialization.SerializationServiceInternal
 import net.corda.flow.fiber.FlowFiber
-import net.corda.flow.fiber.FlowFiberSerializationService
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.state.FlowContext
@@ -20,7 +20,7 @@ class FlowSessionImpl(
     override val counterparty: MemberX500Name,
     private val sourceSessionId: String,
     private val flowFiberService: FlowFiberService,
-    private val flowFiberSerializationService: FlowFiberSerializationService,
+    private val serializationService: SerializationServiceInternal,
     private val flowContext: FlowContext,
     direction: Direction
 ) : FlowSession {
@@ -106,7 +106,7 @@ class FlowSessionImpl(
     }
 
     private fun serialize(payload: Any): ByteArray {
-        return flowFiberSerializationService.serialize(payload).bytes
+        return serializationService.serialize(payload).bytes
     }
 
     private fun <R : Any> deserializeReceivedPayload(
@@ -115,7 +115,7 @@ class FlowSessionImpl(
     ): UntrustworthyData<R> {
         return received[sourceSessionId]?.let {
             try {
-                UntrustworthyData(flowFiberSerializationService.deserialize(it, receiveType))
+                UntrustworthyData(serializationService.deserializeAndCheckType(it, receiveType))
             } catch (e: DeserializedWrongAMQPObjectException) {
                 throw CordaRuntimeException(
                     "Expecting to receive a ${e.expectedType} but received a ${e.deserializedType} instead, payload: " +

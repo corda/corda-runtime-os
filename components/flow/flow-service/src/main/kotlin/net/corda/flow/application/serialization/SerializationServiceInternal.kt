@@ -1,26 +1,17 @@
-package net.corda.flow.fiber
+package net.corda.flow.application.serialization
 
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.serialization.SerializedBytes
 
 /**
- * [FlowFiberSerializationService] provides simplified access to the AMQP [SerializationService] assigned to the
+ * [SerializationServiceInternal] provides simplified access to the AMQP [SerializationService] assigned to the
  * currently executing flow's sandbox.
  */
-interface FlowFiberSerializationService : SerializationService {
+interface SerializationServiceInternal : SerializationService {
 
     /**
-     * Serializes the input [obj] using the flow's [SerializationService].
-     *
-     * @param obj The object to serialize.
-     *
-     * @return [SerializedBytes] containing the serialized representation of the input object.
-     */
-    override fun <T : Any> serialize(obj: T): SerializedBytes<T>
-
-    /**
-     * Deserializes the input serialized bytes into an object of type [T] using the flow's [SerializationService].
+     * Deserializes the input serialized bytes into an object of type [T].
      *
      * The deserialized object is validated to ensure that its type matches [clazz].
      *
@@ -32,10 +23,10 @@ interface FlowFiberSerializationService : SerializationService {
      *
      * @throws DeserializedWrongAMQPObjectException If [bytes] deserializes into an object that is not a [clazz].
      */
-    override fun <T : Any> deserialize(bytes: ByteArray, clazz: Class<T>): T
+    fun <T : Any> deserializeAndCheckType(bytes: ByteArray, clazz: Class<T>): T
 
     /**
-     * Deserializes the input serialized bytes into an object of type [T] using the flow's [SerializationService].
+     * Deserializes the input serialized bytes into an object of type [T].
      *
      * @param serializedBytes The [SerializedBytes] to deserialize.
      * @param clazz [Class] containing the type [T] to deserialize to.
@@ -46,9 +37,7 @@ interface FlowFiberSerializationService : SerializationService {
      * @throws DeserializedWrongAMQPObjectException If [serializedBytes] deserializes into an object that is not a
      * [clazz].
      */
-    override fun <T : Any> deserialize(serializedBytes: SerializedBytes<T>, clazz: Class<T>): T {
-        TODO("Not yet implemented")
-    }
+    fun <T : Any> deserializeAndCheckType(serializedBytes: SerializedBytes<T>, clazz: Class<T>): T
 }
 
 class DeserializedWrongAMQPObjectException(
