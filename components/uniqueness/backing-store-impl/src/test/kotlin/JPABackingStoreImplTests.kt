@@ -91,7 +91,7 @@ class JPABackingStoreImplTests {
         }
 
         @Test
-        fun `isRunning returns life cycle isRunning`() {
+        fun `Get running life cycle status`() {
             backingStoreImpl.isRunning
             Mockito.verify(lifecycleCoordinator).isRunning
         }
@@ -190,7 +190,7 @@ class JPABackingStoreImplTests {
     @Nested
     inner class TransactionTests {
         // FIXME: a temporary constant until MAX_RETRIES is configurable.
-        private val maxRetriesCnt = 11
+        private val maxRetriesCnt = 10
         private val expectedTxnExceptions = mapOf(
             "EntityExistsException" to EntityExistsException(),
             "RollbackException" to RollbackException(),

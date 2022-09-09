@@ -12,6 +12,7 @@ dependencies {
     api project(':libs:lifecycle:lifecycle')
 
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-crypto"
     implementation "net.corda:corda-db-schema"
@@ -22,15 +23,30 @@ dependencies {
     implementation project(':libs:db:db-admin-impl')
     implementation project(":libs:uniqueness:jpa-backing-store-datamodel")
 
-    // TODO: clean up
+    // TODO: clean up - are all required?
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
-    testImplementation project(":testing:crypto-testkit")
+    testImplementation project(":testing:crypto-testkit") // ?
     testImplementation project(":testing:test-utilities")
-    testImplementation project(":testing:uniqueness:backing-store-fake")
+    testImplementation project(":testing:uniqueness:backing-store-fake") // ?
     testImplementation project(":testing:uniqueness:uniqueness-utilities")
 
+    // TODO: clean up - are all required?
+    integrationTestApi project(":components:db:db-connection-manager")
+    integrationTestImplementation 'net.corda:corda-crypto' // ?
+    integrationTestImplementation 'net.corda:corda-db-schema'
+    integrationTestImplementation project(':libs:db:db-admin')
+    integrationTestImplementation project(':libs:db:db-admin-impl')
+    integrationTestImplementation project(':libs:db:db-core')
+    integrationTestImplementation project(':libs:db:db-orm')
+    integrationTestImplementation project(':libs:db:db-orm-impl')
+    integrationTestImplementation project(':libs:lifecycle:lifecycle')
+    integrationTestImplementation project(':libs:uniqueness:jpa-backing-store-datamodel')
+    integrationTestImplementation project(':testing:db-testkit')
+
+    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 
     // For JSON serialization to DB
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"

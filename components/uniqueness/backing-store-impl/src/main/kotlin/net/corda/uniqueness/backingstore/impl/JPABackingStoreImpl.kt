@@ -44,8 +44,8 @@ open class JPABackingStoreImpl @Activate constructor(
     //  refactored. If createDefaultUniquenessDb() can't be refactored and we want to remove this default parameter,
     //  revert this change and the only affected test is
     //  "Registration status change event instantiates entity manager when event status is up"
-    @Reference(service = LiquibaseSchemaMigratorImpl::class)
-    private val schemaMigrator: LiquibaseSchemaMigratorImpl = LiquibaseSchemaMigratorImpl()
+    @Reference(service = LiquibaseSchemaMigrator::class)
+    private val schemaMigrator: LiquibaseSchemaMigrator = LiquibaseSchemaMigratorImpl()
 ) : BackingStore {
 
     private companion object {
@@ -108,7 +108,7 @@ open class JPABackingStoreImpl @Activate constructor(
         override fun executeTransaction(
             block: (BackingStore.Session, BackingStore.Session.TransactionOps) -> Unit
         ) {
-            for (retryCount in 0..MAX_RETRIES) {
+            for (retryCount in 1..MAX_RETRIES) {
                 try {
                     entityManager.transaction.begin()
                     block(this, transactionOps)
@@ -345,6 +345,7 @@ open class JPABackingStoreImpl @Activate constructor(
                 if (event.status == LifecycleStatus.UP) {
 
                     createDefaultUniquenessDb(schemaMigrator)
+//                    createDefaultUniquenessDb()
 
                     entityManagerFactory = dbConnectionManager.getOrCreateEntityManagerFactory(
                         DEFAULT_UNIQUENESS_DB_NAME,
@@ -371,7 +372,7 @@ open class JPABackingStoreImpl @Activate constructor(
      * store uniqueness data. It needs replacing with a solution to retrieve the appropriate DB
      * connection for a given notary service identity, and a mechanism to create the DB connection
      */
-    private fun createDefaultUniquenessDb(schemaMigrator: LiquibaseSchemaMigratorImpl) {
+    private fun createDefaultUniquenessDb(schemaMigrator: LiquibaseSchemaMigrator) {
         jpaEntitiesRegistry.register(
             CordaDb.Uniqueness.persistenceUnitName,
             JPABackingStoreEntities.classes
