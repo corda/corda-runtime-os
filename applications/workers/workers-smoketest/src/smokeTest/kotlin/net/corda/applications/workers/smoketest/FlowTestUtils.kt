@@ -182,9 +182,9 @@ fun createKeyFor(holdingId: String, alias: String, category: String, scheme: Str
             command { createKey(holdingId, alias, category, scheme) }
             condition { it.code == 200 }
             failMessage("Failed to create key for holding id '$holdingId'")
-        }.body
+        }.toJson()
         assertWithRetry {
-            command { getKey(holdingId, keyId) }
+            command { getKey(holdingId, keyId["id"].textValue()) }
             condition { it.code == 200 }
             failMessage("Failed to get key for holding id '$holdingId' and key id '$keyId'")
         }.body
