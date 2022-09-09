@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
+import com.typesafe.config.ConfigRenderOptions
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.component.impl.AbstractConfigurableComponent
@@ -132,7 +133,10 @@ class CryptoServiceFactoryImpl @Activate constructor(
             val retry = hsmConfig.retry
             val hsm = hsmConfig.hsm
             val cryptoService = cryptoServiceProvider.getInstance(
-                objectMapper.convertValue(hsm.cfg.root().unwrapped(), cryptoServiceProvider.configType),
+                objectMapper.readValue(
+                    hsm.cfg.root().render(ConfigRenderOptions.concise()),
+                    cryptoServiceProvider.configType
+                ),
                 cryptoConfig.toConfigurationSecrets()
             )
             CryptoServiceDecorator.create(
