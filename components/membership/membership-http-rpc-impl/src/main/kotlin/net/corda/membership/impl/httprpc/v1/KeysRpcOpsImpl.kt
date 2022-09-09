@@ -142,14 +142,12 @@ class KeysRpcOpsImpl @Activate constructor(
         hsmCategory: String,
         scheme: String
     ): KeyPairIdentifier {
-        return cryptoOpsClient.generateKeyPair(
+        return KeyPairIdentifier(cryptoOpsClient.generateKeyPair(
             tenantId = tenantId,
             category = hsmCategory.uppercase(),
             alias = alias,
             scheme = scheme
-        ).publicKeyId().run {
-            KeyPairIdentifier(this)
-        }
+        ).publicKeyId())
     }
 
     override fun generateKeyPem(
