@@ -134,11 +134,11 @@ publishing {
             groupId project.group
             artifact cliInstallArchive
         }
-        if (project.hasProperty(S3_BUCKET_URI_PROPERTY) && s3Script != null) {
+        if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
             maven(MavenPublication) {
                 artifactId "corda-cli-installer-script"
                 groupId project.group
-                artifact s3Script
+                artifact cliInstallScriptsS3
             }
         }
     }
