@@ -1,11 +1,11 @@
 package net.corda.v5.ledger.obsolete.notary
 
-import net.corda.v5.application.flows.exceptions.FlowException
+import java.time.Instant
 import net.corda.v5.base.annotations.CordaSerializable
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.obsolete.contracts.StateRef
 import net.corda.v5.ledger.obsolete.contracts.TimeWindow
-import java.time.Instant
 
 /**
  * Exception thrown by the notary service if any issues are encountered while trying to commit a transaction. The
@@ -16,7 +16,7 @@ class NotaryException(
     val error: NotaryError,
     /** Id of the transaction to be notarised. Can be _null_ if an error occurred before the id could be resolved. */
     val txId: SecureHash?
-) : FlowException("Unable to notarise transaction ${txId ?: "<Unknown>"} : $error") {
+) : CordaRuntimeException("Unable to notarise transaction ${txId ?: "<Unknown>"} : $error") {
 
     constructor(error: NotaryError) : this(error, txId = null)
 }

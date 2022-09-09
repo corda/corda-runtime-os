@@ -1,6 +1,5 @@
 package net.corda.v5.ledger.obsolete.contracts
 
-import net.corda.v5.application.flows.exceptions.FlowException
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
@@ -8,14 +7,13 @@ import net.corda.v5.ledger.obsolete.identity.Party
 import net.corda.v5.ledger.obsolete.services.AttachmentId
 import net.corda.v5.membership.GroupParameters
 
-
 /**
  * The node asked a remote peer for the transaction identified by [hash] because it is a dependency of a transaction
  * being resolved, but the remote peer would not provide it.
  *
  * @property hash Merkle root of the transaction being resolved, see [WireTransaction.id][net.corda.v5.ledger.obsolete.transactions.WireTransaction.id]
  */
-open class TransactionResolutionException(val hash: SecureHash, message: String) : FlowException(message) {
+open class TransactionResolutionException(val hash: SecureHash, message: String) : CordaRuntimeException(message) {
 
     constructor(hash: SecureHash) : this(hash, message = "Transaction resolution failure for $hash")
     /**
@@ -33,7 +31,7 @@ open class TransactionResolutionException(val hash: SecureHash, message: String)
  *
  * @property hash Hash of the bytes of the attachment, see [Attachment.id]
  */
-class AttachmentResolutionException(val hash: AttachmentId) : FlowException("Attachment resolution failure for $hash")
+class AttachmentResolutionException(val hash: AttachmentId) : CordaRuntimeException("Attachment resolution failure for $hash")
 
 /**
  * A non-specific exception for the attachment identified by [attachmentId]. The context
@@ -41,18 +39,17 @@ class AttachmentResolutionException(val hash: AttachmentId) : FlowException("Att
  * @property attachmentId
  */
 class BrokenAttachmentException(val attachmentId: AttachmentId, message: String?, cause: Throwable?)
-    : FlowException("Attachment $attachmentId has error (${message ?: "no message"})", cause)
+    : CordaRuntimeException("Attachment $attachmentId has error (${message ?: "no message"})", cause)
 
 /**
  * Indicates that some aspect of the transaction named by [txId] violates the platform rules. The exact type of failure
- * is expressed using a subclass. TransactionVerificationException is a [FlowException] and thus when thrown inside
- * a flow, the details of the failure will be serialised, propagated to the peer and rethrown.
+ * is expressed using a subclass.
  *
  * @property txId the Merkle root hash (identifier) of the transaction that failed verification.
  */
 @Suppress("MemberVisibilityCanBePrivate")
 abstract class TransactionVerificationException(val txId: SecureHash, message: String, cause: Throwable?)
-    : FlowException("$message, transaction: $txId", cause) {
+    : CordaRuntimeException("$message, transaction: $txId", cause) {
 
     /**
      * Indicates that one of the [Contract.verify] methods selected by the contract constraints and attachments
