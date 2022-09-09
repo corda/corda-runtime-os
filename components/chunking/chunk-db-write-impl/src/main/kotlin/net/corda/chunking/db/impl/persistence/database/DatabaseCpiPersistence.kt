@@ -95,9 +95,20 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
             createOrUpdateCpkFileEntities(em, cpi.cpks)
 
-            cpkDbChangeLogEntities.forEach { em.merge(it) }
+            updateChangeLogs(cpkDbChangeLogEntities, em)
 
             return@persistMetadataAndCpks managedCpiMetadataEntity
+        }
+    }
+
+    private fun updateChangeLogs(
+        cpkDbChangeLogEntities: List<CpkDbChangeLogEntity>,
+        em: EntityManager
+    ) {
+        cpkDbChangeLogEntities.forEach {
+            val inDb = em.find(CpkDbChangeLogEntity::class.java, it.id)
+            if (inDb!=null) it.entityVersion = inDb.entityVersion
+            em.merge(it)
         }
     }
 
@@ -139,7 +150,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
             createOrUpdateCpkFileEntities(em, cpi.cpks)
 
-            cpkDbChangeLogEntities.forEach { em.merge(it) }
+            updateChangeLogs(cpkDbChangeLogEntities, em)
 
             return cpiMetadataEntity
         }
