@@ -206,7 +206,7 @@ internal class HttpRpcServerInternal(
 
     private fun Javalin.registerHandlerForRoute(routeInfo: RouteInfo, handlerType: HandlerType) {
         try {
-            log.info("Add \"$handlerType\" handler for \"${routeInfo.fullPath}\".")
+            log.trace("Add \"$handlerType\" handler for \"${routeInfo.fullPath}\".")
 
             addHandler(handlerType, routeInfo.fullPath, routeInfo.invokeHttpMethod())
 
