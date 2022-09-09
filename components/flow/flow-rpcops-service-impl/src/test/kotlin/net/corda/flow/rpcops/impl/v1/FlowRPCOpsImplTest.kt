@@ -12,6 +12,7 @@ import net.corda.flow.rpcops.v1.types.request.StartFlowParameters
 import net.corda.flow.rpcops.v1.types.response.StartableFlowsResponse
 import net.corda.httprpc.JsonObject
 import net.corda.httprpc.exception.InvalidInputDataException
+import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.ws.DuplexChannel
@@ -125,6 +126,21 @@ class FlowRPCOpsImplTest {
     }
 
     @Test
+    fun `get flow status throws bad request if short hash is invalid`() {
+        val flowRPCOps =
+            FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory)
+        flowRPCOps.initialise(SmartConfigImpl.empty())
+
+        assertThrows<BadRequestException> {
+            flowRPCOps.getFlowStatus("invalid", "")
+        }
+
+        verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(any())
+        verify(flowStatusCacheService, never()).getStatus(any(), any())
+        verify(messageFactory, never()).createFlowStatusResponse(any())
+    }
+
+    @Test
     fun `get multiple flow status`() {
         whenever(flowStatusCacheService.getStatusesPerIdentity(any())).thenReturn(listOf(FlowStatus(), FlowStatus()))
         val flowRPCOps =
@@ -149,6 +165,21 @@ class FlowRPCOpsImplTest {
         }
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
+        verify(flowStatusCacheService, never()).getStatusesPerIdentity(any())
+        verify(messageFactory, never()).createFlowStatusResponse(any())
+    }
+
+    @Test
+    fun `get multiple flow status throws bad request if short hash is invalid`() {
+        val flowRPCOps =
+            FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory)
+        flowRPCOps.initialise(SmartConfigImpl.empty())
+
+        assertThrows<BadRequestException> {
+            flowRPCOps.getMultipleFlowStatus("invalid")
+        }
+
+        verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(any())
         verify(flowStatusCacheService, never()).getStatusesPerIdentity(any())
         verify(messageFactory, never()).createFlowStatusResponse(any())
     }
@@ -185,6 +216,23 @@ class FlowRPCOpsImplTest {
 
         verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(any())
         verify(flowClassRpcOps, never()).getStartableFlows(any())
+        verify(flowStatusCacheService, never()).getStatus(any(), any())
+        verify(messageFactory, never()).createStartFlowEvent(any(), any(), any(), any(), any())
+        verify(messageFactory, never()).createStartFlowStatus(any(), any(), any())
+        verify(publisher, never()).publish(any())
+        verify(messageFactory, never()).createStartFlowStatus(any(), any(), any())
+    }
+
+    @Test
+    fun `start flow event throws bad request if short hash is invalid`() {
+        val flowRPCOps =
+            FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory)
+        flowRPCOps.initialise(SmartConfigImpl.empty())
+
+        assertThrows<BadRequestException> {
+            flowRPCOps.startFlow("invalid", StartFlowParameters("", "", TestJsonObject()))
+        }
+
         verify(flowStatusCacheService, never()).getStatus(any(), any())
         verify(messageFactory, never()).createStartFlowEvent(any(), any(), any(), any(), any())
         verify(messageFactory, never()).createStartFlowStatus(any(), any(), any())
@@ -273,7 +321,7 @@ class FlowRPCOpsImplTest {
     }
 
     @Test
-    fun `registerFlowStatusUpdatesFeed throws resource not found if virtual node does not exist`() {
+    fun `registerFlowStatusUpdatesFeed sends resource not found if virtual node does not exist`() {
         val duplexChannel = mock<DuplexChannel>()
         val exceptionArgumentCaptor = argumentCaptor<Exception>()
 
@@ -289,6 +337,24 @@ class FlowRPCOpsImplTest {
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
         verify(duplexChannel, times(1)).error(any())
         assertInstanceOf(ResourceNotFoundException::class.java, exceptionArgumentCaptor.firstValue.cause)
+    }
+
+    @Test
+    fun `registerFlowStatusUpdatesFeed sends bad request if short hash is invalid`() {
+        val duplexChannel = mock<DuplexChannel>()
+        val exceptionArgumentCaptor = argumentCaptor<Exception>()
+
+        doNothing().whenever(duplexChannel).error(exceptionArgumentCaptor.capture())
+
+        val flowRPCOps =
+            FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory)
+        flowRPCOps.initialise(SmartConfigImpl.empty())
+
+        flowRPCOps.registerFlowStatusUpdatesFeed(duplexChannel, "invalid", "")
+
+        verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(any())
+        verify(duplexChannel, times(1)).error(any())
+        assertInstanceOf(BadRequestException::class.java, exceptionArgumentCaptor.firstValue.cause)
     }
 
 }
