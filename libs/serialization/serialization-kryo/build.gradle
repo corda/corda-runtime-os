@@ -28,17 +28,19 @@ dependencies {
     implementation "net.corda:corda-cipher-suite"
     implementation project(":libs:packaging:packaging")
     implementation "net.corda:corda-serialization"
+    implementation "net.corda:corda-ledger-common"
 
     implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
     implementation "com.esotericsoftware:kryo:$kryoVersion"
     implementation project(path: ':libs:serialization:kryo-serializers', configuration: 'bundle')
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "org.slf4j:slf4j-api"
-    
+
     implementation project(":libs:sandbox")
     implementation project(":libs:serialization:serialization-checkpoint-api")
     implementation project(path: ':libs:serialization:serialization-encoding', configuration: 'bundle')
     implementation project(":libs:utilities")
+    implementation project(":libs:ledger:ledger-common-impl")
     runtimeOnly project(':libs:crypto:cipher-suite-impl')
 
     cpbs project(path: 'cpks:serializable-cpk-one', configuration: 'cordaCPB')
