@@ -1,6 +1,7 @@
 package net.corda.uniqueness.checker.impl
 
 import net.corda.crypto.testkit.SecureHashUtils
+import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.data.uniqueness.UniquenessCheckResponseAvro
 import net.corda.data.uniqueness.UniquenessCheckResultSuccessAvro
@@ -10,12 +11,14 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.impl.JpaEntitiesRegistryImpl
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.AutoTickTestClock
 import net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl
 import net.corda.uniqueness.backingstore.jpa.datamodel.JPABackingStoreEntities
 import net.corda.uniqueness.checker.UniquenessChecker
 import net.corda.uniqueness.utils.UniquenessAssertions
 import net.corda.v5.crypto.SecureHash
+import net.corda.virtualnode.toAvro
 import org.apache.avro.AvroRuntimeException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.*
@@ -51,6 +54,9 @@ class UniquenessCheckerImplIntegrationTests {
 
     private val baseTime: Instant = Instant.EPOCH
 
+    private val defaultHoldingIdentity = createTestHoldingIdentity(
+        "C=GB, L=London, O=Alice", "Test Group").toAvro()
+
     // We don't use Instant.MAX because this appears to cause a long overflow in Avro
     private val defaultTimeWindowUpperBound: Instant =
         LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
@@ -65,6 +71,8 @@ class UniquenessCheckerImplIntegrationTests {
             : UniquenessCheckRequestAvro.Builder =
         UniquenessCheckRequestAvro.newBuilder(
             UniquenessCheckRequestAvro(
+                defaultHoldingIdentity,
+                ExternalEventContext(),
                 txId.toString(),
                 emptyList(),
                 emptyList(),
@@ -132,6 +140,9 @@ class UniquenessCheckerImplIntegrationTests {
         )
 
         uniquenessChecker = BatchedUniquenessCheckerImpl(
+            mock(),
+            mock(),
+            mock(),
             mock(),
             testClock,
             backingStore)
