@@ -18,13 +18,15 @@ import org.osgi.service.component.propertytypes.ServiceRanking
 @ServiceRanking(Int.MAX_VALUE)
 @Component(service = [FlowFactory::class, FakeFlowFactory::class])
 class FakeFlowFactory : FlowFactory {
+
     override fun createFlow(startFlowEvent: StartFlow, sandboxGroupContext: SandboxGroupContext): FlowLogicAndArgs {
         return RPCStartedFlow(FakeFlow(), FakeRPCRequestData())
     }
 
     override fun createInitiatedFlow(
         flowStartContext: FlowStartContext,
-        sandboxGroupContext: SandboxGroupContext
+        sandboxGroupContext: SandboxGroupContext,
+        contextProperties: Map<String, String>
     ): FlowLogicAndArgs {
         return InitiatedFlow(FakeInitiatedFlow(), FakeFlowSession())
     }

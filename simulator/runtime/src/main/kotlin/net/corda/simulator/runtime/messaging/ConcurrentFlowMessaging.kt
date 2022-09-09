@@ -9,7 +9,6 @@ import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.UntrustworthyData
 import net.corda.v5.base.types.MemberX500Name
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.thread
@@ -38,9 +37,6 @@ class ConcurrentFlowMessaging(
     private val injector: FlowServicesInjector,
     private val flowFactory: FlowFactory
 ) : FlowMessaging {
-    override fun close(sessions: Set<FlowSession>) {
-        TODO("Not yet implemented")
-    }
 
     override fun initiateFlow(x500Name: MemberX500Name): FlowSession {
         val protocol = flowClass.getAnnotation(InitiatingFlow::class.java)?.protocol
@@ -59,16 +55,12 @@ class ConcurrentFlowMessaging(
         val fromInitiatorToResponder = LinkedBlockingQueue<Any>()
         val fromResponderToInitiator = LinkedBlockingQueue<Any>()
         val initiatorSession = BlockingQueueFlowSession(
-            initiator,
             x500Name,
-            flowClass,
             fromInitiatorToResponder,
             fromResponderToInitiator
         )
         val recipientSession = BlockingQueueFlowSession(
-            x500Name,
             initiator,
-            flowClass,
             fromResponderToInitiator,
             fromInitiatorToResponder
         )
@@ -83,22 +75,4 @@ class ConcurrentFlowMessaging(
     ): FlowSession {
         TODO("Not yet implemented")
     }
-
-    override fun <R> receiveAll(receiveType: Class<out R>, sessions: Set<FlowSession>): List<UntrustworthyData<R>> {
-        TODO("Not yet implemented")
-    }
-
-    override fun receiveAllMap(sessions: Map<FlowSession, Class<out Any>>): Map<FlowSession, UntrustworthyData<Any>> {
-        TODO("Not yet implemented")
-    }
-
-    override fun sendAll(payload: Any, sessions: Set<FlowSession>) {
-        TODO("Not yet implemented")
-    }
-
-    override fun sendAllMap(payloadsPerSession: Map<FlowSession, *>) {
-        TODO("Not yet implemented")
-    }
-
-
 }
