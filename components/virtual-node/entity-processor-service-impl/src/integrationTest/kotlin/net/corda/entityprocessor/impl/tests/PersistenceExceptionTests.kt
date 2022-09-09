@@ -6,6 +6,7 @@ import java.time.Instant
 import java.util.UUID
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponse
@@ -167,7 +168,11 @@ class PersistenceExceptionTests {
         val (dbConnectionManager, oldRequest) = setupExceptionHandlingTests()
         val unknownCommand = ExceptionEnvelope("", "") // Any Avro object, or null works here.
         val badRequest =
-            EntityRequest(oldRequest.holdingIdentity, unknownCommand, ExternalEventContext("request id", "flow id"))
+            EntityRequest(
+                oldRequest.holdingIdentity,
+                unknownCommand,
+                ExternalEventContext("request id", "flow id", KeyValuePairList(emptyList()))
+            )
 
         val entitySandboxService =
             EntitySandboxServiceImpl(
@@ -220,14 +225,14 @@ class PersistenceExceptionTests {
         val sandboxOne = entitySandboxService.get(virtualNodeInfoOne.holdingIdentity)
 
         // create dog using dog-aware sandbox
-        val dog = sandboxOne.createDog("Stray", owner="Not Known")
+        val dog = sandboxOne.createDog("Stray", owner = "Not Known")
         val serialisedDog = sandboxOne.getSerializer().serialize(dog.instance).bytes
 
         // create persist request for the sandbox that isn't dog-aware
         val request = EntityRequest(
             virtualNodeInfoOne.holdingIdentity.toAvro(),
             PersistEntities(listOf(ByteBuffer.wrap(serialisedDog))),
-            ExternalEventContext("request id", "flow id")
+            ExternalEventContext("request id", "flow id", KeyValuePairList(emptyList()))
         )
         return Pair(dbConnectionManager, request)
     }
