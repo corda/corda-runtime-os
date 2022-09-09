@@ -1,8 +1,8 @@
 package net.corda.libs.configuration.validation.impl
 
 import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
+import com.fasterxml.jackson.databind.node.TextNode
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.secret.MaskedSecretsLookupService
 
@@ -13,6 +13,8 @@ class ConfigSecretHelper {
 
     private companion object {
         const val TMP_SECRET = MaskedSecretsLookupService.MASK_VALUE
+        val TMP_SECRET_NODE: JsonNode = TextNode(TMP_SECRET)
+
     }
 
     /**
@@ -21,29 +23,31 @@ class ConfigSecretHelper {
      * @param node Node to replace secrets with strings
      * @return a new JSON node containing only secrets
      */
-    fun hideSecrets(node: JsonNode): JsonNode {
-        return hideSecretsRecursive(node)
+    fun hideSecrets(node: JsonNode): MutableMap<String, JsonNode> {
+        return hideSecretsRecursive(node, node)
     }
 
     private fun hideSecretsRecursive(
+        parentNode: JsonNode,
         node: JsonNode,
         secrets: MutableMap<String, JsonNode> = mutableMapOf(),
+        nodePath: String = "",
         nodeName: String = ""
-    ): JsonNode {
+    ): MutableMap<String, JsonNode> {
+        val newPath = if (nodePath == "") nodeName else "$nodePath.$nodeName"
         if (node.isObject) {
-            for ((name, newNode) in node.fields().asSequence().toList()) {
-                val nodePath = if (nodeName == "") name else "$nodeName.$name"
-                if (name.endsWith(".${SmartConfig.SECRET_KEY}") || name == SmartConfig.SECRET_KEY) {
-                    secrets[nodePath] = newNode
-                    (node as ObjectNode).remove(name)
-                    node.put(name, TMP_SECRET)
+            for ((fieldName, fieldNode) in node.fields().asSequence().toList()) {
+                if (fieldName.endsWith(".${SmartConfig.SECRET_KEY}") || fieldName == SmartConfig.SECRET_KEY) {
+                    secrets[newPath] = node
+                    (parentNode as ObjectNode).remove(nodeName)
+                    parentNode.set(nodeName, TMP_SECRET_NODE)
                 } else {
-                    hideSecretsRecursive(newNode, secrets, nodePath)
+                    hideSecretsRecursive(node, fieldNode, secrets, newPath, fieldName)
                 }
             }
         }
 
-        return secrets.toJSONNode()
+        return secrets
     }
 
     /**
@@ -51,19 +55,19 @@ class ConfigSecretHelper {
      * @param node Node to update with secrets
      * @param secretsNode Secrets to insert into [node]
      */
-    fun insertSecrets(node: JsonNode, secretsNode: JsonNode) {
+    fun insertSecrets(node: JsonNode, secretsNode: MutableMap<String, JsonNode>) {
         insertSecretsRecursive(node, secretsNode)
     }
 
     private fun insertSecretsRecursive(
         node: JsonNode,
-        secretsNode: JsonNode,
+        secretsNode: MutableMap<String, JsonNode>,
         nodeName: String = ""
     ) {
         if (node.isObject) {
             for ((name, newNode) in node.fields().asSequence().toList()) {
                 val nodePath = if (nodeName == "") name else "$nodeName.$name"
-                if (name.endsWith(".${SmartConfig.SECRET_KEY}") || name == SmartConfig.SECRET_KEY) {
+                if (secretsNode.keys.contains(nodePath)) {
                     val secret = secretsNode[nodePath]
                     (node as ObjectNode).set(name, secret)
                 } else {
@@ -73,9 +77,4 @@ class ConfigSecretHelper {
         }
     }
 
-    private fun <K, V> MutableMap<K, V>.toJSONNode(): JsonNode {
-        val objectMapper = ObjectMapper()
-        val jsonNode = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(this)
-        return objectMapper.readTree(jsonNode)
-    }
 }
