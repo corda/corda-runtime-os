@@ -20,7 +20,11 @@ class WakeupWaitingForHandler : FlowWaitingForHandler<Wakeup> {
         log.info("Waking up [${context.checkpoint.flowId}]")
         val pendingPlatformError = context.checkpoint.pendingPlatformError
         return if (pendingPlatformError != null) {
-            FlowContinuation.Error(CordaRuntimeException("Type='${pendingPlatformError.errorType}' Message='${pendingPlatformError.errorMessage}'"))
+            FlowContinuation.Error(
+                CordaRuntimeException(
+                    "Type='${pendingPlatformError.errorType}' Message='${pendingPlatformError.errorMessage}'"
+                )
+            )
         } else {
             FlowContinuation.Run(Unit)
         }
