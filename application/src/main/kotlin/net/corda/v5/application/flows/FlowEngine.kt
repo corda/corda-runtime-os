@@ -1,42 +1,59 @@
 package net.corda.v5.application.flows
 
-import net.corda.v5.application.flows.exceptions.FlowException
+import java.util.UUID
+import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
-import java.util.*
 
+/**
+ * [FlowEngine] provides core flow related functionality.
+ *
+ * This service can be injected using [CordaInject].
+ */
 @DoNotImplement
 interface FlowEngine {
+
     /**
-     * Returns a wrapped [UUID][java.util.UUID] object that identifies this flow or it's top level instance
-     * (i.e. subflows have the same identifier as their parents).
+     * Gets the flow id that identifies this flow.
+     *
+     * A subFlow shares the same flow id as the flow that invoked it via [FlowEngine.subFlow].
      */
     val flowId: UUID
 
     /**
-     * Returns the x500 name of the current virtual node executing the flow.
+     * Gets the [MemberX500Name] of the current virtual node executing the flow.
      */
     val virtualNodeName: MemberX500Name
 
     /**
-     * Returns the context properties of the current flow.
+     * Gets the context properties of the current flow.
      */
     val flowContextProperties: FlowContextProperties
 
     /**
-     * Invokes the given subflow. This function returns once the subflow completes successfully with the result
-     * returned by that subflow's [SubFlow.call] method. If the subflow has a progress tracker, it is attached to the
-     * current step in this flow's progress tracker.
+     * Executes the given [SubFlow].
      *
-     * If the subflow is not an initiating flow (i.e. not annotated with [InitiatingFlow]) then it will continue to use
-     * the existing sessions this flow has created with its counterparties. This allows for subflows which can act as
-     * building blocks for other flows, for example removing the boilerplate of common sequences of sends and receives.
+     * This function returns once the [SubFlow] completes, returning either:
      *
-     * @throws FlowException This is either thrown by [subFlow] itself or propagated from any of the remote
-     * [Flow]s it communicated with. The subflow can be retried by catching this exception.
+     * - The result executing of [SubFlow.call].
+     * - An exception thrown by [SubFlow.call].
+     *
+     * Any open [FlowSession]s created within a [SubFlow] annotated with [InitiatingFlow] are sent:
+     *
+     * - Session close messages after successfully completing the [SubFlow].
+     * - Session error messages when an exception is thrown from the [SubFlow].
+     *
+     * @param subFlow The [SubFlow] to execute.
+     * @param R The type returned by [subFlow].
+     *
+     * @return The result of executing [SubFlow.call].
+     *
+     * @throws CordaRuntimeException General type of exception thrown by most Corda APIs.
+     *
+     * @see SubFlow
      */
     @Suspendable
     fun <R> subFlow(subFlow: SubFlow<R>): R
 }
-
