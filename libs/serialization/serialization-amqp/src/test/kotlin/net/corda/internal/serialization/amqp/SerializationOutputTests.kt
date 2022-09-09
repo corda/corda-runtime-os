@@ -1,5 +1,21 @@
 package net.corda.internal.serialization.amqp
 
+import java.io.IOException
+import java.io.InputStream
+import java.io.NotSerializableException
+import java.math.BigDecimal
+import java.time.DayOfWeek
+import java.time.Month
+import java.util.Currency
+import java.util.Date
+import java.util.EnumMap
+import java.util.NavigableMap
+import java.util.Objects
+import java.util.Random
+import java.util.SortedSet
+import java.util.TreeMap
+import java.util.TreeSet
+import java.util.UUID
 import net.corda.internal.serialization.CordaSerializationEncoding
 import net.corda.internal.serialization.SnappyEncodingAllowList
 import net.corda.internal.serialization.amqp.custom.BigDecimalSerializer
@@ -15,7 +31,6 @@ import net.corda.internal.serialization.encodingNotPermittedFormat
 import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.serialization.EncodingAllowList
 import net.corda.serialization.SerializationContext
-import net.corda.v5.application.flows.exceptions.FlowException
 import net.corda.v5.base.annotations.ConstructorForDeserialization
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -45,22 +60,6 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.whenever
-import java.io.IOException
-import java.io.InputStream
-import java.io.NotSerializableException
-import java.math.BigDecimal
-import java.time.DayOfWeek
-import java.time.Month
-import java.util.Currency
-import java.util.Date
-import java.util.EnumMap
-import java.util.NavigableMap
-import java.util.Objects
-import java.util.Random
-import java.util.SortedSet
-import java.util.TreeMap
-import java.util.TreeSet
-import java.util.UUID
 
 object AckWrapper {
     @CordaSerializable
@@ -614,7 +613,7 @@ class SerializationOutputTests {
         factory2.register(ThrowableSerializer(factory2), factory2)
         factory2.register(StackTraceElementSerializer(), factory2)
 
-        val obj = FlowException("message").fillInStackTrace()
+        val obj = CordaRuntimeException("message").fillInStackTrace()
         serdes(obj, factory, factory2)
     }
 
