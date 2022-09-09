@@ -34,12 +34,6 @@ class ConsensualLedgerDAO(
         return EntityResponse(emptyList())
     }
 
-    @Entity
-    data class Transaction(val privacySalt: ByteArray,
-                           val accountId: String,
-                           val componentGroups: List<List<ByteArray>>,
-                           val created: Instant)
-
     fun findTransaction(id: String, entityManager: EntityManager): EntityResponse {
         val results = entityManager.createNativeQuery(
             """
@@ -54,7 +48,6 @@ class ConsensualLedgerDAO(
 
         return EntityResponse(results.map { r ->
             val json = mapper.writeValueAsBytes(r)
-            logger.info("DEBUG: ${json.toString(Charset.defaultCharset())}")
             ByteBuffer.wrap(json)
         })
     }
