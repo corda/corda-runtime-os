@@ -31,7 +31,7 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
     }
 
     /** Reads CPI metadata from the database. */
-    internal fun getCPIMetadataByChecksum(cpiFileChecksum: String): CpiMetadataLite? {
+    internal fun getCpiMetadataByChecksum(cpiFileChecksum: String): CpiMetadataLite? {
         if (cpiFileChecksum.isBlank()) {
             log.warn("CPI file checksum cannot be empty")
             return null

@@ -112,7 +112,7 @@ class Apply : Callable<Collection<Record<String, *>>> {
             "membersToRemove"
         ) {
             val groupId = it.getString("groupId")
-            val x500Name = it.getString("x500name")
+            val x500Name = it.getString("x500Name")
             Record(
                 MEMBER_INFO_TOPIC,
                 "$x500Name-$groupId",
@@ -124,7 +124,7 @@ class Apply : Callable<Collection<Record<String, *>>> {
             "identitiesToRemove"
         ) {
             val groupId = it.getString("groupId")
-            val x500Name = it.getString("x500name")
+            val x500Name = it.getString("x500Name")
             Record(
                 P2P_HOSTED_IDENTITIES_TOPIC,
                 "$x500Name-$groupId",

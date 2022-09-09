@@ -36,16 +36,19 @@ import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.VirtualNodeState
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
+import java.lang.System.currentTimeMillis
 import java.time.Instant
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import javax.persistence.EntityManager
+import kotlin.system.measureTimeMillis
 
 /**
  * An RPC responder processor that handles virtual node creation requests.
@@ -79,64 +82,129 @@ internal class VirtualNodeWriterProcessor(
         const val PUBLICATION_TIMEOUT_SECONDS = 30L
     }
 
-    @Suppress("ReturnCount")
+    @Suppress("ReturnCount", "ComplexMethod")
     private fun createVirtualNode(
         instant: Instant,
         create: VirtualNodeCreateRequest,
         respFuture: CompletableFuture<VirtualNodeManagementResponse>
     ) {
-        create.validationError()?.let { errMsg ->
-            handleException(respFuture, IllegalArgumentException(errMsg))
-            return
+        // TODO - replace this with real metrics
+        logger.info("Create new Virtual Node: ${create.x500Name} and ${create.cpiFileChecksum}")
+        val startMillis = currentTimeMillis()
+
+        measureTimeMillis {
+            create.validationError()?.let { errMsg ->
+                handleException(respFuture, IllegalArgumentException(errMsg))
+                return
+            }
+        }.also {
+            logger.debug {"[Create ${create.x500Name}] validation took $it ms, elapsed " +
+                    "${currentTimeMillis() - startMillis} ms"}
         }
 
+
         try {
-            val cpiMetadata = virtualNodeEntityRepository.getCPIMetadataByChecksum(create.cpiFileChecksum)
-            if (cpiMetadata == null) {
-                handleException(
-                    respFuture,
-                    CpiNotFoundException("CPI with file checksum ${create.cpiFileChecksum} was not found.")
-                )
-                return
+            val cpiMetadata: CpiMetadataLite?
+            measureTimeMillis {
+                cpiMetadata = virtualNodeEntityRepository.getCpiMetadataByChecksum(create.cpiFileChecksum)
+                if (cpiMetadata == null) {
+                    handleException(
+                        respFuture,
+                        CpiNotFoundException("CPI with file checksum ${create.cpiFileChecksum} was not found.")
+                    )
+                    return
+                }
+            }.also {
+                logger.debug {"[Create ${create.x500Name}] get metadata took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
             }
 
             // Generate group ID for MGM
-            val groupId = cpiMetadata.mgmGroupId.let {
+            val groupId = cpiMetadata!!.mgmGroupId.let {
                 if (it == MGM_DEFAULT_GROUP_ID) UUID.randomUUID().toString() else it
             }
             val holdingId = HoldingIdentity(MemberX500Name.parse(create.getX500CanonicalName()), groupId)
-            if (virtualNodeEntityRepository.virtualNodeExists(holdingId, cpiMetadata.id)) {
-                handleException(
-                    respFuture,
-                    VirtualNodeAlreadyExistsException(
-                        "Virtual node for CPI with file checksum ${create.cpiFileChecksum} and x500Name ${create.x500Name} already exists."
+            measureTimeMillis {
+                if (virtualNodeEntityRepository.virtualNodeExists(holdingId, cpiMetadata.id)) {
+                    handleException(
+                        respFuture,
+                        VirtualNodeAlreadyExistsException(
+                            "Virtual node for CPI with file checksum ${create.cpiFileChecksum} and x500Name " +
+                                    "${create.x500Name} already exists."
+                        )
                     )
-                )
-                return
+                    return
+                }
+                checkUniqueId(holdingId)
+            }.also {
+                logger.debug {"[Create ${create.x500Name}] validate holding ID took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
             }
-            checkUniqueId(holdingId)
 
-            val vNodeDbs = vnodeDbFactory.createVNodeDbs(holdingId.shortHash, create)
+            val vNodeDbs:  Map<VirtualNodeDbType, VirtualNodeDb>
+            measureTimeMillis {
+                vNodeDbs = vnodeDbFactory.createVNodeDbs(holdingId.shortHash, create)
+            }.also {
+                logger.debug {"[Create ${create.x500Name}] creating vnode DBs took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
+            }
 
-            createSchemasAndUsers(holdingId, vNodeDbs.values)
+            measureTimeMillis {
+                createSchemasAndUsers(holdingId, vNodeDbs.values)
+            }.also {
+                logger.debug {"[Create ${create.x500Name}] creating vnode DB Schemas and users took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
+            }
 
-            runDbMigrations(holdingId, vNodeDbs.values)
+            measureTimeMillis {
+                runDbMigrations(holdingId, vNodeDbs.values)
+            }.also {
+                logger.debug {"[Create ${create.x500Name}] DB migrations took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
+            }
 
             val vaultDb = vNodeDbs[VAULT]
             if (null == vaultDb) {
                 handleException(respFuture, VirtualNodeWriteServiceException("Vault DB not configured"))
                 return
             } else {
-                runCpiMigrations(cpiMetadata, vaultDb)
+                measureTimeMillis {
+                    runCpiMigrations(cpiMetadata, vaultDb)
+                }.also {
+                    logger.debug {"[Create ${create.x500Name}] CPI DB migrations took $it ms, elapsed " +
+                            "${currentTimeMillis() - startMillis} ms"}
+                }
             }
 
-            val dbConnections = persistHoldingIdAndVirtualNode(holdingId, vNodeDbs, cpiMetadata.id, create.updateActor)
+            val dbConnections: VirtualNodeDbConnections
+            measureTimeMillis {
+                dbConnections =
+                    persistHoldingIdAndVirtualNode(holdingId, vNodeDbs, cpiMetadata.id, create.updateActor)
+            }.also {
+                logger.debug {"[Create ${create.x500Name}] persisting VNode to DB took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
+            }
 
-            publishVNodeInfo(holdingId, cpiMetadata, dbConnections)
+            measureTimeMillis {
+                publishVNodeInfo(holdingId, cpiMetadata, dbConnections)
+            }.also {
+                logger.debug {"[Create ${create.x500Name}] persisting VNode Info to Kafka took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
+            }
 
-            publishMgmInfo(holdingId, cpiMetadata.groupPolicy)
+            measureTimeMillis {
+                publishMgmInfo(holdingId, cpiMetadata.groupPolicy)
+            }.also {
+                logger.debug {"[Create ${create.x500Name}] persisting Mgm Info to Kafka took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
+            }
 
-            sendSuccessfulResponse(respFuture, instant, holdingId, cpiMetadata, dbConnections)
+            measureTimeMillis {
+                sendSuccessfulResponse(respFuture, instant, holdingId, cpiMetadata, dbConnections)
+            }.also {
+                logger.debug {"[Create ${create.x500Name}] send response to RPC gateway took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
+            }
         } catch (e: Exception) {
             handleException(respFuture, e)
         }

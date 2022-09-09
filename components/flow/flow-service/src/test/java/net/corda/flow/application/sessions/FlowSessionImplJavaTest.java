@@ -1,10 +1,10 @@
 package net.corda.flow.application.sessions;
 
 import co.paralleluniverse.fibers.FiberScheduler;
+import net.corda.flow.application.serialization.SerializationServiceInternal;
 import net.corda.flow.fiber.FlowContinuation;
 import net.corda.flow.fiber.FlowFiber;
 import net.corda.flow.fiber.FlowFiberExecutionContext;
-import net.corda.flow.fiber.FlowFiberSerializationService;
 import net.corda.flow.fiber.FlowFiberService;
 import net.corda.flow.fiber.FlowIORequest;
 import net.corda.flow.fiber.FlowLogicAndArgs;
@@ -35,7 +35,7 @@ import static org.mockito.Mockito.when;
 public class FlowSessionImplJavaTest {
 
     private final FlowSandboxGroupContext flowSandboxGroupContext = mock(FlowSandboxGroupContext.class);
-    private final FlowFiberSerializationService flowFiberSerializationService = mock(FlowFiberSerializationService.class);
+    private final SerializationServiceInternal serializationService = mock(SerializationServiceInternal.class);
     private final SandboxDependencyInjector sandboxDependencyInjector = mock(SandboxDependencyInjector.class);
     private final CheckpointSerializer checkpointSerializer = mock(CheckpointSerializer.class);
     private final FlowFiberExecutionContext flowFiberExecutionContext = new FlowFiberExecutionContext(
@@ -52,7 +52,7 @@ public class FlowSessionImplJavaTest {
             new MemberX500Name("Alice", "Alice Corp", "LDN", "GB"),
             "session id",
             flowFiberService,
-            flowFiberSerializationService,
+            serializationService,
             flowContext,
             FlowSessionImpl.Direction.INITIATED_SIDE
     );
@@ -106,8 +106,8 @@ public class FlowSessionImplJavaTest {
     public void beforeEach() {
         Map<String, byte[]> received = new HashMap<>();
         received.put("session id", new byte[]{1, 2, 3});
-        when(flowFiberSerializationService.serialize(any())).thenReturn(new SerializedBytes(new byte[]{1, 2, 3}));
-        when(flowFiberSerializationService.deserialize(any(byte[].class), any())).thenReturn(1);
+        when(serializationService.serialize(any())).thenReturn(new SerializedBytes(new byte[]{1, 2, 3}));
+        when(serializationService.deserializeAndCheckType(any(byte[].class), any())).thenReturn(1);
         when(flowSandboxGroupContext.getDependencyInjector()).thenReturn(sandboxDependencyInjector);
         when(flowSandboxGroupContext.getCheckpointSerializer()).thenReturn(checkpointSerializer);
         when(flowFiberService.getExecutingFiber()).thenReturn(flowFiber);

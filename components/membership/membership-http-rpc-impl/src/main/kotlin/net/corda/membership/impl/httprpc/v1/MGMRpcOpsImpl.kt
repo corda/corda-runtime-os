@@ -85,7 +85,7 @@ class MGMRpcOpsImpl @Activate constructor(
 
     private inner class ActiveImpl : InnerMGMRpcOps {
         override fun generateGroupPolicy(holdingIdentityShortHash: String): String {
-            return mgmOpsClient.generateGroupPolicy(holdingIdentityShortHash)
+            return mgmOpsClient.generateGroupPolicy(holdingIdentityShortHash.toShortHash())
         }
     }
 }
