@@ -16,10 +16,10 @@ import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.serialization.EncodingAllowList
 import net.corda.serialization.SerializationContext
 import net.corda.v5.application.flows.exceptions.FlowException
+import net.corda.v5.base.annotations.ConstructorForDeserialization
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.OpaqueBytes
-import net.corda.v5.serialization.annotations.ConstructorForDeserialization
 import org.apache.qpid.proton.amqp.Decimal128
 import org.apache.qpid.proton.amqp.Decimal32
 import org.apache.qpid.proton.amqp.Decimal64
