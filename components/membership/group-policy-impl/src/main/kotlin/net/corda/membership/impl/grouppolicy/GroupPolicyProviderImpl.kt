@@ -332,7 +332,7 @@ class GroupPolicyProviderImpl @Activate constructor(
                         else -> { logger.warn("Unhandled MembershipEvent was received.") }
                     }
                 } catch(e: Exception) {
-                    logger.warn("Could not process events, caused by: ${e.message}")
+                    logger.warn("Could not process events, caused by: $e")
                 }
             }
 
