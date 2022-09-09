@@ -139,7 +139,7 @@ fun E2eCluster.generateKeyPairIfNotExists(
                         keyAlias,
                         cat,
                         KEY_SCHEME
-                    )
+                    ).id
             }
         }
 }

@@ -17,6 +17,7 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.httprpc.v1.KeysRpcOps
 import net.corda.membership.httprpc.v1.types.response.KeyMetaData
+import net.corda.membership.httprpc.v1.types.response.KeyPairIdentifier
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.publicKeyId
@@ -140,13 +141,15 @@ class KeysRpcOpsImpl @Activate constructor(
         alias: String,
         hsmCategory: String,
         scheme: String
-    ): String {
+    ): KeyPairIdentifier {
         return cryptoOpsClient.generateKeyPair(
             tenantId = tenantId,
             category = hsmCategory.uppercase(),
             alias = alias,
             scheme = scheme
-        ).publicKeyId()
+        ).publicKeyId().run {
+            KeyPairIdentifier(this)
+        }
     }
 
     override fun generateKeyPem(
