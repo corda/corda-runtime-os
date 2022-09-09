@@ -39,7 +39,7 @@ class ExternalEventExecutorImpl @Activate constructor(
         )
     }
 
-    private fun externalContext(flowFiber: FlowFiber) =
+    private fun externalContext(flowFiber: FlowFiber): Map<String, String> =
         with(flowFiber.getExecutionContext().flowCheckpoint.flowContext) {
             localToExternalContextMapper(
                 userContextProperties = this.flattenUserProperties(),
