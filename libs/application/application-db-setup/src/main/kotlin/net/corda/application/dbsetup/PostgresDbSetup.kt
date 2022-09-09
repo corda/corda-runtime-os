@@ -196,8 +196,8 @@ class PostgresDbSetup(
         val random = SecureRandom()
         val config = createCryptoSmartConfigFactory(
             KeyCredentials(
-                passphrase = secretsSalt,
-                salt = secretsPassphrase
+                salt = secretsSalt,
+                passphrase = secretsPassphrase
             )
         ).createDefaultCryptoConfig(
             KeyCredentials(
