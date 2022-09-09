@@ -8,7 +8,7 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 
 @InitiatingFlow("absence-call")
-class AbsenceSubFlow(val counterparty: MemberX500Name) : SubFlow<String> {
+class AbsenceSubFlow(private val counterparty: MemberX500Name) : SubFlow<String> {
 
     @CordaInject
     lateinit var flowMessaging: FlowMessaging
@@ -16,7 +16,7 @@ class AbsenceSubFlow(val counterparty: MemberX500Name) : SubFlow<String> {
     @Suspendable
     override fun call(): String {
         val session = flowMessaging.initiateFlow(counterparty)
-        session.send(RollCallRequest(counterparty.toString()))
+        session.send(RollCallRequest(counterparty))
         return session.receive(RollCallResponse::class.java).unwrap {it}.response
     }
 }

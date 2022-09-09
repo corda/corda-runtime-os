@@ -58,10 +58,10 @@ class RollCallFlow: RPCStartableFlow {
 
         val students = findStudents(memberLookup)
 
-        val truancyOffice = MemberX500Name.parse(requestBody.getRequestBodyAs(
+        val truancyOffice = requestBody.getRequestBodyAs(
             jsonMarshallingService,
             RollCallInitiationRequest::class.java
-        ).truancyOfficeX500)
+        ).truancyOfficeX500
 
         val sessionsAndRecipients = students.map {
             SessionAndRecipient(flowMessaging.initiateFlow(it.name), it.name)
@@ -95,7 +95,7 @@ class RollCallFlow: RPCStartableFlow {
     @Suspendable
     private fun sendTruancyRecord(truancyOffice : MemberX500Name, truants: List<MemberX500Name>) {
         if (truants.isNotEmpty()) {
-            val unsignedTruants = jsonMarshallingService.format(truants.map { it.toString() })
+            val unsignedTruants = jsonMarshallingService.format(truants)
             val signedTruants = signingService.sign(
                 unsignedTruants.toByteArray(),
                 memberLookup.myInfo().ledgerKeys[0],
@@ -113,7 +113,7 @@ class RollCallFlow: RPCStartableFlow {
                 sessionAndRecipient.flowSession,
                 sessionAndRecipient.flowSession.sendAndReceive(
                     RollCallResponse::class.java,
-                    RollCallRequest(sessionAndRecipient.receipient.toString())
+                    RollCallRequest(sessionAndRecipient.receipient)
                 ).unwrap { r -> r }.response
             )
         )
@@ -147,10 +147,10 @@ class RollCallFlow: RPCStartableFlow {
     }
 }
 @CordaSerializable
-data class RollCallInitiationRequest(val truancyOfficeX500: String)
+data class RollCallInitiationRequest(val truancyOfficeX500: MemberX500Name)
 
 @CordaSerializable
-data class RollCallRequest(val recipientX500: String)
+data class RollCallRequest(val recipientX500: MemberX500Name)
 @CordaSerializable
 data class RollCallResponse(val response: String)
 
