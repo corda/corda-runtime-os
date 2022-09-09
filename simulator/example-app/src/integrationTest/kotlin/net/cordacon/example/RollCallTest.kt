@@ -53,7 +53,7 @@ class RollCallTest {
             RequestData.create(
                 "r1",
                 RollCallFlow::class.java,
-                RollCallInitiationRequest(truantingAuth.toString())
+                RollCallInitiationRequest(truantingAuth)
         ))
 
         // Then we should get the response back

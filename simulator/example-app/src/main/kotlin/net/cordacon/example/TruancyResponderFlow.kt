@@ -39,7 +39,7 @@ class TruancyResponderFlow : ResponderFlow {
         val record = session.receive(TruancyRecord::class.java).unwrap {it}
 
         verificationService.verify(record.signature.by, SignatureSpec.ECDSA_SHA256, record.signature.bytes,
-            jsonMarshallingService.format(record.absentees.map{it.toString()}).toByteArray())
+            jsonMarshallingService.format(record.absentees).toByteArray())
 
         persistenceService.persist(record.absentees.map { TruancyEntity(name = it.toString()) })
 
