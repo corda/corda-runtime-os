@@ -16,7 +16,7 @@ class ConsensualLedgerDAO(
     }
 
     // TODO: This should probably take a ConsensualSignedTransactionImpl which includes WireTransaction and signers.
-    fun persistTransaction(transaction: WireTransaction, entityManager: EntityManager): EntityResponse {
+    fun persistTransaction(transaction: MappableWireTransaction, entityManager: EntityManager): EntityResponse {
         logger.debug("TMP DEBUG 1. transaction: $transaction, loadClass: $loadClass")
 
         val now = Instant.now()
@@ -29,14 +29,14 @@ class ConsensualLedgerDAO(
         return EntityResponse(emptyList())
     }
 
-    private fun writeTransaction(entityManager: EntityManager, timestamp: Instant, tx: WireTransaction) {
+    private fun writeTransaction(entityManager: EntityManager, timestamp: Instant, tx: MappableWireTransaction) {
         entityManager.createNativeQuery(
             """
                 INSERT INTO {h-schema}consensual_transaction(id, privacy_salt, account_id, created)
                 VALUES (:id, :privacySalt, :accountId, :createdAt)"""
         )
-            .setParameter("id", tx.id)
-            .setParameter("privacySalt", tx.privacySalt)
+            .setParameter("id", tx.id.toHexString())
+            .setParameter("privacySalt", tx.privacySalt.bytes)
             .setParameter("accountId", 123)             // TODO: where do we get this?
             .setParameter("createdAt", timestamp)
             .executeUpdate()
@@ -45,7 +45,7 @@ class ConsensualLedgerDAO(
     private fun writeTransactionStatus(
         entityManager: EntityManager,
         timestamp: Instant,
-        tx: WireTransaction,
+        tx: MappableWireTransaction,
         status: String
     ) {
         entityManager.createNativeQuery(
@@ -53,7 +53,7 @@ class ConsensualLedgerDAO(
                 INSERT INTO {h-schema}consensual_transaction_status(transaction_id, status, created)
                 VALUES (:txId, :status, :createdAt)"""
         )
-            .setParameter("txId", tx.id)
+            .setParameter("txId", tx.id.toHexString())
             .setParameter("status", status)
             .setParameter("createdAt", timestamp)
             .executeUpdate()

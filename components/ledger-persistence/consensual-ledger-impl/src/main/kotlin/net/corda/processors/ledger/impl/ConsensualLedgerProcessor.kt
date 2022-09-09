@@ -1,6 +1,7 @@
 package net.corda.processors.ledger.impl
 
 import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -31,6 +32,8 @@ import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
+import net.corda.v5.crypto.SecureHash
+import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.ledger.common.transaction.PrivacySalt
 import java.io.NotSerializableException
 
@@ -47,8 +50,15 @@ fun EntitySandboxService.getClass(holdingIdentity: HoldingIdentity, fullyQualifi
  * an error has occurred.
  */
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, defaultImpl = PrivacySalt::class)
-class MappablePrivacySalt @JsonCreator constructor(@JsonProperty override val bytes: ByteArray): PrivacySalt {}
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class MappablePrivacySalt @JsonCreator constructor(@JsonProperty override val bytes: ByteArray): PrivacySalt {}
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class MappableWireTransaction @JsonCreator constructor(
+    @JsonProperty val id: SecureHash,
+    @JsonProperty val privacySalt: MappablePrivacySalt,
+    @JsonProperty val componentGroupLists: List<List<ByteArray>>
+)
 
 class ConsensualLedgerProcessor(
     private val entitySandboxService: EntitySandboxService,
@@ -137,7 +147,7 @@ class ConsensualLedgerProcessor(
                 when (val req = request.request) {
                     is PersistTransaction -> successResponse(
                         request.flowExternalEventContext,
-                        consensualLedgerDAO.persistTransaction(deserialize<WireTransaction>(req.transaction), it)
+                        consensualLedgerDAO.persistTransaction(deserialize(req.transaction), it)
                     )
 
                     else -> {
@@ -162,9 +172,9 @@ class ConsensualLedgerProcessor(
      * TODO: Temporary JSON deserializer for transactions. We should replace this with AMQP-based serialization
      * but at the moment that isn't quite ready.
      */
-    private inline fun <reified T> deserialize(bytes: ByteBuffer): T {
+    private fun deserialize(bytes: ByteBuffer): MappableWireTransaction {
         val inStream = ByteBufferBackedInputStream(bytes)
-        return mapper.readValue(inStream, jacksonTypeRef<T>())
+        return mapper.readValue(inStream, jacksonTypeRef<MappableWireTransaction>())
     }
 
     private fun successResponse(
