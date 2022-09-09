@@ -10,6 +10,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.membership.certificate.client.CertificatesClient
 import net.corda.membership.certificate.client.CertificatesResourceNotFoundException
 import net.corda.membership.httprpc.v1.types.request.HostedIdentitySetupRequest
+import net.corda.virtualnode.ShortHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -77,7 +78,7 @@ class NetworkRpcOpsImplTest {
         @Test
         fun `it calls the client code`() {
             networkOps.setupHostedIdentities(
-                "id",
+                "1234567890ab",
                 HostedIdentitySetupRequest(
                     "alias",
                     "tls",
@@ -87,7 +88,7 @@ class NetworkRpcOpsImplTest {
             )
 
             verify(certificatesClient).setupLocallyHostedIdentity(
-                "id",
+                ShortHash.of("1234567890ab"),
                 "alias",
                 "tls",
                 "session-tenant",
@@ -108,7 +109,7 @@ class NetworkRpcOpsImplTest {
 
             assertThrows<ResourceNotFoundException> {
                 networkOps.setupHostedIdentities(
-                    "id",
+                    "1234567890ab",
                     HostedIdentitySetupRequest(
                         "alias",
                         "tls",

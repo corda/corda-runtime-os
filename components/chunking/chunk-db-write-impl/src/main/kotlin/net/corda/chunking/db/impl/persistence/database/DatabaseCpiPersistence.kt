@@ -75,7 +75,8 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
                 CpiCpkEntity(
                     CpiCpkKey(
                         cpi.metadata.cpiId.name, cpi.metadata.cpiId.version, cpi.metadata.cpiId.signerSummaryHash?.toString() ?: "",
-                        cpk.metadata.cpkId.name, cpk.metadata.cpkId.version, cpk.metadata.cpkId.signerSummaryHash.toString()
+                        // TODO Fallback to empty string can be removed after package verification is enabled (CORE-5405)
+                        cpk.metadata.cpkId.name, cpk.metadata.cpkId.version, cpk.metadata.cpkId.signerSummaryHash?.toString().orEmpty()
                     ),
                     cpk.originalFileName!!,
                     cpk.metadata.fileChecksum.toString(),
@@ -94,9 +95,20 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
             createOrUpdateCpkFileEntities(em, cpi.cpks)
 
-            cpkDbChangeLogEntities.forEach { em.merge(it) }
+            updateChangeLogs(cpkDbChangeLogEntities, em)
 
             return@persistMetadataAndCpks managedCpiMetadataEntity
+        }
+    }
+
+    private fun updateChangeLogs(
+        cpkDbChangeLogEntities: List<CpkDbChangeLogEntity>,
+        em: EntityManager
+    ) {
+        cpkDbChangeLogEntities.forEach {
+            val inDb = em.find(CpkDbChangeLogEntity::class.java, it.id)
+            if (inDb!=null) it.entityVersion = inDb.entityVersion
+            em.merge(it)
         }
     }
 
@@ -138,7 +150,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
             createOrUpdateCpkFileEntities(em, cpi.cpks)
 
-            cpkDbChangeLogEntities.forEach { em.merge(it) }
+            updateChangeLogs(cpkDbChangeLogEntities, em)
 
             return cpiMetadataEntity
         }
@@ -293,12 +305,12 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         }
     }
 
-    private fun checkForMatchingEntity(entitiesFound: List<CpiMetadataEntity>, cpiName: String, cpiVersion: String) {
+    private fun checkForMatchingEntity(entitiesFound: List<CpiMetadataEntity>, cpiName: String, cpiVersion: String, requestId:String) {
         if (entitiesFound.singleOrNull { it.name == cpiName && it.version == cpiVersion } == null)
-            throw ValidationException("No instance of same CPI with previous version found")
+            throw ValidationException("No instance of same CPI with previous version found", requestId)
     }
 
-    override fun canUpsertCpi(cpiName: String, groupId: String, forceUpload: Boolean, cpiVersion: String?): Boolean {
+    override fun canUpsertCpi(cpiName: String, groupId: String, forceUpload: Boolean, cpiVersion: String?, requestId:String): Boolean {
         val entitiesFound = entityManagerFactory.createEntityManager().transaction {
             it.createQuery(
                 "FROM ${CpiMetadataEntity::class.simpleName} c WHERE c.groupId = :groupId",
@@ -310,7 +322,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         if (entitiesFound.isEmpty() && !forceUpload) return true
 
         if (forceUpload && cpiVersion != null) {
-            checkForMatchingEntity(entitiesFound, cpiName, cpiVersion)
+            checkForMatchingEntity(entitiesFound, cpiName, cpiVersion, requestId)
             // We can update this CPI if we find one with the same version in the case of a forceUpload
             return true
         } else if (entitiesFound.map { it.name }.contains(cpiName)) {

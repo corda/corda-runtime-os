@@ -66,7 +66,10 @@ class TrustStoresPublisherTest {
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()
     private val configuration = mock<SmartConfig>()
     private val publisherFactory = mock<PublisherFactory>()
-    private val subscriptionDominoTile = mockConstruction(SubscriptionDominoTile::class.java)
+    private val subscriptionDominoTile = mockConstruction(SubscriptionDominoTile::class.java) { _, context ->
+        @Suppress("UNCHECKED_CAST")
+        (context.arguments()[1] as (() -> CompactedProcessor<String, GatewayTruststore>)).invoke()
+    }
 
     private val certificates = listOf("one", "two")
     private val groupInfo = GroupPolicyListener.GroupInfo(

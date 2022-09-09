@@ -12,5 +12,7 @@ data class VirtualNodeRequest(
     val vaultDdlConnection: String?,
     val vaultDmlConnection: String?,
     val cryptoDdlConnection: String?,
-    val cryptoDmlConnection: String?
+    val cryptoDmlConnection: String?,
+    val uniquenessDdlConnection: String?,
+    val uniquenessDmlConnection: String?
 )

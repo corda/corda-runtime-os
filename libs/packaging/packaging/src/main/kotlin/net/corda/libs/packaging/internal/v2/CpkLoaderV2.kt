@@ -65,7 +65,7 @@ class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
 
     private fun readCpkMetadata(cpkBytes: ByteArray): CpkMetadata {
 
-        val (manifest, cpkEntries) = JarInputStream(cpkBytes.inputStream(), false).use {
+        val (manifest, cpkEntries) = JarInputStream(cpkBytes.inputStream(), true).use {
             val manifest = it.manifest
             val jarEntries = readJar(it).toList()
             Pair(manifest, jarEntries)

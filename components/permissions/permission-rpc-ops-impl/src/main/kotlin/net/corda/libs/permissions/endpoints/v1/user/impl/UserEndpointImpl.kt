@@ -55,7 +55,7 @@ class UserEndpointImpl @Activate constructor(
             createUser(createUserType.convertToDto(principal))
         }
 
-        return ResponseEntity.created(createUserResult!!.convertToEndpointType())
+        return ResponseEntity.created(createUserResult.convertToEndpointType())
     }
 
     override fun getUser(loginName: String): UserResponseType {
@@ -74,7 +74,7 @@ class UserEndpointImpl @Activate constructor(
         val result = withPermissionManager(permissionManagementService.permissionManager, logger) {
             addRoleToUser(AddRoleToUserRequestDto(principal, loginName.lowercase(), roleId))
         }
-        return ResponseEntity.ok(result!!.convertToEndpointType())
+        return ResponseEntity.ok(result.convertToEndpointType())
     }
 
     override fun removeRole(loginName: String, roleId: String): ResponseEntity<UserResponseType> {
@@ -83,7 +83,7 @@ class UserEndpointImpl @Activate constructor(
         val result = withPermissionManager(permissionManagementService.permissionManager, logger) {
             removeRoleFromUser(RemoveRoleFromUserRequestDto(principal, loginName.lowercase(), roleId))
         }
-        return ResponseEntity.deleted(result!!.convertToEndpointType())
+        return ResponseEntity.deleted(result.convertToEndpointType())
     }
 
     override fun getPermissionSummary(loginName: String): UserPermissionSummaryResponseType {

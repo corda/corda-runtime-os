@@ -89,7 +89,7 @@ class PubSubSubscriptionImplTest {
 
         latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
 
-        kafkaPubSubSubscription.stop()
+        kafkaPubSubSubscription.close()
         assertThat(latch.count).isEqualTo(0)
         verify(cordaConsumerBuilder, times(1)).createConsumer<String, ByteBuffer>(
             any(),
@@ -202,7 +202,7 @@ class PubSubSubscriptionImplTest {
 
         latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
 
-        kafkaPubSubSubscription.stop()
+        kafkaPubSubSubscription.close()
         assertThat(latch.count).isEqualTo(0)
         verify(cordaConsumerBuilder, times(1)).createConsumer<String, ByteBuffer>(
             any(),
@@ -228,7 +228,7 @@ class PubSubSubscriptionImplTest {
 
         latch.await(TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
 
-        kafkaPubSubSubscription.stop()
+        kafkaPubSubSubscription.close()
         assertThat(latch.count).isEqualTo(0)
         verify(cordaConsumerBuilder, times(1)).createConsumer<String, ByteBuffer>(
             any(),

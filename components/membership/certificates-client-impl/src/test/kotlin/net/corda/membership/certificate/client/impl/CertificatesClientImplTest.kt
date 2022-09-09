@@ -15,6 +15,7 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.grouppolicy.GroupPolicyProvider
@@ -26,6 +27,7 @@ import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.p2p.HostedIdentityEntry
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -63,6 +65,7 @@ class CertificatesClientImplTest {
         @Suppress("UNCHECKED_CAST")
         retrieveCertificates = settings.arguments()[4] as? ((String, String) -> String?)
     }
+    private val shortHash = ShortHash.of("AF77BF2471F3")
 
     private val client = CertificatesClientImpl(
         coordinatorFactory,
@@ -142,7 +145,7 @@ class CertificatesClientImplTest {
             handler.firstValue.processEvent(event, coordinator)
 
             client.setupLocallyHostedIdentity(
-                "holdingIdentityShortHash",
+                shortHash,
                 "Alias",
                 "tlsTenantId",
                 "sessionKeyTenantId",
@@ -152,7 +155,7 @@ class CertificatesClientImplTest {
             verify(
                 mockHostedIdentityEntryFactory.constructed().first()
             ).createIdentityRecord(
-                "holdingIdentityShortHash",
+                shortHash,
                 "Alias",
                 "tlsTenantId",
                 "sessionKeyTenantId",
@@ -186,7 +189,7 @@ class CertificatesClientImplTest {
         fun `publishToLocallyHostedIdentities throws exception if publisher is null`() {
             assertThrows<IllegalStateException> {
                 client.setupLocallyHostedIdentity(
-                    "holdingIdentityShortHash",
+                    shortHash,
                     "Alias",
                     "tlsTenantId",
                     "sessionKeyTenantId",
@@ -206,7 +209,7 @@ class CertificatesClientImplTest {
 
             assertThrows<CordaRuntimeException> {
                 client.setupLocallyHostedIdentity(
-                    "holdingIdentityShortHash",
+                    shortHash,
                     "Alias",
                     "tlsTenantId",
                     "sessionKeyTenantId",
@@ -229,7 +232,7 @@ class CertificatesClientImplTest {
             handler.firstValue.processEvent(event, coordinator)
 
             client.setupLocallyHostedIdentity(
-                "holdingIdentityShortHash",
+                shortHash,
                 "Alias",
                 "tlsTenantId",
                 "sessionKeyTenantId",
@@ -316,7 +319,7 @@ class CertificatesClientImplTest {
             fun `StopEvent will stop everything`() {
                 val registrationHandle = mock<RegistrationHandle>()
                 whenever(coordinator.followStatusChangesByName(any())).doReturn(registrationHandle)
-                val configHandle = mock<AutoCloseable>()
+                val configHandle = mock<Resource>()
                 whenever(configurationReadService.registerComponentForUpdates(any(), any())).doReturn(configHandle)
                 handler.firstValue.processEvent(StartEvent(), coordinator)
                 val event = ConfigChangedEvent(
@@ -365,7 +368,7 @@ class CertificatesClientImplTest {
 
             @Test
             fun `client stop listen to configuration when configuration is ready in the second time`() {
-                val configHandle = mock<AutoCloseable>()
+                val configHandle = mock<Resource>()
                 whenever(configurationReadService.registerComponentForUpdates(any(), any())).doReturn(configHandle)
                 val registrationHandle = mock<RegistrationHandle>()
                 whenever(coordinator.followStatusChangesByName(any())).doReturn(registrationHandle)
@@ -409,7 +412,7 @@ class CertificatesClientImplTest {
 
             @Test
             fun `client goes down and stop listen to configuration when configuration goes down`() {
-                val configHandle = mock<AutoCloseable>()
+                val configHandle = mock<Resource>()
                 whenever(configurationReadService.registerComponentForUpdates(any(), any())).doReturn(configHandle)
                 val registrationHandle = mock<RegistrationHandle>()
                 whenever(coordinator.followStatusChangesByName(any())).doReturn(registrationHandle)

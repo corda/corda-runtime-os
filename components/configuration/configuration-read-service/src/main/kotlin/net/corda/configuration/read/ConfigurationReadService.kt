@@ -3,6 +3,7 @@ package net.corda.configuration.read
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.Resource
 
 /**
  * A service managing the configuration in the process.
@@ -40,7 +41,7 @@ interface ConfigurationReadService : Lifecycle {
      * @param configHandler The user configuration handler. See [ConfigurationHandler].
      * @return A handle for this registration, which may be closed to unregister from the configuration read service.
      */
-    fun registerForUpdates(configHandler: ConfigurationHandler): AutoCloseable
+    fun registerForUpdates(configHandler: ConfigurationHandler): Resource
 
     /**
      * Register a component for configuration updates on a particular set of top-level keys.
@@ -58,7 +59,7 @@ interface ConfigurationReadService : Lifecycle {
      *                     these are present in the configuration, configuration updates will be delivered.
      * @return A handle for this registration, which may be closed to unregister from the configuration read service.
      */
-    fun registerComponentForUpdates(coordinator: LifecycleCoordinator, requiredKeys: Set<String>): AutoCloseable
+    fun registerComponentForUpdates(coordinator: LifecycleCoordinator, requiredKeys: Set<String>): Resource
 
     /**
      * Provide bootstrap configuration to the configuration read service.

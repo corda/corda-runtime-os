@@ -5,8 +5,8 @@ import net.corda.internal.serialization.amqp.testutils.serialize
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.amqp.testutils.writeTestResource
 import net.corda.v5.base.annotations.CordaSerializable
+import net.corda.v5.base.annotations.DeprecatedConstructorForDeserialization
 import net.corda.v5.serialization.SerializedBytes
-import net.corda.v5.serialization.annotations.DeprecatedConstructorForDeserialization
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout

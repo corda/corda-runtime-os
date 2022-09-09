@@ -7,12 +7,13 @@ import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.connection.manager.VirtualNodeDbType.CRYPTO
+import net.corda.db.connection.manager.VirtualNodeDbType.UNIQUENESS
 import net.corda.db.connection.manager.VirtualNodeDbType.VAULT
 import net.corda.db.connection.manager.createDbConfig
 import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.DDL
 import net.corda.db.core.DbPrivilege.DML
-import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.DatabaseConfig
 import net.corda.virtualnode.ShortHash
 import java.security.SecureRandom
 
@@ -25,7 +26,7 @@ class VirtualNodeDbFactory(
     private val schemaMigrator: LiquibaseSchemaMigrator
 ) {
     private val smartConfigFactory = dbConnectionManager.clusterConfig.factory
-    private val adminJdbcUrl = dbConnectionManager.clusterConfig.getString(ConfigKeys.JDBC_URL)
+    private val adminJdbcUrl = dbConnectionManager.clusterConfig.getString(DatabaseConfig.JDBC_URL)
 
     companion object {
         private const val ddlMaxPoolSize = 1
@@ -50,7 +51,8 @@ class VirtualNodeDbFactory(
         with(request) {
             return mapOf(
                 Pair(VAULT, createVNodeDb(VAULT, holdingIdentityShortHash, vaultDdlConnection, vaultDmlConnection)),
-                Pair(CRYPTO, createVNodeDb(CRYPTO, holdingIdentityShortHash, cryptoDdlConnection, cryptoDmlConnection))
+                Pair(CRYPTO, createVNodeDb(CRYPTO, holdingIdentityShortHash, cryptoDdlConnection, cryptoDmlConnection)),
+                Pair(UNIQUENESS, createVNodeDb(UNIQUENESS, holdingIdentityShortHash, uniquenessDdlConnection, uniquenessDmlConnection))
             )
         }
     }
