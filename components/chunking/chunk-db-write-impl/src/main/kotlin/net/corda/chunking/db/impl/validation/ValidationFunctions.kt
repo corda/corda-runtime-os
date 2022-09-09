@@ -142,7 +142,7 @@ fun CpiPersistence.persistCpiToDatabase(
         when (ex) {
             is ValidationException -> throw ex
             is PersistenceException -> throw ValidationException("Could not persist CPI and CPK to database", requestId, ex)
-            is CordaRuntimeException -> throw ValidationException("Could not persist CPI and CPK to database", requestId, ex)
+            is CordaRuntimeException -> throw ValidationException("Runtime exception persisting CPI and CPK to database", requestId, ex)
             else -> throw ValidationException("Unexpected error when trying to persist CPI and CPK to database", requestId, ex)
         }
     }

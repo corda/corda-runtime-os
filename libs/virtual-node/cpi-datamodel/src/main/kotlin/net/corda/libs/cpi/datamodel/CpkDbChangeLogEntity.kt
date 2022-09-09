@@ -53,7 +53,7 @@ data class CpkDbChangeLogKey(
     @Column(name = "cpk_signer_summary_hash", nullable = false)
     var cpkSignerSummaryHash: String,
     @Column(name = "file_path", nullable = false)
-    val filePath: String,
+    val filePath: String
 ) : Serializable
 
 

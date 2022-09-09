@@ -107,7 +107,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
     ) {
         cpkDbChangeLogEntities.forEach {
             val inDb = em.find(CpkDbChangeLogEntity::class.java, it.id)
-            if (inDb!=null) it.entityVersion = inDb.entityVersion
+            if (inDb != null) it.entityVersion = inDb.entityVersion
             em.merge(it)
         }
     }

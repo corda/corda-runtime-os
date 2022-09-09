@@ -4,7 +4,14 @@ import net.corda.chunking.RequestId
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.packaging.Cpi
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
+import java.util.*
+
+val random = Random(0)
+fun newRandomSecureHash(): SecureHash {
+    return SecureHash(DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name, ByteArray(32).also(random::nextBytes))
+}
 
 interface CpiPersistence {
     /**
@@ -32,11 +39,11 @@ interface CpiPersistence {
     @Suppress("LongParameterList")
     fun persistMetadataAndCpks(
         cpi: Cpi,
-        cpiFileName: String,
-        checksum: SecureHash,
-        requestId: RequestId,
-        groupId: String,
-        cpkDbChangeLogEntities: List<CpkDbChangeLogEntity>
+        cpiFileName: String = "test.cpi",
+        checksum: SecureHash = newRandomSecureHash(),
+        requestId: RequestId = UUID.randomUUID().toString(),
+        groupId: String = "group-a",
+        cpkDbChangeLogEntities: List<CpkDbChangeLogEntity> = emptyList()
     ): CpiMetadataEntity
 
     /**
@@ -52,11 +59,11 @@ interface CpiPersistence {
     @Suppress("LongParameterList")
     fun updateMetadataAndCpks(
         cpi: Cpi,
-        cpiFileName: String,
-        checksum: SecureHash,
-        requestId: RequestId,
-        groupId: String,
-        cpkDbChangeLogEntities: List<CpkDbChangeLogEntity>
+        cpiFileName: String = "test.cpi",
+        checksum: SecureHash = newRandomSecureHash(),
+        requestId: RequestId = UUID.randomUUID().toString(),
+        groupId: String = "group-a",
+        cpkDbChangeLogEntities: List<CpkDbChangeLogEntity> = emptyList()
     ): CpiMetadataEntity
 
     /**
