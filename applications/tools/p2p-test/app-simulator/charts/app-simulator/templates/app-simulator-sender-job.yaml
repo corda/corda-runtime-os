@@ -59,7 +59,7 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       volumes:
-      {{- include "appSimulator.workerVolumes" . | nindent 8 }}
+      {{- include "appSimulator.volumes" . | nindent 8 }}
       restartPolicy: Never
   backoffLimit: 0
 {{- end }}

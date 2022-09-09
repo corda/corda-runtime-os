@@ -13,7 +13,7 @@ image:
   registry: "corda-os-docker.software.r3.com"
   # -- image repository
   repository: "corda-os-app-simulator"
-  # Overrides the image tag whose default is the chart appVersion.
+  # -- overrides the image tag whose default is the chart appVersion.
   tag: ""
 
 # -- image pull secrets
@@ -28,13 +28,6 @@ resources:
   limits: {}
   # -- the default CPU/memory resource request for the app simulator containers
   requests: {}
-
-# Logging configuration
-logging:
-  # -- log format; "json" or "text"
-  format: "json"
-  # -- log level; one of "all", "trace", "debug", "info", "warn" (the default), "error", "fatal", or "off"
-  level: "warn"
 
 # -- node labels for pod assignment, see https://kubernetes.io/docs/user-guide/node-selection/
 nodeSelector: {}

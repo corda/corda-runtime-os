@@ -143,7 +143,7 @@ Volume mounts for the appSimulator
 {{/*
 Volumes for the appSimulator
 */}}
-{{- define "appSimulator.workerVolumes" }}
+{{- define "appSimulator.volumes" }}
 {{- if and .Values.kafka.tls.enabled .Values.kafka.tls.truststore.secretRef.name }}
 - name: certs
   secret:

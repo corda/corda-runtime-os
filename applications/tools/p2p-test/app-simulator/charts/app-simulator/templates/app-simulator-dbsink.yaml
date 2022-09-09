@@ -62,7 +62,7 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       volumes:
-      {{- include "appSimulator.workerVolumes" . | nindent 8 }}
+      {{- include "appSimulator.volumes" . | nindent 8 }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
