@@ -8,11 +8,12 @@ import net.corda.lifecycle.*
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import org.junit.jupiter.api.*
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mockito
 import org.mockito.kotlin.*
 import java.sql.Connection
-import javax.persistence.EntityManager
-import javax.persistence.EntityManagerFactory
+import javax.persistence.*
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -21,33 +22,50 @@ import kotlin.test.assertTrue
 class JPABackingStoreImplTests {
     private lateinit var backingStoreImpl: JPABackingStoreImpl
 
-    private val lifecycleCoordinator = mock<LifecycleCoordinator>()
-    private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory> {
-        on { createCoordinator(any(), any()) }.doReturn(lifecycleCoordinator)
-    }
-
-    private val dummyDataSource = mock<CloseableDataSource>().apply {
-        whenever(connection) doReturn mock<Connection>()
-    }
-    private val jpaEntitiesRegistry = mock<JpaEntitiesRegistry>().apply {
-        whenever(get(any())) doReturn mock<JpaEntitiesSet>()
-    }
-
-    private val entityManager = mock<EntityManager>()
-    private val entityManagerFactory = mock<EntityManagerFactory>().apply {
-        whenever(createEntityManager()) doReturn entityManager
-    }
+    private lateinit var lifecycleCoordinator: LifecycleCoordinator
+    private lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+    private lateinit var entityManager: EntityManager
+    private lateinit var entityTransaction: EntityTransaction
+    private lateinit var entityManagerFactory: EntityManagerFactory
+    private lateinit var dummyDataSource: CloseableDataSource
+    private lateinit var jpaEntitiesRegistry: JpaEntitiesRegistry
 
     // NOTE: While expecting refactoring around createDefaultUniquenessDb(), it's mocked for testing
     //  convenience. Since it's a final class, MockMaker's been added under resources with content "mock-maker-inline".
-    private val schemaMigrator = mock<LiquibaseSchemaMigratorImpl>()
-    private val dbConnectionManager = mock<DbConnectionManager>().apply {
-        whenever(getClusterDataSource()) doReturn dummyDataSource
-        whenever(getOrCreateEntityManagerFactory(any(), any(), any())) doReturn entityManagerFactory
-    }
+    private lateinit var schemaMigrator: LiquibaseSchemaMigratorImpl
+    private lateinit var dbConnectionManager: DbConnectionManager
+
+    inner class DummyLifecycle : LifecycleEvent
+
+    class DummyException(message: String) : Exception(message)
 
     @BeforeEach
     fun init() {
+        lifecycleCoordinator = mock<LifecycleCoordinator>()
+        lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>().apply {
+            whenever(createCoordinator(any(), any())) doReturn lifecycleCoordinator
+        }
+        entityTransaction = mock<EntityTransaction>().apply {
+            whenever(isActive) doReturn true
+        }
+        entityManager = mock<EntityManager>().apply {
+            whenever(transaction) doReturn entityTransaction
+        }
+        entityManagerFactory = mock<EntityManagerFactory>().apply {
+            whenever(createEntityManager()) doReturn entityManager
+        }
+        dummyDataSource = mock<CloseableDataSource>().apply {
+            whenever(connection) doReturn mock<Connection>()
+        }
+        jpaEntitiesRegistry = mock<JpaEntitiesRegistry>().apply {
+            whenever(get(any())) doReturn mock<JpaEntitiesSet>()
+        }
+        schemaMigrator = mock<LiquibaseSchemaMigratorImpl>()
+        dbConnectionManager = mock<DbConnectionManager>().apply {
+            whenever(getClusterDataSource()) doReturn dummyDataSource
+            whenever(getOrCreateEntityManagerFactory(any(), any(), any())) doReturn entityManagerFactory
+        }
+
         backingStoreImpl = JPABackingStoreImpl(
             lifecycleCoordinatorFactory,
             jpaEntitiesRegistry,
@@ -55,8 +73,6 @@ class JPABackingStoreImplTests {
             schemaMigrator = schemaMigrator
         )
     }
-
-    inner class DummyLifecycle : LifecycleEvent
 
     @Nested
     inner class LifeCycleTests {
@@ -80,13 +96,12 @@ class JPABackingStoreImplTests {
             Mockito.verify(lifecycleCoordinator).isRunning
         }
 
-        // FIXME: it's currently failing because entityManagerFactory never got a chance to get initialised with
-        //   a mock lifecycleCoordinator. In normal scenario, an instance is created then start() gets invoked which
-        //   in turn invokes the event handler where entityManagerFactor creates an instance of EntityManager.
-        //   Q. What'd be the desired behaviour - is it allowed to invoke close() before doing anything?
         @Test
         fun `Closing backing store invokes life cycle stop`() {
             Mockito.verify(lifecycleCoordinator, never()).stop()
+            backingStoreImpl.eventHandler(
+                RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), lifecycleCoordinator
+            )
             backingStoreImpl.close()
             Mockito.verify(lifecycleCoordinator).stop()
         }
@@ -140,7 +155,6 @@ class JPABackingStoreImplTests {
             Mockito.verify(mockCoordinator).updateStatus(LifecycleStatus.ERROR)
         }
 
-
         @Test
         fun `Unknown life cycle event does not throw exception`() {
             assertDoesNotThrow {
@@ -150,30 +164,109 @@ class JPABackingStoreImplTests {
     }
 
     @Nested
-    inner class ClosingSessionTests {
+    inner class ClosingSessionBlockTests {
         @BeforeEach
-        fun initMock() {
-            Mockito.reset(entityManager)
+        fun init() {
+            backingStoreImpl.eventHandler(
+                RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), lifecycleCoordinator
+            )
         }
 
         @Test
         fun `Session closes entity manager after use`() {
-            backingStoreImpl.eventHandler(
-                RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), lifecycleCoordinator
-            )
             backingStoreImpl.session { }
             Mockito.verify(entityManager).close()
         }
 
         @Test
         fun `Session closes entity manager even when exception occurs`() {
-            backingStoreImpl.eventHandler(
-                RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), lifecycleCoordinator
-            )
             assertThrows<java.lang.RuntimeException> {
                 backingStoreImpl.session { throw java.lang.RuntimeException("test exception") }
             }
             Mockito.verify(entityManager).close()
+        }
+    }
+
+    @Nested
+    inner class TransactionTests {
+        // FIXME: a temporary constant until MAX_RETRIES is configurable.
+        private val maxRetriesCnt = 11
+        private val expectedTxnExceptions = mapOf(
+            "EntityExistsException" to EntityExistsException(),
+            "RollbackException" to RollbackException(),
+            "OptimisticLockException" to OptimisticLockException()
+        )
+
+        @BeforeEach
+        fun init() {
+            backingStoreImpl.eventHandler(
+                RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), lifecycleCoordinator
+            )
+        }
+
+        @Test
+        fun `Executing transaction runs with transaction begin and commit`() {
+            backingStoreImpl.session { session ->
+                session.executeTransaction { _, _ -> }
+            }
+
+            Mockito.verify(entityTransaction, times(1)).begin()
+            Mockito.verify(entityTransaction, times(1)).commit()
+            Mockito.verify(entityManager, times(1)).close()
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = ["EntityExistsException", "RollbackException", "OptimisticLockException"])
+        fun `Executing transaction retries upon expected exceptions`(exception: String) {
+            assertThrows<IllegalStateException> {
+                backingStoreImpl.session { session ->
+                    session.executeTransaction { _, _ -> throw expectedTxnExceptions[exception]!! }
+                }
+            }
+
+            // FIXME: this fails because the logic executes MAX_RETRIES + 1 times.
+            //  This should be refactored to get the value from the configuration which doesn't exist yet.
+            Mockito.verify(entityTransaction, times(maxRetriesCnt)).begin()
+            Mockito.verify(entityTransaction, never()).commit()
+        }
+
+        @Test
+        fun `Executing transaction does not retry upon unexpected exception`() {
+            assertThrows<DummyException> {
+                backingStoreImpl.session { session ->
+                    session.executeTransaction { _, _ -> throw DummyException("dummy exception") }
+                }
+            }
+            Mockito.verify(entityTransaction, times(1)).begin()
+            Mockito.verify(entityTransaction, never()).commit()
+        }
+
+        @Test
+        fun `Executing transaction triggers rollback upon receiving expected exception if transaction is active`() {
+            assertThrows<java.lang.IllegalStateException> {
+                backingStoreImpl.session { session ->
+                    session.executeTransaction { _, _ -> throw EntityExistsException() }
+                }
+            }
+            Mockito.verify(entityTransaction, times(maxRetriesCnt)).rollback()
+        }
+
+        @Test
+        fun `Get state details`() {
+            throw NotImplementedError()
+//            backingStoreImpl.session { session -> session.getStateDetails() }
+        }
+
+        @Test
+        fun `Get transaction details`() {
+            throw NotImplementedError()
+//            backingStoreImpl.session { session -> session.getTransactionDetails() }
+        }
+
+        @Test
+        fun `Get transaction errors`() {
+            throw NotImplementedError()
+//            backingStoreImpl.session { session -> session.getTransactionDetails() }
         }
     }
 }

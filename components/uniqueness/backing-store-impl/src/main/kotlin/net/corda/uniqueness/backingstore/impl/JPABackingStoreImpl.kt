@@ -43,6 +43,7 @@ open class JPABackingStoreImpl @Activate constructor(
     //  refactored. If createDefaultUniquenessDb() can't be refactored and we want to remove this default parameter,
     //  revert this change and the only affected test is
     //  "Registration status change event instantiates entity manager when event status is up"
+    @Reference(service = LiquibaseSchemaMigratorImpl::class)
     private val schemaMigrator: LiquibaseSchemaMigratorImpl = LiquibaseSchemaMigratorImpl()
 ) : BackingStore {
 
