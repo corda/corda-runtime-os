@@ -112,7 +112,7 @@ class FlowRPCOpsImplTest {
         whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(any())).thenReturn(null)
 
         val flowRPCOps =
-            FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory)
+            FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory, flowClassRpcOps)
         flowRPCOps.initialise(SmartConfigImpl.empty())
 
         assertThrows<ResourceNotFoundException> {
@@ -141,7 +141,7 @@ class FlowRPCOpsImplTest {
         whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(any())).thenReturn(null)
 
         val flowRPCOps =
-            FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory)
+            FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory, flowClassRpcOps)
         flowRPCOps.initialise(SmartConfigImpl.empty())
 
         assertThrows<ResourceNotFoundException> {
@@ -197,7 +197,7 @@ class FlowRPCOpsImplTest {
         whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(any())).thenReturn(null)
 
         val flowRPCOps =
-            FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory)
+            FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory, flowClassRpcOps)
         flowRPCOps.initialise(SmartConfigImpl.empty())
 
         assertThrows<ResourceNotFoundException> {
@@ -281,7 +281,7 @@ class FlowRPCOpsImplTest {
         doNothing().whenever(duplexChannel).error(exceptionArgumentCaptor.capture())
 
         val flowRPCOps =
-            FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory)
+            FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory, flowClassRpcOps)
         flowRPCOps.initialise(SmartConfigImpl.empty())
 
         flowRPCOps.registerFlowStatusUpdatesFeed(duplexChannel, "1234567890ab", "")
