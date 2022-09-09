@@ -8,6 +8,8 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import java.io.NotSerializableException
+import net.corda.v5.base.annotations.CordaSerializable
+import org.junit.jupiter.api.Assertions.assertEquals
 
 class ErrorMessagesTests {
     companion object {
@@ -18,10 +20,6 @@ class ErrorMessagesTests {
         "Property '$property' or its getter is non public, this renders class 'class $testname\$C' unserializable -> class $testname\$C"
 
     // Java allows this to be set at the class level yet Kotlin doesn't for some reason
-    @Disabled(
-        "Current behaviour allows for the serialization of objects with private members," +
-            " this will be disallowed at some point in the future"
-    )
     @Test
     fun privateProperty() {
         data class C(private val a: Int)
@@ -36,10 +34,6 @@ class ErrorMessagesTests {
     }
 
     // Java allows this to be set at the class level yet Kotlin doesn't for some reason
-    @Disabled(
-        "Current behaviour allows for the serialization of objects with private members," +
-            " this will be disallowed at some point in the future"
-    )
     @Test
     fun privateProperty2() {
         data class C(val a: Int, private val b: Int)
@@ -54,14 +48,11 @@ class ErrorMessagesTests {
     }
 
     // Java allows this to be set at the class level yet Kotlin doesn't for some reason
-    @Disabled(
-        "Current behaviour allows for the serialization of objects with private members, " +
-            "this will be disallowed at some point in the future"
-    )
     @Test
     fun privateProperty3() {
         // despite b being private, the getter we've added is public and thus allows for the serialisation
         // of the object
+        @CordaSerializable
         data class C(val a: Int, private val b: Int) {
             @Suppress("unused")
             fun getB() = b
@@ -69,15 +60,14 @@ class ErrorMessagesTests {
 
         val sf = testDefaultFactory()
 
-        val bytes = TestSerializationOutput(VERBOSE, sf).serialize(C(1, 2))
-        DeserializationInput(sf).deserialize(bytes)
+        val input = C(1, 2)
+
+        val bytes = TestSerializationOutput(VERBOSE, sf).serialize(input)
+        val output = DeserializationInput(sf).deserialize(bytes)
+        assertEquals(input, output)
     }
 
     // Java allows this to be set at the class level yet Kotlin doesn't for some reason
-    @Disabled(
-        "Current behaviour allows for the serialization of objects with private members, " +
-            "this will be disallowed at some point in the future"
-    )
     @Test
     fun protectedProperty() {
         open class C(@Suppress("unused") protected val a: Int)

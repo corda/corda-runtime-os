@@ -412,24 +412,19 @@ internal data class LocalTypeInformationBuilder(val lookup: LocalTypeLookup,
                     constructorParameterIndices.getValue(normalisedName),
                     descriptor,
                     constructorInformation)
-            if (property == null) null else normalisedName to property
+            normalisedName to property
         }
     }
 
     private fun makeConstructorPairedProperty(constructorIndex: Int,
                                               descriptor: PropertyDescriptor,
-                                              constructorInformation: LocalConstructorInformation): LocalPropertyInformation? {
+                                              constructorInformation: LocalConstructorInformation): LocalPropertyInformation {
 
         if (descriptor.getter == null) {
-            if (descriptor.field == null) return null
-            val paramType = descriptor.field.genericType
-            val paramTypeInformation = resolveAndBuild(paramType)
-
-            return LocalPropertyInformation.PrivateConstructorPairedProperty(
-                    descriptor.field,
-                    ConstructorSlot(constructorIndex, constructorInformation),
-                    paramTypeInformation,
-                    constructorInformation.parameters[constructorIndex].isMandatory)
+            throw NotSerializableException(
+                "Property '${descriptor.field!!.name}' or its getter is non public, " +
+                        "this renders class '${descriptor.field.declaringClass}' unserializable -> ${descriptor.field.declaringClass}"
+            )
         }
 
         val paramType = descriptor.getter.genericReturnType
