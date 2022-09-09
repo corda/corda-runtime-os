@@ -44,7 +44,7 @@ fun startRpcFlow(
     }
 }
 
-fun startRpcFlow(holdingId: String, args: Map<String, Any>, flowName: String): String {
+fun startRpcFlow(holdingId: String, args: Map<String, Any>, flowName: String, expectedCode: Int = 202): String {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
@@ -59,7 +59,7 @@ fun startRpcFlow(holdingId: String, args: Map<String, Any>, flowName: String): S
                     escapeJson(ObjectMapper().writeValueAsString(args))
                 )
             }
-            condition { it.code == 202 }
+            condition { it.code == expectedCode }
         }
 
         requestId

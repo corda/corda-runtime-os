@@ -7,11 +7,13 @@ import net.corda.flow.rpcops.FlowRPCOpsServiceException
 import net.corda.flow.rpcops.FlowStatusCacheService
 import net.corda.flow.rpcops.factory.MessageFactory
 import net.corda.flow.rpcops.impl.flowstatus.websocket.WebSocketFlowStatusUpdateListener
+import net.corda.flow.rpcops.v1.FlowClassRpcOps
 import net.corda.flow.rpcops.v1.FlowRpcOps
 import net.corda.flow.rpcops.v1.types.request.StartFlowParameters
 import net.corda.flow.rpcops.v1.types.response.FlowStatusResponse
 import net.corda.flow.rpcops.v1.types.response.FlowStatusResponses
 import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.response.ResponseEntity
@@ -44,7 +46,9 @@ class FlowRPCOpsImpl @Activate constructor(
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
     @Reference(service = MessageFactory::class)
-    private val messageFactory: MessageFactory
+    private val messageFactory: MessageFactory,
+    @Reference(service = FlowClassRpcOps::class)
+    private val flowClassRpcOps: FlowClassRpcOps
 ) : FlowRpcOps, PluggableRPCOps<FlowRpcOps>, Lifecycle {
 
     companion object {
@@ -82,6 +86,11 @@ class FlowRPCOpsImpl @Activate constructor(
         }
 
         val flowClassName = startFlow.flowClassName
+        val startableFlows = flowClassRpcOps.getStartableFlows(holdingIdentityShortHash).flowClassNames
+        if (!startableFlows.contains(flowClassName)) {
+            throw InvalidInputDataException("The flow that was requested is not in the list of startable flows for this holding identity.")
+        }
+
         // TODO Platform properties to be populated correctly, for now a fixed 'account zero' is the only property
         // This is a placeholder which indicates access to everything, see CORE-6076
         val flowContextPlatformProperties = mapOf("corda.account" to "account-zero")
