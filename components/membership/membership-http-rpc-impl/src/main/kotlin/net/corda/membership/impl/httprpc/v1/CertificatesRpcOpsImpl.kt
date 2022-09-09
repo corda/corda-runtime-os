@@ -89,7 +89,7 @@ class CertificatesRpcOpsImpl @Activate constructor(
     override fun generateCsr(
         tenantId: String,
         keyId: String,
-        x500name: String,
+        x500Name: String,
         certificateRole: String,
         subjectAlternativeNames: List<String>?,
         contextMap: Map<String, String?>?,
@@ -116,7 +116,7 @@ class CertificatesRpcOpsImpl @Activate constructor(
         val signer = CsrContentSigner(spec, publicKey, tenantId)
 
         val p10Builder = JcaPKCS10CertificationRequestBuilder(
-            X500Principal(x500name), publicKey
+            X500Principal(x500Name), publicKey
         )
 
         p10Builder

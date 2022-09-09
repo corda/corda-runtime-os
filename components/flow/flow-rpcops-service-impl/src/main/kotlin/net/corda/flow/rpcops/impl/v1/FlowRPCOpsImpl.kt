@@ -149,8 +149,8 @@ class FlowRPCOpsImpl @Activate constructor(
         } catch (e: ShortHashException) {
             channel.error(WebSocketValidationException("Invalid holding identifier", e))
             return
-        } catch (e: FlowRPCOpsServiceException) {
-            channel.error(WebSocketValidationException("Invalid virtual node", e))
+        } catch (e: ResourceNotFoundException) {
+            channel.error(WebSocketValidationException(e.message, e))
             return
         }
         try {
@@ -184,6 +184,6 @@ class FlowRPCOpsImpl @Activate constructor(
 
     private fun getVirtualNode(shortId: ShortHash): VirtualNodeInfo {
         return virtualNodeInfoReadService.getByHoldingIdentityShortHash(shortId)?.toAvro()
-            ?: throw FlowRPCOpsServiceException("Failed to find a Virtual Node for ID='${shortId}'")
+            ?: throw ResourceNotFoundException("Virtual Node", shortId.value)
     }
 }
