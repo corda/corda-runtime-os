@@ -36,6 +36,7 @@ import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.VirtualNodeState
@@ -97,8 +98,8 @@ internal class VirtualNodeWriterProcessor(
                 return
             }
         }.also {
-            logger.debug("[Create ${create.x500Name}] validation took $it ms, elapsed " +
-                    "${currentTimeMillis() - startMillis} ms")
+            logger.debug {"[Create ${create.x500Name}] validation took $it ms, elapsed " +
+                    "${currentTimeMillis() - startMillis} ms"}
         }
 
 
@@ -114,8 +115,8 @@ internal class VirtualNodeWriterProcessor(
                     return
                 }
             }.also {
-                logger.debug("[Create ${create.x500Name}] get metadata took $it ms, elapsed " +
-                        "${currentTimeMillis() - startMillis} ms")
+                logger.debug {"[Create ${create.x500Name}] get metadata took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
             }
 
             // Generate group ID for MGM
@@ -136,30 +137,30 @@ internal class VirtualNodeWriterProcessor(
                 }
                 checkUniqueId(holdingId)
             }.also {
-                logger.debug("[Create ${create.x500Name}] validate holding ID took $it ms, elapsed " +
-                        "${currentTimeMillis() - startMillis} ms")
+                logger.debug {"[Create ${create.x500Name}] validate holding ID took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
             }
 
             val vNodeDbs:  Map<VirtualNodeDbType, VirtualNodeDb>
             measureTimeMillis {
                 vNodeDbs = vnodeDbFactory.createVNodeDbs(holdingId.shortHash, create)
             }.also {
-                logger.debug("[Create ${create.x500Name}] creating vnode DBs took $it ms, elapsed " +
-                        "${currentTimeMillis() - startMillis} ms")
+                logger.debug {"[Create ${create.x500Name}] creating vnode DBs took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
             }
 
             measureTimeMillis {
                 createSchemasAndUsers(holdingId, vNodeDbs.values)
             }.also {
-                logger.debug("[Create ${create.x500Name}] creating vnode DB Schemas and users took $it ms, elapsed " +
-                        "${currentTimeMillis() - startMillis} ms")
+                logger.debug {"[Create ${create.x500Name}] creating vnode DB Schemas and users took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
             }
 
             measureTimeMillis {
                 runDbMigrations(holdingId, vNodeDbs.values)
             }.also {
-                logger.debug("[Create ${create.x500Name}] DB migrations took $it ms, elapsed " +
-                        "${currentTimeMillis() - startMillis} ms")
+                logger.debug {"[Create ${create.x500Name}] DB migrations took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
             }
 
             val vaultDb = vNodeDbs[VAULT]
@@ -170,8 +171,8 @@ internal class VirtualNodeWriterProcessor(
                 measureTimeMillis {
                     runCpiMigrations(cpiMetadata, vaultDb)
                 }.also {
-                    logger.debug("[Create ${create.x500Name}] CPI DB migrations took $it ms, elapsed " +
-                            "${currentTimeMillis() - startMillis} ms")
+                    logger.debug {"[Create ${create.x500Name}] CPI DB migrations took $it ms, elapsed " +
+                            "${currentTimeMillis() - startMillis} ms"}
                 }
             }
 
@@ -180,29 +181,29 @@ internal class VirtualNodeWriterProcessor(
                 dbConnections =
                     persistHoldingIdAndVirtualNode(holdingId, vNodeDbs, cpiMetadata.id, create.updateActor)
             }.also {
-                logger.debug("[Create ${create.x500Name}] persisting VNode to DB took $it ms, elapsed " +
-                        "${currentTimeMillis() - startMillis} ms")
+                logger.debug {"[Create ${create.x500Name}] persisting VNode to DB took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
             }
 
             measureTimeMillis {
                 publishVNodeInfo(holdingId, cpiMetadata, dbConnections)
             }.also {
-                logger.debug("[Create ${create.x500Name}] persisting VNode Info to Kafka took $it ms, elapsed " +
-                        "${currentTimeMillis() - startMillis} ms")
+                logger.debug {"[Create ${create.x500Name}] persisting VNode Info to Kafka took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
             }
 
             measureTimeMillis {
                 publishMgmInfo(holdingId, cpiMetadata.groupPolicy)
             }.also {
-                logger.debug("[Create ${create.x500Name}] persisting Mgm Info to Kafka took $it ms, elapsed " +
-                        "${currentTimeMillis() - startMillis} ms")
+                logger.debug {"[Create ${create.x500Name}] persisting Mgm Info to Kafka took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
             }
 
             measureTimeMillis {
                 sendSuccessfulResponse(respFuture, instant, holdingId, cpiMetadata, dbConnections)
             }.also {
-                logger.debug("[Create ${create.x500Name}] send response to RPC gateway took $it ms, elapsed " +
-                        "${currentTimeMillis() - startMillis} ms")
+                logger.debug {"[Create ${create.x500Name}] send response to RPC gateway took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
             }
         } catch (e: Exception) {
             handleException(respFuture, e)
