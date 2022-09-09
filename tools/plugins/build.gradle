@@ -69,9 +69,9 @@ tasks.register("cliInstallScriptsS3", Copy) {
 
 tasks.named('jar').configure {
     finalizedBy cliInstallArchive
-    if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
-        finalizedBy cliInstallScriptsS3
-    }
+    // if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
+    //     finalizedBy cliInstallScriptsS3
+    // }
 }
 
 tasks.register('publishOSGiImage', DeployableContainerBuilder) {
@@ -120,12 +120,12 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
     }
 }
 
-if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
-    artifacts {
-        cliInstallArchive
-        cliInstallScriptsS3
-    }
-}
+// if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
+//     artifacts {
+//         cliInstallArchive
+//         cliInstallScriptsS3
+//     }
+// }
 
 publishing {
     publications {
@@ -134,13 +134,13 @@ publishing {
             groupId project.group
             artifact cliInstallArchive
         }
-        if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
-            maven(MavenPublication) {
-                artifactId "corda-cli-installer-script"
-                groupId project.group
-                artifact cliInstallScriptsS3
-            }
-        }
+        // if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
+        //     maven(MavenPublication) {
+        //         artifactId "corda-cli-installer-script"
+        //         groupId project.group
+        //         artifact cliInstallScriptsS3
+        //     }
+        // }
     }
     if (project.hasProperty(S3_BUCKET_URI_PROPERTY) && project.hasProperty('releasable')) {
         publishing {
