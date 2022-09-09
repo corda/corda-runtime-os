@@ -1,7 +1,7 @@
 @Library('corda-shared-build-pipeline-steps@DP2') _
 
 cordaPipeline(
-    nexusAppId: 'flow-worker-5.0',
+    //nexusAppId: 'flow-worker-5.0',
     runIntegrationTests: true,
     publishRepoPrefix: 'corda-ent-maven',
     createPostgresDb: true,
