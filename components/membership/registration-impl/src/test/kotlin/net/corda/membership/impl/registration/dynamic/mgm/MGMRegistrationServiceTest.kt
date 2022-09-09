@@ -264,16 +264,14 @@ class MGMRegistrationServiceTest {
 
         val result = registrationService.register(registrationRequest, mgm, properties)
 
-        verify(mockPublisher, times(2)).publish(capturedPublishedList.capture())
-        val publishedMgmInfoList = capturedPublishedList.firstValue
-        val publishedEventList = capturedPublishedList.secondValue
+        verify(mockPublisher, times(1)).publish(capturedPublishedList.capture())
+        val publishedList = capturedPublishedList.firstValue
+        val publishedMgmInfo = publishedList.first()
+        val publishedEvent = publishedList.last()
         assertSoftly {
             it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.SUBMITTED)
-            it.assertThat(publishedMgmInfoList).hasSize(1)
-            it.assertThat(publishedEventList).hasSize(1)
+            it.assertThat(publishedList).hasSize(2)
 
-            val publishedMgmInfo = publishedMgmInfoList.first()
-            val publishedEvent = publishedEventList.first()
             it.assertThat(publishedMgmInfo.topic).isEqualTo(MEMBER_LIST_TOPIC)
             it.assertThat(publishedEvent.topic).isEqualTo(EVENT_TOPIC)
 
