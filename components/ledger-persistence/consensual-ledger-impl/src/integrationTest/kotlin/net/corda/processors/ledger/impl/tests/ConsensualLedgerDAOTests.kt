@@ -30,9 +30,11 @@ import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import net.corda.processors.ledger.impl.MappablePrivacySalt
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
+import net.corda.v5.ledger.common.transaction.PrivacySalt
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
@@ -49,6 +51,7 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.ByteBuffer
+import java.nio.charset.Charset
 import java.nio.file.Path
 import java.time.Instant
 import java.util.UUID
@@ -145,30 +148,34 @@ class ConsensualLedgerDAOTests {
 
     @Test
     fun `persistTransaction for consensual ledger deserialises the tx and persists`() {
-        val payload = ByteBuffer.allocate(1)
-        logger.info("Creating request")
         // create ConsensualSignedTransactionImpl instance (or WireTransaction at first)
         val mapper = jacksonObjectMapper()
+        mapper.addMixIn(PrivacySalt::class.java, MappablePrivacySalt::class.java)
+
         val transactionMetaData = TransactionMetaData(
             mapOf(
                 TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues
             )
         )
-        val privacySalt = PrivacySaltImpl("1".repeat(32).toByteArray())
+        val privacySalt = MappablePrivacySalt("1".repeat(32).toByteArray())
         val componentGroupLists = listOf(
             listOf(mapper.writeValueAsBytes(transactionMetaData)),
             listOf(".".toByteArray()),
             listOf("abc d efg".toByteArray()),
         )
         val wireTransaction = WireTransaction(merkleTreeFactory, digestService, privacySalt, componentGroupLists)
-
-        // val txBytes = serializationService.serialize(wireTransaction)
-        // logger.info(txBytes.summary)
         logger.info("WireTransaction: ", wireTransaction)
 
         // serialise tx into bytebuffer and add to PersistTransaction payload
+        // This won't work because WireTransaction isn't marked with @CordaSerializable
+        // val txBytes = ctx.serialize(wireTransaction)
+        val txBytes = mapper.writeValueAsBytes(wireTransaction)
+        logger.info(txBytes.toString(Charset.defaultCharset()))
 
         // create request
+//        val payload = ByteBuffer.allocate(1)
+        val payload = ByteBuffer.wrap(txBytes)
+        logger.info("Creating request")
         val request = createRequest(ctx.virtualNodeInfo.holdingIdentity, PersistTransaction(payload))
         logger.info("request: $request")
 

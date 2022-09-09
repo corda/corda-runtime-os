@@ -3,6 +3,7 @@ package net.corda.processors.ledger.impl
 import net.corda.data.ledger.consensual.PersistTransaction
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.EntityResponseSuccess
+import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.v5.base.util.contextLogger
 import java.time.Instant
 import javax.persistence.EntityManager
@@ -14,23 +15,13 @@ class ConsensualLedgerDAO(
         private val logger = contextLogger()
     }
 
-    // TODO: rm tmp transaction/leaf structures when real ones are merged
-    data class SignedTransaction(val id: String, val privacySalt: Array<Byte>, val accountId: String, val merkleTree: List<List<MerkleLeaf>>)
-    data class MerkleLeaf(val data: Array<Byte>, val hash: String)
+    // TODO: This should probably take a ConsensualSignedTransactionImpl which includes WireTransaction and signers.
+    fun persistTransaction(transaction: WireTransaction, entityManager: EntityManager): EntityResponse {
+        logger.debug("TMP DEBUG 1. transaction: $transaction, loadClass: $loadClass")
 
-    fun persistTransaction(request: PersistTransaction, entityManager: EntityManager): EntityResponse {
-        logger.debug("TMP DEBUG 1. request: $request, loadClass: $loadClass")
-        // TODO: deserialise the request data to a real SignedTransaction
-        val tx = SignedTransaction(
-            "0",
-            arrayOf<Byte>(1),
-            "2",
-            listOf(listOf(MerkleLeaf(arrayOf<Byte>(3,4), "5")))
-        )
-        // do some native queries to insert multiple rows (and across tables)
         val now = Instant.now()
-        writeTransaction(entityManager, now, tx)
-        writeTransactionStatus(entityManager, now, tx, "Faked")
+        writeTransaction(entityManager, now, transaction)
+        writeTransactionStatus(entityManager, now, transaction, "Faked")
         // TODO: when and what do we write to the signatures table?
         // TODO: when and what do we write to the CPKs table?
 
@@ -38,7 +29,7 @@ class ConsensualLedgerDAO(
         return EntityResponse(emptyList())
     }
 
-    private fun writeTransaction(entityManager: EntityManager, timestamp: Instant, tx: SignedTransaction) {
+    private fun writeTransaction(entityManager: EntityManager, timestamp: Instant, tx: WireTransaction) {
         entityManager.createNativeQuery(
             """
                 INSERT INTO {h-schema}consensual_transaction(id, privacy_salt, account_id, created)
@@ -46,7 +37,7 @@ class ConsensualLedgerDAO(
         )
             .setParameter("id", tx.id)
             .setParameter("privacySalt", tx.privacySalt)
-            .setParameter("accountId", tx.accountId)
+            .setParameter("accountId", 123)             // TODO: where do we get this?
             .setParameter("createdAt", timestamp)
             .executeUpdate()
     }
@@ -54,7 +45,7 @@ class ConsensualLedgerDAO(
     private fun writeTransactionStatus(
         entityManager: EntityManager,
         timestamp: Instant,
-        tx: SignedTransaction,
+        tx: WireTransaction,
         status: String
     ) {
         entityManager.createNativeQuery(

@@ -49,8 +49,6 @@ dependencies {
     implementation project(':libs:virtual-node:sandbox-group-context')
     implementation project(':libs:utilities')
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation 'javax.persistence:javax.persistence-api'
     implementation 'net.corda:corda-application'
     implementation 'net.corda:corda-avro-schema'
     implementation 'net.corda:corda-base'
@@ -59,6 +57,9 @@ dependencies {
     implementation 'net.corda:corda-membership'
     implementation 'net.corda:corda-topic-schema'
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation "com.typesafe:config:$typeSafeConfigVersion"
+    implementation 'javax.persistence:javax.persistence-api'
     implementation 'org.slf4j:slf4j-api'
 
     testImplementation project(':libs:db:db-orm-impl')
@@ -99,7 +100,6 @@ dependencies {
     integrationTestRuntimeOnly project(":libs:crypto:crypto-serialization-impl")
     integrationTestImplementation project(':libs:ledger:ledger-common-serialization')
     integrationTestImplementation project(':testing:test-serialization')
-    integrationTestImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 
     integrationTestRuntimeOnly project(':libs:flows:external-event-responses-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')

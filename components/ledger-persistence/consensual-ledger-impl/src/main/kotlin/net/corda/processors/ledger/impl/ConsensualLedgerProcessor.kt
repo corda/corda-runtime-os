@@ -1,5 +1,10 @@
 package net.corda.processors.ledger.impl
 
+import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.util.ByteBufferBackedInputStream
 import java.nio.ByteBuffer
 import javax.persistence.EntityManagerFactory
 import net.corda.data.flow.event.FlowEvent
@@ -13,6 +18,7 @@ import net.corda.entityprocessor.impl.internal.exceptions.NotReadyException
 import net.corda.entityprocessor.impl.internal.exceptions.NullParameterException
 import net.corda.entityprocessor.impl.internal.exceptions.VirtualNodeException
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
+import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
@@ -23,6 +29,9 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
+import net.corda.v5.ledger.common.transaction.PrivacySalt
 import java.io.NotSerializableException
 
 
@@ -37,6 +46,10 @@ fun EntitySandboxService.getClass(holdingIdentity: HoldingIdentity, fullyQualifi
  * The [EntityResponse] contains the response or an exception-like payload whose presence indicates
  * an error has occurred.
  */
+
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, defaultImpl = PrivacySalt::class)
+class MappablePrivacySalt @JsonCreator constructor(@JsonProperty override val bytes: ByteArray): PrivacySalt {}
+
 class ConsensualLedgerProcessor(
     private val entitySandboxService: EntitySandboxService,
     private val externalEventResponseFactory: ExternalEventResponseFactory,
@@ -44,6 +57,13 @@ class ConsensualLedgerProcessor(
 ) : DurableProcessor<String, ConsensualLedgerRequest> {
     companion object {
         private val log = contextLogger()
+        private val mapper = getMapper()
+
+        private fun getMapper(): ObjectMapper {
+            val mapper = jacksonObjectMapper()
+            mapper.addMixIn(PrivacySalt::class.java, MappablePrivacySalt::class.java)
+            return mapper
+        }
     }
 
     private fun SandboxGroupContext.getSerializationService(): SerializationService =
@@ -117,7 +137,7 @@ class ConsensualLedgerProcessor(
                 when (val req = request.request) {
                     is PersistTransaction -> successResponse(
                         request.flowExternalEventContext,
-                        consensualLedgerDAO.persistTransaction(req, it)
+                        consensualLedgerDAO.persistTransaction(deserialize<WireTransaction>(req.transaction), it)
                     )
 
                     else -> {
@@ -136,6 +156,15 @@ class ConsensualLedgerProcessor(
         }
 
         return response
+    }
+
+    /**
+     * TODO: Temporary JSON deserializer for transactions. We should replace this with AMQP-based serialization
+     * but at the moment that isn't quite ready.
+     */
+    private inline fun <reified T> deserialize(bytes: ByteBuffer): T {
+        val inStream = ByteBufferBackedInputStream(bytes)
+        return mapper.readValue(inStream, jacksonTypeRef<T>())
     }
 
     private fun successResponse(
