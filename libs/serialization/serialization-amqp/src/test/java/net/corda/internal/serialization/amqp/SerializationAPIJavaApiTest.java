@@ -296,12 +296,14 @@ public class SerializationAPIJavaApiTest {
     class BaseProxyTestClass implements SerializationCustomSerializer<BaseTestClass<?>, ProxyTestClass> {
 
         @Override
-        public ProxyTestClass toProxy(BaseTestClass<?> baseTestClass) {
+        @NotNull
+        public ProxyTestClass toProxy(@NotNull BaseTestClass<?> baseTestClass) {
             return proxy;
         }
 
         @Override
-        public BaseTestClass<?> fromProxy(ProxyTestClass proxyTestClass) {
+        @NotNull
+        public BaseTestClass<?> fromProxy(@NotNull ProxyTestClass proxyTestClass) {
             return obj;
         }
     }

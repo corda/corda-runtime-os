@@ -22,8 +22,8 @@ import net.corda.internal.serialization.model.LocalTypeInformation.Top
 import net.corda.internal.serialization.model.LocalTypeInformation.Unknown
 import net.corda.kotlin.reflect.kotlinClass
 import net.corda.utilities.reflection.kotlinObjectInstance
-import net.corda.v5.serialization.annotations.ConstructorForDeserialization
-import net.corda.v5.serialization.annotations.DeprecatedConstructorForDeserialization
+import net.corda.v5.base.annotations.ConstructorForDeserialization
+import net.corda.v5.base.annotations.DeprecatedConstructorForDeserialization
 import java.io.NotSerializableException
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
@@ -32,6 +32,7 @@ import java.lang.reflect.Type
 import java.util.Locale
 import kotlin.reflect.KFunction
 import kotlin.reflect.full.findAnnotation
+import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.primaryConstructor
 import kotlin.reflect.jvm.internal.KotlinReflectionInternalError
 import kotlin.reflect.jvm.isAccessible
@@ -511,7 +512,9 @@ private fun constructorForDeserialization(type: Type): KFunction<Any>? {
 
     val kotlinCtors = clazz.kotlin.constructors
 
-    val annotatedCtors = kotlinCtors.filter { it.findAnnotation<ConstructorForDeserialization>() != null }
+    val annotatedCtors = kotlinCtors.filter { ctor ->
+        ctor.hasAnnotation<ConstructorForDeserialization>()
+    }
     if (annotatedCtors.size > 1) return null
     if (annotatedCtors.size == 1) return annotatedCtors.first().apply { isAccessible = true }
 
