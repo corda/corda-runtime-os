@@ -19,9 +19,9 @@ class ConfigSecretHelper {
 
     /**
      * Replaces all secret paths with the string MaskedSecretsLookupService.MASK_VALUE
-     * and returns a new JsonNode with the secrets that have been removed.
+     * and returns a map of all the secrets that have been removed keyed by their path.
      * @param node Node to replace secrets with strings
-     * @return a new JSON node containing only secrets
+     * @return a map containing all secrets
      */
     fun hideSecrets(node: JsonNode): MutableMap<String, JsonNode> {
         return hideSecretsRecursive(node, node)
@@ -37,7 +37,7 @@ class ConfigSecretHelper {
         val newPath = if (nodePath == "") nodeName else "$nodePath.$nodeName"
         if (node.isObject) {
             for ((fieldName, fieldNode) in node.fields().asSequence().toList()) {
-                if (fieldName.endsWith(".${SmartConfig.SECRET_KEY}") || fieldName == SmartConfig.SECRET_KEY) {
+                if (fieldName == SmartConfig.SECRET_KEY) {
                     secrets[newPath] = node
                     (parentNode as ObjectNode).remove(nodeName)
                     parentNode.set(nodeName, TMP_SECRET_NODE)
