@@ -4,6 +4,7 @@ import com.esotericsoftware.kryo.Kryo
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
+import net.corda.crypto.impl.DoubleSHA256DigestFactory
 import net.corda.crypto.merkle.impl.MerkleTreeFactoryImpl
 import net.corda.kryoserialization.DefaultKryoCustomizer
 import net.corda.kryoserialization.KryoCheckpointSerializer
@@ -20,6 +21,7 @@ import org.mockito.Mockito.`when`
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
+import java.util.*
 
 internal fun mockSandboxGroup(taggedClasses: Set<Class<*>>): SandboxGroup {
     val standardClasses = listOf(String::class.java, Class::class.java)
@@ -42,13 +44,14 @@ internal fun mockSandboxGroup(taggedClasses: Set<Class<*>>): SandboxGroup {
 
 class WireTransactionKryoSerializationTest {
     companion object {
+        private val schemeMetadata= CipherSchemeMetadataImpl()
+
         private lateinit var digestService: DigestService
         private lateinit var merkleTreeFactory: MerkleTreeFactory
 
         @BeforeAll
         @JvmStatic
         fun setup() {
-            val schemeMetadata = CipherSchemeMetadataImpl()
             digestService = DigestServiceImpl(schemeMetadata, null)
             merkleTreeFactory = MerkleTreeFactoryImpl(digestService)
         }
@@ -75,16 +78,46 @@ class WireTransactionKryoSerializationTest {
             componentGroupLists
         )
 
-//        val sandboxGroup = mockSandboxGroup(setOf(WireTransaction::class.java))
-        val serializer = KryoCheckpointSerializer(Kryo())
-/*            DefaultKryoCustomizer.customize(
+        //val serializer = KryoCheckpointSerializer(Kryo())
+        val sandboxGroup = mockSandboxGroup(
+            setOf(
+                WireTransaction::class.java,
+                Arrays.asList("").javaClass,
+                java.util.List::class.java,
+                java.util.Collections.singletonList("").javaClass,
+                ByteArray::class.java,
+                DigestServiceImpl::class.java,
+                java.util.concurrent.ConcurrentHashMap::class.java,
+                DoubleSHA256DigestFactory::class.java,
+                CipherSchemeMetadataImpl::class.java,
+                java.util.LinkedHashMap::class.java,
+                org.bouncycastle.asn1.x509.AlgorithmIdentifier::class.java,
+                org.bouncycastle.asn1.ASN1ObjectIdentifier::class.java,
+                net.corda.v5.cipher.suite.schemes.KeyScheme::class.java,
+                java.util.Collections.singleton("").javaClass,
+                net.corda.v5.cipher.suite.schemes.KeySchemeCapability::class.java,
+                org.bouncycastle.jce.spec.ECNamedCurveParameterSpec::class.java,
+                org.bouncycastle.math.ec.custom.sec.SecP256K1Point::class.java,
+                org.bouncycastle.math.ec.custom.sec.SecP256K1Curve::class.java
+
+            )
+        )
+        val serializer = KryoCheckpointSerializer(
+            DefaultKryoCustomizer.customize(
                 Kryo(),
                 emptyMap(),
                 CordaClassResolver(sandboxGroup),
                 ClassSerializer(sandboxGroup)
             )
         )
- */
+
+/*        var checkpointSerializerBuilderFactory = CheckpointSerializerBuilderFactoryImpl(schemeMetadata)
+        val builder =
+            checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(mockSandboxGroup(emptySet()))
+        val serializer = builder
+            //.addSerializer(TestClass::class.java, TestClass.Serializer())
+            .build()
+*/
         val bytes = serializer.serialize(wireTransaction)
         val deserialized = serializer.deserialize(bytes, WireTransaction::class.java)
         assertEquals(wireTransaction, deserialized)

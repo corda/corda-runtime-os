@@ -16,6 +16,8 @@ dependencies {
 
     implementation project(":libs:crypto:crypto-core")
 
+    testCompileOnly 'org.osgi:osgi.core'
+    testRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testImplementation "com.esotericsoftware:kryo:$kryoVersion"
