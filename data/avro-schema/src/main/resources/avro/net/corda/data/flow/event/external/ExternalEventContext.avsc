@@ -13,6 +13,11 @@
       "name": "flowId",
       "type": "string",
       "doc": "The flow id of flow to respond to."
+    },
+    {
+      "name": "contextProperties",
+      "type": "net.corda.data.KeyValuePairList",
+      "doc": "The context properties of the issuing flow which the external processor can use as it wishes, for example to allow or disallow certain actions."
     }
   ]
 }
