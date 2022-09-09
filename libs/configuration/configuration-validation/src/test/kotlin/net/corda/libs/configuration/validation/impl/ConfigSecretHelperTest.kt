@@ -37,14 +37,15 @@ class ConfigSecretHelperTest {
         val inputNode = convertJSONToNode(input)!!
         val secrets = helper.hideSecrets(inputNode)
 
-        assertThat(inputNode["testReference"]["hidden"].textValue()).isEqualTo(MaskedSecretsLookupService
-            .MASK_VALUE)
+        assertThat(inputNode["testReference"]["hidden"].textValue()).isEqualTo(MaskedSecretsLookupService.MASK_VALUE)
+        assertThat(inputNode["testString"].textValue()).isEqualTo("hello")
 
         helper.insertSecrets(inputNode, secrets)
 
         val secretsNode = convertJSONToNode(passwordsObject)!!
 
         assertThat(inputNode["testReference"]["hidden"][SmartConfig.SECRET_KEY]).isEqualTo(secretsNode)
+        assertThat(inputNode["testString"].textValue()).isEqualTo("hello")
     }
 
     private fun convertJSONToNode(json: String?): JsonNode? {
