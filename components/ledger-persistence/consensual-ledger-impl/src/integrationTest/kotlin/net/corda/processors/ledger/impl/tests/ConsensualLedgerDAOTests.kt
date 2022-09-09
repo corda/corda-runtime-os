@@ -17,7 +17,6 @@ import net.corda.entityprocessor.impl.tests.helpers.BasicMocks
 import net.corda.entityprocessor.impl.tests.helpers.Resources
 import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getSerializer
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
-import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.TransactionMetaData
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
@@ -30,6 +29,7 @@ import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import net.corda.data.ledger.consensual.FindTransaction
 import net.corda.processors.ledger.impl.MappablePrivacySalt
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.DigestService
@@ -163,24 +163,22 @@ class ConsensualLedgerDAOTests {
             listOf(".".toByteArray()),
             listOf("abc d efg".toByteArray()),
         )
-        val wireTransaction = WireTransaction(merkleTreeFactory, digestService, privacySalt, componentGroupLists)
-        logger.info("WireTransaction: ", wireTransaction)
+        val tx = WireTransaction(merkleTreeFactory, digestService, privacySalt, componentGroupLists)
+        logger.info("WireTransaction: ", tx)
 
         // serialise tx into bytebuffer and add to PersistTransaction payload
         // This won't work because WireTransaction isn't marked with @CordaSerializable
         // val txBytes = ctx.serialize(wireTransaction)
-        val txBytes = mapper.writeValueAsBytes(wireTransaction)
+        val txBytes = mapper.writeValueAsBytes(tx)
         logger.info(txBytes.toString(Charset.defaultCharset()))
 
         // create request
 //        val payload = ByteBuffer.allocate(1)
         val payload = ByteBuffer.wrap(txBytes)
-        logger.info("Creating request")
+        logger.info("Creating persistence request")
         val request = createRequest(ctx.virtualNodeInfo.holdingIdentity, PersistTransaction(payload))
-        logger.info("request: $request")
 
         // send request to message processor
-        logger.info("Creating message processor")
         val processor = ConsensualLedgerProcessor(
             ctx.entitySandboxService,
             externalEventResponseFactory,
@@ -189,13 +187,14 @@ class ConsensualLedgerDAOTests {
         val records = listOf(Record(TOPIC, requestId, request))
 
         // process the messages. This should result in ConsensualStateDAO persisting things to the DB
-        logger.info("Sending request to processor")
-        val responses = assertSuccessResponses(processor.onNext(records))
+        var responses = assertSuccessResponses(processor.onNext(records))
         assertThat(responses.size).isEqualTo(1)
 
         // check that we wrote the expected things to the DB
-        // val retrievedTx = ctx.findTxById(1)
-        // assertThat(retrievedTx.id.isEqualTo(1))
+        val findRequest = createRequest(ctx.virtualNodeInfo.holdingIdentity, FindTransaction(tx.id.toHexString()))
+        responses = assertSuccessResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), findRequest))))
+        assertThat(responses.size).isEqualTo(1)
+        // assertThat(responses[0].id.isEqualTo(tx.id)) // need to reconstruct tx from the serialised response
     }
 
     private fun createDbTestContext(): DbTestContext {

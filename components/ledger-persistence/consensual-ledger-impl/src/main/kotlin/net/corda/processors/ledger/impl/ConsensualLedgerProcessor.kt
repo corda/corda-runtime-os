@@ -3,7 +3,6 @@ package net.corda.processors.ledger.impl
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.annotation.JsonTypeInfo
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.util.ByteBufferBackedInputStream
 import java.nio.ByteBuffer
@@ -32,8 +31,8 @@ import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
+import net.corda.data.ledger.consensual.FindTransaction
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.ledger.common.transaction.PrivacySalt
 import java.io.NotSerializableException
 
@@ -50,6 +49,7 @@ fun EntitySandboxService.getClass(holdingIdentity: HoldingIdentity, fullyQualifi
  * an error has occurred.
  */
 
+// TODO: get rid of temporary JSON serialisation code now that an injectable AMQP serialiser is available
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class MappablePrivacySalt @JsonCreator constructor(@JsonProperty override val bytes: ByteArray): PrivacySalt {}
 
@@ -148,6 +148,11 @@ class ConsensualLedgerProcessor(
                     is PersistTransaction -> successResponse(
                         request.flowExternalEventContext,
                         consensualLedgerDAO.persistTransaction(deserialize(req.transaction), it)
+                    )
+
+                    is FindTransaction -> successResponse(
+                        request.flowExternalEventContext,
+                        consensualLedgerDAO.findTransaction(req.id, it)
                     )
 
                     else -> {
