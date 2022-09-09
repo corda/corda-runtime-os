@@ -49,8 +49,8 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Membership.Companion.EVENT_TOPIC
+import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.time.UTCClock
@@ -268,20 +268,9 @@ class MGMRegistrationService @Activate constructor(
                     )
                 }
 
-                val mgmRecord = Record(
-                    Schemas.Membership.MEMBER_LIST_TOPIC,
-                    "${member.shortHash}-${member.shortHash}",
-                    PersistentMemberInfo(
-                        member.toAvro(),
-                        mgmInfo.memberProvidedContext.toAvro(),
-                        mgmInfo.mgmProvidedContext.toAvro()
-                    )
-                )
-                publisher.publish(listOf(mgmRecord)).first().get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-
                 val serializedMemberContext = keyValuePairListSerializer.serialize(memberContext.toWire())
                     ?: throw IllegalArgumentException("Failed to serialize the member context for this request.")
-                membershipPersistenceClient.persistRegistrationRequest(
+                val registrationRequestPersistenceResult = membershipPersistenceClient.persistRegistrationRequest(
                     viewOwningIdentity = member,
                     registrationRequest = RegistrationRequest(
                         status = RegistrationStatus.APPROVED,
@@ -292,6 +281,32 @@ class MGMRegistrationService @Activate constructor(
                         signature = ByteBuffer.wrap(byteArrayOf()),
                     )
                 )
+                if (registrationRequestPersistenceResult is MembershipPersistenceResult.Failure) {
+                    return MembershipRequestRegistrationResult(
+                        MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
+                        "Registration failed, persistence error. Reason: ${registrationRequestPersistenceResult.errorMsg}"
+                    )
+                }
+
+                val mgmRecord = Record(
+                    MEMBER_LIST_TOPIC,
+                    "${member.shortHash}-${member.shortHash}",
+                    PersistentMemberInfo(
+                        member.toAvro(),
+                        mgmInfo.memberProvidedContext.toAvro(),
+                        mgmInfo.mgmProvidedContext.toAvro()
+                    )
+                )
+
+                val eventRecord = Record(
+                    EVENT_TOPIC,
+                    "${member.shortHash}",
+                    MembershipEvent(
+                        MgmOnboarded(member.toAvro())
+                    )
+                )
+
+                publisher.publish(listOf(mgmRecord, eventRecord)).first().get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             } catch (e: Exception) {
                 logger.warn("Registration failed.", e)
                 return MembershipRequestRegistrationResult(
@@ -299,8 +314,6 @@ class MGMRegistrationService @Activate constructor(
                     "Registration failed. Reason: ${e.message}"
                 )
             }
-
-            publisher.publish(listOf(Record(EVENT_TOPIC, "${member.shortHash}", MembershipEvent(MgmOnboarded(member.toAvro())))))
 
             return MembershipRequestRegistrationResult(MembershipRequestRegistrationOutcome.SUBMITTED)
         }
