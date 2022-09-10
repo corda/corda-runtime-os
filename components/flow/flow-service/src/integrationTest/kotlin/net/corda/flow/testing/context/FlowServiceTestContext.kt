@@ -31,6 +31,7 @@ import net.corda.flow.testing.fakes.FakeMembershipGroupReaderProvider
 import net.corda.flow.testing.fakes.FakeSandboxGroupContextComponent
 import net.corda.flow.testing.tests.FLOW_NAME
 import net.corda.flow.utils.emptyKeyValuePairList
+import net.corda.flow.utils.keyValuePairListOf
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CordappType
@@ -124,6 +125,8 @@ class FlowServiceTestContext @Activate constructor(
                 emptyUUID,
                 emptyUUID,
                 emptyUUID,
+                emptyUUID,
+                emptyUUID,
                 timestamp = Instant.now()
             )
         )
@@ -206,7 +209,8 @@ class FlowServiceTestContext @Activate constructor(
         requestId: String,
         holdingId: HoldingIdentity,
         cpiId: String,
-        args: String
+        args: String,
+        platformContext: Map<String, String>
     ): FlowIoRequestSetup {
         val flowStart = FlowStartContext.newBuilder().apply {
             this.statusKey = FlowKey(requestId, holdingId)
@@ -216,7 +220,7 @@ class FlowServiceTestContext @Activate constructor(
             this.cpiId = cpiId
             this.initiatorType = FlowInitiatorType.RPC
             this.flowClassName = FLOW_NAME
-            this.contextPlatformProperties = emptyKeyValuePairList()
+            this.contextPlatformProperties = keyValuePairListOf(platformContext)
             this.createdTimestamp = Instant.now()
         }.build()
 

@@ -35,6 +35,7 @@ object TestCatalogue {
                 identity,
                 cpiId,
                 cryptoDmlConnectionId = UUID.randomUUID(),
+                uniquenessDmlConnectionId = UUID.randomUUID(),
                 vaultDmlConnectionId = UUID.randomUUID(),
                 timestamp = Instant.now()
             )

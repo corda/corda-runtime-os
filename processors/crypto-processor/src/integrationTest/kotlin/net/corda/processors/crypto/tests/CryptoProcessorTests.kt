@@ -16,8 +16,10 @@ import net.corda.crypto.ecies.EphemeralKeyPairEncryptor
 import net.corda.crypto.ecies.StableKeyPairDecryptor
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.flow.factory.CryptoFlowOpsTransformerFactory
+import net.corda.crypto.impl.emptyKeyValuePairList
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
@@ -296,6 +298,7 @@ class CryptoProcessorTests {
                         signerSummaryHash = null
                     ),
                     cryptoDmlConnectionId = connectionIds.getValue(vnodeDb.name),
+                    uniquenessDmlConnectionId = UUID.randomUUID(),
                     vaultDmlConnectionId = UUID.randomUUID(),
                     timestamp = Instant.now()
                 )
@@ -696,7 +699,7 @@ class CryptoProcessorTests {
                 publicKey = publicKey,
                 signatureSpec = spec,
                 data = data,
-                flowExternalEventContext = ExternalEventContext(requestId, key)
+                flowExternalEventContext = ExternalEventContext(requestId, key, KeyValuePairList(emptyList()))
             )
             logger.info(
                 "Publishing: createSign({}, {}, {}), request id: $requestId, flow id: $key",
@@ -742,7 +745,7 @@ class CryptoProcessorTests {
                 publicKey = publicKey,
                 signatureSpec = spec,
                 data = data,
-                flowExternalEventContext = ExternalEventContext(requestId, key)
+                flowExternalEventContext = ExternalEventContext(requestId, key, KeyValuePairList(emptyList()))
             )
             logger.info(
                 "Publishing: createSign({}, {}, {})",

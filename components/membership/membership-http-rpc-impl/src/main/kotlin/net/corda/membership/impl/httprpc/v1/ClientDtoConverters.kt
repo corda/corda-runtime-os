@@ -1,5 +1,6 @@
 package net.corda.membership.impl.httprpc.v1
 
+import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.membership.client.dto.MemberInfoSubmittedDto
 import net.corda.membership.client.dto.MemberRegistrationRequestDto
 import net.corda.membership.client.dto.RegistrationActionDto
@@ -11,12 +12,14 @@ import net.corda.membership.httprpc.v1.types.response.MemberInfoSubmitted
 import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgress
 import net.corda.membership.httprpc.v1.types.response.RegistrationRequestStatus
 import net.corda.membership.httprpc.v1.types.response.RegistrationStatus
+import net.corda.virtualnode.ShortHash
+import net.corda.virtualnode.ShortHashException
 
 /**
  * Convert [MemberRegistrationRequest] from the HTTP API to the internal DTO [MemberRegistrationRequestDto].
  */
 fun MemberRegistrationRequest.toDto(holdingIdentityShortHash: String) = MemberRegistrationRequestDto(
-    holdingIdentityShortHash,
+    holdingIdentityShortHash.toShortHash(),
     RegistrationActionDto.REQUEST_JOIN.getFromValue(action),
     context
 )
@@ -52,4 +55,15 @@ fun RegistrationStatusDto.fromDto() = when (this) {
     RegistrationStatusDto.PENDING_AUTO_APPROVAL -> RegistrationStatus.PENDING_AUTO_APPROVAL
     RegistrationStatusDto.DECLINED -> RegistrationStatus.DECLINED
     RegistrationStatusDto.APPROVED -> RegistrationStatus.APPROVED
+}
+
+fun String.toShortHash(): ShortHash {
+    return try {
+        ShortHash.of(this)
+    } catch (e: ShortHashException) {
+        throw InvalidInputDataException(
+            "Invalid holding identity short hash: $this",
+            mapOf("holdingIdentityShortHash" to this)
+        )
+    }
 }

@@ -12,6 +12,7 @@ import net.corda.flow.rpcops.v1.types.request.StartFlowParameters
 import net.corda.flow.rpcops.v1.types.response.FlowStatusResponse
 import net.corda.flow.rpcops.v1.types.response.FlowStatusResponses
 import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.response.ResponseEntity
@@ -73,7 +74,7 @@ class FlowRPCOpsImpl @Activate constructor(
             throw FlowRPCOpsServiceException("FlowRPC has not been initialised ")
         }
 
-        val vNode = getVirtualNode(ShortHash.of(holdingIdentityShortHash))
+        val vNode = getVirtualNode(parseShortHash(holdingIdentityShortHash))
         val clientRequestId = startFlow.clientRequestId
         val flowStatus = flowStatusCacheService.getStatus(clientRequestId, vNode.holdingIdentity)
 
@@ -112,7 +113,7 @@ class FlowRPCOpsImpl @Activate constructor(
     }
 
     override fun getFlowStatus(holdingIdentityShortHash: String, clientRequestId: String): FlowStatusResponse {
-        val vNode = getVirtualNode(ShortHash.of(holdingIdentityShortHash))
+        val vNode = getVirtualNode(parseShortHash(holdingIdentityShortHash))
 
         val flowStatus = flowStatusCacheService.getStatus(clientRequestId, vNode.holdingIdentity)
             ?: throw ResourceNotFoundException(
@@ -124,7 +125,7 @@ class FlowRPCOpsImpl @Activate constructor(
     }
 
     override fun getMultipleFlowStatus(holdingIdentityShortHash: String): FlowStatusResponses {
-        val vNode = getVirtualNode(ShortHash.of(holdingIdentityShortHash))
+        val vNode = getVirtualNode(parseShortHash(holdingIdentityShortHash))
         val flowStatuses = flowStatusCacheService.getStatusesPerIdentity(vNode.holdingIdentity)
         return FlowStatusResponses(flowStatusResponses = flowStatuses.map { messageFactory.createFlowStatusResponse(it) })
     }
@@ -136,12 +137,12 @@ class FlowRPCOpsImpl @Activate constructor(
     ) {
         val sessionId = channel.id
         val holdingIdentity = try {
-            getVirtualNode(ShortHash.of(holdingIdentityShortHash)).holdingIdentity
-        } catch (e: ShortHashException) {
-            channel.error(WebSocketValidationException("Invalid holding identifier", e))
+            getVirtualNode(parseShortHash(holdingIdentityShortHash)).holdingIdentity
+        } catch (e: BadRequestException) {
+            channel.error(WebSocketValidationException(e.message, e))
             return
-        } catch (e: FlowRPCOpsServiceException) {
-            channel.error(WebSocketValidationException("Invalid virtual node", e))
+        } catch (e: ResourceNotFoundException) {
+            channel.error(WebSocketValidationException(e.message, e))
             return
         }
         try {
@@ -173,8 +174,16 @@ class FlowRPCOpsImpl @Activate constructor(
         publisher?.close()
     }
 
+    private fun parseShortHash(holdingIdentityShortHash: String): ShortHash {
+        return try {
+            ShortHash.of(holdingIdentityShortHash)
+        } catch (e: ShortHashException) {
+            throw BadRequestException("Invalid holding identity short hash${e.message?.let { ": $it" }}")
+        }
+    }
+
     private fun getVirtualNode(shortId: ShortHash): VirtualNodeInfo {
         return virtualNodeInfoReadService.getByHoldingIdentityShortHash(shortId)?.toAvro()
-            ?: throw FlowRPCOpsServiceException("Failed to find a Virtual Node for ID='${shortId}'")
+            ?: throw ResourceNotFoundException("Virtual Node", shortId.value)
     }
 }

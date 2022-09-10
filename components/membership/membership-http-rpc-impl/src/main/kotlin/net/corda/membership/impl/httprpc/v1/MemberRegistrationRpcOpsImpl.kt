@@ -131,7 +131,9 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
         }
 
         override fun checkRegistrationProgress(holdingIdentityShortHash: String): List<RegistrationRequestStatus> {
-            return memberOpsClient.checkRegistrationProgress(holdingIdentityShortHash).map { it.fromDto() }
+            return memberOpsClient.checkRegistrationProgress(
+                holdingIdentityShortHash.toShortHash()
+            ).map { it.fromDto() }
         }
 
         override fun checkSpecificRegistrationProgress(
@@ -139,7 +141,7 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
             registrationRequestId: String,
         ): RegistrationRequestStatus? {
             return memberOpsClient.checkSpecificRegistrationProgress(
-                holdingIdentityShortHash,
+                holdingIdentityShortHash.toShortHash(),
                 registrationRequestId
             )?.fromDto()
         }

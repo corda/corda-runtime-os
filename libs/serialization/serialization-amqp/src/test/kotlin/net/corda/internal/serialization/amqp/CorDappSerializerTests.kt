@@ -94,7 +94,7 @@ class CorDappSerializerTests {
     }
 
     @Test
-	fun testWithWhitelistNotAllowed() {
+	fun testWithAllowListBlocked() {
         data class A(val a: Int, val b: NeedsProxy)
 
         val factory = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())

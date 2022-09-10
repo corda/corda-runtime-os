@@ -1,6 +1,7 @@
 package net.cordapp.flowworker.development.smoketests.flow
 
-import net.cordapp.testing.bundles.dogs.Dog
+import java.time.Instant
+import java.util.UUID
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.CordaInject
@@ -13,17 +14,18 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.sendAndReceive
 import net.corda.v5.application.persistence.PersistenceService
+import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
+import net.cordapp.flowworker.development.smoketests.flow.context.launchContextPropagationFlows
 import net.cordapp.flowworker.development.smoketests.flow.messages.InitiatedSmokeTestMessage
 import net.cordapp.flowworker.development.smoketests.flow.messages.RpcSmokeTestInput
 import net.cordapp.flowworker.development.smoketests.flow.messages.RpcSmokeTestOutput
-import net.cordapp.flowworker.development.smoketests.flow.context.launchContextPropagationFlows
-import java.time.Instant
-import java.util.UUID
+import net.cordapp.testing.bundles.dogs.Dog
 
 @Suppress("unused", "TooManyFunctions")
 @InitiatingFlow(protocol = "smoke-test-protocol")
@@ -37,17 +39,23 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         "echo" to this::echo,
         "throw_error" to this::throwError,
         "start_sessions" to this::startSessions,
-        "persist_insert" to this::persistenceInsertDog,
-        "persist_delete" to this::persistenceDeleteDog,
-        "persist_update" to this::persistenceUpdateDog,
-        "persist_find" to this::persistenceFindDog,
-        "persist_findall" to this::persistenceFindAllDogs,
+        "persistence_persist" to this::persistencePersistDog,
+        "persistence_persist_bulk" to this::persistencePersistDogs,
+        "persistence_delete" to this::persistenceDeleteDog,
+        "persistence_delete_bulk" to this::persistenceDeleteDogs,
+        "persistence_merge" to this::persistenceMergeDog,
+        "persistence_merge_bulk" to this::persistenceMergeDogs,
+        "persistence_find" to this::persistenceFindDog,
+        "persistence_find_bulk" to this::persistenceFindDogs,
+        "persistence_findall" to  { persistenceFindAllDogs() },
+        "persistence_query" to { persistenceQueryDogs() },
         "throw_platform_error" to this::throwPlatformError,
         "subflow_passed_in_initiated_session" to { createSessionsInInitiatingFlowAndPassToInlineFlow(it, true) },
         "subflow_passed_in_non_initiated_session" to { createSessionsInInitiatingFlowAndPassToInlineFlow(it, false) },
         "crypto_sign_and_verify" to this::signAndVerify,
         "crypto_verify_invalid_signature" to this::verifyInvalidSignature,
-        "context_propagation" to this::contextPropagation
+        "context_propagation" to { contextPropagation() },
+        "serialization" to this::serialization
     )
 
     @CordaInject
@@ -64,6 +72,9 @@ class RpcSmokeTestFlow : RPCStartableFlow {
 
     @CordaInject
     lateinit var persistenceService: PersistenceService
+
+    @CordaInject
+    lateinit var serializationService: SerializationService
 
     @CordaInject
     lateinit var signingService: SigningService
@@ -83,11 +94,18 @@ class RpcSmokeTestFlow : RPCStartableFlow {
     }
 
     @Suspendable
-    private fun persistenceInsertDog(input: RpcSmokeTestInput): String {
+    private fun persistencePersistDog(input: RpcSmokeTestInput): String {
         val dogId = getDogId(input)
         val dog = Dog(dogId, "dog", Instant.now(), "none")
         persistenceService.persist(dog)
         return "dog '${dogId}' saved"
+    }
+
+    @Suspendable
+    private fun persistencePersistDogs(input: RpcSmokeTestInput): String {
+        val dogs = getDogIds(input).map { id -> Dog(id, "dog-$id", Instant.now(), "none") }
+        persistenceService.persist(dogs)
+        return "dogs ${dogs.map { it.id }} saved"
     }
 
     @Suspendable
@@ -98,11 +116,25 @@ class RpcSmokeTestFlow : RPCStartableFlow {
     }
 
     @Suspendable
-    private fun persistenceUpdateDog(input: RpcSmokeTestInput): String {
+    private fun persistenceDeleteDogs(input: RpcSmokeTestInput): String {
+        val dogs = getDogIds(input).map { id -> Dog(id, "dog-$id", Instant.now(), "none") }
+        persistenceService.remove(dogs)
+        return "dogs ${dogs.map { it.id }} deleted"
+    }
+
+    @Suspendable
+    private fun persistenceMergeDog(input: RpcSmokeTestInput): String {
         val dogId = getDogId(input)
         val newDogName = input.getValue("name")
         persistenceService.merge(Dog(dogId, newDogName, Instant.now(), "none"))
-        return "dog '${dogId}' updated"
+        return "dog '${dogId}' merged"
+    }
+
+    @Suspendable
+    private fun persistenceMergeDogs(input: RpcSmokeTestInput): String {
+        val dogs = getDogIds(input).map { id -> Dog(id, "dog-$id", Instant.now(), "merged") }
+        persistenceService.merge(dogs)
+        return "dogs ${dogs.map { it.id }} merged"
     }
 
     @Suspendable
@@ -116,10 +148,30 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         }
     }
 
-    @Suppress("UNUSED_PARAMETER")
     @Suspendable
-    private fun persistenceFindAllDogs(input: RpcSmokeTestInput): String {
+    private fun persistenceFindDogs(input: RpcSmokeTestInput): String {
+        val dogIds = getDogIds(input)
+        val dogs = persistenceService.find(Dog::class.java, dogIds)
+        return if (dogs.isEmpty()) {
+            "no dogs found"
+        } else {
+            "found dogs ${dogs.map { dog -> "id='${dog.id}' name='${dog.name}" }}"
+        }
+    }
+
+    @Suspendable
+    private fun persistenceFindAllDogs(): String {
         val dogs = persistenceService.findAll(Dog::class.java).execute()
+        return if (dogs.isEmpty()) {
+            "no dog found"
+        } else {
+            "found one or more dogs"
+        }
+    }
+
+    @Suspendable
+    private fun persistenceQueryDogs(): String {
+        val dogs = persistenceService.query("Dog.all", Dog::class.java).execute()
         return if (dogs.isEmpty()) {
             "no dog found"
         } else {
@@ -154,6 +206,18 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         } catch (e: Exception) {
             log.error("your dog must have a valid UUID, '${id}' is no good!")
             throw e
+        }
+    }
+
+    private fun getDogIds(input: RpcSmokeTestInput): List<UUID> {
+        val ids = input.getValue("ids").split(";")
+        return ids.map { id ->
+            try {
+                UUID.fromString(id)
+            } catch (e: Exception) {
+                log.error("your dog must have a valid UUID, '${id}' is no good!")
+                throw e
+            }
         }
     }
 
@@ -213,8 +277,14 @@ class RpcSmokeTestFlow : RPCStartableFlow {
     }
 
     @Suspendable
-    private fun contextPropagation(@Suppress("UNUSED_PARAMETER") input: RpcSmokeTestInput): String {
+    private fun contextPropagation(): String {
         return launchContextPropagationFlows(flowEngine, jsonMarshallingService)
+    }
+
+    @Suspendable
+    private fun serialization(input: RpcSmokeTestInput): String {
+        val serialized = serializationService.serialize(input.getValue("data"))
+        return serializationService.deserialize(serialized)
     }
 
     @Suspendable

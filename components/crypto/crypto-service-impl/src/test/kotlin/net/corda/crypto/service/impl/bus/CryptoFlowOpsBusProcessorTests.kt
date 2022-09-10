@@ -162,7 +162,7 @@ class CryptoFlowOpsBusProcessorTests {
         var passedList = listOf<ByteBuffer>()
         val notMyKey = mockPublicKey()
         val recordKey = UUID.randomUUID().toString()
-        val flowExternalEventContext = ExternalEventContext("request id", recordKey)
+        val flowExternalEventContext = ExternalEventContext("request id", recordKey, KeyValuePairList(emptyList()))
 
         whenever(
             externalEventResponseFactory.success(
@@ -280,7 +280,7 @@ class CryptoFlowOpsBusProcessorTests {
         }.whenever(cryptoOpsClient).signProxy(any(), any(), any(), any(), any())
 
         val recordKey = UUID.randomUUID().toString()
-        val flowExternalEventContext = ExternalEventContext("request id", recordKey)
+        val flowExternalEventContext = ExternalEventContext("request id", recordKey, KeyValuePairList(emptyList()))
 
         whenever(
             externalEventResponseFactory.success(
@@ -351,7 +351,7 @@ class CryptoFlowOpsBusProcessorTests {
         var passedList = listOf<ByteBuffer>()
         val notMyKey = mockPublicKey()
         val recordKey = UUID.randomUUID().toString()
-        val flowExternalEventContext = ExternalEventContext("request id", recordKey)
+        val flowExternalEventContext = ExternalEventContext("request id", recordKey, KeyValuePairList(emptyList()))
 
         whenever(
             externalEventResponseFactory.success(
@@ -463,8 +463,8 @@ class CryptoFlowOpsBusProcessorTests {
         val notMyKey = mockPublicKey()
         val recordKey0 = UUID.randomUUID().toString()
         val recordKey1 = UUID.randomUUID().toString()
-        val flowExternalEventContext0 = ExternalEventContext("request id", recordKey0)
-        val flowExternalEventContext1 = ExternalEventContext("request id", recordKey1)
+        val flowExternalEventContext0 = ExternalEventContext("request id", recordKey0, KeyValuePairList(emptyList()))
+        val flowExternalEventContext1 = ExternalEventContext("request id", recordKey1, KeyValuePairList(emptyList()))
 
         whenever(
             externalEventResponseFactory.transientError(
@@ -609,8 +609,8 @@ class CryptoFlowOpsBusProcessorTests {
         val notMyKey = mockPublicKey()
         val recordKey0 = UUID.randomUUID().toString()
         val recordKey1 = UUID.randomUUID().toString()
-        val flowExternalEventContext0 = ExternalEventContext("request id", recordKey0)
-        val flowExternalEventContext1 = ExternalEventContext("request id", recordKey1)
+        val flowExternalEventContext0 = ExternalEventContext("request id", recordKey0, KeyValuePairList(emptyList()))
+        val flowExternalEventContext1 = ExternalEventContext("request id", recordKey1, KeyValuePairList(emptyList()))
         val failingTenantId = UUID.randomUUID().toString()
 
         whenever(

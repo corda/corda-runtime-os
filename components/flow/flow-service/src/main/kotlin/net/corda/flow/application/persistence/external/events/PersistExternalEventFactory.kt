@@ -9,8 +9,8 @@ import org.osgi.service.component.annotations.Component
 class PersistExternalEventFactory : AbstractPersistenceExternalEventFactory<PersistParameters>() {
 
     override fun createRequest(parameters: PersistParameters): Any {
-        return PersistEntities(listOf(parameters.serializedEntity))
+        return PersistEntities(parameters.serializedEntities)
     }
 }
 
-data class PersistParameters(val serializedEntity: ByteBuffer)
+data class PersistParameters(val serializedEntities: List<ByteBuffer>)

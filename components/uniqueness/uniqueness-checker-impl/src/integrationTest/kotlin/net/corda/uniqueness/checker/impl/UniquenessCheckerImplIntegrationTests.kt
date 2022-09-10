@@ -46,7 +46,7 @@ class UniquenessCheckerImplIntegrationTests {
     private val dbConfig = DbUtils.getEntityManagerConfiguration("uniqueness_default")
 
     private companion object {
-        private const val MIGRATION_FILE_LOCATION = "net/corda/db/schema/uniqueness/db.changelog-master.xml"
+        private const val MIGRATION_FILE_LOCATION = "net/corda/db/schema/vnode-uniqueness/db.changelog-master.xml"
     }
 
     private val baseTime: Instant = Instant.EPOCH

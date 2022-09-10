@@ -39,7 +39,6 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
@@ -69,7 +68,8 @@ class MGMOpsClientTest {
             "CN=Alice,O=Alice,OU=Unit1,L=London,ST=State1,C=GB",
             "DEFAULT_MEMBER_GROUP_ID"
         )
-        private const val HOLDING_IDENTITY_STRING = "1234567890ab"
+        private const val HOLDING_IDENTITY_STRING = "1234567890AB"
+        private val shortHash = ShortHash.of(HOLDING_IDENTITY_STRING)
         private const val KNOWN_KEY = "12345"
 
         val mgmX500Name = MemberX500Name.parse("CN=Alice,OU=Unit1,O=Alice,L=London,ST=State1,C=GB")
@@ -77,10 +77,15 @@ class MGMOpsClientTest {
     }
 
     private var virtualNodeInfoReadService: VirtualNodeInfoReadService= mock {
-        on { getByHoldingIdentityShortHash(ShortHash.of(HOLDING_IDENTITY_STRING)) } doReturn VirtualNodeInfo(
+        on { getByHoldingIdentityShortHash(shortHash) } doReturn VirtualNodeInfo(
             holdingIdentity,
             CpiIdentifier("test", "test", SecureHash("algorithm", "1234".toByteArray())),
-            null, UUID.randomUUID(), null, UUID.randomUUID(),
+            null,
+            UUID.randomUUID(),
+            null,
+            UUID.randomUUID(),
+            null,
+            UUID.randomUUID(),
             timestamp = Instant.now()
         )
     }
@@ -89,7 +94,7 @@ class MGMOpsClientTest {
     private val keys = listOf(knownKey, knownKey)
 
     private val endpoints = listOf(
-        EndpointInfoImpl("https://corda5.r3.com:10000", EndpointInfo.DEFAULT_PROTOCOL_VERSION),
+        EndpointInfoImpl("https://corda5.r3.com:10000"),
         EndpointInfoImpl("https://corda5.r3.com:10001", 10)
     )
 
@@ -270,7 +275,7 @@ class MGMOpsClientTest {
     fun `rpc sender sends the expected request - starting generate group policy process`() {
         mgmOpsClient.start()
         setUpRpcSender()
-        mgmOpsClient.generateGroupPolicy(HOLDING_IDENTITY_STRING)
+        mgmOpsClient.generateGroupPolicy(shortHash)
         mgmOpsClient.stop()
 
         val requestSent = rpcRequest?.request as MGMGroupPolicyRequest
@@ -282,7 +287,7 @@ class MGMOpsClientTest {
     fun `should fail when rpc sender is not ready`() {
         mgmOpsClient.start()
         val ex = assertFailsWith<IllegalStateException> {
-            mgmOpsClient.generateGroupPolicy(HOLDING_IDENTITY_STRING)
+            mgmOpsClient.generateGroupPolicy(shortHash)
         }
         assertTrue { ex.message!!.contains("incorrect state") }
         mgmOpsClient.stop()
@@ -291,7 +296,7 @@ class MGMOpsClientTest {
     @Test
     fun `should fail when service is not running`() {
         val ex = assertFailsWith<IllegalStateException> {
-            mgmOpsClient.generateGroupPolicy(HOLDING_IDENTITY_STRING)
+            mgmOpsClient.generateGroupPolicy(shortHash)
         }
         assertTrue { ex.message!!.contains("incorrect state") }
     }
@@ -303,7 +308,7 @@ class MGMOpsClientTest {
         val message = "Sender exception."
         whenever(rpcSender.sendRequest(any())).thenThrow(CordaRPCAPISenderException(message))
         val ex = assertFailsWith<CordaRuntimeException> {
-            mgmOpsClient.generateGroupPolicy(HOLDING_IDENTITY_STRING)
+            mgmOpsClient.generateGroupPolicy(shortHash)
         }
         assertTrue { ex.message!!.contains(message) }
         mgmOpsClient.stop()
@@ -329,7 +334,7 @@ class MGMOpsClientTest {
         }
 
         val ex = assertFailsWith<CordaRuntimeException> {
-            mgmOpsClient.generateGroupPolicy(HOLDING_IDENTITY_STRING)
+            mgmOpsClient.generateGroupPolicy(shortHash)
         }
         assertTrue { ex.message!!.contains("null") }
         mgmOpsClient.stop()
@@ -357,7 +362,7 @@ class MGMOpsClientTest {
         }
 
         val ex = assertFailsWith<CordaRuntimeException> {
-            mgmOpsClient.generateGroupPolicy(HOLDING_IDENTITY_STRING)
+            mgmOpsClient.generateGroupPolicy(shortHash)
         }
         assertTrue { ex.message!!.contains("ID") }
         mgmOpsClient.stop()
@@ -385,7 +390,7 @@ class MGMOpsClientTest {
         }
 
         val ex = assertFailsWith<CordaRuntimeException> {
-            mgmOpsClient.generateGroupPolicy(HOLDING_IDENTITY_STRING)
+            mgmOpsClient.generateGroupPolicy(shortHash)
         }
         assertTrue { ex.message!!.contains("timestamp") }
         mgmOpsClient.stop()
@@ -411,7 +416,7 @@ class MGMOpsClientTest {
         }
 
         val ex = assertFailsWith<CordaRuntimeException> {
-            mgmOpsClient.generateGroupPolicy(HOLDING_IDENTITY_STRING)
+            mgmOpsClient.generateGroupPolicy(shortHash)
         }
         assertTrue { ex.message!!.contains("Expected class") }
         mgmOpsClient.stop()

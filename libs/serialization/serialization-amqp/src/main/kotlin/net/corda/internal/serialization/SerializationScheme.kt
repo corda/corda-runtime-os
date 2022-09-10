@@ -1,7 +1,7 @@
 package net.corda.internal.serialization
 
 import net.corda.internal.serialization.amqp.amqpMagic
-import net.corda.serialization.EncodingWhitelist
+import net.corda.serialization.EncodingAllowList
 import net.corda.serialization.ObjectWithCompatibleContext
 import net.corda.serialization.SerializationContext
 import net.corda.serialization.SerializationEncoding
@@ -17,11 +17,11 @@ import java.nio.ByteBuffer
 import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 
-object NullEncodingWhitelist : EncodingWhitelist {
+object NullEncodingAllowList : EncodingAllowList {
     override fun acceptEncoding(encoding: SerializationEncoding) = false
 }
 
-object SnappyEncodingWhitelist : EncodingWhitelist {
+object SnappyEncodingAllowList : EncodingAllowList {
     override fun acceptEncoding(encoding: SerializationEncoding): Boolean {
         return encoding == CordaSerializationEncoding.SNAPPY
     }
@@ -33,7 +33,7 @@ data class SerializationContextImpl @JvmOverloads constructor(
     override val objectReferencesEnabled: Boolean,
     override val useCase: SerializationContext.UseCase,
     override val encoding: SerializationEncoding?,
-    override val encodingWhitelist: EncodingWhitelist = SnappyEncodingWhitelist,
+    override val encodingAllowList: EncodingAllowList = SnappyEncodingAllowList,
     override val preventDataLoss: Boolean = false,
     override val customSerializers: Set<SerializationCustomSerializer<*, *>>? = null,
     override val sandboxGroup: Any? = null
@@ -61,7 +61,7 @@ data class SerializationContextImpl @JvmOverloads constructor(
 
     override fun withPreferredSerializationVersion(magic: SerializationMagic) = copy(preferredSerializationVersion = magic)
     override fun withEncoding(encoding: SerializationEncoding?) = copy(encoding = encoding)
-    override fun withEncodingWhitelist(encodingWhitelist: EncodingWhitelist) = copy(encodingWhitelist = encodingWhitelist)
+    override fun withEncodingAllowList(encodingAllowList: EncodingAllowList) = copy(encodingAllowList = encodingAllowList)
 }
 
 open class SerializationFactoryImpl(

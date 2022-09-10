@@ -36,6 +36,7 @@ class FlowFactoryImplTest {
     private val flowSessionFactory = mock<FlowSessionFactory>()
     private val flowFiberService = mock<FlowFiberService>()
     private val flowFactory = FlowFactoryImpl(flowSessionFactory, flowFiberService)
+    private val contextMap = mapOf("key" to "value")
 
     @BeforeEach
     fun setup() {
@@ -51,11 +52,13 @@ class FlowFactoryImplTest {
             startArgs = args
         }
 
-        whenever(flowSessionFactory.create(SESSION_ID_1, BOB_X500_NAME, true)).thenReturn(flowSession)
+        whenever(flowSessionFactory.createInitiatedFlowSession(SESSION_ID_1, BOB_X500_NAME, contextMap)).thenReturn(
+            flowSession
+        )
         whenever(sandboxGroup.loadClassFromMainBundles(className, ResponderFlow::class.java))
             .thenReturn(ExampleFlow2::class.java)
 
-        val result = flowFactory.createInitiatedFlow(flowStartContext, sandboxGroupContext) as InitiatedFlow
+        val result = flowFactory.createInitiatedFlow(flowStartContext, sandboxGroupContext, contextMap) as InitiatedFlow
         assertTrue(result.logic is ExampleFlow2)
     }
 
@@ -67,9 +70,9 @@ class FlowFactoryImplTest {
             initiatedBy = BOB_X500_HOLDING_IDENTITY
             flowClassName = className
         }
-        val flowStartEvent = StartFlow(). apply {
+        val flowStartEvent = StartFlow().apply {
             startContext = flowStartContext
-            flowStartArgs= startArgs
+            flowStartArgs = startArgs
         }
 
         whenever(sandboxGroup.loadClassFromMainBundles(className, RPCStartableFlow::class.java))
@@ -89,12 +92,14 @@ class FlowFactoryImplTest {
             startArgs = args
         }
 
-        whenever(flowSessionFactory.create(SESSION_ID_1, BOB_X500_NAME, true)).thenReturn(flowSession)
+        whenever(flowSessionFactory.createInitiatedFlowSession(SESSION_ID_1, BOB_X500_NAME, contextMap)).thenReturn(
+            flowSession
+        )
         whenever(sandboxGroup.loadClassFromMainBundles(className, ResponderFlow::class.java))
             .thenThrow(IllegalStateException())
 
         assertThrows<FlowFatalException> {
-            flowFactory.createInitiatedFlow(flowStartContext, sandboxGroupContext)
+            flowFactory.createInitiatedFlow(flowStartContext, sandboxGroupContext, contextMap)
         }
     }
 
@@ -106,9 +111,9 @@ class FlowFactoryImplTest {
             initiatedBy = BOB_X500_HOLDING_IDENTITY
             flowClassName = className
         }
-        val flowStartEvent = StartFlow(). apply {
+        val flowStartEvent = StartFlow().apply {
             startContext = flowStartContext
-            flowStartArgs= startArgs
+            flowStartArgs = startArgs
         }
 
         whenever(sandboxGroup.loadClassFromMainBundles(className, RPCStartableFlow::class.java))
@@ -120,7 +125,7 @@ class FlowFactoryImplTest {
     }
 
     class ExampleFlow1 : RPCStartableFlow {
-        override fun call(requestBody: RPCRequestData) : String {
+        override fun call(requestBody: RPCRequestData): String {
             return "result"
         }
     }

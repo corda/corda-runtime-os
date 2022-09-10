@@ -28,6 +28,7 @@ dependencies {
     implementation project(":libs:virtual-node:virtual-node-info")
     implementation project(":libs:chunking:chunking-core")
     implementation project(":libs:flows:utils")
+    implementation project(":libs:utilities")
 
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
     runtimeOnly project(":libs:messaging:messaging-impl")

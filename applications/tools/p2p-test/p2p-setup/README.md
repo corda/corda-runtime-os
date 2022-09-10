@@ -48,7 +48,7 @@ First:
 2. Prepare a configuration file with the identity data. For example:
 ```json
 {
-  "x500name": "O=Alice, L=London, C=GB",
+  "x500Name": "O=Alice, L=London, C=GB",
   "groupId": "group-1",
   "data": {
     "tlsTenantId": "cluster",
@@ -90,7 +90,7 @@ First:
 ```json
 {
   "groupId": "group-1",
-  "x500name": "O=Alice, L=London, C=GB",
+  "x500Name": "O=Alice, L=London, C=GB",
   "data": {
     "networkType": "CORDA_5",
     "protocolModes": ["AUTHENTICATION_ONLY", "AUTHENTICATED_ENCRYPTION"],
@@ -99,7 +99,7 @@ First:
 }
 ```
 where:
-* `x500name` is the x500 name of the identity the group policy corresponds to.
+* `x500Name` is the x500 name of the identity the group policy corresponds to.
 * `networkType` is either `CORDA_5`, `CORDA_4`.
 * `protocolModes` are either: `AUTHENTICATED_ENCRYPTION` or `AUTHENTICATION_ONLY`.
 * `trustRootCertificates` is the content of the root certificates in PEM format (use either this or `trustRootCertificatesFiles`).
@@ -127,7 +127,7 @@ First:
 2. Prepare a configuration file with the member data. For example:
 ```json
 {
-  "x500name": "O=Alice, L=London, C=GB",
+  "x500Name": "O=Alice, L=London, C=GB",
   "groupId": "group-1",
   "data": {
        "publicSessionKey": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w...xwIDAQAB\n-----END PUBLIC KEY-----",
@@ -251,7 +251,7 @@ The file should look like the following:
   ],
   "membersToAdd": [
     {
-      "x500name": "O=Alice, L=London, C=GB",
+      "x500Name": "O=Alice, L=London, C=GB",
       "groupId": "group-1",
       "data": {
         "publicKey": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w...xwIDAQAB\n-----END PUBLIC KEY-----",
@@ -261,7 +261,7 @@ The file should look like the following:
   ],
   "identitiesToAdd": [
     {
-      "x500name": "O=Alice, L=London, C=GB",
+      "x500Name": "O=Alice, L=London, C=GB",
       "groupId": "group-2",
       "data": {
         "tlsTenantId": "cluster",
@@ -281,13 +281,13 @@ The file should look like the following:
   "groupsToRemove": ["group-3", "group-5"],
   "membersToRemove": [
     {
-      "x500name": "O=Alice, L=London, C=GB",
+      "x500Name": "O=Alice, L=London, C=GB",
       "groupId": "group-3"
     }
   ],
   "identitiesToRemove": [
     {
-      "x500name": "O=Alice, L=London, C=GB",
+      "x500Name": "O=Alice, L=London, C=GB",
       "groupId": "group-3"
     }
   ]
