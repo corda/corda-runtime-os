@@ -1,4 +1,4 @@
-package net.corda.entityprocessor.impl.tests.fake
+package net.corda.db.persistence.testkit.fake
 
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.DbConnectionOps

@@ -9,19 +9,20 @@ import net.corda.data.persistence.*
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.messagebus.testkit.DBSetup
+import net.corda.db.persistence.testkit.components.VirtualNodeService
+import net.corda.db.persistence.testkit.fake.FakeDbConnectionManager
+import net.corda.db.persistence.testkit.helpers.BasicMocks
+import net.corda.db.persistence.testkit.helpers.Resources
+import net.corda.db.persistence.testkit.helpers.SandboxHelper.getSerializer
 import net.corda.db.schema.DbSchema
 import net.corda.entityprocessor.impl.internal.EntitySandboxServiceImpl
-import net.corda.entityprocessor.impl.tests.components.VirtualNodeService
-import net.corda.entityprocessor.impl.tests.fake.FakeDbConnectionManager
-import net.corda.entityprocessor.impl.tests.helpers.BasicMocks
-import net.corda.entityprocessor.impl.tests.helpers.Resources
-import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getSerializer
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.common.impl.transaction.TransactionMetaData
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
 import net.corda.messaging.api.records.Record
 import net.corda.orm.JpaEntitiesSet
+import net.corda.processors.ledger.impl.ConsensualLedgerContextTypes.SANDBOX_SERIALIZER
 import net.corda.processors.ledger.impl.ConsensualLedgerProcessor
 import net.corda.processors.ledger.impl.tests.helpers.DbTestContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
@@ -29,6 +30,7 @@ import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import net.corda.data.KeyValuePairList
 import net.corda.data.ledger.consensual.FindTransaction
 import net.corda.processors.ledger.impl.MappablePrivacySalt
 import net.corda.v5.base.util.contextLogger
@@ -73,7 +75,7 @@ import java.util.UUID
 class ConsensualLedgerDAOTests {
     companion object {
         const val TOPIC = "consensual-ledger-dummy-topic"
-        val EXTERNAL_EVENT_CONTEXT = ExternalEventContext("request id", "flow id")
+        val EXTERNAL_EVENT_CONTEXT = ExternalEventContext("request id", "flow id", KeyValuePairList(emptyList()))
         private val logger = contextLogger()
     }
 
@@ -132,14 +134,14 @@ class ConsensualLedgerDAOTests {
     }
 
     /* Simple wrapper to serialize bytes correctly during test */
-    private fun SandboxGroupContext.serialize(obj: Any) = ByteBuffer.wrap(getSerializer().serialize(obj).bytes)
+    private fun SandboxGroupContext.serialize(obj: Any) = ByteBuffer.wrap(getSerializer(SANDBOX_SERIALIZER).serialize(obj).bytes)
 
     /* Simple wrapper to serialize bytes correctly during test */
     private fun DbTestContext.serialize(obj: Any) = sandbox.serialize(obj)
 
     /* Simple wrapper to deserialize */
     private fun SandboxGroupContext.deserialize(bytes: ByteBuffer) =
-        getSerializer().deserialize(bytes.array(), Any::class.java)
+        getSerializer(SANDBOX_SERIALIZER).deserialize(bytes.array(), Any::class.java)
 
     /* Simple wrapper to deserialize */
     private fun DbTestContext.deserialize(bytes: ByteBuffer) = sandbox.deserialize(bytes)

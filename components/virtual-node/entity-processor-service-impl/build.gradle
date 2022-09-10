@@ -58,6 +58,7 @@ dependencies {
     testImplementation project(':libs:db:db-orm-impl')
     testImplementation project(':libs:messaging:messaging')
     testImplementation project(':testing:db-testkit')
+    testImplementation project(':testing:persistence-testkit')
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 

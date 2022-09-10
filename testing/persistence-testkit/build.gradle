@@ -1,0 +1,27 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description "Cpi Info Service Fake Implementation"
+
+dependencies {
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+    compileOnly 'org.osgi:osgi.annotation'
+
+    implementation project(':components:db:db-connection-manager')
+    implementation project(':components:virtual-node:sandbox-group-context-service')
+    implementation project(':libs:db:db-orm-impl')
+    implementation project(':libs:virtual-node:sandbox-group-context')
+    implementation project(':testing:db-testkit')
+    implementation project(':testing:sandboxes')
+    implementation project(':testing:test-utilities')
+
+    implementation 'net.corda:corda-application'
+    implementation 'net.corda:corda-db-schema'
+
+    implementation("org.mockito:mockito-core:$mockitoVersion")
+    implementation("org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion")
+
+}

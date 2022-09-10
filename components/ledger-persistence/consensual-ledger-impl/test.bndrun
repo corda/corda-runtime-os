@@ -21,12 +21,8 @@
     postgresPassword=${project.postgresPassword}
 
 -runrequires: \
-    bnd.identity;id='net.corda.consensual-ledger-impl',\
     bnd.identity;id='${project.archivesBaseName}-tests',\
-    bnd.identity;id='net.corda.cipher-suite-impl',\
     bnd.identity;id='net.corda.merkle-impl',\
-    bnd.identity;id='net.corda.entity-processor-service',\
-    bnd.identity;id='net.corda.entity-processor-service-impl',\
     bnd.identity;id='net.bytebuddy.byte-buddy',\
     bnd.identity;id='org.hsqldb.hsqldb',\
     bnd.identity;id='org.osgi.service.jdbc',\

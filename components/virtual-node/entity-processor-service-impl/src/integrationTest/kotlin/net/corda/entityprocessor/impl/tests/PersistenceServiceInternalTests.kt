@@ -25,21 +25,6 @@ import net.corda.entityprocessor.impl.internal.EntitySandboxServiceImpl
 import net.corda.entityprocessor.impl.internal.PersistenceServiceInternal
 import net.corda.entityprocessor.impl.internal.exceptions.KafkaMessageSizeException
 import net.corda.entityprocessor.impl.internal.getClass
-import net.corda.entityprocessor.impl.tests.components.VirtualNodeService
-import net.corda.entityprocessor.impl.tests.fake.FakeDbConnectionManager
-import net.corda.entityprocessor.impl.tests.helpers.AnimalCreator.createCats
-import net.corda.entityprocessor.impl.tests.helpers.AnimalCreator.createDogs
-import net.corda.entityprocessor.impl.tests.helpers.BasicMocks
-import net.corda.entityprocessor.impl.tests.helpers.Resources
-import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.CAT_CLASS_NAME
-import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.DOG_CLASS_NAME
-import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.createCat
-import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.createCatKeyInstance
-import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.createDog
-import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getCatClass
-import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getDogClass
-import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getOwnerClass
-import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getSerializer
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.messaging.api.records.Record
 import net.corda.orm.JpaEntitiesSet
@@ -74,6 +59,22 @@ import java.time.ZoneOffset
 import java.util.UUID
 import javax.persistence.EntityManagerFactory
 import net.corda.data.persistence.FindEntities
+import net.corda.db.persistence.testkit.components.VirtualNodeService
+import net.corda.db.persistence.testkit.fake.FakeDbConnectionManager
+import net.corda.db.persistence.testkit.helpers.AnimalCreator.createCats
+import net.corda.db.persistence.testkit.helpers.AnimalCreator.createDogs
+import net.corda.db.persistence.testkit.helpers.BasicMocks
+import net.corda.db.persistence.testkit.helpers.Resources
+import net.corda.db.persistence.testkit.helpers.SandboxHelper.CAT_CLASS_NAME
+import net.corda.db.persistence.testkit.helpers.SandboxHelper.DOG_CLASS_NAME
+import net.corda.db.persistence.testkit.helpers.SandboxHelper.createCat
+import net.corda.db.persistence.testkit.helpers.SandboxHelper.createCatKeyInstance
+import net.corda.db.persistence.testkit.helpers.SandboxHelper.createDog
+import net.corda.db.persistence.testkit.helpers.SandboxHelper.getCatClass
+import net.corda.db.persistence.testkit.helpers.SandboxHelper.getDogClass
+import net.corda.db.persistence.testkit.helpers.SandboxHelper.getOwnerClass
+import net.corda.db.persistence.testkit.helpers.SandboxHelper.getSerializer
+import net.corda.entityprocessor.impl.internal.EntitySandboxContextTypes.SANDBOX_SERIALIZER
 
 sealed class QuerySetup {
     data class NamedQuery(val params: Map<String, String>, val query: String = "Dog.summon") : QuerySetup()
@@ -192,7 +193,7 @@ class PersistenceServiceInternalTests {
 
         val entityManager = BasicMocks.entityManager()
 
-        persistenceService.persist(sandbox.getSerializer(), entityManager, payload)
+        persistenceService.persist(sandbox.getSerializer(SANDBOX_SERIALIZER), entityManager, payload)
 
         Mockito.verify(entityManager).persist(Mockito.any())
     }
@@ -970,10 +971,10 @@ class PersistenceServiceInternalTests {
         return cats.size
     }
 
-    private fun SandboxGroupContext.serialize(obj: Any) = ByteBuffer.wrap(getSerializer().serialize(obj).bytes)
+    private fun SandboxGroupContext.serialize(obj: Any) = ByteBuffer.wrap(getSerializer(SANDBOX_SERIALIZER).serialize(obj).bytes)
 
     /** Simple wrapper to deserialize */
     private fun SandboxGroupContext.deserialize(bytes: ByteBuffer) =
-        getSerializer().deserialize(bytes.array(), Any::class.java)
+        getSerializer(SANDBOX_SERIALIZER).deserialize(bytes.array(), Any::class.java)
 
 }

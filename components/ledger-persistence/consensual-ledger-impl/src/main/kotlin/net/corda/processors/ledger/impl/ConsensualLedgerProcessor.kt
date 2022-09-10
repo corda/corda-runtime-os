@@ -10,7 +10,6 @@ import javax.persistence.EntityManagerFactory
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.consensual.PersistTransaction
-import net.corda.data.persistence.*
 import net.corda.entityprocessor.impl.internal.EntitySandboxContextTypes
 import net.corda.entityprocessor.impl.internal.EntitySandboxService
 import net.corda.entityprocessor.impl.internal.exceptions.KafkaMessageSizeException
@@ -18,7 +17,6 @@ import net.corda.entityprocessor.impl.internal.exceptions.NotReadyException
 import net.corda.entityprocessor.impl.internal.exceptions.NullParameterException
 import net.corda.entityprocessor.impl.internal.exceptions.VirtualNodeException
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
-import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
@@ -32,6 +30,8 @@ import net.corda.virtualnode.toCorda
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonTypeRef
 import net.corda.data.ledger.consensual.FindTransaction
+import net.corda.data.persistence.ConsensualLedgerRequest
+import net.corda.data.persistence.EntityResponse
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.PrivacySalt
 import java.io.NotSerializableException
@@ -49,9 +49,9 @@ fun EntitySandboxService.getClass(holdingIdentity: HoldingIdentity, fullyQualifi
  * an error has occurred.
  */
 
-// TODO: get rid of temporary JSON serialisation code now that an injectable AMQP serialiser is available
+// TODO get rid of temporary JSON serialisation code now that an injectable AMQP serialiser is available
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class MappablePrivacySalt @JsonCreator constructor(@JsonProperty override val bytes: ByteArray): PrivacySalt {}
+data class MappablePrivacySalt @JsonCreator constructor(@JsonProperty override val bytes: ByteArray): PrivacySalt
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class MappableWireTransaction @JsonCreator constructor(
@@ -138,7 +138,7 @@ class ConsensualLedgerProcessor(
 
         // get the per-sandbox entity manager and serialization services
         val entityManagerFactory = sandbox.getEntityManagerFactory()
-        // val serializationService = sandbox.getSerializationService()  // TODO: use
+        // val serializationService = sandbox.getSerializationService()  // TODO use
         val consensualLedgerDAO = ConsensualLedgerDAO(entitySandboxService::getClass)
 
         // We match on the type, and delegate to the appropriate method in the DAO.
@@ -174,7 +174,7 @@ class ConsensualLedgerProcessor(
     }
 
     /**
-     * TODO: Temporary JSON deserializer for transactions. We should replace this with AMQP-based serialization
+     * TODO Temporary JSON deserializer for transactions. We should replace this with AMQP-based serialization
      * but at the moment that isn't quite ready.
      */
     private fun deserialize(bytes: ByteBuffer): MappableWireTransaction {

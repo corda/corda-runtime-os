@@ -1,4 +1,4 @@
-package net.corda.entityprocessor.impl.tests.components
+package net.corda.db.persistence.testkit.components
 
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType

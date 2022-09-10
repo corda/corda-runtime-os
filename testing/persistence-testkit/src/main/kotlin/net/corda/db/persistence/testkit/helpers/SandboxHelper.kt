@@ -1,6 +1,5 @@
-package net.corda.entityprocessor.impl.tests.helpers
+package net.corda.db.persistence.testkit.helpers
 
-import net.corda.entityprocessor.impl.internal.EntitySandboxContextTypes
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey
@@ -38,7 +37,12 @@ object SandboxHelper {
 
     data class Box(val instance: Any, val id: UUID)
 
-    fun SandboxGroupContext.createDog(name: String="Lassie",  id:UUID = UUID.randomUUID(), date: Instant = Instant.now().truncatedTo(ChronoUnit.MILLIS),owner: String? = "me"): Box {
+    fun SandboxGroupContext.createDog(
+        name: String="Lassie",
+        id:UUID = UUID.randomUUID(),
+        date: Instant = Instant.now().truncatedTo(ChronoUnit.MILLIS),
+        owner: String? = "me"
+    ): Box {
         val dogCtor = this.sandboxGroup.getDogClass()
             .getDeclaredConstructor(UUID::class.java, String::class.java, Instant::class.java, String::class.java)
         val instance = dogCtor.newInstance(id, name, date, owner)
@@ -50,15 +54,14 @@ object SandboxHelper {
         return keyCtor.newInstance(id, name)
     }
 
+    @Suppress("LongParameterList")
     fun SandboxGroupContext.createCat(
         name: String = "Garfield",
         id: UUID = UUID.randomUUID(),
         colour: String = "Ginger",
         ownerId: UUID = UUID.randomUUID(),
         ownerName: String = "Jim Davies",
-        ownerAge: Int = Calendar.getInstance().get(
-            Calendar.YEAR
-        ) - 1976
+        ownerAge: Int = Calendar.getInstance().get(Calendar.YEAR) - 1976
     ): Box {
         val ownerClass = this.sandboxGroup.getOwnerClass()
         val ownerCtor = ownerClass.getDeclaredConstructor(UUID::class.java, String::class.java, Int::class.java)
@@ -68,7 +71,7 @@ object SandboxHelper {
         return Box(catCtor.newInstance(id, name, colour, owner), id)
     }
 
-    fun SandboxGroupContext.getSerializer(): SerializationService {
-        return this.getObjectByKey(EntitySandboxContextTypes.SANDBOX_SERIALIZER)!!
+    fun SandboxGroupContext.getSerializer(key: String): SerializationService {
+        return this.getObjectByKey(key)!!
     }
 }

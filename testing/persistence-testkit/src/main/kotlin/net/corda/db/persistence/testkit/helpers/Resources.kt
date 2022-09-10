@@ -1,4 +1,4 @@
-package net.corda.entityprocessor.impl.tests.helpers
+package net.corda.db.persistence.testkit.helpers
 
 object Resources {
     const val EXTENDABLE_CPB = "/META-INF/extendable-cpb.cpb"
