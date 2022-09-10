@@ -22,6 +22,7 @@ import javax.sql.DataSource
 // TODO - move into re-usable fake.
 //@ServiceRanking(Int.MAX_VALUE)
 //@Component(service = [DbConnectionManager::class, FakeDbConnectionManager::class])
+@Suppress("TooManyFunctions")
 class FakeDbConnectionManager(
     private val connections: List<Pair<UUID, String>>,
     private val schemaName: String,
