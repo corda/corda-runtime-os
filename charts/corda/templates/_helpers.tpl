@@ -70,13 +70,6 @@ Worker name
 {{- end }}
 
 {{/*
-Job name
-*/}}
-{{- define "corda.jobName" -}}
-"{{ include "corda.fullname" . }}-{{ .job | kebabcase }}-job"
-{{- end }}
-
-{{/*
 Worker common labels
 */}}
 {{- define "corda.workerLabels" -}}
