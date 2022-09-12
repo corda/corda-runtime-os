@@ -12,8 +12,8 @@ import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResponse
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.DigestService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_DEFAULT_NAME
@@ -74,7 +74,7 @@ class UniquenessCheckerClientServiceImpl @Activate constructor(
             timeWindowUpperBound
         )
 
-        val txIds = listOf(SecureHash.create(request.txId))
+        val txIds = listOf(SecureHash.parse(request.txId))
 
         val uniquenessCheckResponse = uniquenessChecker.processRequests(listOf(request)).first()
 
