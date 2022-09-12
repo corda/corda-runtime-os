@@ -90,7 +90,7 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
         lifecycleCoordinator.stop()
     }
 
-    @Suppress("ComplexMethod")
+    @Suppress("ComplexMethod", "NestedBlockDepth")
     protected open fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         logger.info("LifecycleEvent received: $event")
         when (event) {
