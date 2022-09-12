@@ -1,8 +1,8 @@
 package net.corda.cli.plugin.initialconfig
 
 import com.typesafe.config.ConfigRenderOptions
-import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.config.impl.createCryptoSmartConfigFactory
+import net.corda.crypto.config.impl.createDefaultCryptoConfig
 import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.libs.configuration.datamodel.ConfigEntity
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
@@ -66,8 +66,16 @@ class CryptoConfigSubcommand : Runnable {
             )
         ).createDefaultCryptoConfig(
             KeyCredentials(
-                passphrase = softHsmRootPassphrase ?: random.randomString(),
-                salt = softHsmRootSalt ?: random.randomString()
+                passphrase = if (softHsmRootPassphrase.isNullOrBlank()) {
+                    random.randomString()
+                } else {
+                    softHsmRootPassphrase!!
+                },
+                salt = if (softHsmRootSalt.isNullOrBlank()) {
+                    random.randomString()
+                } else {
+                    softHsmRootSalt!!
+                }
             )
         ).root().render(ConfigRenderOptions.concise())
 
