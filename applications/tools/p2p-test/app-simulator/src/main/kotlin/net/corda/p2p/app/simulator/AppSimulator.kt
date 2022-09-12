@@ -106,35 +106,32 @@ class AppSimulator @Activate constructor(
 
     @Suppress("ComplexMethod")
     private fun runSimulator(parameters: CliParameters, bootConfig: SmartConfig) {
-        val configFromFile = parameters.simulatorConfig?.let { ConfigFactory.parseFile(it) } ?: ConfigFactory.empty()
-        val clients = parameters.clients ?: configFromFile.getIntOrNull(PARALLEL_CLIENTS_KEY) ?: DEFAULT_PARALLEL_CLIENTS
-        val simulatorMode = parameters.simulationMode ?: configFromFile.getEnumOrNull("simulatorMode")
-        if (simulatorMode == null) {
+        val commonConfig = CommonConfig.read(parameters)
+        if (commonConfig.simulatorMode == null) {
             logErrorAndShutdown("Simulation mode must be specified as a command line option or in the config file.")
         }
-        when (simulatorMode) {
+        when (commonConfig.simulatorMode) {
             SimulationMode.SENDER -> {
-                runSender(configFromFile, parameters, bootConfig, clients)
+                runSender(commonConfig, parameters, bootConfig)
             }
             SimulationMode.RECEIVER -> {
-                runReceiver(parameters, bootConfig, clients)
+                runReceiver(commonConfig, parameters, bootConfig)
             }
             SimulationMode.DB_SINK -> {
-                runSink(configFromFile, parameters, bootConfig, clients)
+                runSink(commonConfig, parameters, bootConfig)
             }
-            else -> throw IllegalStateException("Invalid value for simulator mode: $simulatorMode")
+            else -> throw IllegalStateException("Invalid value for simulator mode: ${commonConfig.simulatorMode}")
         }
     }
 
     private fun runSender(
-        configFromFile: Config,
+        commonConfig: CommonConfig,
         parameters: CliParameters,
         bootConfig: SmartConfig,
-        clients: Int,
     ) {
         val sendTopic = parameters.sendTopic ?: P2P_OUT_TOPIC
-        val connectionDetails = readDbParams(configFromFile, parameters)
-        val loadGenerationParams = readLoadGenParams(configFromFile, parameters)
+        val connectionDetails = DBParams.read(commonConfig.configFromFile, parameters)
+        val loadGenerationParams = LoadGenerationParams.read(commonConfig.configFromFile, parameters)
         val sender = Sender(
             publisherFactory,
             configMerger,
@@ -142,7 +139,7 @@ class AppSimulator @Activate constructor(
             loadGenerationParams,
             sendTopic,
             bootConfig,
-            clients,
+            commonConfig.clients,
             parameters.instanceId,
             clock
         )
@@ -157,9 +154,9 @@ class AppSimulator @Activate constructor(
     }
 
     private fun runReceiver(
+        commonConfig: CommonConfig,
         parameters: CliParameters,
         bootConfig: SmartConfig,
-        clients: Int,
     ) {
         val receiveTopic = parameters.receiveTopic ?: P2P_IN_TOPIC
         val receiver = Receiver(
@@ -168,7 +165,7 @@ class AppSimulator @Activate constructor(
             topicAdmin,
             receiveTopic,
             bootConfig,
-            clients,
+            commonConfig.clients,
             parameters.instanceId
         )
         receiver.start()
@@ -176,58 +173,14 @@ class AppSimulator @Activate constructor(
     }
 
     private fun runSink(
-        configFromFile: Config,
+        commonConfig: CommonConfig,
         parameters: CliParameters,
         bootConfig: SmartConfig,
-        clients: Int,
     ) {
-        val connectionDetails = readDbParams(configFromFile, parameters)
-        val sink = Sink(subscriptionFactory, configMerger, connectionDetails, bootConfig, clients, parameters.instanceId)
+        val connectionDetails = DBParams.read(commonConfig.configFromFile, parameters)
+        val sink = Sink(subscriptionFactory, configMerger, connectionDetails, bootConfig, commonConfig.clients, parameters.instanceId)
         sink.start()
         resources.add(sink)
-    }
-
-    private fun readDbParams(config: Config, parameters: CliParameters): DBParams {
-        val username = getDbParameter("username", config, parameters)
-        val password = getDbParameter("password", config, parameters)
-        val host = getDbParameter("host", config, parameters)
-        val db = getDbParameter("db", config, parameters)
-        return DBParams(username, password, host, db)
-    }
-
-    private fun readLoadGenParams(configFromFile: Config, parameters: CliParameters): LoadGenerationParams {
-        val peerX500Name = getLoadGenStrParameter("peerX500Name", configFromFile, parameters)
-        MemberX500Name.parse(peerX500Name)
-        val peerGroupId = getLoadGenStrParameter("peerGroupId", configFromFile, parameters)
-        val ourX500Name = getLoadGenStrParameter("ourX500Name", configFromFile, parameters)
-        MemberX500Name.parse(ourX500Name)
-        val ourGroupId = getLoadGenStrParameter("ourGroupId", configFromFile, parameters)
-        val loadGenerationType: LoadGenerationType = getLoadGenEnumParameter("loadGenerationType", configFromFile, parameters)
-        val totalNumberOfMessages = when (loadGenerationType) {
-            LoadGenerationType.ONE_OFF -> getLoadGenIntParameter(
-                "totalNumberOfMessages",
-                DEFAULT_TOTAL_NUMBER_OF_MESSAGES,
-                configFromFile,
-                parameters,
-            )
-            LoadGenerationType.CONTINUOUS -> null
-        }
-        val batchSize = getLoadGenIntParameter("batchSize", DEFAULT_BATCH_SIZE, configFromFile, parameters)
-        val interBatchDelay =
-            getLoadGenDuration("interBatchDelay", DEFAULT_INTER_BATCH_DELAY, configFromFile, parameters)
-        val messageSizeBytes =
-            getLoadGenIntParameter("messageSizeBytes", DEFAULT_MESSAGE_SIZE_BYTES, configFromFile, parameters)
-        val expireAfterTime = getLoadGenDurationOrNull("expireAfterTime", configFromFile, parameters)
-        return LoadGenerationParams(
-            HoldingIdentity(peerX500Name, peerGroupId),
-            HoldingIdentity(ourX500Name, ourGroupId),
-            loadGenerationType,
-            totalNumberOfMessages,
-            batchSize,
-            interBatchDelay,
-            messageSizeBytes,
-            expireAfterTime
-        )
     }
 
     private fun logErrorAndShutdown(error: String) {
@@ -324,7 +277,28 @@ enum class SimulationMode {
     DB_SINK
 }
 
-data class DBParams(val username: String, val password: String, val host: String, val db: String)
+data class CommonConfig(val configFromFile: Config, val clients: Int, val simulatorMode: SimulationMode?) {
+    companion object {
+        fun read(parameters: CliParameters): CommonConfig {
+            val configFromFile = parameters.simulatorConfig?.let { ConfigFactory.parseFile(it) } ?: ConfigFactory.empty()
+            val clients = parameters.clients ?: configFromFile.getIntOrNull(AppSimulator.PARALLEL_CLIENTS_KEY) ?: AppSimulator.DEFAULT_PARALLEL_CLIENTS
+            val simulatorMode = parameters.simulationMode ?: configFromFile.getEnumOrNull("simulatorMode")
+            return CommonConfig(configFromFile, clients, simulatorMode)
+        }
+    }
+}
+
+data class DBParams(val username: String, val password: String, val host: String, val db: String) {
+    companion object {
+        fun read(configFromFile: Config, parameters: CliParameters): DBParams {
+            val username = getDbParameter("username", configFromFile, parameters)
+            val password = getDbParameter("password", configFromFile, parameters)
+            val host = getDbParameter("host", configFromFile, parameters)
+            val db = getDbParameter("db", configFromFile, parameters)
+            return DBParams(username, password, host, db)
+        }
+    }
+}
 
 data class LoadGenerationParams(
     val peer: HoldingIdentity,
@@ -340,6 +314,54 @@ data class LoadGenerationParams(
         when (loadGenerationType) {
             LoadGenerationType.ONE_OFF -> require(totalNumberOfMessages != null)
             LoadGenerationType.CONTINUOUS -> require(totalNumberOfMessages == null)
+        }
+    }
+
+    companion object {
+        fun read(configFromFile: Config, parameters: CliParameters): LoadGenerationParams {
+            val peerX500Name = getLoadGenStrParameter("peerX500Name", configFromFile, parameters)
+            MemberX500Name.parse(peerX500Name)
+            val peerGroupId = getLoadGenStrParameter("peerGroupId", configFromFile, parameters)
+            val ourX500Name = getLoadGenStrParameter("ourX500Name", configFromFile, parameters)
+            MemberX500Name.parse(ourX500Name)
+            val ourGroupId = getLoadGenStrParameter("ourGroupId", configFromFile, parameters)
+            val loadGenerationType: LoadGenerationType =
+                getLoadGenEnumParameter("loadGenerationType", configFromFile, parameters)
+            val totalNumberOfMessages = when (loadGenerationType) {
+                LoadGenerationType.ONE_OFF -> getLoadGenIntParameter(
+                    "totalNumberOfMessages",
+                    AppSimulator.DEFAULT_TOTAL_NUMBER_OF_MESSAGES,
+                    configFromFile,
+                    parameters,
+                )
+
+                LoadGenerationType.CONTINUOUS -> null
+            }
+            val batchSize =
+                getLoadGenIntParameter("batchSize", AppSimulator.DEFAULT_BATCH_SIZE, configFromFile, parameters)
+            val interBatchDelay =
+                getLoadGenDuration(
+                    "interBatchDelay",
+                    AppSimulator.DEFAULT_INTER_BATCH_DELAY,
+                    configFromFile,
+                    parameters
+                )
+            val messageSizeBytes =
+                getLoadGenIntParameter(
+                    "messageSizeBytes",
+                    AppSimulator.DEFAULT_MESSAGE_SIZE_BYTES, configFromFile, parameters
+                )
+            val expireAfterTime = getLoadGenDurationOrNull("expireAfterTime", configFromFile, parameters)
+            return LoadGenerationParams(
+                HoldingIdentity(peerX500Name, peerGroupId),
+                HoldingIdentity(ourX500Name, ourGroupId),
+                loadGenerationType,
+                totalNumberOfMessages,
+                batchSize,
+                interBatchDelay,
+                messageSizeBytes,
+                expireAfterTime
+            )
         }
     }
 }
