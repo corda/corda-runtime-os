@@ -7,7 +7,9 @@ import net.corda.v5.crypto.SecureHash
 import java.time.Instant
 
 /**
- * TODO Rewrite KDocs
+ * Internal representation of a uniqueness check request, used by the uniqueness checker and
+ * backing store only. This simply wraps the external message bus request, converting data that
+ * is represented as primitive types into the internal types used within the uniqueness checker.
  */
 data class UniquenessCheckRequestInternal private constructor(
     val txId: SecureHash,
@@ -24,11 +26,6 @@ data class UniquenessCheckRequestInternal private constructor(
                 throw IllegalArgumentException("Number of output states cannot be less than 0.")
             }
 
-            try {
-                SecureHash.parse(externalRequest.txId)
-            } catch (e: Exception) {
-                println("mivan fos")
-            }
             with (externalRequest) {
                 return UniquenessCheckRequestInternal(
                     SecureHash.parse(txId),
