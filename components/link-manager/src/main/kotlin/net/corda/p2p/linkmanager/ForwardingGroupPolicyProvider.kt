@@ -52,6 +52,8 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
 
     override fun registerListener(groupPolicyListener: GroupPolicyListener) {
         groupPolicyProvider.registerListener { holdingIdentity, groupPolicy ->
+            logger.info("I received the following holding identity: $holdingIdentity")
+            logger.info("I received the following group policy: $holdingIdentity")
             val groupInfo = toGroupInfo(holdingIdentity, groupPolicy)
             groupPolicyListener.groupAdded(groupInfo)
         }
@@ -72,6 +74,7 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
 
         val trustedCertificates = groupPolicy.p2pParameters.tlsTrustRoots.toList()
         logger.info("size of trustroots ${trustedCertificates.size}")
+        logger.info("contains the following: $trustedCertificates")
 
         return GroupPolicyListener.GroupInfo(holdingIdentity, networkType, protocolModes, trustedCertificates)
     }
