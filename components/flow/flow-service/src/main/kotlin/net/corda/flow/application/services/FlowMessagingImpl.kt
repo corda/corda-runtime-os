@@ -69,6 +69,7 @@ class FlowMessagingImpl @Activate constructor(
             .flowStackService
             .peek()
             ?: throw CordaRuntimeException(
-                "Flow [${flowFiberService.getExecutingFiber().flowId}] does not have a flow stack item")
+                "Flow [${flowFiberService.getExecutingFiber().flowId}] does not have a flow stack item"
+            )
     }
 }
