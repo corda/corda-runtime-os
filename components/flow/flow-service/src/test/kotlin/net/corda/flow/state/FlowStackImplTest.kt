@@ -1,13 +1,14 @@
 package net.corda.flow.state
 
-import co.paralleluniverse.common.util.Objects
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.state.impl.FlowStackImpl
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.flow.utils.keyValuePairListOf
 import net.corda.flow.utils.toMap
+import org.assertj.core.api.AbstractObjectAssert
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
@@ -37,9 +38,9 @@ class FlowStackImplTest {
     @Test
     fun `can be initialized from non empty avro generated stack items`() {
         assertThat(flowStack.flowStackItems).hasSize(3)
-        assertThat(flowStack.pop()!!.isRepresentationOf(flowStackItem3)).isTrue
-        assertThat(flowStack.pop()!!.isRepresentationOf(flowStackItem2)).isTrue
-        assertThat(flowStack.pop()!!.isRepresentationOf(flowStackItem1)).isTrue
+        FlowStackItemAssertions.assertThat(flowStack.pop()).isRepresentationOf(flowStackItem3)
+        FlowStackItemAssertions.assertThat(flowStack.pop()).isRepresentationOf(flowStackItem2)
+        FlowStackItemAssertions.assertThat(flowStack.pop()).isRepresentationOf(flowStackItem1)
     }
 
     @Test
@@ -60,7 +61,8 @@ class FlowStackImplTest {
 
     @Test
     fun `nearestFirst returns the most recently pushed matching element`() {
-        assertThat(flowStack.nearestFirst { it.isInitiatingFlow }!!.isRepresentationOf(flowStackItem3)).isTrue
+        FlowStackItemAssertions.assertThat(flowStack.nearestFirst { it.isInitiatingFlow })
+            .isRepresentationOf(flowStackItem3)
     }
 
     @Test
@@ -70,7 +72,7 @@ class FlowStackImplTest {
 
     @Test
     fun `peek returns the last element when the stack is not empty`() {
-        assertThat(flowStack.peek()!!.isRepresentationOf(flowStackItem3)).isTrue
+        FlowStackItemAssertions.assertThat(flowStack.peek()!!).isRepresentationOf(flowStackItem3)
     }
 
     @Test
@@ -80,7 +82,7 @@ class FlowStackImplTest {
 
     @Test
     fun `peekFirst returns the first element when the stack is not empty`() {
-        assertThat(flowStack.peekFirst()!!.isRepresentationOf(flowStackItem1)).isTrue
+        FlowStackItemAssertions.assertThat(flowStack.peekFirst()).isRepresentationOf(flowStackItem1)
     }
 
     @Test
@@ -90,17 +92,9 @@ class FlowStackImplTest {
 
     @Test
     fun `pop returns the last inserted element when the stack is not empty`() {
-        assertThat(flowStack.pop()!!.isRepresentationOf(flowStackItem3)).isTrue
+        FlowStackItemAssertions.assertThat(flowStack.pop()).isRepresentationOf(flowStackItem3)
         assertThat(flowStack.flowStackItems).hasSize(2)
     }
-}
-
-fun net.corda.flow.state.FlowStackItem.isRepresentationOf(other: FlowStackItem): Boolean {
-    return Objects.equal(this.flowName, other.flowName) &&
-            Objects.equal(this.sessionIds, other.sessionIds) &&
-            Objects.equal(this.isInitiatingFlow, other.isInitiatingFlow) &&
-            Objects.equal(this.contextUserProperties, other.contextUserProperties.toMap()) &&
-            Objects.equal(this.contextPlatformProperties, other.contextPlatformProperties.toMap())
 }
 
 fun flowStackItem(
@@ -117,4 +111,27 @@ fun flowStackItem(
     .setContextPlatformProperties(contextPlatformProperties)
     .build()!!
 
+/**
+ * Custom assertion to verify that the non avro generated FlowStackItem instance is conceptually equal to the
+ * Avro generated FlowStackItem instance.
+ */
+class FlowStackItemAssert(actual: net.corda.flow.state.FlowStackItem?) :
+    AbstractObjectAssert<FlowStackItemAssert, net.corda.flow.state.FlowStackItem>(
+        actual,
+        FlowStackItemAssert::class.java
+    ) {
+    fun isRepresentationOf(avroFlowStackItem: FlowStackItem) {
+        isNotNull
+        assertThat(actual.flowName).isEqualTo(avroFlowStackItem.flowName)
+        assertThat(actual.sessionIds).isEqualTo(avroFlowStackItem.sessionIds)
+        assertThat(actual.isInitiatingFlow).isEqualTo(avroFlowStackItem.isInitiatingFlow)
+        assertThat(actual.contextUserProperties).isEqualTo(avroFlowStackItem.contextUserProperties.toMap())
+        assertThat(actual.contextPlatformProperties).isEqualTo(avroFlowStackItem.contextPlatformProperties.toMap())
+    }
+}
 
+class FlowStackItemAssertions : Assertions() {
+    companion object {
+        fun assertThat(actual: net.corda.flow.state.FlowStackItem?) = FlowStackItemAssert(actual)
+    }
+}

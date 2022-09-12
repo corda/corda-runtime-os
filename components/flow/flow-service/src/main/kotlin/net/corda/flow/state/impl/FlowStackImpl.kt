@@ -12,21 +12,19 @@ import net.corda.v5.application.flows.InitiatingFlow
 
 /**
  * Even though the [FlowStackImpl] works with both types of the [FlowStackItem] internally (Avro and non Avro
- * serializable), only the non-serializable version is exposed so Avro generated types don't end in the stack
+ * serializable), only the non-Avro-serializable version is exposed so Avro generated types don't end in the stack
  * of an executing flow.
  */
 class FlowStackImpl(stackItems: MutableList<AvroFlowStackItem>) : FlowStack {
-    val flowStackItems = mutableListOf<FlowStackItem>().apply {
-        addAll(stackItems.map {
-            FlowStackItem(
-                it.flowName,
-                it.isInitiatingFlow,
-                it.sessionIds.toMutableList(),
-                it.contextUserProperties.toMutableMap(),
-                it.contextPlatformProperties.toMutableMap()
-            )
-        })
-    }
+    val flowStackItems = stackItems.map {
+        FlowStackItem(
+            it.flowName,
+            it.isInitiatingFlow,
+            it.sessionIds.toMutableList(),
+            it.contextUserProperties.toMutableMap(),
+            it.contextPlatformProperties.toMutableMap()
+        )
+    }.toMutableList()
 
     override val size: Int get() = flowStackItems.size
 
@@ -83,16 +81,14 @@ class FlowStackImpl(stackItems: MutableList<AvroFlowStackItem>) : FlowStack {
      * @return the list of avro serializable [FlowStackItem]s
      */
     fun toAvro(): List<AvroFlowStackItem> {
-        return mutableListOf<AvroFlowStackItem>().apply {
-            addAll(flowStackItems.map {
-                AvroFlowStackItem.newBuilder()
-                    .setFlowName(it.flowName)
-                    .setIsInitiatingFlow(it.isInitiatingFlow)
-                    .setSessionIds(it.sessionIds.toList())
-                    .setContextUserProperties(keyValuePairListOf(it.contextUserProperties))
-                    .setContextPlatformProperties(keyValuePairListOf(it.contextPlatformProperties))
-                    .build()
-            })
-        }
+        return flowStackItems.map {
+            AvroFlowStackItem.newBuilder()
+                .setFlowName(it.flowName)
+                .setIsInitiatingFlow(it.isInitiatingFlow)
+                .setSessionIds(it.sessionIds.toList())
+                .setContextUserProperties(keyValuePairListOf(it.contextUserProperties))
+                .setContextPlatformProperties(keyValuePairListOf(it.contextPlatformProperties))
+                .build()
+        }.toMutableList()
     }
 }

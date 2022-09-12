@@ -281,7 +281,7 @@ class FlowCheckpointImplTest {
 
         assertThat(avroCheckpoint.flowState.suspendedOn).isEqualTo("A")
         assertThat(avroCheckpoint.flowState.waitingFor).isEqualTo(waitingFor)
-        assertThat(flowStackItem.isRepresentationOf(avroCheckpoint.flowState.flowStackItems.first())).isTrue
+        FlowStackItemAssertions.assertThat(flowStackItem).isRepresentationOf(avroCheckpoint.flowState.flowStackItems.first())
         assertThat(avroCheckpoint.flowState.sessions.first()).isEqualTo(session1)
         assertThat(avroCheckpoint.flowState.fiber).isEqualTo(serializedFiber)
         assertThat(avroCheckpoint.pipelineState.maxFlowSleepDuration).isEqualTo(60000)
@@ -320,7 +320,7 @@ class FlowCheckpointImplTest {
         val checkpoint = setupAvroCheckpoint(stackItems = listOf(item1, item2))
         val flowCheckpoint = createFlowCheckpoint(checkpoint)
 
-        assertThat(flowCheckpoint.flowStack.peekFirst()!!.isRepresentationOf(item1)).isTrue
+        FlowStackItemAssertions.assertThat(flowCheckpoint.flowStack.peekFirst()).isRepresentationOf(item1)
     }
 
     @Test
@@ -330,8 +330,8 @@ class FlowCheckpointImplTest {
         val checkpoint = setupAvroCheckpoint(stackItems = listOf(flowStackItem0, flowStackItem1))
 
         val service = createFlowCheckpoint(checkpoint).flowStack
-        assertThat(service.pop()!!.isRepresentationOf(flowStackItem1)).isTrue
-        assertThat(service.pop()!!.isRepresentationOf(flowStackItem0)).isTrue
+        FlowStackItemAssertions.assertThat(service.pop()).isRepresentationOf(flowStackItem1)
+        FlowStackItemAssertions.assertThat(service.pop()).isRepresentationOf(flowStackItem0)
 
     }
 
@@ -341,7 +341,7 @@ class FlowCheckpointImplTest {
         val checkpoint = setupAvroCheckpoint(stackItems = listOf(flowStackItem0))
 
         val service = createFlowCheckpoint(checkpoint).flowStack
-        assertThat(service.pop()!!.isRepresentationOf(flowStackItem0)).isTrue
+        FlowStackItemAssertions.assertThat(service.pop()).isRepresentationOf(flowStackItem0)
         assertThat(service.pop()).isNull()
     }
 
@@ -352,8 +352,8 @@ class FlowCheckpointImplTest {
         val checkpoint = setupAvroCheckpoint(stackItems = listOf(flowStackItem0, flowStackItem1))
 
         val service = createFlowCheckpoint(checkpoint).flowStack
-        assertThat(service.peek()!!.isRepresentationOf(flowStackItem1)).isTrue
-        assertThat(service.peek()!!.isRepresentationOf(flowStackItem1)).isTrue
+        FlowStackItemAssertions.assertThat(service.peek()).isRepresentationOf(flowStackItem1)
+        FlowStackItemAssertions.assertThat(service.peek()).isRepresentationOf(flowStackItem1)
     }
 
     @Test
@@ -436,7 +436,7 @@ class FlowCheckpointImplTest {
         val checkpoint = setupAvroCheckpoint(stackItems = listOf(flowStackItem0, flowStackItem1, flowStackItem2))
 
         val service = createFlowCheckpoint(checkpoint).flowStack
-        assertThat(service.nearestFirst { it.isInitiatingFlow }!!.isRepresentationOf(flowStackItem1)).isTrue
+        FlowStackItemAssertions.assertThat(service.nearestFirst { it.isInitiatingFlow }).isRepresentationOf(flowStackItem1)
     }
 
     @Test
