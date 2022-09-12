@@ -62,8 +62,7 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
     @Volatile
     private var _impl: IMPL? = null
 
-    @Volatile
-    private var lastConfigChangedEvent: ConfigChangedEvent? = null
+    private var unprocessedConfigChanges: MutableList<ConfigChangedEvent> = mutableListOf()
 
     @Volatile
     protected var bootConfig: SmartConfig? = null
@@ -122,14 +121,17 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
                     }
                 } else {
                     bootConfig = event.config
-                    if(lastConfigChangedEvent != null) {
+                    if(unprocessedConfigChanges.isNotEmpty()) {
                         logger.info(
                             "Processing {} as the component is ready and already received the {}",
                             event::class.java.simpleName,
                             event::class.java.simpleName
                         )
-                        onConfigChange(lastConfigChangedEvent!!, coordinator)
+                        unprocessedConfigChanges.forEach {
+                            onConfigChange(it, coordinator)
+                        }
                     }
+                    unprocessedConfigChanges.clear()
                 }
             }
             is TryAgainCreateActiveImpl -> {
@@ -177,7 +179,7 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
     }
 
     private fun onConfigChange(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        lastConfigChangedEvent = event
+        unprocessedConfigChanges.add(event)
         if(isReady()) {
             doActivation(event, coordinator)
             updateLifecycleStatus(coordinator)
