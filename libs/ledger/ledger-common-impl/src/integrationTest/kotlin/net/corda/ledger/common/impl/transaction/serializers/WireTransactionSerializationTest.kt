@@ -1,11 +1,16 @@
-package net.corda.kryoserialization
+package net.corda.ledger.common.impl.transaction.serializers
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.TransactionMetaData
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
+import net.corda.libs.packaging.Cpi
+import net.corda.libs.packaging.Cpk
+import net.corda.sandbox.SandboxCreationService
+import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFactory
+import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
@@ -22,11 +27,41 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.framework.BundleContext
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
+import org.osgi.service.component.annotations.Reference
 import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.file.Path
+
+@Component(service = [ SandboxManagementService::class ])
+class SandboxManagementService @Activate constructor(
+    @Reference
+    private val cpiLoader: CpiLoader,
+    @Reference
+    private val sandboxCreationService: SandboxCreationService
+) {
+
+    private val cpi1: Cpi = loadCPI(resourceName = "empty-package.cpb")
+    val group1: SandboxGroup = createSandboxGroupFor(cpi1.cpks)
+
+    @Suppress("unused")
+    @Deactivate
+    fun cleanup() {
+        sandboxCreationService.unloadSandboxGroup(group1)
+    }
+
+    private fun loadCPI(resourceName: String): Cpi {
+        return cpiLoader.loadCPI(resourceName)
+    }
+
+    private fun createSandboxGroupFor(cpks: Iterable<Cpk>): SandboxGroup {
+        return sandboxCreationService.createSandboxGroup(cpks)
+    }
+}
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
