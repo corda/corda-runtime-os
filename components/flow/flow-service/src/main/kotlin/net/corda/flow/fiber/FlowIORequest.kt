@@ -4,8 +4,6 @@ import java.nio.ByteBuffer
 import java.time.Instant
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.state.FlowStackItem
-import net.corda.v5.application.messaging.FlowInfo
-import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
 
 /**
