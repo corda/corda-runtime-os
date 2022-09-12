@@ -46,7 +46,7 @@ import kotlin.test.assertTrue
 class CryptoFlowOpsTransformerImplTests {
 
     private companion object {
-        val flowExternalEventContext = ExternalEventContext("requestId", "flow id")
+        val flowExternalEventContext = ExternalEventContext("requestId", "flow id", KeyValuePairList(emptyList()))
     }
 
     private lateinit var knownComponentName: String
@@ -121,7 +121,7 @@ class CryptoFlowOpsTransformerImplTests {
             Instant.now(),
             knownTenantId,
             KeyValuePairList(
-                if(error != null) {
+                if (error != null) {
                     listOf(
                         KeyValuePair(REQUEST_OP_KEY, requestType.simpleName),
                         KeyValuePair(RESPONSE_ERROR_KEY, error),
@@ -463,9 +463,11 @@ class CryptoFlowOpsTransformerImplTests {
             CryptoSignatureWithKey(
                 ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(publicKey)),
                 ByteBuffer.wrap(signature),
-                KeyValuePairList(listOf(
-                    KeyValuePair("key1", "value1")
-                ))
+                KeyValuePairList(
+                    listOf(
+                        KeyValuePair("key1", "value1")
+                    )
+                )
             ),
             SignFlowCommand::class.java
         )

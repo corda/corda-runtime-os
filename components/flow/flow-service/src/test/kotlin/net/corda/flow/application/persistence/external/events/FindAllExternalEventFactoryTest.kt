@@ -1,5 +1,6 @@
 package net.corda.flow.application.persistence.external.events
 
+import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.FindAll
@@ -18,7 +19,7 @@ class FindAllExternalEventFactoryTest {
     @Test
     fun `creates a record containing an EntityRequest with a FindAll payload`() {
         val checkpoint = mock<FlowCheckpoint>()
-        val externalEventContext = ExternalEventContext("request id", "flow id")
+        val externalEventContext = ExternalEventContext("request id", "flow id", KeyValuePairList(emptyList()))
 
         whenever(checkpoint.holdingIdentity).thenReturn(ALICE_X500_HOLDING_IDENTITY.toCorda())
 
