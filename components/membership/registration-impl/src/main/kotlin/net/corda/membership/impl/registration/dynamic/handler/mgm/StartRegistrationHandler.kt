@@ -22,6 +22,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -96,8 +97,9 @@ class StartRegistrationHandler(
             )
             validateRegistrationRequest(
                 existingMemberInfo is MembershipQueryResult.Success
-                        && existingMemberInfo.payload.isEmpty()
-            ) { "Member Info already exists for applying member" }
+                        && (existingMemberInfo.payload.isEmpty()
+                        || !existingMemberInfo.payload.sortedBy { it.modifiedTime }.last().isActive)
+            ) { "The latest member info for given member is in 'Active' status" }
 
             // The group ID matches the group ID of the MGM
             validateRegistrationRequest(
