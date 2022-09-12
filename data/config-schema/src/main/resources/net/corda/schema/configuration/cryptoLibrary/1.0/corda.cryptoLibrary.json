@@ -142,11 +142,6 @@
       },
       "additionalProperties": false
     },
-    "hsmId": {
-      "description": "The HSM's id which is handled by this instance, the value must match one of the keys in the hsmMap",
-      "type": "string",
-      "default": "SOFT"
-    },
     "hsmMap": {
       "description": "Settings for all available HSMs",
       "type": "object",
@@ -303,25 +298,7 @@
                           },
                           "passphrase": {
                             "description": "Passphrase for the root master wrapping key",
-                            "type": "object",
-                            "properties": {
-                              "configSecret": {
-                                "type": "object",
-                                "properties": {
-                                  "encryptedSecret": {
-                                    "type": "string"
-                                  }
-                                },
-                                "additionalProperties": false,
-                                "required": [
-                                  "encryptedSecret"
-                                ]
-                              }
-                            },
-                            "additionalProperties": false,
-                            "required": [
-                              "configSecret"
-                            ]
+                            "type": "string"
                           },
                           "cache": {
                             "description": "Settings for the cache if the type is CACHING",
@@ -342,7 +319,11 @@
                             "additionalProperties": false
                           }
                         },
-                        "additionalProperties": false
+                        "additionalProperties": false,
+                        "required": [
+                          "salt",
+                          "passphrase"
+                        ]
                       },
                       "wrapping": {
                         "description": "Number of keys which can be handled by the HSM, -1 means unlimited capacity",
