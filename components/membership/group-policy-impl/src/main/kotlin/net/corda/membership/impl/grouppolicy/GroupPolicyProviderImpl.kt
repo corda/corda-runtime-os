@@ -306,7 +306,7 @@ class GroupPolicyProviderImpl @Activate constructor(
      * This will make sure we have the trust stores and other important information in the group policy ready.
      */
     internal inner class FinishedRegistrationsProcessor : DurableProcessor<String, MembershipEvent> {
-        @Suppress("NestedBlockDepth", "ComplexMethod")
+        @Suppress("NestedBlockDepth")
         override fun onNext(events: List<Record<String, MembershipEvent>>): List<Record<*, *>> {
             logger.info("Received event after mgm registration.")
             events.forEach {record ->
@@ -319,13 +319,12 @@ class GroupPolicyProviderImpl @Activate constructor(
                             val event = record.value!!.event as MgmOnboarded
                             val holdingIdentity = event.onboardedMgm.toCorda()
                             val gp = parseGroupPolicy(holdingIdentity)
-                                ?: throw CordaRuntimeException(
-                                    "Unable to get group policy for ${holdingIdentity.shortHash}."
-                                ).also {
-                                    groupPolicies.remove(holdingIdentity)
-                                }
-                            if(gp !is MGMGroupPolicy) throw CordaRuntimeException("MGM Group Policy was expected.").also {
+                            if(gp == null || gp !is MGMGroupPolicy) {
                                 groupPolicies.remove(holdingIdentity)
+                                throw CordaRuntimeException(
+                                    "Unable to get group policy for ${holdingIdentity.shortHash} or " +
+                                            "we didn't receive an MGM group policy."
+                                )
                             }
                             logger.info("Caching group policy for MGM.")
                             groupPolicies[holdingIdentity] = gp
