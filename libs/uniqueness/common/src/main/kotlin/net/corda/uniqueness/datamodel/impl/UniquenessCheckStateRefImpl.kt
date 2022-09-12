@@ -6,4 +6,6 @@ import net.corda.v5.crypto.SecureHash
 data class UniquenessCheckStateRefImpl(
     override val txHash: SecureHash,
     override val stateIndex: Int
-) : UniquenessCheckStateRef
+) : UniquenessCheckStateRef {
+    override fun toString() = "${txHash}:${stateIndex}"
+}

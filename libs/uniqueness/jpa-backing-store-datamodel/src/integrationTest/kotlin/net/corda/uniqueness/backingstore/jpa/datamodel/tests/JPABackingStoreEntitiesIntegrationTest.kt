@@ -15,7 +15,7 @@ import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessStateDetailEnti
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTransactionDetailEntity
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTxAlgoIdKey
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTxAlgoStateRefKey
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalResult
+import net.corda.uniqueness.datamodel.common.UniquenessConstants.RESULT_ACCEPTED_REPRESENTATION
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -126,7 +126,7 @@ class JPABackingStoreEntitiesIntegrationTest {
             txId.bytes,
             testClock.instant(),
             testClock.instant(),
-            UniquenessCheckInternalResult.RESULT_ACCEPTED_REPRESENTATION
+            RESULT_ACCEPTED_REPRESENTATION
         )
 
         entityManagerFactory.createEntityManager().transaction { em ->

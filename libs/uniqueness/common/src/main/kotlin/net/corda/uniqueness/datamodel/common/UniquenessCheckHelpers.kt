@@ -152,7 +152,7 @@ fun UniquenessCheckResult.toCharacterRepresentation() = if (this is UniquenessCh
 
 fun String.toStateRef() : UniquenessCheckStateRef {
     return UniquenessCheckStateRefImpl(
-        SecureHash.parse(substringBefore(":")),
-        substringAfter(":").toInt()
+        SecureHash.parse(substringBeforeLast(":")),
+        substringAfterLast(":").toInt()
     )
 }
