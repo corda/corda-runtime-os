@@ -50,7 +50,6 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.makeMembers
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.makeMessagingConfig
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishMembershipConf
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.makeCryptoConfig
-import net.corda.processor.member.MemberProcessorTestUtils.Companion.makeMessagingConfig
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishDefaultCryptoConf
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishMessagingConf
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishRawGroupPolicyData
