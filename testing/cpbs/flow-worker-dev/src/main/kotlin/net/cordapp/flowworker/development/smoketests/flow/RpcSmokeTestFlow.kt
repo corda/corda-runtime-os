@@ -238,7 +238,6 @@ class RpcSmokeTestFlow : RPCStartableFlow {
             log.info("Creating session '${session}' now sending and waiting for response ...")
             val response = session
                 .sendAndReceive<InitiatedSmokeTestMessage>(InitiatedSmokeTestMessage(messages[idx]))
-                .unwrap { it }
 
             log.info("Received response from session '${session}'.")
 

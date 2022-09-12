@@ -36,7 +36,7 @@ class TruancyResponderFlow : ResponderFlow {
     override fun call(session: FlowSession) {
         log.info("Received request; persisting records")
 
-        val record = session.receive(TruancyRecord::class.java).unwrap {it}
+        val record = session.receive(TruancyRecord::class.java)
 
         verificationService.verify(record.signature.by, SignatureSpec.ECDSA_SHA256, record.signature.bytes,
             jsonMarshallingService.format(record.absentees).toByteArray())
