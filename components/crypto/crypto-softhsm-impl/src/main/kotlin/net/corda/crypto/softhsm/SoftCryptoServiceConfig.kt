@@ -73,6 +73,6 @@ class SoftWrappingConfig(
 )
 
 class SoftWrappingHSMConfig(
-    val name: String,
+    val name: String?,
     val cfg: Map<String, Any>
 )

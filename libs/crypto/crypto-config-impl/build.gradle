@@ -15,7 +15,7 @@ dependencies {
     implementation "net.corda:corda-cipher-suite"
     implementation "net.corda:corda-config-schema"
 
-    implementation project(":libs:configuration:configuration-core")
+    api project(":libs:configuration:configuration-core")
     implementation project(":libs:crypto:crypto-core")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
