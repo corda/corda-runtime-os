@@ -12,9 +12,9 @@ import net.corda.applications.workers.smoketest.X500_DAVID
 import net.corda.applications.workers.smoketest.awaitMultipleRpcFlowFinished
 import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
 import net.corda.applications.workers.smoketest.createKeyFor
-import net.corda.applications.workers.smoketest.getOrCreateVirtualNodeFor
 import net.corda.applications.workers.smoketest.getFlowClasses
 import net.corda.applications.workers.smoketest.getHoldingIdShortHash
+import net.corda.applications.workers.smoketest.getOrCreateVirtualNodeFor
 import net.corda.applications.workers.smoketest.getRpcFlowResult
 import net.corda.applications.workers.smoketest.registerMember
 import net.corda.applications.workers.smoketest.startRpcFlow
@@ -116,6 +116,11 @@ class FlowTests {
 
         startRpcFlow(bobHoldingId, requestBody)
         startRpcFlow(bobHoldingId, requestBody, 409)
+    }
+
+    @Test
+    fun `start RPC flow for flow not in startable list, returns an error code of 400`() {
+        startRpcFlow(bobHoldingId, emptyMap(), "InvalidFlow", 400)
     }
 
     @Test

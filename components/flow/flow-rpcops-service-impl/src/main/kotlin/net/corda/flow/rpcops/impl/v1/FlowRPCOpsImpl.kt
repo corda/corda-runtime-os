@@ -2,6 +2,7 @@ package net.corda.flow.rpcops.impl.v1
 
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.virtualnode.VirtualNodeInfo
 import net.corda.flow.rpcops.FlowRPCOpsServiceException
 import net.corda.flow.rpcops.FlowStatusCacheService
@@ -13,12 +14,14 @@ import net.corda.flow.rpcops.v1.types.response.FlowStatusResponse
 import net.corda.flow.rpcops.v1.types.response.FlowStatusResponses
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.BadRequestException
+import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.response.ResponseEntity
 import net.corda.httprpc.ws.DuplexChannel
 import net.corda.httprpc.ws.WebSocketValidationException
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
@@ -45,7 +48,9 @@ class FlowRPCOpsImpl @Activate constructor(
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
     @Reference(service = MessageFactory::class)
-    private val messageFactory: MessageFactory
+    private val messageFactory: MessageFactory,
+    @Reference(service = CpiInfoReadService::class)
+    private val cpiInfoReadService: CpiInfoReadService
 ) : FlowRpcOps, PluggableRPCOps<FlowRpcOps>, Lifecycle {
 
     companion object {
@@ -83,6 +88,11 @@ class FlowRPCOpsImpl @Activate constructor(
         }
 
         val flowClassName = startFlow.flowClassName
+        val startableFlows = getStartableFlows(holdingIdentityShortHash, vNode)
+        if (!startableFlows.contains(flowClassName)) {
+            throw InvalidInputDataException("The flow that was requested is not in the list of startable flows for this holding identity.")
+        }
+
         // TODO Platform properties to be populated correctly, for now a fixed 'account zero' is the only property
         // This is a placeholder which indicates access to everything, see CORE-6076
         val flowContextPlatformProperties = mapOf("corda.account" to "account-zero")
@@ -110,6 +120,14 @@ class FlowRPCOpsImpl @Activate constructor(
         }
 
         return ResponseEntity.accepted(messageFactory.createFlowStatusResponse(status))
+    }
+
+    private fun getStartableFlows(holdingIdentityShortHash: String, vNode: VirtualNodeInfo): List<String> {
+        val cpiMeta = cpiInfoReadService.get(CpiIdentifier.fromAvro(vNode.cpiIdentifier))
+            ?: throw ResourceNotFoundException("Failed to find a CPI for ID='${holdingIdentityShortHash}'")
+        return cpiMeta.cpksMetadata.flatMap {
+            it.cordappManifest.rpcStartableFlows
+        }
     }
 
     override fun getFlowStatus(holdingIdentityShortHash: String, clientRequestId: String): FlowStatusResponse {
