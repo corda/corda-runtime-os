@@ -1,6 +1,5 @@
 package net.corda.v5.application.messaging;
 
-import net.corda.v5.application.messaging.FlowInfo;
 import net.corda.v5.base.types.MemberX500Name;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -27,22 +26,10 @@ public class FlowSessionJavaApiTest {
     }
 
     @Test
-    public void getCounterpartyFlowInfo() {
-        final FlowInfo flowInfo = new FlowInfo(5, "corda");
-        when(flowSession.getCounterpartyFlowInfo()).thenReturn(flowInfo);
-
-        final FlowInfo flowInfoTest = flowSession.getCounterpartyFlowInfo();
-
-        Assertions.assertThat(flowInfoTest).isNotNull();
-        Assertions.assertThat(flowInfoTest).isEqualTo(flowInfo);
-    }
-
-    @Test
     public void sendAndReceive() {
-        final UntrustworthyData<Message> messageUntrustworthyData = new UntrustworthyData<>(message);
-        when(flowSession.sendAndReceive(Message.class, message)).thenReturn(messageUntrustworthyData);
+        when(flowSession.sendAndReceive(Message.class, message)).thenReturn(message);
 
-        final Message messageTest = flowSession.sendAndReceive(Message.class, message).unwrap(m -> m);
+        final Message messageTest = flowSession.sendAndReceive(Message.class, message);
 
         Assertions.assertThat(messageTest).isNotNull();
         Assertions.assertThat(messageTest).isEqualTo(message);
@@ -50,10 +37,9 @@ public class FlowSessionJavaApiTest {
 
     @Test
     public void receive() {
-        final UntrustworthyData<Message> messageUntrustworthyData = new UntrustworthyData<>(message);
-        when(flowSession.receive(Message.class)).thenReturn(messageUntrustworthyData);
+        when(flowSession.receive(Message.class)).thenReturn(message);
 
-        final Message messageTest = flowSession.receive(Message.class).unwrap(m -> m);
+        final Message messageTest = flowSession.receive(Message.class);
 
         Assertions.assertThat(messageTest).isNotNull();
         Assertions.assertThat(messageTest).isEqualTo(message);

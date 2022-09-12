@@ -5,7 +5,9 @@ import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.serialization.SerializedBytes
 
 /**
- * Handles serialization and deserialization of objects.
+ * [SerializationService] allows a flow to serialization and deserialization of objects to/from a byte array.
+ *
+ * The platform will provide an instance of [SerializationService] to flows via property injection.
  */
 @DoNotImplement
 interface SerializationService {

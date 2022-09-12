@@ -7,28 +7,45 @@ import net.corda.v5.membership.MemberInfo
 import java.security.PublicKey
 
 /**
- * Group Manager Service contains list of identities in Membership Management Group along with information about their ledger keys,
- * services they provide and host names or IP addresses where they can be connected to. The cache wraps around a list fetched from the
- * manager, and adds easy lookup of the data stored within it. Generally it would be initialised with a specific Group Manager,
- * which it fetches data from and then subscribes to updates of.
+ * [MemberLookup] allows flows to lookup the [MemberInfo] for any member of the network, including itself.
  *
+ * The platform will provide an instance of [MemberLookup] to flows via property injection.
  */
 @DoNotImplement
 interface MemberLookup {
 
-    /** Returns our own [MemberInfo] **/
+    /**
+     * Gets the [MemberInfo] for the calling Flow.
+     */
     @Suspendable
     fun myInfo(): MemberInfo
 
-    /** Returns the [MemberInfo]  inside Membership Group with the given [name] name, or null if no such identity is found.**/
+
+    /**
+     * Gets the [MemberInfo] by X500 name.
+     *
+     * @param name The [MemberX500Name] name of the member to lookup.
+     *
+     * @return An instance of [MemberInfo] for the given [MemberX500Name] name or null if no member found.
+     */
     @Suspendable
     fun lookup(name: MemberX500Name): MemberInfo?
 
-    /** Returns the [MemberInfo] inside Membership Group with the given [key] public key, or null if no such identity is found.**/
+    /**
+     * Gets the [MemberInfo] by members public key.
+     *
+     * @param key The [PublicKey] of the member to lookup.
+     *
+     * @return An instance of [MemberInfo] for the given [PublicKey] name or null if no member found.
+     */
     @Suspendable
     fun lookup(key: PublicKey): MemberInfo?
 
-    /** Returns all [MemberInfo]s in the Group the node is currently aware of (including ourselves). **/
+    /**
+     * Gets a list [MemberInfo] for all members in the network.
+     *
+     * @return A list of [MemberInfo].
+     */
     @Suspendable
     fun lookup(): List<MemberInfo>
 }

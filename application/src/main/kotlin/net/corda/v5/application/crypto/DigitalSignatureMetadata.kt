@@ -11,7 +11,7 @@ import java.time.Instant
  *
  * Note that the metadata itself is not signed over.
  *
- * @property timestamp The timestamp at which the signature was applied
+ * @property timestamp The timestamp at which the signature was applied.
  * @property properties A set of properties for this signature. Content depends on API layers above application.
  */
 @CordaSerializable
