@@ -19,8 +19,8 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.v5.base.util.contextLogger
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.virtualnode.rpcops.common.impl.getByHoldingIdentityShortHashOrThrow
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -100,8 +100,7 @@ class FlowClassRPCOpsImpl @Activate constructor(
         return StartableFlowsResponse(flowClasses)
     }
 
-    private fun getVirtualNode(shortId: String): VirtualNodeInfo {
-        return virtualNodeInfoReadService.getByHoldingIdentityShortHash(ShortHash.of(shortId))?.toAvro()
-            ?: throw ResourceNotFoundException("Failed to find a Virtual Node for ID='${shortId}'")
+    private fun getVirtualNode(holdingIdentityShortHash: String): VirtualNodeInfo {
+        return virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(holdingIdentityShortHash).toAvro()
     }
 }

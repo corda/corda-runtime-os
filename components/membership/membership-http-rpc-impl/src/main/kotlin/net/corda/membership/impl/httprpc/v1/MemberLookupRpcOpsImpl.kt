@@ -15,6 +15,8 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.virtualnode.rpcops.common.impl.getByHoldingIdentityShortHashOrThrow
+import net.corda.virtualnode.rpcops.common.impl.ofOrThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -91,7 +93,7 @@ class MemberLookupRpcOpsImpl @Activate constructor(
         state: String?,
         country: String?
     ) = impl.lookup(
-        holdingIdentityShortHash.toShortHash(),
+        ShortHash.ofOrThrow(holdingIdentityShortHash),
         commonName,
         organisation,
         organisationUnit,
@@ -135,8 +137,9 @@ class MemberLookupRpcOpsImpl @Activate constructor(
             state: String?,
             country: String?
         ): RpcMemberInfoList {
-            val holdingIdentity = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
-                ?: throw ResourceNotFoundException("Could not find holding identity associated with member.")
+            val holdingIdentity = virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(
+                holdingIdentityShortHash
+            ) { "Could not find holding identity '$holdingIdentityShortHash' associated with member." }.holdingIdentity
 
             val reader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
             val filteredMembers = reader.lookup().filter { member ->
