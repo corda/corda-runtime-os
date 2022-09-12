@@ -68,6 +68,7 @@ pipeline {
 
     environment {
         ARTIFACTORY_CREDENTIALS = credentials('artifactory-credentials')
+        BASE_IMAGE = getBaseImage(params.BUILD_REV, architectureTag)
         BUILD_CACHE_CREDENTIALS = credentials('gradle-ent-cache-credentials')
         BUILD_CACHE_USERNAME = "${env.BUILD_CACHE_CREDENTIALS_USR}"
         BUILD_CACHE_PASSWORD = "${env.BUILD_CACHE_CREDENTIALS_PSW}"
@@ -136,25 +137,16 @@ pipeline {
            parallel {
                stage("Deploy Alice cluster") {
                   steps {
-                      script {
-                         env.BASE_IMAGE = params.BUILD_REV ? "preTest-${params.BUILD_REV}" : "unstable"
-                      }
                       deployCorda("alice", "${NAMESPACE}", "${BASE_IMAGE}")
                   }
                }
                stage("Deploy Bob cluster") {
                   steps {
-                      script {
-                         env.BASE_IMAGE = params.BUILD_REV ? "preTest-${params.BUILD_REV}" : "unstable"
-                      }
                       deployCorda("bob", "${NAMESPACE}", "${BASE_IMAGE}")
                   }
                }
                stage("Deploy Caroline cluster") {
                   steps {
-                      script {
-                         env.BASE_IMAGE = params.BUILD_REV ? "preTest-${architectureTag}${params.BUILD_REV}" : "${architectureTag}unstable"
-                      }
                       deployCorda("caroline", "${NAMESPACE}", "${BASE_IMAGE}")
                   }
                }
@@ -163,8 +155,8 @@ pipeline {
                 unsuccessful {
                     sh '''\
                         kubectl logs -lapp.kubernetes.io/instance=corda-alice -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs-alice.txt
-                        kubectl logs -lapp.kubernetes.io/instance=corda-bob -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 >> logs-bob.txt
-                        kubectl logs -lapp.kubernetes.io/instance=corda-caroline -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 >> logs-caroline.txt
+                        kubectl logs -lapp.kubernetes.io/instance=corda-bob -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs-bob.txt
+                        kubectl logs -lapp.kubernetes.io/instance=corda-caroline -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs-caroline.txt
                         kubectl describe all -n ${NAMESPACE} > describe.txt
                     '''.stripIndent()
                     archiveArtifacts artifacts: 'logs-alice.txt, logs-bob.txt, logs-caroline.txt, describe.txt', allowEmptyArchive: true
@@ -253,4 +245,8 @@ def deployCorda(def name, def namespace, def base_image){
            --set db.cluster.existingSecret=$name-db-postgresql \
            -n $namespace --wait --timeout 600s
     """.stripIndent()
+}
+
+def getBaseImage(def buildRev, def architectureTag) {
+    return buildRev ? "preTest-${architectureTag}${buildRev}" : "${architectureTag}unstable"
 }
