@@ -36,7 +36,7 @@ class FlowFailedRequestHandler @Activate constructor(
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.FlowFailed): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
 
-        log.info("Flow [${checkpoint.flowId}] failed", request.exception)
+        log.info("Flow [${checkpoint.flowId}] completed with failure")
 
         val status = flowMessageFactory.createFlowFailedStatusMessage(
             checkpoint,

@@ -30,7 +30,10 @@ class SubFlowFailedRequestHandler @Activate constructor(
 
     override val type = FlowIORequest.SubFlowFailed::class.java
 
-    override fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: FlowIORequest.SubFlowFailed): WaitingFor {
+    override fun getUpdatedWaitingFor(
+        context: FlowEventContext<Any>,
+        request: FlowIORequest.SubFlowFailed
+    ): WaitingFor {
         return WaitingFor(Wakeup())
     }
 
@@ -38,10 +41,8 @@ class SubFlowFailedRequestHandler @Activate constructor(
         context: FlowEventContext<Any>,
         request: FlowIORequest.SubFlowFailed
     ): FlowEventContext<Any> {
-
-        log.info("Sub-flow [${context.checkpoint.flowId}] failed", request.throwable)
-
         val checkpoint = context.checkpoint
+        log.info("Sub-flow [${checkpoint.flowId}] completed with failure")
 
         try {
             flowSessionManager.sendErrorMessages(
@@ -63,8 +64,10 @@ class SubFlowFailedRequestHandler @Activate constructor(
 
     private fun getSessionsToError(checkpoint: FlowCheckpoint, request: FlowIORequest.SubFlowFailed): List<String> {
         val flowStackItem = request.flowStackItem
-        val erroredSessions = flowSessionManager.getSessionsWithStatus(checkpoint, flowStackItem.sessionIds, SessionStateType.ERROR)
-        val closedSessions = flowSessionManager.getSessionsWithStatus(checkpoint, flowStackItem.sessionIds, SessionStateType.CLOSED)
+        val erroredSessions =
+            flowSessionManager.getSessionsWithStatus(checkpoint, flowStackItem.sessionIds, SessionStateType.ERROR)
+        val closedSessions =
+            flowSessionManager.getSessionsWithStatus(checkpoint, flowStackItem.sessionIds, SessionStateType.CLOSED)
         return flowStackItem.sessionIds - (erroredSessions + closedSessions).map { it.sessionId }
     }
 }

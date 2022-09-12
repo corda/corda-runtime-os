@@ -57,6 +57,11 @@ class FlowFiberImpl(
         // of critical error handling for free, only undefined behaviour.
         try {
             runFlow()
+        } catch (e: FlowContinuationErrorException) {
+            // Logging the callstack here would be misleading as it would point the log entry to the internal rethrow
+            // in Corda rather than the code in the flow that failed
+            log.warn("Flow was discontinued, reason: ${e.cause?.javaClass?.canonicalName} thrown, ${e.cause?.message}")
+            failTopLevelSubFlow(e)
         } catch (t: Throwable) {
             log.error("FlowFiber failed due to internal Throwable being thrown", t)
             failTopLevelSubFlow(t)
@@ -117,7 +122,7 @@ class FlowFiberImpl(
         @Suppress("unchecked_cast")
         return when (val outcome = suspensionOutcome!!) {
             is FlowContinuation.Run -> outcome.value as SUSPENDRETURN
-            is FlowContinuation.Error -> throw outcome.exception.fillInStackTrace()
+            is FlowContinuation.Error -> throw FlowContinuationErrorException(outcome.exception)
             else -> throw IllegalStateException("Tried to return when suspension outcome says to continue")
         }
     }

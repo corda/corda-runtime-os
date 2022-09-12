@@ -32,8 +32,8 @@ class ExternalEventResponseHandler @Activate constructor(
                         externalEventResponse
             )
             throw FlowEventException(
-                "Received a ${ExternalEventResponse::class.simpleName} for flow [${context.inputEvent.flowId}] that " +
-                        "does not exist"
+                "ExternalEventResponseHandler received a ${ExternalEventResponse::class.simpleName} for flow [${context.inputEvent.flowId}]" +
+                        " that does not exist"
             )
         }
 
@@ -47,7 +47,7 @@ class ExternalEventResponseHandler @Activate constructor(
                         "${ExternalEventResponse::class.simpleName}: $externalEventResponse"
             )
             throw FlowEventException(
-                "Received an ${ExternalEventResponse::class.simpleName} with request id: " +
+                "ExternalEventResponseHandler received an ${ExternalEventResponse::class.simpleName} with request id: " +
                         "${externalEventResponse.requestId} while flow [${context.inputEvent.flowId} is not waiting " +
                         "for an ${ExternalEventResponse::class.simpleName}"
             )

@@ -1,7 +1,9 @@
 package net.corda.flow.application.services
 
 import net.corda.data.flow.state.checkpoint.FlowStackItem
+import net.corda.flow.fiber.FlowContinuationErrorException
 import net.corda.flow.fiber.FlowFiberExecutionContext
+import net.corda.flow.fiber.FlowFiberImpl
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.v5.application.flows.FlowContextProperties
@@ -72,40 +74,43 @@ class FlowEngineImpl @Activate constructor(
 
             log.debug { "Sub-flow('${subFlow.javaClass.name}') resumed ." }
             return result
+        } catch (e: FlowContinuationErrorException) {
+            // Logging the callstack here would be misleading as it would point the log entry to the internal rethrow
+            // in Corda rather than the code in the flow that failed
+            log.warn("Sub-flow was discontinued, reason: ${e.cause?.javaClass?.canonicalName} thrown, ${e.cause?.message}")
+            failSubFlow(e)
+            throw e
         } catch (t: Throwable) {
+            log.error("Sub-flow failed due to exception thrown", t)
             failSubFlow(t)
             throw t
+        } finally {
+            popCurrentFlowStackItem()
         }
     }
 
     @Suspendable
     private fun finishSubFlow() {
-        try {
-            flowFiberService.getExecutingFiber().suspend(FlowIORequest.SubFlowFinished(peekCurrentFlowStackItem()))
-        } finally {
-            popCurrentFlowStackItem()
-        }
+        flowFiberService.getExecutingFiber().suspend(FlowIORequest.SubFlowFinished(peekCurrentFlowStackItem()))
     }
 
     @Suspendable
     private fun failSubFlow(t: Throwable) {
-        try {
-            flowFiberService.getExecutingFiber().suspend(FlowIORequest.SubFlowFailed(t, peekCurrentFlowStackItem()))
-        } finally {
-            popCurrentFlowStackItem()
-        }
+        flowFiberService.getExecutingFiber().suspend(FlowIORequest.SubFlowFailed(t, peekCurrentFlowStackItem()))
     }
 
     private fun peekCurrentFlowStackItem(): FlowStackItem {
         return getFiberExecutionContext().flowStackService.peek()
             ?: throw CordaRuntimeException(
-                "Flow [${flowFiberService.getExecutingFiber().flowId}] does not have a flow stack item")
+                "Flow [${flowFiberService.getExecutingFiber().flowId}] does not have a flow stack item"
+            )
     }
 
     private fun popCurrentFlowStackItem(): FlowStackItem {
         return getFiberExecutionContext().flowStackService.pop()
             ?: throw CordaRuntimeException(
-                "Flow [${flowFiberService.getExecutingFiber().flowId}] does not have a flow stack item")
+                "Flow [${flowFiberService.getExecutingFiber().flowId}] does not have a flow stack item"
+            )
     }
 
     private fun getFiberExecutionContext(): FlowFiberExecutionContext {
