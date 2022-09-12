@@ -1,4 +1,4 @@
-package net.corda.kryoserialization
+package net.corda.kryoserialization.test
 
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk

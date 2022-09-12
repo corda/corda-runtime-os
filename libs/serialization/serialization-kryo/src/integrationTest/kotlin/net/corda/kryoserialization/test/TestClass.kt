@@ -1,4 +1,4 @@
-package net.corda.kryoserialization
+package net.corda.kryoserialization.test
 
 import net.corda.serialization.checkpoint.CheckpointInput
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
