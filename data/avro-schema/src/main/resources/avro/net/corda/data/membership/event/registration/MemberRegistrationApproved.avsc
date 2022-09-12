@@ -2,7 +2,7 @@
   "type": "record",
   "name": "MemberRegistrationApproved",
   "namespace": "net.corda.data.membership.event.registration",
-  "doc": "Event for when processing of a registration has finished. Could be for either acceptance or denial.",
+  "doc": "Event for when processing of a successful registration has finished..",
   "fields": [
     {
       "name": "approvedMember",
