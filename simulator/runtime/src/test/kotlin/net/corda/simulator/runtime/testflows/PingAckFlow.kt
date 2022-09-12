@@ -27,7 +27,7 @@ class PingAckFlow : RPCStartableFlow {
         val whoToPing = jsonMarshallingService.parse<MemberX500Name>(requestBody.getRequestBody())
         val session = flowMessaging.initiateFlow(whoToPing)
         session.send(jsonMarshallingService.format(PingAckMessage("Ping")))
-        return session.receive(PingAckMessage::class.java).unwrap { it }.message
+        return session.receive(PingAckMessage::class.java).message
     }
 }
 

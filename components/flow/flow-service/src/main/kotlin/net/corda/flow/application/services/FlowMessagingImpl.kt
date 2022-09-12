@@ -6,7 +6,6 @@ import net.corda.flow.fiber.FlowFiberService
 import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.UntrustworthyData
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
@@ -25,11 +24,6 @@ class FlowMessagingImpl @Activate constructor(
     @Reference(service = FlowSessionFactory::class)
     private val flowSessionFactory: FlowSessionFactory
 ) : FlowMessaging, SingletonSerializeAsToken {
-
-    @Suspendable
-    override fun close(sessions: Set<FlowSession>) {
-        TODO("Not yet implemented")
-    }
 
     @Suspendable
     override fun initiateFlow(x500Name: MemberX500Name): FlowSession {
@@ -55,26 +49,6 @@ class FlowMessagingImpl @Activate constructor(
         return flowSessionFactory.createInitiatingFlowSession(sessionId, x500Name, flowContextPropertiesBuilder)
     }
 
-    @Suspendable
-    override fun <R> receiveAll(receiveType: Class<out R>, sessions: Set<FlowSession>): List<UntrustworthyData<R>> {
-        TODO("Not yet implemented")
-    }
-
-    @Suspendable
-    override fun receiveAllMap(sessions: Map<FlowSession, Class<out Any>>): Map<FlowSession, UntrustworthyData<Any>> {
-        TODO("Not yet implemented")
-    }
-
-    @Suspendable
-    override fun sendAll(payload: Any, sessions: Set<FlowSession>) {
-        TODO("Not yet implemented")
-    }
-
-    @Suspendable
-    override fun sendAllMap(payloadsPerSession: Map<FlowSession, *>) {
-        TODO("Not yet implemented")
-    }
-
     private fun checkFlowCanBeInitiated() {
         val flowStackItem = getCurrentFlowStackItem()
         if (!flowStackItem.isInitiatingFlow) {
@@ -94,6 +68,8 @@ class FlowMessagingImpl @Activate constructor(
             .getExecutionContext()
             .flowStackService
             .peek()
-            ?: throw CordaRuntimeException("Flow [${flowFiberService.getExecutingFiber().flowId}] does not have a flow stack item")
+            ?: throw CordaRuntimeException(
+                "Flow [${flowFiberService.getExecutingFiber().flowId}] does not have a flow stack item"
+            )
     }
 }

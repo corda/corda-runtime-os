@@ -114,7 +114,7 @@ class RollCallFlow: RPCStartableFlow {
                 sessionAndRecipient.flowSession.sendAndReceive(
                     RollCallResponse::class.java,
                     RollCallRequest(sessionAndRecipient.receipient)
-                ).unwrap { r -> r }.response
+                ).response
             )
         )
 

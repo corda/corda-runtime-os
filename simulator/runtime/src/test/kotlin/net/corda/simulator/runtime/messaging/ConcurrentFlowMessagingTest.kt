@@ -60,7 +60,7 @@ class ConcurrentFlowMessagingTest {
 
         // When we send and receive the message
         thread { sendingSession.send(message) }
-        val received = sendingSession.receive(PingAckMessage::class.java).unwrap { it }
+        val received = sendingSession.receive(PingAckMessage::class.java)
 
         // Then it should come through OK
         assertThat(received, `is`(PingAckMessage("Ick")))
@@ -107,7 +107,7 @@ class ConcurrentFlowMessagingTest {
 
         // When we send and receive the message
         thread { sendingSession.send(message) }
-        val received = sendingSession.receive(PingAckMessage::class.java).unwrap { it }
+        val received = sendingSession.receive(PingAckMessage::class.java)
 
         // Then it should come through OK
         assertThat(received, `is`(PingAckMessage("Ick")))
