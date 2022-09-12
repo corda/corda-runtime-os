@@ -35,7 +35,7 @@ class WireTransaction(
 
         val mapper = jacksonObjectMapper()
         val metadataBytes = componentGroupLists[ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first()
-        metadata = mapper.readValue(metadataBytes, TransactionMetaData::class.java) // CORE-5940
+        metadata = mapper.readValue(metadataBytes, TransactionMetaData::class.java) // TODO(update with CORE-5940)
 
         check(metadata.getDigestSettings() == WireTransactionDigestSettings.defaultValues) {
             "Only the default digest settings are acceptable now! ${metadata.getDigestSettings()} vs " +
