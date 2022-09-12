@@ -620,6 +620,31 @@ class GroupPolicyProviderImplTest {
         verify(groupPolicyParser, times(2)).parse(eq(holdingIdentity5), any(), any())
     }
 
+
+    @Test
+    fun `MGM group policy is removed from cache if exception occurs when parsing`() {
+        postConfigChangedEvent()
+        startComponentAndDependencies()
+
+        groupPolicyProvider.FinishedRegistrationsProcessor()
+            .onNext(listOf(Record("", "", MembershipEvent(MgmOnboarded(holdingIdentity5.toAvro())))))
+        verify(groupPolicyParser, times(1)).parse(eq(holdingIdentity5), any(), any())
+
+        // returns from cache
+        groupPolicyProvider.getGroupPolicy(holdingIdentity5)
+        verify(groupPolicyParser, times(1)).parse(eq(holdingIdentity5), any(), any())
+
+        // on new event we will fail parsing
+        whenever(groupPolicyParser.parse(eq(holdingIdentity5), any(), any())).thenReturn(null)
+        groupPolicyProvider.FinishedRegistrationsProcessor()
+            .onNext(listOf(Record("", "", MembershipEvent(MgmOnboarded(holdingIdentity5.toAvro())))))
+        verify(groupPolicyParser, times(2)).parse(eq(holdingIdentity5), any(), any())
+
+        // previous value was rmeoved from cache, hence re-calculating
+        groupPolicyProvider.getGroupPolicy(holdingIdentity5)
+        verify(groupPolicyParser, times(3)).parse(eq(holdingIdentity5), any(), any())
+    }
+
     @Test
     fun `MGM group policy cache is updated on each mgm onboarded event`() {
         postConfigChangedEvent()

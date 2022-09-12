@@ -240,10 +240,10 @@ class GroupPolicyProviderImpl @Activate constructor(
                         null
                     }
                     if(groupPolicyToStore == null) {
-                        groupPolicies.compute(it) { _, _ -> null }
+                        groupPolicies.remove(it)
                     } else if (groupPolicyToStore !is MGMGroupPolicy) {
                         logger.info("Caching group policy for member.")
-                        groupPolicies.compute(it) { _, _ -> groupPolicyToStore }
+                        groupPolicies[it] = groupPolicyToStore
                         synchronized(listeners) {
                             listeners.forEach { callback -> callback(it, groupPolicies[it]!!) }
                         }
@@ -306,7 +306,7 @@ class GroupPolicyProviderImpl @Activate constructor(
      * This will make sure we have the trust stores and other important information in the group policy ready.
      */
     internal inner class FinishedRegistrationsProcessor : DurableProcessor<String, MembershipEvent> {
-        @Suppress("NestedBlockDepth")
+        @Suppress("NestedBlockDepth", "ComplexMethod")
         override fun onNext(events: List<Record<String, MembershipEvent>>): List<Record<*, *>> {
             logger.info("Received event after mgm registration.")
             events.forEach {record ->
@@ -319,12 +319,16 @@ class GroupPolicyProviderImpl @Activate constructor(
                             val event = record.value!!.event as MgmOnboarded
                             val holdingIdentity = event.onboardedMgm.toCorda()
                             val gp = parseGroupPolicy(holdingIdentity)
-                                ?: throw CordaRuntimeException("Unable to get group policy for ${holdingIdentity.shortHash}.")
-                            if(gp !is MGMGroupPolicy) throw CordaRuntimeException("MGM Group Policy was expected.")
-                            logger.info("Caching group policy for MGM.")
-                            groupPolicies.compute(holdingIdentity) { _, _ ->
-                                gp
+                                ?: throw CordaRuntimeException(
+                                    "Unable to get group policy for ${holdingIdentity.shortHash}."
+                                ).also {
+                                    groupPolicies.remove(holdingIdentity)
+                                }
+                            if(gp !is MGMGroupPolicy) throw CordaRuntimeException("MGM Group Policy was expected.").also {
+                                groupPolicies.remove(holdingIdentity)
                             }
+                            logger.info("Caching group policy for MGM.")
+                            groupPolicies[holdingIdentity] = gp
                             synchronized(listeners) {
                                 listeners.forEach { callback -> callback(holdingIdentity, gp) }
                             }
