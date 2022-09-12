@@ -3,6 +3,7 @@ package net.corda.schema.configuration.provider.impl
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
 import net.corda.schema.configuration.ConfigKeys.P2P_LINK_MANAGER_CONFIG
@@ -35,7 +36,8 @@ class SchemaProviderImplTest {
             RPC_CONFIG,
             SECRETS_CONFIG,
             SANDBOX_CONFIG,
-            RECONCILIATION_CONFIG
+            RECONCILIATION_CONFIG,
+            MEMBERSHIP_CONFIG,
         )
         private val VERSIONS = listOf("1.0")
 

@@ -16,6 +16,7 @@ object ConfigKeys {
     const val SECRETS_CONFIG = "corda.secrets"
     const val SANDBOX_CONFIG = "corda.sandbox"
     const val RECONCILIATION_CONFIG = "corda.reconciliation"
+    const val MEMBERSHIP_CONFIG = "corda.membership"
     const val SECURITY_CONFIG = "corda.security"
 
     //  RPC
