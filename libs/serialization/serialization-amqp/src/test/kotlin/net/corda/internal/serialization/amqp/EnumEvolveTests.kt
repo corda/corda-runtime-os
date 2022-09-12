@@ -401,7 +401,7 @@ class EnumEvolveTests {
         load(stage5Resources).forEach { assertEquals(it.second, it.first.e) }
     }
 
-    @CordaSerializationTransformEnumDefault(old = "A", new = "F")
+    @CordaSerializationTransformEnumDefault(oldName = "A", newName = "F")
     enum class BadNewValue { A, B, C, D }
 
     @Test
@@ -416,8 +416,8 @@ class EnumEvolveTests {
     }
 
     @CordaSerializationTransformEnumDefaults(
-        CordaSerializationTransformEnumDefault(new = "D", old = "E"),
-        CordaSerializationTransformEnumDefault(new = "E", old = "A")
+        CordaSerializationTransformEnumDefault(newName = "D", oldName = "E"),
+        CordaSerializationTransformEnumDefault(newName = "E", oldName = "A")
     )
     enum class OutOfOrder { A, B, C, D, E }
 
@@ -437,7 +437,7 @@ class EnumEvolveTests {
     // enum class ChangedOrdinality { A, B, C }
     //
     // class as it exists for the tests
-    @CordaSerializationTransformEnumDefault("D", "A")
+    @CordaSerializationTransformEnumDefault(newName = "D", oldName = "A")
     enum class ChangedOrdinality { A, B, D, C }
 
     @Test
@@ -466,8 +466,8 @@ class EnumEvolveTests {
     //
     // Version of the class as it's used in the test
     @CordaSerializationTransformEnumDefaults(
-        CordaSerializationTransformEnumDefault("E", "C"),
-        CordaSerializationTransformEnumDefault("D", "C")
+        CordaSerializationTransformEnumDefault(newName = "E", oldName = "C"),
+        CordaSerializationTransformEnumDefault(newName = "D", oldName = "C")
     )
     @CordaSerializable
     enum class ExtendedEnum { A, B, C, D, E }

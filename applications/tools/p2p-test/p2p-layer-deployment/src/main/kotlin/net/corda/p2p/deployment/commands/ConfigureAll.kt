@@ -82,7 +82,7 @@ class ConfigureAll : Runnable {
     private val host by lazy {
         annotations["host"] as? String ?: throw DeploymentException("Missing host for $namespaceName")
     }
-    private val x500name by lazy {
+    private val x500Name by lazy {
         annotations["x500-name"] as? String ?: throw DeploymentException("Missing x500 name for $namespaceName")
     }
     private val groupId by lazy {
@@ -128,7 +128,7 @@ class ConfigureAll : Runnable {
     }
 
     private val tenantId by lazy {
-        "$groupId|$x500name"
+        "$groupId|$x500Name"
     }
 
     private fun tlsCertificates(host: String): File {
@@ -181,7 +181,7 @@ class ConfigureAll : Runnable {
         }
         val entry =
             mapOf(
-                "x500name" to x500name,
+                "x500Name" to x500Name,
                 "groupId" to groupId,
                 "data" to mapOf(
                     "publicSessionKey" to publicKeyFile(host).readText(),
@@ -213,7 +213,7 @@ class ConfigureAll : Runnable {
         }
         val entriesToAdd = mapOf(
             "groupId" to annotations["group-id"],
-            "x500name" to x500name,
+            "x500Name" to x500Name,
             "data" to mapOf(
                 "networkType" to "CORDA_5",
                 "protocolModes" to listOf("AUTHENTICATED_ENCRYPTION"),
@@ -234,7 +234,7 @@ class ConfigureAll : Runnable {
         }
         val entry =
             mapOf(
-                "x500name" to x500name,
+                "x500Name" to x500Name,
                 "groupId" to groupId,
                 "data" to mapOf(
                     "tlsTenantId" to tenantId,
@@ -263,7 +263,7 @@ class ConfigureAll : Runnable {
             .map { annotations ->
                 val host = annotations["host"] as String
                 mapOf(
-                    "x500name" to annotations["x500-name"],
+                    "x500Name" to annotations["x500-name"],
                     "groupId" to annotations["group-id"],
                     "data" to mapOf(
                         "publicSessionKey" to publicKeyFile(host).readText(),
@@ -290,7 +290,7 @@ class ConfigureAll : Runnable {
                 mapOf(
                     "keys" to privateKeyFile(host).readText(),
                     "tenantId" to tenantId,
-                    "publishAlias" to "$x500name.$groupId.ec",
+                    "publishAlias" to "$x500Name.$groupId.ec",
                 )
             )
         }
@@ -301,7 +301,7 @@ class ConfigureAll : Runnable {
                 mapOf(
                     "keys" to sslPrivateKeyFile.readText(),
                     "tenantId" to tenantId,
-                    "publishAlias" to "$host.$x500name.rsa"
+                    "publishAlias" to "$host.$x500Name.rsa"
                 )
             )
         }

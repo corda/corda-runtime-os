@@ -62,6 +62,7 @@ spec:
           - -ddatabase.jdbc.url=jdbc:postgresql://{{ required "Must specify db.cluster.host" .Values.db.cluster.host }}:{{ .Values.db.cluster.port }}/{{ .Values.db.cluster.database }}
           - -ddatabase.jdbc.directory=/opt/jdbc-driver
           - -ddatabase.pool.max_size={{ .Values.workers.crypto.clusterDbConnectionPool.maxSize }}
+          - --hsm-id=SOFT
         volumeMounts:
         {{- include "corda.workerVolumeMounts" . | nindent 10 }}
         ports:

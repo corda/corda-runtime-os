@@ -27,7 +27,7 @@ class AddGroup : Callable<Collection<Record<String, GroupPolicyEntry>>> {
     companion object {
         internal fun Config.toGroupRecord(topic: String = GROUP_POLICIES_TOPIC): Record<String, GroupPolicyEntry> {
             val groupId = this.getString("groupId")
-            val x500Name = this.getString("x500name")
+            val x500Name = this.getString("x500Name")
             val dataConfig = this.getConfig("data")
             val networkType = dataConfig.getEnum(NetworkType::class.java, "networkType")
             val trustRootCertificates = try {

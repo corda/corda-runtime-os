@@ -21,12 +21,12 @@ import org.osgi.service.component.annotations.Reference
 
 @Component(service = [FlowFactory::class])
 @Suppress("Unused")
-class FlowFactoryImpl  @Activate constructor(
+class FlowFactoryImpl @Activate constructor(
     @Reference(service = FlowSessionFactory::class)
     private val flowSessionFactory: FlowSessionFactory,
     @Reference(service = FlowFiberService::class)
     private val flowFiberService: FlowFiberService
-): FlowFactory {
+) : FlowFactory {
 
     override fun createFlow(startFlowEvent: StartFlow, sandboxGroupContext: SandboxGroupContext): FlowLogicAndArgs {
         return try {
@@ -42,12 +42,18 @@ class FlowFactoryImpl  @Activate constructor(
 
             RPCStartedFlow(logic, args)
         } catch (e: Exception) {
-            throw FlowFatalException("Could not create ${startFlowEvent.startContext.flowClassName} for " +
-                    "virtual node ${startFlowEvent.startContext.identity}: ${e.message}", e)
+            throw FlowFatalException(
+                "Could not create ${startFlowEvent.startContext.flowClassName} for " +
+                        "virtual node ${startFlowEvent.startContext.identity}: ${e.message}", e
+            )
         }
     }
 
-    override fun createInitiatedFlow(flowStartContext: FlowStartContext, sandboxGroupContext: SandboxGroupContext): FlowLogicAndArgs {
+    override fun createInitiatedFlow(
+        flowStartContext: FlowStartContext,
+        sandboxGroupContext: SandboxGroupContext,
+        contextProperties: Map<String, String>
+    ): FlowLogicAndArgs {
         return try {
             val flowClass: Class<ResponderFlow> = uncheckedCast(
                 sandboxGroupContext.sandboxGroup.loadClassFromMainBundles(
@@ -56,17 +62,19 @@ class FlowFactoryImpl  @Activate constructor(
                 )
             )
 
-            val flowSession = flowSessionFactory.create(
+            val flowSession = flowSessionFactory.createInitiatedFlowSession(
                 flowStartContext.statusKey.id, // The ID on a start context is the session ID
                 MemberX500Name.parse(flowStartContext.initiatedBy.x500Name),
-                initiated = true
+                contextProperties
             )
             val logic = flowClass.getDeclaredConstructor().newInstance()
 
             InitiatedFlow(logic, flowSession)
         } catch (e: Exception) {
-            throw FlowFatalException("Could not create initiated flow ${flowStartContext.flowClassName} for " +
-                    "virtual node ${flowStartContext.identity}: ${e.message}", e)
+            throw FlowFatalException(
+                "Could not create initiated flow ${flowStartContext.flowClassName} for " +
+                        "virtual node ${flowStartContext.identity}: ${e.message}", e
+            )
         }
     }
 }

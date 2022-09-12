@@ -44,7 +44,7 @@ fun startRpcFlow(
     }
 }
 
-fun startRpcFlow(holdingId: String, args: Map<String, Any>, flowName: String): String {
+fun startRpcFlow(holdingId: String, args: Map<String, Any>, flowName: String, expectedCode: Int = 202): String {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
@@ -59,7 +59,7 @@ fun startRpcFlow(holdingId: String, args: Map<String, Any>, flowName: String): S
                     escapeJson(ObjectMapper().writeValueAsString(args))
                 )
             }
-            condition { it.code == 202 }
+            condition { it.code == expectedCode }
         }
 
         requestId
@@ -119,18 +119,28 @@ fun getFlowClasses(holdingId: String): List<String> {
     }
 }
 
-fun createVirtualNodeFor(x500: String): String {
+fun getOrCreateVirtualNodeFor(x500: String): String {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
         val cpis = cpiList().toJson()["cpis"]
         val json = cpis.toList().first { it["id"]["cpiName"].textValue() == CPI_NAME }
         val hash = truncateLongHash(json["cpiFileChecksum"].textValue())
 
-        val vNodeJson = assertWithRetry {
-            command { vNodeCreate(hash, x500) }
+        val vNodesJson = assertWithRetry {
+            command { vNodeList() }
             condition { it.code == 200 }
-            failMessage("Failed to create the virtual node for '$x500'")
+            failMessage("Failed to retrieve virtual nodes")
         }.toJson()
+
+        val vNodeJson = if (vNodesJson.findValuesAsText("x500Name").contains(x500)) {
+            vNodeList().toJson()["virtualNodes"].toList().first { it["holdingIdentity"]["x500Name"].textValue() == x500 }
+        } else {
+            assertWithRetry {
+                command { vNodeCreate(hash, x500) }
+                condition { it.code == 200 }
+                failMessage("Failed to create the virtual node for '$x500'")
+            }.toJson()
+        }
 
         val holdingId = vNodeJson["holdingIdentity"]["shortHash"].textValue()
         Assertions.assertThat(holdingId).isNotNull.isNotEmpty
@@ -172,9 +182,9 @@ fun createKeyFor(holdingId: String, alias: String, category: String, scheme: Str
             command { createKey(holdingId, alias, category, scheme) }
             condition { it.code == 200 }
             failMessage("Failed to create key for holding id '$holdingId'")
-        }.body
+        }.toJson()
         assertWithRetry {
-            command { getKey(holdingId, keyId) }
+            command { getKey(holdingId, keyId["id"].textValue()) }
             condition { it.code == 200 }
             failMessage("Failed to get key for holding id '$holdingId' and key id '$keyId'")
         }.body

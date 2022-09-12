@@ -1,5 +1,6 @@
 package net.corda.flow.application.persistence.external.events
 
+import net.corda.data.KeyValuePairList
 import java.nio.ByteBuffer
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.persistence.EntityRequest
@@ -31,7 +32,7 @@ class AbstractPersistenceExternalEventFactoryTest {
     fun `creates an external event record containing an EntityRequest`() {
         val checkpoint = mock<FlowCheckpoint>()
         val payload = "payload"
-        val externalEventContext = ExternalEventContext("request id", "flow id")
+        val externalEventContext = ExternalEventContext("request id", "flow id", KeyValuePairList(emptyList()))
 
         whenever(checkpoint.holdingIdentity).thenReturn(ALICE_X500_HOLDING_IDENTITY.toCorda())
 

@@ -2,16 +2,23 @@ package net.corda.application.dbsetup
 
 
 import com.typesafe.config.ConfigRenderOptions
+import net.corda.crypto.config.impl.createCryptoSmartConfigFactory
+import net.corda.crypto.config.impl.createDefaultCryptoConfig
+import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.core.DbPrivilege
 import net.corda.db.core.OSGiDataSourceFactory
 import net.corda.db.schema.DbSchema
+import net.corda.libs.configuration.datamodel.ConfigEntity
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.libs.configuration.secret.EncryptionSecretsServiceImpl
 import net.corda.libs.configuration.secret.SecretsCreateService
+import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.v5.base.util.contextLogger
+import java.security.SecureRandom
 import java.time.Instant
+import java.util.Base64
 import java.util.UUID
 
 
@@ -63,6 +70,7 @@ class PostgresDbSetup(
             initConfiguration("corda-crypto", "crypto_user_$dbName", "crypto_password", "$dbUrl?currentSchema=CRYPTO")
             createUserConfig("admin", "admin")
             createDbUsersAndGrants()
+            createCryptoConfig()
         } else {
             log.info("Table config.config exists in $dbSuperUserUrl, skipping DB initialisation.")
         }
@@ -184,6 +192,38 @@ class PostgresDbSetup(
             }
     }
 
+    private fun createCryptoConfig() {
+        val random = SecureRandom()
+        val config = createCryptoSmartConfigFactory(
+            KeyCredentials(
+                salt = secretsSalt,
+                passphrase = secretsPassphrase
+            )
+        ).createDefaultCryptoConfig(
+            KeyCredentials(
+                passphrase = random.randomString(),
+                salt = random.randomString()
+            )
+        ).root().render(ConfigRenderOptions.concise())
+
+        val entity = ConfigEntity(
+            section = CRYPTO_CONFIG,
+            config = config,
+            schemaVersionMajor = 1,
+            schemaVersionMinor = 0,
+            updateTimestamp = Instant.now(),
+            updateActor = "init",
+            isDeleted = false
+        ).apply {
+            version = 0
+        }
+
+        adminConnection()
+            .use { connection ->
+                connection.createStatement().execute(entity.toInsertStatement())
+            }
+    }
+
     private fun createDbConfig(
         jdbcUrl: String,
         username: String,
@@ -199,5 +239,10 @@ class PostgresDbSetup(
 
     private fun createSecureConfig(secretsService: SecretsCreateService, value: String): String {
         return secretsService.createValue(value).root().render(ConfigRenderOptions.concise())
+    }
+
+    private fun SecureRandom.randomString(length: Int = 32): String = ByteArray(length).let {
+        this.nextBytes(it)
+        Base64.getEncoder().encodeToString(it)
     }
 }

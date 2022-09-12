@@ -81,7 +81,7 @@ class StartRegistrationHandler(
             }
 
             val mgmMemberInfo = getMGMMemberInfo(mgmHoldingId)
-            logger.info("Registering with MGM for holding identity: $mgmHoldingId")
+            logger.info("Registering $pendingMemberHoldingId with MGM for holding identity: $mgmHoldingId")
             val pendingMemberInfo = buildPendingMemberInfo(registrationRequest)
             // Parse the registration request and verify contents
             // The MemberX500Name matches the source MemberX500Name from the P2P messaging

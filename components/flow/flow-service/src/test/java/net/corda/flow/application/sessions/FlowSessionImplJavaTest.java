@@ -1,16 +1,17 @@
 package net.corda.flow.application.sessions;
 
 import co.paralleluniverse.fibers.FiberScheduler;
+import net.corda.flow.application.serialization.SerializationServiceInternal;
 import net.corda.flow.fiber.FlowContinuation;
 import net.corda.flow.fiber.FlowFiber;
 import net.corda.flow.fiber.FlowFiberExecutionContext;
-import net.corda.flow.fiber.FlowFiberSerializationService;
 import net.corda.flow.fiber.FlowFiberService;
 import net.corda.flow.fiber.FlowIORequest;
 import net.corda.flow.fiber.FlowLogicAndArgs;
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext;
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector;
 import net.corda.flow.state.FlowCheckpoint;
+import net.corda.flow.state.FlowContext;
 import net.corda.membership.read.MembershipGroupReader;
 import net.corda.serialization.checkpoint.CheckpointSerializer;
 import net.corda.v5.application.messaging.FlowSession;
@@ -34,7 +35,7 @@ import static org.mockito.Mockito.when;
 public class FlowSessionImplJavaTest {
 
     private final FlowSandboxGroupContext flowSandboxGroupContext = mock(FlowSandboxGroupContext.class);
-    private final FlowFiberSerializationService flowFiberSerializationService = mock(FlowFiberSerializationService.class);
+    private final SerializationServiceInternal serializationService = mock(SerializationServiceInternal.class);
     private final SandboxDependencyInjector sandboxDependencyInjector = mock(SandboxDependencyInjector.class);
     private final CheckpointSerializer checkpointSerializer = mock(CheckpointSerializer.class);
     private final FlowFiberExecutionContext flowFiberExecutionContext = new FlowFiberExecutionContext(
@@ -45,13 +46,15 @@ public class FlowSessionImplJavaTest {
     );
     private final FlowFiber flowFiber = new FakeFiber(flowFiberExecutionContext);
     private final FlowFiberService flowFiberService = mock(FlowFiberService.class);
+    private final FlowContext flowContext = mock(FlowContext.class);
 
     private final FlowSession session = new FlowSessionImpl(
             new MemberX500Name("Alice", "Alice Corp", "LDN", "GB"),
             "session id",
             flowFiberService,
-            flowFiberSerializationService,
-            true
+            serializationService,
+            flowContext,
+            FlowSessionImpl.Direction.INITIATED_SIDE
     );
 
     private static class FakeFiber implements FlowFiber {
@@ -63,7 +66,7 @@ public class FlowSessionImplJavaTest {
 
         private FlowFiberExecutionContext fiberContext;
 
-        public FakeFiber (FlowFiberExecutionContext context) {
+        public FakeFiber(FlowFiberExecutionContext context) {
             fiberContext = context;
         }
 
@@ -76,7 +79,7 @@ public class FlowSessionImplJavaTest {
         @Override
         public <SUSPENDRETURN> SUSPENDRETURN suspend(FlowIORequest<? extends SUSPENDRETURN> flowIORequest) {
             Map<String, byte[]> received = new HashMap<>();
-            received.put("session id", new byte[]{ 1, 2, 3 });
+            received.put("session id", new byte[]{1, 2, 3});
             return (SUSPENDRETURN) received;
         }
 
@@ -102,9 +105,9 @@ public class FlowSessionImplJavaTest {
     @BeforeEach
     public void beforeEach() {
         Map<String, byte[]> received = new HashMap<>();
-        received.put("session id", new byte[]{ 1, 2, 3 });
-        when(flowFiberSerializationService.serialize(any())).thenReturn(new SerializedBytes(new byte[]{ 1, 2, 3 }));
-        when(flowFiberSerializationService.deserialize(any(byte[].class), any())).thenReturn(1);
+        received.put("session id", new byte[]{1, 2, 3});
+        when(serializationService.serialize(any())).thenReturn(new SerializedBytes(new byte[]{1, 2, 3}));
+        when(serializationService.deserializeAndCheckType(any(byte[].class), any())).thenReturn(1);
         when(flowSandboxGroupContext.getDependencyInjector()).thenReturn(sandboxDependencyInjector);
         when(flowSandboxGroupContext.getCheckpointSerializer()).thenReturn(checkpointSerializer);
         when(flowFiberService.getExecutingFiber()).thenReturn(flowFiber);

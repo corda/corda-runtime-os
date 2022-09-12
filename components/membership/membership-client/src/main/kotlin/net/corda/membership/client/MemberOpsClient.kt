@@ -4,6 +4,7 @@ import net.corda.lifecycle.Lifecycle
 import net.corda.membership.client.dto.MemberRegistrationRequestDto
 import net.corda.membership.client.dto.RegistrationRequestProgressDto
 import net.corda.membership.client.dto.RegistrationRequestStatusDto
+import net.corda.virtualnode.ShortHash
 
 /**
  * The member ops client to perform group operations.
@@ -26,7 +27,7 @@ interface MemberOpsClient : Lifecycle {
      * @return [List<RegistrationRequestStatusDto>] to indicate the last known status of the registration request based on
      * local member data.
      */
-    fun checkRegistrationProgress(holdingIdentityShortHash: String): List<RegistrationRequestStatusDto>
+    fun checkRegistrationProgress(holdingIdentityShortHash: ShortHash): List<RegistrationRequestStatusDto>
 
     /**
      * Checks the latest known status of a specific registration based on a member's own local data and without
@@ -38,7 +39,7 @@ interface MemberOpsClient : Lifecycle {
      * local member data.
      */
     fun checkSpecificRegistrationProgress(
-        holdingIdentityShortHash: String,
+        holdingIdentityShortHash: ShortHash,
         registrationRequestId: String,
     ): RegistrationRequestStatusDto?
 }

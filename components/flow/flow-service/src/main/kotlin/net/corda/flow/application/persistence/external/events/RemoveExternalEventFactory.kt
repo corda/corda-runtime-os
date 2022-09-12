@@ -9,8 +9,8 @@ import org.osgi.service.component.annotations.Component
 class RemoveExternalEventFactory : AbstractPersistenceExternalEventFactory<RemoveParameters>() {
 
     override fun createRequest(parameters: RemoveParameters): Any {
-        return DeleteEntities(listOf(parameters.serializedEntity))
+        return DeleteEntities(parameters.serializedEntities)
     }
 }
 
-data class RemoveParameters(val serializedEntity: ByteBuffer)
+data class RemoveParameters(val serializedEntities: List<ByteBuffer>)

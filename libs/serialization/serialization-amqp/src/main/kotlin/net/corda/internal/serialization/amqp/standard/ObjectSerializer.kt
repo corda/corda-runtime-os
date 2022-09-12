@@ -42,8 +42,8 @@ interface ObjectSerializer : AMQPSerializer<Any> {
             if (typeInformation is LocalTypeInformation.NonComposable) {
                 val typeNames = typeInformation.nonComposableTypes.map { it.observedType.typeName }
                 throw MissingSerializerException(
-                    message = nonComposableExceptionMessage(typeInformation, factory),
-                    typeNames = typeNames
+                    nonComposableExceptionMessage(typeInformation, factory),
+                    typeNames
                 )
             }
 

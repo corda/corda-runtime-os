@@ -1,5 +1,6 @@
 package net.corda.flow.application.persistence.external.events
 
+import net.corda.data.KeyValuePairList
 import java.nio.ByteBuffer
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.persistence.EntityRequest
@@ -19,14 +20,14 @@ class MergeExternalEventFactoryTest {
     @Test
     fun `creates a record containing an EntityRequest with a MergeEntities payload`() {
         val checkpoint = mock<FlowCheckpoint>()
-        val externalEventContext = ExternalEventContext("request id", "flow id")
+        val externalEventContext = ExternalEventContext("request id", "flow id", KeyValuePairList(emptyList()))
 
         whenever(checkpoint.holdingIdentity).thenReturn(ALICE_X500_HOLDING_IDENTITY.toCorda())
 
         val externalEventRecord = MergeExternalEventFactory().createExternalEvent(
             checkpoint,
             externalEventContext,
-            MergeParameters(ByteBuffer.wrap(byteArrayOf(1)))
+            MergeParameters(listOf(ByteBuffer.wrap(byteArrayOf(1))))
         )
         assertEquals(Schemas.VirtualNode.ENTITY_PROCESSOR, externalEventRecord.topic)
         assertNull(externalEventRecord.key)

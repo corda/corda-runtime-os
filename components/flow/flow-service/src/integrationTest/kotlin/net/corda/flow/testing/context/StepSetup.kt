@@ -21,7 +21,7 @@ interface StepSetup {
 
     fun sessionInitiatedIdentity(initiatedIdentity: HoldingIdentity)
 
-    fun flowConfiguration(key:String, value:Any)
+    fun flowConfiguration(key: String, value: Any)
 
     fun initiatingToInitiatedFlow(protocol: String, initiatingFlowClassName: String, initiatedFlowClassName: String)
 
@@ -30,7 +30,8 @@ interface StepSetup {
         requestId: String,
         holdingId: HoldingIdentity,
         cpiId: String,
-        args: String
+        args: String,
+        platformContext: Map<String, String> = emptyMap()
     ): FlowIoRequestSetup
 
     fun sessionInitEventReceived(
@@ -82,5 +83,9 @@ interface StepSetup {
 
     fun externalEventReceived(flowId: String, requestId: String, payload: Any): FlowIoRequestSetup
 
-    fun externalEventErrorReceived(flowId: String, requestId: String, errorType: ExternalEventResponseErrorType): FlowIoRequestSetup
+    fun externalEventErrorReceived(
+        flowId: String,
+        requestId: String,
+        errorType: ExternalEventResponseErrorType
+    ): FlowIoRequestSetup
 }
