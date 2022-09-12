@@ -179,12 +179,12 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
     }
 
     private fun onConfigChange(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        unprocessedConfigChanges.add(event)
         if(isReady()) {
             doActivation(event, coordinator)
             updateLifecycleStatus(coordinator)
         } else {
             logger.info("The {} will not be processed as the component is not ready yet", event::class.java.simpleName)
+            unprocessedConfigChanges.add(event)
         }
     }
 
