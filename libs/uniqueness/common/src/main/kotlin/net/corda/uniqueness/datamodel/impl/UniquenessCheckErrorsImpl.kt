@@ -10,8 +10,6 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import java.time.Instant
 
-// TODO JSON de-/serialisation needs to be solved for these classes in the future
-
 data class UniquenessCheckErrorInputStateConflictImpl(
     override val conflictingStates: List<UniquenessCheckStateDetails>
 ) : UniquenessCheckErrorInputStateConflict

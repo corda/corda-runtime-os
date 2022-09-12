@@ -24,6 +24,11 @@ data class UniquenessCheckRequestInternal private constructor(
                 throw IllegalArgumentException("Number of output states cannot be less than 0.")
             }
 
+            try {
+                SecureHash.parse(externalRequest.txId)
+            } catch (e: Exception) {
+                println("mivan fos")
+            }
             with (externalRequest) {
                 return UniquenessCheckRequestInternal(
                     SecureHash.parse(txId),

@@ -19,10 +19,10 @@ object UniquenessAssertions {
      * check the commit timestamp is valid with respect to the provider.
      */
     fun assertStandardSuccessResponse(
-        response: UniquenessCheckExternalResponse,
+        response: UniquenessCheckResponseAvro,
         clock: AutoTickTestClock? = null
     ) =
-        getResultOfType<UniquenessCheckExternalResultSuccess>(response).run {
+        getResultOfType<UniquenessCheckResultSuccessAvro>(response).run {
             assertThat(commitTimestamp).isAfter(Instant.MIN)
             if (clock != null) {
                 assertThat(commitTimestamp)
@@ -34,10 +34,10 @@ object UniquenessAssertions {
      * Checks for a malformed request response with the specified error text
      */
     fun assertMalformedRequestResponse(
-        response: UniquenessCheckExternalResponse,
+        response: UniquenessCheckResponseAvro,
         expectedErrorText: String
     ) {
-        getResultOfType<UniquenessCheckExternalResultMalformedRequest>(response).run {
+        getResultOfType<UniquenessCheckResultMalformedRequestAvro>(response).run {
             assertThat(errorText).isEqualTo(expectedErrorText)
         }
     }
@@ -47,10 +47,10 @@ object UniquenessAssertions {
      *  are captured.
      */
     fun assertUnknownInputStateResponse(
-        response: UniquenessCheckExternalResponse,
+        response: UniquenessCheckResponseAvro,
         expectedUnknownStates: List<String>
     ) {
-        getResultOfType<UniquenessCheckExternalResultInputStateUnknown>(response).run {
+        getResultOfType<UniquenessCheckResultInputStateUnknownAvro>(response).run {
             assertThat(unknownStates)
                 .containsExactlyInAnyOrder(*expectedUnknownStates.toTypedArray())
         }
@@ -61,10 +61,10 @@ object UniquenessAssertions {
      * states are captured.
      */
     fun assertInputStateConflictResponse(
-        response: UniquenessCheckExternalResponse,
+        response: UniquenessCheckResponseAvro,
         expectedConflictingStates: List<String>
     ) {
-        getResultOfType<UniquenessCheckExternalResultInputStateConflict>(response).run {
+        getResultOfType<UniquenessCheckResultInputStateConflictAvro>(response).run {
             assertThat(conflictingStates)
                 .containsExactlyInAnyOrder(*expectedConflictingStates.toTypedArray())
         }
@@ -75,10 +75,10 @@ object UniquenessAssertions {
      *  are captured.
      */
     fun assertUnknownReferenceStateResponse(
-        response: UniquenessCheckExternalResponse,
+        response: UniquenessCheckResponseAvro,
         expectedUnknownStates: List<String>
     ) {
-        getResultOfType<UniquenessCheckExternalResultReferenceStateUnknown>(response).run {
+        getResultOfType<UniquenessCheckResultReferenceStateUnknownAvro>(response).run {
             assertThat(unknownStates)
                 .containsExactlyInAnyOrder(*expectedUnknownStates.toTypedArray())
         }
@@ -89,10 +89,10 @@ object UniquenessAssertions {
      * states are captured.
      */
     fun assertReferenceStateConflictResponse(
-        response: UniquenessCheckExternalResponse,
+        response: UniquenessCheckResponseAvro,
         expectedConflictingStates: List<String>
     ) {
-        getResultOfType<UniquenessCheckExternalResultReferenceStateConflict>(response).run {
+        getResultOfType<UniquenessCheckResultReferenceStateConflictAvro>(response).run {
             assertThat(conflictingStates)
                 .containsExactlyInAnyOrder(*expectedConflictingStates.toTypedArray())
         }
@@ -103,11 +103,11 @@ object UniquenessAssertions {
      * the expected (optional) lower and (mandatory) upper bound.
      */
     fun assertTimeWindowOutOfBoundsResponse(
-        response: UniquenessCheckExternalResponse,
+        response: UniquenessCheckResponseAvro,
         expectedLowerBound: Instant? = null,
         expectedUpperBound: Instant
     ) {
-        getResultOfType<UniquenessCheckExternalResultTimeWindowOutOfBounds>(response).run {
+        getResultOfType<UniquenessCheckResultTimeWindowOutOfBoundsAvro>(response).run {
             assertAll(
                 { assertEquals(expectedLowerBound, timeWindowLowerBound, "Lower bound") },
                 { assertEquals(expectedUpperBound, timeWindowUpperBound, "Upper bound") }
@@ -118,16 +118,16 @@ object UniquenessAssertions {
     /**
      * Checks that all commit timestamps within a list of responses are unique
      */
-    fun assertUniqueCommitTimestamps(responses: List<UniquenessCheckExternalResponse>) {
+    fun assertUniqueCommitTimestamps(responses: List<UniquenessCheckResponseAvro>) {
         assertEquals(
             responses.size,
             responses.distinctBy {
-                (it.result as UniquenessCheckExternalResultSuccess).commitTimestamp
+                (it.result as UniquenessCheckResultSuccessAvro).commitTimestamp
             }.size
         )
     }
 
-    private inline fun<reified T> getResultOfType(response: UniquenessCheckExternalResponse): T {
+    private inline fun<reified T> getResultOfType(response: UniquenessCheckResponseAvro): T {
         assertInstanceOf(T::class.java, response.result)
         @Suppress("UNCHECKED_CAST")
         return response.result as T
