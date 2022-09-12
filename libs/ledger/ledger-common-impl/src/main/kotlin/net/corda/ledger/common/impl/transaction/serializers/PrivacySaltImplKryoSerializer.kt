@@ -1,4 +1,4 @@
-package net.corda.kryoserialization.serializers
+package net.corda.ledger.common.impl.transaction.serializers
 
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.Serializer
@@ -8,7 +8,7 @@ import net.corda.kryoserialization.readBytesWithLength
 import net.corda.kryoserialization.writeBytesWithLength
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 
-class PrivacySaltImplSerializer : Serializer<PrivacySaltImpl>() {
+class PrivacySaltImplKryoSerializer : Serializer<PrivacySaltImpl>() {
     override fun write(kryo: Kryo, output: Output, obj: PrivacySaltImpl) {
         output.writeBytesWithLength(obj.bytes)
     }

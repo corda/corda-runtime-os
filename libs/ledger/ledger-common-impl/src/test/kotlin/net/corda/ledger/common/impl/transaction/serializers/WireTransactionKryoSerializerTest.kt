@@ -1,4 +1,4 @@
-package net.corda.kryoserialization.serializers
+package net.corda.ledger.common.impl.transaction.serializers
 
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.io.Input
@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test
 import java.util.*
 import de.javakaffee.kryoserializers.ArraysAsListSerializer
 
-class WireTransactionKryoSerializationTest {
+class WireTransactionKryoSerializerTest {
     companion object {
         private val schemeMetadata = CipherSchemeMetadataImpl()
 
@@ -59,7 +59,7 @@ class WireTransactionKryoSerializationTest {
         val wireTransactionKryoSerializer = WireTransactionKryoSerializer(merkleTreeFactory, digestService)
 
         val kryo = Kryo()
-        kryo.addDefaultSerializer(PrivacySaltImpl::class.java, PrivacySaltImplSerializer())
+        kryo.addDefaultSerializer(PrivacySaltImpl::class.java, PrivacySaltImplKryoSerializer())
         kryo.addDefaultSerializer(Arrays.asList("").javaClass, ArraysAsListSerializer())
         val output = Output(5000)
         wireTransactionKryoSerializer.write(kryo, output, wireTransaction)

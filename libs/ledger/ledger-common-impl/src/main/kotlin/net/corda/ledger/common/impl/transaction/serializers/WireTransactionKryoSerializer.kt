@@ -1,4 +1,4 @@
-package net.corda.kryoserialization.serializers
+package net.corda.ledger.common.impl.transaction.serializers
 
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.Serializer
