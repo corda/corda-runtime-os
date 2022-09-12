@@ -11,6 +11,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
+import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 
@@ -21,6 +22,9 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
                                              membershipQueryClient: MembershipQueryClient): LinkManagerGroupPolicyProvider {
 
 
+    private companion object {
+        val logger = contextLogger()
+    }
     private val dependentChildren = setOf(
         LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
         LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
@@ -67,6 +71,7 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
         }
 
         val trustedCertificates = groupPolicy.p2pParameters.tlsTrustRoots.toList()
+        logger.info("size of trustroots ${trustedCertificates.size}")
 
         return GroupPolicyListener.GroupInfo(holdingIdentity, networkType, protocolModes, trustedCertificates)
     }
