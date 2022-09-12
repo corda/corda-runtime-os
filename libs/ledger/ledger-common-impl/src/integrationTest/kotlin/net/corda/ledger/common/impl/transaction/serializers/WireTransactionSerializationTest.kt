@@ -5,12 +5,9 @@ import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.TransactionMetaData
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
-import net.corda.libs.packaging.Cpi
-import net.corda.libs.packaging.Cpk
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFactory
-import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
@@ -40,26 +37,14 @@ import java.nio.file.Path
 @Component(service = [ SandboxManagementService::class ])
 class SandboxManagementService @Activate constructor(
     @Reference
-    private val cpiLoader: CpiLoader,
-    @Reference
     private val sandboxCreationService: SandboxCreationService
 ) {
-
-    private val cpi1: Cpi = loadCPI(resourceName = "empty-package.cpb")
-    val group1: SandboxGroup = createSandboxGroupFor(cpi1.cpks)
+    val group1: SandboxGroup = sandboxCreationService.createSandboxGroup(emptyList())
 
     @Suppress("unused")
     @Deactivate
     fun cleanup() {
         sandboxCreationService.unloadSandboxGroup(group1)
-    }
-
-    private fun loadCPI(resourceName: String): Cpi {
-        return cpiLoader.loadCPI(resourceName)
-    }
-
-    private fun createSandboxGroupFor(cpks: Iterable<Cpk>): SandboxGroup {
-        return sandboxCreationService.createSandboxGroup(cpks)
     }
 }
 

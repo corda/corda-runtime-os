@@ -8,13 +8,6 @@ plugins {
 
 description 'Corda ledger common - implementation'
 
-configurations {
-    cpbs {
-        canBeConsumed = false
-        transitive = false
-    }
-}
-
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
@@ -32,21 +25,10 @@ dependencies {
     testImplementation project(":libs:crypto:merkle-impl")
     testImplementation project(":libs:crypto:cipher-suite-impl")
 
-    cpbs project(path: 'cpks:empty', configuration: 'cordaCPB')
-
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation project(":libs:serialization:serialization-checkpoint-api")
-    integrationTestImplementation project('cpks:empty')
 
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
-}
-
-def integrationTestResources = tasks.named('processIntegrationTestResources', ProcessResources) {
-    from configurations.cpbs
-}
-
-tasks.named('testingBundle', Bundle) {
-    dependsOn integrationTestResources
 }
