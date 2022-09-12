@@ -105,7 +105,7 @@ class MemberOpsServiceProcessor(
             respFuture.complete(result)
         } catch (e: Throwable) {
             val message =
-                "Failed to handle ${request.request::class.java} for request ID ${request.requestContext.requestId}"
+                "${e.message}\nFailed to handle ${request.request::class.java} for request ID ${request.requestContext.requestId}"
             logger.error(message, e)
             respFuture.completeExceptionally(MembershipRegistrationException(message, e))
         }

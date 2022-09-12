@@ -27,9 +27,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.utilities.time.Clock
-import net.corda.utilities.time.UTCClock
-import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.utilities.time.ClockFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
@@ -47,24 +45,18 @@ import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity as HoldingI
 
 @Component(service = [PluggableRPCOps::class])
 // Primary constructor is for test. This is until a clock service is available
-internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
+internal class VirtualNodeRPCOpsImpl @Activate constructor(
+    @Reference(service = LifecycleCoordinatorFactory::class)
     coordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = ConfigurationReadService::class)
     configurationReadService: ConfigurationReadService,
+    @Reference(service = VirtualNodeInfoReadService::class)
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    @Reference(service = VirtualNodeSenderFactory::class)
     private val virtualNodeSenderFactory: VirtualNodeSenderFactory,
-    private var clock: Clock
+    @Reference(service = ClockFactory::class)
+    private var clockFactory: ClockFactory
 ) : VirtualNodeRPCOps, PluggableRPCOps<VirtualNodeRPCOps>, Lifecycle {
-
-    @Activate constructor(
-        @Reference(service = LifecycleCoordinatorFactory::class)
-        coordinatorFactory: LifecycleCoordinatorFactory,
-        @Reference(service = ConfigurationReadService::class)
-        configurationReadService: ConfigurationReadService,
-        @Reference(service = VirtualNodeInfoReadService::class)
-        virtualNodeInfoReadService: VirtualNodeInfoReadService,
-        @Reference(service = VirtualNodeSenderFactory::class)
-        virtualNodeSenderFactory: VirtualNodeSenderFactory,
-    ) : this(coordinatorFactory, configurationReadService, virtualNodeInfoReadService, virtualNodeSenderFactory, UTCClock())
 
     private companion object {
         private val requiredKeys = setOf(ConfigKeys.MESSAGING_CONFIG, ConfigKeys.RPC_CONFIG)
@@ -74,6 +66,8 @@ internal class VirtualNodeRPCOpsImpl @VisibleForTesting constructor(
         private const val SENDER = "SENDER"
         private const val CONFIG_HANDLE = "CONFIG_HANDLE"
     }
+
+    private val clock = clockFactory.createUTCClock()
 
     // Http RPC values
     override val targetInterface: Class<VirtualNodeRPCOps> = VirtualNodeRPCOps::class.java

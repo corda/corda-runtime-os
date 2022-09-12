@@ -134,8 +134,7 @@ class StaticMemberRegistrationService @Activate constructor(
             val groupPolicy = groupPolicyProvider.getGroupPolicy(member)
                 ?: throw CordaRuntimeException("Could not find group policy for member: [$member]")
             val (memberInfo, records) = parseMemberTemplate(member, groupPolicy, keyScheme)
-            records.publish()
-            listOf(createHostedIdentity(member, groupPolicy)).publish()
+            (records + createHostedIdentity(member, groupPolicy)).publish()
             persistRegistrationRequest(registrationId, memberInfo)
         } catch (e: Exception) {
             logger.warn("Registration failed. Reason:", e)

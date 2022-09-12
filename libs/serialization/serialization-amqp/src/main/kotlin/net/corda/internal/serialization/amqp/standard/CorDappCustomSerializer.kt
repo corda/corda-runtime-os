@@ -96,7 +96,7 @@ class CorDappCustomSerializer(
                              context: SerializationContext, debugIndent: Int
     ) {
         @Suppress("unchecked_cast")
-        val proxy = (serializer as SerializationCustomSerializer<Any, Any?>).toProxy(obj)
+        val proxy = (serializer as SerializationCustomSerializer<Any, Any>).toProxy(obj)
 
         data.withDescribed(descriptor) {
             data.withList {

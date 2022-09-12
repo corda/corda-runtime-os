@@ -3,7 +3,9 @@ package net.corda.processor.member
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.crypto.config.impl.addDefaultBootCryptoConfig
+import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
+import net.corda.crypto.config.impl.createDefaultCryptoConfig
+import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -20,6 +22,7 @@ import net.corda.membership.registration.RegistrationProxy
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
+import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MembershipConfig.MAX_DURATION_BETWEEN_SYNC_REQUESTS_MINUTES
 import net.corda.test.util.eventually
@@ -84,28 +87,39 @@ class MemberProcessorTestUtils {
                         ConfigValueFactory.fromAnyRef(100L))
             )
 
-        fun makeMessagingConfig(boostrapConfig: SmartConfig): SmartConfig =
-            boostrapConfig.factory.create(
+        private val smartConfigFactory: SmartConfigFactory = SmartConfigFactory.create(
+            ConfigFactory.parseString(
+                """
+            ${SmartConfigFactory.SECRET_PASSPHRASE_KEY}=passphrase
+            ${SmartConfigFactory.SECRET_SALT_KEY}=salt
+        """.trimIndent()
+            )
+        )
+
+        fun makeCryptoConfig(): SmartConfig = smartConfigFactory.createDefaultCryptoConfig(
+            KeyCredentials("master-key-pass", "master-key-salt")
+        )
+
+        fun makeMessagingConfig(): SmartConfig =
+            smartConfigFactory.create(
                 ConfigFactory.parseString(MESSAGING_CONFIGURATION_VALUE)
                     .withFallback(ConfigFactory.parseString(BOOT_CONFIGURATION))
             )
 
         fun makeBootstrapConfig(extra: Map<String, SmartConfig>): SmartConfig {
-            var cfg = SmartConfigFactory.create(
-                ConfigFactory.parseString(
-                    """
-            ${SmartConfigFactory.SECRET_PASSPHRASE_KEY}=passphrase
-            ${SmartConfigFactory.SECRET_SALT_KEY}=salt
-                    """.trimIndent()
-                )
-            ).create(
+            var cfg = smartConfigFactory.create(
                 ConfigFactory
                     .parseString(MESSAGING_CONFIGURATION_VALUE)
                     .withFallback(
                         ConfigFactory.parseString(BOOT_CONFIGURATION)
                     )
-            ).addDefaultBootCryptoConfig(
-                fallbackMasterWrappingKey = KeyCredentials("soft-passphrase", "soft-salt")
+                    .withFallback(
+                        ConfigFactory.parseMap(
+                            mapOf(
+                                BOOT_CRYPTO to createCryptoBootstrapParamsMap(CryptoConsts.SOFT_HSM_ID)
+                            )
+                        )
+                    )
             )
             extra.forEach {
                 cfg = cfg.withFallback(cfg.withValue(it.key, ConfigValueFactory.fromMap(it.value.root().unwrapped())))
@@ -265,6 +279,8 @@ class MemberProcessorTestUtils {
 
         fun Publisher.publishMembershipConf(membershipConfig: SmartConfig) =
             publishConf(ConfigKeys.MEMBERSHIP_CONFIG, membershipConfig.root().render())
+        fun Publisher.publishDefaultCryptoConf(cryptoConfig: SmartConfig) =
+            publishConf(ConfigKeys.CRYPTO_CONFIG, cryptoConfig.root().render())
 
         private fun getSampleGroupPolicy(fileName: String): String {
             val url = this::class.java.getResource(fileName)

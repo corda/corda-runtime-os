@@ -61,7 +61,7 @@ class InlineSubFlowSmokeTestFlow(
             session.send(InitiatedSmokeTestMessage("Initiate"))
         }
         val initiatedSmokeTestMessage =
-            session.sendAndReceive<InitiatedSmokeTestMessage>(InitiatedSmokeTestMessage(message)).unwrap { it }
+            session.sendAndReceive<InitiatedSmokeTestMessage>(InitiatedSmokeTestMessage(message))
         log.info("SubFlow - Received response from session '$session'.")
         return initiatedSmokeTestMessage
     }
@@ -78,7 +78,7 @@ class InitiatingSubFlowResponderSmokeTestFlow : ResponderFlow {
     override fun call(session: FlowSession) {
         session.receive<InitiatedSmokeTestMessage>()
         log.info("SubFlow - Initiated.")
-        val received = session.receive<InitiatedSmokeTestMessage>().unwrap { it }
+        val received = session.receive<InitiatedSmokeTestMessage>()
         log.info("SubFlow - Received message from session '$session'.")
         session.send(InitiatedSmokeTestMessage("echo:${received.message}"))
         log.info("SubFlow - Sent message to session '$session'.")

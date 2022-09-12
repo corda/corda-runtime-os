@@ -44,7 +44,7 @@ fun startRpcFlow(
     }
 }
 
-fun startRpcFlow(holdingId: String, args: Map<String, Any>, flowName: String): String {
+fun startRpcFlow(holdingId: String, args: Map<String, Any>, flowName: String, expectedCode: Int = 202): String {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
@@ -59,7 +59,7 @@ fun startRpcFlow(holdingId: String, args: Map<String, Any>, flowName: String): S
                     escapeJson(ObjectMapper().writeValueAsString(args))
                 )
             }
-            condition { it.code == 202 }
+            condition { it.code == expectedCode }
         }
 
         requestId
@@ -182,9 +182,9 @@ fun createKeyFor(holdingId: String, alias: String, category: String, scheme: Str
             command { createKey(holdingId, alias, category, scheme) }
             condition { it.code == 200 }
             failMessage("Failed to create key for holding id '$holdingId'")
-        }.body
+        }.toJson()
         assertWithRetry {
-            command { getKey(holdingId, keyId) }
+            command { getKey(holdingId, keyId["id"].textValue()) }
             condition { it.code == 200 }
             failMessage("Failed to get key for holding id '$holdingId' and key id '$keyId'")
         }.body

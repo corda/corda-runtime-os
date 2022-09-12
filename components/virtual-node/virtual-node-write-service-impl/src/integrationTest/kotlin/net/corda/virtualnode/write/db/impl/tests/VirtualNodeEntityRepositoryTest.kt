@@ -100,33 +100,33 @@ internal class VirtualNodeEntityRepositoryTest {
         }
 
         // Search by full file checksum
-        var cpiMetadata = repository.getCPIMetadataByChecksum(fileChecksum)
+        var cpiMetadata = repository.getCpiMetadataByChecksum(fileChecksum)
         Assertions.assertThat(cpiMetadata).isEqualTo(expectedCpiMetadata)
 
         // Search by hex file checksum
-        cpiMetadata = repository.getCPIMetadataByChecksum(fileChecksum)
+        cpiMetadata = repository.getCpiMetadataByChecksum(fileChecksum)
         Assertions.assertThat(cpiMetadata).isEqualTo(expectedCpiMetadata)
 
         // Search by partial file checksum
         // We should not match anything less than the 12-char 'short hash'
-        cpiMetadata = repository.getCPIMetadataByChecksum("56ABCD")
+        cpiMetadata = repository.getCpiMetadataByChecksum("56ABCD")
         Assertions.assertThat(cpiMetadata).isNotEqualTo(expectedCpiMetadata)
 
         // Search by partial file checksum using different case
         // We should not match anything less than the 12-char 'short hash'
-        cpiMetadata = repository.getCPIMetadataByChecksum("56AbCd")
+        cpiMetadata = repository.getCpiMetadataByChecksum("56AbCd")
         Assertions.assertThat(cpiMetadata).isNotEqualTo(expectedCpiMetadata)
 
         // Search by partial file checksum
-        cpiMetadata = repository.getCPIMetadataByChecksum("123456ABCDEF")
+        cpiMetadata = repository.getCpiMetadataByChecksum("123456ABCDEF")
         Assertions.assertThat(cpiMetadata).isEqualTo(expectedCpiMetadata)
 
         // Search by partial file checksum using different case
-        cpiMetadata = repository.getCPIMetadataByChecksum("123456AbCdEf")
+        cpiMetadata = repository.getCpiMetadataByChecksum("123456AbCdEf")
         Assertions.assertThat(cpiMetadata).isEqualTo(expectedCpiMetadata)
 
         // Noll returned if not found
-        cpiMetadata = repository.getCPIMetadataByChecksum("111111")
+        cpiMetadata = repository.getCpiMetadataByChecksum("111111")
         Assertions.assertThat(cpiMetadata).isNull()
     }
 
@@ -158,9 +158,9 @@ internal class VirtualNodeEntityRepositoryTest {
             it.persist(cpiMetadataEntity)
         }
 
-        Assertions.assertThat(repository.getCPIMetadataByChecksum("")).isNull()
-        Assertions.assertThat(repository.getCPIMetadataByChecksum("123456")).isNull()
-        Assertions.assertThat(repository.getCPIMetadataByChecksum(hexFileChecksum.substring(0, 12))).isEqualTo(expectedCpiMetadata)
+        Assertions.assertThat(repository.getCpiMetadataByChecksum("")).isNull()
+        Assertions.assertThat(repository.getCpiMetadataByChecksum("123456")).isNull()
+        Assertions.assertThat(repository.getCpiMetadataByChecksum(hexFileChecksum.substring(0, 12))).isEqualTo(expectedCpiMetadata)
     }
 
     @Test

@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
 
+const val CODESIGNER_CERT = "/cordadevcodesign.pem"
 // The CPB we're using in this test
 const val TEST_CPB = "/META-INF/flow-worker-dev.cpb"
 const val CACHE_INVALIDATION_TEST_CPB = "/META-INF/cache-invalidation-testing/flow-worker-dev.cpb"
@@ -58,7 +59,25 @@ class VirtualNodeRpcTest {
     /**
      * As long as no-one assigns an order lower than this, this test runs first, and all others, after, which is fine.
      *
-     * This *first* test, uploads a CPI into the system.  It must pass.
+     * This *first* test, uploads codesign certificate into the system.
+     */
+    @Test
+    @Order(5)
+    fun `can import codesigner certificate`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+            assertWithRetry {
+                // Certificate upload can be slow in the combined worker, especially after it has just started up.
+                timeout(Duration.ofSeconds(100))
+                interval(Duration.ofSeconds(1))
+                command { importCertificate(CODESIGNER_CERT, "codesigner", "cordadev") }
+                condition { it.code == 204 }
+            }
+        }
+    }
+
+    /**
+     * This test, uploads a CPI into the system.
      */
     @Test
     @Order(10)

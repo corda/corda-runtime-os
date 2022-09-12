@@ -5,8 +5,8 @@ import net.corda.flow.application.persistence.external.events.AbstractPersistenc
 import net.corda.flow.application.persistence.external.events.NamedQueryExternalEventFactory
 import net.corda.flow.application.persistence.external.events.NamedQueryParameters
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.flow.fiber.FlowFiberSerializationService
 import net.corda.v5.application.persistence.CordaPersistenceException
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
@@ -27,7 +27,7 @@ class NamedParameterisedQueryTest {
     private class TestObject
 
     private val externalEventExecutor = mock<ExternalEventExecutor>()
-    private val flowFiberSerializationService = mock<FlowFiberSerializationService>()
+    private val serializationService = mock<SerializationService>()
     private val serializedBytes = mock<SerializedBytes<Any>>()
     private val byteBuffer = ByteBuffer.wrap("bytes".toByteArray())
     private val factoryArgumentCaptor = argumentCaptor<Class<out AbstractPersistenceExternalEventFactory<Any>>>()
@@ -36,7 +36,7 @@ class NamedParameterisedQueryTest {
 
     private val query = NamedParameterisedQuery(
         externalEventExecutor = externalEventExecutor,
-        flowFiberSerializationService = flowFiberSerializationService,
+        serializationService = serializationService,
         queryName = "",
         parameters = mutableMapOf(),
         limit = 1,
@@ -46,7 +46,7 @@ class NamedParameterisedQueryTest {
 
     @BeforeEach
     fun setup() {
-        whenever(flowFiberSerializationService.serialize(serializeArgumentCaptor.capture())).thenReturn(serializedBytes)
+        whenever(serializationService.serialize(serializeArgumentCaptor.capture())).thenReturn(serializedBytes)
         whenever(serializedBytes.bytes).thenReturn(byteBuffer.array())
     }
 
@@ -54,7 +54,7 @@ class NamedParameterisedQueryTest {
     fun `setLimit updates the limit`() {
         whenever(externalEventExecutor.execute(factoryArgumentCaptor.capture(), parametersArgumentCaptor.capture()))
             .thenReturn(listOf(byteBuffer))
-        whenever(flowFiberSerializationService.deserialize<TestObject>(any<ByteArray>(), any()))
+        whenever(serializationService.deserialize<TestObject>(any<ByteArray>(), any()))
             .thenReturn(TestObject())
 
         query.execute()
@@ -69,7 +69,7 @@ class NamedParameterisedQueryTest {
     fun `setOffset updates the offset`() {
         whenever(externalEventExecutor.execute(factoryArgumentCaptor.capture(), parametersArgumentCaptor.capture()))
             .thenReturn(listOf(byteBuffer))
-        whenever(flowFiberSerializationService.deserialize<TestObject>(any<ByteArray>(), any()))
+        whenever(serializationService.deserialize<TestObject>(any<ByteArray>(), any()))
             .thenReturn(TestObject())
 
         query.execute()
@@ -94,7 +94,7 @@ class NamedParameterisedQueryTest {
     fun `setParameter sets a parameter`() {
         whenever(externalEventExecutor.execute(factoryArgumentCaptor.capture(), parametersArgumentCaptor.capture()))
             .thenReturn(listOf(byteBuffer))
-        whenever(flowFiberSerializationService.deserialize<TestObject>(any<ByteArray>(), any()))
+        whenever(serializationService.deserialize<TestObject>(any<ByteArray>(), any()))
             .thenReturn(TestObject())
 
         query.execute()
@@ -122,7 +122,7 @@ class NamedParameterisedQueryTest {
     fun `setParameters overwrites all parameters`() {
         whenever(externalEventExecutor.execute(factoryArgumentCaptor.capture(), parametersArgumentCaptor.capture()))
             .thenReturn(listOf(byteBuffer))
-        whenever(flowFiberSerializationService.deserialize<TestObject>(any<ByteArray>(), any()))
+        whenever(serializationService.deserialize<TestObject>(any<ByteArray>(), any()))
             .thenReturn(TestObject())
 
         query.execute()
@@ -153,7 +153,7 @@ class NamedParameterisedQueryTest {
         val result = TestObject()
         whenever(externalEventExecutor.execute(factoryArgumentCaptor.capture(), any()))
             .thenReturn(listOf(byteBuffer))
-        whenever(flowFiberSerializationService.deserialize<TestObject>(any<ByteArray>(), any()))
+        whenever(serializationService.deserialize<TestObject>(any<ByteArray>(), any()))
             .thenReturn(result)
 
         query.setOffset(1)
@@ -162,8 +162,8 @@ class NamedParameterisedQueryTest {
 
         assertEquals(listOf(result), query.execute())
 
-        verify(flowFiberSerializationService).deserialize<TestObject>(any<ByteArray>(), any())
-        verify(flowFiberSerializationService).serialize<String>(any())
+        verify(serializationService).deserialize<TestObject>(any<ByteArray>(), any())
+        verify(serializationService).serialize<String>(any())
         assertEquals(NamedQueryExternalEventFactory::class.java, factoryArgumentCaptor.firstValue)
     }
 
@@ -178,8 +178,8 @@ class NamedParameterisedQueryTest {
 
         assertThat(query.execute()).isEmpty()
 
-        verify(flowFiberSerializationService, never()).deserialize<TestObject>(any<ByteArray>(), any())
-        verify(flowFiberSerializationService).serialize<String>(any())
+        verify(serializationService, never()).deserialize<TestObject>(any<ByteArray>(), any())
+        verify(serializationService).serialize<String>(any())
         assertEquals(NamedQueryExternalEventFactory::class.java, factoryArgumentCaptor.firstValue)
     }
 

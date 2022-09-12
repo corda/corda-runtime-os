@@ -91,7 +91,7 @@ class MemberLookupRpcOpsImpl @Activate constructor(
         state: String?,
         country: String?
     ) = impl.lookup(
-        ShortHash.of(holdingIdentityShortHash),
+        holdingIdentityShortHash.toShortHash(),
         commonName,
         organisation,
         organisationUnit,

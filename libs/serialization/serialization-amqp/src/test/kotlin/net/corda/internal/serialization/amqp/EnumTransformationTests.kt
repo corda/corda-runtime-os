@@ -16,8 +16,8 @@ import kotlin.test.assertFailsWith
 class EnumTransformationTests {
 
     @CordaSerializationTransformEnumDefaults(
-            CordaSerializationTransformEnumDefault(old = "C", new = "D"),
-            CordaSerializationTransformEnumDefault(old = "D", new = "E")
+            CordaSerializationTransformEnumDefault(oldName = "C", newName = "D"),
+            CordaSerializationTransformEnumDefault(oldName = "D", newName = "E")
     )
     @CordaSerializationTransformRenames(
         CordaSerializationTransformRename(to = "BOB", from = "FRED"),

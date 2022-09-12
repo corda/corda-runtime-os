@@ -16,8 +16,10 @@ import net.corda.crypto.ecies.EphemeralKeyPairEncryptor
 import net.corda.crypto.ecies.StableKeyPairDecryptor
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.flow.factory.CryptoFlowOpsTransformerFactory
+import net.corda.crypto.impl.emptyKeyValuePairList
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
@@ -51,13 +53,14 @@ import net.corda.processors.crypto.tests.infra.FlowOpsResponses
 import net.corda.processors.crypto.tests.infra.RESPONSE_TOPIC
 import net.corda.processors.crypto.tests.infra.makeBootstrapConfig
 import net.corda.processors.crypto.tests.infra.makeClientId
+import net.corda.processors.crypto.tests.infra.makeCryptoConfig
 import net.corda.processors.crypto.tests.infra.makeMessagingConfig
 import net.corda.processors.crypto.tests.infra.publishVirtualNodeInfo
 import net.corda.processors.crypto.tests.infra.randomDataByteArray
 import net.corda.processors.crypto.tests.infra.startAndWait
 import net.corda.schema.Schemas.Config.Companion.CONFIG_TOPIC
 import net.corda.schema.Schemas.Crypto.Companion.FLOW_OPS_MESSAGE_TOPIC
-import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
+import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.test.util.eventually
 import net.corda.test.util.identity.createTestHoldingIdentity
@@ -170,13 +173,11 @@ class CryptoProcessorTests {
 
         private lateinit var connectionIds: Map<String, UUID>
 
-        private val boostrapConfig = makeBootstrapConfig(
-            mapOf(
-                BOOT_DB_PARAMS to clusterDb.config
-            )
-        )
+        private val boostrapConfig = makeBootstrapConfig(clusterDb.config)
 
-        private val messagingConfig = makeMessagingConfig(boostrapConfig)
+        private val messagingConfig = makeMessagingConfig()
+
+        private val cryptoConfig = makeCryptoConfig()
 
         @JvmStatic
         @BeforeAll
@@ -201,7 +202,7 @@ class CryptoProcessorTests {
 
         private fun setupPrerequisites() {
             // Creating this publisher first (using the messagingConfig) will ensure we're forcing
-            // the in-memory message bus. Otherwise we may attempt to use a real database for the test
+            // the in-memory message bus. Otherwise, we may attempt to use a real database for the test
             // and that can cause message bus conflicts when the tests are run in parallel.
             publisher = publisherFactory.createPublisher(PublisherConfig(CLIENT_ID), messagingConfig)
             logger.info("Publishing prerequisite config")
@@ -213,6 +214,16 @@ class CryptoProcessorTests {
                         Configuration(
                             messagingConfig.root().render(),
                             messagingConfig.root().render(),
+                            0,
+                            ConfigurationSchemaVersion(1, 0)
+                        )
+                    ),
+                    Record(
+                        CONFIG_TOPIC,
+                        CRYPTO_CONFIG,
+                        Configuration(
+                            cryptoConfig.root().render(),
+                            cryptoConfig.root().render(),
                             0,
                             ConfigurationSchemaVersion(1, 0)
                         )
@@ -697,7 +708,7 @@ class CryptoProcessorTests {
                 publicKey = publicKey,
                 signatureSpec = spec,
                 data = data,
-                flowExternalEventContext = ExternalEventContext(requestId, key)
+                flowExternalEventContext = ExternalEventContext(requestId, key, KeyValuePairList(emptyList()))
             )
             logger.info(
                 "Publishing: createSign({}, {}, {}), request id: $requestId, flow id: $key",
@@ -743,7 +754,7 @@ class CryptoProcessorTests {
                 publicKey = publicKey,
                 signatureSpec = spec,
                 data = data,
-                flowExternalEventContext = ExternalEventContext(requestId, key)
+                flowExternalEventContext = ExternalEventContext(requestId, key, KeyValuePairList(emptyList()))
             )
             logger.info(
                 "Publishing: createSign({}, {}, {})",

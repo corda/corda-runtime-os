@@ -2,7 +2,7 @@ package net.corda.crypto.persistence.impl.tests.infra
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import net.corda.crypto.config.impl.createDefaultCryptoConfig
+import net.corda.crypto.config.impl.createTestCryptoConfig
 import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -54,7 +54,7 @@ object CryptoConfigurationSetup {
 
 
     fun setup(publisher: Publisher) {
-        val cryptoConfig = createDefaultCryptoConfig(
+        val cryptoConfig = createTestCryptoConfig(
             KeyCredentials("passphrase", "salt")
         ) .root().render()
         val virtualNodeInfo = VirtualNodeInfo(
