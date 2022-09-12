@@ -134,6 +134,19 @@ bootstrap:
   db:
     # -- Indicates whether DB bootstrap is enabled as part of installation
     enabled: true
+    # crypto configuration
+    crypto:
+      # JDBC connection pool configuration for crypto DB
+      dbConnectionPool:
+        # -- maximum JDBC connection pool size for crypto DB
+        maxSize: 5
+    # RBAC configuration
+    rbac:
+      # JDBC connection pool configuration for RBAC DB
+      dbConnectionPool:
+        # -- maximum JDBC connection pool size for RBAC DB
+        maxSize: 5
+
 
   # Configuration for Kafka bootstrap
   kafka:
@@ -198,6 +211,10 @@ workers:
       requests: {}
       # -- the CPU/memory resource limits for the crypto worker containers
       limits: {}
+    # crypto worker JDBC connection pool configuration for cluster DB
+    clusterDbConnectionPool:
+      # -- crypto worker maximum JDBC connection pool size for cluster DB
+      maxSize: 5
 
   # DB worker configuration
   db:
@@ -234,6 +251,10 @@ workers:
       requests: {}
       # -- the CPU/memory resource limits for the DB worker containers
       limits: {}
+    # DB worker JDBC connection pool configuration for cluster DB
+    clusterDbConnectionPool:
+      # -- DB worker maximum JDBC connection pool size for cluster DB
+      maxSize: 5
 
   # flow worker configuration
   flow:
