@@ -73,9 +73,9 @@ class GroupPolicyProviderImpl @Activate constructor(
     private companion object {
         val logger = contextLogger()
         const val CONSUMER_GROUP = "membership.group.policy.provider.group"
-
-        val groupPolicies: MutableMap<HoldingIdentity, GroupPolicy?> = ConcurrentHashMap()
     }
+    private val groupPolicies: MutableMap<HoldingIdentity, GroupPolicy?> = ConcurrentHashMap()
+
     private var configHandle: AutoCloseable? = null
 
     private val coordinator = lifecycleCoordinatorFactory
@@ -305,7 +305,7 @@ class GroupPolicyProviderImpl @Activate constructor(
      * Registers callback when MGM has finished its registration and has the final group policy persisted.
      * This will make sure we have the trust stores and other important information in the group policy ready.
      */
-    inner class FinishedRegistrationsProcessor : DurableProcessor<String, MembershipEvent> {
+    internal inner class FinishedRegistrationsProcessor : DurableProcessor<String, MembershipEvent> {
         @Suppress("NestedBlockDepth")
         override fun onNext(events: List<Record<String, MembershipEvent>>): List<Record<*, *>> {
             logger.info("Received event after mgm registration.")

@@ -43,7 +43,6 @@ import net.corda.virtualnode.read.VirtualNodeInfoListener
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -156,7 +155,7 @@ class GroupPolicyProviderImplTest {
     }
 
     @Captor
-    val lifecycleEventHandler = argumentCaptor<LifecycleEventHandler>()
+    private val lifecycleEventHandler = argumentCaptor<LifecycleEventHandler>()
     private val configs = setOf(BOOT_CONFIG, MESSAGING_CONFIG)
     private val dependencies = setOf(
         LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
@@ -219,7 +218,7 @@ class GroupPolicyProviderImplTest {
     private fun postEvent(event: LifecycleEvent) = lifecycleEventHandler.firstValue.processEvent(event, coordinator)
 
     // set up mock for new CPI and send update to virtual node callback
-    fun setCpi(holdingIdentity: HoldingIdentity, cpiIdentifier: CpiIdentifier) {
+    private fun setCpi(holdingIdentity: HoldingIdentity, cpiIdentifier: CpiIdentifier) {
         val vnode = createVirtualNodeInfo(holdingIdentity, cpiIdentifier)
         doReturn(vnode).whenever(virtualNodeInfoReadService).get(holdingIdentity)
         virtualNodeListener?.onUpdate(
@@ -239,12 +238,6 @@ class GroupPolicyProviderImplTest {
             subscriptionFactory,
             configurationReadService
         )
-    }
-
-    @AfterEach
-    fun tearDown() {
-        // clears group policy cache after each test run
-        postStopEvent()
     }
 
     fun startComponentAndDependencies() {
