@@ -1,7 +1,7 @@
 package net.corda.crypto.persistence.impl.tests
 
 import net.corda.crypto.component.test.utils.TestConfigurationReadService
-import net.corda.crypto.config.impl.createDefaultCryptoConfig
+import net.corda.crypto.config.impl.createTestCryptoConfig
 import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.crypto.persistence.impl.CryptoConnectionsFactoryImpl
 import net.corda.crypto.persistence.impl.tests.infra.TestDbConnectionManager
@@ -33,7 +33,7 @@ class CryptoConnectionsFactoryTests {
         configurationReadService = TestConfigurationReadService(
             coordinatorFactory,
             configUpdates = listOf(
-                CRYPTO_CONFIG to createDefaultCryptoConfig(KeyCredentials("pass", "salt"))
+                CRYPTO_CONFIG to createTestCryptoConfig(KeyCredentials("pass", "salt"))
             )
         ).also {
             it.start()

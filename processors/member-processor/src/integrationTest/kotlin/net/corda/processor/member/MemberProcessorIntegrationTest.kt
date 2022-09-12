@@ -46,7 +46,9 @@ import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookUpBySes
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookup
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.lookupFails
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.makeBootstrapConfig
+import net.corda.processor.member.MemberProcessorTestUtils.Companion.makeCryptoConfig
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.makeMessagingConfig
+import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishDefaultCryptoConf
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishMessagingConf
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.publishRawGroupPolicyData
 import net.corda.processor.member.MemberProcessorTestUtils.Companion.sampleGroupPolicy1
@@ -162,7 +164,9 @@ class MemberProcessorIntegrationTest {
             )
         )
 
-        private val messagingConfig = makeMessagingConfig(boostrapConfig)
+        private val messagingConfig = makeMessagingConfig()
+
+        private val cryptoConfig = makeCryptoConfig()
 
         private lateinit var connectionIds: Map<String, UUID>
 
@@ -194,6 +198,7 @@ class MemberProcessorIntegrationTest {
             ).also { it.startAndWait() }
 
             publisher.publishMessagingConf(messagingConfig)
+            publisher.publishDefaultCryptoConf(cryptoConfig)
             publisher.publishRawGroupPolicyData(
                 virtualNodeInfoReader,
                 cpiInfoReader,
