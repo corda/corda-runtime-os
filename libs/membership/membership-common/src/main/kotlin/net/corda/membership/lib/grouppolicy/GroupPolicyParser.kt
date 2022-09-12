@@ -8,6 +8,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
+import kotlin.jvm.Throws
 
 interface GroupPolicyParser {
 
@@ -28,6 +29,7 @@ interface GroupPolicyParser {
             }
         }
     }
+
     /**
      * Parses a GroupPolicy from [String] to [GroupPolicy].
      *
@@ -38,6 +40,7 @@ interface GroupPolicyParser {
      * @throws [BadGroupPolicyException] if the input string is null, blank, cannot be parsed, or if persisted
      * properties cannot be retrieved.
      */
+    @Throws(BadGroupPolicyException::class)
     fun parse(
         holdingIdentity: HoldingIdentity,
         groupPolicy: String?,
@@ -53,6 +56,7 @@ interface GroupPolicyParser {
      *
      * @throws [BadGroupPolicyException] if the input string is null, blank, or cannot be parsed.
      */
+    @Throws(BadGroupPolicyException::class)
     fun getMgmInfo(
         holdingIdentity: HoldingIdentity,
         groupPolicy: String
