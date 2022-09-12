@@ -41,4 +41,17 @@ class ExamplePluginTest {
 
         assertTrue(outText.contains("Hello from the example plugin!"))
     }
+
+    @Test
+    fun testUnknownCommand() {
+
+        val app = ExamplePlugin.ExamplePluginEntry()
+        val outText = tapSystemErrNormalized {
+            CommandLine(
+                app
+            ).execute("unknown-command")
+        }
+
+        assertTrue(outText.contains("Unmatched argument at index 0: 'unknown-command'"), "Actual: $outText")
+    }
 }
