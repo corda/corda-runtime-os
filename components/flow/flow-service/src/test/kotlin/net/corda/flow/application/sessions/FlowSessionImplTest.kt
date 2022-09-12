@@ -97,7 +97,7 @@ class FlowSessionImplTest {
     @Test
     fun `sendAndReceive returns the result of the flow's suspension`() {
         val session = createInitiatedSession()
-        assertEquals(HELLO_THERE, session.sendAndReceive(String::class.java, HI).unwrap { it })
+        assertEquals(HELLO_THERE, session.sendAndReceive(String::class.java, HI))
         verify(flowFiber).suspend(any<FlowIORequest.SendAndReceive>())
     }
 
@@ -136,7 +136,7 @@ class FlowSessionImplTest {
     @Test
     fun `receive returns the result of the flow's suspension`() {
         val session = createInitiatedSession()
-        assertEquals(HELLO_THERE, session.receive(String::class.java).unwrap { it })
+        assertEquals(HELLO_THERE, session.receive(String::class.java))
         verify(flowFiber).suspend(any<FlowIORequest.Receive>())
     }
 

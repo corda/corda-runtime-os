@@ -8,7 +8,6 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.state.FlowContext
 import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.UntrustworthyData
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
@@ -43,7 +42,7 @@ class FlowSessionImpl(
     private val fiber: FlowFiber get() = flowFiberService.getExecutingFiber()
 
     @Suspendable
-    override fun <R : Any> sendAndReceive(receiveType: Class<R>, payload: Any): UntrustworthyData<R> {
+    override fun <R : Any> sendAndReceive(receiveType: Class<R>, payload: Any): R {
         requireBoxedType(receiveType)
         confirmSession()
         val request = FlowIORequest.SendAndReceive(mapOf(sourceSessionId to serialize(payload)))
@@ -52,7 +51,7 @@ class FlowSessionImpl(
     }
 
     @Suspendable
-    override fun <R : Any> receive(receiveType: Class<R>): UntrustworthyData<R> {
+    override fun <R : Any> receive(receiveType: Class<R>): R {
         requireBoxedType(receiveType)
         confirmSession()
         val request = FlowIORequest.Receive(setOf(sourceSessionId))
@@ -106,10 +105,10 @@ class FlowSessionImpl(
     private fun <R : Any> deserializeReceivedPayload(
         received: Map<String, ByteArray>,
         receiveType: Class<R>
-    ): UntrustworthyData<R> {
+    ): R {
         return received[sourceSessionId]?.let {
             try {
-                UntrustworthyData(serializationService.deserializeAndCheckType(it, receiveType))
+                serializationService.deserializeAndCheckType(it, receiveType)
             } catch (e: DeserializedWrongAMQPObjectException) {
                 throw CordaRuntimeException(
                     "Expecting to receive a ${e.expectedType} but received a ${e.deserializedType} instead, payload: " +

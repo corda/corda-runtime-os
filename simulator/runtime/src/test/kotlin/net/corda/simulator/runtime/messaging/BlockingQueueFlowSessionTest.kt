@@ -36,6 +36,6 @@ class BlockingQueueFlowSessionTest {
         sendingSession.send(payload)
 
         // Then we should be able to return the response that appears in the queue
-        assertThat(receivingSession.receive<PingAckMessage>().unwrap { it }.message, `is`("Ping"))
+        assertThat(receivingSession.receive<PingAckMessage>().message, `is`("Ping"))
     }
 }
