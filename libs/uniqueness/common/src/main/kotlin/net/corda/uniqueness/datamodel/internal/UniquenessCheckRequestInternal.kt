@@ -26,7 +26,7 @@ data class UniquenessCheckRequestInternal private constructor(
 
             with (externalRequest) {
                 return UniquenessCheckRequestInternal(
-                    SecureHash.create(txId),
+                    SecureHash.parse(txId),
                     txId,
                     inputStates?.map { it.toStateRef() } ?: emptyList(),
                     referenceStates?.map { it.toStateRef() } ?: emptyList(),
