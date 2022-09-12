@@ -242,9 +242,9 @@ class MemberSynchronisationServiceImpl internal constructor(
             val viewOwningMember = updates.synchronisationMetaData.member.toCorda()
             val mgm = updates.synchronisationMetaData.mgm.toCorda()
             logger.info("Member $viewOwningMember received membership updates from $mgm.")
-            cancelCurrentRequestAndScheduleNewOne(viewOwningMember, mgm)
 
             try {
+                cancelCurrentRequestAndScheduleNewOne(viewOwningMember, mgm)
                 val updateMembersInfo = updates.membershipPackage.memberships.memberships.map { update ->
                     val memberContext = deserializer.deserialize(update.memberContext.array())
                         ?: throw CordaRuntimeException("Invalid member context")
