@@ -281,7 +281,8 @@ data class CommonConfig(val configFromFile: Config, val clients: Int, val simula
     companion object {
         fun read(parameters: CliParameters): CommonConfig {
             val configFromFile = parameters.simulatorConfig?.let { ConfigFactory.parseFile(it) } ?: ConfigFactory.empty()
-            val clients = parameters.clients ?: configFromFile.getIntOrNull(AppSimulator.PARALLEL_CLIENTS_KEY) ?: AppSimulator.DEFAULT_PARALLEL_CLIENTS
+            val clients = parameters.clients ?: configFromFile.getIntOrNull(AppSimulator.PARALLEL_CLIENTS_KEY)
+                ?: AppSimulator.DEFAULT_PARALLEL_CLIENTS
             val simulatorMode = parameters.simulationMode ?: configFromFile.getEnumOrNull("simulatorMode")
             return CommonConfig(configFromFile, clients, simulatorMode)
         }
