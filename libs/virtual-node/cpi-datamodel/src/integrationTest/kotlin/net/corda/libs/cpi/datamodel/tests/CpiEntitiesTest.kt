@@ -88,10 +88,11 @@ class CpiEntitiesIntegrationTest {
         ).use {
             val loadedCpiEntity = it.find(
                 CpiMetadataEntity::class.java,
-                CpiMetadataEntityKey(cpi.name, cpi.version, cpi.signerSummaryHash)
+                CpiMetadataEntityKey(cpi.id.name, cpi.id.version, cpi.id.signerSummaryHash)
             )
-
-            assertThat(loadedCpiEntity.cpks).isEqualTo(cpi.cpks)
+            // the db version will differ on insertTimestamp so null that out before comparing
+            assertThat(loadedCpiEntity.cpks.map { it.copy(insertTimestamp = null) }
+                .toTypedArray()).isEqualTo(cpi.cpks.toTypedArray())
         }
 
     }
@@ -146,16 +147,16 @@ class CpiEntitiesIntegrationTest {
         ).use { em ->
             val  loadedCpiEntity = em.find(
                 CpiMetadataEntity::class.java,
-                CpiMetadataEntityKey(cpi.name, cpi.version, cpi.signerSummaryHash)
+                CpiMetadataEntityKey(cpi.id.name, cpi.id.version, cpi.id.signerSummaryHash)
             )
 
             val updated = loadedCpiEntity.copy(
                 cpks = loadedCpiEntity.cpks.plus(
                     CpiCpkEntity(
                         CpiCpkKey(
-                            cpi.name,
-                            cpi.version,
-                            cpi.signerSummaryHash,
+                            cpi.id.name,
+                            cpi.id.version,
+                            cpi.id.signerSummaryHash,
                             cpkMetadataEntity2.id.cpkName,
                             cpkMetadataEntity2.id.cpkVersion,
                             cpkMetadataEntity2.id.cpkSignerSummaryHash
@@ -181,7 +182,7 @@ class CpiEntitiesIntegrationTest {
         ).use {
             it.find(
                 CpiMetadataEntity::class.java,
-                CpiMetadataEntityKey(cpi.name, cpi.version, cpi.signerSummaryHash)
+                CpiMetadataEntityKey(cpi.id.name, cpi.id.version, cpi.id.signerSummaryHash)
             )
         }
 
@@ -257,7 +258,7 @@ class CpiEntitiesIntegrationTest {
         ).use {
             it.find(
                 CpiMetadataEntity::class.java,
-                CpiMetadataEntityKey(cpi2.name, cpi2.version, cpi2.signerSummaryHash)
+                CpiMetadataEntityKey(cpi2.id.name, cpi2.id.version, cpi2.id.signerSummaryHash)
             )
         }
 

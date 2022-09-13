@@ -27,7 +27,7 @@ interface CpiPersistence {
      */
     fun cpiExists(cpiName: String, cpiVersion: String, signerSummaryHash: String): Boolean
 
-    /** Persist the CPI metadata and the CPKs
+    /** Store CPI metadata and the CPKs in the database
      *
      * @param cpi a [Cpi] object
      * @param cpiFileName the original CPI file name
@@ -35,36 +35,19 @@ interface CpiPersistence {
      * @param requestId the request id for the CPI that is being uploaded
      * @param groupId the group id from the group policy file
      * @param cpkDbChangeLogEntities the list of entities containing Liquibase scripts for all cpks of the given cpi
+     * @param allowCpiUpdate if the CPI is already in the database, replace it if this is true otherwise throw a ValidationException
      */
     @Suppress("LongParameterList")
-    fun persistMetadataAndCpks(
+    fun store(
         cpi: Cpi,
         cpiFileName: String = "test.cpi",
         checksum: SecureHash = newRandomSecureHash(),
         requestId: RequestId = UUID.randomUUID().toString(),
         groupId: String = "group-a",
-        cpkDbChangeLogEntities: List<CpkDbChangeLogEntity> = emptyList()
+        cpkDbChangeLogEntities: List<CpkDbChangeLogEntity> = emptyList(),
+        allowCpiUpdate: Boolean = false,
     ): CpiMetadataEntity
-
-    /**
-     * When CPI has previously been saved, delete all the stale data and update in place.
-     *
-     * @param cpi a [Cpi] object
-     * @param cpiFileName the original CPI file name
-     * @param checksum the checksum of the CPI file
-     * @param requestId the request id for the CPI that is being uploaded
-     * @param groupId the group id from the group policy file
-     * @param cpkDbChangeLogEntities the list of entities containing Liquibase scripts for all cpks of the given cpi
-     */
-    @Suppress("LongParameterList")
-    fun updateMetadataAndCpks(
-        cpi: Cpi,
-        cpiFileName: String = "test.cpi",
-        checksum: SecureHash = newRandomSecureHash(),
-        requestId: RequestId = UUID.randomUUID().toString(),
-        groupId: String = "group-a",
-        cpkDbChangeLogEntities: List<CpkDbChangeLogEntity> = emptyList()
-    ): CpiMetadataEntity
+    
 
     /**
      *  Get the group id for a given CPI

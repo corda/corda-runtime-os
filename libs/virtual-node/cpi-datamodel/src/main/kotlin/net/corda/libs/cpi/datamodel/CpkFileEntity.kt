@@ -11,6 +11,7 @@ import javax.persistence.EntityManager
 import javax.persistence.NamedQuery
 import javax.persistence.Version
 
+// Now only used for testing- move to test code?
 const val QUERY_NAME_UPDATE_CPK_FILE_DATA = "CpkFileEntity.updateFileData"
 const val QUERY_PARAM_FILE_CHECKSUM = "fileChecksum"
 const val QUERY_PARAM_DATA = "data"
@@ -31,6 +32,7 @@ const val QUERY_PARAM_ID = "id"
 @Entity
 @Table(name = "cpk_file", schema = DbSchema.CONFIG)
 @NamedQuery(
+    // Now only used for testing- move to test code?
     name = QUERY_NAME_UPDATE_CPK_FILE_DATA,
     query = "UPDATE CpkFileEntity f" +
             " SET f.fileChecksum = :$QUERY_PARAM_FILE_CHECKSUM," +
@@ -44,20 +46,19 @@ data class CpkFileEntity(
     @EmbeddedId
     val id: CpkKey,
     @Column(name = "file_checksum", nullable = false, unique = true)
-    var fileChecksum: String,
+    val fileChecksum: String,
     @Lob
     @Column(name = "data", nullable = false)
-    var data: ByteArray,
+    val data: ByteArray,
     @Column(name = "is_deleted", nullable = false)
-    var isDeleted: Boolean = false
-) {
+    val isDeleted: Boolean = false,
     @Version
     @Column(name = "entity_version", nullable = false)
-    var entityVersion: Int = 0
-
+    val entityVersion: Int = 0,
     // this TS is managed on the DB itself
     @Column(name = "insert_ts", insertable = false, updatable = false)
-    var insertTimestamp: Instant? = null
+    val insertTimestamp: Instant? = null // changed on update
+) {
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

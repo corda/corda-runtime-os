@@ -73,7 +73,7 @@ class CpiValidatorImpl constructor(
 
         publisher.update(requestId, "Persisting CPI")
         val cpiMetadataEntity =
-            cpiPersistence.persistCpiToDatabase(cpi, groupId, fileInfo, requestId, cpkDbChangeLogEntities, log)
+            cpiPersistence.persistCpiToDatabase(cpi, groupId, fileInfo, requestId, cpkDbChangeLogEntities)
 
         publisher.update(requestId, "Notifying flow workers")
         val cpiMetadata = CpiMetadata(

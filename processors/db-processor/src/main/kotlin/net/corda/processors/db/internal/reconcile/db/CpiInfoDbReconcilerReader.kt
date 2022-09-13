@@ -16,10 +16,10 @@ import net.corda.v5.crypto.SecureHash
 val getAllCpiInfoDBVersionedRecords: (EntityManager) -> Stream<VersionedRecord<CpiIdentifier, CpiMetadata>> = { em ->
     em.findAllCpiMetadata().map { cpiMetadataEntity ->
         val cpiId = CpiIdentifier(
-            cpiMetadataEntity.name,
-            cpiMetadataEntity.version,
-            if (cpiMetadataEntity.signerSummaryHash != "")
-                SecureHash.parse(cpiMetadataEntity.signerSummaryHash)
+            cpiMetadataEntity.id.name,
+            cpiMetadataEntity.id.version,
+            if (cpiMetadataEntity.id.signerSummaryHash != "")
+                SecureHash.parse(cpiMetadataEntity.id.signerSummaryHash)
             else
                 null
         )

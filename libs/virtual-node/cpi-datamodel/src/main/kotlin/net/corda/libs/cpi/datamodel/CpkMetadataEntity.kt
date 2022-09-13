@@ -18,18 +18,18 @@ data class CpkMetadataEntity(
     @EmbeddedId
     val id: CpkKey,
     @Column(name = "file_checksum", nullable = false, unique = true)
-    var cpkFileChecksum: String,
+    val cpkFileChecksum: String,
     @Column(name = "format_version", nullable = false)
-    var formatVersion: String,
+    val formatVersion: String,
     @Column(name = "metadata", nullable = false)
-    var serializedMetadata: String,
+    val serializedMetadata: String,
     @Column(name = "is_deleted", nullable = false)
-    var isDeleted: Boolean = false
-) : Serializable {
+    val isDeleted: Boolean = false,
     @Version
     @Column(name = "entity_version", nullable = false)
-    var entityVersion: Int = 0
-}
+    val entityVersion: Int = 0
+) : Serializable
+
 
 /**
  * Composite primary key for a Cpk.
@@ -37,9 +37,9 @@ data class CpkMetadataEntity(
 @Embeddable
 data class CpkKey(
     @Column(name = "cpk_name")
-    var cpkName: String,
+    val cpkName: String,
     @Column(name = "cpk_version")
-    var cpkVersion: String,
+    val cpkVersion: String,
     @Column(name = "cpk_signer_summary_hash")
-    var cpkSignerSummaryHash: String,
+    val cpkSignerSummaryHash: String,
 ) : Serializable

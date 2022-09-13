@@ -10,6 +10,7 @@ import net.corda.libs.configuration.datamodel.ConfigurationEntities
 import net.corda.libs.configuration.datamodel.DbConnectionConfig
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
+import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.datamodel.HoldingIdentityEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntities
@@ -83,9 +84,7 @@ internal class VirtualNodeEntityRepositoryTest {
 
         val cpiMetadataEntity = with(expectedCpiMetadata) {
             CpiMetadataEntity(
-                id.name,
-                id.version,
-                signerSummaryHash,
+                CpiMetadataEntityKey(id.name, id.version, signerSummaryHash),
                 "TestFile",
                 fileChecksum,
                 "Test Group Policy",
@@ -142,9 +141,7 @@ internal class VirtualNodeEntityRepositoryTest {
 
         val cpiMetadataEntity = with(expectedCpiMetadata) {
             CpiMetadataEntity(
-                id.name,
-                id.version,
-                signerSummaryHash,
+                CpiMetadataEntityKey(id.name, id.version, signerSummaryHash),
                 "TestFile",
                 fileChecksum,
                 groupPolicy,
@@ -375,9 +372,7 @@ internal class VirtualNodeEntityRepositoryTest {
 
         val cpiMetadataEntity = with(cpiMetadata) {
             CpiMetadataEntity(
-                id.name,
-                id.version,
-                signerSummaryHash,
+                CpiMetadataEntityKey(id.name, id.version, signerSummaryHash),
                 "TestFile",
                 fileChecksum,
                 "Test Group Policy",
@@ -428,9 +423,7 @@ internal class VirtualNodeEntityRepositoryTest {
 
         val cpiMetadataEntity = with(cpiMetadata) {
             CpiMetadataEntity(
-                id.name,
-                id.version,
-                signerSummaryHash,
+                CpiMetadataEntityKey(id.name, id.version, signerSummaryHash),
                 "TestFile",
                 fileChecksum,
                 "Test Group Policy",

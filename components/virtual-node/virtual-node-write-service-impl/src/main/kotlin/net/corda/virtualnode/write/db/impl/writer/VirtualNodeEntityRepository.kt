@@ -53,10 +53,10 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
             if (foundCpi.isNotEmpty()) foundCpi[0] else null
         } ?: return null
 
-        val signerSummaryHash = cpiMetadataEntity.signerSummaryHash.let {
+        val signerSummaryHash = cpiMetadataEntity.id.signerSummaryHash.let {
             if (it == "") null else SecureHash.parse(it)
         }
-        val cpiId = CpiIdentifier(cpiMetadataEntity.name, cpiMetadataEntity.version, signerSummaryHash)
+        val cpiId = CpiIdentifier(cpiMetadataEntity.id.name, cpiMetadataEntity.id.version, signerSummaryHash)
         val fileChecksum = SecureHash.parse(cpiMetadataEntity.fileChecksum).toHexString()
         return CpiMetadataLite(cpiId, fileChecksum, cpiMetadataEntity.groupId, cpiMetadataEntity.groupPolicy)
     }
@@ -67,8 +67,8 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
             it.transaction {
                 it.createQuery(
                     "SELECT cpi FROM CpiMetadataEntity cpi " +
-                            "WHERE cpi.name = :cpiName "+
-                            "AND cpi.version = :cpiVersion ",
+                            "WHERE cpi.id.name = :cpiName " +
+                            "AND cpi.id.version = :cpiVersion ",
                     CpiMetadataEntity::class.java
                 )
                     .setParameter("cpiName", name)
@@ -77,10 +77,10 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
             }
         }
 
-        val signerSummaryHash = cpiMetadataEntity.signerSummaryHash.let {
+        val signerSummaryHash = cpiMetadataEntity.id.signerSummaryHash.let {
             if (it.isBlank()) null else SecureHash.parse(it)
         }
-        val cpiId = CpiIdentifier(cpiMetadataEntity.name, cpiMetadataEntity.version, signerSummaryHash)
+        val cpiId = CpiIdentifier(cpiMetadataEntity.id.name, cpiMetadataEntity.id.version, signerSummaryHash)
         val fileChecksum = SecureHash.parse(cpiMetadataEntity.fileChecksum).toHexString()
         return CpiMetadataLite(cpiId, fileChecksum, cpiMetadataEntity.groupId, cpiMetadataEntity.groupPolicy)
     }

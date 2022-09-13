@@ -7,6 +7,7 @@ import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
+import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
 import net.corda.libs.virtualnode.datamodel.HoldingIdentityEntity
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntities
 import net.corda.libs.virtualnode.datamodel.VirtualNodeEntity
@@ -223,9 +224,7 @@ class VirtualNodeEntitiesIntegrationTest {
         version: String,
         hash: String
     ) = CpiMetadataEntity(
-        name = name,
-        version = version,
-        signerSummaryHash = hash,
+        CpiMetadataEntityKey(name, version, hash),
         fileName = "file",
         fileChecksum = Generator.randomHoldingIdentityShortHash(),
         groupPolicy = "group policy",

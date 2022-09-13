@@ -23,11 +23,11 @@ import javax.persistence.Version
 @Table(name = "cpi_cpk", schema = DbSchema.CONFIG)
 data class CpiCpkEntity(
     @EmbeddedId
-    private val id: CpiCpkKey,
+    val id: CpiCpkKey,
     @Column(name = "cpk_file_name", nullable = false)
-    var cpkFileName: String,
+    val cpkFileName: String = "",
     @Column(name = "cpk_file_checksum", nullable = false)
-    var cpkFileChecksum: String,
+    val cpkFileChecksum: String = "",
     @OneToOne(cascade = [CascadeType.MERGE, CascadeType.PERSIST])
     @JoinColumns(
         JoinColumn(name = "cpk_name", referencedColumnName = "cpk_name", insertable = false, updatable = false),
@@ -39,17 +39,16 @@ data class CpiCpkEntity(
             updatable = false
         ),
     )
-    var metadata: CpkMetadataEntity,
-) {
+    val metadata: CpkMetadataEntity,
     @Version
     @Column(name = "entity_version", nullable = false)
-    var entityVersion: Int = 0
+    val entityVersion: Int = 0,
     // Initial population of this TS is managed on the DB itself
     @Column(name = "insert_ts", insertable = false, updatable = true)
-    var insertTimestamp: Instant? = null
+    var insertTimestamp: Instant? = null, // changed on update
     @Column(name = "is_deleted", nullable = false)
-    var isDeleted: Boolean = false
-
+    val isDeleted: Boolean = false
+) {
     @PreUpdate
     fun onUpdate() {
         insertTimestamp = Instant.now()

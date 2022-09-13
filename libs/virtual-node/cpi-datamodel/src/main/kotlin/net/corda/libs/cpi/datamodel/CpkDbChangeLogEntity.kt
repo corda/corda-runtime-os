@@ -9,36 +9,41 @@ import javax.persistence.Embeddable
 import javax.persistence.EmbeddedId
 import javax.persistence.Entity
 import javax.persistence.EntityManager
+import javax.persistence.PreUpdate
 import javax.persistence.Table
 import javax.persistence.Version
-
 /**
  * Representation of a DB ChangeLog (Liquibase) file associated with a CPK.
  */
 @Entity
 @Table(name = "cpk_db_change_log", schema = DbSchema.CONFIG)
-class CpkDbChangeLogEntity(
+data class CpkDbChangeLogEntity(
     @EmbeddedId
     var id: CpkDbChangeLogKey,
     @Column(name = "cpk_file_checksum", nullable = false, unique = true)
     val fileChecksum: String,
     @Column(name = "content", nullable = false)
     val content: String,
+    @Version
+    @Column(name = "entity_version", nullable = false)
+    val entityVersion: Int = 0
 ) {
     // This structure does not distinguish the root changelogs from changelog include files
     // (or CSVs, which we do not need to support). So, to find the root, you need to look for a filename
     // convention. See the comment in the companion object of VirtualNodeDbChangeLog.
     // for the convention used when populating these records.
-    @Version
-    @Column(name = "entity_version", nullable = false)
-    var entityVersion: Int = 0
 
     @Column(name = "is_deleted", nullable = false)
     var isDeleted: Boolean = false
 
     // this TS is managed on the DB itself
     @Column(name = "insert_ts", insertable = false, updatable = false)
-    val insertTimestamp: Instant? = null
+    var insertTimestamp: Instant? = null
+
+    @PreUpdate
+    fun onUpdate() {
+        insertTimestamp = Instant.now()
+    }
 }
 
 /**

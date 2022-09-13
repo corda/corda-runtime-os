@@ -17,7 +17,6 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyIdNotFoundException
 import net.corda.membership.lib.grouppolicy.GroupPolicyParseException
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
-import org.slf4j.Logger
 import java.nio.file.Files
 import java.nio.file.Path
 import javax.persistence.PersistenceException
@@ -98,46 +97,20 @@ fun CpiPersistence.persistCpiToDatabase(
     fileInfo: FileInfo,
     requestId: RequestId,
     cpkDbChangeLogEntities: List<CpkDbChangeLogEntity>,
-    log: Logger
-): CpiMetadataEntity {
-    // Cannot compare the CPI.metadata.hash to our checksum above
-    // because two different digest algorithms might have been used to create them.
+): CpiMetadataEntity =
+// Cannot compare the CPI.metadata.hash to our checksum above
+// because two different digest algorithms might have been used to create them.
     // We'll publish to the database using the de-chunking checksum.
-
     try {
-        val cpiExists = this.cpiExists(
-            cpi.metadata.cpiId.name,
-            cpi.metadata.cpiId.version,
-            cpi.metadata.cpiId.signerSummaryHashForDbQuery
+        this.store(
+            cpi,
+            fileInfo.name,
+            fileInfo.checksum,
+            requestId,
+            groupId,
+            cpkDbChangeLogEntities,
+            fileInfo.forceUpload
         )
-
-        return if (cpiExists && fileInfo.forceUpload) {
-            log.info("Force uploading CPI: ${cpi.metadata.cpiId.name} v${cpi.metadata.cpiId.version}")
-            this.updateMetadataAndCpks(
-                cpi,
-                fileInfo.name,
-                fileInfo.checksum,
-                requestId,
-                groupId,
-                cpkDbChangeLogEntities
-            )
-        } else if (!cpiExists) {
-            log.info("Uploading CPI: ${cpi.metadata.cpiId.name} v${cpi.metadata.cpiId.version}")
-            this.persistMetadataAndCpks(
-                cpi,
-                fileInfo.name,
-                fileInfo.checksum,
-                requestId,
-                groupId,
-                cpkDbChangeLogEntities
-            )
-        } else {
-            throw ValidationException(
-                "CPI has already been inserted with cpks for " +
-                    "${cpi.metadata.cpiId.name} ${cpi.metadata.cpiId.version} with groupId=$groupId",
-                requestId
-            )
-        }
     } catch (ex: Exception) {
         when (ex) {
             is ValidationException -> throw ex
@@ -146,7 +119,6 @@ fun CpiPersistence.persistCpiToDatabase(
             else -> throw ValidationException("Unexpected error when trying to persist CPI and CPK to database", requestId, ex)
         }
     }
-}
 
 /**
  * Get groupId from group policy JSON on the [Cpi] object.

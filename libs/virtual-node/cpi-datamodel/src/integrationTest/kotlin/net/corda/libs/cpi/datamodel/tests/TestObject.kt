@@ -1,11 +1,7 @@
 package net.corda.libs.cpi.datamodel.tests
 
-import net.corda.libs.cpi.datamodel.CpiMetadataEntity
-import net.corda.libs.cpi.datamodel.CpkKey
-import net.corda.libs.cpi.datamodel.CpkMetadataEntity
+import net.corda.libs.cpi.datamodel.*
 import java.util.UUID
-import net.corda.libs.cpi.datamodel.CpiCpkEntity
-import net.corda.libs.cpi.datamodel.CpiCpkKey
 import net.corda.v5.crypto.SecureHash
 import java.nio.ByteBuffer
 
@@ -17,8 +13,8 @@ object TestObject {
     }
 
     fun createCpi(id: String, cpiName: String, cpiVersion: String, cpiSSH: String, cpks: Set<CpiCpkEntity>) =
-        CpiMetadataEntity.create(
-            cpiName, cpiVersion, cpiSSH,
+        CpiMetadataEntity(
+            CpiMetadataEntityKey(cpiName, cpiVersion, cpiSSH),
             "test-cpi-$id.cpi",
             "test-cpi.cpi-$id-hash",
             "{group-policy-json}",
@@ -28,10 +24,8 @@ object TestObject {
         )
 
     fun createCpi(cpiId: UUID, cpks: Set<CpiCpkEntity>) =
-        CpiMetadataEntity.create(
-            "test-cpi-$cpiId",
-            "1.0",
-            "test-cpi-hash",
+        CpiMetadataEntity(
+            CpiMetadataEntityKey("test-cpi-$cpiId", "1.0", "test-cpi-hash"),
             "test-cpi-$cpiId.cpi",
             "test-cpi.cpi-$cpiId-hash",
             "{group-policy-json}",
