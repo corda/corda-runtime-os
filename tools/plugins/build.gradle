@@ -20,6 +20,7 @@ dependencies {
 def S3_BUCKET_URI_PROPERTY = 'maven.repo.s3'
 
 tasks.register('copyCliFiles') {
+    dependsOn subprojects.collect { it.tasks.named("cliPluginTask").get() }
     copy {
         from configurations.named('cliHostDist')
         into "$buildDir/cli"
@@ -49,12 +50,12 @@ tasks.register("cleanDir", Delete) {
     delete 'build/generatedScripts'
 }
 
-tasks.register("cliInstallScriptsS3", Copy) {
+tasks.register("cliS3Download", Copy) {
     dependsOn cleanDir
     description 'Copy corda-cli install scripts to a location in build dir and update to use correct version'
     if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
-        def s3Url = project.findProperty("maven.repo.s3").replace('s3://','https://')+ "/" +
-                project.group.replace('.','/') + "/corda-cli-installer/$version/corda-cli-installer-$version"
+        def s3Url = System.getenv('HTTPS_PATH') + project.group.replace('.','/') + "/corda-cli-installer/$version/corda-cli-installer-$version"
+        logger.info ("S3 Https URL: $s3Url")
         from 'templateScripts'
         into 'build/generatedScripts'
         filter {
@@ -62,7 +63,7 @@ tasks.register("cliInstallScriptsS3", Copy) {
         }
     }
     else {
-        logger.info("parameter S3_BUCKET_URI_PROPERTY is required! e.g. -Pmaven.repo.s3=https://demo.s3.com/example/bucket, Taking no action for :cliInstallScriptsS3")
+        logger.info("parameter S3_BUCKET_URI_PROPERTY is required! e.g. -Pmaven.repo.s3=https://demo.s3.com/example/bucket, Taking no action for :cliS3Download")
     }
 }
 
@@ -70,7 +71,7 @@ tasks.register("cliInstallScriptsS3", Copy) {
 tasks.named('jar').configure {
     finalizedBy cliInstallArchive
     if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
-        finalizedBy cliInstallScriptsS3
+        finalizedBy cliS3Download
     }
 }
 
@@ -120,12 +121,16 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
     }
 }
 
+def s3Script = null
 if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
+    s3Script = artifacts.add('archives', file("$project.buildDir/generatedScripts/corda-cli-downloader.sh")) {
+        builtBy('cliS3Download')
+    }
     artifacts {
         cliInstallArchive
-        cliInstallScriptsS3
     }
 }
+
 
 publishing {
     publications {
@@ -136,7 +141,7 @@ publishing {
         }
         if (project.hasProperty(S3_BUCKET_URI_PROPERTY) && s3Script != null) {
             maven(MavenPublication) {
-                artifactId "corda-cli-installer-script"
+                artifactId "corda-cli-downloader"
                 groupId project.group
                 artifact s3Script
             }
