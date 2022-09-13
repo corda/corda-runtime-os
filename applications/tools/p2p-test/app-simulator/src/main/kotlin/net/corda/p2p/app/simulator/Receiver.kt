@@ -6,7 +6,6 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.typesafe.config.ConfigValueFactory
 import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
-import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.records.EventLogRecord
@@ -24,14 +23,10 @@ import java.io.Closeable
 import java.time.Duration
 import java.time.Instant
 
-@Suppress("LongParameterList")
 class Receiver(private val subscriptionFactory: SubscriptionFactory,
                private val configMerger: ConfigMerger,
                private val topicAdmin: KafkaTopicAdmin,
-               private val receiveTopic: String,
-               private val bootConfig: SmartConfig,
-               private val clients: Int,
-               private val instanceId: String,
+               private val commonConfig: CommonConfig
     ): Closeable {
 
     companion object {
@@ -42,10 +37,13 @@ class Receiver(private val subscriptionFactory: SubscriptionFactory,
     private val subscriptions = mutableListOf<Subscription<*, *>>()
 
     fun start() {
-        AppSimulatorTopicCreator(bootConfig, topicAdmin).createTopic()
-        (1..clients).forEach { client ->
-            val subscriptionConfig = SubscriptionConfig("app-simulator-receiver", receiveTopic, )
-            val configWithInstanceId = bootConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef("$instanceId-$client".hashCode()))
+        AppSimulatorTopicCreator(commonConfig.bootConfig, topicAdmin).createTopic()
+        (1..commonConfig.clients).forEach { client ->
+            val subscriptionConfig = SubscriptionConfig("app-simulator-receiver", commonConfig.parameters.receiveTopic,)
+            val configWithInstanceId = commonConfig.bootConfig.withValue(
+                INSTANCE_ID,
+                ConfigValueFactory.fromAnyRef("${commonConfig.parameters.instanceId}-$client".hashCode())
+            )
             val messagingConfig = configMerger.getMessagingConfig(configWithInstanceId)
 
             val subscription = subscriptionFactory.createEventLogSubscription(subscriptionConfig,
@@ -53,7 +51,8 @@ class Receiver(private val subscriptionFactory: SubscriptionFactory,
             subscription.start()
             subscriptions.add(subscription)
         }
-        logger.info("Started consuming messages fom $receiveTopic. When you want to stop the consumption, you can do so using Ctrl+C.")
+        logger.info("Started consuming messages fom ${commonConfig.parameters.receiveTopic}. When you want to stop the consumption, you " +
+                "can do so using Ctrl+C.")
     }
 
     override fun close() {

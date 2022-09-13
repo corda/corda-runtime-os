@@ -67,7 +67,7 @@ kafka:
   # TLS configuration for client connections to Kafka
   tls:
     # -- indicates whether TLS should be used for client connections to Kafka
-    enabled: true
+    enabled: false
     # if TLS is enabled, the truststore configuration for client connections to Kafka
     truststore:
       # if TLS is enabled, details of an existing Kubernetes secret containing the truststore for client connections to Kafka
@@ -96,7 +96,7 @@ kafka:
 # app simulator configuration
 appSimulators:
   sender:
-    enabled: true
+    enabled: false
     # -- should we write metadata into the database
     sendMessagesToDatabase: true
     # -- peer x500Name
@@ -133,7 +133,7 @@ appSimulators:
       # -- if debug is enabled, suspend the receiver app simulator worker until the debugger is attached
       suspend: false
   receiver:
-    enabled: true
+    enabled: false
     # -- receiver app simulator replica count
     replicaCount: 1
     # -- the number of parallel clients/threads (per replica) consuming messages from Kafka.
