@@ -7,27 +7,50 @@ import net.corda.data.membership.command.registration.member.ProcessMemberVerifi
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.VerificationResponse
 import net.corda.data.membership.state.RegistrationState
+import net.corda.membership.impl.registration.VerificationResponseKeys.FAILURE_REASONS
+import net.corda.membership.impl.registration.VerificationResponseKeys.VERIFIED
+import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.utilities.time.Clock
+import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.toCorda
 
 internal class ProcessMemberVerificationRequestHandler(
     clock: Clock,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val membershipPersistenceClient: MembershipPersistenceClient,
+    private val memberTypeChecker: MemberTypeChecker,
     private val p2pRecordsFactory: P2pRecordsFactory = P2pRecordsFactory(
         cordaAvroSerializationFactory,
         clock,
     )
 ) : RegistrationHandler<ProcessMemberVerificationRequest> {
+    private companion object {
+        val logger = contextLogger()
+    }
+
     override val commandType = ProcessMemberVerificationRequest::class.java
 
     override fun invoke(state: RegistrationState?, key: String, command: ProcessMemberVerificationRequest): RegistrationHandlerResult {
         val member = command.destination
         val mgm = command.source
+        val reasons = mutableListOf<String>()
+        if (memberTypeChecker.isMgm(member)) {
+            reasons += "${member.x500Name} is an MGM and can not register"
+        }
+        if (!memberTypeChecker.isMgm(mgm)) {
+            reasons += "${mgm.x500Name} is not an MGM and can not be used in member registration"
+        }
+        val payload = reasons.map { KeyValuePair(FAILURE_REASONS, it) } + if (reasons.isEmpty()) {
+            KeyValuePair(VERIFIED, true.toString())
+        } else {
+            logger.warn("Failed to verify request: ${command.verificationRequest.registrationId} - $reasons")
+            KeyValuePair(VERIFIED, false.toString())
+        }
+
         val registrationId = command.verificationRequest.registrationId
 
         membershipPersistenceClient.setRegistrationRequestStatus(
@@ -44,7 +67,7 @@ internal class ProcessMemberVerificationRequestHandler(
                     mgm,
                     VerificationResponse(
                         registrationId,
-                        KeyValuePairList(emptyList<KeyValuePair>())
+                        KeyValuePairList(payload)
                     )
                 )
             )

@@ -1,13 +1,17 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
+import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
+import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.ProcessMemberVerificationResponse
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.p2p.VerificationResponse
 import net.corda.data.membership.state.RegistrationState
+import net.corda.membership.impl.registration.VerificationResponseKeys
+import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -20,10 +24,13 @@ import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 
 class ProcessMemberVerificationResponseHandlerTest {
     private companion object {
@@ -37,7 +44,11 @@ class ProcessMemberVerificationResponseHandlerTest {
     private val command = ProcessMemberVerificationResponse(
         VerificationResponse(
             REGISTRATION_ID,
-            KeyValuePairList(emptyList())
+            KeyValuePairList(
+                listOf(
+                    KeyValuePair(VerificationResponseKeys.VERIFIED, true.toString())
+                )
+            )
         )
     )
     private val state = RegistrationState(
@@ -69,11 +80,16 @@ class ProcessMemberVerificationResponseHandlerTest {
             )
         } doReturn record
     }
+    private val memberTypeChecker = mock<MemberTypeChecker> {
+        on { isMgm(mgm) } doReturn true
+        on { isMgm(member) } doReturn false
+    }
 
     private val processMemberVerificationResponseHandler = ProcessMemberVerificationResponseHandler(
         membershipPersistenceClient,
         mock(),
         mock(),
+        memberTypeChecker,
         p2pRecordsFactory,
     )
 
@@ -101,6 +117,68 @@ class ProcessMemberVerificationResponseHandlerTest {
             assertThat(this?.mgm).isEqualTo(mgm)
             assertThat(this?.registrationId).isEqualTo(REGISTRATION_ID)
         }
+    }
+
+    @Test
+    fun `handler returns decline member command if the verification failed`() {
+        val command = ProcessMemberVerificationResponse(
+            VerificationResponse(
+                REGISTRATION_ID,
+                KeyValuePairList(
+                    listOf(
+                        KeyValuePair(VerificationResponseKeys.VERIFIED, false.toString()),
+                        KeyValuePair(VerificationResponseKeys.FAILURE_REASONS, "one"),
+                        KeyValuePair(VerificationResponseKeys.FAILURE_REASONS, "two"),
+                    )
+                )
+            )
+        )
+        val result = processMemberVerificationResponseHandler.invoke(state, Record(TOPIC, member.toString(), RegistrationCommand(command)))
+
+        verify(membershipPersistenceClient, never()).setRegistrationRequestStatus(
+            any(),
+            any(),
+            any(),
+        )
+
+        assertThat(result.outputStates).hasSize(1)
+            .anyMatch {
+                (it.value as? RegistrationCommand)?.command is DeclineRegistration
+            }
+    }
+
+    @Test
+    fun `handler returns decline member command if the member is an MGM`() {
+        whenever(memberTypeChecker.isMgm(member)).doReturn(true)
+        val result = processMemberVerificationResponseHandler.invoke(state, Record(TOPIC, member.toString(), RegistrationCommand(command)))
+
+        verify(membershipPersistenceClient, never()).setRegistrationRequestStatus(
+            any(),
+            any(),
+            any(),
+        )
+
+        assertThat(result.outputStates).hasSize(1)
+            .anyMatch {
+                (it.value as? RegistrationCommand)?.command is DeclineRegistration
+            }
+    }
+
+    @Test
+    fun `handler returns decline member command if the mgm is not an MGM`() {
+        whenever(memberTypeChecker.isMgm(mgm)).doReturn(false)
+        val result = processMemberVerificationResponseHandler.invoke(state, Record(TOPIC, member.toString(), RegistrationCommand(command)))
+
+        verify(membershipPersistenceClient, never()).setRegistrationRequestStatus(
+            any(),
+            any(),
+            any(),
+        )
+
+        assertThat(result.outputStates).hasSize(1)
+            .anyMatch {
+                (it.value as? RegistrationCommand)?.command is DeclineRegistration
+            }
     }
 
     @Test

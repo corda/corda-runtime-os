@@ -16,14 +16,13 @@ import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.p2p.VerificationRequest
 import net.corda.data.membership.p2p.VerificationResponse
 import net.corda.data.membership.state.RegistrationState
-import net.corda.layeredpropertymap.LayeredPropertyMapFactory
+import net.corda.membership.impl.registration.VerificationResponseKeys
 import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -34,7 +33,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.test.util.time.TestClock
-import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MGMContext
@@ -91,7 +89,11 @@ class RegistrationProcessorTest {
 
         val verificationResponse = VerificationResponse(
             registrationId,
-            KeyValuePairList(emptyList<KeyValuePair>())
+            KeyValuePairList(
+                listOf(
+                    KeyValuePair(VerificationResponseKeys.VERIFIED, true.toString())
+                )
+            )
         )
 
         val verificationRequestCommand = RegistrationCommand(
@@ -116,36 +118,30 @@ class RegistrationProcessorTest {
     lateinit var membershipPersistenceClient: MembershipPersistenceClient
     lateinit var membershipQueryClient: MembershipQueryClient
 
-    val memberMemberContext: MemberContext = mock {
+    private val memberMemberContext: MemberContext = mock {
         on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
         on { parseList(eq(ENDPOINTS), eq(EndpointInfo::class.java)) } doReturn listOf(mock())
     }
-    val memberMgmContext: MGMContext = mock {
+    private val memberMgmContext: MGMContext = mock {
         on { parse(eq(STATUS), eq(String::class.java)) } doReturn MEMBER_STATUS_ACTIVE
+        on { parseOrNull(eq(IS_MGM), any<Class<Boolean>>()) } doReturn false
     }
-    val memberInfo: MemberInfo = mock {
+    private val memberInfo: MemberInfo = mock {
         on { name } doReturn x500Name
         on { memberProvidedContext } doReturn memberMemberContext
         on { mgmProvidedContext } doReturn memberMgmContext
     }
 
-    val mgmMemberContext: MemberContext = mock {
+    private val mgmMemberContext: MemberContext = mock {
         on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
     }
-    val mgmContext: MGMContext = mock {
+    private val mgmContext: MGMContext = mock {
         on { parseOrNull(eq(IS_MGM), any<Class<Boolean>>()) } doReturn true
     }
-    val mgmMemberInfo: MemberInfo = mock {
+    private val mgmMemberInfo: MemberInfo = mock {
         on { name } doReturn mgmX500Name
         on { memberProvidedContext } doReturn mgmMemberContext
         on { mgmProvidedContext } doReturn mgmContext
-    }
-
-    private val layeredPropertyMap = mock<LayeredPropertyMap> {
-        on { entries } doReturn memberContext.toMap().entries
-    }
-    private val layeredPropertyMapFactory = mock<LayeredPropertyMapFactory> {
-        on {createMap(any())} doReturn layeredPropertyMap
     }
 
     @BeforeEach
@@ -158,6 +154,7 @@ class RegistrationProcessorTest {
         }
         membershipGroupReaderProvider = mock {
             on { getGroupReader(eq(mgmHoldingIdentity.toCorda())) } doReturn membershipGroupReader
+            on { getGroupReader(eq(holdingIdentity.toCorda())) } doReturn membershipGroupReader
         }
         deserializer = mock {
             on { deserialize(eq(memberContext.toByteBuffer().array())) } doReturn memberContext
@@ -193,7 +190,6 @@ class RegistrationProcessorTest {
             membershipQueryClient,
             mock(),
             mock(),
-            layeredPropertyMapFactory,
             mock(),
         )
     }

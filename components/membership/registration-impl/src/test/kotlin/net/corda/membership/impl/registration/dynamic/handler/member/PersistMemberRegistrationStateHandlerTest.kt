@@ -23,7 +23,9 @@ class PersistMemberRegistrationStateHandlerTest {
         )
     )
 
-    private val handler = PersistMemberRegistrationStateHandler(membershipPersistenceClient)
+    private val handler = PersistMemberRegistrationStateHandler(
+        membershipPersistenceClient,
+    )
 
     @Test
     fun `command type return the correct command`() {
