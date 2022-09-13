@@ -1,12 +1,10 @@
 package net.corda.ledger.common.impl.transaction.serializers
 
-import com.esotericsoftware.kryo.Kryo
-import com.esotericsoftware.kryo.io.Input
-import com.esotericsoftware.kryo.io.Output
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeFactoryImpl
+import net.corda.kryoserialization.testkit.KryoTestUtils
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.TransactionMetaData
 import net.corda.ledger.common.impl.transaction.WireTransaction
@@ -17,8 +15,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import java.util.*
-import de.javakaffee.kryoserializers.ArraysAsListSerializer
 
 class WireTransactionKryoSerializerTest {
     companion object {
@@ -58,12 +54,16 @@ class WireTransactionKryoSerializerTest {
 
         val wireTransactionKryoSerializer = WireTransactionKryoSerializer(merkleTreeFactory, digestService)
 
-        val kryo = Kryo()
-        kryo.addDefaultSerializer(PrivacySaltImpl::class.java, PrivacySaltImplKryoSerializer())
-        kryo.addDefaultSerializer(Arrays.asList("").javaClass, ArraysAsListSerializer())
-        val output = Output(5000)
-        wireTransactionKryoSerializer.write(kryo, output, wireTransaction)
-        val deserialized = wireTransactionKryoSerializer.read(kryo, Input(output.buffer), WireTransaction::class.java)
+        val serializer = KryoTestUtils.createCheckpointSerializer(
+            schemeMetadata,
+            mapOf(
+                WireTransaction::class.java to wireTransactionKryoSerializer,
+                PrivacySaltImpl::class.java to PrivacySaltImplKryoSerializer()
+            )
+        )
+
+        val bytes = serializer.serialize(wireTransaction)
+        val deserialized = serializer.deserialize(bytes, WireTransaction::class.java)
 
         assertThat(deserialized).isEqualTo(wireTransaction)
         org.junit.jupiter.api.Assertions.assertDoesNotThrow{
