@@ -15,7 +15,7 @@ interface LiquibaseSchemaMigrator {
      * @param datasource
      * @param dbChange
      */
-    fun updateDb(datasource: Connection, dbChange: DbChange)
+    fun updateDb(datasource: Connection, dbChange: DbChange, tagAsLast: Boolean = false)
 
     /**
      * Update [datasource] using [dbChange] provided.
@@ -24,7 +24,24 @@ interface LiquibaseSchemaMigrator {
      * @param dbChange
      * @param controlTablesSchema schema for the databasechangelog tables
      */
-    fun updateDb(datasource: Connection, dbChange: DbChange, controlTablesSchema: String)
+    fun updateDb(datasource: Connection, dbChange: DbChange, controlTablesSchema: String, tagAsLast: Boolean = false)
+
+    /**
+     * Rollback [datasource] using [dbChange] provided.
+     *
+     * @param datasource
+     * @param dbChange
+     */
+    fun rollbackDb(datasource: Connection, tag: String?)
+
+    /**
+     * Rollback [datasource] using [dbChange] provided.
+     *
+     * @param datasource
+     * @param dbChange
+     * @param controlTablesSchema schema for the databasechangelog tables
+     */
+    fun rollbackDb(datasource: Connection, controlTablesSchema: String, tag: String?)
 
     /**
      * Create update [sql] for [datasource] based on [dbChange] but
@@ -34,7 +51,7 @@ interface LiquibaseSchemaMigrator {
      * @param dbChange
      * @param sql output
      */
-    fun createUpdateSql(datasource: Connection, dbChange: DbChange, sql: Writer)
+    fun createUpdateSql(datasource: Connection, dbChange: DbChange, sql: Writer, tagAsLast: Boolean = false)
 
     /**
      * Create update [sql] for [datasource] based on [dbChange] but
@@ -45,6 +62,6 @@ interface LiquibaseSchemaMigrator {
      * @param controlTablesSchema schema for the databasechangelog tables
      * @param sql output
      */
-    fun createUpdateSql(datasource: Connection, dbChange: DbChange, controlTablesSchema: String, sql: Writer)
+    fun createUpdateSql(datasource: Connection, dbChange: DbChange, controlTablesSchema: String, sql: Writer, tagAsLast: Boolean = false)
 }
 

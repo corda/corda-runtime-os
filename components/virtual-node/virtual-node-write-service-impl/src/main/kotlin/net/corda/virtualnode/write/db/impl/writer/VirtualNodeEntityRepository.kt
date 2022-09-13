@@ -152,6 +152,14 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
         }
     }
 
+    internal fun getVirtualNode(entityManager: EntityManager, holdingIdentityShortHash: String): VirtualNodeEntity {
+        return entityManager.transaction {
+            // Lookup virtual node and grab the latest one based on the cpi Version.
+            it.findVirtualNode(holdingIdentityShortHash)
+                ?: throw VirtualNodeNotFoundException(holdingIdentityShortHash)
+        }
+    }
+
     /**
      * Writes a virtual node to the database.
      * @param holdingId Holding identity

@@ -149,7 +149,7 @@ publishing {
             maven(MavenPublication) {
                 artifactId "corda-cli-downloader"
                 groupId project.group
-                artifact s3Script
+                artifact cliInstallScriptsS3
             }
         }
     }
