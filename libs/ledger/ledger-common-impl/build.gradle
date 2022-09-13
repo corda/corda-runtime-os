@@ -9,17 +9,15 @@ description 'Corda ledger common - implementation'
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-    implementation "com.esotericsoftware:kryo:$kryoVersion"
-    implementation project(":libs:serialization:serialization-kryo")
-
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation "net.corda:corda-ledger-common"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-
-    implementation project(path: ':libs:serialization:kryo-serializers', configuration: 'bundle')
+    implementation project(":libs:serialization:serialization-kryo")
+    implementation project(":libs:serialization:serialization-checkpoint-api")
     implementation project(":libs:crypto:crypto-core")
 
+    testImplementation project(":testing:kryo-serialization-testkit")
     testImplementation project(":libs:crypto:merkle-impl")
     testImplementation project(":libs:crypto:cipher-suite-impl")
 

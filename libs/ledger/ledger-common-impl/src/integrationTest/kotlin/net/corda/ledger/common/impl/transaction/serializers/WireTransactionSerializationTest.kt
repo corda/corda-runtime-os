@@ -110,10 +110,13 @@ class WireTransactionSerializationTest {
                 digestService as SingletonSerializeAsToken, //TODO(This does not look right...)
                 merkleTreeFactory as SingletonSerializeAsToken
             ))
+// ??            .addSerializer(PrivacySaltImpl::class.java, PrivacySaltImplKryoSerializer())
+// ??            .addSerializer(WireTransaction::class.java, WireTransactionKryoSerializer(merkleTreeFactory, digestService))
             .build()
 
         val wireTransaction = getWireTransaction()
         val bytes = serializer.serialize(wireTransaction)
+        println(bytes.decodeToString())
         val deserialized = serializer.deserialize(bytes, WireTransaction::class.java)
 
         assertThat(deserialized).isEqualTo(wireTransaction)
