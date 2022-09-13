@@ -102,7 +102,6 @@ class CertificatesRpcOpsImplTest {
         private val holdingIdentityShortHash = "id"
         private val keyId = "keyId"
         private val x500Name = "CN=Alice"
-        private val role = "TLS"
         private val publicKeyBytes = "123".toByteArray()
         private val key = mock<CryptoSigningKey> {
             on { publicKey } doReturn ByteBuffer.wrap(publicKeyBytes)
@@ -150,7 +149,6 @@ class CertificatesRpcOpsImplTest {
                     holdingIdentityShortHash,
                     keyId,
                     x500Name,
-                    role,
                     null,
                     null,
                 )
@@ -163,7 +161,6 @@ class CertificatesRpcOpsImplTest {
                 holdingIdentityShortHash,
                 keyId,
                 x500Name,
-                role,
                 null,
                 null,
             )
@@ -183,7 +180,6 @@ class CertificatesRpcOpsImplTest {
                 holdingIdentityShortHash,
                 keyId,
                 x500Name,
-                role,
                 null,
                 null,
             )
@@ -197,7 +193,6 @@ class CertificatesRpcOpsImplTest {
                 holdingIdentityShortHash,
                 keyId,
                 x500Name,
-                role,
                 listOf("www.alice.net", "alice.net"),
                 null,
             )
@@ -228,7 +223,6 @@ class CertificatesRpcOpsImplTest {
                 holdingIdentityShortHash,
                 keyId,
                 x500Name,
-                role,
                 null,
                 null,
             )
@@ -246,7 +240,6 @@ class CertificatesRpcOpsImplTest {
                 holdingIdentityShortHash,
                 keyId,
                 x500Name,
-                role,
                 null,
                 emptyMap(),
             )
@@ -264,7 +257,6 @@ class CertificatesRpcOpsImplTest {
                     holdingIdentityShortHash,
                     keyId,
                     x500Name,
-                    role,
                     null,
                     mapOf(SIGNATURE_SPEC to "Nop")
                 )
@@ -280,7 +272,6 @@ class CertificatesRpcOpsImplTest {
                     holdingIdentityShortHash,
                     keyId,
                     x500Name,
-                    role,
                     null,
                     null,
                 )

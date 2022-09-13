@@ -44,7 +44,6 @@ fun E2eCluster.generateCsr(
                 P2P_TENANT_ID,
                 tlsKeyId,
                 member.name,
-                HSM_CAT_TLS,
                 listOf(clusterConfig.p2pHost),
                 null
             )

@@ -2836,14 +2836,8 @@
         }
       },
       "GenerateCsrWrapperRequest" : {
-        "required" : [ "certificateRole", "x500Name" ],
+        "required" : [ "x500Name" ],
         "properties" : {
-          "certificateRole" : {
-            "type" : "string",
-            "description" : "Certificate role. For example: TLS, SESSION_INIT, ...",
-            "nullable" : false,
-            "example" : "string"
-          },
           "contextMap" : {
             "type" : "object",
             "additionalProperties" : {
