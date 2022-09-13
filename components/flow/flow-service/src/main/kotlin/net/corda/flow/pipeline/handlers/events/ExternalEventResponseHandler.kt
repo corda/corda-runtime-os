@@ -32,8 +32,8 @@ class ExternalEventResponseHandler @Activate constructor(
                         externalEventResponse
             )
             throw FlowEventException(
-                "ExternalEventResponseHandler received a ${ExternalEventResponse::class.simpleName} for flow [${context.inputEvent.flowId}]" +
-                        " that does not exist"
+                "ExternalEventResponseHandler received a ${ExternalEventResponse::class.simpleName} for flow" +
+                        " [${context.inputEvent.flowId}] that does not exist"
             )
         }
 
