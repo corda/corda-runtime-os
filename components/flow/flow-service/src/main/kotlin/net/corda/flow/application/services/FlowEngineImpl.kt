@@ -1,9 +1,9 @@
 package net.corda.flow.application.services
 
+import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.state.FlowStackItem
 import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.SubFlow
@@ -81,7 +81,7 @@ class FlowEngineImpl @Activate constructor(
     @Suspendable
     private fun finishSubFlow() {
         try {
-            flowFiberService.getExecutingFiber().suspend(FlowIORequest.SubFlowFinished(peekCurrentFlowStackItem()))
+            flowFiberService.getExecutingFiber().suspend(FlowIORequest.SubFlowFinished(peekCurrentFlowStackItem().sessionIds.toList()))
         } finally {
             popCurrentFlowStackItem()
         }
@@ -90,7 +90,7 @@ class FlowEngineImpl @Activate constructor(
     @Suspendable
     private fun failSubFlow(t: Throwable) {
         try {
-            flowFiberService.getExecutingFiber().suspend(FlowIORequest.SubFlowFailed(t, peekCurrentFlowStackItem()))
+            flowFiberService.getExecutingFiber().suspend(FlowIORequest.SubFlowFailed(t, peekCurrentFlowStackItem().sessionIds.toList()))
         } finally {
             popCurrentFlowStackItem()
         }

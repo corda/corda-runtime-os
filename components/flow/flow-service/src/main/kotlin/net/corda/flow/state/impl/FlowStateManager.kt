@@ -79,8 +79,7 @@ class FlowStateManager(private val initialState: FlowState) {
     fun toAvro(): FlowState {
         val sessions = sessionMap.values.sortedBy { it.sessionId }.toList()
         state.sessions = sessions
-        state.flowStackItems = stack.toAvro()
-
+        state.flowStackItems = stack.flowStackItems
         return state
     }
 

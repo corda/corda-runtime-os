@@ -6,6 +6,7 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.event.session.SessionInit
+import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.BOB_X500_HOLDING_IDENTITY
 import net.corda.flow.FLOW_ID_1
@@ -24,7 +25,6 @@ import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
-import net.corda.flow.state.FlowStackItem
 import net.corda.flow.test.utils.buildFlowEventContext
 import net.corda.flow.utils.KeyValueStore
 import net.corda.flow.utils.emptyKeyValuePairList
@@ -53,7 +53,7 @@ class FlowRunnerImplTest {
     private val sandboxDependencyInjector = mock<SandboxDependencyInjector>()
     private val fiberFuture = mock<FiberFuture>()
     private var flowFiberExecutionContext: FlowFiberExecutionContext
-    private var flowStackItem = FlowStackItem("flowId", true, mutableListOf(), mutableMapOf(), mutableMapOf())
+    private var flowStackItem = FlowStackItem().apply { sessionIds = mutableListOf() }
     private var rpcFlow = mock<RPCStartableFlow>()
     private var initiatedFlow = mock<ResponderFlow>()
 

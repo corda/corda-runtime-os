@@ -3,8 +3,8 @@ package net.corda.flow.fiber
 import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.fibers.FiberScheduler
 import co.paralleluniverse.fibers.FiberWriter
+import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.fiber.FlowFiberImpl.SerializableFiberWriter
-import net.corda.flow.state.FlowStackItem
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
@@ -129,7 +129,7 @@ class FlowFiberImpl(
         // logic to determine whether all sessions have successfully acknowledged receipt of the close messages.
         val flowStackItem = getRemainingFlowStackItem()
         if (flowStackItem.sessionIds.isNotEmpty()) {
-            suspend(FlowIORequest.SubFlowFinished(flowStackItem))
+            suspend(FlowIORequest.SubFlowFinished(flowStackItem.sessionIds.toList()))
         }
         flowCompletion.complete(outcomeOfFlow)
     }
@@ -141,7 +141,7 @@ class FlowFiberImpl(
         // logic to determine whether all sessions have successfully acknowledged receipt of the close messages.
         val flowStackItem = getRemainingFlowStackItem()
         if (flowStackItem.sessionIds.isNotEmpty()) {
-            suspend(FlowIORequest.SubFlowFailed(throwable, flowStackItem))
+            suspend(FlowIORequest.SubFlowFailed(throwable, flowStackItem.sessionIds.toList()))
         }
         flowCompletion.complete(FlowIORequest.FlowFailed(throwable))
     }

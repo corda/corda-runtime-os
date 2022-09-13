@@ -3,7 +3,6 @@ package net.corda.flow.fiber
 import java.nio.ByteBuffer
 import java.time.Instant
 import net.corda.flow.external.events.factory.ExternalEventFactory
-import net.corda.flow.state.FlowStackItem
 import net.corda.v5.base.types.MemberX500Name
 
 /**
@@ -77,9 +76,9 @@ interface FlowIORequest<out R> {
 
     data class FlowFinished(val result: String?) : FlowIORequest<String?>
 
-    data class SubFlowFinished(val flowStackItem: FlowStackItem) : FlowIORequest<FlowStackItem?>
+    data class SubFlowFinished(val sessionIds: List<String>) : FlowIORequest<Unit?>
 
-    data class SubFlowFailed(val throwable: Throwable, val flowStackItem: FlowStackItem) : FlowIORequest<Unit>
+    data class SubFlowFailed(val throwable: Throwable, val sessionIds: List<String>) : FlowIORequest<Unit>
 
     data class FlowFailed(val exception: Throwable) : FlowIORequest<Unit>
 

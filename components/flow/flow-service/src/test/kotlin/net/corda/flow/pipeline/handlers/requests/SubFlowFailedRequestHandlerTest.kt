@@ -1,6 +1,7 @@
 package net.corda.flow.pipeline.handlers.requests
 
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.Wakeup
@@ -8,7 +9,7 @@ import net.corda.flow.RequestHandlerTestContext
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
-import net.corda.flow.state.FlowStackItem
+import net.corda.flow.utils.mutableKeyValuePairList
 import net.corda.messaging.api.records.Record
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -46,8 +47,14 @@ class SubFlowFailedRequestHandlerTest {
     private val sessionStates = listOf(sessionState1, sessionState2, sessionState3)
 
     private val flowError = Exception()
-    private var flowStackItem = FlowStackItem("FLOW_NAME", true, sessions.toMutableList(), mutableMapOf(), mutableMapOf())
-    private val ioRequest = FlowIORequest.SubFlowFailed(flowError, flowStackItem)
+    private val flowStackItem = FlowStackItem.newBuilder()
+        .setFlowName("FLOW_NAME")
+        .setIsInitiatingFlow(true)
+        .setSessionIds(sessions)
+        .setContextPlatformProperties(mutableKeyValuePairList())
+        .setContextUserProperties(mutableKeyValuePairList())
+        .build()
+    private val ioRequest = FlowIORequest.SubFlowFailed(flowError, flowStackItem.sessionIds)
     private val record = Record("", "", FlowEvent())
     private val testContext = RequestHandlerTestContext(Any())
     private val handler = SubFlowFailedRequestHandler(testContext.flowSessionManager, testContext.flowRecordFactory)
@@ -75,7 +82,7 @@ class SubFlowFailedRequestHandlerTest {
     fun `Sends session error messages and creates a Wakeup record when the flow has no closed or errored sessions`(
         isInitiatingFlow: Boolean
     ) {
-        flowStackItem = FlowStackItem(flowStackItem.flowName, isInitiatingFlow, flowStackItem.sessionIds, flowStackItem.contextUserProperties, flowStackItem.contextPlatformProperties)
+        flowStackItem.isInitiatingFlow = isInitiatingFlow
         whenever(
             testContext.flowSessionManager.getSessionsWithStatus(
                 testContext.flowCheckpoint,
@@ -117,7 +124,7 @@ class SubFlowFailedRequestHandlerTest {
     fun `Sends session error messages to non-closed and non-errored sessions and creates a Wakeup record when the flow has sessions to error`(
         isInitiatingFlow: Boolean
     ) {
-        flowStackItem = FlowStackItem(flowStackItem.flowName, isInitiatingFlow, flowStackItem.sessionIds, flowStackItem.contextUserProperties, flowStackItem.contextPlatformProperties)
+        flowStackItem.isInitiatingFlow = isInitiatingFlow
         whenever(
             testContext.flowSessionManager.getSessionsWithStatus(
                 testContext.flowCheckpoint,
@@ -159,7 +166,7 @@ class SubFlowFailedRequestHandlerTest {
     fun `Sends no session error messages and creates a Wakeup record when the flow has no sessions to error`(
         isInitiatingFlow: Boolean
     ) {
-        flowStackItem = FlowStackItem(flowStackItem.flowName, isInitiatingFlow, flowStackItem.sessionIds, flowStackItem.contextUserProperties, flowStackItem.contextPlatformProperties)
+        flowStackItem.isInitiatingFlow = isInitiatingFlow
         whenever(
             testContext.flowSessionManager.getSessionsWithStatus(
                 testContext.flowCheckpoint,

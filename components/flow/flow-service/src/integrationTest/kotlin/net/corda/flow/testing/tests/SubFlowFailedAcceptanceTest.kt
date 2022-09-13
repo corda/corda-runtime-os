@@ -1,9 +1,10 @@
 package net.corda.flow.testing.tests
 
+import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.state.FlowStackItem
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.initiateFlowMessage
+import net.corda.flow.utils.mutableKeyValuePairList
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -47,7 +48,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(
                     FlowIORequest.SubFlowFailed(
                         RuntimeException(),
-                        initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2)
+                        initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2).sessionIds
                     )
                 )
         }
@@ -79,7 +80,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(
                     FlowIORequest.SubFlowFailed(
                         RuntimeException(),
-                        initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2)
+                        initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2).sessionIds
                     )
                 )
         }
@@ -113,7 +114,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(
                     FlowIORequest.SubFlowFailed(
                         RuntimeException(),
-                        initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2)
+                        initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2).sessionIds
                     )
                 )
         }
@@ -147,7 +148,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(
                     FlowIORequest.SubFlowFailed(
                         RuntimeException(),
-                        initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2)
+                        initiatingFlowStackItem(SESSION_ID_1, SESSION_ID_2).sessionIds
                     )
                 )
         }
@@ -172,7 +173,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
 
         `when` {
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.SubFlowFailed(RuntimeException(), initiatingFlowStackItem()))
+                .suspendsWith(FlowIORequest.SubFlowFailed(RuntimeException(), initiatingFlowStackItem().sessionIds))
         }
 
         then {
@@ -195,7 +196,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(
                     FlowIORequest.SubFlowFailed(
                         RuntimeException(),
-                        nonInitiatingFlowStackItem()
+                        nonInitiatingFlowStackItem().sessionIds
                     )
                 )
         }
@@ -224,7 +225,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(
                     FlowIORequest.SubFlowFailed(
                         RuntimeException(),
-                        nonInitiatingFlowStackItem()
+                        nonInitiatingFlowStackItem().sessionIds
                     )
                 )
         }
@@ -252,7 +253,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(
                     FlowIORequest.SubFlowFailed(
                         RuntimeException(),
-                        nonInitiatingFlowStackItem()
+                        nonInitiatingFlowStackItem().sessionIds
                     )
                 )
         }
@@ -266,14 +267,15 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
     }
 
     private fun initiatingFlowStackItem(vararg sessionIds: String) =
-        FlowStackItem(FLOW_NAME, true, sessionIds.toMutableList(), mutableMapOf(), mutableMapOf())
+        FlowStackItem(FLOW_NAME, true, sessionIds.toList(), mutableKeyValuePairList(), mutableKeyValuePairList()
+    )
 
     private fun nonInitiatingFlowStackItem(): FlowStackItem =
         FlowStackItem(
             FLOW_NAME,
             false,
-            mutableListOf(INITIATED_SESSION_ID_1),
-            mutableMapOf(),
-            mutableMapOf()
+            listOf(INITIATED_SESSION_ID_1),
+            mutableKeyValuePairList(),
+            mutableKeyValuePairList()
         )
 }

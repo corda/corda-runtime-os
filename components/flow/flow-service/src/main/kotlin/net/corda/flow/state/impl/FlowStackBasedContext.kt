@@ -1,8 +1,10 @@
 package net.corda.flow.state.impl
 
+import net.corda.data.KeyValuePairList
+import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.state.ContextPlatformProperties
 import net.corda.flow.state.FlowContext
-import net.corda.flow.state.FlowStackItem
+import net.corda.flow.utils.KeyValueStore
 import net.corda.serialization.checkpoint.NonSerializable
 import net.corda.v5.application.flows.FlowContextProperties.Companion.CORDA_RESERVED_PREFIX
 
@@ -17,8 +19,10 @@ class FlowStackBasedContext(
 
     override val platformProperties = object : ContextPlatformProperties {
         override fun put(key: String, value: String) {
-            val platformContextKeyValueStore =
-                checkNotNull(flowStack.peek()) { "Attempt to set context before any items added to flow stack" }.contextPlatformProperties
+            val platformContextKeyValueStore = KeyValueStore(
+                checkNotNull(flowStack.peek())
+                { "Attempt to set context before any items added to flow stack" }.contextPlatformProperties
+            )
 
             require(getPropertyFromPlatformStack(key) == null) {
                 "'${key}' is already a platform context property, it cannot be overwritten"
@@ -29,8 +33,10 @@ class FlowStackBasedContext(
     }
 
     override fun put(key: String, value: String) {
-        val userContextKeyValueStore =
-            checkNotNull(flowStack.peek()) { "Attempt to set context before any items added to flow stack" }.contextUserProperties
+        val userContextKeyValueStore = KeyValueStore(
+            checkNotNull(flowStack.peek())
+            { "Attempt to set context before any items added to flow stack" }.contextUserProperties
+        )
 
         require(getPropertyFromPlatformStack(key) == null) {
             "'${key}' is already a platform context property, it cannot be overwritten with a user property"
@@ -54,14 +60,13 @@ class FlowStackBasedContext(
     /**
      * Return property searching the stack
      * @param key The key to search for
-     * @param block Lambda which takes a stack item and requires the return of a Map from that stack item in which to
+     * @param block Lambda which takes a stack item and requires the return of a list from that stack item in which to
      * search for the key
      */
-    private fun getPropertyFromStack(key: String, block: (FlowStackItem) -> Map<String, String>): String? {
+    private fun getPropertyFromStack(key: String, block: (FlowStackItem) -> KeyValuePairList): String? {
         flowStack.flowStackItems.asReversed().forEach { stackItem ->
-            block(stackItem)[key]?.let { return it }
+            KeyValueStore(block(stackItem))[key]?.let { return it }
         }
-
         return null
     }
 
@@ -73,15 +78,21 @@ class FlowStackBasedContext(
         return flowStack.flowStackItems.flatMapLaterKeysOverwrite { stackItem -> stackItem.contextUserProperties }
     }
 
-    private fun List<FlowStackItem>.flatMapLaterKeysOverwrite(block: (FlowStackItem) -> Map<String, String>): Map<String, String> {
+    private fun List<FlowStackItem>.flatMapLaterKeysOverwrite(block: (FlowStackItem) -> KeyValuePairList): Map<String, String> {
         val flattenedKeyValueStore = mutableMapOf<String, String>()
         this.forEach { stackItem ->
-            val stackItemKeyValueStore = block(stackItem)
+            val stackItemKeyValueStore = KeyValueStore(block(stackItem))
             // We iterate from the beginning of the stack to the end, so later values (those closer to the current stack
             // item) overwrite previous ones
             flattenedKeyValueStore += stackItemKeyValueStore
         }
 
         return flattenedKeyValueStore
+    }
+
+    private operator fun MutableMap<String, String>.plusAssign(toAdd: KeyValueStore) {
+        toAdd.avro.items.forEach { keyValuePair ->
+            this[keyValuePair.key] = keyValuePair.value
+        }
     }
 }

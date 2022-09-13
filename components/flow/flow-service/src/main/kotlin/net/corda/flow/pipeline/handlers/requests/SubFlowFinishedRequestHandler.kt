@@ -68,9 +68,8 @@ class SubFlowFinishedRequestHandler @Activate constructor(
     }
 
     private fun getSessionsToClose(checkpoint: FlowCheckpoint, request: FlowIORequest.SubFlowFinished): List<String> {
-        val flowStackItem = request.flowStackItem
-        val erroredSessions = flowSessionManager.getSessionsWithStatus(checkpoint, flowStackItem.sessionIds, SessionStateType.ERROR)
+        val erroredSessions = flowSessionManager.getSessionsWithStatus(checkpoint, request.sessionIds, SessionStateType.ERROR)
 
-        return flowStackItem.sessionIds - erroredSessions.map { it.sessionId }
+        return request.sessionIds - erroredSessions.map { it.sessionId }
     }
 }

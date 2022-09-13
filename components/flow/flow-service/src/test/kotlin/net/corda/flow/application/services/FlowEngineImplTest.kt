@@ -1,7 +1,8 @@
 package net.corda.flow.application.services
 
+import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.state.FlowStackItem
+import net.corda.flow.utils.mutableKeyValuePairList
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
@@ -20,7 +21,13 @@ class FlowEngineImplTest {
     private val flowStack = flowFiberService.flowStack
     private val sandboxDependencyInjector = flowFiberService.flowFiberExecutionContext.sandboxGroupContext.dependencyInjector
     private val flowFiber = flowFiberService.flowFiber
-    private val flowStackItem = FlowStackItem("flow-id", true, mutableListOf("session1", "session2"), mutableMapOf(), mutableMapOf())
+    private val flowStackItem = FlowStackItem.newBuilder()
+        .setFlowName("flow-id")
+        .setIsInitiatingFlow(true)
+        .setSessionIds(listOf())
+        .setContextPlatformProperties(mutableKeyValuePairList())
+        .setContextUserProperties(mutableKeyValuePairList())
+        .build()
     private val subFlow = mock<SubFlow<String>>()
     private val result = "result"
 
@@ -57,7 +64,8 @@ class FlowEngineImplTest {
             // and passed to the sub flow finished IO request
             argumentCaptor<FlowIORequest.SubFlowFinished>().apply {
                 verify(flowFiber).suspend(capture())
-                assertThat(firstValue.flowStackItem).isEqualTo(flowStackItem)
+
+                assertThat(firstValue.sessionIds).isEqualTo(flowStackItem.sessionIds)
             }
         }
     }
@@ -86,7 +94,9 @@ class FlowEngineImplTest {
             // to the SubFlowFailed IO request
             argumentCaptor<FlowIORequest.SubFlowFailed>().apply {
                 verify(flowFiber).suspend(capture())
-                assertThat(firstValue.flowStackItem).isEqualTo(flowStackItem)
+
+                assertThat(firstValue.throwable).isEqualTo(error)
+                assertThat(firstValue.sessionIds).isEqualTo(flowStackItem.sessionIds)
             }
         }
     }

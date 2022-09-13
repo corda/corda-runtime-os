@@ -5,6 +5,7 @@ import com.typesafe.config.ConfigValueFactory
 import java.nio.ByteBuffer
 import java.time.Instant
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.KeyValuePair
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.FlowEvent
@@ -30,7 +31,6 @@ import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.SubFlow
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.entry
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
@@ -133,7 +133,7 @@ class FlowCheckpointImplTest {
 
     @Test
     fun `existing checkpoint - ensures flow stack items are initialised`() {
-        val flowStackItem = flowStackItem()
+        val flowStackItem = FlowStackItem()
         val checkpoint = setupAvroCheckpoint(stackItems = listOf(flowStackItem))
         val flowCheckpoint = createFlowCheckpoint(checkpoint)
 
@@ -281,7 +281,7 @@ class FlowCheckpointImplTest {
 
         assertThat(avroCheckpoint.flowState.suspendedOn).isEqualTo("A")
         assertThat(avroCheckpoint.flowState.waitingFor).isEqualTo(waitingFor)
-        FlowStackItemAssertions.assertThat(flowStackItem).isRepresentationOf(avroCheckpoint.flowState.flowStackItems.first())
+        assertThat(avroCheckpoint.flowState.flowStackItems.first()).isEqualTo(flowStackItem)
         assertThat(avroCheckpoint.flowState.sessions.first()).isEqualTo(session1)
         assertThat(avroCheckpoint.flowState.fiber).isEqualTo(serializedFiber)
         assertThat(avroCheckpoint.pipelineState.maxFlowSleepDuration).isEqualTo(60000)
@@ -306,54 +306,54 @@ class FlowCheckpointImplTest {
     }
 
     @Test
-    fun `flow stack - peek first returns null if stack empty`() {
+    fun `flow stack - peek first throws if stack empty`() {
         val checkpoint = setupAvroCheckpoint()
         val flowCheckpoint = createFlowCheckpoint(checkpoint)
-
-        assertThat(flowCheckpoint.flowStack.peekFirst()).isNull()
+        assertThrows<IllegalStateException> { flowCheckpoint.flowStack.peekFirst() }
     }
 
     @Test
     fun `flow stack - peek first returns first item on the stack`() {
-        val item1 = flowStackItem()
-        val item2 = flowStackItem()
+        val item1 = FlowStackItem()
+        val item2 = FlowStackItem()
+
         val checkpoint = setupAvroCheckpoint(stackItems = listOf(item1, item2))
         val flowCheckpoint = createFlowCheckpoint(checkpoint)
 
-        FlowStackItemAssertions.assertThat(flowCheckpoint.flowStack.peekFirst()).isRepresentationOf(item1)
+        assertThat(flowCheckpoint.flowStack.peekFirst()).isEqualTo(item1)
     }
 
     @Test
     fun `flow stack - pop removes and returns top item`() {
-        val flowStackItem0 = flowStackItem()
-        val flowStackItem1 = flowStackItem()
+        val flowStackItem0 = FlowStackItem()
+        val flowStackItem1 = FlowStackItem()
         val checkpoint = setupAvroCheckpoint(stackItems = listOf(flowStackItem0, flowStackItem1))
 
         val service = createFlowCheckpoint(checkpoint).flowStack
-        FlowStackItemAssertions.assertThat(service.pop()).isRepresentationOf(flowStackItem1)
-        FlowStackItemAssertions.assertThat(service.pop()).isRepresentationOf(flowStackItem0)
+        assertThat(service.pop()).isEqualTo(flowStackItem1)
+        assertThat(service.pop()).isEqualTo(flowStackItem0)
 
     }
 
     @Test
     fun `flow stack - pop removes and returns null when stack empty`() {
-        val flowStackItem0 = flowStackItem()
+        val flowStackItem0 = FlowStackItem()
         val checkpoint = setupAvroCheckpoint(stackItems = listOf(flowStackItem0))
 
         val service = createFlowCheckpoint(checkpoint).flowStack
-        FlowStackItemAssertions.assertThat(service.pop()).isRepresentationOf(flowStackItem0)
+        assertThat(service.pop()).isEqualTo(flowStackItem0)
         assertThat(service.pop()).isNull()
     }
 
     @Test
     fun `flow stack - peek returns top item`() {
-        val flowStackItem0 = flowStackItem()
-        val flowStackItem1 = flowStackItem()
+        val flowStackItem0 = FlowStackItem()
+        val flowStackItem1 = FlowStackItem()
         val checkpoint = setupAvroCheckpoint(stackItems = listOf(flowStackItem0, flowStackItem1))
 
         val service = createFlowCheckpoint(checkpoint).flowStack
-        FlowStackItemAssertions.assertThat(service.peek()).isRepresentationOf(flowStackItem1)
-        FlowStackItemAssertions.assertThat(service.peek()).isRepresentationOf(flowStackItem1)
+        assertThat(service.peek()).isEqualTo(flowStackItem1)
+        assertThat(service.peek()).isEqualTo(flowStackItem1)
     }
 
     @Test
@@ -387,14 +387,14 @@ class FlowCheckpointImplTest {
         assertThat(flowStackItem1.flowName).isEqualTo(InitiatingFlowExample::class.qualifiedName)
         assertThat(flowStackItem1.isInitiatingFlow).isTrue
         assertThat(flowStackItem1.sessionIds).isEmpty()
-        assertThat(flowStackItem1.contextUserProperties).isEmpty()
-        assertThat(flowStackItem1.contextPlatformProperties).isEmpty()
+        assertThat(flowStackItem1.contextUserProperties.items).isEmpty()
+        assertThat(flowStackItem1.contextPlatformProperties.items).isEmpty()
 
         assertThat(flowStackItem2.flowName).isEqualTo(NonInitiatingFlowExample::class.qualifiedName)
         assertThat(flowStackItem2.isInitiatingFlow).isFalse
         assertThat(flowStackItem2.sessionIds).isEmpty()
-        assertThat(flowStackItem2.contextUserProperties).isEmpty()
-        assertThat(flowStackItem2.contextPlatformProperties).isEmpty()
+        assertThat(flowStackItem2.contextUserProperties.items).isEmpty()
+        assertThat(flowStackItem2.contextPlatformProperties.items).isEmpty()
     }
 
     @Test
@@ -414,14 +414,14 @@ class FlowCheckpointImplTest {
         assertThat(flowStackItem1.flowName).isEqualTo(InitiatingFlowExample::class.qualifiedName)
         assertThat(flowStackItem1.isInitiatingFlow).isTrue
         assertThat(flowStackItem1.sessionIds).isEmpty()
-        assertThat(flowStackItem1.contextUserProperties).contains(entry("key1", "value1"))
-        assertThat(flowStackItem1.contextPlatformProperties).contains(entry("key2", "value2"))
+        assertThat(flowStackItem1.contextUserProperties.items[0]).isEqualTo(KeyValuePair("key1", "value1"))
+        assertThat(flowStackItem1.contextPlatformProperties.items[0]).isEqualTo(KeyValuePair("key2", "value2"))
 
         assertThat(flowStackItem2.flowName).isEqualTo(NonInitiatingFlowExample::class.qualifiedName)
         assertThat(flowStackItem2.isInitiatingFlow).isFalse
         assertThat(flowStackItem2.sessionIds).isEmpty()
-        assertThat(flowStackItem2.contextUserProperties).contains(entry("key3", "value3"))
-        assertThat(flowStackItem2.contextPlatformProperties).contains(entry("key4", "value4"))
+        assertThat(flowStackItem2.contextUserProperties.items[0]).isEqualTo(KeyValuePair("key3", "value3"))
+        assertThat(flowStackItem2.contextPlatformProperties.items[0]).isEqualTo(KeyValuePair("key4", "value4"))
     }
 
     @Test
@@ -436,7 +436,7 @@ class FlowCheckpointImplTest {
         val checkpoint = setupAvroCheckpoint(stackItems = listOf(flowStackItem0, flowStackItem1, flowStackItem2))
 
         val service = createFlowCheckpoint(checkpoint).flowStack
-        FlowStackItemAssertions.assertThat(service.nearestFirst { it.isInitiatingFlow }).isRepresentationOf(flowStackItem1)
+        assertThat(service.nearestFirst { it.isInitiatingFlow }).isEqualTo(flowStackItem1)
     }
 
     @Test

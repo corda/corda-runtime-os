@@ -2,6 +2,7 @@ package net.corda.flow.pipeline.handlers.requests
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
+import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.SessionConfirmation
@@ -10,7 +11,7 @@ import net.corda.flow.RequestHandlerTestContext
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
-import net.corda.flow.state.FlowStackItem
+import net.corda.flow.utils.mutableKeyValuePairList
 import net.corda.messaging.api.records.Record
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -54,7 +55,13 @@ class SubFlowFinishedRequestHandlerTest {
     private val handler = SubFlowFinishedRequestHandler(flowSessionManager, testContext.flowRecordFactory)
 
     private fun createFlowStackItem(isInitiatingFlow: Boolean, sessions: List<String> = SESSIONS) =
-        FlowStackItem(FLOW_NAME, isInitiatingFlow, sessions.toMutableList(), mutableMapOf(), mutableMapOf())
+        FlowStackItem.newBuilder()
+            .setFlowName(FLOW_NAME)
+            .setIsInitiatingFlow(isInitiatingFlow)
+            .setSessionIds(sessions)
+            .setContextPlatformProperties(mutableKeyValuePairList())
+            .setContextUserProperties(mutableKeyValuePairList())
+            .build()
 
     @BeforeEach
     fun setup() {
@@ -80,7 +87,7 @@ class SubFlowFinishedRequestHandlerTest {
 
         val result = handler.getUpdatedWaitingFor(
             testContext.flowEventContext,
-            FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow))
+            FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow).sessionIds)
         )
 
         assertEquals(SessionConfirmation(SESSIONS, SessionConfirmationType.CLOSE), result.value)
@@ -101,7 +108,7 @@ class SubFlowFinishedRequestHandlerTest {
 
         val result = handler.getUpdatedWaitingFor(
             testContext.flowEventContext,
-            FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow))
+            FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow).sessionIds)
         )
 
         assertEquals(
@@ -123,7 +130,7 @@ class SubFlowFinishedRequestHandlerTest {
 
         val result = handler.getUpdatedWaitingFor(
             testContext.flowEventContext,
-            FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow))
+            FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow).sessionIds)
         )
 
         assertEquals(net.corda.data.flow.state.waiting.Wakeup(), result.value)
@@ -134,7 +141,7 @@ class SubFlowFinishedRequestHandlerTest {
     fun `Returns an updated WaitingFor of Wakeup when the flow  has no sessions to close`(isInitiatingFlow: Boolean) {
         val result = handler.getUpdatedWaitingFor(
             testContext.flowEventContext,
-            FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow, emptyList()))
+            FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow, emptyList()).sessionIds)
         )
 
         assertEquals(net.corda.data.flow.state.waiting.Wakeup(), result.value)
@@ -164,7 +171,7 @@ class SubFlowFinishedRequestHandlerTest {
 
         val result = handler.getUpdatedWaitingFor(
             testContext.flowEventContext,
-            FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow))
+            FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow).sessionIds)
         )
 
         assertEquals(SessionConfirmation(SESSIONS, SessionConfirmationType.CLOSE), result.value)
@@ -183,7 +190,7 @@ class SubFlowFinishedRequestHandlerTest {
         assertThrows<FlowFatalException> {
             handler.getUpdatedWaitingFor(
                 testContext.flowEventContext,
-                FlowIORequest.SubFlowFinished(createFlowStackItem(true))
+                FlowIORequest.SubFlowFinished(createFlowStackItem(true).sessionIds)
             )
         }
     }
@@ -213,7 +220,7 @@ class SubFlowFinishedRequestHandlerTest {
 
         val outputContext = handler.postProcess(
             testContext.flowEventContext,
-            FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow))
+            FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow).sessionIds)
         )
 
         verify(testContext.flowCheckpoint, never()).putSessionState(sessionState1)
@@ -257,7 +264,7 @@ class SubFlowFinishedRequestHandlerTest {
 
         val outputContext = handler.postProcess(
             testContext.flowEventContext,
-            FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow, emptyList()))
+            FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow, emptyList()).sessionIds)
         )
 
         verify(testContext.flowCheckpoint, never()).putSessionState(sessionState1)
@@ -292,7 +299,7 @@ class SubFlowFinishedRequestHandlerTest {
 
         val outputContext = handler.postProcess(
             testContext.flowEventContext,
-            FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow))
+            FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow).sessionIds)
         )
 
         verify(testContext.flowCheckpoint).putSessionState(sessionState1)
@@ -332,7 +339,7 @@ class SubFlowFinishedRequestHandlerTest {
 
         val outputContext = handler.postProcess(
             testContext.flowEventContext,
-            FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow))
+            FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow).sessionIds)
         )
 
         verify(testContext.flowCheckpoint, never()).putSessionState(sessionState1)
@@ -356,7 +363,7 @@ class SubFlowFinishedRequestHandlerTest {
         assertThrows<FlowFatalException> {
             handler.postProcess(
                 testContext.flowEventContext,
-                FlowIORequest.SubFlowFinished(createFlowStackItem(true))
+                FlowIORequest.SubFlowFinished(createFlowStackItem(true).sessionIds)
             )
         }
     }

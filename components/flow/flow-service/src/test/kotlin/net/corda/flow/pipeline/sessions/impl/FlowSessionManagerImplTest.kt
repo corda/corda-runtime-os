@@ -9,6 +9,7 @@ import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
 import net.corda.data.flow.event.session.SessionInit
+import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.session.SessionProcessState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
@@ -16,8 +17,8 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.flow.state.FlowStack
-import net.corda.flow.state.FlowStackItem
 import net.corda.flow.utils.KeyValueStore
+import net.corda.flow.utils.mutableKeyValuePairList
 import net.corda.session.manager.SessionManager
 import net.corda.test.flow.util.buildSessionEvent
 import net.corda.test.flow.util.buildSessionState
@@ -116,7 +117,13 @@ class FlowSessionManagerImplTest {
             }
         }
 
-        whenever(flowStack.peek()).thenReturn(FlowStackItem(INITIATING_FLOW_NAME, true, mutableListOf(), mutableMapOf(), mutableMapOf()))
+        whenever(flowStack.peek()).thenReturn(
+            FlowStackItem.newBuilder().setFlowName(INITIATING_FLOW_NAME).setIsInitiatingFlow(true)
+                .setSessionIds(emptyList()).setContextPlatformProperties(mutableKeyValuePairList())
+                .setContextUserProperties(
+                    mutableKeyValuePairList()
+                ).build()
+        )
         whenever(checkpoint.flowStartContext).thenReturn(FlowStartContext().apply {
             cpiId = CPI_ID
         })

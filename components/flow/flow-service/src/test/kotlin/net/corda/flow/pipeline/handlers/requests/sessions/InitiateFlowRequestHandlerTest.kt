@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.handlers.requests.sessions
 
+import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.SessionConfirmation
 import net.corda.data.flow.state.waiting.SessionConfirmationType
@@ -9,8 +10,8 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sessions.FlowProtocolStore
-import net.corda.flow.state.FlowStackItem
 import net.corda.flow.utils.keyValuePairListOf
+import net.corda.flow.utils.mutableKeyValuePairList
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -55,7 +56,13 @@ class InitiateFlowRequestHandlerTest {
         whenever(sandboxGroupContext.protocolStore).thenReturn(protocolStore)
         whenever(protocolStore.protocolsForInitiator(any(), any())).thenReturn(Pair("protocol", listOf(1)))
         whenever(testContext.flowStack.nearestFirst(any())).thenReturn(
-            FlowStackItem("flow", true, mutableListOf(), mutableMapOf(), mutableMapOf())
+            FlowStackItem(
+                "flow",
+                true,
+                mutableListOf(),
+                mutableKeyValuePairList(),
+                mutableKeyValuePairList()
+            )
         )
     }
 
