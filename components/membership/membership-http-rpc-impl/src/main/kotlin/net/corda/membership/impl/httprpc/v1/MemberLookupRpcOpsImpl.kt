@@ -1,7 +1,6 @@
 package net.corda.membership.impl.httprpc.v1
 
 import net.corda.httprpc.PluggableRPCOps
-import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.exception.ServiceUnavailableException
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -15,8 +14,8 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import net.corda.virtualnode.rpcops.common.impl.getByHoldingIdentityShortHashOrThrow
-import net.corda.virtualnode.rpcops.common.impl.ofOrThrow
+import net.corda.virtualnode.read.rpc.extensions.getByHoldingIdentityShortHashOrThrow
+import net.corda.virtualnode.read.rpc.extensions.ofOrThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

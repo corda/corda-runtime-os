@@ -12,7 +12,7 @@ import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgres
 import net.corda.membership.httprpc.v1.types.response.RegistrationRequestStatus
 import net.corda.membership.httprpc.v1.types.response.RegistrationStatus
 import net.corda.virtualnode.ShortHash
-import net.corda.virtualnode.rpcops.common.impl.ofOrThrow
+import net.corda.virtualnode.read.rpc.extensions.ofOrThrow
 
 /**
  * Convert [MemberRegistrationRequest] from the HTTP API to the internal DTO [MemberRegistrationRequestDto].

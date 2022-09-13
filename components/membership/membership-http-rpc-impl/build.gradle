@@ -18,7 +18,7 @@ dependencies {
     implementation project(":components:membership:membership-group-read")
     implementation project(":components:membership:membership-http-rpc")
     implementation project(":components:virtual-node:virtual-node-info-read-service")
-    implementation project(":components:virtual-node:virtual-node-rpcops-common")
+    implementation project(":components:virtual-node:virtual-node-info-read-service-rpc-extensions")
     implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:http-rpc:http-rpc")
     implementation project(":libs:lifecycle:lifecycle")

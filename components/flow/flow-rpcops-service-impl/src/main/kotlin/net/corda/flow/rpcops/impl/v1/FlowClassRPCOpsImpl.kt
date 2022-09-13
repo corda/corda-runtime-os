@@ -20,7 +20,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import net.corda.virtualnode.rpcops.common.impl.getByHoldingIdentityShortHashOrThrow
+import net.corda.virtualnode.read.rpc.extensions.getByHoldingIdentityShortHashOrThrow
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -90,7 +90,7 @@ class FlowClassRPCOpsImpl @Activate constructor(
     ): CpiMetadata {
         val vNodeCPIIdentifier = vNode.cpiIdentifier
         return cpiInfoReadService.get(CpiIdentifier.fromAvro(vNodeCPIIdentifier))
-            ?: throw ResourceNotFoundException("Failed to find a CPI for ID='${holdingIdentityShortHash}'")
+            ?: throw ResourceNotFoundException("CPI", holdingIdentityShortHash)
     }
 
     private fun getFlowClassesFromCPI(cpiMeta: CpiMetadata): StartableFlowsResponse {
