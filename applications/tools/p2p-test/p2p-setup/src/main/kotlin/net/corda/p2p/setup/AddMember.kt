@@ -24,7 +24,7 @@ import java.util.concurrent.Callable
 class AddMember : Callable<Collection<Record<String, MemberInfoEntry>>> {
     companion object {
         fun Config.toMemberRecord(topic: String = MEMBER_INFO_TOPIC): Record<String, MemberInfoEntry> {
-            val x500Name = this.getString("x500name")
+            val x500Name = this.getString("x500Name")
             val groupId = this.getString("groupId")
             val dataConfig = this.getConfig("data")
             val address = dataConfig.getString("address")

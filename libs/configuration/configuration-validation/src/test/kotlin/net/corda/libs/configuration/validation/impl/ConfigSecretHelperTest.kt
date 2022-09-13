@@ -22,10 +22,10 @@ class ConfigSecretHelperTest {
         "testString": "hello",
         "testReference": {
             "foo": [1, 2, 3.14],
-            "bar": "test",
             "bool": true,
-            "bar.${SmartConfig.SECRET_KEY}": "1111111111111",
-            "configSecret": $passwordsObject
+            "hidden": {
+                "configSecret": $passwordsObject
+            }
         }
        }
     """.trimIndent()
@@ -37,17 +37,15 @@ class ConfigSecretHelperTest {
         val inputNode = convertJSONToNode(input)!!
         val secrets = helper.hideSecrets(inputNode)
 
-        assertThat(inputNode["testReference"][SmartConfig.SECRET_KEY].textValue()).isEqualTo(MaskedSecretsLookupService.MASK_VALUE)
-        assertThat(inputNode["testReference"]["bar.${SmartConfig.SECRET_KEY}"].textValue()).isEqualTo(MaskedSecretsLookupService.MASK_VALUE)
-        assertThat(inputNode["testReference"]["bar"].textValue()).isEqualTo("test")
+        assertThat(inputNode["testReference"]["hidden"].textValue()).isEqualTo(MaskedSecretsLookupService.MASK_VALUE)
+        assertThat(inputNode["testString"].textValue()).isEqualTo("hello")
 
         helper.insertSecrets(inputNode, secrets)
 
         val secretsNode = convertJSONToNode(passwordsObject)!!
 
-        assertThat(inputNode["testReference"][SmartConfig.SECRET_KEY]).isEqualTo(secretsNode)
-        assertThat(inputNode["testReference"]["bar.${SmartConfig.SECRET_KEY}"].textValue()).isEqualTo("1111111111111")
-        assertThat(inputNode["testReference"]["bar"].textValue()).isEqualTo("test")
+        assertThat(inputNode["testReference"]["hidden"][SmartConfig.SECRET_KEY]).isEqualTo(secretsNode)
+        assertThat(inputNode["testString"].textValue()).isEqualTo("hello")
     }
 
     private fun convertJSONToNode(json: String?): JsonNode? {

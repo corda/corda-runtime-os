@@ -15,6 +15,7 @@ import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.Party
@@ -102,5 +103,6 @@ class ConsensualLedgerServiceImplTest {
             .withStates(testConsensualState)
             .signInitial(testPublicKey)
         assertIs<ConsensualSignedTransaction>(signedTransaction)
+        assertIs<SecureHash>(signedTransaction.id)
     }
 }

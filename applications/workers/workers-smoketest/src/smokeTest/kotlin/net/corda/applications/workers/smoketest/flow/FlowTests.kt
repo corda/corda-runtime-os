@@ -12,9 +12,9 @@ import net.corda.applications.workers.smoketest.X500_DAVID
 import net.corda.applications.workers.smoketest.awaitMultipleRpcFlowFinished
 import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
 import net.corda.applications.workers.smoketest.createKeyFor
-import net.corda.applications.workers.smoketest.getOrCreateVirtualNodeFor
 import net.corda.applications.workers.smoketest.getFlowClasses
 import net.corda.applications.workers.smoketest.getHoldingIdShortHash
+import net.corda.applications.workers.smoketest.getOrCreateVirtualNodeFor
 import net.corda.applications.workers.smoketest.getRpcFlowResult
 import net.corda.applications.workers.smoketest.registerMember
 import net.corda.applications.workers.smoketest.startRpcFlow
@@ -116,6 +116,11 @@ class FlowTests {
 
         startRpcFlow(bobHoldingId, requestBody)
         startRpcFlow(bobHoldingId, requestBody, 409)
+    }
+
+    @Test
+    fun `start RPC flow for flow not in startable list, returns an error code of 400`() {
+        startRpcFlow(bobHoldingId, emptyMap(), "InvalidFlow", 400)
     }
 
     @Test
@@ -521,27 +526,32 @@ class FlowTests {
               "rpcFlow": {
                 "platform": "account-zero",
                 "user1": "user1-set",
-                "user2": "null"
+                "user2": "null",
+                "user3": "null"
               },
               "rpcSubFlow": {
                 "platform": "account-zero",
                 "user1": "user1-set",
-                "user2": "user2-set"
+                "user2": "user2-set",
+                "user3": "null"
               },
               "initiatedFlow": {
                 "platform": "account-zero",
                 "user1": "user1-set",
-                "user2": "user2-set"
+                "user2": "user2-set",
+                "user3": "user3-set"
               },
               "initiatedSubFlow": {
                 "platform": "account-zero",
                 "user1": "user1-set",
-                "user2": "user2-set-ContextPropagationInitiatedFlow"
+                "user2": "user2-set-ContextPropagationInitiatedFlow",
+                "user3": "user3-set"
               },
               "rpcFlowAtComplete": {
                 "platform": "account-zero",
                 "user1": "user1-set",
-                "user2": "null"
+                "user2": "null",
+                "user3": "null"
               }
             }
             """.filter { !it.isWhitespace() }
@@ -551,12 +561,30 @@ class FlowTests {
     }
 
     @Test
-    fun flowsCanUseInheritance() {
+    fun `Flows can use inheritance`() {
         val requestId = startRpcFlow(bobHoldingId, mapOf("id" to X500_CHARLIE), dependencyInjectionTestFlowName)
         val result = awaitRpcFlowFinished(bobHoldingId, requestId)
 
         assertThat(result.flowError).isNull()
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(result.flowResult).isEqualTo(X500_CHARLIE)
+    }
+
+    @Test
+    fun `Serialize and deserialize an object`() {
+        val dataToSerialize = "serialize this"
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "serialization"
+            data = mapOf("data" to dataToSerialize)
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        val flowResult = result.getRpcFlowResult()
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(result.flowError).isNull()
+        assertThat(flowResult.result).isEqualTo(dataToSerialize)
+        assertThat(flowResult.command).isEqualTo("serialization")
     }
 }

@@ -1,6 +1,7 @@
 package net.corda.membership.certificate.client
 
 import net.corda.lifecycle.Lifecycle
+import net.corda.virtualnode.ShortHash
 
 /**
  * A client that handles certificates requests.
@@ -29,7 +30,7 @@ interface CertificatesClient : Lifecycle {
      * @throws CertificatesResourceNotFoundException if a resource was not found.
      */
     fun setupLocallyHostedIdentity(
-        holdingIdentityShortHash: String,
+        holdingIdentityShortHash: ShortHash,
         p2pTlsCertificateChainAlias: String,
         p2pTlsTenantId: String?,
         sessionKeyTenantId: String?,

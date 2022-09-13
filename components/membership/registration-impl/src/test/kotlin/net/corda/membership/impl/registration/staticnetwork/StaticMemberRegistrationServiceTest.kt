@@ -219,26 +219,23 @@ class StaticMemberRegistrationServiceTest {
         registrationService.start()
         val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
         val registrationResult = registrationService.register(registrationId, alice, mockContext)
-        Mockito.verify(mockPublisher, times(2)).publish(capturedPublishedList.capture())
+        Mockito.verify(mockPublisher, times(1)).publish(capturedPublishedList.capture())
         CryptoConsts.Categories.all.forEach {
             Mockito.verify(hsmRegistrationClient, times(1)).findHSM(aliceId.value, it)
             Mockito.verify(hsmRegistrationClient, times(1)).assignSoftHSM(aliceId.value, it)
         }
         registrationService.stop()
 
-        val memberList = capturedPublishedList.firstValue
-        assertEquals(3, memberList.size)
+        val publishedList = capturedPublishedList.firstValue
+        assertEquals(4, publishedList.size)
 
-        val hostedIdentityList = capturedPublishedList.secondValue
-        assertEquals(1, hostedIdentityList.size)
-
-        memberList.forEach {
+        publishedList.take(3).forEach {
             assertTrue(it.key.startsWith(aliceId.value) || it.key.startsWith(bobId.value)
                     || it.key.startsWith(charlieId.value))
             assertTrue(it.key.endsWith(aliceId.value))
         }
 
-        val publishedInfo = memberList.first()
+        val publishedInfo = publishedList.first()
 
         assertEquals(Schemas.Membership.MEMBER_LIST_TOPIC, publishedInfo.topic)
         val persistentMemberPublished = publishedInfo.value as PersistentMemberInfo
@@ -259,7 +256,8 @@ class StaticMemberRegistrationServiceTest {
         assertEquals(MEMBER_STATUS_ACTIVE, memberPublished.status)
         assertEquals(1, memberPublished.endpoints.size)
 
-        val publishedHostedIdentity = hostedIdentityList.first()
+        // we publish the hosted identity as the last item
+        val publishedHostedIdentity = publishedList.last()
 
         assertEquals(alice.shortHash.value, publishedHostedIdentity.key)
         assertEquals(P2P_HOSTED_IDENTITIES_TOPIC, publishedHostedIdentity.topic)

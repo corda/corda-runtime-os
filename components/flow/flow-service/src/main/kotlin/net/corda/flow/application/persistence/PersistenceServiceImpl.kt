@@ -11,10 +11,10 @@ import net.corda.flow.application.persistence.external.events.RemoveExternalEven
 import net.corda.flow.application.persistence.external.events.RemoveParameters
 import net.corda.flow.application.persistence.query.PagedQueryFactory
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.flow.fiber.FlowFiberSerializationService
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.application.persistence.ParameterisedQuery
 import net.corda.v5.application.persistence.PersistenceService
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -29,8 +29,8 @@ class PersistenceServiceImpl @Activate constructor(
     private val externalEventExecutor: ExternalEventExecutor,
     @Reference(service = PagedQueryFactory::class)
     private val pagedQueryFactory: PagedQueryFactory,
-    @Reference(service = FlowFiberSerializationService::class)
-    private val flowFiberSerializationService: FlowFiberSerializationService
+    @Reference(service = SerializationService::class)
+    private val serializationService: SerializationService
 ) : PersistenceService, SingletonSerializeAsToken {
 
     @Suspendable
@@ -41,7 +41,7 @@ class PersistenceServiceImpl @Activate constructor(
                 FindExternalEventFactory::class.java,
                 FindParameters(entityClass, listOf(serialize(primaryKey)))
             )
-        }.firstOrNull()?.let { flowFiberSerializationService.deserialize(it.array(), entityClass) }
+        }.firstOrNull()?.let { serializationService.deserialize(it.array(), entityClass) }
     }
 
     @Suspendable
@@ -52,7 +52,7 @@ class PersistenceServiceImpl @Activate constructor(
                 FindExternalEventFactory::class.java,
                 FindParameters(entityClass, primaryKeys.map { serialize(it) })
             )
-        }.map { flowFiberSerializationService.deserialize(it.array(), entityClass) }
+        }.map { serializationService.deserialize(it.array(), entityClass) }
     }
 
     @Suspendable
@@ -69,7 +69,7 @@ class PersistenceServiceImpl @Activate constructor(
                 MergeExternalEventFactory::class.java,
                 MergeParameters(listOf(serialize(entity)))
             )
-        }.firstOrNull()?.let { flowFiberSerializationService.deserialize(it.array(), entity::class.java) }
+        }.firstOrNull()?.let { serializationService.deserialize(it.array(), entity::class.java) }
     }
 
     @Suspendable
@@ -86,7 +86,7 @@ class PersistenceServiceImpl @Activate constructor(
             // deserialized into the correct types. This assumes that the order of [mergedEntities] is the same as
             // [entities].
             entities.zip(mergedEntities).map { (entity, mergedEntity) ->
-                flowFiberSerializationService.deserialize(mergedEntity.array(), entity::class.java)
+                serializationService.deserialize(mergedEntity.array(), entity::class.java)
             }
         } else {
             emptyList()
@@ -164,6 +164,6 @@ class PersistenceServiceImpl @Activate constructor(
     }
 
     private fun serialize(payload: Any): ByteBuffer {
-        return ByteBuffer.wrap(flowFiberSerializationService.serialize(payload).bytes)
+        return ByteBuffer.wrap(serializationService.serialize(payload).bytes)
     }
 }

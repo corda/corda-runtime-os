@@ -12,7 +12,7 @@ class InitiatedSmokeTestFlow : ResponderFlow {
 
     @Suspendable
     override fun call(session: FlowSession) {
-        val received = session.receive<InitiatedSmokeTestMessage>().unwrap { it }
+        val received = session.receive<InitiatedSmokeTestMessage>()
         session.send(InitiatedSmokeTestMessage("echo:${received.message}"))
     }
 }

@@ -28,7 +28,7 @@ class BrokenProtocolFlow : RPCStartableFlow {
                 country = "GB"
             )
         )
-        session.sendAndReceive<MyClass>(MyClass("Serialize me please", 1)).unwrap { it }
+        session.sendAndReceive<MyClass>(MyClass("Serialize me please", 1))
         return ""
     }
 }

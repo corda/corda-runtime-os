@@ -2,31 +2,21 @@ package net.corda.ledger.common.impl.transaction
 
 import net.corda.crypto.core.concatByteArrays
 import net.corda.crypto.core.toByteArray
-import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_ENTROPY_OPTION
+import net.corda.v5.ledger.common.transaction.PrivacySalt
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION
-import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NONCE_NAME
-import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_TWEAKABLE_NAME
+import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_ENTROPY_OPTION
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.crypto.merkle.MerkleTreeHashDigestProvider
-import net.corda.v5.ledger.common.transaction.PrivacySalt
-
-internal const val ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME = HASH_DIGEST_PROVIDER_TWEAKABLE_NAME
-internal val ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME = DigestAlgorithmName.SHA2_256D
-
-internal const val COMPONENT_MERKLE_TREE_DIGEST_PROVIDER_NAME = HASH_DIGEST_PROVIDER_NONCE_NAME
-internal val COMPONENT_MERKLE_TREE_DIGEST_ALGORITHM_NAME = DigestAlgorithmName.SHA2_256D
-internal val COMPONENT_MERKLE_TREE_ENTROPY_ALGORITHM_NAME = DigestAlgorithmName.SHA2_256D
+import java.util.Base64
 
 const val ALL_LEDGER_METADATA_COMPONENT_GROUP_ID = 0
 
-@CordaSerializable
 class WireTransaction(
     private val merkleTreeFactory: MerkleTreeFactory,
     private val digestService: DigestService,
@@ -37,29 +27,78 @@ class WireTransaction(
         rootMerkleTree.root
     }
 
+    val metadata: TransactionMetaData
+
     init {
         check(componentGroupLists.all { it.isNotEmpty() }) { "Empty component groups are not allowed" }
         check(componentGroupLists.all { i -> i.all { j-> j.isNotEmpty() } }) { "Empty components are not allowed" }
+
+        val mapper = jacksonObjectMapper()
+        val metadataBytes = componentGroupLists[ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first()
+        metadata = mapper.readValue(metadataBytes, TransactionMetaData::class.java) // TODO(update with CORE-5940)
+
+        check(metadata.getDigestSettings() == WireTransactionDigestSettings.defaultValues) {
+            "Only the default digest settings are acceptable now! ${metadata.getDigestSettings()} vs " +
+                    "${WireTransactionDigestSettings.defaultValues}"
+        }
     }
 
     fun getComponentGroupList(componentGroupId: Int): List<ByteArray> =
         componentGroupLists[componentGroupId]
 
-    fun getWrappedLedgerTransactionClassName(serializer: SerializationService): String {
-        return this.getMetadata(serializer).getLedgerModel()
+    val wrappedLedgerTransactionClassName: String
+        get() {
+            return this.metadata.getLedgerModel()
+        }
+
+    private fun getDigestSetting(settingKey: String): Any {
+        return this.metadata.getDigestSettings()[settingKey]!!
     }
 
-    fun getMetadata(serializer: SerializationService): TransactionMetaData {
-        val metadataBytes = componentGroupLists[ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first()
-        return serializer.deserialize(metadataBytes, TransactionMetaData::class.java)
-    }
+    private val rootMerkleTreeDigestProviderName get() =
+        getDigestSetting(ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY) as String
 
-    private fun getRootMerkleTreeDigestProvider() : MerkleTreeHashDigestProvider = merkleTreeFactory.createHashDigestProvider(
-        ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME,
-        ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME,
+    private val rootMerkleTreeDigestAlgorithmName
+        get() = DigestAlgorithmName(
+            getDigestSetting(
+                ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY
+            ) as String
+        )
+
+    private val rootMerkleTreeDigestOptionsLeafPrefix
+        get() = Base64.getDecoder()
+            .decode(getDigestSetting(ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY) as String)
+
+    private val rootMerkleTreeDigestOptionsNodePrefix
+        get() = Base64.getDecoder()
+            .decode(getDigestSetting(ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY) as String)
+
+    private val componentMerkleTreeEntropyAlgorithmName
+        get() = DigestAlgorithmName(
+            getDigestSetting(
+                COMPONENT_MERKLE_TREE_ENTROPY_ALGORITHM_NAME_KEY
+            ) as String
+        )
+
+    private val componentMerkleTreeDigestProviderName
+        get() = getDigestSetting(
+            COMPONENT_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY
+        ) as String
+
+    private val componentMerkleTreeDigestAlgorithmName
+        get() = DigestAlgorithmName(
+            getDigestSetting(
+                COMPONENT_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY
+            ) as String
+        )
+
+    private fun getRootMerkleTreeDigestProvider() : MerkleTreeHashDigestProvider =
+        merkleTreeFactory.createHashDigestProvider(
+        rootMerkleTreeDigestProviderName,
+        rootMerkleTreeDigestAlgorithmName,
         mapOf(
-            HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION to "leaf".toByteArray(Charsets.UTF_8),
-            HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION to "node".toByteArray(Charsets.UTF_8)
+            HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION to rootMerkleTreeDigestOptionsLeafPrefix,
+            HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION to rootMerkleTreeDigestOptionsNodePrefix
         )
     )
 
@@ -69,7 +108,7 @@ class WireTransaction(
     ): ByteArray =
         digestService.hash(
             concatByteArrays(privacySalt.bytes, componentGroupIndexBytes),
-            COMPONENT_MERKLE_TREE_ENTROPY_ALGORITHM_NAME
+            componentMerkleTreeEntropyAlgorithmName
         ).bytes
 
     private fun getComponentGroupMerkleTreeDigestProvider(
@@ -77,8 +116,8 @@ class WireTransaction(
         componentGroupIndex: Int
     ) : MerkleTreeHashDigestProvider =
         merkleTreeFactory.createHashDigestProvider(
-            COMPONENT_MERKLE_TREE_DIGEST_PROVIDER_NAME,
-            COMPONENT_MERKLE_TREE_DIGEST_ALGORITHM_NAME,
+            componentMerkleTreeDigestProviderName,
+            componentMerkleTreeDigestAlgorithmName,
             mapOf(
                 HASH_DIGEST_PROVIDER_ENTROPY_OPTION to
                     getComponentGroupEntropy(privacySalt, componentGroupIndex.toByteArray())
