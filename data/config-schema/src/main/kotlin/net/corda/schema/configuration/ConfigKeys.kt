@@ -28,6 +28,7 @@ object ConfigKeys {
     const val RPC_AZUREAD_CLIENT_ID = "sso.azureAd.clientId"
     const val RPC_AZUREAD_CLIENT_SECRET = "sso.azureAd.clientSecret"
     const val RPC_AZUREAD_TENANT_ID = "sso.azureAd.tenantId"
+    const val RPC_WEBSOCKET_CONNECTION_IDLE_TIMEOUT_MS = "websocket.idleTimeoutMs"
 
     // Secrets Service
     const val SECRETS_PASSPHRASE = "passphrase"

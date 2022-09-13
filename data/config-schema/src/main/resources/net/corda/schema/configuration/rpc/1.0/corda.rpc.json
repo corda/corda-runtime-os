@@ -48,6 +48,20 @@
           "default": 12000
         }
       }
+    },
+    "websocket": {
+      "description": "Configuration settings for WebSockets.",
+      "type": "object",
+      "default": {},
+      "properties": {
+        "idleTimeoutMs": {
+          "description": "Amount of time in milliseconds for a websocket connection to be idle (i.e. no messages are either sent or received) before timing out and closing the connection. Value of 0 means such idle check will be disabled.",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647,
+          "default": 30000
+        }
+      }
     }
   }
 }
