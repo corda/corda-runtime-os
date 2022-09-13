@@ -18,7 +18,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
-@Component(service = [MerkleTreeFactory::class, SingletonSerializeAsToken::class], scope = PROTOTYPE)
+@Component(service = [MerkleTreeFactory::class, SingletonSerializeAsToken::class], scope = PROTOTYPE, property=["corda.system=true"])
 class MerkleTreeFactoryImpl @Activate constructor(
     @Reference(service = DigestService::class)
     private val digestService: DigestService
