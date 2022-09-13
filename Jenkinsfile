@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@5.0') _
+@Library('corda-shared-build-pipeline-steps@DP2') _
 
 cordaPipeline(
     runIntegrationTests: false,
