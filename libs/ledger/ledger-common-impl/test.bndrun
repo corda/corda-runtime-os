@@ -11,4 +11,5 @@
     bnd.identity;id='junit-platform-launcher',\
     bnd.identity;id='net.corda.cipher-suite-impl',\
     bnd.identity;id='net.corda.merkle-impl',\
+    bnd.identity;id='net.corda.serialization-kryo',\
     bnd.identity;id='slf4j.simple'
