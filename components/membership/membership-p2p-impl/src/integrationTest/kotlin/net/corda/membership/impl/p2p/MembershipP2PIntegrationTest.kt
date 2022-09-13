@@ -50,7 +50,7 @@ import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.app.UnauthenticatedMessageHeader
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
-import net.corda.schema.Schemas.Membership.Companion.SYNCHRONISATION_TOPIC
+import net.corda.schema.Schemas.Membership.Companion.SYNCHRONIZATION_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
@@ -432,7 +432,7 @@ class MembershipP2PIntegrationTest {
         val completableResult = CompletableFuture<SynchronisationCommand>()
 
         val syncRequestSubscription = subscriptionFactory.createPubSubSubscription(
-            SubscriptionConfig("membership_p2p_sync_test_receiver", SYNCHRONISATION_TOPIC),
+            SubscriptionConfig("membership_p2p_sync_test_receiver", SYNCHRONIZATION_TOPIC),
             getPubSubTestProcessor { v ->
                 completableResult.complete(v as SynchronisationCommand)
             },
