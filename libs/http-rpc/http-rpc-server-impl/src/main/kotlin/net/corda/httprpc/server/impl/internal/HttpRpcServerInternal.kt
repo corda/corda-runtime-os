@@ -375,7 +375,13 @@ internal class HttpRpcServerInternal(
 
             ws(
                 routeInfo.fullPath,
-                routeInfo.setupWsCall(securityManager, credentialResolver, webSocketCloserService, webSocketRouteAdaptors)
+                routeInfo.setupWsCall(
+                    securityManager,
+                    credentialResolver,
+                    webSocketCloserService,
+                    webSocketRouteAdaptors,
+                    configurationsProvider.getWebSocketIdleTimeoutMs()
+                )
             )
 
             log.debug { "Add WS handler for \"${routeInfo.fullPath}\" completed." }

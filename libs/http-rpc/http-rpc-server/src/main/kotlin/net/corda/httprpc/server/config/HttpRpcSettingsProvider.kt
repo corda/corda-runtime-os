@@ -58,4 +58,9 @@ interface HttpRpcSettingsProvider {
     fun getSsoSettings(): SsoSettingsProvider?
 
     fun maxContentLength(): Int
+
+    /**
+     * @return The time (in milliseconds) after which an idle websocket connection will be timed out and closed
+     */
+    fun getWebSocketIdleTimeoutMs(): Long
 }
