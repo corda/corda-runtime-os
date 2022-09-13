@@ -267,8 +267,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
     }
 
     private fun initiatingFlowStackItem(vararg sessionIds: String) =
-        FlowStackItem(FLOW_NAME, true, sessionIds.toList(), mutableKeyValuePairList(), mutableKeyValuePairList()
-    )
+        FlowStackItem(FLOW_NAME, true, sessionIds.toList(), mutableKeyValuePairList(), mutableKeyValuePairList())
 
     private fun nonInitiatingFlowStackItem(): FlowStackItem =
         FlowStackItem(
