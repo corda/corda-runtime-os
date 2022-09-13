@@ -1,14 +1,29 @@
 {
   "type": "record",
-  "name": "UniquenessCheckResultTimeWindowOutOfBounds",
+  "name": "UniquenessCheckRequestAvro",
   "namespace": "net.corda.data.uniqueness",
   "fields": [
     {
-      "name": "evaluationTimestamp",
+      "name": "txId",
+      "type": "string"
+    },
+    {
+      "name": "inputStates",
       "type": {
-        "type": "long",
-        "logicalType": "timestamp-millis"
+        "type": "array",
+        "items": "string"
       }
+    },
+    {
+      "name": "referenceStates",
+      "type": {
+        "type": "array",
+        "items": "string"
+      }
+    },
+    {
+      "name": "numOutputStates",
+      "type": "int"
     },
     {
       "name": "timeWindowLowerBound",

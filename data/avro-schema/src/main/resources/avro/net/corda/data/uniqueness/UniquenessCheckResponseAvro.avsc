@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "UniquenessCheckResponseAvro",
+  "namespace": "net.corda.data.uniqueness",
+  "fields": [
+    {
+      "name": "txId",
+      "type": "string"
+    },
+    {
+      "name": "result",
+      "type": [
+        "net.corda.data.uniqueness.UniquenessCheckResultSuccessAvro",
+        "net.corda.data.uniqueness.UniquenessCheckResultInputStateConflictAvro",
+        "net.corda.data.uniqueness.UniquenessCheckResultInputStateUnknownAvro",
+        "net.corda.data.uniqueness.UniquenessCheckResultReferenceStateConflictAvro",
+        "net.corda.data.uniqueness.UniquenessCheckResultReferenceStateUnknownAvro",
+        "net.corda.data.uniqueness.UniquenessCheckResultTimeWindowOutOfBoundsAvro",
+        "net.corda.data.uniqueness.UniquenessCheckResultMalformedRequestAvro"
+      ]
+    }
+  ]
+}

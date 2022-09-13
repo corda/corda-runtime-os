@@ -1,6 +1,6 @@
 {
   "type": "record",
-  "name": "UniquenessCheckResultReferenceStateUnknown",
+  "name": "UniquenessCheckResultReferenceStateUnknownAvro",
   "namespace": "net.corda.data.uniqueness",
   "fields": [
     {

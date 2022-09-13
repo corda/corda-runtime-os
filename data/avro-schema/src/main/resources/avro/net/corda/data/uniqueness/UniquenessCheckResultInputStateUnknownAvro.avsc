@@ -1,10 +1,10 @@
 {
   "type": "record",
-  "name": "UniquenessCheckResultInputStateConflict",
+  "name": "UniquenessCheckResultInputStateUnknownAvro",
   "namespace": "net.corda.data.uniqueness",
   "fields": [
     {
-      "name": "conflictingStates",
+      "name": "unknownStates",
       "type": {
         "type": "array",
         "items": "string"

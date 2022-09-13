@@ -1,6 +1,6 @@
 {
   "type": "record",
-  "name": "UniquenessCheckResultSuccess",
+  "name": "UniquenessCheckResultSuccessAvro",
   "namespace": "net.corda.data.uniqueness",
   "fields": [
     {
