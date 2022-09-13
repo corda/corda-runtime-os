@@ -240,7 +240,7 @@ class GroupPolicyProviderImpl @Activate constructor(
                         null
                     }
                     if(groupPolicyToStore == null) {
-                        groupPolicies.remove(it)
+                        groupPolicies.compute(it) { _, _ -> null }
                     } else if (groupPolicyToStore !is MGMGroupPolicy) {
                         logger.info("Caching group policy for member.")
                         groupPolicies[it] = groupPolicyToStore
