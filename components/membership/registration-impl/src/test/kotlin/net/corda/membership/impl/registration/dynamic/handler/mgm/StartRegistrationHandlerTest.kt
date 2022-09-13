@@ -17,6 +17,7 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -109,10 +110,17 @@ class StartRegistrationHandlerTest {
         on { parseList(eq(ENDPOINTS), eq(EndpointInfo::class.java)) } doReturn listOf(mock())
     }
     val memberMgmContext: MGMContext = mock {
+        on { parse(eq(MODIFIED_TIME), eq(Instant::class.java)) } doReturn clock.instant()
         on { entries } doReturn emptySet()
     }
     val memberInfo: MemberInfo = mock {
         on { name } doReturn x500Name
+        on { isActive } doReturn true
+        on { memberProvidedContext } doReturn memberMemberContext
+        on { mgmProvidedContext } doReturn memberMgmContext
+    }
+    val declinedMember: MemberInfo = mock {
+        on { isActive } doReturn false
         on { memberProvidedContext } doReturn memberMemberContext
         on { mgmProvidedContext } doReturn memberMgmContext
     }
@@ -325,7 +333,7 @@ class StartRegistrationHandlerTest {
     @Test
     fun `declined if member already exists`() {
         whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
-            .doReturn(MembershipQueryResult.Success(listOf(mock())))
+            .doReturn(MembershipQueryResult.Success(listOf(memberInfo)))
         with(
             handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
         ) {
@@ -342,6 +350,22 @@ class StartRegistrationHandlerTest {
             lookup = true,
             queryMemberInfo = true,
         )
+    }
+
+    @Test
+    fun `approve if member already exists but has DECLINED as last status`() {
+        whenever(membershipQueryClient.queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any()))
+            .doReturn(MembershipQueryResult.Success(listOf(memberInfo, declinedMember)))
+        with(
+            handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+        ) {
+            assertThat(updatedState).isNotNull
+            assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
+            assertThat(updatedState!!.registeringMember).isEqualTo(holdingIdentity)
+            assertThat(outputStates).isNotEmpty.hasSize(2)
+
+            assertRegistrationStarted()
+        }
     }
 
     @Test
