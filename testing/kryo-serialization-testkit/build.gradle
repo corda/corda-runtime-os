@@ -1,0 +1,19 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Kryo serialization test utilities'
+
+dependencies {
+    implementation "com.esotericsoftware:kryo:$kryoVersion"
+    implementation "org.apache.felix:org.apache.felix.framework:$felixVersion"
+    implementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+
+    implementation project(":libs:serialization:serialization-kryo")
+    implementation project(":libs:serialization:serialization-checkpoint-api")
+    implementation project(":libs:sandbox")
+    implementation project(":libs:crypto:cipher-suite-impl")
+}
