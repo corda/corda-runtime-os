@@ -1,5 +1,6 @@
 package net.corda.simulator.runtime.flows
 
+import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.runtime.messaging.SimFiber
 import net.corda.simulator.runtime.tools.CordaFlowChecker
 import net.corda.simulator.tools.FlowChecker
@@ -27,7 +28,7 @@ class InjectingFlowEngineTest {
         val injector = mock<FlowServicesInjector>()
 
         // And a flow engine which uses them
-        val engine = InjectingFlowEngine(member, fiber, injector, CordaFlowChecker())
+        val engine = InjectingFlowEngine(mock(), member, fiber, injector, CordaFlowChecker())
 
         // When we pass a subflow to the flow engine
         val flow = mock<SubFlow<String>>()
@@ -48,10 +49,11 @@ class InjectingFlowEngineTest {
         val fiber = mock<SimFiber>()
         val injector = mock<FlowServicesInjector>()
         val flowChecker = mock<FlowChecker>()
+        val configuration = mock<SimulatorConfiguration>()
         whenever(flowChecker.check(any())).thenThrow(IllegalArgumentException())
 
         // And a flow engine which uses them
-        val engine = InjectingFlowEngine(member, fiber, injector, flowChecker)
+        val engine = InjectingFlowEngine(configuration, member, fiber, injector, flowChecker)
 
         // When we pass a subflow to the flow engine
         val flow = mock<SubFlow<String>>()

@@ -25,8 +25,8 @@ class UtilitiesTest {
         val b = B()
 
         // When we inject into both of them
-        b.injectIfRequired(String::class.java, "Hello!")
-        b.injectIfRequired(Any::class.java, Object())
+        b.injectIfRequired(String::class.java) { "Hello!" }
+        b.injectIfRequired(Any::class.java) { Object() }
 
         // Then the declared field should be set, but not the inherited one
         assertNotNull(b.declaredField)
