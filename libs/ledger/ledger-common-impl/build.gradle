@@ -11,8 +11,10 @@ dependencies {
 
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+
     implementation "net.corda:corda-ledger-common"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+
     implementation project(":libs:serialization:serialization-kryo")
     implementation project(":libs:serialization:serialization-checkpoint-api")
     implementation project(":libs:crypto:crypto-core")
