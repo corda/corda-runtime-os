@@ -1,18 +1,17 @@
 package net.corda.simulator.runtime.persistence
 
+import net.corda.db.admin.impl.ClassloaderChangeLog
+import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.simulator.runtime.utils.sandboxName
 import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.application.persistence.ParameterizedQuery
 import net.corda.v5.base.types.MemberX500Name
-import org.hibernate.cfg.AvailableSettings.DIALECT
-import org.hibernate.cfg.AvailableSettings.HBM2DDL_AUTO
-import org.hibernate.cfg.AvailableSettings.JPA_JDBC_DRIVER
-import org.hibernate.cfg.AvailableSettings.JPA_JDBC_PASSWORD
-import org.hibernate.cfg.AvailableSettings.JPA_JDBC_URL
-import org.hibernate.cfg.AvailableSettings.JPA_JDBC_USER
+import org.hibernate.Session
+import org.hibernate.cfg.AvailableSettings.*
 import org.hibernate.dialect.HSQLDialect
 import org.hibernate.jpa.HibernatePersistenceProvider
+import java.sql.Connection
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
@@ -22,7 +21,7 @@ class DbPersistenceService(member : MemberX500Name) : CloseablePersistenceServic
 
     companion object {
         fun createEntityManagerFactory(member: MemberX500Name): EntityManagerFactory {
-            return HibernatePersistenceProvider()
+            val emf = HibernatePersistenceProvider()
                 .createContainerEntityManagerFactory(
                     JpaPersistenceUnitInfo(),
                     mapOf(
@@ -31,9 +30,35 @@ class DbPersistenceService(member : MemberX500Name) : CloseablePersistenceServic
                         JPA_JDBC_USER to "admin",
                         JPA_JDBC_PASSWORD to "",
                         DIALECT to HSQLDialect::class.java.name,
-                        HBM2DDL_AUTO to "create",
+//                        HBM2DDL_AUTO to "create",
+                        "hibernate.show_sql" to "true",
+                        "hibernate.format_sql" to "true",
                     )
                 )
+
+            // NOTE: only need the connection here, creating EM is a bit wasteful but ok for now.
+            //  alternative option would be to create a connection manually here.
+            emf.createEntityManager().use { em ->
+                em.unwrap(Session::class.java).doWork {
+                     runMigrations(it)
+                }
+            }
+            return emf
+        }
+
+        fun runMigrations(connection: Connection) {
+            val cl1 = ClassloaderChangeLog(
+                linkedSetOf(
+                    ClassloaderChangeLog.ChangeLogResourceFiles(
+                        "simulator-${DbPersistenceService::javaClass.name}",
+                        // TODO: constant in `components/virtual-node/virtual-node-write-service-impl/src/main/kotlin/net/corda/virtualnode/write/db/impl/writer/VirtualNodeDbChangeLog.kt`
+                        //   should move into API repo.
+                        listOf("migration/db.changelog-master.xml")
+                    ),
+                )
+            )
+            val lbm = LiquibaseSchemaMigratorImpl()
+            lbm.updateDb(connection, cl1)
         }
     }
 
@@ -51,7 +76,7 @@ class DbPersistenceService(member : MemberX500Name) : CloseablePersistenceServic
 
     override fun <T : Any> findAll(entityClass: Class<T>): PagedQuery<T> {
         emf.guard {
-            val query = it.createQuery("SELECT e FROM ${entityClass.simpleName} e")
+            val query = it.createQuery("FROM ${entityClass.simpleName} e")
             val result = query.resultList
 
             return object : PagedQuery<T> {
