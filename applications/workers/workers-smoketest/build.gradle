@@ -77,7 +77,7 @@ dependencies {
 def smokeTestResources = tasks.named('processSmokeTestResources', ProcessResources) {
     from(configurations.cpis) {
         into 'META-INF'
-        rename "(.+)-\\d+.+-package.cpb", "\$1.cpb"
+        rename "(.+)(-(?:\\d+\\.*)+-.+)(-package.cpb)\$", "\$1\$2"
     }
 
     // Put the flow-worker-dev-for-cache-testing cpb into a different folder
@@ -85,7 +85,7 @@ def smokeTestResources = tasks.named('processSmokeTestResources', ProcessResourc
     def cacheTestingDir = "META-INF" + File.separator + "cache-invalidation-testing"
     from(cpiForFlowCacheTest) {
         into cacheTestingDir
-        rename "(.+)-\\d+.+-package.cpb", "flow-worker-dev.cpb"
+        rename "(.+)(-(?:\\d+\\.*)+-.+)(-package.cpb)\$", "flow-worker-dev.cpb"
     }
 }
 
