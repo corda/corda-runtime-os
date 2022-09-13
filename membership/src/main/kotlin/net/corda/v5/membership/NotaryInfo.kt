@@ -1,8 +1,8 @@
-package net.corda.v5.ledger.obsolete
+package net.corda.v5.membership
 
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.types.LayeredPropertyMap
-import net.corda.v5.ledger.obsolete.identity.Party
+import net.corda.v5.base.types.MemberX500Name
 
 /**
  * Stores information about a notary service available in the network.
@@ -11,8 +11,9 @@ import net.corda.v5.ledger.obsolete.identity.Party
 interface NotaryInfo : LayeredPropertyMap {
     /**
      * Identity of the notary (note that it can be an identity of the distributed node).
+     *
      */
-    val party: Party
+    val party: MemberX500Name
 
     /**
      * The type of notary plugin class used for this notary.
