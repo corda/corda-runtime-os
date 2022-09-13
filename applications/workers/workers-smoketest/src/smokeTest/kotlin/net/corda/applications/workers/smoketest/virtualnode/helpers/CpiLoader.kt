@@ -9,9 +9,10 @@ import net.corda.cli.plugins.packaging.CreateCpiV2
 import net.corda.cli.plugins.packaging.signing.SigningOptions
 import net.corda.utilities.deleteRecursively
 import net.corda.utilities.readAll
-import net.corda.utilities.write
 import java.io.FileNotFoundException
 import java.io.InputStream
+import java.nio.file.Files
+import java.nio.file.StandardOpenOption
 import kotlin.io.path.createTempDirectory
 
 object CpiLoader {
@@ -33,16 +34,23 @@ object CpiLoader {
         val tempDirectory = createTempDirectory()
         try {
             // Save CPB to disk
-            val cpbPath = tempDirectory.resolve("cpb")
-            cpbPath.write { inputStream.copyTo(it) }
+            val cpbPath = tempDirectory.resolve("cpb.cpb")
+            Files.newOutputStream(cpbPath, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW).use {
+                inputStream.copyTo(it)
+            }
 
             // Save group policy to disk
             val groupPolicyPath = tempDirectory.resolve("groupPolicy")
-            groupPolicyPath.write { it.bufferedWriter().write(getStaticNetworkPolicy(groupId)) }
+            val networkPolicyStr = getStaticNetworkPolicy(groupId)
+            Files.newBufferedWriter(groupPolicyPath, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW).use {
+                it.write(networkPolicyStr)
+            }
 
             // Save keystore to disk
-            val keyStorePath = tempDirectory.resolve("alice.p12")
-            keyStorePath.write { it.write(getKeyStore()) }
+            val keyStorePath = tempDirectory.resolve("cordadevcodesign.p12")
+            Files.newOutputStream(keyStorePath, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW).use {
+                it.write(getKeyStore())
+            }
 
             // Create CPI
             val cpiPath = tempDirectory.resolve("cpi")
@@ -55,30 +63,31 @@ object CpiLoader {
                 outputFileName = cpiPath.toString()
                 signingOptions = SigningOptions().apply {
                     keyStoreFileName = keyStorePath.toString()
-                    keyStorePass = "cordadevpass"
-                    keyAlias = "alice"
+                    keyStorePass = "cordacadevpass"
+                    keyAlias = "cordacodesign"
                 }
             }.run()
 
             // Read CPI
             return cpiPath.readAll().inputStream()
-
         } finally {
             tempDirectory.deleteRecursively()
         }
     }
 
-    private fun getKeyStore() = javaClass.classLoader.getResourceAsStream("alice.p12")?.use { it.readAllBytes() }
+    private fun getKeyStore() = javaClass.classLoader.getResourceAsStream("cordadevcodesign.p12")?.use { it.readAllBytes() }
         ?: throw Exception("alice.p12 not found")
 
-    private fun getStaticNetworkPolicy(groupId: String) = getDefaultStaticNetworkGroupPolicy(
+    private fun getStaticNetworkPolicy(groupId: String) =
+        getDefaultStaticNetworkGroupPolicy(
         groupId,
         listOf(
             X500_ALICE,
             X500_BOB,
             X500_CHARLIE,
             X500_DAVID
-        ))
-        .reader().use { it.readText() }
-        .replace(groupIdPlaceholder, groupId)
+        ))?.use { inStream ->
+            inStream.reader().use { it.readText() }
+                .replace(groupIdPlaceholder, groupId)
+        } ?: throw Exception("GroupPolicy-static-network.json not found")
 }
