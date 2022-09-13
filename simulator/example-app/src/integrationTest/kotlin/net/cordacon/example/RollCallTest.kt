@@ -4,17 +4,26 @@ import net.corda.simulator.HoldingIdentity
 import net.corda.simulator.RequestData
 import net.corda.simulator.Simulator
 import net.corda.simulator.crypto.HsmCategory
+import net.corda.simulator.factories.SimulatorConfigurationBuilder
 import net.corda.v5.base.types.MemberX500Name
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers.`is`
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Timeout
+import java.time.Duration
+import java.util.concurrent.TimeUnit
 
+@Timeout(value=5, unit=TimeUnit.MINUTES)
 class RollCallTest {
 
     @Test
     fun `should get roll call from multiple recipients`() {
         // Given a RollCallFlow that's been uploaded to Corda for a teacher
-        val corda = Simulator()
+        val corda = Simulator(SimulatorConfigurationBuilder.create()
+            .withTimeout(Duration.ofMinutes(2))
+            .withPollInterval(Duration.ofMillis(50))
+            .build()
+        )
         val teacher = MemberX500Name.parse(
             "CN=Ben Stein, OU=Economics, O=Glenbrook North High School, L=Chicago, C=US"
         )

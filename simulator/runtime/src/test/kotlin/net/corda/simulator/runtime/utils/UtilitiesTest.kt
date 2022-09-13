@@ -14,7 +14,7 @@ class UtilitiesTest {
     fun `should provide injector into flows`() {
         val flowEngine = mock<FlowEngine>()
         val flow = HelloFlow()
-        flow.injectIfRequired(FlowEngine::class.java, flowEngine)
+        flow.injectIfRequired(FlowEngine::class.java) { flowEngine }
         assertThat(flow.flowEngine, `is`(flowEngine))
     }
 

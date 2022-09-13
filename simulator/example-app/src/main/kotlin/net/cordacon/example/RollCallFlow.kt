@@ -53,7 +53,6 @@ class RollCallFlow: RPCStartableFlow {
 
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
-        log.info("Flow invoked")
         log.info("Initiating roll call")
 
         val students = findStudents(memberLookup)
@@ -69,12 +68,14 @@ class RollCallFlow: RPCStartableFlow {
 
         log.info("Roll call initiated; waiting for responses")
         val responses = sessionsAndRecipients.map {
-            val firstResponses = sendRollCall(it)
-            val absenteeSessions = firstResponses.filter { r -> r.response.isEmpty() }
-                .map { (flowSession) -> flowSession }
-            val rechecks = sendRetries(absenteeSessions)
+            val firstResponse = sendRollCall(it)
+            val rechecks = if (firstResponse.response.isEmpty()) {
+                sendRetries(firstResponse.flowSession)
+            } else {
+                listOf()
+            }
             sendTruancyRecord(truancyOffice, getTruantsFromRetryResults(rechecks))
-            firstResponses + rechecks
+            listOf(firstResponse) + rechecks
         }.flatten()
 
         val studentsAndResponses = responses
@@ -108,31 +109,28 @@ class RollCallFlow: RPCStartableFlow {
 
     @Suspendable
     private fun sendRollCall(sessionAndRecipient: SessionAndRecipient) =
-        listOf(
-            SessionAndResponse(
-                sessionAndRecipient.flowSession,
-                sessionAndRecipient.flowSession.sendAndReceive(
-                    RollCallResponse::class.java,
-                    RollCallRequest(sessionAndRecipient.receipient)
-                ).response
-            )
+        SessionAndResponse(
+            sessionAndRecipient.flowSession,
+            sessionAndRecipient.flowSession.sendAndReceive(
+                RollCallResponse::class.java,
+                RollCallRequest(sessionAndRecipient.receipient)
+            ).response
         )
 
     @Suspendable
-    private fun sendRetries(absenteeSessions: List<FlowSession>) =
-        absenteeSessions.map { session ->
-                val absenceResponses = retryRollCall(session)
-                if (absenceResponses.none { (response) -> response.isNotEmpty() }) {
-                    persistenceService.persist(TruancyEntity(name = session.counterparty.rollCallName))
-                    absenceResponses.map { SessionAndResponse(session, "") }
-                } else {
-                    listOf(
-                        SessionAndResponse(
-                            session, absenceResponses.first { (response) -> response.isNotEmpty() }.response
-                        )
-                    )
-                }
-            }.flatten()
+    private fun sendRetries(session: FlowSession): List<SessionAndResponse> {
+        val absenceResponses = retryRollCall(session)
+        if (absenceResponses.none { (response) -> response.isNotEmpty() }) {
+            persistenceService.persist(TruancyEntity(name = session.counterparty.rollCallName))
+            return absenceResponses.map { SessionAndResponse(session, "") }
+        } else {
+            return listOf(
+                SessionAndResponse(
+                    session, absenceResponses.first { (response) -> response.isNotEmpty() }.response
+                )
+            )
+        }
+    }
 
 
     @Suspendable
