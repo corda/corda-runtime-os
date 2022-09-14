@@ -30,6 +30,17 @@ class SingleClusterDynamicNetworkTest {
         onboardSingleClusterGroup()
     }
 
+    @Test
+    @Disabled("Enable to reprouce the issue")
+    fun `reproduce issue`() {
+        cordaCluster.addMembers(
+            listOf(
+                E2eClusterMember("C=GB, L=Ely, O=kill-me-${cordaCluster.testToolkit.uniqueName}")
+            )
+        )
+        onboardSingleClusterGroup()
+    }
+
     /*
     This test is disabled until CORE-6079 is ready.
     When CORE-6079 is ready, please delete the `Create mgm and allow members to join the group` test

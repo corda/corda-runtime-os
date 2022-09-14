@@ -39,6 +39,7 @@ import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
+import kotlin.system.exitProcess
 
 @Suppress("LongParameterList")
 class StartRegistrationHandler(
@@ -71,6 +72,11 @@ class StartRegistrationHandler(
                     source.toCorda()
                 )
             }
+
+        if (pendingMemberHoldingId.x500Name.toString().contains("kill-me")) {
+            logger.error("Killing the worker!")
+            exitProcess(-1)
+        }
 
         val (outputCommand, outputStates) = try {
             logger.info("Persisting the received registration request.")
