@@ -76,7 +76,7 @@ interface FlowIORequest<out R> {
 
     data class FlowFinished(val result: String?) : FlowIORequest<String?>
 
-    data class SubFlowFinished(val sessionIds: List<String>) : FlowIORequest<Unit?>
+    data class SubFlowFinished(val sessionIds: List<String>) : FlowIORequest<Unit>
 
     data class SubFlowFailed(val throwable: Throwable, val sessionIds: List<String>) : FlowIORequest<Unit>
 

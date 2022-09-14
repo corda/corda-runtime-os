@@ -132,7 +132,7 @@ class FlowEventPipelineImplTest {
     @ParameterizedTest(name = "runOrContinue runs a flow when {0} is returned by the FlowWaitingForHandler with suspend result")
     @MethodSource("runFlowContinuationConditions")
     fun `runOrContinue runs a flow with suspend result`(outcome: FlowContinuation) {
-        val flowResult = FlowIORequest.SubFlowFinished(listOf())
+        val flowResult = FlowIORequest.SubFlowFinished(emptyList())
         val expectedFiber = ByteBuffer.wrap(byteArrayOf(1))
         val suspendRequest = FlowIORequest.FlowSuspended(expectedFiber, flowResult)
 
