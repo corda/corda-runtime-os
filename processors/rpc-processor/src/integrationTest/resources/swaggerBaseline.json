@@ -1462,22 +1462,22 @@
         }, {
           "name" : "o",
           "in" : "query",
-          "description" : "Organisation (O) attribute of the X.500 name to filter members by",
+          "description" : "Organization (O) attribute of the X.500 name to filter members by",
           "required" : false,
           "schema" : {
             "type" : "string",
-            "description" : "Organisation (O) attribute of the X.500 name to filter members by",
+            "description" : "Organization (O) attribute of the X.500 name to filter members by",
             "nullable" : true,
             "example" : "string"
           }
         }, {
           "name" : "ou",
           "in" : "query",
-          "description" : "Organisation Unit (OU) attribute of the X.500 name to filter members by",
+          "description" : "Organization Unit (OU) attribute of the X.500 name to filter members by",
           "required" : false,
           "schema" : {
             "type" : "string",
-            "description" : "Organisation Unit (OU) attribute of the X.500 name to filter members by",
+            "description" : "Organization Unit (OU) attribute of the X.500 name to filter members by",
             "nullable" : true,
             "example" : "string"
           }

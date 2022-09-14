@@ -6,14 +6,14 @@ import net.corda.flow.application.persistence.external.events.NamedQueryExternal
 import net.corda.flow.application.persistence.external.events.NamedQueryParameters
 import net.corda.flow.application.persistence.wrapWithPersistenceException
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.v5.application.persistence.ParameterisedQuery
+import net.corda.v5.application.persistence.ParameterizedQuery
 import net.corda.v5.application.serialization.SerializationService
 
 /**
- * [NamedParameterisedQuery] is used to set and execute named queries.
+ * [NamedParameterizedQuery] is used to set and execute named queries.
  */
 @Suppress("LongParameterList")
-class NamedParameterisedQuery<R : Any>(
+class NamedParameterizedQuery<R : Any>(
     private val externalEventExecutor: ExternalEventExecutor,
     private val serializationService: SerializationService,
     private val queryName: String,
@@ -21,26 +21,26 @@ class NamedParameterisedQuery<R : Any>(
     private var limit: Int,
     private var offset: Int,
     private var expectedClass: Class<R>,
-) : ParameterisedQuery<R> {
+) : ParameterizedQuery<R> {
 
-    override fun setLimit(limit: Int): ParameterisedQuery<R> {
+    override fun setLimit(limit: Int): ParameterizedQuery<R> {
         require (limit >= 0) { "Limit cannot be negative" }
         this.limit = limit
         return this
     }
 
-    override fun setOffset(offset: Int): ParameterisedQuery<R> {
+    override fun setOffset(offset: Int): ParameterizedQuery<R> {
         require (offset >= 0) { "Offset cannot be negative" }
         this.offset = offset
         return this
     }
 
-    override fun setParameter(name: String, value: Any): ParameterisedQuery<R> {
+    override fun setParameter(name: String, value: Any): ParameterizedQuery<R> {
         parameters[name] = value
         return this
     }
 
-    override fun setParameters(parameters: Map<String, Any>): ParameterisedQuery<R> {
+    override fun setParameters(parameters: Map<String, Any>): ParameterizedQuery<R> {
         this.parameters = parameters.toMutableMap()
         return this
     }
