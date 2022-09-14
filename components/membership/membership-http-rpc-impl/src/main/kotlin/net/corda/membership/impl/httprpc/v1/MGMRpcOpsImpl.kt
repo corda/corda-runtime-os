@@ -10,6 +10,8 @@ import net.corda.membership.client.MGMOpsClient
 import net.corda.membership.httprpc.v1.MGMRpcOps
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.v5.base.util.contextLogger
+import net.corda.virtualnode.ShortHash
+import net.corda.virtualnode.read.rpc.extensions.ofOrThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -85,7 +87,7 @@ class MGMRpcOpsImpl @Activate constructor(
 
     private inner class ActiveImpl : InnerMGMRpcOps {
         override fun generateGroupPolicy(holdingIdentityShortHash: String): String {
-            return mgmOpsClient.generateGroupPolicy(holdingIdentityShortHash.toShortHash())
+            return mgmOpsClient.generateGroupPolicy(ShortHash.ofOrThrow(holdingIdentityShortHash))
         }
     }
 }
