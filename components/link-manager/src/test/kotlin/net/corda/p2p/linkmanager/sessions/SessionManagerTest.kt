@@ -1546,6 +1546,13 @@ class SessionManagerTest {
 //TODO - a better name
     @Test
     fun `DRAFT`() {
+        val messages = mutableListOf<String>()
+        fun callback(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
+            val record = records.single()
+            assertEquals(SESSION_OUT_PARTITIONS, record.topic)
+            messages.add(record.key.toString())
+            return listOf(CompletableFuture.completedFuture(Unit))
+        }
         whenever(outboundSessionPool.constructed().first().getSession(protocolInitiator.sessionId)).thenReturn(
             OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
         )
@@ -1574,11 +1581,22 @@ class SessionManagerTest {
         verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
             .publish(listOf(Record(SESSION_OUT_PARTITIONS, protocolInitiator.sessionId, null))
         )
-
-
+        publisherWithDominoLogicByClientId["session-manager"]!!.forEach {
+            whenever(it.publish(any())).doAnswer { invocation ->
+                @Suppress("UNCHECKED_CAST")
+                callback(invocation.arguments.first() as List<Record<*, *>>)
+            }
+        }
+        for (message in messages) {
+            assertThat(message).isEqualTo(protocolInitiator.sessionId)
+        }
 
 
 /*
+        //assertThat(sessionManager.getSessionById(protocolInitiator.sessionId)).isEqualTo(SessionManager.SessionDirection.NoSession)
+//        publisherWithDominoLogicByClientId["session-manager"]!!.forEach {
+//            verify(it).publish(listOf(Record(SESSION_OUT_PARTITIONS, sessionId, null)))
+//        }
         //val someSessionId = protocolInitiator.sessionId
         //val session = mock<Session>()
         //whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(mock())
@@ -1587,7 +1605,6 @@ class SessionManagerTest {
         //whenever(outboundSessionPool.constructed().last().replaceSession(protocolInitiator.sessionId, secondProtocolInitiator)).thenReturn(true)
         //whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(mock())
         //verify(outboundSessionPool.constructed().last()).replaceSession(protocolInitiator.sessionId, secondProtocolInitiator)
-
         verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
             .publish(listOf(Record(SESSION_OUT_PARTITIONS, someSessionId, null))
         )
