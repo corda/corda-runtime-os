@@ -27,6 +27,11 @@ Simulator will wire up your flow with lightweight versions of the same injected 
 the real Corda, enabling your flows to communicate with each other, persist data (currently to an in-memory database)
 and "sign" data (see below).
 
+To release resources used by Simulator, including any database connections, call
+```kotlin
+  Simulator.clo
+```
+
 ## RequestData
 
 Corda normally takes requests via its API in the form of JSON-formatted strings, which are converted
