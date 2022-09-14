@@ -158,22 +158,14 @@ sealed class PropertyReader {
     /**
      * Reads a property using a getter [Method].
      */
-    class GetterReader(private val getter: Method): PropertyReader() {
-        init {
-            getter.isAccessible = true
-        }
-
+    class GetterReader(private val getter: Method) : PropertyReader() {
         override fun read(obj: Any?): Any? = if (obj == null) null else getter.invoke(obj)
     }
 
     /**
      * Reads a property using a backing [Field].
      */
-    class FieldReader(private val field: Field): PropertyReader() {
-        init {
-            field.isAccessible = true
-        }
-
+    class FieldReader(private val field: Field) : PropertyReader() {
         override fun read(obj: Any?): Any? = if (obj == null) null else field.get(obj)
     }
 }

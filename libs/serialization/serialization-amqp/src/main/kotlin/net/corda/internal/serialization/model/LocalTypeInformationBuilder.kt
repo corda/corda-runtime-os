@@ -412,19 +412,32 @@ internal data class LocalTypeInformationBuilder(val lookup: LocalTypeLookup,
                     constructorParameterIndices.getValue(normalisedName),
                     descriptor,
                     constructorInformation)
-            normalisedName to property
+            if (property == null) null else normalisedName to property
         }
     }
 
     private fun makeConstructorPairedProperty(constructorIndex: Int,
                                               descriptor: PropertyDescriptor,
-                                              constructorInformation: LocalConstructorInformation): LocalPropertyInformation {
+                                              constructorInformation: LocalConstructorInformation): LocalPropertyInformation? {
 
-        if (descriptor.getter == null) {
+        @Suppress("DEPRECATION")    // JDK11: isAccessible() should be replaced with canAccess() (since 9)
+        if (descriptor.getter == null && descriptor.field != null && !descriptor.field.isAccessible) {
             throw NotSerializableException(
-                "Property '${descriptor.field!!.name}' or its getter is non public, " +
+                "Property '${descriptor.field.name}' and its getter is non public, " +
                         "this renders class '${descriptor.field.declaringClass}' unserializable -> ${descriptor.field.declaringClass}"
             )
+        }
+
+        if (descriptor.getter == null) {
+            if (descriptor.field == null) return null
+            val paramType = descriptor.field.genericType
+            val paramTypeInformation = resolveAndBuild(paramType)
+
+            return LocalPropertyInformation.PrivateConstructorPairedProperty(
+                    descriptor.field,
+                    ConstructorSlot(constructorIndex, constructorInformation),
+                    paramTypeInformation,
+                    constructorInformation.parameters[constructorIndex].isMandatory)
         }
 
         val paramType = descriptor.getter.genericReturnType
