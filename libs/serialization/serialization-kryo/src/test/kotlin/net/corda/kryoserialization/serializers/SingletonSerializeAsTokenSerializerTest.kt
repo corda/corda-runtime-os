@@ -4,9 +4,9 @@ import com.esotericsoftware.kryo.Kryo
 import net.corda.kryoserialization.CordaKryoException
 import net.corda.kryoserialization.DefaultKryoCustomizer
 import net.corda.kryoserialization.KryoCheckpointSerializer
-import net.corda.kryoserialization.createCheckpointSerializer
-import net.corda.kryoserialization.mockSandboxGroup
 import net.corda.kryoserialization.resolver.CordaClassResolver
+import net.corda.kryoserialization.testkit.KryoTestUtils.Companion.createCheckpointSerializer
+import net.corda.kryoserialization.testkit.KryoTestUtils.Companion.mockSandboxGroup
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType

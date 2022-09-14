@@ -35,7 +35,7 @@ class KryoTestUtils {
             return checkpointSerializer
         }
 
-        private fun mockSandboxGroup(taggedClasses: Set<Class<*>>): SandboxGroup {
+        fun mockSandboxGroup(taggedClasses: Set<Class<*>>): SandboxGroup {
             val standardClasses = listOf(
                 String::class.java,
                 Class::class.java,

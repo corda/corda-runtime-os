@@ -3,7 +3,7 @@ package net.corda.kryoserialization.serializers
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.io.Input
 import com.esotericsoftware.kryo.io.Output
-import net.corda.kryoserialization.mockSandboxGroup
+import net.corda.kryoserialization.testkit.KryoTestUtils.Companion.mockSandboxGroup
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 

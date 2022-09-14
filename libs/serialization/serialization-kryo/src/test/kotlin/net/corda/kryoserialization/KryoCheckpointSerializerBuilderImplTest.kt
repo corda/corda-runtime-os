@@ -3,6 +3,7 @@ package net.corda.kryoserialization
 import net.corda.kryoserialization.TestClass.Companion.TEST_INT
 import net.corda.kryoserialization.TestClass.Companion.TEST_STRING
 import net.corda.kryoserialization.impl.KryoCheckpointSerializerBuilderImpl
+import net.corda.kryoserialization.testkit.KryoTestUtils.Companion.mockSandboxGroup
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.checkpoint.CheckpointSerializerBuilder
 import net.corda.v5.crypto.CompositeKey
