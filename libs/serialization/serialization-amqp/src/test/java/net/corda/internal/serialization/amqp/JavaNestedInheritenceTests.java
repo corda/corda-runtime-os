@@ -31,12 +31,20 @@ class Wrapper {
     Wrapper(JavaTestContractState cs) {
         this.cs = cs;
     }
+
+    public JavaTestContractState getCs() {
+        return cs;
+    }
 }
 
 @CordaSerializable
 class TemplateWrapper<T> {
     public T obj;
     TemplateWrapper(T obj) { this.obj = obj; }
+
+    public T getObj() {
+        return obj;
+    }
 }
 
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
