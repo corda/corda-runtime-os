@@ -173,7 +173,7 @@ pipeline {
                     portForwarding("prereqs-kafka-0", 9092)
 
                     clusters.eachWithIndex {c, index  ->
-                       portForwarding("deploy/corda-$c-rpc-worker", 8886 + index, 8888)
+                       portForwarding("deploy/corda-$c-rpc-worker", 8887 + index, 8888)
                     }
                     workers.eachWithIndex {w, index  ->
                        portForwarding("deploy/corda-alice-$w", 7001 + index, 7000)
