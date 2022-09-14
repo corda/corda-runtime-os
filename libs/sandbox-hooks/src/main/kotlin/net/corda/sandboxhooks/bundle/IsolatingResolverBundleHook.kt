@@ -6,9 +6,6 @@ import org.osgi.framework.hooks.resolver.ResolverHookFactory
 import org.osgi.framework.wiring.BundleCapability
 import org.osgi.framework.wiring.BundleRequirement
 import org.osgi.framework.wiring.BundleRevision
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
 
 /**
  * This hook modifies the logic for resolving bundles.
@@ -61,10 +58,7 @@ internal class IsolatingResolverBundleHook(private val sandboxService: SandboxCo
 }
 
 /** A [ResolverHookFactory] implementation for creating [IsolatingResolverBundleHook]s. */
-@Component(immediate = true)
-@Suppress("unused")
-internal class IsolatingResolverBundleHookFactory @Activate constructor(
-        @Reference
+internal class IsolatingResolverBundleHookFactory(
         private val sandboxManagerService: SandboxContextService) : ResolverHookFactory {
 
     /** Returns an [IsolatingResolverBundleHook]. */
