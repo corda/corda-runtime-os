@@ -1,13 +1,13 @@
 package net.corda.kryoserialization.testkit
 
 import com.esotericsoftware.kryo.Kryo
+import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.kryoserialization.KryoCheckpointSerializer
 import net.corda.kryoserialization.impl.KryoCheckpointSerializerBuilderImpl
 import net.corda.kryoserialization.serializers.SingletonSerializeAsTokenSerializer
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
-import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.mockito.Mockito.`when`
 import org.mockito.kotlin.any
@@ -18,7 +18,6 @@ import java.util.*
 class KryoTestUtils {
     companion object{
         fun createCheckpointSerializer(
-            keyEncodingService: KeyEncodingService,
             serializers: Map<Class<*>, CheckpointInternalCustomSerializer<*>> = emptyMap(),
             singletonInstances: List<SingletonSerializeAsToken> = emptyList()
         ): KryoCheckpointSerializer {
@@ -26,7 +25,7 @@ class KryoTestUtils {
             val sandboxGroup = mockSandboxGroup(serializers.keys + singletonInstances.map { it::class.java })
             val kryo = Kryo()
             kryo.addDefaultSerializer(SingletonSerializeAsToken::class.java, singletonSerializer)
-            val checkpointSerializer = KryoCheckpointSerializerBuilderImpl(keyEncodingService, sandboxGroup, kryo).let { builder ->
+            val checkpointSerializer = KryoCheckpointSerializerBuilderImpl(CipherSchemeMetadataImpl(), sandboxGroup, kryo).let { builder ->
                 builder.addSingletonSerializableInstances(singletonInstances.toSet())
                 builder.addSingletonSerializableInstances(setOf(sandboxGroup))
                 serializers.forEach { (clazz, serializer) -> builder.addSerializer(clazz, serializer)}

@@ -55,7 +55,6 @@ class WireTransactionKryoSerializerTest {
         val wireTransactionKryoSerializer = WireTransactionKryoSerializer(merkleTreeFactory, digestService)
 
         val serializer = KryoTestUtils.createCheckpointSerializer(
-            schemeMetadata,
             mapOf(
                 WireTransaction::class.java to wireTransactionKryoSerializer,
                 PrivacySaltImpl::class.java to PrivacySaltImplKryoSerializer()
