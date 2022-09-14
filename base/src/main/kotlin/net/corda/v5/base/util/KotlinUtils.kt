@@ -107,18 +107,18 @@ interface VariablePropertyDelegate<T> : PropertyDelegate<T> {
 }
 
 @CordaSerializable
-private class TransientProperty<out T>(private val initialiser: Supplier<T>) : PropertyDelegate<T> {
+private class TransientProperty<out T>(private val initializer: Supplier<T>) : PropertyDelegate<T> {
     @Transient
-    private var initialised = false
+    private var initialized = false
 
     @Transient
     private var value: T? = null
 
     @Synchronized
     override operator fun getValue(thisRef: Any?, property: KProperty<*>): T {
-        if (!initialised) {
-            value = initialiser.get()
-            initialised = true
+        if (!initialized) {
+            value = initializer.get()
+            initialized = true
         }
         return uncheckedCast(value)
     }

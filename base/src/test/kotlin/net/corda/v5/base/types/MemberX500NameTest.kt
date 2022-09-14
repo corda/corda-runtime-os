@@ -2,8 +2,8 @@ package net.corda.v5.base.types
 
 import net.corda.v5.base.types.MemberX500Name.Companion.MAX_LENGTH_COMMON_NAME
 import net.corda.v5.base.types.MemberX500Name.Companion.MAX_LENGTH_LOCALITY
-import net.corda.v5.base.types.MemberX500Name.Companion.MAX_LENGTH_ORGANISATION
-import net.corda.v5.base.types.MemberX500Name.Companion.MAX_LENGTH_ORGANISATION_UNIT
+import net.corda.v5.base.types.MemberX500Name.Companion.MAX_LENGTH_ORGANIZATION
+import net.corda.v5.base.types.MemberX500Name.Companion.MAX_LENGTH_ORGANIZATION_UNIT
 import net.corda.v5.base.types.MemberX500Name.Companion.MAX_LENGTH_STATE
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -30,9 +30,9 @@ class MemberX500NameTest {
     fun `Should parse properly escaped X500 name string`() {
         val name = MemberX500Name.parse("O=\"Bank+A\", CN=\"Service<>Name\", L=\"New=York\", C=US")
         assertEquals("Service<>Name", name.commonName)
-        assertNull(name.organisationUnit)
+        assertNull(name.organizationUnit)
         assertNull(name.state)
-        assertEquals("Bank+A", name.organisation)
+        assertEquals("Bank+A", name.organization)
         assertEquals("New=York", name.locality)
         assertEquals("US", name.country)
         assertEquals("CN=\"Service<>Name\", O=\"Bank+A\", L=\"New=York\", C=US", name.toString())
@@ -69,8 +69,8 @@ class MemberX500NameTest {
     fun `Should parse string without state`() {
         val name = MemberX500Name.parse("O=Bank A, L=New York, C=US, OU=Org Unit, CN=Service Name")
         assertEquals("Service Name", name.commonName)
-        assertEquals("Org Unit", name.organisationUnit)
-        assertEquals("Bank A", name.organisation)
+        assertEquals("Org Unit", name.organizationUnit)
+        assertEquals("Bank A", name.organization)
         assertEquals("New York", name.locality)
         assertEquals("US", name.country)
         assertNull(name.state)
@@ -78,34 +78,34 @@ class MemberX500NameTest {
 
     @Test
     fun `Should parse string containing unspecified country code`() {
-        val name = MemberX500Name.parse("O=Organisation, L=Location, C=ZZ, OU=Org Unit, CN=Service Name")
+        val name = MemberX500Name.parse("O=Organization, L=Location, C=ZZ, OU=Org Unit, CN=Service Name")
         assertEquals("Service Name", name.commonName)
-        assertEquals("Org Unit", name.organisationUnit)
-        assertEquals("Organisation", name.organisation)
+        assertEquals("Org Unit", name.organizationUnit)
+        assertEquals("Organization", name.organization)
         assertEquals("Location", name.locality)
         assertEquals("ZZ", name.country)
         assertNull(name.state)
     }
 
     @Test
-    fun `Should parse string without state and organisational unit`() {
+    fun `Should parse string without state and organizational unit`() {
         val name = MemberX500Name.parse("O=Bank A, L=New York, C=US, CN=Service Name")
         assertEquals("Service Name", name.commonName)
-        assertEquals("Bank A", name.organisation)
+        assertEquals("Bank A", name.organization)
         assertEquals("New York", name.locality)
         assertEquals("US", name.country)
         assertNull(name.state)
-        assertNull(name.organisationUnit)
+        assertNull(name.organizationUnit)
     }
 
     @Test
-    fun `Should parse string without state, organisational unit and common name`() {
+    fun `Should parse string without state, organizational unit and common name`() {
         val name = MemberX500Name.parse("O=Bank A, L=New York, C=US")
-        assertEquals("Bank A", name.organisation)
+        assertEquals("Bank A", name.organization)
         assertEquals("New York", name.locality)
         assertEquals("US", name.country)
         assertNull(name.state)
-        assertNull(name.organisationUnit)
+        assertNull(name.organizationUnit)
         assertNull(name.commonName)
     }
 
@@ -117,7 +117,7 @@ class MemberX500NameTest {
     }
 
     @Test
-    fun `Should throw IllegalArgumentException when organisational unit is blank`() {
+    fun `Should throw IllegalArgumentException when organizational unit is blank`() {
         assertFailsWith<IllegalArgumentException> {
             MemberX500Name.parse("O=Bank A, L=New York, C=US, OU=, CN=Service Name")
         }
@@ -166,14 +166,14 @@ class MemberX500NameTest {
     }
 
     @Test
-    fun `Should throw IllegalArgumentException when organisation is not present`() {
+    fun `Should throw IllegalArgumentException when organization is not present`() {
         assertFailsWith<IllegalArgumentException> {
             MemberX500Name.parse("L=New York, C=US, OU=Org Unit")
         }
     }
 
     @Test
-    fun `Should throw IllegalArgumentException when organisation is blank`() {
+    fun `Should throw IllegalArgumentException when organization is blank`() {
         assertFailsWith<IllegalArgumentException> {
             MemberX500Name.parse("O=, L=New York, C=US, OU=Org Unit")
         }
@@ -187,9 +187,9 @@ class MemberX500NameTest {
     }
 
     @Test
-    fun `Should throw IllegalArgumentException when organisational unit exceeds max length`() {
+    fun `Should throw IllegalArgumentException when organizational unit exceeds max length`() {
         assertFailsWith<IllegalArgumentException> {
-            MemberX500Name.parse("O=Bank A, L=New York, C=US, OU=${randomString(MAX_LENGTH_ORGANISATION_UNIT+1)}")
+            MemberX500Name.parse("O=Bank A, L=New York, C=US, OU=${randomString(MAX_LENGTH_ORGANIZATION_UNIT+1)}")
         }
     }
 
@@ -208,9 +208,9 @@ class MemberX500NameTest {
     }
 
     @Test
-    fun `Should throw IllegalArgumentException when organisation exceeds max length`() {
+    fun `Should throw IllegalArgumentException when organization exceeds max length`() {
         assertFailsWith<IllegalArgumentException> {
-            MemberX500Name.parse("L=New York, C=US, O=${randomString(MAX_LENGTH_ORGANISATION+1)}")
+            MemberX500Name.parse("L=New York, C=US, O=${randomString(MAX_LENGTH_ORGANIZATION+1)}")
         }
     }
 
@@ -224,11 +224,11 @@ class MemberX500NameTest {
     @Test
     fun `Should parse attributes starting with lower case letter`() {
         val name = MemberX500Name.parse("o=bank A, l=new York, c=DE, ou=org Unit, st=main, cn=service Name")
-        assertEquals("bank A", name.organisation)
+        assertEquals("bank A", name.organization)
         assertEquals("new York", name.locality)
         assertEquals("DE", name.country)
         assertEquals("main", name.state)
-        assertEquals("org Unit", name.organisationUnit)
+        assertEquals("org Unit", name.organizationUnit)
         assertEquals("service Name", name.commonName)
         assertEquals("CN=service Name, OU=org Unit, O=bank A, L=new York, ST=main, C=DE", name.toString())
     }
@@ -236,11 +236,11 @@ class MemberX500NameTest {
     @Test
     fun `Should parse attributes starting with numeric character`() {
         val name = MemberX500Name.parse("O=8Bank A, L=1New York, C=DE, OU=3Org Unit, ST=5main, CN=4Service Name")
-        assertEquals("8Bank A", name.organisation)
+        assertEquals("8Bank A", name.organization)
         assertEquals("1New York", name.locality)
         assertEquals("DE", name.country)
         assertEquals("5main", name.state)
-        assertEquals("3Org Unit", name.organisationUnit)
+        assertEquals("3Org Unit", name.organizationUnit)
         assertEquals("4Service Name", name.commonName)
         assertEquals("CN=4Service Name, OU=3Org Unit, O=8Bank A, L=1New York, ST=5main, C=DE", name.toString())
     }
@@ -248,11 +248,11 @@ class MemberX500NameTest {
     @Test
     fun `Should parse attributes with leading whitespace`() {
         val name = MemberX500Name.parse("O= VALID_O, L= VALID_L, C= DE, OU= VALID_OU, CN= VALID_CN, ST= VALID_ST")
-        assertEquals("VALID_O", name.organisation)
+        assertEquals("VALID_O", name.organization)
         assertEquals("VALID_L", name.locality)
         assertEquals("DE", name.country)
         assertEquals("VALID_ST", name.state)
-        assertEquals("VALID_OU", name.organisationUnit)
+        assertEquals("VALID_OU", name.organizationUnit)
         assertEquals("VALID_CN", name.commonName)
         assertEquals("CN=VALID_CN, OU=VALID_OU, O=VALID_O, L=VALID_L, ST=VALID_ST, C=DE", name.toString())
     }
@@ -260,11 +260,11 @@ class MemberX500NameTest {
     @Test
     fun `Should parse attributes with trailing whitespace`() {
         val name = MemberX500Name.parse("O=VALID_O , L=VALID_L , C=DE , OU=VALID_OU , CN=VALID_CN , ST=VALID_ST" )
-        assertEquals("VALID_O", name.organisation)
+        assertEquals("VALID_O", name.organization)
         assertEquals("VALID_L", name.locality)
         assertEquals("DE", name.country)
         assertEquals("VALID_ST", name.state)
-        assertEquals("VALID_OU", name.organisationUnit)
+        assertEquals("VALID_OU", name.organizationUnit)
         assertEquals("VALID_CN", name.commonName)
         assertEquals("CN=VALID_CN, OU=VALID_OU, O=VALID_O, L=VALID_L, ST=VALID_ST, C=DE", name.toString())
     }
@@ -302,34 +302,34 @@ class MemberX500NameTest {
     }
 
     @Test
-    fun `Should create MemberX500Name without organisationUnit and state`() {
+    fun `Should create MemberX500Name without organizationUnit and state`() {
         val member = MemberX500Name(
             commonName = "Service Name",
-            organisation = "Org",
+            organization = "Org",
             locality = "New York",
             country = "US"
         )
         assertEquals("Service Name", member.commonName)
-        assertEquals( "Org", member.organisation)
+        assertEquals( "Org", member.organization)
         assertEquals("New York", member.locality)
         assertEquals("US", member.country)
         assertNull(member.state)
-        assertNull(member.organisationUnit)
+        assertNull(member.organizationUnit)
     }
 
     @Test
-    fun `Should create MemberX500Name without commonName, organisationUnit and state`() {
+    fun `Should create MemberX500Name without commonName, organizationUnit and state`() {
         val member = MemberX500Name(
-            organisation = "Org",
+            organization = "Org",
             locality = "New York",
             country = "US"
         )
-        assertEquals("Org", member.organisation)
+        assertEquals("Org", member.organization)
         assertEquals("New York", member.locality)
         assertEquals("US", member.country)
         assertNull(member.state)
         assertNull(member.commonName)
-        assertNull(member.organisationUnit)
+        assertNull(member.organizationUnit)
     }
 
     @Test

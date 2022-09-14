@@ -10,43 +10,43 @@ import javax.security.auth.x500.X500Principal
 
 /**
  * X.500 distinguished name data type customised to how Corda uses names. This restricts the attributes to those Corda
- * supports, and requires that organisation, locality and country attributes are specified. See also RFC 4519 for
+ * supports, and requires that organization, locality and country attributes are specified. See also RFC 4519 for
  * the underlying attribute type definitions.
  *
  * The class also guaranties the reliable equality comparison regardless which order the attributes are specified when
  * parsing from the string or X500principal as well outputs the attributes to string in predictable order.
  *
- * @property commonName optional name by the which the entity is usually known. Used only for services (for
- * organisations, the [organisation] property is the name). Corresponds to the "CN" attribute type.
- * @property organisationUnit optional name of a unit within the [organisation]. Corresponds to the "OU" attribute type.
- * @property organisation name of the organisation. Corresponds to the "O" attribute type.
- * @property locality locality of the organisation, typically the nearest major city. For distributed services this would be
- * where one of the organisations is based. Corresponds to the "L" attribute type.
- * @property state the full name of the state or province the organisation is based in. Corresponds to the "ST"
+ * @property commonName Optional name by the which the entity is usually known. Used only for services (for
+ * organizations, the [organization] property is the name). Corresponds to the "CN" attribute type.
+ * @property organizationUnit Optional name of a unit within the [organization]. Corresponds to the "OU" attribute type.
+ * @property organization Name of the organization. Corresponds to the "O" attribute type.
+ * @property locality Locality of the organization, typically the nearest major city. For distributed services this would be
+ * where one of the organizations is based. Corresponds to the "L" attribute type.
+ * @property state The full name of the state or province the organization is based in. Corresponds to the "ST"
  * attribute type.
- * @property country country the organisation is in, as an ISO 3166-1 2-letter country code. Corresponds to the "C"
+ * @property country Country the organization is in, as an ISO 3166-1 2-letter country code. Corresponds to the "C"
  * attribute type.
 */
 @Suppress("LongParameterList")
 @CordaSerializable
 class MemberX500Name(
     val commonName: String?,
-    val organisationUnit: String?,
-    val organisation: String,
+    val organizationUnit: String?,
+    val organization: String,
     val locality: String,
     val state: String?,
     val country: String
 ) : Comparable<MemberX500Name> {
     companion object {
-        const val MAX_LENGTH_ORGANISATION = 128
+        const val MAX_LENGTH_ORGANIZATION = 128
         const val MAX_LENGTH_LOCALITY = 64
         const val MAX_LENGTH_STATE = 64
-        const val MAX_LENGTH_ORGANISATION_UNIT = 64
+        const val MAX_LENGTH_ORGANIZATION_UNIT = 64
         const val MAX_LENGTH_COMMON_NAME = 64
 
         private const val ATTRIBUTE_COMMON_NAME = "CN"
-        private const val ATTRIBUTE_ORGANISATION_UNIT = "OU"
-        private const val ATTRIBUTE_ORGANISATION = "O"
+        private const val ATTRIBUTE_ORGANIZATION_UNIT = "OU"
+        private const val ATTRIBUTE_ORGANIZATION = "O"
         private const val ATTRIBUTE_LOCALITY = "L"
         private const val ATTRIBUTE_STATE = "ST"
         private const val ATTRIBUTE_COUNTRY = "C"
@@ -55,8 +55,8 @@ class MemberX500Name(
 
         private val supportedAttributes = setOf(
             ATTRIBUTE_COMMON_NAME,
-            ATTRIBUTE_ORGANISATION_UNIT,
-            ATTRIBUTE_ORGANISATION,
+            ATTRIBUTE_ORGANIZATION_UNIT,
+            ATTRIBUTE_ORGANIZATION,
             ATTRIBUTE_LOCALITY,
             ATTRIBUTE_STATE,
             ATTRIBUTE_COUNTRY
@@ -67,8 +67,8 @@ class MemberX500Name(
         private val comparator by lazy {
             compareBy<MemberX500Name>(
                 { it.commonName },
-                { it.organisationUnit },
-                { it.organisation },
+                { it.organizationUnit },
+                { it.organization },
                 { it.locality },
                 { it.state },
                 { it.country },
@@ -116,8 +116,8 @@ class MemberX500Name(
 
         private fun parse(attrsMap: Map<String, String>): MemberX500Name {
             val cn = attrsMap[ATTRIBUTE_COMMON_NAME]
-            val ou = attrsMap[ATTRIBUTE_ORGANISATION_UNIT]
-            val o = requireNotNull(attrsMap[ATTRIBUTE_ORGANISATION]) { "Member X.500 names must include an O attribute" }
+            val ou = attrsMap[ATTRIBUTE_ORGANIZATION_UNIT]
+            val o = requireNotNull(attrsMap[ATTRIBUTE_ORGANIZATION]) { "Member X.500 names must include an O attribute" }
             val l = requireNotNull(attrsMap[ATTRIBUTE_LOCALITY]) { "Member X.500 names must include an L attribute" }
             val st = attrsMap[ATTRIBUTE_STATE]
             val c = requireNotNull(attrsMap[ATTRIBUTE_COUNTRY]) { "Member X.500 names must include an C attribute" }
@@ -157,29 +157,29 @@ class MemberX500Name(
     }
 
     /**
-     * @param commonName optional name by the which the entity is usually known. Used only for services (for
-     * organisations, the [organisation] property is the name). Corresponds to the "CN" attribute type.
-     * @param organisation name of the organisation.
-     * @param locality locality of the organisation, typically the nearest major city.
-     * @param country country the organisation is in, as an ISO 3166-1 2-letter country code.
+     * @param commonName Optional name by the which the entity is usually known. Used only for services (for
+     * organizations, the [organization] property is the name). Corresponds to the "CN" attribute type.
+     * @param organization Name of the organization.
+     * @param locality Locality of the organization, typically the nearest major city.
+     * @param country Country the organization is in, as an ISO 3166-1 2-letter country code.
      */
-    constructor(commonName: String, organisation: String, locality: String, country: String) :
+    constructor(commonName: String, organization: String, locality: String, country: String) :
             this(
                 commonName = commonName,
-                organisationUnit = null,
-                organisation = organisation,
+                organizationUnit = null,
+                organization = organization,
                 locality = locality,
                 state = null,
                 country = country
             )
 
     /**
-     * @param organisation name of the organisation.
-     * @param locality locality of the organisation, typically nearest major city.
-     * @param country country the organisation is in, as an ISO 3166-1 2-letter country code.
+     * @param organization Name of the organization.
+     * @param locality Locality of the organization, typically nearest major city.
+     * @param country Country the organization is in, as an ISO 3166-1 2-letter country code.
      */
-    constructor(organisation: String, locality: String, country: String) :
-            this(null, null, organisation, locality, null, country)
+    constructor(organization: String, locality: String, country: String) :
+            this(null, null, organization, locality, null, country)
 
     init {
         require(country in countryCodes) { "Invalid country code $country" }
@@ -196,19 +196,19 @@ class MemberX500Name(
         }
         require(locality.length < MAX_LENGTH_LOCALITY) { "Locality attribute (L) must contain less then $MAX_LENGTH_LOCALITY characters." }
 
-        require(organisation.isNotBlank()) {
-            "Organisation attribute (O) if specified then it must be not blank."
+        require(organization.isNotBlank()) {
+            "Organization attribute (O) if specified then it must be not blank."
         }
-        require(organisation.length < MAX_LENGTH_ORGANISATION) {
-            "Organisation attribute (O) must contain less then $MAX_LENGTH_ORGANISATION characters."
+        require(organization.length < MAX_LENGTH_ORGANIZATION) {
+            "Organization attribute (O) must contain less then $MAX_LENGTH_ORGANIZATION characters."
         }
 
-        organisationUnit?.let {
+        organizationUnit?.let {
             require(it.isNotBlank()) {
-                "Organisation unit attribute (OU) if specified then it must be not blank."
+                "Organization unit attribute (OU) if specified then it must be not blank."
             }
-            require(it.length < MAX_LENGTH_ORGANISATION_UNIT) {
-                "Organisation Unit attribute (OU) must contain less then $MAX_LENGTH_ORGANISATION_UNIT characters."
+            require(it.length < MAX_LENGTH_ORGANIZATION_UNIT) {
+                "Organization Unit attribute (OU) must contain less then $MAX_LENGTH_ORGANIZATION_UNIT characters."
             }
         }
 
@@ -233,9 +233,9 @@ class MemberX500Name(
                 add(Rdn(BasicAttributes(ATTRIBUTE_STATE, it)))
             }
             add(Rdn(BasicAttributes(ATTRIBUTE_LOCALITY, locality)))
-            add(Rdn(BasicAttributes(ATTRIBUTE_ORGANISATION, organisation)))
-            organisationUnit?.let {
-                add(Rdn(BasicAttributes(ATTRIBUTE_ORGANISATION_UNIT, it)))
+            add(Rdn(BasicAttributes(ATTRIBUTE_ORGANIZATION, organization)))
+            organizationUnit?.let {
+                add(Rdn(BasicAttributes(ATTRIBUTE_ORGANIZATION_UNIT, it)))
             }
             commonName?.let {
                 add(Rdn(BasicAttributes(ATTRIBUTE_COMMON_NAME, it)))
@@ -259,8 +259,8 @@ class MemberX500Name(
         other as MemberX500Name
 
         if (commonName != other.commonName) return false
-        if (organisationUnit != other.organisationUnit) return false
-        if (organisation != other.organisation) return false
+        if (organizationUnit != other.organizationUnit) return false
+        if (organization != other.organization) return false
         if (locality != other.locality) return false
         if (state != other.state) return false
         if (country != other.country) return false
@@ -271,8 +271,8 @@ class MemberX500Name(
     override fun hashCode(): Int {
         return Objects.hash(
             commonName,
-            organisationUnit,
-            organisation,
+            organizationUnit,
+            organization,
             locality,
             state,
             country

@@ -115,7 +115,7 @@ interface PersistenceService {
     fun <T : Any> findAll(entityClass: Class<T>): PagedQuery<T>
 
     /**
-     * Create a [ParameterisedQuery] to support a named query to return a list of entities of the given type in a single
+     * Create a [ParameterizedQuery] to support a named query to return a list of entities of the given type in a single
      * transaction. Casts result set to the specified type [T].
      * Example usage:
      *
@@ -184,7 +184,7 @@ interface PersistenceService {
      * }
      *
      * // create a named query setting parameters one-by-one, that returns the second page of up to 100 records
-     * ParameterisedQuery<Dog> pagedQuery = persistenceService
+     * ParameterizedQuery<Dog> pagedQuery = persistenceService
      *         .query("find_by_name_and_age", Dog.class)
      *         .setParameter("name", "Felix")
      *         .setParameter("maxAge", 5)
@@ -195,7 +195,7 @@ interface PersistenceService {
      * List<Dog> result1 = pagedQuery.execute();
      *
      * // create a named query setting parameters as Map, that returns the second page of up to 100 records
-     * ParameterisedQuery<Dog> paramQuery = persistenceService
+     * ParameterizedQuery<Dog> paramQuery = persistenceService
      *         .query("find_by_name_and_age", Dog.class)
      *         .setParameters(Map.of("name", "Felix", "maxAge", 5))
      *         .setLimit(100)
@@ -207,14 +207,14 @@ interface PersistenceService {
      * @param queryName The name of the named query registered in the persistence context.
      * @param entityClass The type of the entities to find.
      * @param T The type of the results.
-     * @return A [ParameterisedQuery] That returns the list of entities found. Empty list if none were found.
+     * @return A [ParameterizedQuery] That returns the list of entities found. Empty list if none were found.
      * @throws CordaPersistenceException if an error happens during query operation
      */
     @Suspendable
     fun <T : Any> query(
         queryName: String,
         entityClass: Class<T>
-    ): ParameterisedQuery<T>
+    ): ParameterizedQuery<T>
 }
 
 /**

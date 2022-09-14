@@ -101,7 +101,7 @@ class Schemas {
             const val REGISTRATION_COMMAND_TOPIC = "membership.registration"
             const val REGISTRATION_STATE_TOPIC = "membership.registration.state"
 
-            const val SYNCHRONISATION_TOPIC = "membership.sync"
+            const val SYNCHRONIZATION_TOPIC = "membership.sync"
         }
     }
 

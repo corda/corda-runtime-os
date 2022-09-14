@@ -43,7 +43,7 @@ topics:
     consumers:
     producers:
     config:
-  MembershipSynchronisationTopic:
+  MembershipSynchronizationTopic:
     name: membership.sync
     consumers:
     producers:
