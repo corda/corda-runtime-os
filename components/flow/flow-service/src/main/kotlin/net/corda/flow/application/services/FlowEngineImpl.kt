@@ -2,9 +2,11 @@ package net.corda.flow.application.services
 
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.fiber.FlowContinuationErrorException
+import net.corda.flow.fiber.FlowContinuationErrorInUserCodeException
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.fiber.userCodeExceptionWrapper
 import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.SubFlow
@@ -60,7 +62,9 @@ class FlowEngineImpl @Activate constructor(
 
         try {
             log.debug { "Calling sub-flow('$subFlowClassName')..." }
-            val result = subFlow.call()
+            val result = userCodeExceptionWrapper {
+                subFlow.call()
+            }
             log.debug { "Sub-flow('$subFlowClassName') call completed ..." }
             /*
              * TODOs:
@@ -73,16 +77,19 @@ class FlowEngineImpl @Activate constructor(
 
             log.debug { "Sub-flow('${subFlow.javaClass.name}') resumed ." }
             return result
+        } catch (e: FlowContinuationErrorInUserCodeException) {
+            // This was an exception thrown during the processing of the sub-flow pipeline, due to something the user
+            // code initiated, the user should see the point of origin of this exception in the log
+            log.error("Sub-flow failed, reason:", e.originatingCause)
+            throw failSubFlow(e.originatingCause)
         } catch (e: FlowContinuationErrorException) {
             // Logging the callstack here would be misleading as it would point the log entry to the internal rethrow
             // in Corda rather than the code in the flow that failed
             log.warn("Sub-flow was discontinued, reason: ${e.cause?.javaClass?.canonicalName} thrown, ${e.cause?.message}")
-            failSubFlow(e)
-            throw e
+            throw failSubFlow(e)
         } catch (t: Throwable) {
-            log.error("Sub-flow failed due to exception thrown", t)
-            failSubFlow(t)
-            throw t
+            log.error("Sub-flow failed due to thrown throwable", t)
+            throw failSubFlow(t)
         } finally {
             popCurrentFlowStackItem()
         }
@@ -94,8 +101,9 @@ class FlowEngineImpl @Activate constructor(
     }
 
     @Suspendable
-    private fun failSubFlow(t: Throwable) {
+    private fun failSubFlow(t: Throwable): Throwable {
         flowFiberService.getExecutingFiber().suspend(FlowIORequest.SubFlowFailed(t, peekCurrentFlowStackItem()))
+        return t
     }
 
     private fun peekCurrentFlowStackItem(): FlowStackItem {

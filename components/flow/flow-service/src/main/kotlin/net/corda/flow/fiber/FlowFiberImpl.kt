@@ -61,9 +61,9 @@ class FlowFiberImpl(
             // Logging the callstack here would be misleading as it would point the log entry to the internal rethrow
             // in Corda rather than the code in the flow that failed
             log.warn("Flow was discontinued, reason: ${e.cause?.javaClass?.canonicalName} thrown, ${e.cause?.message}")
-            failTopLevelSubFlow(e)
+            failTopLevelSubFlow(e.cause!!)
         } catch (t: Throwable) {
-            log.error("FlowFiber failed due to internal Throwable being thrown", t)
+            log.error("FlowFiber failed due to Throwable being thrown", t)
             failTopLevelSubFlow(t)
         }
 
@@ -81,7 +81,14 @@ class FlowFiberImpl(
 
         val outcomeOfFlow = try {
             log.info("Flow starting.")
-            FlowIORequest.FlowFinished(flowLogic.invoke())
+            userCodeExceptionWrapper {
+                FlowIORequest.FlowFinished(flowLogic.invoke())
+            }
+        } catch (e: FlowContinuationErrorInUserCodeException) {
+            // This was an exception thrown during the processing of the sub-flow pipeline, due to something the user
+            // code initiated, the user should see the point of origin of this exception in the log
+            log.error("Flow failed", e.originatingCause)
+            FlowIORequest.FlowFailed(e.originatingCause)
         } catch (t: Throwable) {
             log.error("Flow failed", t)
             FlowIORequest.FlowFailed(t)
