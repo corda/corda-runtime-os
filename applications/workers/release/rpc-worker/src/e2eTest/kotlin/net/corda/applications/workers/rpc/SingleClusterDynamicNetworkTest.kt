@@ -9,6 +9,7 @@ import net.corda.applications.workers.rpc.utils.getGroupId
 import net.corda.applications.workers.rpc.utils.onboardMembers
 import net.corda.applications.workers.rpc.utils.onboardMgm
 import net.corda.data.identity.HoldingIdentity
+import net.corda.v5.base.util.minutes
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 
@@ -33,9 +34,11 @@ class SingleClusterDynamicNetworkTest {
     @Test
     @Disabled("Enable to reprouce the issue")
     fun `reproduce issue`() {
+        val killAt = System.currentTimeMillis() + 2.minutes.toMillis()
+        println("Will kill at $killAt")
         cordaCluster.addMembers(
             listOf(
-                E2eClusterMember("C=GB, L=Ely, O=kill-me-${cordaCluster.testToolkit.uniqueName}")
+                E2eClusterMember("C=GB, L=Ely, O=kill-me-${cordaCluster.testToolkit.uniqueName}, OU=$killAt")
             )
         )
         onboardSingleClusterGroup()
