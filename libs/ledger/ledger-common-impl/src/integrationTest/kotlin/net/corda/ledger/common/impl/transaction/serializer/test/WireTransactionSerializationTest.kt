@@ -91,7 +91,7 @@ class WireTransactionSerializationTest {
         )
         val privacySalt = PrivacySaltImpl("1".repeat(32).toByteArray())
         val componentGroupLists = listOf(
-            listOf(mapper.writeValueAsBytes(transactionMetaData)), // CORE-5940
+            listOf(mapper.writeValueAsBytes(transactionMetaData)), // TODO update with CORE-5940
             listOf(".".toByteArray()),
             listOf("abc d efg".toByteArray()),
         )
@@ -109,7 +109,7 @@ class WireTransactionSerializationTest {
             checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(sandboxManagementService.group1)
         val serializer = builder
             .addSingletonSerializableInstances(setOf(
-                digestService as SingletonSerializeAsToken, //TODO(This does not look right...)
+                digestService as SingletonSerializeAsToken,
                 merkleTreeFactory as SingletonSerializeAsToken
             ))
             .addSerializer(PrivacySaltImpl::class.java, PrivacySaltImplKryoSerializer())
