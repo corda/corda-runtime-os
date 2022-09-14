@@ -155,7 +155,7 @@ class SimFiberBaseTest {
         val memberInfos = fiber.members
 
         // Then they should all be there, but none of them twice
-        assertThat(memberInfos.keys.sortedBy { it.organisation }, `is`(members))
+        assertThat(memberInfos.keys.sortedBy { it.organization }, `is`(members))
     }
 
     @Test

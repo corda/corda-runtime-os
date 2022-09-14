@@ -25,7 +25,7 @@ import net.corda.p2p.app.AuthenticatedMessageHeader
 import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.p2p.app.UnauthenticatedMessageHeader
 import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
-import net.corda.schema.Schemas.Membership.Companion.SYNCHRONISATION_TOPIC
+import net.corda.schema.Schemas.Membership.Companion.SYNCHRONIZATION_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.test.util.time.TestClock
 import net.corda.virtualnode.toCorda
@@ -257,7 +257,7 @@ class MembershipP2PProcessorTest {
                 it.assertThat(this)
                     .isNotEmpty
                     .hasSize(1)
-                it.assertThat(this.first().topic).isEqualTo(SYNCHRONISATION_TOPIC)
+                it.assertThat(this.first().topic).isEqualTo(SYNCHRONIZATION_TOPIC)
                 it.assertThat(this.first().value).isInstanceOf(SynchronisationCommand::class.java)
                 val command = this.first().value as SynchronisationCommand
                 it.assertThat(command.command).isInstanceOf(ProcessSyncRequest::class.java)

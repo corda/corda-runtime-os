@@ -10,7 +10,7 @@ fun findStudents(memberLookup: MemberLookup): List<MemberInfo> {
     val myInfo = memberLookup.myInfo()
     return memberLookup.lookup()
         .minus(myInfo)
-        .filter { it.name.organisation == myInfo.name.organisation }
+        .filter { it.name.organization == myInfo.name.organization }
         .sortedBy { it.name }
 }
 
