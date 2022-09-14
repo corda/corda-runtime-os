@@ -6,6 +6,8 @@ import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import net.corda.serialization.checkpoint.CheckpointOutput
 
 class PrivacySaltImplKryoSerializer : CheckpointInternalCustomSerializer<PrivacySaltImpl> {
+    override val type: Class<PrivacySaltImpl> get() = PrivacySaltImpl::class.java
+
     override fun write(output: CheckpointOutput, obj: PrivacySaltImpl) {
         output.writeBytesWithLength(obj.bytes)
     }

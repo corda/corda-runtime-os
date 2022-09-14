@@ -5,6 +5,7 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sandbox.factory.SandboxDependencyInjectorFactory
+import net.corda.flow.pipeline.sandbox.impl.FlowSandboxServiceImpl.Companion.CHECKPOINT_INTERNAL_CUSTOM_SERIALIZERS
 import net.corda.flow.pipeline.sandbox.impl.FlowSandboxServiceImpl.Companion.INTERNAL_CUSTOM_SERIALIZERS
 import net.corda.flow.pipeline.sessions.FlowProtocolStoreFactory
 import net.corda.internal.serialization.AMQP_P2P_CONTEXT
@@ -21,6 +22,7 @@ import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.putObjectByKey
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.serialization.InternalCustomSerializer
+import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFactory
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.serialization.SerializationCustomSerializer
@@ -45,7 +47,13 @@ import org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC
             service = InternalCustomSerializer::class,
             cardinality = MULTIPLE,
             policy = DYNAMIC
-        )
+        ),
+        Reference(
+            name = CHECKPOINT_INTERNAL_CUSTOM_SERIALIZERS,
+            service = CheckpointInternalCustomSerializer::class,
+            cardinality = MULTIPLE,
+            policy = DYNAMIC
+        ),
     ]
 )
 class FlowSandboxServiceImpl @Activate constructor(
@@ -66,6 +74,7 @@ class FlowSandboxServiceImpl @Activate constructor(
 
     companion object {
         const val INTERNAL_CUSTOM_SERIALIZERS = "internalCustomSerializers"
+        const val CHECKPOINT_INTERNAL_CUSTOM_SERIALIZERS = "checkpointInternalCustomSerializers"
         private const val NON_PROTOTYPE_SERVICES = "(!($SERVICE_SCOPE=$SCOPE_PROTOTYPE))"
 
         private fun <T> ComponentContext.fetchServices(refName: String): List<T> {
@@ -78,6 +87,9 @@ class FlowSandboxServiceImpl @Activate constructor(
 
     private val internalCustomSerializers
         get() = componentContext.fetchServices<InternalCustomSerializer<out Any>>(INTERNAL_CUSTOM_SERIALIZERS)
+
+    private val checkpointInternalCustomSerializers
+        get() = componentContext.fetchServices<CheckpointInternalCustomSerializer<out Any>>(CHECKPOINT_INTERNAL_CUSTOM_SERIALIZERS)
 
     override fun get(holdingIdentity: HoldingIdentity): FlowSandboxGroupContext {
 
@@ -129,6 +141,10 @@ class FlowSandboxServiceImpl @Activate constructor(
             builder.addSingletonSerializableInstances(injectorService.getRegisteredSingletons())
             builder.addSingletonSerializableInstances(nonInjectableSingletons)
             builder.addSingletonSerializableInstances(setOf(sandboxGroup))
+            for (serializer in checkpointInternalCustomSerializers) {
+                log.info("Registering internal checkpoint serializer {}", serializer.javaClass.name)
+                builder.addSerializer(serializer.type , serializer)
+            }
             builder.build()
         }
         sandboxGroupContext.putObjectByKey(FlowSandboxGroupContextImpl.CHECKPOINT_SERIALIZER, checkpointSerializer)

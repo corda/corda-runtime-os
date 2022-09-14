@@ -13,6 +13,8 @@ class WireTransactionKryoSerializer(
     private val merkleTreeFactory: MerkleTreeFactory,
     private val digestService: DigestService
 ) : CheckpointInternalCustomSerializer<WireTransaction> {
+    override val type: Class<WireTransaction> get() = WireTransaction::class.java
+
     override fun write(output: CheckpointOutput, obj: WireTransaction) {
         output.writeClassAndObject(obj.privacySalt)
         output.writeClassAndObject(obj.componentGroupLists)
