@@ -60,6 +60,7 @@ import kotlin.collections.HashMap
  * together in order to provide higher performance under load.
  */
 @Component(service = [UniquenessChecker::class])
+@Suppress("LongParameterList")
 class BatchedUniquenessCheckerImpl(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val configurationReadService: ConfigurationReadService,
