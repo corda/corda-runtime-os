@@ -1,0 +1,18 @@
+plugins {
+    id 'org.jetbrains.kotlin.jvm'
+    id 'corda.common-publishing'
+    id 'corda-api.common-library'
+}
+
+description 'Schema definitions for membership operations'
+
+dependencies {
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation platform(project(':corda-api'))
+    implementation project(":base")
+
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly "org.osgi:osgi.core"
+
+    testRuntimeOnly "org.osgi:osgi.core"
+}
