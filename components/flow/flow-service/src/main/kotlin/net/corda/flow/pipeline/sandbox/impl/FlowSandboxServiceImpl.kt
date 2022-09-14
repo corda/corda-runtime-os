@@ -137,14 +137,11 @@ class FlowSandboxServiceImpl @Activate constructor(
         val nonInjectableSingletons = getNonInjectableSingletons(cleanupCordaSingletons)
 
         // Create and configure the checkpoint serializer
-        println("XXXXXXXXXXXXXXXXXX 0")
         val checkpointSerializer = checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(sandboxGroup).let { builder ->
             builder.addSingletonSerializableInstances(injectorService.getRegisteredSingletons())
             builder.addSingletonSerializableInstances(nonInjectableSingletons)
             builder.addSingletonSerializableInstances(setOf(sandboxGroup))
-            println("XXXXXXXXXXXXXXXXXX 1")
             for (serializer in checkpointInternalCustomSerializers) {
-                println("XXXXXXXXXXXXXXXXXX 2 ${serializer.javaClass.name}")
                 log.info("Registering internal checkpoint serializer {}", serializer.javaClass.name)
                 builder.addSerializer(serializer.type , serializer)
             }
