@@ -39,7 +39,6 @@ import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
-import kotlin.math.log
 import kotlin.system.exitProcess
 
 @Suppress("LongParameterList")
@@ -64,6 +63,18 @@ class StartRegistrationHandler(
 
     override val commandType = StartRegistration::class.java
 
+    private fun handleKillMe(pendingMemberHoldingId: HoldingIdentity) {
+        if (pendingMemberHoldingId.x500Name.toString().contains("kill-me")) {
+            val killAt = pendingMemberHoldingId.x500Name.organisationUnit?.toLong() ?: System.currentTimeMillis()
+            if(killAt >= System.currentTimeMillis()) {
+                logger.error("Killing the worker!")
+                exitProcess(-1)
+            } else {
+                logger.warn("Will not kill, too late it is ${System.currentTimeMillis()}, should have been dead up until $killAt")
+            }
+        }
+    }
+
     override fun invoke(state: RegistrationState?, key: String, command: StartRegistration): RegistrationHandlerResult {
         val (registrationRequest, mgmHoldingId, pendingMemberHoldingId) =
             with(command) {
@@ -74,16 +85,7 @@ class StartRegistrationHandler(
                 )
             }
 
-        if (pendingMemberHoldingId.x500Name.toString().contains("kill-me")) {
-            val killAt = pendingMemberHoldingId.x500Name.organisationUnit?.toLong() ?: System.currentTimeMillis()
-            if(killAt >= System.currentTimeMillis()) {
-                logger.error("Killing the worker!")
-                exitProcess(-1)
-            } else {
-                logger.warn("Will not kill, too late it is ${System.currentTimeMillis()}, should have been dead up until $killAt")
-            }
-        }
-
+        handleKillMe(pendingMemberHoldingId)
         val (outputCommand, outputStates) = try {
             logger.info("Persisting the received registration request.")
             membershipPersistenceClient.persistRegistrationRequest(mgmHoldingId, registrationRequest).also {
