@@ -45,6 +45,7 @@ internal class DeclineRegistrationHandler(
         if (!memberTypeChecker.isMgm(declinedBy)) {
             logger.warn("Trying to decline registration $registrationId by ${declinedBy.x500Name} which is not an MGM")
         }
+        logger.info("Declining registration $registrationId for ${declinedMember.x500Name} - ${command.reason}")
         membershipPersistenceClient.setMemberAndRegistrationRequestAsDeclined(
             viewOwningIdentity = declinedBy.toCorda(),
             declinedMember = declinedMember.toCorda(),

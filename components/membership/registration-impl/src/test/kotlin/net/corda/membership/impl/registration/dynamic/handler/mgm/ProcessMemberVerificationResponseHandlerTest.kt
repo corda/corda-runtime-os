@@ -143,7 +143,7 @@ class ProcessMemberVerificationResponseHandlerTest {
 
         assertThat(result.outputStates).hasSize(1)
             .anyMatch {
-                (it.value as? RegistrationCommand)?.command is DeclineRegistration
+                ((it.value as? RegistrationCommand)?.command as? DeclineRegistration)?.reason?.isNotBlank() == true
             }
     }
 
@@ -160,7 +160,7 @@ class ProcessMemberVerificationResponseHandlerTest {
 
         assertThat(result.outputStates).hasSize(1)
             .anyMatch {
-                (it.value as? RegistrationCommand)?.command is DeclineRegistration
+                ((it.value as? RegistrationCommand)?.command as? DeclineRegistration)?.reason?.isNotBlank() == true
             }
     }
 
@@ -177,7 +177,7 @@ class ProcessMemberVerificationResponseHandlerTest {
 
         assertThat(result.outputStates).hasSize(1)
             .anyMatch {
-                (it.value as? RegistrationCommand)?.command is DeclineRegistration
+                ((it.value as? RegistrationCommand)?.command as? DeclineRegistration)?.reason?.isNotBlank() == true
             }
     }
 

@@ -57,6 +57,18 @@ class MemberTypeCheckerTest {
     }
 
     @Test
+    fun `isMgm return true for MGM`() {
+        assertThat(
+            memberTypeChecker.isMgm(
+                HoldingIdentity(
+                    mgm.toString(),
+                    groupId
+                )
+            )
+        ).isTrue
+    }
+
+    @Test
     fun `isMgm return false for not MGM member`() {
         assertThat(
             memberTypeChecker.isMgm(

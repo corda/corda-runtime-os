@@ -96,9 +96,9 @@ class StartRegistrationHandlerTest {
     private lateinit var handler: RegistrationHandler<StartRegistration>
 
     // test dependencies
-    lateinit var memberInfoFactory: MemberInfoFactory
+    private lateinit var memberInfoFactory: MemberInfoFactory
     lateinit var membershipPersistenceClient: MembershipPersistenceClient
-    lateinit var membershipQueryClient: MembershipQueryClient
+    private lateinit var membershipQueryClient: MembershipQueryClient
 
     private val memberMemberContext: MemberContext = mock {
         on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
@@ -114,7 +114,7 @@ class StartRegistrationHandlerTest {
         on { memberProvidedContext } doReturn memberMemberContext
         on { mgmProvidedContext } doReturn memberMgmContext
     }
-    val declinedMember: MemberInfo = mock {
+    private val declinedMember: MemberInfo = mock {
         on { isActive } doReturn false
         on { memberProvidedContext } doReturn memberMemberContext
         on { mgmProvidedContext } doReturn memberMgmContext

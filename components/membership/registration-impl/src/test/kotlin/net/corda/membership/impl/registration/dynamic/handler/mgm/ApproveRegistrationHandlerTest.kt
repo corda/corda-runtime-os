@@ -300,6 +300,7 @@ class ApproveRegistrationHandlerTest {
                 assertThat(value)
                     .isNotNull
                     .isInstanceOf(DeclineRegistration::class.java)
+                assertThat((value as? DeclineRegistration)?.reason).isNotBlank()
             }
     }
 
@@ -319,6 +320,7 @@ class ApproveRegistrationHandlerTest {
                 assertThat(value)
                     .isNotNull
                     .isInstanceOf(DeclineRegistration::class.java)
+                assertThat((value as? DeclineRegistration)?.reason).isNotBlank()
             }
     }
 

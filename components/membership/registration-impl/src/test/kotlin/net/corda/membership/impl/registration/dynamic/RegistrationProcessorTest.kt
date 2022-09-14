@@ -109,14 +109,14 @@ class RegistrationProcessorTest {
     private lateinit var processor: RegistrationProcessor
 
     // test dependencies
-    lateinit var memberInfoFactory: MemberInfoFactory
-    lateinit var membershipGroupReader: MembershipGroupReader
-    lateinit var membershipGroupReaderProvider: MembershipGroupReaderProvider
-    lateinit var deserializer: CordaAvroDeserializer<KeyValuePairList>
-    lateinit var verificationRequestResponseSerializer: CordaAvroSerializer<Any>
-    lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
+    private lateinit var memberInfoFactory: MemberInfoFactory
+    private lateinit var membershipGroupReader: MembershipGroupReader
+    private lateinit var membershipGroupReaderProvider: MembershipGroupReaderProvider
+    private lateinit var deserializer: CordaAvroDeserializer<KeyValuePairList>
+    private lateinit var verificationRequestResponseSerializer: CordaAvroSerializer<Any>
+    private lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
     lateinit var membershipPersistenceClient: MembershipPersistenceClient
-    lateinit var membershipQueryClient: MembershipQueryClient
+    private lateinit var membershipQueryClient: MembershipQueryClient
 
     private val memberMemberContext: MemberContext = mock {
         on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
