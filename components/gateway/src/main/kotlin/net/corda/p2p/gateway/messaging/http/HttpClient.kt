@@ -79,7 +79,7 @@ class HttpClient(
     @Volatile
     private var clientChannel: Channel? = null
 
-    val isRunning: Boolean
+    private val isRunning: Boolean
         get() = (writeProcessor != null)
 
     @Volatile

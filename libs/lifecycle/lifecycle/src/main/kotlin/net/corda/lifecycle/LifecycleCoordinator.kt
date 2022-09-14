@@ -10,7 +10,7 @@ package net.corda.lifecycle
  * The coordinator guarantees that posted events are processed in the order they are processed, and that events will not
  * be processed concurrently.
  */
-interface LifecycleCoordinator : Lifecycle {
+interface LifecycleCoordinator : Lifecycle, AutoCloseable {
 
     /**
      * The name of this coordinator.
@@ -191,5 +191,5 @@ interface LifecycleCoordinator : Lifecycle {
      *
      * @throws LifecycleException if there are any registrations involving this coordinator.
      */
-    fun close()
+    override fun close()
 }

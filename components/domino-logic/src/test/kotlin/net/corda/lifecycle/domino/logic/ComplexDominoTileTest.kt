@@ -808,7 +808,7 @@ class ComplexDominoTileTest {
             }
 
             @Test
-            fun `close will close the managed children`() {
+            fun `close will stop the managed children`() {
                 val children = arrayOf<Pair<StubDominoTile, RegistrationHandle>>(
                     StubDominoTile(LifecycleCoordinatorName("component", "1")) to mock()
                 )

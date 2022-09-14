@@ -103,7 +103,7 @@ class HttpServer(
         }
     }
 
-    val isRunning: Boolean
+    internal val isRunning: Boolean
         get() {
             lock.withLock {
                 return shutdownSequence.isNotEmpty()

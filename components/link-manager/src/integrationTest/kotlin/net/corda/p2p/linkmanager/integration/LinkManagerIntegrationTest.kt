@@ -35,6 +35,7 @@ import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
+import net.corda.test.util.lifecycle.usingLifecycle
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
@@ -150,7 +151,7 @@ class LinkManagerIntegrationTest {
             ThirdPartyComponentsMode.STUB
         )
 
-        linkManager.also {
+        linkManager.usingLifecycle {
             linkManager.start()
 
             logger.info("Publishing valid configuration")

@@ -42,6 +42,7 @@ import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.test.util.eventually
+import net.corda.test.util.lifecycle.usingLifecycle
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
@@ -206,7 +207,7 @@ class MemberRegistrationIntegrationTest {
             messagingConfig = bootConfig
         ).also { it.start() }
 
-        registrationProxy.also {
+        registrationProxy.usingLifecycle {
             it.register(UUID.randomUUID(), member, context)
         }
 

@@ -25,7 +25,6 @@ import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -73,8 +72,6 @@ abstract class SubscriptionDominoTileBase(
 
     private val currentState = AtomicReference(Created)
 
-    private val isOpen = AtomicBoolean(true)
-
     private val internalState: DominoTileState
         get() = currentState.get()
     override val isRunning: Boolean
@@ -98,7 +95,6 @@ abstract class SubscriptionDominoTileBase(
 
     override fun stop() {
         managedChildren.forEach { it.lifecycle.stop() }
-        isOpen.set(false)
     }
 
     private fun updateState(newState: DominoTileState) {
@@ -125,14 +121,6 @@ abstract class SubscriptionDominoTileBase(
 
     private inner class EventHandler : LifecycleEventHandler {
         override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-            if (!isOpen.get()) {
-                return
-            }
-
-            handleEvent(event)
-        }
-
-        private fun handleEvent(event: LifecycleEvent) {
             when(event) {
                 is StartEvent -> {
                     startTile()
