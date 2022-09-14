@@ -40,9 +40,6 @@ import kotlin.test.assertEquals
 /**
  * Unit tests for uniqueness checker implementations. Currently, this tests our single batched
  * uniqueness checker implementation, using a "fake" backing store.
- *
- * These tests also serve as the foundation for integration tests which use a real backing
- * store implementation.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class UniquenessCheckerImplTests {

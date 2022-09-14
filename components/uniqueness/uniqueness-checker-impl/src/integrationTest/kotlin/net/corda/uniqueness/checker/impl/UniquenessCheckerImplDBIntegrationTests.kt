@@ -38,19 +38,15 @@ import java.util.*
 import javax.persistence.EntityManagerFactory
 
 /**
- * Integration tests the batched uniqueness checker implementation with the JPA based backing store
- * implementation and an associated JPA compatible DB
+ * Tests the integration of the uniqueness checker with the JPA based backing store implementation
+ * and an associated JPA compatible DB. This duplicates the test cases of [UniquenessCheckerImplTests].
  */
 // TODO: Find an elegant way to avoid duplication of unit tests
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class UniquenessCheckerImplIntegrationTests {
+class UniquenessCheckerImplDBIntegrationTests {
 
     private val entityManagerFactory: EntityManagerFactory
     private val dbConfig = DbUtils.getEntityManagerConfiguration("uniqueness_default")
-
-    private companion object {
-        private const val MIGRATION_FILE_LOCATION = "net/corda/db/schema/vnode-uniqueness/db.changelog-master.xml"
-    }
 
     private val baseTime: Instant = Instant.EPOCH
 
