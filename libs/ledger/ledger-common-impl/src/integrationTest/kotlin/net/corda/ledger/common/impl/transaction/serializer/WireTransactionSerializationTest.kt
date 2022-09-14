@@ -1,4 +1,4 @@
-package net.corda.ledger.common.impl.transaction.serializers
+package net.corda.ledger.common.impl.transaction.serializer
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl

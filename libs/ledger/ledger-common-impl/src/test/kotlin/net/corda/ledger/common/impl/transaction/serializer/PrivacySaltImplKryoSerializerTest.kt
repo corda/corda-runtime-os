@@ -1,4 +1,4 @@
-package net.corda.ledger.common.impl.transaction.serializers
+package net.corda.ledger.common.impl.transaction.serializer
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.kryoserialization.testkit.KryoTestUtils

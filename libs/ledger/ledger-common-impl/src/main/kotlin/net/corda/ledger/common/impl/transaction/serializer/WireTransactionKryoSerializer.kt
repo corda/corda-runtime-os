@@ -1,4 +1,4 @@
-package net.corda.ledger.common.impl.transaction.serializers
+package net.corda.ledger.common.impl.transaction.serializer
 
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.serialization.checkpoint.CheckpointInput
