@@ -31,7 +31,9 @@ class HttpRpcSettingsTest {
                     tenantId,
                     trustedIssuers = listOf(issuer)
                 )
-            ), HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE
+            ),
+            HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
+            20000L
         )
             .toString()
 

@@ -156,12 +156,15 @@ internal class RouteInfo(
         securityManager: HttpRpcSecurityManager,
         credentialResolver: DefaultCredentialResolver,
         webSocketCloserService: WebSocketCloserService,
-        adaptors: MutableList<AutoCloseable>
+        adaptors: MutableList<AutoCloseable>,
+        webSocketIdleTimeoutMs: Long
     ): (WsConfig) -> Unit {
         return { wsConfig ->
             log.info("Setting-up WS call for '$fullPath'")
             try {
-                val adaptor = WebSocketRouteAdaptor(this, securityManager, credentialResolver, webSocketCloserService)
+                val adaptor = WebSocketRouteAdaptor(
+                    this, securityManager, credentialResolver, webSocketCloserService, webSocketIdleTimeoutMs
+                )
                 wsConfig.onMessage(adaptor)
                 wsConfig.onClose(adaptor)
                 wsConfig.onConnect(adaptor)

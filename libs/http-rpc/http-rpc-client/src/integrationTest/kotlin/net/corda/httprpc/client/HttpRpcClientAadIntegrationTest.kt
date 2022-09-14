@@ -27,7 +27,8 @@ class HttpRpcClientAadIntegrationTest : HttpRpcIntegrationTestBase() {
             context,
             null,
             SsoSettings(AzureAdSettings(AzureAdMock.clientId, null, AzureAdMock.tenantId, trustedIssuers = listOf(AzureAdMock.issuer))),
-            HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE
+            HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
+            20000L
         )
         server = HttpRpcServerImpl(
             listOf(TestHealthCheckAPIImpl()),

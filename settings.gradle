@@ -153,6 +153,7 @@ include 'components:security-manager'
 include 'components:uniqueness:backing-store'
 include 'components:uniqueness:backing-store-impl'
 include 'components:uniqueness:uniqueness-checker'
+include 'components:uniqueness:uniqueness-checker-client-service-impl'
 include 'components:uniqueness:uniqueness-checker-impl'
 include 'components:virtual-node:cpi-info-read-service'
 include 'components:virtual-node:cpi-info-read-service-impl'
@@ -400,6 +401,7 @@ if (compositeBuild.toBoolean() && file(cordaApiLocation).exists()) {
             substitute module('net.corda:corda-ledger-obsolete') using project(':ledger-obsolete')
             substitute module('net.corda:corda-ledger-common') using project(':ledger:ledger-common')
             substitute module('net.corda:corda-ledger-consensual') using project(':ledger:ledger-consensual')
+            substitute module('net.corda:corda-ledger-utxo') using project(':ledger:ledger-utxo')
             substitute module('net.corda:corda-membership') using project(':membership')
             substitute module('net.corda:corda-serialization') using project(':serialization')
         }

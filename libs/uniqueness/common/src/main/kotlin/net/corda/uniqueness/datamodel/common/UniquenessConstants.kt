@@ -1,4 +1,4 @@
-package net.corda.uniqueness.common
+package net.corda.uniqueness.datamodel.common
 
 /**
  * Common constants.
@@ -20,4 +20,14 @@ object UniquenessConstants {
      * CHANGING THIS VALUE WILL CHANGE THE SIZE OF DATABASE FIELDS STORING TRANSACTION IDS
      */
     const val TRANSACTION_ID_LENGTH = 64
+
+    /**
+     * Character representation of accepted results, used in the backing store
+     */
+    const val RESULT_ACCEPTED_REPRESENTATION = 'A'
+
+    /**
+     * Character representation of rejected results, used in the backing store
+     */
+    const val RESULT_REJECTED_REPRESENTATION = 'R'
 }
