@@ -117,7 +117,9 @@ internal class SessionManagerImpl(
 
     private val sessionNegotiationLock = ReentrantReadWriteLock()
 
-    private val config = AtomicReference<SessionManagerConfig>()
+    private val config = AtomicReference(
+        SessionManagerConfig(1000000, 4)
+    )
 
     private val heartbeatManager: HeartbeatManager = HeartbeatManager(
         publisherFactory,
