@@ -345,7 +345,6 @@ open class JPABackingStoreImpl @Activate constructor(
                 if (event.status == LifecycleStatus.UP) {
 
                     createDefaultUniquenessDb(schemaMigrator)
-//                    createDefaultUniquenessDb()
 
                     entityManagerFactory = dbConnectionManager.getOrCreateEntityManagerFactory(
                         DEFAULT_UNIQUENESS_DB_NAME,

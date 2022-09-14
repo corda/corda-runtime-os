@@ -1,5 +1,7 @@
 package net.corda.uniqueness.backingstore.impl
 
+import net.corda.crypto.testkit.SecureHashUtils
+import net.corda.data.uniqueness.UniquenessCheckRequest
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.testkit.DbUtils
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -8,19 +10,36 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.impl.JpaEntitiesRegistryImpl
 import net.corda.uniqueness.backingstore.jpa.datamodel.JPABackingStoreEntities
+import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalRequest
+import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalResult
+import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalStateRef
+import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.*
-import org.mockito.kotlin.*
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
+import java.time.Clock
+import java.time.LocalDate
+import java.time.ZoneOffset
+import java.util.*
 import javax.persistence.EntityExistsException
+import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
+import javax.persistence.OptimisticLockException
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class JPABackingStoreImplIntegrationTests {
     private lateinit var backingStoreImpl: JPABackingStoreImpl
+    private val entityManager: EntityManager
     private val entityManagerFactory: EntityManagerFactory
     private val dbConfig = DbUtils.getEntityManagerConfiguration("uniqueness_default")
 
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
+
+    class DummyException(message: String) : Exception(message)
 
     init {
         entityManagerFactory = EntityManagerFactoryFactoryImpl().create(
@@ -28,8 +47,8 @@ class JPABackingStoreImplIntegrationTests {
             JPABackingStoreEntities.classes.toList(),
             dbConfig
         )
+        entityManager = entityManagerFactory.createEntityManager()
     }
-
 
     @BeforeEach
     fun init() {
@@ -41,6 +60,26 @@ class JPABackingStoreImplIntegrationTests {
             })
 
         backingStoreImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
+    }
+
+    private fun generateSecureHashes(cnt: Int): LinkedList<SecureHash> {
+        val secureHashes = LinkedList<SecureHash>()
+        repeat(cnt) {
+            secureHashes.push(SecureHashUtils.randomSecureHash())
+        }
+        return secureHashes
+    }
+
+    private fun generateInternalStateRefs(secureHashes: LinkedList<SecureHash>): LinkedList<UniquenessCheckInternalStateRef> {
+        val uniquenessCheckInternalStateRefs = secureHashes.let {
+            val tmpUniquenessCheckInternalStateRefs = LinkedList<UniquenessCheckInternalStateRef>()
+            it.forEachIndexed { i, hash ->
+                tmpUniquenessCheckInternalStateRefs.add(UniquenessCheckInternalStateRef(hash, i))
+            }
+            tmpUniquenessCheckInternalStateRefs
+        }
+
+        return uniquenessCheckInternalStateRefs
     }
 
     @Nested
@@ -62,45 +101,147 @@ class JPABackingStoreImplIntegrationTests {
 
         @Test
         fun `Executing transaction does not retry upon unexpected exception`() {
-
+            var execCounter = 0
+            assertThrows<DummyException> {
+                backingStoreImpl.session { session ->
+                    session.executeTransaction { _, _ ->
+                        execCounter++
+                        throw DummyException("dummy exception")
+                    }
+                }
+            }
+            assertEquals(1, execCounter)
         }
 
         @Test
-        fun `Executing transaction succeeds after a trasient failure`() {
-
+        fun `Executing transaction succeeds after trasient failures`() {
+            var execCounter = 0
+            assertDoesNotThrow {
+                backingStoreImpl.session { session ->
+                    session.executeTransaction { _, _ ->
+                        execCounter++
+                        if (execCounter < 3)
+                            throw OptimisticLockException()
+                    }
+                }
+            }
+            assertEquals(3, execCounter)
         }
     }
 
-    // TODO: may overlap some existing tests. check if these are useful.
     @Nested
     inner class PersistingDataTests {
         @Test
         fun `Persisting transaction details succeeds`() {
+            val txCnt = 3
+            val txns: LinkedList<Pair<UniquenessCheckInternalRequest, UniquenessCheckInternalResult>> = LinkedList()
+            val txIds = LinkedList<SecureHash>()
 
+            repeat(txCnt) {
+                val txId = SecureHashUtils.randomSecureHash()
+                val inputStateRef = "${SecureHashUtils.randomSecureHash()}:$it"
+                txIds.add(txId)
+
+                val externalRequest = UniquenessCheckRequest.newBuilder(
+                    UniquenessCheckRequest(
+                        txId.toString(),
+                        emptyList(),
+                        emptyList(),
+                        0,
+                        null,
+                        LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
+                    )
+                ).setInputStates(listOf(inputStateRef)).build()
+                val internalRequest = UniquenessCheckInternalRequest.create(externalRequest)
+                txns.add(Pair(internalRequest, UniquenessCheckInternalResult.Success(Clock.systemUTC().instant())))
+            }
+
+            backingStoreImpl.session { session ->
+                session.executeTransaction { _, txnOps -> txnOps.commitTransactions(txns) }
+            }
+
+            backingStoreImpl.session { session ->
+                val result = session.getTransactionDetails(txIds)
+                assertEquals(txCnt, result.size)
+                result.forEach { secureHashTxnDetails ->
+                    assertTrue(secureHashTxnDetails.key in txIds.toSet())
+                }
+            }
         }
 
         @Test
-        fun `Persisting unconsumed stats succeeds`() {
+        fun `Persisting unconsumed states succeeds`() {
+            val hashCnt = 5
+            val secureHashes = generateSecureHashes(hashCnt)
+            val stateRefs = generateInternalStateRefs(secureHashes)
 
+            backingStoreImpl.session { session ->
+                session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
+            }
+
+            backingStoreImpl.session { session ->
+                val result = session.getStateDetails(stateRefs).toList()
+                assertEquals(hashCnt, result.size)
+                result.forEach { stateRefAndStateDetailPair ->
+                    assertTrue(stateRefAndStateDetailPair.first.txHash in secureHashes.toSet())
+                }
+            }
         }
 
         @Test
-        fun `Consuming data updates unconsued states successfully`() {
+        fun `Consuming an unconsumed state succeeds`() {
+            val hashCnt = 2
+            val secureHashes = generateSecureHashes(hashCnt)
+            val stateRefs = generateInternalStateRefs(secureHashes)
 
+            // Generate unconsumed states in DB.
+            backingStoreImpl.session { session ->
+                session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
+            }
+
+            // Consume one of unconsumed states in DB.
+            val consumingTxId: SecureHash = secureHashes[0]
+            val consumingStateRef = UniquenessCheckInternalStateRef(consumingTxId, 0)
+            val consumingStateRefs = LinkedList<UniquenessCheckInternalStateRef>()
+            consumingStateRefs.push(consumingStateRef)
+            backingStoreImpl.session { session ->
+                session.executeTransaction { _, txnOps ->
+                    txnOps.consumeStates(consumingTxId = consumingTxId, stateRefs = consumingStateRefs)
+                }
+            }
+
+            // Verify if the target state has been correctly updated.
+            backingStoreImpl.session { session ->
+                val stateDetails = session.getStateDetails(stateRefs)
+                val filteredStates = stateDetails.filterValues { it.consumingTxId != null }
+                assertEquals(1, filteredStates.count())
+                assertEquals(consumingTxId, filteredStates[consumingStateRef]?.consumingTxId)
+            }
         }
-    }
-
-    // DB error handling
-
-    @Nested
-    inner class TimeoutTests {
-        @Test
-        fun `Persisting data succeeds within timeout`() {
-
-        }
 
         @Test
-        fun `Persisting data fails after timeout`() {
+        fun `Attempt to consume an unknown state fails with an exception`() {
+            val hashCnt = 2
+            val secureHashes = generateSecureHashes(hashCnt)
+            val stateRefs = generateInternalStateRefs(secureHashes)
+
+            // Generate unconsumed states in DB.
+            backingStoreImpl.session { session ->
+                session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
+            }
+
+            val consumingTxId: SecureHash = SecureHashUtils.randomSecureHash()
+            val consumingStateRef = UniquenessCheckInternalStateRef(consumingTxId, 0)
+            val consumingStateRefs = LinkedList<UniquenessCheckInternalStateRef>()
+            consumingStateRefs.push(consumingStateRef)
+
+            assertThrows<IllegalStateException> {
+                backingStoreImpl.session { session ->
+                    session.executeTransaction { _, txnOps ->
+                        txnOps.consumeStates(consumingTxId = consumingTxId, stateRefs = consumingStateRefs)
+                    }
+                }
+            }
         }
     }
 }
