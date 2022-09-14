@@ -19,6 +19,7 @@ import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.cordapp.flowworker.development.smoketests.flow.context.launchContextPropagationFlows
@@ -75,6 +76,9 @@ class RpcSmokeTestFlow : RPCStartableFlow {
 
     @CordaInject
     lateinit var serializationService: SerializationService
+
+    @CordaInject
+    lateinit var keyEncodingService: KeyEncodingService
 
     @CordaInject
     lateinit var signingService: SigningService
@@ -288,7 +292,7 @@ class RpcSmokeTestFlow : RPCStartableFlow {
 
     @Suspendable
     private fun signAndVerify(input: RpcSmokeTestInput): String {
-        val publicKey = signingService.decodePublicKey(input.getValue("publicKey"))
+        val publicKey = keyEncodingService.decodePublicKey(input.getValue("publicKey"))
         val bytesToSign = byteArrayOf(1, 2, 3, 4, 5)
         log.info("Crypto - Signing bytes $bytesToSign with public key '$publicKey'")
         val signedBytes = signingService.sign(bytesToSign, publicKey, SignatureSpec.RSA_SHA256)
@@ -300,7 +304,7 @@ class RpcSmokeTestFlow : RPCStartableFlow {
 
     @Suspendable
     private fun verifyInvalidSignature(input: RpcSmokeTestInput): String {
-        val publicKey = signingService.decodePublicKey(input.getValue("publicKey"))
+        val publicKey = keyEncodingService.decodePublicKey(input.getValue("publicKey"))
         val bytesToSign = byteArrayOf(1, 2, 3, 4, 5)
         log.info("Crypto - Signing bytes $bytesToSign with public key '$publicKey'")
         val signedBytes = signingService.sign(bytesToSign, publicKey, SignatureSpec.RSA_SHA256)
