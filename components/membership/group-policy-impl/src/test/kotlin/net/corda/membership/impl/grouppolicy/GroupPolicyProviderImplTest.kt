@@ -534,6 +534,7 @@ class GroupPolicyProviderImplTest {
         assertNotNull(lifecycleEventHandler)
 
         postRegistrationStatusChangeEvent(dependencyServiceRegistration, LifecycleStatus.DOWN)
+        postConfigChangedEvent()
         postRegistrationStatusChangeEvent(dependencyServiceRegistration)
         postRegistrationStatusChangeEvent(subRegistration)
 

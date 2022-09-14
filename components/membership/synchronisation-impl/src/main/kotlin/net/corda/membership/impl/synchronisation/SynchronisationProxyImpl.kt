@@ -179,12 +179,16 @@ class SynchronisationProxyImpl @Activate constructor(
                     }
                 } else {
                     deactivate("Setting inactive state due to receiving registration status ${event.status}")
+                    subRegistration?.close()
+                    subRegistration = null
                     subscription?.close()
                     subscription = null
                 }
             }
             is ConfigChangedEvent -> {
                 val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
+                subRegistration?.close()
+                subRegistration = null
                 subscription?.close()
                 subscription = subscriptionFactory.createDurableSubscription(
                     SubscriptionConfig(CONSUMER_GROUP, SYNCHRONISATION_TOPIC),
@@ -193,7 +197,6 @@ class SynchronisationProxyImpl @Activate constructor(
                     null
                 ).also {
                     it.start()
-                    subRegistration?.close()
                     subRegistration = coordinator.followStatusChangesByName(setOf(it.subscriptionName))
                 }
 

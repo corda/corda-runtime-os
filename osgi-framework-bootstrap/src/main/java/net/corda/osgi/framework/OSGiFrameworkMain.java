@@ -1,7 +1,5 @@
 package net.corda.osgi.framework;
 
-import net.corda.libs.configuration.validation.ConfigurationDefaults;
-import net.corda.schema.configuration.ConfigKeys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
@@ -16,8 +14,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import static java.util.stream.Collectors.toUnmodifiableList;
-import static net.corda.libs.configuration.validation.ConfigurationDefaultsKt.getConfigurationDefaults;
-import static net.corda.schema.configuration.DatabaseConfig.JDBC_DRIVER_DIRECTORY;
 
 /**
  * This class provided the main entry point for the applications built with the {@code corda.common-app} plugin.
@@ -65,6 +61,11 @@ final class OSGiFrameworkMain {
      * Wait for stop of the OSGi framework, without timeout.
      */
     private static final long NO_TIMEOUT = 0L;
+
+    /**
+     * Default directory with JDBC drivers
+     */
+    private static final String DEFAULT_JDBC_DRIVER_DIRECTORY = "/opt/jdbc-driver";
 
     /**
      * Location of the list of bundles to install in the {@link OSGiFrameworkWrap} instance.
@@ -198,7 +199,7 @@ final class OSGiFrameworkMain {
      */
     private static Path getDbDriverDirectory(String[] args) {
         final List<String> jdbcValues = Arrays.stream(args)
-            .filter(a -> a.contains(JDBC_DRIVER_DIRECTORY + "="))
+            .filter(a -> a.contains("database.jdbc.directory="))
             .collect(toUnmodifiableList());
 
         if (!jdbcValues.isEmpty()) {
@@ -209,9 +210,6 @@ final class OSGiFrameworkMain {
             }
         }
 
-        // Use default value if value not provided via arguments
-        return Paths.get(
-                getConfigurationDefaults(ConfigKeys.DB_CONFIG, ConfigurationDefaults.INSTANCE.getDB_SCHEMA_VER())
-                        .getString(JDBC_DRIVER_DIRECTORY));
+        return Paths.get(DEFAULT_JDBC_DRIVER_DIRECTORY);
     }
 }

@@ -158,7 +158,7 @@ class SubscriptionDominoTileBaseTest {
 
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenRegistration, LifecycleStatus.DOWN), coordinator)
         verify(subscription, times(1)).close()
-        handler.lastValue.processEvent(RegistrationStatusChangeEvent(subscriptionRegistration, LifecycleStatus.DOWN), coordinator)
+        verify(subscriptionRegistration, times(1)).close()
         assertThat(subscriptionTile.isRunning).isFalse
     }
 
@@ -178,7 +178,7 @@ class SubscriptionDominoTileBaseTest {
 
         handler.lastValue.processEvent(RegistrationStatusChangeEvent(childrenRegistration, LifecycleStatus.ERROR), coordinator)
         verify(subscription, times(1)).close()
-        handler.lastValue.processEvent(RegistrationStatusChangeEvent(subscriptionRegistration, LifecycleStatus.DOWN), coordinator)
+        verify(subscriptionRegistration, times(1)).close()
         assertThat(subscriptionTile.isRunning).isFalse
     }
 

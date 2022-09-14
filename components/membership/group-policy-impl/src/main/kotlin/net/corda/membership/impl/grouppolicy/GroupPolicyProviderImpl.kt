@@ -145,12 +145,16 @@ class GroupPolicyProviderImpl @Activate constructor(
                         activate("Received config, started subscriptions and setting status to UP.")
                     }
                 } else {
-                        deactivate("Setting inactive state due to receiving registration status ${event.status}.")
-                        subscription?.close()
-                        subscription = null
+                    deactivate("Setting inactive state due to receiving registration status ${event.status}.")
+                    subRegistration?.close()
+                    subRegistration = null
+                    subscription?.close()
+                    subscription = null
                 }
             }
             is ConfigChangedEvent -> {
+                subRegistration?.close()
+                subRegistration = null
                 val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
                 subscription?.close()
                 subscription = subscriptionFactory.createDurableSubscription(
@@ -160,7 +164,6 @@ class GroupPolicyProviderImpl @Activate constructor(
                     null
                 ).also {
                     it.start()
-                    subRegistration?.close()
                     subRegistration = coordinator.followStatusChangesByName(setOf(it.subscriptionName))
                 }
             }
