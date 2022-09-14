@@ -15,11 +15,11 @@ dependencies {
     implementation "net.corda:corda-ledger-common"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
-    implementation project(":libs:serialization:serialization-kryo")
     implementation project(":libs:serialization:serialization-checkpoint-api")
     implementation project(":libs:crypto:crypto-core")
 
     testImplementation project(":testing:kryo-serialization-testkit")
+    testImplementation project(":libs:serialization:serialization-kryo")
     testImplementation project(":libs:crypto:merkle-impl")
     testImplementation project(":libs:crypto:cipher-suite-impl")
 
