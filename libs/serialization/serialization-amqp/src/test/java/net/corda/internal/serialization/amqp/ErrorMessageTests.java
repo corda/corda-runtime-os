@@ -12,7 +12,7 @@ public class ErrorMessageTests {
     private String errMsg(String property, String testname) {
         return "Property '"
                 + property
-                + "' and its getter is non public, this renders class 'class "
+                + "' or its getter is non public, this renders class 'class "
                 + testname
                 + "$C' unserializable -> class "
                 + testname
