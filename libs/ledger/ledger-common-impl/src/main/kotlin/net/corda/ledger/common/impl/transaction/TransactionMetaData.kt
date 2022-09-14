@@ -5,7 +5,7 @@ import net.corda.v5.base.annotations.CordaSerializable
 //TODO(CORE-5940: guarantee its serialization is deterministic)
 @CordaSerializable
 class TransactionMetaData(
-    val properties: Map<String, Any>
+    private val properties: Map<String, Any>
     ) {
 
     operator fun get(key: String): Any? = properties[key]
