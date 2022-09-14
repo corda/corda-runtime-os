@@ -22,6 +22,9 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.registration.RegistrationRequest
+import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
+import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
+import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.read.MembershipGroupReader
@@ -36,6 +39,7 @@ import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.membership.MembershipSchema
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature
@@ -55,6 +59,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -63,7 +68,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.PublicKey
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.CompletableFuture
 
 class DynamicMemberRegistrationServiceTest {
@@ -188,6 +193,10 @@ class DynamicMemberRegistrationServiceTest {
         on { getGroupReader(any()) } doReturn groupReader
     }
     private val membershipPersistenceClient = mock<MembershipPersistenceClient>()
+    private val membershipSchemaValidator: MembershipSchemaValidator = mock()
+    private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory = mock {
+        on { createValidator() } doReturn membershipSchemaValidator
+    }
     private val registrationService = DynamicMemberRegistrationService(
         publisherFactory,
         configurationReadService,
@@ -197,6 +206,7 @@ class DynamicMemberRegistrationServiceTest {
         serializationFactory,
         membershipGroupReaderProvider,
         membershipPersistenceClient,
+        membershipSchemaValidatorFactory
     )
 
     private val context = mapOf(
@@ -338,7 +348,40 @@ class DynamicMemberRegistrationServiceTest {
         SoftAssertions.assertSoftly {
             it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
             it.assertThat(result.message)
-                .isEqualTo("Registration failed. Reason: Provided ledger key IDs are incorrectly numbered.")
+                .isEqualTo(
+                    "Registration failed. " +
+                            "The registration context is invalid: Provided ledger key IDs are incorrectly numbered."
+                )
+        }
+        registrationService.stop()
+    }
+
+    @Test
+    fun `registration fails if the registration context doesn't match the schema`() {
+        postConfigChangedEvent()
+        val err = "ERROR-MESSAGE"
+        val errReason = "ERROR-REASON"
+        whenever(
+            membershipSchemaValidator.validateRegistrationContext(
+                eq(MembershipSchema.RegistrationContextSchema.DynamicMember),
+                any(),
+                any()
+            )
+        ).doThrow(
+            MembershipSchemaValidationException(
+                err,
+                null,
+                MembershipSchema.RegistrationContextSchema.DynamicMember,
+                listOf(errReason)
+            )
+        )
+
+        registrationService.start()
+        val result = registrationService.register(registrationResultId, member, context)
+        SoftAssertions.assertSoftly {
+            it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+            it.assertThat(result.message).contains(err)
+            it.assertThat(result.message).contains(errReason)
         }
         registrationService.stop()
     }
