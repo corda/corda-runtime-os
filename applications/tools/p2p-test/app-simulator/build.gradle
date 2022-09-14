@@ -20,6 +20,7 @@ dependencies {
     implementation "info.picocli:picocli:$picocliVersion"
     implementation "org.slf4j:slf4j-api"
     implementation "net.corda:corda-base"
+    implementation project(":components:kafka-topic-admin")
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:configuration:configuration-merger")
     implementation project(":libs:messaging:messaging")
@@ -42,5 +43,6 @@ dependencies {
     runtimeOnly project(":libs:messaging:messaging-impl")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
+    runtimeOnly project(':libs:messaging:kafka-topic-admin-impl')
 
 }
