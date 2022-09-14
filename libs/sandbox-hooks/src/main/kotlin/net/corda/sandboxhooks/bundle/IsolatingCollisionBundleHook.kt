@@ -3,9 +3,6 @@ package net.corda.sandboxhooks.bundle
 import net.corda.sandbox.SandboxContextService
 import org.osgi.framework.Bundle
 import org.osgi.framework.hooks.bundle.CollisionHook
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
 
 /**
  * This hook modifies the logic for identifying collisions (i.e. bundles with the same symbolic name) when installing
@@ -19,11 +16,7 @@ import org.osgi.service.component.annotations.Reference
  * using a more sophisticated approach (e.g. avoiding collisions if two library bundles are from different CPKs).
  * Unfortunately, [CollisionHook] does not provide this information.
  */
-@Component(immediate = true)
-internal class IsolatingCollisionBundleHook @Activate constructor(
-    @Reference
-    private val sandboxService: SandboxContextService
-) : CollisionHook {
+class IsolatingCollisionBundleHook(private val sandboxService: SandboxContextService) : CollisionHook {
 
     // Note that `target` is not the bundle being installed, but the bundle whose context triggered the installation.
     override fun filterCollisions(operationType: Int, target: Bundle, collisionCandidates: MutableCollection<Bundle>) {
