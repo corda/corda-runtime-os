@@ -1,10 +1,12 @@
-package net.corda.ledger.common.impl.transaction.serializer
+package net.corda.ledger.common.impl.transaction.serializer.test
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.TransactionMetaData
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
+import net.corda.ledger.common.impl.transaction.serializer.PrivacySaltImplKryoSerializer
+import net.corda.ledger.common.impl.transaction.serializer.WireTransactionKryoSerializer
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFactory
@@ -110,13 +112,12 @@ class WireTransactionSerializationTest {
                 digestService as SingletonSerializeAsToken, //TODO(This does not look right...)
                 merkleTreeFactory as SingletonSerializeAsToken
             ))
-// ??            .addSerializer(PrivacySaltImpl::class.java, PrivacySaltImplKryoSerializer())
-// ??            .addSerializer(WireTransaction::class.java, WireTransactionKryoSerializer(merkleTreeFactory, digestService))
+            .addSerializer(PrivacySaltImpl::class.java, PrivacySaltImplKryoSerializer())
+            .addSerializer(WireTransaction::class.java, WireTransactionKryoSerializer(merkleTreeFactory, digestService))
             .build()
 
         val wireTransaction = getWireTransaction()
         val bytes = serializer.serialize(wireTransaction)
-        println(bytes.decodeToString())
         val deserialized = serializer.deserialize(bytes, WireTransaction::class.java)
 
         assertThat(deserialized).isEqualTo(wireTransaction)
