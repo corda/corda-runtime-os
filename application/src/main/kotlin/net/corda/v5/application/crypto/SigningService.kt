@@ -6,7 +6,6 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.exceptions.CryptoException
 import java.security.KeyPair
 import java.security.PrivateKey
 import java.security.PublicKey
