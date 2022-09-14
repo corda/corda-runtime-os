@@ -1546,34 +1546,22 @@ class SessionManagerTest {
 //TODO - a better name
     @Test
     fun `DRAFT`() {
-        //val someSessionId = protocolInitiator.sessionId
         whenever(outboundSessionPool.constructed().first().getSession(protocolInitiator.sessionId)).thenReturn(
             OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
         )
-
         whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), any())).thenReturn(mock())
         val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, protocolInitiator.sessionId, 4, Instant.now().toEpochMilli())
         val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
         sessionManager.processSessionMessage(LinkInMessage(responderHello))
-
         val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
         val session = mock<Session>()
         whenever(session.sessionId).doAnswer{protocolInitiator.sessionId}
-        //val session = mock<Session>()
         whenever(protocolInitiator.getSession()).thenReturn(session)
-
-        //whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(mock())
-        //whenever(outboundSessionPool.constructed().last().replaceSession(someSessionId, protocolInitiator)).thenReturn(true)
-        //verify(outboundSessionPool.constructed().last()).replaceSession(protocolInitiator.sessionId, secondProtocolInitiator)
-        //whenever(outboundSessionPool.constructed().last().replaceSession(protocolInitiator.sessionId, secondProtocolInitiator)).thenReturn(true)
         whenever(outboundSessionPool.constructed().last().replaceSession(eq(protocolInitiator.sessionId), any())).thenReturn(true)
-
-
-        whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(mock())
-
+        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
         assertThat(sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))).isNull()
         mockTimeFacilitiesProvider.advanceTime(3.minutes)
-        loggingInterceptor.assertInfoContains("Outbound session some-session" +
+        loggingInterceptor.assertInfoContains("Outbound session sessionId" +
                 " (local=HoldingIdentity(x500Name=CN=Alice, O=Alice Corp, L=LDN, C=GB, groupId=myGroup)," +
                 " remote=HoldingIdentity(x500Name=CN=Bob, O=Bob Corp, L=LDN, C=GB, groupId=myGroup))" +
                 " timed out to refresh ephemeral keys and it will be cleaned up."
@@ -1582,29 +1570,35 @@ class SessionManagerTest {
             "${protocolInitiator.sessionId}_${InitiatorHandshakeMessage::class.java.simpleName}",
             SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY)
         )
-
-        verify(outboundSessionPool.constructed().last()).replaceSession(protocolInitiator.sessionId, secondProtocolInitiator)
-
-
+        verify(outboundSessionPool.constructed().last()).replaceSession(protocolInitiator.sessionId, protocolInitiator)
         verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
             .publish(listOf(Record(SESSION_OUT_PARTITIONS, protocolInitiator.sessionId, null))
         )
 
 
+
+
 /*
+        //val someSessionId = protocolInitiator.sessionId
+        //val session = mock<Session>()
+        //whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(mock())
+        //whenever(outboundSessionPool.constructed().last().replaceSession(someSessionId, protocolInitiator)).thenReturn(true)
+        //verify(outboundSessionPool.constructed().last()).replaceSession(protocolInitiator.sessionId, secondProtocolInitiator)
+        //whenever(outboundSessionPool.constructed().last().replaceSession(protocolInitiator.sessionId, secondProtocolInitiator)).thenReturn(true)
+        //whenever(secondProtocolInitiator.generateInitiatorHello()).thenReturn(mock())
+        //verify(outboundSessionPool.constructed().last()).replaceSession(protocolInitiator.sessionId, secondProtocolInitiator)
+
         verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
             .publish(listOf(Record(SESSION_OUT_PARTITIONS, someSessionId, null))
         )
         verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
             .publish(listOf(Record(SESSION_OUT_PARTITIONS, protocolInitiator.sessionId, null))
         )
-
         val sessionIds = listOf("firstSession", "anotherSession")
         publisherWithDominoLogicByClientId["session-manager"]!!.forEach { publisher ->
             verify(publisher).publish(sessionIds.map { Record(SESSION_OUT_PARTITIONS, it, null)}.toList())
-        }*/
-
-        //mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.sessionTimeout.plus(5.millis))
-
+        }
+        mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.sessionTimeout.plus(5.millis))
+*/
     }
 }
