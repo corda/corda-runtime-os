@@ -55,11 +55,14 @@ class FlowEventProcessorImpl(
             return flowEventExceptionProcessor.process(t)
         }
 
+        //flow result timeout must be lower than the processor timeout as the processor thread will be killed by the subscription consumer
+        // thread after this period and so this timeout would never be reached and given a chance to return otherwise.
+        val flowTimeout = config.getInt(PROCESSING_MAX_FLOW_EXECUTION_DURATION) * 0.75.toLong()
         return try {
             flowEventContextConverter.convert(
                 pipeline
                     .eventPreProcessing()
-                    .runOrContinue(config.getInt(PROCESSING_MAX_FLOW_EXECUTION_DURATION).toLong())
+                    .runOrContinue(flowTimeout)
                     .setCheckpointSuspendedOn()
                     .setWaitingFor()
                     .requestPostProcessing()
