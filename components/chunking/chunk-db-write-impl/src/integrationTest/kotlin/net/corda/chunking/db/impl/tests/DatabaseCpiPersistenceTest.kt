@@ -25,6 +25,7 @@ import net.corda.libs.cpi.datamodel.CpkKey
 import net.corda.libs.cpi.datamodel.CpkMetadataEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
+import net.corda.libs.cpi.datamodel.findDbChangeLogForCpi
 import net.corda.libs.cpi.datamodel.QUERY_NAME_UPDATE_CPK_FILE_DATA
 import net.corda.libs.cpi.datamodel.QUERY_PARAM_DATA
 import net.corda.libs.cpi.datamodel.QUERY_PARAM_ENTITY_VERSION
@@ -738,6 +739,36 @@ internal class DatabaseCpiPersistenceTest {
         assertThat(file.insertTimestamp)
             .withFailMessage("Insert timestamp should be updated")
             .isAfter(initialTimestamp)
+    }
+    
+    @Test
+    fun `force upload can remove all changelogs`() {
+        val (cpkWithChangelogs, cpkWithoutChangelogs) = makeCpks(2)
+        val cpi = mockCpi(listOf(cpkWithChangelogs))
+        val cpiEntity = cpiPersistence.persistMetadataAndCpks(
+            cpi, "test.cpi", newRandomSecureHash(), UUID.randomUUID().toString(),
+            "group-A", makeChangeLogs(arrayOf(cpkWithChangelogs))
+        )
+
+        fun findChangelogs(cpiEntity: CpiMetadataEntity) = entityManagerFactory.createEntityManager().transaction {
+            findDbChangeLogForCpi(
+                it,
+                CpiIdentifier(
+                    name = cpiEntity.name,
+                    version = cpiEntity.version,
+                    signerSummaryHash = SecureHash.parse(cpiEntity.signerSummaryHash)
+                )
+            )
+        }
+
+        val changelogsWith = findChangelogs(cpiEntity)
+        assertThat(changelogsWith.size).isEqualTo(1)
+        val updatedCpi = mockCpiWithId(listOf(cpkWithoutChangelogs), cpi.metadata.cpiId)
+        val updateCpiEntity = cpiPersistence.updateMetadataAndCpks(
+            updatedCpi, "test.cpi", newRandomSecureHash(), UUID.randomUUID().toString(), "group-A", emptyList()
+        )
+        val changelogsWithout = findChangelogs(updateCpiEntity)
+        assertThat(changelogsWithout.size).isEqualTo(0)
     }
 
     @Test
