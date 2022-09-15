@@ -16,7 +16,6 @@ import kotlin.test.assertEquals
 
 class WireTransactionSerializerTest {
     companion object {
-        private val schemeMetadata = CipherSchemeMetadataImpl()
         private lateinit var digestService: DigestService
         private lateinit var merkleTreeFactory: MerkleTreeFactory
         private lateinit var serializationService: SerializationService
@@ -24,6 +23,7 @@ class WireTransactionSerializerTest {
         @BeforeAll
         @JvmStatic
         fun setup() {
+            val schemeMetadata = CipherSchemeMetadataImpl()
             digestService = DigestServiceImpl(schemeMetadata, null)
             merkleTreeFactory = MerkleTreeFactoryImpl(digestService)
             serializationService = TestSerializationService.getTestSerializationService({
@@ -34,7 +34,7 @@ class WireTransactionSerializerTest {
 
     @Test
     fun `Should serialize and then deserialize wire Tx`() {
-        val wireTransaction = getWireTransaction(schemeMetadata, digestService, merkleTreeFactory)
+        val wireTransaction = getWireTransaction(digestService, merkleTreeFactory)
         val bytes = serializationService.serialize(wireTransaction)
         val deserialized = serializationService.deserialize(bytes)
         assertEquals(wireTransaction, deserialized)

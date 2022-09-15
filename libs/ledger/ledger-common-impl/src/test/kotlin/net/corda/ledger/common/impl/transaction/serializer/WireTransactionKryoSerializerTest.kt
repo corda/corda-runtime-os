@@ -16,14 +16,13 @@ import org.junit.jupiter.api.Test
 
 class WireTransactionKryoSerializerTest {
     companion object {
-        private val schemeMetadata = CipherSchemeMetadataImpl()
-
         private lateinit var digestService: DigestService
         private lateinit var merkleTreeFactory: MerkleTreeFactory
 
         @BeforeAll
         @JvmStatic
         fun setup() {
+            val schemeMetadata = CipherSchemeMetadataImpl()
             digestService = DigestServiceImpl(schemeMetadata, null)
             merkleTreeFactory = MerkleTreeFactoryImpl(digestService)
         }
@@ -31,7 +30,7 @@ class WireTransactionKryoSerializerTest {
 
     @Test
     fun `serialization of a Wire Tx object using the kryo default serialization`() {
-        val wireTransaction = getWireTransaction(schemeMetadata, digestService, merkleTreeFactory)
+        val wireTransaction = getWireTransaction(digestService, merkleTreeFactory)
         val wireTransactionKryoSerializer = WireTransactionKryoSerializer(merkleTreeFactory, digestService)
 
         val serializer = createCheckpointSerializer(

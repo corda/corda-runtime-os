@@ -11,6 +11,7 @@ import net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFac
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
+import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -95,7 +96,7 @@ class WireTransactionSerializationTest {
             .addSerializer(WireTransaction::class.java, wireTransactionKryoSerializer)
             .build()
 
-        val wireTransaction = getWireTransaction(digestService= digestService, merkleTreeFactory = merkleTreeFactory)
+        val wireTransaction = getWireTransaction(digestService, merkleTreeFactory)
         val bytes = serializer.serialize(wireTransaction)
         val deserialized = serializer.deserialize(bytes, WireTransaction::class.java)
 
