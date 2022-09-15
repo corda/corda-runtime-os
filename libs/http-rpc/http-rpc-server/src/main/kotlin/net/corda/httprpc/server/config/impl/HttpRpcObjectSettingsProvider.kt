@@ -47,4 +47,6 @@ class HttpRpcObjectSettingsProvider(
     override fun getSsoSettings(): SsoSettingsProvider? = ssoSettingsProvider
 
     override fun maxContentLength(): Int = httpRpcSettings.maxContentLength
+
+    override fun getWebSocketIdleTimeoutMs(): Long = httpRpcSettings.webSocketIdleTimeoutMs
 }

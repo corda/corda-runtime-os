@@ -141,7 +141,7 @@ class FlowFiberImpl(
         // logic to determine whether all sessions have successfully acknowledged receipt of the close messages.
         val flowStackItem = getRemainingFlowStackItem()
         if (flowStackItem.sessionIds.isNotEmpty()) {
-            suspend(FlowIORequest.SubFlowFinished(flowStackItem))
+            suspend(FlowIORequest.SubFlowFinished(flowStackItem.sessionIds.toList()))
         }
         flowCompletion.complete(outcomeOfFlow)
     }
@@ -153,7 +153,7 @@ class FlowFiberImpl(
         // logic to determine whether all sessions have successfully acknowledged receipt of the close messages.
         val flowStackItem = getRemainingFlowStackItem()
         if (flowStackItem.sessionIds.isNotEmpty()) {
-            suspend(FlowIORequest.SubFlowFailed(throwable, flowStackItem))
+            suspend(FlowIORequest.SubFlowFailed(throwable, flowStackItem.sessionIds.toList()))
         }
         flowCompletion.complete(FlowIORequest.FlowFailed(throwable))
     }

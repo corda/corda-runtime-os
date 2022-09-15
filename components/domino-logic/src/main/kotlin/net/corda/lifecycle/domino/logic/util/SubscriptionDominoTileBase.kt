@@ -120,6 +120,8 @@ abstract class SubscriptionDominoTileBase(
     }
 
     private fun createAndStartSubscription() {
+        subscriptionRegistration.get()?.close()
+        subscriptionRegistration.set(null)
         coordinator.createManagedResource(SUBSCRIPTION, subscriptionGenerator)
         val subscriptionName = coordinator.getManagedResource<SubscriptionBase>(SUBSCRIPTION)?.subscriptionName
             ?: throw CordaRuntimeException("Subscription could not be extracted from the lifecycle coordinator.")
@@ -164,11 +166,17 @@ abstract class SubscriptionDominoTileBase(
                                 }
                                 LifecycleStatus.DOWN -> {
                                     logger.info("One of the dependencies went down, stopping subscription.")
+                                    subscriptionRegistration.get()?.close()
+                                    subscriptionRegistration.set(null)
+                                    updateState(StoppedDueToChildStopped)
                                     coordinator.getManagedResource<Resource>(SUBSCRIPTION)?.close()
                                 }
                                 LifecycleStatus.ERROR -> {
                                     logger.info("One of the dependencies had an error, stopping subscription.")
+                                    subscriptionRegistration.get()?.close()
+                                    subscriptionRegistration.set(null)
                                     coordinator.getManagedResource<Resource>(SUBSCRIPTION)?.close()
+                                    updateState(StoppedDueToError)
                                 }
                             }
                         }

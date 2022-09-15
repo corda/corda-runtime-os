@@ -29,7 +29,8 @@ class HttpRpcServerResponseEntityTest : HttpRpcServerTestBase() {
                 context,
                 null,
                 null,
-                HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE
+                HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
+                20000L
             )
             server = HttpRpcServerImpl(
                 listOf(

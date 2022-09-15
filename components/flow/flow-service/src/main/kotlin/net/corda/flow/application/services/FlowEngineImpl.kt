@@ -97,12 +97,12 @@ class FlowEngineImpl @Activate constructor(
 
     @Suspendable
     private fun finishSubFlow() {
-        flowFiberService.getExecutingFiber().suspend(FlowIORequest.SubFlowFinished(peekCurrentFlowStackItem()))
+        flowFiberService.getExecutingFiber().suspend(FlowIORequest.SubFlowFinished(peekCurrentFlowStackItem().sessionIds.toList()))
     }
 
     @Suspendable
     private fun failSubFlow(t: Throwable): Throwable {
-        flowFiberService.getExecutingFiber().suspend(FlowIORequest.SubFlowFailed(t, peekCurrentFlowStackItem()))
+        flowFiberService.getExecutingFiber().suspend(FlowIORequest.SubFlowFailed(t, peekCurrentFlowStackItem().sessionIds.toList()))
         return t
     }
 

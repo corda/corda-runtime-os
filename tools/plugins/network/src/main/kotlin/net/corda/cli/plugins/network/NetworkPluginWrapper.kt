@@ -74,13 +74,13 @@ class NetworkPluginWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
             @CommandLine.Option(
                 names = ["-ou"],
                 arity = "0..1",
-                description = ["Optional. Organisation Unit (OU) attribute of the X.500 name to filter members by."]
-            ) organisationUnit: String?,
+                description = ["Optional. Organization Unit (OU) attribute of the X.500 name to filter members by."]
+            ) organizationUnit: String?,
             @CommandLine.Option(
                 names = ["-o"],
                 arity = "0..1",
-                description = ["Optional. Organisation (O) attribute of the X.500 name to filter members by."]
-            ) organisation: String?,
+                description = ["Optional. Organization (O) attribute of the X.500 name to filter members by."]
+            ) organization: String?,
             @CommandLine.Option(
                 names = ["-l"],
                 arity = "0..1",
@@ -107,8 +107,8 @@ class NetworkPluginWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
                         result = lookup(
                             holdingIdentityShortHash,
                             commonName,
-                            organisation,
-                            organisationUnit,
+                            organization,
+                            organizationUnit,
                             locality,
                             state,
                             country

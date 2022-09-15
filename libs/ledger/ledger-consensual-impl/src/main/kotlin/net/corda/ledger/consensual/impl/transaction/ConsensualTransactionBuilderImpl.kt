@@ -2,9 +2,11 @@ package net.corda.ledger.consensual.impl.transaction
 
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.TransactionMetaData
+import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.DIGEST_SETTINGS_KEY
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.LEDGER_MODEL_KEY
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.LEDGER_VERSION_KEY
 import net.corda.ledger.common.impl.transaction.WireTransaction
+import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SigningService
@@ -18,6 +20,7 @@ import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
 import java.security.PublicKey
 import java.security.SecureRandom
 import java.time.Instant
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 
 @Suppress("LongParameterList")
 class ConsensualTransactionBuilderImpl(
@@ -54,15 +57,19 @@ class ConsensualTransactionBuilderImpl(
         this.copy(states = this.states + states)
 
     private fun calculateMetaData(): TransactionMetaData {
-        return TransactionMetaData(mapOf(
-            LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
-            LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
-            // CORE-5940 set CPK identifier/etc
-        ))
+        return TransactionMetaData(
+            mapOf(
+                LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
+                LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
+                DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues
+                // TODO(CORE-5940 set CPK identifier/etc)
+            )
+        )
     }
 
     private fun calculateComponentGroupLists(serializer: SerializationService): List<List<ByteArray>>
     {
+        val mapper = jacksonObjectMapper()
         val requiredSigningKeys = states
             .map{it.participants}
             .flatten()
@@ -73,7 +80,7 @@ class ConsensualTransactionBuilderImpl(
         for (componentGroupIndex in ConsensualComponentGroupEnum.values()) {
             componentGroupLists += when (componentGroupIndex) {
                 ConsensualComponentGroupEnum.METADATA ->
-                    listOf(serializer.serialize(calculateMetaData()).bytes)
+                    listOf(mapper.writeValueAsBytes(calculateMetaData())) // TODO(update with CORE-5940)
                 ConsensualComponentGroupEnum.TIMESTAMP ->
                     listOf(serializer.serialize(Instant.now()).bytes)
                 ConsensualComponentGroupEnum.REQUIRED_SIGNING_KEYS ->
@@ -89,7 +96,7 @@ class ConsensualTransactionBuilderImpl(
 
     override fun signInitial(publicKey: PublicKey): ConsensualSignedTransaction {
         val wireTransaction = buildWireTransaction()
-        // CORE-5091 we just fake the signature for now...
+        // TODO(CORE-5091 we just fake the signature for now...)
 //        val signature = signingService.sign(wireTransaction.id.bytes, publicKey, SignatureSpec.RSA_SHA256)
         val signature = DigitalSignature.WithKey(publicKey, "0".toByteArray(), mapOf())
         val digitalSignatureMetadata = DigitalSignatureMetadata(Instant.now(), mapOf()) //CORE-5091 populate this properly...
@@ -98,8 +105,8 @@ class ConsensualTransactionBuilderImpl(
     }
 
     private fun buildWireTransaction() : WireTransaction{
-        // CORE-5982 more verifications
-        // CORE-5940 ? metadata verifications: nulls, order of CPKs, at least one CPK?)
+        // TODO(CORE-5982 more verifications)
+        // TODO(CORE-5940 ? metadata verifications: nulls, order of CPKs, at least one CPK?))
         require(states.isNotEmpty()){"At least one Consensual State is required"}
         require(states.all{it.participants.isNotEmpty()}){"All consensual states needs to have participants"}
         val componentGroupLists = calculateComponentGroupLists(serializer)

@@ -51,7 +51,6 @@ interface CertificatesRpcOps : RpcOps {
      * @param tenantId The tenant ID.
      * @param keyId The Key ID.
      * @param x500Name A valid X500 name.
-     * @param certificateRole - The certificate role
      * @param subjectAlternativeNames - list of subject alternative DNS names
      * @param contextMap - Any additional attributes to add to the CSR.
      *
@@ -72,11 +71,6 @@ interface CertificatesRpcOps : RpcOps {
             required = true,
         )
         x500Name: String,
-        @HttpRpcRequestBodyParameter(
-            description = "Certificate role. For example: TLS, SESSION_INIT, ...",
-            required = true,
-        )
-        certificateRole: String,
         @HttpRpcRequestBodyParameter(
             description = "Subject alternative names",
             required = false,

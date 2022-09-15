@@ -13,7 +13,6 @@ import net.corda.flow.FLOW_ID_1
 import net.corda.flow.SESSION_ID_1
 import net.corda.flow.fiber.FiberFuture
 import net.corda.flow.fiber.FlowContinuation
-import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.InitiatedFlow
 import net.corda.flow.fiber.RPCStartedFlow
@@ -52,7 +51,6 @@ class FlowRunnerImplTest {
     private val sandboxGroupContext = mock<FlowSandboxGroupContext>()
     private val flowFiberExecutionContextFactory = mock<FlowFiberExecutionContextFactory>()
     private val sandboxDependencyInjector = mock<SandboxDependencyInjector>()
-    private val fiber = mock<FlowFiber>()
     private val fiberFuture = mock<FiberFuture>()
     private var flowFiberExecutionContext: FlowFiberExecutionContext
     private var flowStackItem = FlowStackItem().apply { sessionIds = mutableListOf() }

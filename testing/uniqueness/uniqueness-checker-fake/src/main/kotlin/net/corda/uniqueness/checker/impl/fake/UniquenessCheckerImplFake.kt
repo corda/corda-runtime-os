@@ -1,14 +1,14 @@
 package net.corda.uniqueness.checker.impl.fake
 
-import net.corda.data.uniqueness.UniquenessCheckRequest
-import net.corda.data.uniqueness.UniquenessCheckResponse
-import net.corda.data.uniqueness.UniquenessCheckResultInputStateConflict
-import net.corda.data.uniqueness.UniquenessCheckResultInputStateUnknown
-import net.corda.data.uniqueness.UniquenessCheckResultMalformedRequest
-import net.corda.data.uniqueness.UniquenessCheckResultReferenceStateConflict
-import net.corda.data.uniqueness.UniquenessCheckResultReferenceStateUnknown
-import net.corda.data.uniqueness.UniquenessCheckResultSuccess
-import net.corda.data.uniqueness.UniquenessCheckResultTimeWindowOutOfBounds
+import net.corda.data.uniqueness.UniquenessCheckRequestAvro
+import net.corda.data.uniqueness.UniquenessCheckResponseAvro
+import net.corda.data.uniqueness.UniquenessCheckResultInputStateConflictAvro
+import net.corda.data.uniqueness.UniquenessCheckResultInputStateUnknownAvro
+import net.corda.data.uniqueness.UniquenessCheckResultMalformedRequestAvro
+import net.corda.data.uniqueness.UniquenessCheckResultReferenceStateConflictAvro
+import net.corda.data.uniqueness.UniquenessCheckResultReferenceStateUnknownAvro
+import net.corda.data.uniqueness.UniquenessCheckResultSuccessAvro
+import net.corda.data.uniqueness.UniquenessCheckResultTimeWindowOutOfBoundsAvro
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
@@ -21,6 +21,7 @@ import net.corda.uniqueness.checker.UniquenessChecker
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -39,7 +40,7 @@ import java.time.Instant
 class UniquenessCheckerImplFake(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val clock: Clock
-) : UniquenessChecker {
+) : UniquenessChecker, SingletonSerializeAsToken {
 
     @Activate
     constructor(
@@ -51,7 +52,7 @@ class UniquenessCheckerImplFake(
         private val log: Logger = contextLogger()
     }
 
-    private val responseCache = HashMap<String, UniquenessCheckResponse>()
+    private val responseCache = HashMap<String, UniquenessCheckResponseAvro>()
 
     // Value of state cache is populated with the consuming tx id when spent, null if unspent
     private val stateCache = HashMap<String, String?>()
@@ -75,8 +76,8 @@ class UniquenessCheckerImplFake(
     @Synchronized
     @Suppress("ComplexMethod", "LongMethod")
     override fun processRequests(
-        requests: List<UniquenessCheckRequest>
-    ): List<UniquenessCheckResponse> {
+        requests: List<UniquenessCheckRequestAvro>
+    ): List<UniquenessCheckResponseAvro> {
         return requests.map { request ->
             responseCache[request.txId] ?: run {
                 val (knownInputStates, unknownInputStates) =
@@ -91,39 +92,39 @@ class UniquenessCheckerImplFake(
 
                 val response = when {
                     request.numOutputStates < 0 -> {
-                        UniquenessCheckResponse(
+                        UniquenessCheckResponseAvro(
                             request.txId,
-                            UniquenessCheckResultMalformedRequest(
+                            UniquenessCheckResultMalformedRequestAvro(
                                 "Number of output states cannot be less than 0."
                             )
                         )
                     }
 
                     unknownInputStates.isNotEmpty() -> {
-                        UniquenessCheckResponse(
+                        UniquenessCheckResponseAvro(
                             request.txId,
-                            UniquenessCheckResultInputStateUnknown(unknownInputStates)
+                            UniquenessCheckResultInputStateUnknownAvro(unknownInputStates)
                         )
                     }
 
                     unknownReferenceStates.isNotEmpty() -> {
-                        UniquenessCheckResponse(
+                        UniquenessCheckResponseAvro(
                             request.txId,
-                            UniquenessCheckResultReferenceStateUnknown(unknownReferenceStates)
+                            UniquenessCheckResultReferenceStateUnknownAvro(unknownReferenceStates)
                         )
                     }
 
                     inputStateConflicts.isNotEmpty() -> {
-                        UniquenessCheckResponse(
+                        UniquenessCheckResponseAvro(
                             request.txId,
-                            UniquenessCheckResultInputStateConflict(inputStateConflicts)
+                            UniquenessCheckResultInputStateConflictAvro(inputStateConflicts)
                         )
                     }
 
                     referenceStateConflicts.isNotEmpty() -> {
-                        UniquenessCheckResponse(
+                        UniquenessCheckResponseAvro(
                             request.txId,
-                            UniquenessCheckResultReferenceStateConflict(referenceStateConflicts)
+                            UniquenessCheckResultReferenceStateConflictAvro(referenceStateConflicts)
                         )
                     }
 
@@ -132,9 +133,9 @@ class UniquenessCheckerImplFake(
                         request.timeWindowLowerBound,
                         request.timeWindowUpperBound
                     ) -> {
-                        UniquenessCheckResponse(
+                        UniquenessCheckResponseAvro(
                             request.txId,
-                            UniquenessCheckResultTimeWindowOutOfBounds(
+                            UniquenessCheckResultTimeWindowOutOfBoundsAvro(
                                 timeWindowEvaluationTime,
                                 request.timeWindowLowerBound,
                                 request.timeWindowUpperBound
@@ -149,9 +150,9 @@ class UniquenessCheckerImplFake(
                         }
                         // Write spent states - overwrites any earlier entries for unspent states
                         stateCache.putAll(request.inputStates.associateWith { request.txId })
-                        UniquenessCheckResponse(
+                        UniquenessCheckResponseAvro(
                             request.txId,
-                            UniquenessCheckResultSuccess(clock.instant())
+                            UniquenessCheckResultSuccessAvro(clock.instant())
                         )
                     }
                 }

@@ -63,11 +63,9 @@ class SubFlowFailedRequestHandler @Activate constructor(
     }
 
     private fun getSessionsToError(checkpoint: FlowCheckpoint, request: FlowIORequest.SubFlowFailed): List<String> {
-        val flowStackItem = request.flowStackItem
-        val erroredSessions =
-            flowSessionManager.getSessionsWithStatus(checkpoint, flowStackItem.sessionIds, SessionStateType.ERROR)
-        val closedSessions =
-            flowSessionManager.getSessionsWithStatus(checkpoint, flowStackItem.sessionIds, SessionStateType.CLOSED)
-        return flowStackItem.sessionIds - (erroredSessions + closedSessions).map { it.sessionId }
+        val erroredSessions = flowSessionManager.getSessionsWithStatus(checkpoint, request.sessionIds, SessionStateType.ERROR)
+        val closedSessions = flowSessionManager.getSessionsWithStatus(checkpoint, request.sessionIds, SessionStateType.CLOSED)
+
+        return request.sessionIds - (erroredSessions + closedSessions).map { it.sessionId }
     }
 }
