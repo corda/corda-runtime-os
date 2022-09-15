@@ -61,7 +61,7 @@ fun createStaticMemberGroupPolicyJson(
             "sessionPki" to "NoPKI",
             "tlsPki" to "Standard",
             "tlsVersion" to "1.3",
-            "protocolMode" to "Authentication_Encryption"
+            "protocolMode" to "Authenticated_Encryption"
         ),
         "cipherSuite" to emptyMap<String, String>()
     )
@@ -84,7 +84,7 @@ fun createMgmRegistrationContext(
             to "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
     "corda.group.protocol.synchronisation"
             to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
-    "corda.group.protocol.p2p.mode" to "AUTHENTICATION_ENCRYPTION",
+    "corda.group.protocol.p2p.mode" to "Authenticated_Encryption",
     "corda.group.key.session.policy" to "Distinct",
     "corda.group.pki.session" to "NoPKI",
     "corda.group.pki.tls" to "Standard",

@@ -1,0 +1,64 @@
+{{- if and (.Values.appSimulators.sender.enabled) (eq .Values.appSimulators.sender.loadGenerationType "ONE_OFF") }}
+
+Deploying a sending app simulator into namespace {{ .Release.Namespace }}.
+Deploying {{ .Values.appSimulators.sender.replicaCount }} replicas each of which will use {{ .Values.appSimulators.sender.parallelClientsPerReplica }} clients in parallel.
+
+The sending app simulator will generate messages to the topic, which is where the p2p layer processes them from by default (`p2p.out`).
+The tool will also (optionally) write some additional metadata (e.g. message ID, sender ID) to the specified database.
+Whether you want to write metadata to the DB from the sender depends on the nature of testing:
+* If you want to perform functional testing, it's useful to write this metadata to the DB so that you can check whether all sent messages were delivered.
+* If you want to perform performance/stress testing, you can disable this part. This will prevent the DB from becoming a bottleneck and you will still get latency statistics for the delivered messages.
+{{- if .Values.appSimulators.sender.sendMessagesToDatabase }}
+The current deployment is configured to send metadata to the database.
+{{- else }}
+The current deployment is configured to not send metadata to the database.
+{{- end }}
+
+The sending app simulator will send {{ .Values.appSimulators.sender.totalNumberOfMessages }} messages of size {{ .Values.appSimulators.sender.messageSizeBytes }} bytes, in batches of {{ .Values.appSimulators.sender.batchSize }}.
+With a delay of {{ .Values.appSimulators.sender.interBatchDelay}} between each batch.
+From identity {{ .Values.appSimulators.sender.ourX500Name }} in group {{ .Values.appSimulators.sender.ourGroupId }} to {{ .Values.appSimulators.sender.peerX500Name }} in group {{ .Values.appSimulators.sender.peerGroupId }}.
+
+The sending app simulator will run until it finishes sending messages.
+{{- end }}
+
+{{- if and (.Values.appSimulators.sender.enabled) (eq .Values.appSimulators.sender.loadGenerationType "CONTINUOUS") }}
+
+Deploying a sending app simulator into namespace {{ .Release.Namespace }}.
+Deploying {{ .Values.appSimulators.sender.replicaCount}} replicas each of which will use {{ .Values.appSimulators.sender.parallelClientsPerReplica}} clients in parallel.
+
+The sending app simulator will generate messages to the topic, which is where the p2p layer processes them from by default (`p2p.out`).
+The tool will also (optionally) write some additional metadata (e.g. message ID, sender ID) to the specified database.
+Whether you want to write metadata to the DB from the sender depends on the nature of testing:
+* If you want to perform functional testing, it's useful to write this metadata to the DB so that you can check whether all sent messages were delivered.
+* If you want to perform performance/stress testing, you can disable this part. This will prevent the DB from becoming a bottleneck and you will still get latency statistics for the delivered messages.
+{{- if .Values.appSimulators.sender.sendMessagesToDatabase }}
+The current deployment is configured to send metadata to the database.
+{{- else }}
+The current deployment is configured to not send metadata to the database.
+{{- end }}
+
+The sending app simulator will send messages of size {{ .Values.appSimulators.sender.messageSizeBytes }} bytes, in batches of {{ .Values.appSimulators.sender.batchSize }}.
+With a delay of {{ .Values.appSimulators.sender.interBatchDelay}} between each batch.
+From identity {{ .Values.appSimulators.sender.ourX500Name }} in group {{ .Values.appSimulators.sender.ourGroupId }} to {{ .Values.appSimulators.sender.peerX500Name }} in group {{ .Values.appSimulators.sender.peerGroupId }}.
+
+The sending app simulator will run until explicitly stopped.
+{{- end }}
+
+{{- if .Values.appSimulators.receiver.enabled }}
+
+Deploying a receiving app simulator into namespace {{ .Release.Namespace }}.
+Deploying {{ .Values.appSimulators.receiver.replicaCount}} replicas each of which will use {{ .Values.appSimulators.receiver.parallelClientsPerReplica}} clients in parallel.
+
+The app simulator will consume messages from the default topic where the p2p layer delivers messages (`p2p.in`).
+The consumed messages will be written to a secondary topic (`app.received_msg`) along with some additional metadata (e.g. timestamps, calculated latency).
+The receiving app simulator will run until explicitly stopped.
+{{- end }}
+
+{{- if .Values.appSimulators.dbSink.enabled }}
+
+Deploying a dbSink app simulator into namespace {{ .Release.Namespace }}.
+Deploying {{ .Values.appSimulators.dbSink.replicaCount}} replicas each of which will use {{ .Values.appSimulators.dbSink.parallelClientsPerReplica}} clients in parallel.
+
+The dbSink app simulator will copy all the metadata from the Kafka topic (`app.received_msg`) into the database at {{ .Values.db.appSimulator.host}}:{{ .Values.db.appSimulator.port}} in namespace {{ .Values.db.appSimulator.namespace }} for further analysis.
+The dbSink app simulator will run until explicitly stopped.
+{{- end }}

@@ -5,7 +5,6 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import com.typesafe.config.ConfigValueFactory
-import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.merger.ConfigMerger
 import java.io.Closeable
 import java.sql.Timestamp
@@ -14,18 +13,17 @@ import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.TestSchema.Companion.APP_RECEIVED_MESSAGES_TOPIC
+import net.corda.p2p.app.simulator.AppSimulatorTopicCreator.Companion.APP_RECEIVED_MESSAGES_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.v5.base.util.contextLogger
 
 @Suppress("LongParameterList")
-class Sink(private val subscriptionFactory: SubscriptionFactory,
-           private val configMerger: ConfigMerger,
-           private val dbParams: DBParams,
-           private val bootConfig: SmartConfig,
-           private val clients: Int,
-           private val instanceId: String,
-    ): Closeable {
+class Sink(
+    private val subscriptionFactory: SubscriptionFactory,
+    private val configMerger: ConfigMerger,
+    private val commonConfig: CommonConfig,
+    private val dbParams: DBParams,
+    ) : Closeable {
 
     companion object {
         private val logger = contextLogger()
@@ -35,9 +33,12 @@ class Sink(private val subscriptionFactory: SubscriptionFactory,
     private val resources = mutableListOf<AutoCloseable>()
 
     fun start() {
-        (1..clients).forEach { client ->
+        (1..commonConfig.clients).forEach { client ->
             val subscriptionConfig = SubscriptionConfig("app-simulator-sink", APP_RECEIVED_MESSAGES_TOPIC)
-            val configWithInstanceId = bootConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef("$instanceId-$client".hashCode()))
+            val configWithInstanceId = commonConfig.bootConfig.withValue(
+                INSTANCE_ID,
+                ConfigValueFactory.fromAnyRef("${commonConfig.parameters.instanceId}-$client".hashCode())
+            )
             val messagingConfig = configMerger.getMessagingConfig(configWithInstanceId)
             val processor = DBSinkProcessor()
             resources.add(processor)
