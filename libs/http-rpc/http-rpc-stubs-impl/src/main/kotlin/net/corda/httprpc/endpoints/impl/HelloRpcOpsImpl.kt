@@ -9,11 +9,14 @@ import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Component
 
-@HttpRpcResource(name = "Hello RPC API", description = "Test endpoint to test interaction via HTTP RPC API", path = "hello")
+@HttpRpcResource(name = "Hello RPC API", description = "Endpoint to test interaction via HTTP RPC API. " +
+        "It verifies that a call to HTTP RPC can be made, identity of the user making a call is recognized, " +
+        "RBAC permissions checked and the call is successfully processed by the HTTP RPC worker.",
+    path = "hello")
 interface HelloRpcOps : RpcOps {
 
-    @HttpRpcPOST
-    fun greet(@HttpRpcQueryParameter addressee: String): String
+    @HttpRpcPOST(description = "Produces a greeting phrase for the addressee.")
+    fun greet(@HttpRpcQueryParameter(description = "Can be an arbitrary name to be greeted.") addressee: String): String
 }
 
 @Component(service = [PluggableRPCOps::class])
