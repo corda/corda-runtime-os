@@ -73,9 +73,13 @@ class DbReconcilerReader<K : Any, V : Any>(
     private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
         if (event.status == LifecycleStatus.UP) {
             entityManagerFactory = dbConnectionManager.getClusterEntityManagerFactory()
+            logger.info("Switching to UP")
             coordinator.updateStatus(LifecycleStatus.UP)
         } else {
-            logger.warn("Received a ${RegistrationStatusChangeEvent::class.java.simpleName} with status ${event.status}.")
+            logger.info(
+                "Received a ${RegistrationStatusChangeEvent::class.java.simpleName} with status ${event.status}. " +
+                        "Switching to ${event.status}"
+            )
             coordinator.updateStatus(event.status)
             closeResources()
         }
