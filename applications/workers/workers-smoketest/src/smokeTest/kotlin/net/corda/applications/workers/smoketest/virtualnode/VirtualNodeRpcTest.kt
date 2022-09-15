@@ -29,8 +29,8 @@ import org.junit.jupiter.api.TestMethodOrder
 
 const val CODESIGNER_CERT = "/cordadevcodesign.pem"
 // The CPB we're using in this test
-const val TEST_CPB = "/META-INF/flow-worker-dev.cpb"
-const val CACHE_INVALIDATION_TEST_CPB = "/META-INF/cache-invalidation-testing/flow-worker-dev.cpb"
+const val TEST_CPB = "/META-INF/test-cordapp.cpb"
+const val CACHE_INVALIDATION_TEST_CPB = "/META-INF/cache-invalidation-testing/test-cordapp.cpb"
 
 fun SimpleResponse.toJson(): JsonNode = ObjectMapper().readTree(this.body)!!
 

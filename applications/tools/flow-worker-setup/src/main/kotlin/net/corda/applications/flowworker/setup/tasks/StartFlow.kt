@@ -23,7 +23,7 @@ class StartFlow(private val context: TaskContext) : Task {
                 clientId = UUID.randomUUID().toString(),
                 flowName = "net.cordapp.flowworker.development.testflows.MessagingFlow",
                 x500Name = context.startArgs.x500NName,
-                groupId = "flow-worker-dev",
+                groupId = "test-cordapp",
                 jsonArgs = "{ \"who\":\"${context.startArgs.x500NName}\"}"
             ),
 
@@ -49,7 +49,7 @@ class StartFlow(private val context: TaskContext) : Task {
             clientId = UUID.randomUUID().toString(),
             flowName = "net.cordapp.flowworker.development.flows.RpcSmokeTestFlow",
             x500Name = context.startArgs.x500NName,
-            groupId = "flow-worker-dev",
+            groupId = "test-cordapp",
             jsonArgs = args
         )
     }
@@ -69,7 +69,7 @@ class StartFlow(private val context: TaskContext) : Task {
             FlowInitiatorType.RPC,
             clientId,
             identity,
-            "flow-worker-dev",
+            "test-cordapp",
             identity,
             flowName,
             jsonArgs,

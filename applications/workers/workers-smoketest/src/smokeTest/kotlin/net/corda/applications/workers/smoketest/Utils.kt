@@ -16,7 +16,7 @@ const val X500_ALICE = "CN=Alice, OU=Application, O=R3, L=London, C=GB"
 //Charlie and David for use in multiple flow status endpoints. Number of flows they start is asserted. Do not start flows using these names
 const val X500_CHARLIE = "CN=Charlie, OU=Application, O=R3, L=Dublin, C=IE"
 const val X500_DAVID = "CN=David, OU=Application, O=R3, L=Dublin, C=IE"
-const val CPI_NAME = "flow-worker-dev"
+const val CPI_NAME = "test-cordapp"
 
 const val USERNAME = "admin"
 const val PASSWORD = "admin"

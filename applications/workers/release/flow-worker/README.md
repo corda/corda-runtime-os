@@ -17,7 +17,7 @@ You have built a CPB with the flow you want to use for running the flow worker:
 1) compile and build the CBP e.g.
 
 ```shell
-./gradlew testing:cpbs:flow-worker-dev:build
+./gradlew testing:cpbs:test-cordapp:build
 ```
 
 2) Generate a GroupPolicy file for the CPB. This can be done using the
@@ -78,7 +78,7 @@ instructions below are for using curl.
    the CBP file.)
 
 ```shell
-curl --insecure -u admin:admin  -s -F upload=@./flow-worker-dev-5.0.0.0-SNAPSHOT-package.cpb https://localhost:8888/api/v1/cpi/
+curl --insecure -u admin:admin  -s -F upload=@./test-cordapp-5.0.0.0-SNAPSHOT-package.cpb https://localhost:8888/api/v1/cpi/
 
 ```
 
@@ -119,7 +119,7 @@ This should yield a result similar to this for first request:
 {
   "x500Name": "C=GB, L=London, O=Alice",
   "cpiId": {
-    "cpiName": "flow-worker-dev",
+    "cpiName": "test-cordapp",
     "cpiVersion": "5.0.0.0-SNAPSHOT",
     "signerSummaryHash": null
   },
