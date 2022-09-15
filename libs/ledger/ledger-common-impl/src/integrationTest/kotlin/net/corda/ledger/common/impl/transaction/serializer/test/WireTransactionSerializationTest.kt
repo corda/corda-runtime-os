@@ -1,11 +1,9 @@
 package net.corda.ledger.common.impl.transaction.serializer.test
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
-import net.corda.ledger.common.impl.transaction.TransactionMetaData
 import net.corda.ledger.common.impl.transaction.WireTransaction
-import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
 import net.corda.ledger.common.impl.transaction.serializer.WireTransactionKryoSerializer
+import net.corda.ledger.common.testkit.WireTransactionExample.Companion.getWireTransaction
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
@@ -85,27 +83,6 @@ class WireTransactionSerializationTest {
         }
     }
 
-    private fun getWireTransaction(): WireTransaction{
-        val mapper = jacksonObjectMapper()
-        val transactionMetaData = TransactionMetaData(
-            mapOf(
-                TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues
-            )
-        )
-        val privacySalt = PrivacySaltImpl("1".repeat(32).toByteArray())
-        val componentGroupLists = listOf(
-            listOf(mapper.writeValueAsBytes(transactionMetaData)), // TODO update with CORE-5940
-            listOf(".".toByteArray()),
-            listOf("abc d efg".toByteArray()),
-        )
-        return WireTransaction(
-            merkleTreeFactory,
-            digestService,
-            privacySalt,
-            componentGroupLists
-        )
-    }
-
     @Test
     fun `correct serialization of a wire Transaction`() {
         val builder =
@@ -118,7 +95,7 @@ class WireTransactionSerializationTest {
             .addSerializer(WireTransaction::class.java, wireTransactionKryoSerializer)
             .build()
 
-        val wireTransaction = getWireTransaction()
+        val wireTransaction = getWireTransaction(digestService= digestService, merkleTreeFactory = merkleTreeFactory)
         val bytes = serializer.serialize(wireTransaction)
         val deserialized = serializer.deserialize(bytes, WireTransaction::class.java)
 

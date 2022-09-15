@@ -19,6 +19,7 @@ dependencies {
     implementation project(":libs:crypto:crypto-core")
 
     testImplementation project(":testing:kryo-serialization-testkit")
+    testImplementation project(':testing:ledger:ledger-common-testkit')
     testImplementation project(":libs:serialization:serialization-kryo")
     testImplementation project(":libs:crypto:merkle-impl")
     testImplementation project(":libs:crypto:cipher-suite-impl")

@@ -1,14 +1,12 @@
 package net.corda.ledger.common.impl.transaction.serializer
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeFactoryImpl
 import net.corda.kryoserialization.testkit.createCheckpointSerializer
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
-import net.corda.ledger.common.impl.transaction.TransactionMetaData
 import net.corda.ledger.common.impl.transaction.WireTransaction
-import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
+import net.corda.ledger.common.testkit.WireTransactionExample.Companion.getWireTransaction
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import org.assertj.core.api.Assertions.assertThat
@@ -33,25 +31,7 @@ class WireTransactionKryoSerializerTest {
 
     @Test
     fun `serialization of a Wire Tx object using the kryo default serialization`() {
-        val mapper = jacksonObjectMapper()
-        val transactionMetaData = TransactionMetaData(
-            mapOf(
-                TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues
-            )
-        )
-        val privacySalt = PrivacySaltImpl("1".repeat(32).toByteArray())
-        val componentGroupLists = listOf(
-            listOf(mapper.writeValueAsBytes(transactionMetaData)), // CORE-5940
-            listOf(".".toByteArray()),
-            listOf("abc d efg".toByteArray()),
-        )
-        val wireTransaction = WireTransaction(
-            merkleTreeFactory,
-            digestService,
-            privacySalt,
-            componentGroupLists
-        )
-
+        val wireTransaction = getWireTransaction(schemeMetadata, digestService, merkleTreeFactory)
         val wireTransactionKryoSerializer = WireTransactionKryoSerializer(merkleTreeFactory, digestService)
 
         val serializer = createCheckpointSerializer(
