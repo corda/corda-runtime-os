@@ -18,6 +18,7 @@ import net.corda.libs.cpi.datamodel.QUERY_PARAM_ENTITY_VERSION
 import net.corda.libs.cpi.datamodel.QUERY_PARAM_FILE_CHECKSUM
 import net.corda.libs.cpi.datamodel.QUERY_PARAM_ID
 import net.corda.libs.cpi.datamodel.QUERY_PARAM_INCREMENTED_ENTITY_VERSION
+import net.corda.libs.cpi.datamodel.findDbChangeLogForCpi
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
@@ -105,7 +106,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
             createOrUpdateCpkFileEntities(em, cpi.cpks)
 
-            updateChangeLogs(cpkDbChangeLogEntities, em)
+            updateChangeLogs(cpkDbChangeLogEntities, em, cpi)
 
             return@persistMetadataAndCpks managedCpiMetadataEntity
         }
@@ -113,11 +114,22 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
     private fun updateChangeLogs(
         cpkDbChangeLogEntities: List<CpkDbChangeLogEntity>,
-        em: EntityManager
+        em: EntityManager,
+        cpi: Cpi
     ) {
+        // The incoming changelogs will not be marked deleted
+        cpkDbChangeLogEntities.forEach { require(!it.isDeleted) }
+        // We first mark each existing changelog for this CPI as deleted.
+        val allChangelogs = findDbChangeLogForCpi(em, cpi.metadata.cpiId)
+        allChangelogs.forEach { rec ->
+            rec.isDeleted = true
+            em.merge(rec)
+        }
+        // Then, for the currently declared changelog, we'll save the record and clear any isDeleted flags.
+        // This all happens under one transaction so no one will see the isDeleted flags flicker.
         cpkDbChangeLogEntities.forEach {
             val inDb = em.find(CpkDbChangeLogEntity::class.java, it.id)
-            if (inDb!=null) it.entityVersion = inDb.entityVersion
+            if (inDb != null) it.entityVersion = inDb.entityVersion
             em.merge(it)
         }
     }
@@ -160,7 +172,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
             createOrUpdateCpkFileEntities(em, cpi.cpks)
 
-            updateChangeLogs(cpkDbChangeLogEntities, em)
+            updateChangeLogs(cpkDbChangeLogEntities, em, cpi)
 
             return cpiMetadataEntity
         }
