@@ -28,7 +28,9 @@ class PrivatePropertyTests {
     @Test
 	fun testWithOnePrivateProperty() {
         @CordaSerializable
-        data class C(private val b: String)
+        data class C(private val b: String) {
+            fun getB() = b
+        }
 
         val c1 = C("Pants are comfortable sometimes")
         val c2 = DeserializationInput(factory).deserialize(SerializationOutput(factory).serialize(c1))
@@ -38,7 +40,9 @@ class PrivatePropertyTests {
     @Test
 	fun testWithOnePrivatePropertyBoolean() {
         @CordaSerializable
-        data class C(private val b: Boolean)
+        data class C(private val b: Boolean) {
+            fun getB() = b
+        }
 
         C(false).apply {
             assertThat(this).isEqualTo(DeserializationInput(factory).deserialize(SerializationOutput(factory).serialize(this)))
@@ -48,7 +52,9 @@ class PrivatePropertyTests {
     @Test
 	fun testWithOnePrivatePropertyNullableNotNull() {
         @CordaSerializable
-        data class C(private val b: String?)
+        data class C(private val b: String?) {
+            fun getB() = b
+        }
 
         val c1 = C("Pants are comfortable sometimes")
         val c2 = DeserializationInput(factory).deserialize(SerializationOutput(factory).serialize(c1))
@@ -58,7 +64,9 @@ class PrivatePropertyTests {
     @Test
 	fun testWithOnePrivatePropertyNullableNull() {
         @CordaSerializable
-        data class C(private val b: String?)
+        data class C(private val b: String?) {
+            fun getB() = b
+        }
 
         val c1 = C(null)
         val c2 = DeserializationInput(factory).deserialize(SerializationOutput(factory).serialize(c1))
@@ -68,7 +76,9 @@ class PrivatePropertyTests {
     @Test
 	fun testWithOnePublicOnePrivateProperty() {
         @CordaSerializable
-        data class C(val a: Int, private val b: Int)
+        data class C(val a: Int, private val b: Int) {
+            fun getB() = b
+        }
 
         val c1 = C(1, 2)
         val c2 = DeserializationInput(factory).deserialize(SerializationOutput(factory).serialize(c1))
@@ -77,7 +87,8 @@ class PrivatePropertyTests {
 
     @Test
 	fun testWithInheritance() {
-        open class B(val a: String, protected val b: String)
+        open class B(val a: String, @JvmField protected val b: String)
+
         @CordaSerializable
         class D (a: String, b: String) : B (a, b) {
             override fun equals(other: Any?): Boolean = when (other) {
@@ -134,7 +145,9 @@ class PrivatePropertyTests {
     @Test
 	fun testWithOnePublicOnePrivateProperty2() {
         @CordaSerializable
-        data class C(val a: Int, private val b: Int)
+        data class C(val a: Int, private val b: Int) {
+            fun getB() = b
+        }
 
         val c1 = C(1, 2)
         val schemaAndBlob = SerializationOutput(factory).serializeAndReturnSchema(c1)
@@ -146,7 +159,7 @@ class PrivatePropertyTests {
 
         assertThat(typeInformation.properties.size).isEqualTo(2)
         assertThat(typeInformation.properties["a"] is LocalPropertyInformation.ConstructorPairedProperty).isTrue()
-        assertThat(typeInformation.properties["b"] is LocalPropertyInformation.PrivateConstructorPairedProperty).isTrue()
+        assertThat(typeInformation.properties["b"] is LocalPropertyInformation.ConstructorPairedProperty).isTrue()
     }
 
     @Test

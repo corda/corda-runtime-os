@@ -421,12 +421,7 @@ internal data class LocalTypeInformationBuilder(val lookup: LocalTypeLookup,
                                               constructorInformation: LocalConstructorInformation): LocalPropertyInformation? {
 
         if (descriptor.getter == null) {
-            if (descriptor.field == null) return null
-
-            throw NotSerializableException(
-                "Property '${descriptor.field.name}' or its getter is non public, " +
-                        "this renders class '${descriptor.field.declaringClass}' unserializable -> ${descriptor.field.declaringClass}"
-            )
+            return null
         }
 
         val paramType = descriptor.getter.genericReturnType

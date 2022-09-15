@@ -1,6 +1,7 @@
 package net.corda.internal.serialization.amqp;
 
 import net.corda.internal.serialization.amqp.helper.TestSerializationContext;
+import net.corda.v5.base.annotations.CordaSerializable;
 import org.junit.jupiter.api.Test;
 
 import java.io.NotSerializableException;
@@ -10,15 +11,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class ErrorMessageTests {
     private String errMsg(String property, String testname) {
-        return "Property '"
-                + property
-                + "' or its getter is non public, this renders class 'class "
-                + testname
-                + "$C' unserializable -> class "
-                + testname
-                + "$C";
+        return "Unable to create an object serializer for type class "
+                + testname + "$C:\n" +
+                "Mandatory constructor parameters [" + property + "] are missing from the readable properties []\n\n"
+                + "Either provide getters or readable fields for [" + property + "], or provide a custom serializer for this type\n\n"
+                + "No custom serializers registered.\n";
     }
 
+
+    @CordaSerializable
     static class C {
         public Integer a;
 
