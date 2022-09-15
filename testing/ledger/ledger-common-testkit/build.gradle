@@ -1,0 +1,26 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Corda ledger common test objects'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation "net.corda:corda-ledger-common"
+
+    implementation project(":libs:ledger:ledger-common-impl")
+
+    implementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+
+    implementation project(":libs:crypto:cipher-suite-impl")
+    implementation project(":libs:crypto:merkle-impl")
+
+//    implementation project(':testing:test-serialization')
+//    implementation project(":libs:serialization:serialization-amqp")
+}
