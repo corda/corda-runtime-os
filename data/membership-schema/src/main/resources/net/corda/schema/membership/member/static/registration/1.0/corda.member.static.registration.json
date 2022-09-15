@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://corda.r3.com/net/corda/schema/membership/member/static/registration/1.0/corda.member.static.registration.json",
+  "title": "Corda static member registration context schema",
+  "description": "Definition of the registration context required for registering a member in a static group.",
+  "type": "object",
+  "properties": {
+    "corda.key.scheme": {
+      "description": "The key scheme to use when generating keys for a static member. Available key schemes are obtainable through the Keys HTTP API.",
+      "type": "string",
+      "examples": [
+        "CORDA.ECDSA.SECP256R1"
+      ]
+    }
+  },
+  "required": [
+    "corda.key.scheme"
+  ],
+  "additionalProperties": false
+}

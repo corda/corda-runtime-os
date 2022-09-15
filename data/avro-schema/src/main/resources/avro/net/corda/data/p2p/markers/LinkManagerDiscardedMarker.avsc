@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "LinkManagerDiscardedMarker",
+  "namespace": "net.corda.p2p.markers",
+  "fields": [
+    {
+      "name": "message",
+      "type": "net.corda.p2p.AuthenticatedMessageAndKey",
+      "doc": "A copy of the original message in P2P_OUT_TOPIC."
+    },
+    {
+      "name": "reason",
+      "type": "string",
+      "doc": "The reason why the message was discarded."
+    }
+  ],
+  "doc": "The message was discarded by the sending Link Manager (e.g. because it was invalid)."
+}

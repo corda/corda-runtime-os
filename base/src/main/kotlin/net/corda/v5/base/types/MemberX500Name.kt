@@ -3,6 +3,7 @@ package net.corda.v5.base.types
 import net.corda.v5.base.annotations.CordaSerializable
 import java.util.Locale
 import java.util.Objects
+import javax.naming.InvalidNameException
 import javax.naming.directory.BasicAttributes
 import javax.naming.ldap.LdapName
 import javax.naming.ldap.Rdn
@@ -126,23 +127,27 @@ class MemberX500Name(
 
         private fun toAttributesMap(principal: X500Principal): Map<String, String> {
             val result = mutableMapOf<String, String>()
-            LdapName(principal.toString()).rdns.forEach { rdn ->
-                require(rdn.size() == 1) {
-                    "The RDN '$rdn' must not be multi-valued."
+            try {
+                LdapName(principal.toString()).rdns.forEach { rdn ->
+                    require(rdn.size() == 1) {
+                        "The RDN '$rdn' must not be multi-valued."
+                    }
+                    rdn.toAttributes().all.asSequence().forEach {
+                        require(it.size() == 1) {
+                            "Attribute '${it.id}' have to contain only single value."
+                        }
+                        val value = it.get(0)
+                        require(value is String) {
+                            "Attribute's '${it.id}' value must be a string"
+                        }
+                        require(!result.containsKey(it.id)) {
+                            "Duplicate attribute ${it.id}"
+                        }
+                        result[it.id] = value
+                    }
                 }
-                rdn.toAttributes().all.asSequence().forEach {
-                    require(it.size() == 1) {
-                        "Attribute '${it.id}' have to contain only single value."
-                    }
-                    val value = it.get(0)
-                    require(value is String) {
-                        "Attribute's '${it.id}' value must be a string"
-                    }
-                    require(!result.containsKey(it.id)) {
-                        "Duplicate attribute ${it.id}"
-                    }
-                    result[it.id] = value
-                }
+            } catch (e: InvalidNameException) {
+                throw IllegalArgumentException(e.message, e)
             }
             if (supportedAttributes.isNotEmpty()) {
                 (result.keys - supportedAttributes).let { unsupported ->
@@ -225,23 +230,29 @@ class MemberX500Name(
     /**
      * Returns the [X500Principal] equivalent of this name where the order of RDNs is
      * C, ST, L, O, OU, CN (the printing order would be reversed)
+     *
+     * @throws IllegalArgumentException If a valid RDN cannot be constructed using the given attributes.
      */
     val x500Principal: X500Principal by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        val rdns = mutableListOf<Rdn>().apply {
-            add(Rdn(BasicAttributes(ATTRIBUTE_COUNTRY, country)))
-            state?.let {
-                add(Rdn(BasicAttributes(ATTRIBUTE_STATE, it)))
+        try {
+            val rdns = mutableListOf<Rdn>().apply {
+                add(Rdn(BasicAttributes(ATTRIBUTE_COUNTRY, country)))
+                state?.let {
+                    add(Rdn(BasicAttributes(ATTRIBUTE_STATE, it)))
+                }
+                add(Rdn(BasicAttributes(ATTRIBUTE_LOCALITY, locality)))
+                add(Rdn(BasicAttributes(ATTRIBUTE_ORGANIZATION, organization)))
+                organizationUnit?.let {
+                    add(Rdn(BasicAttributes(ATTRIBUTE_ORGANIZATION_UNIT, it)))
+                }
+                commonName?.let {
+                    add(Rdn(BasicAttributes(ATTRIBUTE_COMMON_NAME, it)))
+                }
             }
-            add(Rdn(BasicAttributes(ATTRIBUTE_LOCALITY, locality)))
-            add(Rdn(BasicAttributes(ATTRIBUTE_ORGANIZATION, organization)))
-            organizationUnit?.let {
-                add(Rdn(BasicAttributes(ATTRIBUTE_ORGANIZATION_UNIT, it)))
-            }
-            commonName?.let {
-                add(Rdn(BasicAttributes(ATTRIBUTE_COMMON_NAME, it)))
-            }
+            X500Principal(LdapName(rdns).toString())
+        } catch (e: InvalidNameException) {
+            throw IllegalArgumentException(e.message, e)
         }
-        X500Principal(LdapName(rdns).toString())
     }
 
     /**
