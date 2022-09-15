@@ -17,16 +17,18 @@ class DefaultServicesInjectorTest {
         val member = MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB")
         val fiber = SimFiberBase()
 
-        // When we inject services into it
-        DefaultServicesInjector().injectServices(flow, member, fiber)
+        fiber.use {
+            // When we inject services into it
+            DefaultServicesInjector().injectServices(flow, member, it)
 
-        // Then it should have constructed useful things for us
-        assertNotNull(flow.flowEngine)
-        assertNotNull(flow.jsonMarshallingService)
-        assertNotNull(flow.persistenceService)
-        assertNotNull(flow.flowMessaging)
-        assertNotNull(flow.memberLookup)
-        assertNotNull(flow.signingService)
-        assertNotNull(flow.signatureVerificationService)
+            // Then it should have constructed useful things for us
+            assertNotNull(flow.flowEngine)
+            assertNotNull(flow.jsonMarshallingService)
+            assertNotNull(flow.persistenceService)
+            assertNotNull(flow.flowMessaging)
+            assertNotNull(flow.memberLookup)
+            assertNotNull(flow.signingService)
+            assertNotNull(flow.signatureVerificationService)
+        }
     }
 }

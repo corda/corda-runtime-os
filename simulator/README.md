@@ -13,10 +13,10 @@ will create a simulated "virtual node" which can then be invoked using the initi
 network this would be done using the `CPI_HASH`).
 
 ```kotlin
-  val corda = Simulator()
+  val simulator = Simulator()
   val member = MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB")
   val holdingIdentity = HoldingIdentity.create(member)
-  val node = corda.createVirtualNode(holdingIdentity, HelloFlow::class.java)
+  val node = simulator.createVirtualNode(holdingIdentity, HelloFlow::class.java)
 
   val response = node.callFlow(
       RequestData.create("r1", HelloFlow::class.java.name, "{ \"name\" : \"CordaDev\" }")
@@ -26,6 +26,11 @@ network this would be done using the `CPI_HASH`).
 Simulator will wire up your flow with lightweight versions of the same injected services that you'd get with
 the real Corda, enabling your flows to communicate with each other, persist data (currently to an in-memory database)
 and "sign" data (see below).
+
+To release resources used by Simulator, including any database connections, call
+```kotlin
+  simulator.close()
+```
 
 ## RequestData
 
@@ -87,7 +92,7 @@ whenever(responder.call(any())).then {
     session.send(RollCallResponse(""))
 }
 
-val node = corda.createVirtualNode(
+val node = simulator.createVirtualNode(
     HoldingIdentity.create(MemberX500Name.parse(studentId)),
     "roll-call",
     responder
