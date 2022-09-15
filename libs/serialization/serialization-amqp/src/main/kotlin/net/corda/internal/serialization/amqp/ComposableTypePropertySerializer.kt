@@ -49,7 +49,7 @@ interface PropertyWriteStrategy {
          * Select the correct strategy for writing properties, based on the property information.
          */
         fun make(name: String, propertyInformation: LocalPropertyInformation, factory: LocalSerializerFactory): PropertyWriteStrategy {
-            val reader = PropertyReader.make(propertyInformation)
+            val reader = GetterReader(propertyInformation.observedGetter)
             val type = propertyInformation.type
             return if (isPrimitive(type.typeIdentifier)) {
                 when (type.typeIdentifier) {
@@ -131,37 +131,14 @@ class ComposableTypePropertySerializer(
     }
 }
 
-// TODO `PropertyReader` needs to be removed as it now always is a `GetterReader`.
-//  Most likely `LocalPropertyInformation` too and perhaps further APIs after `LocalPropertyInformation` is removed.
 /**
- * Obtains the value of a property from an instance of the type to which that property belongs, either by calling a getter method
- * or by reading the value of a private backing field.
+ * Obtains the value of a property from an instance of the type to which that property belongs, by calling a getter [Method].
  */
-sealed class PropertyReader {
-
-    companion object {
-        /**
-         * Make a [PropertyReader] based on the provided [LocalPropertyInformation].
-         */
-        fun make(propertyInformation: LocalPropertyInformation) = when(propertyInformation) {
-            is LocalPropertyInformation.GetterSetterProperty -> GetterReader(propertyInformation.observedGetter)
-            is LocalPropertyInformation.ConstructorPairedProperty -> GetterReader(propertyInformation.observedGetter)
-            is LocalPropertyInformation.ReadOnlyProperty -> GetterReader(propertyInformation.observedGetter)
-            is LocalPropertyInformation.CalculatedProperty -> GetterReader(propertyInformation.observedGetter)
-        }
-    }
-
+class GetterReader(private val getter: Method) {
     /**
      * Get the value of the property from the supplied instance, or null if the instance is itself null.
      */
-    abstract fun read(obj: Any?): Any?
-
-    /**
-     * Reads a property using a getter [Method].
-     */
-    class GetterReader(private val getter: Method) : PropertyReader() {
-        override fun read(obj: Any?): Any? = if (obj == null) null else getter.invoke(obj)
-    }
+    fun read(obj: Any?): Any? = if (obj == null) null else getter.invoke(obj)
 }
 
 private val characterTypes = setOf(
@@ -199,7 +176,7 @@ class DescribedTypeReadStrategy(name: String,
  */
 class DescribedTypeWriteStrategy(private val name: String,
                                  private val propertyInformation: LocalPropertyInformation,
-                                 private val reader: PropertyReader,
+                                 private val reader: GetterReader,
                                  private val serializerProvider: () -> AMQPSerializer<Any>) : PropertyWriteStrategy {
 
     // Lazy to avoid getting into infinite loops when there are cycles.
@@ -226,7 +203,7 @@ object AMQPPropertyReadStrategy : PropertyReadStrategy {
             if (obj is Binary) obj.array else obj
 }
 
-class AMQPPropertyWriteStrategy(private val reader: PropertyReader) : PropertyWriteStrategy {
+class AMQPPropertyWriteStrategy(private val reader: GetterReader) : PropertyWriteStrategy {
     override fun writeClassInfo(output: SerializationOutput, context: SerializationContext) {}
 
     override fun writeProperty(obj: Any?, data: Data, output: SerializationOutput,
@@ -250,7 +227,7 @@ object AMQPCharPropertyReadStrategy : PropertyReadStrategy {
     }
 }
 
-class AMQPCharPropertyWriteStategy(private val reader: PropertyReader) : PropertyWriteStrategy {
+class AMQPCharPropertyWriteStategy(private val reader: GetterReader) : PropertyWriteStrategy {
     override fun writeClassInfo(output: SerializationOutput, context: SerializationContext) {}
 
     override fun writeProperty(obj: Any?, data: Data, output: SerializationOutput,
