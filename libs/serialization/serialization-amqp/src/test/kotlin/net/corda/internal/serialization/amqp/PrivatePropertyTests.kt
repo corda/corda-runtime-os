@@ -87,7 +87,7 @@ class PrivatePropertyTests {
 
     @Test
 	fun testWithInheritance() {
-        open class B(val a: String, @JvmField protected val b: String)
+        open class B(val a: String, val b: String)
 
         @CordaSerializable
         class D (a: String, b: String) : B (a, b) {
@@ -187,9 +187,13 @@ class PrivatePropertyTests {
     @Test
 	fun testNested() {
         @CordaSerializable
-        data class Inner(private val a: Int)
+        data class Inner(private val a: Int) {
+            fun getA() = a
+        }
         @CordaSerializable
-        data class Outer(private val i: Inner)
+        data class Outer(private val i: Inner) {
+            fun getI() = i
+        }
 
         val c1 = Outer(Inner(1010101))
         val output = SerializationOutput(factory).serializeAndReturnSchema(c1)
