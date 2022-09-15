@@ -7,7 +7,6 @@ import net.corda.internal.serialization.model.TypeIdentifier
 import net.corda.serialization.SerializationContext
 import org.apache.qpid.proton.amqp.Binary
 import org.apache.qpid.proton.codec.Data
-import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.lang.reflect.Type
 
