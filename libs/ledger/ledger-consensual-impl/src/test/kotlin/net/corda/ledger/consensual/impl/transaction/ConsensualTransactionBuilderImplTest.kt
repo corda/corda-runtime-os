@@ -3,6 +3,7 @@ package net.corda.ledger.consensual.impl.transaction
 import java.security.KeyPairGenerator
 import java.security.PublicKey
 import java.security.SecureRandom
+import kotlin.test.assertIs
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeFactoryImpl
@@ -26,7 +27,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import kotlin.test.assertIs
 
 internal class ConsensualTransactionBuilderImplTest{
     companion object {
@@ -59,7 +59,7 @@ internal class ConsensualTransactionBuilderImplTest{
 
             val flowFiberService = FlowFiberServiceImpl()
             externalEventExecutor = ExternalEventExecutorImpl(flowFiberService)
-            signingService = SigningServiceImpl(externalEventExecutor, schemeMetadata)
+            signingService = SigningServiceImpl(externalEventExecutor)
 
             val kpg = KeyPairGenerator.getInstance("RSA")
             kpg.initialize(512) // Shortest possible to not slow down tests.

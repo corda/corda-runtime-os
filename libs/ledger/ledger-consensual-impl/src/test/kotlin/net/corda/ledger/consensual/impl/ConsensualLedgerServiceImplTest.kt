@@ -2,6 +2,7 @@ package net.corda.ledger.consensual.impl
 
 import java.security.KeyPairGenerator
 import java.security.PublicKey
+import kotlin.test.assertIs
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeFactoryImpl
@@ -25,7 +26,6 @@ import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import kotlin.test.assertIs
 
 class TestFlowFiberServiceWithSerializationProxy constructor(
     private val schemeMetadata: CipherSchemeMetadata
@@ -67,7 +67,7 @@ class ConsensualLedgerServiceImplTest {
 
             flowFiberService = TestFlowFiberServiceWithSerializationProxy(schemeMetadata)
             externalEventExecutor = ExternalEventExecutorImpl(flowFiberService)
-            signingService = SigningServiceImpl(externalEventExecutor, schemeMetadata)
+            signingService = SigningServiceImpl(externalEventExecutor)
 
             val kpg = KeyPairGenerator.getInstance("RSA")
             kpg.initialize(512) // Shortest possible to not slow down tests.
