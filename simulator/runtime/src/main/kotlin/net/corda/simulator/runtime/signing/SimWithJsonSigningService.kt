@@ -1,17 +1,14 @@
 package net.corda.simulator.runtime.signing
 
+import java.security.PublicKey
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
-import java.security.PublicKey
 
 class SimWithJsonSigningService(
     private val jsonMarshallingService: JsonMarshallingService,
     private val keyStore: SimKeyStore) : SigningService {
-    override fun decodePublicKey(encodedKey: String): PublicKey {
-        TODO()
-    }
 
     override fun sign(bytes: ByteArray, publicKey: PublicKey, signatureSpec: SignatureSpec): DigitalSignature.WithKey {
         val keyParameters = checkNotNull(keyStore.getParameters(publicKey)) {
