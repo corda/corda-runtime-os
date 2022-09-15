@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.model
 
-import java.lang.reflect.Field
 import java.lang.reflect.Method
 
 /**
@@ -33,16 +32,6 @@ sealed class LocalPropertyInformation(val isCalculated: Boolean) {
      * constructor arguments when creating instances of its owning type.
      */
     data class ConstructorPairedProperty(val observedGetter: Method, val constructorSlot: ConstructorSlot, override val type: LocalTypeInformation, override val isMandatory: Boolean) : LocalPropertyInformation(false)
-
-    /**
-     * A property for which we have no getter, but for which there is a backing field a matching slot in an array of
-     * constructor parameters.
-     *
-     * @param observedField The field which can be used to obtain the value of this property from an instance of its owning type.
-     * @param constructorSlot The [ConstructorSlot] to which the property corresponds, used to populate an array of
-     * constructor arguments when creating instances of its owning type.
-     */
-    data class PrivateConstructorPairedProperty(val observedField: Field, val constructorSlot: ConstructorSlot, override val type: LocalTypeInformation, override val isMandatory: Boolean) : LocalPropertyInformation(false)
 
     /**
      * A property for which we have both getter and setter methods (usually belonging to a POJO which is initialised

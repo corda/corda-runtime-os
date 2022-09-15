@@ -131,6 +131,8 @@ class ComposableTypePropertySerializer(
     }
 }
 
+// TODO `PropertyReader` needs to be removed as it now always is a `GetterReader`.
+//  Most likely `LocalPropertyInformation` too and perhaps further APIs after `LocalPropertyInformation` is removed.
 /**
  * Obtains the value of a property from an instance of the type to which that property belongs, either by calling a getter method
  * or by reading the value of a private backing field.
@@ -146,7 +148,6 @@ sealed class PropertyReader {
             is LocalPropertyInformation.ConstructorPairedProperty -> GetterReader(propertyInformation.observedGetter)
             is LocalPropertyInformation.ReadOnlyProperty -> GetterReader(propertyInformation.observedGetter)
             is LocalPropertyInformation.CalculatedProperty -> GetterReader(propertyInformation.observedGetter)
-            is LocalPropertyInformation.PrivateConstructorPairedProperty -> FieldReader(propertyInformation.observedField)
         }
     }
 
@@ -160,13 +161,6 @@ sealed class PropertyReader {
      */
     class GetterReader(private val getter: Method) : PropertyReader() {
         override fun read(obj: Any?): Any? = if (obj == null) null else getter.invoke(obj)
-    }
-
-    /**
-     * Reads a property using a backing [Field].
-     */
-    class FieldReader(private val field: Field) : PropertyReader() {
-        override fun read(obj: Any?): Any? = if (obj == null) null else field.get(obj)
     }
 }
 

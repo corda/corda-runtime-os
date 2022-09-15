@@ -305,7 +305,6 @@ internal data class LocalTypeInformationBuilder(val lookup: LocalTypeLookup,
         val indicesAddressedByProperties = properties.values.mapNotNullTo(LinkedHashSet()) {
             when (it) {
                 is LocalPropertyInformation.ConstructorPairedProperty -> it.constructorSlot.parameterIndex
-                is LocalPropertyInformation.PrivateConstructorPairedProperty -> it.constructorSlot.parameterIndex
                 else -> null
             }
         }
@@ -324,7 +323,6 @@ internal data class LocalTypeInformationBuilder(val lookup: LocalTypeLookup,
         val indicesAddressedByProperties = properties.values.mapNotNullTo(LinkedHashSet()) {
             when (it) {
                 is LocalPropertyInformation.ConstructorPairedProperty -> it.constructorSlot.parameterIndex
-                is LocalPropertyInformation.PrivateConstructorPairedProperty -> it.constructorSlot.parameterIndex
                 else -> null
             }
         }
