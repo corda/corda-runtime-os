@@ -107,8 +107,6 @@ class BatchedUniquenessCheckerImpl(
         ::backingStore
     )
 
-    private lateinit var uniquenessCheckSubscription: Subscription<String, UniquenessCheckRequest>
-
     override val isRunning: Boolean
         get() = lifecycleCoordinator.isRunning
 

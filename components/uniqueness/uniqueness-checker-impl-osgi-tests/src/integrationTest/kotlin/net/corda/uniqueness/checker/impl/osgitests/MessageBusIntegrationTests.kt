@@ -4,11 +4,12 @@ import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.testkit.SecureHashUtils.randomSecureHash
 import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.flow.event.external.ExternalEventContext
-import net.corda.data.uniqueness.UniquenessCheckRequest
-import net.corda.data.uniqueness.UniquenessCheckResponse
+import net.corda.data.uniqueness.UniquenessCheckRequestAvro
+import net.corda.data.uniqueness.UniquenessCheckResponseAvro
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.libs.configuration.SmartConfigFactory
@@ -139,11 +140,15 @@ class MessageBusIntegrationTests {
     private fun currentTime(): Instant = testClock.peekTime()
 
     private fun newRequestBuilder(txId: SecureHash = randomSecureHash())
-            : UniquenessCheckRequest.Builder =
-        UniquenessCheckRequest.newBuilder(
-            UniquenessCheckRequest(
+            : UniquenessCheckRequestAvro.Builder =
+        UniquenessCheckRequestAvro.newBuilder(
+            UniquenessCheckRequestAvro(
                 defaultHoldingIdentity,
-                ExternalEventContext(UUID.randomUUID().toString(), UUID.randomUUID().toString()),
+                ExternalEventContext(
+                    UUID.randomUUID().toString(),
+                    UUID.randomUUID().toString(),
+                    KeyValuePairList(emptyList())
+                ),
                 txId.toString(),
                 emptyList(),
                 emptyList(),
@@ -154,13 +159,13 @@ class MessageBusIntegrationTests {
         )
 
     private fun processRequests(
-        vararg requests: UniquenessCheckRequest
-    ) : List<UniquenessCheckResponse> {
+        vararg requests: UniquenessCheckRequestAvro
+    ) : List<UniquenessCheckResponseAvro> {
 
         val requestIds = requests.map { it.flowExternalEventContext.requestId }
 
         val requestSerializer = cordaAvroSerializationFactory
-            .createAvroSerializer<UniquenessCheckRequest> { }
+            .createAvroSerializer<UniquenessCheckRequestAvro> { }
 
         val sendFuture = publisher.publish(
             requests.map { request ->
@@ -183,14 +188,14 @@ class MessageBusIntegrationTests {
         val responses = externalEventResponseMonitor.getResponses(requestIds)
 
         val responseDeserializer = cordaAvroSerializationFactory
-            .createAvroDeserializer({}, UniquenessCheckResponse::class.java)
+            .createAvroDeserializer({}, UniquenessCheckResponseAvro::class.java)
 
         // Responses may be out of order with respect to the passed in request list, so re-sequence
         // these before returning
 
         return requestIds.map {
             responseDeserializer.deserialize(
-                responses[it]!!.payload.array()) as UniquenessCheckResponse
+                responses[it]!!.payload.array()) as UniquenessCheckResponseAvro
         }
     }
 

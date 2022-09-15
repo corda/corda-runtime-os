@@ -1,5 +1,8 @@
 package net.corda.uniqueness.client.impl
 
+import net.corda.data.KeyValuePairList
+import net.corda.data.flow.event.external.ExternalEventContext
+import net.corda.data.identity.HoldingIdentity
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.data.uniqueness.UniquenessCheckResultSuccessAvro
 import net.corda.uniqueness.checker.UniquenessChecker
@@ -65,7 +68,13 @@ class UniquenessCheckerClientServiceImpl @Activate constructor(
     ): UniquenessCheckResponse {
         log.info("Received request with id: $txId, sending it to Uniqueness Checker")
 
+        // TODO: CORE-4730 to pass through the Vnode holding id plus a sensible event context
         val request = UniquenessCheckRequestAvro(
+            HoldingIdentity(),
+            ExternalEventContext(
+                UUID.randomUUID().toString(),
+                "DUMMY_FLOW_ID",
+                KeyValuePairList(emptyList())),
             txId,
             inputStates,
             referenceStates,
