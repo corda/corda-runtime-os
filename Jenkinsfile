@@ -5,9 +5,9 @@ cordaPipeline(
     runIntegrationTests: true,
     publishRepoPrefix: 'corda-ent-maven',
     createPostgresDb: true,
-    publishOSGiImage: true,
+    publishOSGiImage: false, // dont merge back to release branch 
     publishPreTestImage: true,
-    publishHelmChart: true,
+    publishHelmChart: false, // dont merge back to release branch 
     e2eTestName: 'corda-runtime-os-e2e-tests',
     runE2eTests: true,
     combinedWorkere2eTests: true,
