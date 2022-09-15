@@ -131,8 +131,8 @@ internal class SessionManagerImpl(
         executorServiceFactory
     )
     private val outboundSessionPool = OutboundSessionPool(heartbeatManager::calculateWeightForSession)
-//TODO - change to 5 days once testing complete
-    private val fiveDaysInMilliseconds = 2*60*1000L //432000000L
+
+    private val fiveDaysInMilliseconds = 5*24*60*60*1000L
 
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,

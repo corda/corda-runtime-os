@@ -53,6 +53,7 @@ import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.test.util.MockTimeFacilitiesProvider
 import net.corda.test.util.identity.createTestHoldingIdentity
+import net.corda.v5.base.util.days
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.minutes
 import net.corda.v5.base.util.toBase64
@@ -96,7 +97,7 @@ class SessionManagerTest {
         val PROTOCOL_MODES = listOf(ProtocolMode.AUTHENTICATED_ENCRYPTION, ProtocolMode.AUTHENTICATION_ONLY)
         val RANDOM_BYTES = ByteBuffer.wrap("some-random-data".toByteArray())
 
-        private const val longPeriodMilliSec = 10000000L
+        private const val longPeriodMilliSec = 6*24*60*60*1000L
         private val configWithHeartbeat = SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfig(
             Duration.ofMillis(100),
             Duration.ofMillis(500)
@@ -1546,13 +1547,6 @@ class SessionManagerTest {
 //TODO - a better name
     @Test
     fun `DRAFT`() {
-        val messages = mutableListOf<String>()
-        fun callback(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
-            val record = records.single()
-            assertEquals(SESSION_OUT_PARTITIONS, record.topic)
-            messages.add(record.key.toString())
-            return listOf(CompletableFuture.completedFuture(Unit))
-        }
         whenever(outboundSessionPool.constructed().first().getSession(protocolInitiator.sessionId)).thenReturn(
             OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
         )
@@ -1567,7 +1561,7 @@ class SessionManagerTest {
         whenever(outboundSessionPool.constructed().last().replaceSession(eq(protocolInitiator.sessionId), any())).thenReturn(true)
         whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
         assertThat(sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))).isNull()
-        mockTimeFacilitiesProvider.advanceTime(3.minutes)
+        mockTimeFacilitiesProvider.advanceTime(5.days + 1.minutes)
         loggingInterceptor.assertInfoContains("Outbound session sessionId" +
                 " (local=HoldingIdentity(x500Name=CN=Alice, O=Alice Corp, L=LDN, C=GB, groupId=myGroup)," +
                 " remote=HoldingIdentity(x500Name=CN=Bob, O=Bob Corp, L=LDN, C=GB, groupId=myGroup))" +
@@ -1577,19 +1571,14 @@ class SessionManagerTest {
             "${protocolInitiator.sessionId}_${InitiatorHandshakeMessage::class.java.simpleName}",
             SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY)
         )
+        verify(sessionReplayer, times(2)).removeMessageFromReplay(
+            "${protocolInitiator.sessionId}_${InitiatorHelloMessage::class.java.simpleName}",
+            SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY)
+        )
         verify(outboundSessionPool.constructed().last()).replaceSession(protocolInitiator.sessionId, protocolInitiator)
         verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
             .publish(listOf(Record(SESSION_OUT_PARTITIONS, protocolInitiator.sessionId, null))
         )
-        publisherWithDominoLogicByClientId["session-manager"]!!.forEach {
-            whenever(it.publish(any())).doAnswer { invocation ->
-                @Suppress("UNCHECKED_CAST")
-                callback(invocation.arguments.first() as List<Record<*, *>>)
-            }
-        }
-        for (message in messages) {
-            assertThat(message).isEqualTo(protocolInitiator.sessionId)
-        }
 
 
 /*
