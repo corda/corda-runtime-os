@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@5.0') _
+@Library('corda-shared-build-pipeline-steps@mag1c/CORE-5662/sbom') _
 
 cordaPipeline(
     nexusAppId: 'flow-worker-5.0',
