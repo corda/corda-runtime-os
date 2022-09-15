@@ -1,0 +1,102 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://corda.r3.com/net/corda/schema/membership/mgm/registration/1.0/corda.mgm.registration.json",
+  "title": "Corda MGM registration context schema",
+  "type": "object",
+  "description": "Definition of the registration context required for registering an MGM.",
+  "patternProperties": {
+    "^corda.endpoints.[0-9]+.connectionURL$": {
+      "description": "The P2P connection URL. Can be multiple specified by index.",
+      "type": "string"
+    },
+    "^corda.endpoints.[0-9]+.protocolVersion$": {
+      "description": "The P2P connection URL protocol version. Can be multiple specified by index.",
+      "type": "string"
+    },
+    "^corda.group.truststore.session.[0-9]+$": {
+      "description": "Session trust root certificates in PEM format for validating session certificates in the group. Can be multiple specified by index.",
+      "type": "string"
+    },
+    "^corda.group.truststore.tls.[0-9]+$": {
+      "description": "TLS trust root certificates in PEM format for validating TLS certificates in the group. Can be multiple specified by index.",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "corda.session.key.id": {
+      "description": "The session public key ID which should be used for session initiation.",
+      "type": "string"
+    },
+    "corda.ecdh.key.id": {
+      "description": "The ECDH public key ID which should be used by registering members to encrypt registration payloads.",
+      "type": "string"
+    },
+    "corda.group.protocol.registration": {
+      "description": "Group configuration. The fully qualified class name of the registration protocol that all registering members should use.",
+      "type": "string",
+      "examples": [
+        "net.corda.membership.impl.registration.dynamic.MemberRegistrationService"
+      ]
+    },
+    "corda.group.protocol.synchronisation": {
+      "description": "Group configuration. The fully qualified class name of the synchronisation protocol that all members should use.",
+      "type": "string"
+    },
+    "corda.group.key.session.policy": {
+      "description": "The policy for handling session keys. 'Combined' means a combined ledger and session key is used. 'Distinct means these keys must differ'",
+      "type": "string",
+      "examples": [
+        "Combined",
+        "Distinct"
+      ]
+    },
+    "corda.group.pki.session": {
+      "description": "The mode for session PKI handling.",
+      "type": "string",
+      "examples": [
+        "Standard",
+        "StandardEV3",
+        "Corda4",
+        "NoPKI"
+      ]
+    },
+    "corda.group.pki.tls": {
+      "description": "The mode for TLS PKI handling.",
+      "type": "string",
+      "examples": [
+        "Standard",
+        "StandardEV3",
+        "Corda4"
+      ]
+    },
+    "corda.group.tls.version": {
+      "description": "The version of the TLS protocol to use.",
+      "type": "string",
+      "examples": [
+        "1.2",
+        "1.3"
+      ]
+    },
+    "corda.group.protocol.p2p.mode": {
+      "description": "The protocol mode which the P2P layer should use.",
+      "type": "string",
+      "examples": [
+        "Authentication",
+        "Authenticated_Encryption"
+      ]
+    }
+  },
+  "minProperties": 12,
+  "required": [
+    "corda.session.key.id",
+    "corda.ecdh.key.id",
+    "corda.group.protocol.registration",
+    "corda.group.protocol.synchronisation",
+    "corda.group.key.session.policy",
+    "corda.group.pki.session",
+    "corda.group.pki.tls",
+    "corda.group.tls.version",
+    "corda.group.protocol.p2p.mode"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://corda.r3.com/net/corda/schema/membership/member/dynamic/registration/1.0/corda.member.dynamic.registration.json",
+  "title": "Corda dynamic member registration context schema",
+  "type": "object",
+  "description": "Definition of the registration context required for registering a member in a dynamic group.",
+  "patternProperties": {
+    "^corda.endpoints.[0-9]+.connectionURL$": {
+      "description": "The P2P connection URL. Can be multiple specified by index.",
+      "type": "string"
+    },
+    "^corda.endpoints.[0-9]+.protocolVersion$": {
+      "description": "The P2P URL protocol version. Can be multiple specified by index.",
+      "type": "string"
+    },
+    "^corda.ledger.keys.[0-9]+.id$": {
+      "description": "The ledger public key IDs which should be used for ledger signing. Can be multiple specified by index.",
+      "type": "string"
+    },
+    "^corda.ledger.keys.[0-9]+.signature.spec$": {
+      "description": "Optional. The ledger public key signature spec. Can be multiple specified by index.",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "corda.session.key.id": {
+      "description": "The session public key ID which should be used for session initiation.",
+      "type": "string"
+    },
+    "corda.session.key.signature.spec": {
+      "description": "Optional. The session key signature spec.",
+      "type": "string"
+    }
+  },
+  "minProperties": 4,
+  "required": [
+    "corda.session.key.id"
+  ],
+  "additionalProperties": false
+}
