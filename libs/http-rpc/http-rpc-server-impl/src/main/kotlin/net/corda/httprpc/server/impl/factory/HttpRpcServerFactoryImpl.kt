@@ -9,6 +9,7 @@ import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.RpcOps
 import org.osgi.service.component.annotations.Component
 import java.nio.file.Path
+import java.util.function.Supplier
 
 @Component(immediate = true, service = [HttpRpcServerFactory::class])
 @Suppress("Unused")
@@ -16,12 +17,12 @@ class HttpRpcServerFactoryImpl : HttpRpcServerFactory {
 
     override fun createHttpRpcServer(
         rpcOpsImpls: List<PluggableRPCOps<out RpcOps>>,
-        rpcSecurityManager: RPCSecurityManager,
+        rpcSecurityManagerSupplier: Supplier<RPCSecurityManager>,
         httpRpcSettings: HttpRpcSettings,
         multiPartDir: Path,
         devMode: Boolean
     ): HttpRpcServer {
 
-        return HttpRpcServerImpl(rpcOpsImpls, rpcSecurityManager, httpRpcSettings, multiPartDir, devMode = devMode)
+        return HttpRpcServerImpl(rpcOpsImpls, rpcSecurityManagerSupplier, httpRpcSettings, multiPartDir, devMode = devMode)
     }
 }

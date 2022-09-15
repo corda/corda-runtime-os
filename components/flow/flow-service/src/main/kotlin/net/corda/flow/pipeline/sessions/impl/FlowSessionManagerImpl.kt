@@ -1,6 +1,9 @@
 package net.corda.flow.pipeline.sessions.impl
 
+import java.nio.ByteBuffer
+import java.time.Instant
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
@@ -13,7 +16,6 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.flow.state.FlowCheckpoint
-import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.session.manager.Constants
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.types.MemberX500Name
@@ -21,8 +23,6 @@ import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.nio.ByteBuffer
-import java.time.Instant
 
 @Component(service = [FlowSessionManager::class])
 class FlowSessionManagerImpl @Activate constructor(
@@ -36,6 +36,8 @@ class FlowSessionManagerImpl @Activate constructor(
         x500Name: MemberX500Name,
         protocolName: String,
         protocolVersions: List<Int>,
+        contextUserProperties: KeyValuePairList,
+        contextPlatformProperties: KeyValuePairList,
         instant: Instant
     ): SessionState {
         val payload = SessionInit.newBuilder()
@@ -44,9 +46,8 @@ class FlowSessionManagerImpl @Activate constructor(
             .setFlowId(checkpoint.flowId)
             .setCpiId(checkpoint.flowStartContext.cpiId)
             .setPayload(ByteBuffer.wrap(byteArrayOf()))
-            // TODO CORE-5991 populate with maps from the current context properties
-            .setContextPlatformProperties(emptyKeyValuePairList())
-            .setContextUserProperties(emptyKeyValuePairList())
+            .setContextPlatformProperties(contextPlatformProperties)
+            .setContextUserProperties(contextUserProperties)
             .build()
         val event = SessionEvent.newBuilder()
             .setSessionId(sessionId)
@@ -121,6 +122,22 @@ class FlowSessionManagerImpl @Activate constructor(
         return sessionIds.mapNotNull { sessionId ->
             val sessionState = getAndRequireSession(checkpoint, sessionId)
             sessionManager.getNextReceivedEvent(sessionState)?.let { sessionState to it }
+        }
+    }
+
+    override fun getSessionsWithNextMessageClose(
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>
+    ): List<SessionState> {
+        return sessionIds.mapNotNull { sessionId ->
+            val sessionState = getAndRequireSession(checkpoint, sessionId)
+            val receivedEventsState = sessionState.receivedEventsState
+            val lastProcessedSequenceNum = receivedEventsState.lastProcessedSequenceNum
+            receivedEventsState.undeliveredMessages.firstOrNull()?.let { message ->
+                if (message.sequenceNum <= lastProcessedSequenceNum && message.payload is SessionClose) {
+                    sessionState
+                } else null
+            }
         }
     }
 

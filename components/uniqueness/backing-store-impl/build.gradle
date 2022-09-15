@@ -15,12 +15,14 @@ dependencies {
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-crypto"
     implementation "net.corda:corda-db-schema"
+    implementation "net.corda:corda-ledger-utxo"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(":components:uniqueness:backing-store")
     implementation project(":components:db:db-connection-manager")
     implementation project(':libs:db:db-admin')
     implementation project(':libs:db:db-admin-impl')
     implementation project(":libs:uniqueness:jpa-backing-store-datamodel")
+    implementation project(":libs:uniqueness:common")
 
     // For JSON serialization to DB
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"

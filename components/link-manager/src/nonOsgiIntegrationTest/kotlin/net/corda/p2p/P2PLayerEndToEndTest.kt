@@ -15,8 +15,8 @@ import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.HEARTBEAT_MESSAGE_PERIOD_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_MESSAGE_SIZE_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MAX_REPLAYING_MESSAGES_PER_PEER
-import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.REPLAY_ALGORITHM_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.MESSAGE_REPLAY_PERIOD_KEY
+import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.REPLAY_ALGORITHM_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSIONS_PER_PEER_KEY
 import net.corda.libs.configuration.schema.p2p.LinkManagerConfiguration.Companion.SESSION_TIMEOUT_KEY
 import net.corda.lifecycle.impl.LifecycleCoordinatorFactoryImpl
@@ -75,6 +75,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.Timeout
+import org.mockito.kotlin.mock
 import java.io.StringWriter
 import java.nio.ByteBuffer
 import java.security.Key
@@ -83,11 +84,11 @@ import java.security.KeyPairGenerator
 import java.security.KeyStore
 import java.security.spec.PKCS8EncodedKeySpec
 import java.time.Duration
+import java.time.Instant
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
-import org.mockito.kotlin.mock
-import java.time.Instant
-import java.util.UUID
+
 class P2PLayerEndToEndTest {
 
     companion object {
@@ -159,6 +160,7 @@ class P2PLayerEndToEndTest {
 
                 val threeMinutesInMillis: Long = 3*60*1000
                 Thread.sleep(threeMinutesInMillis)
+
             }
         }
     }
@@ -207,9 +209,9 @@ class P2PLayerEndToEndTest {
                     assertThat(messagesWithReceivedMarker).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
                     assertThat(hostAReceivedMessages).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { "pong ($it)" })
                 }
-                hostAApplicationReader.stop()
-                hostBApplicationReaderWriter.stop()
-                hostAMarkerReader.stop()
+                hostAApplicationReader.close()
+                hostBApplicationReaderWriter.close()
+                hostAMarkerReader.close()
             }
         }
     }
@@ -243,8 +245,8 @@ class P2PLayerEndToEndTest {
                 assertThat(messagesWithReceivedMarker).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
                 assertThat(hostReceivedMessages).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { "ping ($it)" })
             }
-            hostApplicationReader.stop()
-            hostMarkerReader.stop()
+            hostApplicationReader.close()
+            hostMarkerReader.close()
         }
     }
 
@@ -290,9 +292,9 @@ class P2PLayerEndToEndTest {
                         .containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
                     assertThat(markers.filterIsInstance<LinkManagerReceivedMarker>()).isEmpty()
                 }
-                hostAApplicationReader.stop()
-                hostBApplicationReaderWriter.stop()
-                hostAMarkerReader.stop()
+                hostAApplicationReader.close()
+                hostBApplicationReaderWriter.close()
+                hostAMarkerReader.close()
             }
         }
     }

@@ -1,5 +1,7 @@
 package net.corda.flow.pipeline.sessions
 
+import java.time.Instant
+import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
@@ -10,7 +12,6 @@ import net.corda.data.flow.state.session.SessionStateType
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.session.manager.SessionManager
 import net.corda.v5.base.types.MemberX500Name
-import java.time.Instant
 
 /**
  * [FlowSessionManager] encapsulates the logic of [SessionManager] with a specific focus on its usage within the flow event pipeline.
@@ -25,6 +26,8 @@ interface FlowSessionManager {
      * @param x500Name The [MemberX500Name] that the [SessionInit] is addressed to.
      * @param protocolName The name of the protocol to use in this session
      * @param protocolVersions The versions of the protocol supported by the initiating side
+     * @param contextUserProperties The user context properties
+     * @param contextPlatformProperties The platform context properties
      * @param instant The [Instant] used within the created [SessionEvent].
      *
      * @return A new [SessionState] containing a [SessionInit] message to send.
@@ -36,6 +39,8 @@ interface FlowSessionManager {
         x500Name: MemberX500Name,
         protocolName: String,
         protocolVersions: List<Int>,
+        contextUserProperties: KeyValuePairList,
+        contextPlatformProperties: KeyValuePairList,
         instant: Instant
     ): SessionState
 
@@ -84,7 +89,12 @@ interface FlowSessionManager {
      *
      * @throws FlowSessionStateException If a session does not exist within the flow's [FlowCheckpoint].
      */
-    fun sendErrorMessages(checkpoint: FlowCheckpoint, sessionIds: List<String>, throwable: Throwable, instant: Instant): List<SessionState>
+    fun sendErrorMessages(
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>,
+        throwable: Throwable,
+        instant: Instant
+    ): List<SessionState>
 
     /**
      * Gets the next received session event for each passed in session id.
@@ -130,7 +140,11 @@ interface FlowSessionManager {
      *
      * @throws []FlowSessionStateException] If a session does not exist within the flow's [FlowCheckpoint].
      */
-    fun getSessionsWithStatus(checkpoint: FlowCheckpoint, sessionIds: List<String>, status: SessionStateType): List<SessionState>
+    fun getSessionsWithStatus(
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>,
+        status: SessionStateType
+    ): List<SessionState>
 
     /**
      * Are all the specified sessions have a [SessionStateType] of [status]?
@@ -154,4 +168,16 @@ interface FlowSessionManager {
      * @throws FlowSessionStateException If any of the sessions don't exist, or they are not in the CONFIRMED state
      */
     fun validateSessionStates(checkpoint: FlowCheckpoint, sessionIds: Set<String>)
+
+    /**
+     * Get the states whose next ordered message is a SessionClose.
+     * This allows for detection of states which have received an ordered close when it is not expected.
+     * @param checkpoint The checkpoint to check states within
+     * @param sessionIds The sessions to check
+     * @return The list of states whose next received ordered message is a SessionClose
+     */
+    fun getSessionsWithNextMessageClose(
+        checkpoint: FlowCheckpoint,
+        sessionIds: List<String>
+    ): List<SessionState>
 }

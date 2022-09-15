@@ -41,6 +41,8 @@ dependencies {
     integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
+
+    integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 }

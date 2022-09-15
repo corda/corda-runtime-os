@@ -9,16 +9,17 @@ import net.corda.httprpc.server.impl.security.provider.bearer.oauth.PriorityList
 import net.corda.httprpc.server.impl.security.provider.scheme.AuthenticationScheme
 import net.corda.httprpc.server.impl.security.provider.scheme.AuthenticationSchemeProvider
 import net.corda.httprpc.server.impl.security.provider.scheme.AuthenticationSchemeProvider.Companion.REALM_KEY
+import java.util.function.Supplier
 
 internal class AzureAdAuthenticationProvider(
     private val settings: AzureAdSettingsProvider,
     jwtProcessor: JwtProcessor,
-    rpcSecurityManager: RPCSecurityManager
+    rpcSecurityManagerSupplier: Supplier<RPCSecurityManager>
 ) :
     JwtAuthenticationProvider(
         jwtProcessor,
         PriorityListJwtClaimExtractor(settings.getPrincipalClaimList()),
-        rpcSecurityManager
+        rpcSecurityManagerSupplier
     ), AuthenticationSchemeProvider {
     companion object {
         const val SCOPE_KEY = "scope"
@@ -30,7 +31,7 @@ internal class AzureAdAuthenticationProvider(
 
         fun createDefault(
             settings: AzureAdSettingsProvider,
-            rpcSecurityManager: RPCSecurityManager
+            rpcSecurityManagerSupplier: Supplier<RPCSecurityManager>
         ): AzureAdAuthenticationProvider {
             val issuers = AzureAdIssuersImpl(settings).apply {
                 val additionalIssuers = settings.getTrustedIssuers()
@@ -45,7 +46,7 @@ internal class AzureAdAuthenticationProvider(
             val keySelector = AzureAdIssuerJWSKeySelector(issuers, resourceRetriever)
             val processor = AzureAdJwtProcessorImpl(settings, issuers, keySelector)
 
-            return AzureAdAuthenticationProvider(settings, processor, rpcSecurityManager)
+            return AzureAdAuthenticationProvider(settings, processor, rpcSecurityManagerSupplier)
         }
     }
 

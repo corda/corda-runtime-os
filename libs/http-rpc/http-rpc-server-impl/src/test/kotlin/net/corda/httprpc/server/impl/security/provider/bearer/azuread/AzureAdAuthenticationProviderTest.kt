@@ -35,7 +35,7 @@ class AzureAdAuthenticationProviderTest {
         whenever(settings.getAuthority()).thenReturn(authority)
         whenever(settings.getPrincipalClaimList()).thenReturn(listOf("random", "name"))
 
-        provider = AzureAdAuthenticationProvider(settings, jwtProcessor, rpcSecurityManager)
+        provider = AzureAdAuthenticationProvider(settings, jwtProcessor, ::rpcSecurityManager)
     }
 
     @Test

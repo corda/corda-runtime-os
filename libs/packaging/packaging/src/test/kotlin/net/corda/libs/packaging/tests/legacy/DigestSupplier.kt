@@ -1,6 +1,6 @@
 package net.corda.libs.packaging.tests.legacy
 
-import net.corda.v5.cipher.suite.DigestAlgorithm
+import net.corda.v5.crypto.extensions.DigestAlgorithm
 import java.util.function.Supplier
 
 // WARNING - "legacy" corda5 code *only* used to make tests pass.

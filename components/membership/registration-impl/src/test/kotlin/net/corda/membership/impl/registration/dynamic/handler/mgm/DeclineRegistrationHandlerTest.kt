@@ -2,15 +2,19 @@ package net.corda.membership.impl.registration.dynamic.handler.mgm
 
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
+import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
+import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.records.Record
+import net.corda.p2p.app.AppMessage
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.doReturn
@@ -44,7 +48,22 @@ class DeclineRegistrationHandlerTest {
         } doReturn MembershipPersistenceResult.success()
     }
 
-    private val handler = DeclineRegistrationHandler(membershipPersistenceClient)
+    private val record = mock<Record<String, AppMessage>>()
+    private val p2pRecordsFactory = mock<P2pRecordsFactory> {
+        on {
+            createAuthenticatedMessageRecord(
+                mgm,
+                member,
+                SetOwnRegistrationStatus(
+                    REGISTRATION_ID,
+                    RegistrationStatus.DECLINED,
+                ),
+                8,
+            )
+        } doReturn record
+    }
+
+    private val handler = DeclineRegistrationHandler(membershipPersistenceClient, mock(), mock(), p2pRecordsFactory)
 
     @Test
     fun `handler calls persistence client and returns no output states`() {
@@ -56,11 +75,13 @@ class DeclineRegistrationHandlerTest {
             REGISTRATION_ID
         )
 
-        Assertions.assertThat(result.outputStates).hasSize(0)
+        assertThat(result.outputStates)
+            .hasSize(1)
+            .contains(record)
         with(result.updatedState) {
-            Assertions.assertThat(this?.registeringMember).isEqualTo(member)
-            Assertions.assertThat(this?.mgm).isEqualTo(mgm)
-            Assertions.assertThat(this?.registrationId).isEqualTo(REGISTRATION_ID)
+            assertThat(this?.registeringMember).isEqualTo(member)
+            assertThat(this?.mgm).isEqualTo(mgm)
+            assertThat(this?.registrationId).isEqualTo(REGISTRATION_ID)
         }
     }
 

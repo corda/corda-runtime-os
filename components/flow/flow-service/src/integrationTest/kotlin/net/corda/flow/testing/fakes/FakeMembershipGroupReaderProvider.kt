@@ -1,6 +1,6 @@
 package net.corda.flow.testing.fakes
 
-import net.corda.membership.lib.CPIWhiteList
+import net.corda.membership.lib.CPIAllowList
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.v5.base.types.MemberX500Name
@@ -49,7 +49,7 @@ class FakeMembershipGroupReaderProvider : MembershipGroupReaderProvider {
             get() = TODO("Not yet implemented")
         override val groupParameters: GroupParameters
             get() = TODO("Not yet implemented")
-        override val cpiWhiteList: CPIWhiteList
+        override val cpiAllowList: CPIAllowList
             get() = TODO("Not yet implemented")
 
         override fun lookup(): Collection<MemberInfo> {

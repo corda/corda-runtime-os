@@ -1,6 +1,6 @@
 package net.corda.httprpc.server.impl.apigen.processing.streams
 
-import net.corda.v5.base.stream.Cursor
+import net.corda.httprpc.durablestream.api.Cursor
 
 open class DurableReturnResult<T>(
     val positionedValues: List<Cursor.PollResult.PositionedValue<T>>,

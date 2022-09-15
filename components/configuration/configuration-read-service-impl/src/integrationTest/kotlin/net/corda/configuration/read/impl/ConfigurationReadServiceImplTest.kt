@@ -21,7 +21,7 @@ import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
-import net.corda.schema.configuration.ConfigKeys.JDBC_URL
+import net.corda.schema.configuration.DatabaseConfig.JDBC_URL
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.seconds

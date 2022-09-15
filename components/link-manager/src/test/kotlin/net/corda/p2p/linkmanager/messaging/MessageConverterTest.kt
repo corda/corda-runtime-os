@@ -3,8 +3,6 @@ package net.corda.p2p.linkmanager.messaging
 import net.corda.p2p.AuthenticatedMessageAndKey
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.app.AuthenticatedMessageHeader
-import net.corda.p2p.app.UnauthenticatedMessage
-import net.corda.p2p.app.UnauthenticatedMessageHeader
 import net.corda.p2p.crypto.AuthenticatedDataMessage
 import net.corda.p2p.crypto.AuthenticatedEncryptedDataMessage
 import net.corda.p2p.crypto.CommonHeader
@@ -140,46 +138,6 @@ class MessageConverterTest {
         assertThat(MessageConverter.linkOutMessageFromAuthenticatedMessageAndKey(flowMessage, session, groups, members)).isNull()
         loggingInterceptor.assertSingleWarning(
             "Could not find the group info in the GroupPolicyProvider for our identity = $us." +
-                " The message was discarded."
-        )
-    }
-
-    @Test
-    fun `linkOutFromUnauthenticatedMessage returns null (with appropriate logging) if if the destination is not in the network map`() {
-        val payload = "test"
-        val groupId = "group-1"
-        val us = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", groupId)
-        val peer = createTestHoldingIdentity("CN=Impostor, O=Evil Corp, L=LDN, C=GB", groupId)
-        val unauthenticatedMsg = UnauthenticatedMessage(
-            UnauthenticatedMessageHeader(peer.toAvro(), us.toAvro(), "subsystem"),
-            ByteBuffer.wrap(payload.toByteArray())
-        )
-
-        val members = mockMembers(emptyList())
-
-        assertThat(MessageConverter.linkOutFromUnauthenticatedMessage(unauthenticatedMsg, mock(), members)).isNull()
-        loggingInterceptor.assertSingleWarning(
-            "Attempted to send message to peer $peer which is not in the network map." +
-                " The message was discarded."
-        )
-    }
-
-    @Test
-    fun `linkOutFromUnauthenticatedMessage returns null (with appropriate logging) if if their network type is not in the network map`() {
-        val payload = "test"
-        val groupId = "group-1"
-        val us = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", groupId)
-        val peer = createTestHoldingIdentity("CN=Impostor, O=Evil Corp, L=LDN, C=GB", groupId)
-        val unauthenticatedMsg = UnauthenticatedMessage(
-            UnauthenticatedMessageHeader(peer.toAvro(), us.toAvro(), "subsystem"),
-            ByteBuffer.wrap(payload.toByteArray())
-        )
-
-        val members = mockMembers(listOf(us, peer))
-        val groups = mockGroups(emptyList())
-        assertThat(MessageConverter.linkOutFromUnauthenticatedMessage(unauthenticatedMsg, groups, members)).isNull()
-        loggingInterceptor.assertSingleWarning(
-            "Could not find the group information in the GroupPolicyProvider for $us." +
                 " The message was discarded."
         )
     }

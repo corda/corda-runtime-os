@@ -3,7 +3,6 @@ package net.corda.flow.pipeline.impl
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.Wakeup
-import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.FLOW_ID_1
 import net.corda.flow.fiber.FiberFuture
@@ -133,7 +132,7 @@ class FlowEventPipelineImplTest {
     @ParameterizedTest(name = "runOrContinue runs a flow when {0} is returned by the FlowWaitingForHandler with suspend result")
     @MethodSource("runFlowContinuationConditions")
     fun `runOrContinue runs a flow with suspend result`(outcome: FlowContinuation) {
-        val flowResult = FlowIORequest.SubFlowFinished(FlowStackItem())
+        val flowResult = FlowIORequest.SubFlowFinished(emptyList())
         val expectedFiber = ByteBuffer.wrap(byteArrayOf(1))
         val suspendRequest = FlowIORequest.FlowSuspended(expectedFiber, flowResult)
 

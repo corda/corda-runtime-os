@@ -13,6 +13,7 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
@@ -278,7 +279,7 @@ class ComplexDominoTileTest {
     inner class LeafTileWithConfigTests {
 
         private val calledNewConfigurations = mutableListOf<Pair<Configuration, Configuration?>>()
-        private val registration = mock<AutoCloseable>()
+        private val registration = mock<Resource>()
         private val configurationHandler = argumentCaptor<ConfigurationHandler>()
         private val service = mock<ConfigurationReadService> {
             on { registerForUpdates(configurationHandler.capture()) } doReturn registration

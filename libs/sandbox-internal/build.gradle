@@ -20,6 +20,7 @@ dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "org.osgi:osgi.annotation"
     compileOnly "org.osgi:osgi.core"
+    compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
     api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
@@ -37,7 +38,9 @@ dependencies {
 
     cpbs project(path: 'sandbox-cpk-one', configuration: 'cordaCPB')
     cpbs project(path: 'sandbox-cpk-three', configuration: 'cordaCPB')
+    cpbs project(path: 'sandbox-fragment-cpk', configuration: 'cordaCPB')
     cpbs project(path: 'sandbox-irresolvable-cpk', configuration: 'cordaCPB')
+    cpbs project(path: 'sandbox-shadow-cpk', configuration: 'cordaCPB')
 
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation "net.corda:corda-application"

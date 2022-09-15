@@ -9,7 +9,8 @@ import java.util.concurrent.Future
 
 internal class ServerDuplexChannel(
     private val ctx: WsConnectContext,
-    private val webSocketCloserService: WebSocketCloserService
+    private val webSocketCloserService: WebSocketCloserService,
+    override val id: String
 ) : DuplexChannel {
 
     private var errorHook: ((Throwable?) -> Unit)? = null

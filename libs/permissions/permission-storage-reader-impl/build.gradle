@@ -23,6 +23,7 @@ dependencies {
     implementation project(':libs:permissions:permission-datamodel')
     implementation project(':libs:permissions:permission-storage-common')
     implementation project(':libs:permissions:permission-storage-reader')
+    implementation project(":libs:utilities")
 
     implementation "javax.persistence:javax.persistence-api"
 

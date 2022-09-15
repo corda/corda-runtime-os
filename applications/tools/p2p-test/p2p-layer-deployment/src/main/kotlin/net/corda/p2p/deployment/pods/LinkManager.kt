@@ -11,7 +11,7 @@ class LinkManager(
         ) = listOf(LinkManager(kafkaServers, details))
     }
 
-    override val imageName = "p2p-link-manager"
+    override val imageName = "p2p-link-manager-worker"
 
     override val readyLog = ".*LinkManager-1.* - Starting child.*".toRegex()
 }

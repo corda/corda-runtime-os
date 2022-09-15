@@ -1,6 +1,6 @@
 package net.corda.httprpc.server.config
 
-import net.corda.v5.base.util.NetworkHostAndPort
+import net.corda.utilities.NetworkHostAndPort
 import java.nio.file.Path
 
 /**
@@ -58,4 +58,9 @@ interface HttpRpcSettingsProvider {
     fun getSsoSettings(): SsoSettingsProvider?
 
     fun maxContentLength(): Int
+
+    /**
+     * @return The time (in milliseconds) after which an idle websocket connection will be timed out and closed
+     */
+    fun getWebSocketIdleTimeoutMs(): Long
 }

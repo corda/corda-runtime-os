@@ -18,7 +18,7 @@ import net.corda.messaging.integration.getDemoRecords
 import net.corda.messaging.integration.getKafkaProperties
 import net.corda.messaging.integration.getTopicConfig
 import net.corda.messaging.integration.processors.TestDurableProcessor
-import net.corda.v5.base.concurrent.getOrThrow
+import net.corda.utilities.concurrent.getOrThrow
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -78,7 +78,7 @@ class PublisherIntegrationTest {
         durableSub.start()
 
         Assertions.assertTrue(latch.await(20, TimeUnit.SECONDS))
-        durableSub.stop()
+        durableSub.close()
     }
     @Test
     @Timeout(value = 30, unit = TimeUnit.SECONDS)
@@ -102,7 +102,7 @@ class PublisherIntegrationTest {
         durableSub.start()
 
         Assertions.assertTrue(latch.await(20, TimeUnit.SECONDS))
-        durableSub.stop()
+        durableSub.close()
     }
 
     @Test
@@ -142,6 +142,6 @@ class PublisherIntegrationTest {
         durableSub.start()
 
         Assertions.assertTrue(latch.await(20, TimeUnit.SECONDS))
-        durableSub.stop()
+        durableSub.close()
     }
 }

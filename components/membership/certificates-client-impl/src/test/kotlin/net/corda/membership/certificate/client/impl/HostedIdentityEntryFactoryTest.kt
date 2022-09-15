@@ -37,8 +37,8 @@ class HostedIdentityEntryFactoryTest {
         val validHoldingId = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group-1")
         val publicKeyBytes = "123".toByteArray()
         val publicKeyBytesKnownTenant = "456".toByteArray()
-        const val VALID_NODE = "1234567890ab"
-        const val INVALID_NODE = "deaddeaddead"
+        val VALID_NODE = ShortHash.of("1234567890ab")
+        val INVALID_NODE = ShortHash.of("deaddeaddead")
         const val PUBLIC_KEY_PEM = "publicKeyPem"
         const val KNOWN_TENANT_PUBLIC_KEY_PEM = "knownTenantPublicKeyPem"
         const val VALID_CERTIFICATE_ALIAS = "alias"
@@ -49,8 +49,8 @@ class HostedIdentityEntryFactoryTest {
         on { holdingIdentity } doReturn validHoldingId
     }
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService> {
-        on { getByHoldingIdentityShortHash(ShortHash.of(VALID_NODE)) } doReturn nodeInfo
-        on { getByHoldingIdentityShortHash(ShortHash.of(INVALID_NODE)) } doReturn null
+        on { getByHoldingIdentityShortHash(VALID_NODE) } doReturn nodeInfo
+        on { getByHoldingIdentityShortHash(INVALID_NODE) } doReturn null
     }
     private val sessionKey = mock<CryptoSigningKey> {
         on { publicKey } doReturn ByteBuffer.wrap(publicKeyBytes)
@@ -71,7 +71,7 @@ class HostedIdentityEntryFactoryTest {
     private val cryptoOpsClient = mock<CryptoOpsClient> {
         on {
             lookup(
-                eq(VALID_NODE),
+                eq(VALID_NODE.toString()),
                 eq(0),
                 eq(1),
                 eq(CryptoKeyOrderBy.NONE),
@@ -80,7 +80,7 @@ class HostedIdentityEntryFactoryTest {
         } doReturn listOf(sessionKey)
         on {
             lookup(
-                eq(VALID_NODE),
+                eq(VALID_NODE.toString()),
                 ids.capture()
             )
         } doReturn listOf(sessionKey)
@@ -92,7 +92,7 @@ class HostedIdentityEntryFactoryTest {
         } doReturn listOf(knownTenantSessionKey)
 
         on {
-            filterMyKeys(eq(VALID_NODE), eq(listOf(certificatePublicKey)))
+            filterMyKeys(eq(VALID_NODE.toString()), eq(listOf(certificatePublicKey)))
         }.doReturn(listOf(certificatePublicKey))
         on {
             filterMyKeys(eq(P2P), eq(listOf(certificatePublicKey)))
@@ -145,8 +145,8 @@ class HostedIdentityEntryFactoryTest {
             softly.assertThat(record.value).isEqualTo(
                 HostedIdentityEntry(
                     validHoldingId.toAvro(),
-                    VALID_NODE,
-                    VALID_NODE,
+                    VALID_NODE.toString(),
+                    VALID_NODE.toString(),
                     listOf(certificatePem),
                     PUBLIC_KEY_PEM
                 )
@@ -160,7 +160,7 @@ class HostedIdentityEntryFactoryTest {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = INVALID_NODE,
                 certificateChainAlias = VALID_CERTIFICATE_ALIAS,
-                tlsTenantId = VALID_NODE,
+                tlsTenantId = VALID_NODE.toString(),
                 sessionKeyTenantId = null,
                 sessionKeyId = null
             )
@@ -172,7 +172,7 @@ class HostedIdentityEntryFactoryTest {
         val record = factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
             certificateChainAlias = VALID_CERTIFICATE_ALIAS,
-            tlsTenantId = VALID_NODE,
+            tlsTenantId = VALID_NODE.toString(),
             sessionKeyTenantId = KNOWN_TENANT,
             sessionKeyId = "id1"
         )
@@ -186,12 +186,12 @@ class HostedIdentityEntryFactoryTest {
         val record = factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
             certificateChainAlias = VALID_CERTIFICATE_ALIAS,
-            tlsTenantId = VALID_NODE,
+            tlsTenantId = VALID_NODE.toString(),
             sessionKeyTenantId = null,
             sessionKeyId = "id1"
         )
 
-        assertThat(record.value?.sessionKeyTenantId).isEqualTo(VALID_NODE)
+        assertThat(record.value?.sessionKeyTenantId).isEqualTo(VALID_NODE.toString())
         assertThat(record.value?.sessionPublicKey).isEqualTo(PUBLIC_KEY_PEM)
     }
 
@@ -200,7 +200,7 @@ class HostedIdentityEntryFactoryTest {
         factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
             certificateChainAlias = VALID_CERTIFICATE_ALIAS,
-            tlsTenantId = VALID_NODE,
+            tlsTenantId = VALID_NODE.toString(),
             sessionKeyTenantId = null,
             sessionKeyId = "id1"
         )
@@ -215,7 +215,7 @@ class HostedIdentityEntryFactoryTest {
         factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
             certificateChainAlias = VALID_CERTIFICATE_ALIAS,
-            tlsTenantId = VALID_NODE,
+            tlsTenantId = VALID_NODE.toString(),
             sessionKeyTenantId = null,
             sessionKeyId = null
         )
@@ -232,7 +232,7 @@ class HostedIdentityEntryFactoryTest {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = VALID_NODE,
                 certificateChainAlias = VALID_CERTIFICATE_ALIAS,
-                tlsTenantId = VALID_NODE,
+                tlsTenantId = VALID_NODE.toString(),
                 sessionKeyTenantId = null,
                 sessionKeyId = null
             )
@@ -245,7 +245,7 @@ class HostedIdentityEntryFactoryTest {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = VALID_NODE,
                 certificateChainAlias = "NOP",
-                tlsTenantId = VALID_NODE,
+                tlsTenantId = VALID_NODE.toString(),
                 sessionKeyTenantId = null,
                 sessionKeyId = null
             )

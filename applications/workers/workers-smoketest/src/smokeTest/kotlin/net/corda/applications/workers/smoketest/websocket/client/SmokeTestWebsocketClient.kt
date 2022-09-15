@@ -3,8 +3,6 @@ package net.corda.applications.workers.smoketest.websocket.client
 import java.net.URI
 import java.time.Duration
 import java.util.LinkedList
-import java.util.Queue
-import java.util.concurrent.ConcurrentLinkedQueue
 import net.corda.applications.workers.smoketest.contextLogger
 import net.corda.applications.workers.smoketest.getOrThrow
 import net.corda.test.util.eventually
@@ -21,10 +19,9 @@ import org.junit.jupiter.api.Assertions.assertTrue
 
 fun useWebsocketConnection(
     path: String,
-    messageQueue: Queue<String> = ConcurrentLinkedQueue(),
     block: (wsHandler: InternalWebsocketHandler) -> Unit
 ) {
-    val wsHandler = MessageQueueWebsocketHandler(messageQueue)
+    val wsHandler = MessageQueueWebSocketHandler()
     val client = SmokeTestWebsocketClient()
 
     client.use {

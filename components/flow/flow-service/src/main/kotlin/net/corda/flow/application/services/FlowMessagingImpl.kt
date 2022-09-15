@@ -3,9 +3,9 @@ package net.corda.flow.application.services
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
 import net.corda.flow.fiber.FlowFiberService
+import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.UntrustworthyData
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
@@ -26,36 +26,27 @@ class FlowMessagingImpl @Activate constructor(
 ) : FlowMessaging, SingletonSerializeAsToken {
 
     @Suspendable
-    override fun close(sessions: Set<FlowSession>) {
-        TODO("Not yet implemented")
+    override fun initiateFlow(x500Name: MemberX500Name): FlowSession {
+        return doInitiateFlow(x500Name, null)
     }
 
     @Suspendable
-    override fun initiateFlow(x500Name: MemberX500Name): FlowSession {
+    override fun initiateFlow(
+        x500Name: MemberX500Name,
+        flowContextPropertiesBuilder: FlowContextPropertiesBuilder
+    ): FlowSession {
+        return doInitiateFlow(x500Name, flowContextPropertiesBuilder)
+    }
+
+    @Suspendable
+    private fun doInitiateFlow(
+        x500Name: MemberX500Name,
+        flowContextPropertiesBuilder: FlowContextPropertiesBuilder?
+    ): FlowSession {
         val sessionId = UUID.randomUUID().toString()
         checkFlowCanBeInitiated()
         addSessionIdToFlowStackItem(sessionId)
-        return flowSessionFactory.create(sessionId, x500Name, initiated = false)
-    }
-
-    @Suspendable
-    override fun <R> receiveAll(receiveType: Class<out R>, sessions: Set<FlowSession>): List<UntrustworthyData<R>> {
-        TODO("Not yet implemented")
-    }
-
-    @Suspendable
-    override fun receiveAllMap(sessions: Map<FlowSession, Class<out Any>>): Map<FlowSession, UntrustworthyData<Any>> {
-        TODO("Not yet implemented")
-    }
-
-    @Suspendable
-    override fun sendAll(payload: Any, sessions: Set<FlowSession>) {
-        TODO("Not yet implemented")
-    }
-
-    @Suspendable
-    override fun sendAllMap(payloadsPerSession: Map<FlowSession, *>) {
-        TODO("Not yet implemented")
+        return flowSessionFactory.createInitiatingFlowSession(sessionId, x500Name, flowContextPropertiesBuilder)
     }
 
     private fun checkFlowCanBeInitiated() {
@@ -77,6 +68,8 @@ class FlowMessagingImpl @Activate constructor(
             .getExecutionContext()
             .flowStackService
             .peek()
-            ?: throw CordaRuntimeException("Flow [${flowFiberService.getExecutingFiber().flowId}] does not have a flow stack item")
+            ?: throw CordaRuntimeException(
+                "Flow [${flowFiberService.getExecutingFiber().flowId}] does not have a flow stack item"
+            )
     }
 }

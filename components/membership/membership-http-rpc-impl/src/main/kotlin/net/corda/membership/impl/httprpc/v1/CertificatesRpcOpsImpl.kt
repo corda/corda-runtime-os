@@ -64,8 +64,8 @@ class CertificatesRpcOpsImpl @Activate constructor(
         private val logger = contextLogger()
 
         private val defaultCodeNameToSpec = mapOf(
-            ECDSA_SECP256K1_CODE_NAME to SignatureSpec("SHA512withECDSA"),
-            ECDSA_SECP256R1_CODE_NAME to SignatureSpec("SHA512withECDSA"),
+            ECDSA_SECP256K1_CODE_NAME to SignatureSpec.ECDSA_SHA256,
+            ECDSA_SECP256R1_CODE_NAME to SignatureSpec.ECDSA_SHA256,
             EDDSA_ED25519_TEMPLATE to SignatureSpec.EDDSA_ED25519,
             GOST3410_GOST3411_TEMPLATE to SignatureSpec.GOST3410_GOST3411,
             RSA_CODE_NAME to SignatureSpec.RSA_SHA512,
@@ -89,8 +89,7 @@ class CertificatesRpcOpsImpl @Activate constructor(
     override fun generateCsr(
         tenantId: String,
         keyId: String,
-        x500name: String,
-        certificateRole: String,
+        x500Name: String,
         subjectAlternativeNames: List<String>?,
         contextMap: Map<String, String?>?,
     ): String {
@@ -116,7 +115,7 @@ class CertificatesRpcOpsImpl @Activate constructor(
         val signer = CsrContentSigner(spec, publicKey, tenantId)
 
         val p10Builder = JcaPKCS10CertificationRequestBuilder(
-            X500Principal(x500name), publicKey
+            X500Principal(x500Name), publicKey
         )
 
         p10Builder

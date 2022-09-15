@@ -72,17 +72,21 @@ class VirtualNodeDb(
      */
     fun runDbMigration() {
         val dbConnection = dbConnections[DDL]
-        if (dbConnection == null) throw VirtualNodeDbException("No DDL database connection when due to apply system migrations")
+            ?: throw VirtualNodeDbException("No DDL database connection when due to apply system migrations")
         dbConnectionManager.getDataSource(dbConnection.config).use { dataSource ->
             val dbChangeFiles = dbType.dbChangeFiles
             val changeLogResourceFiles = setOf(DbSchema::class.java).mapTo(LinkedHashSet()) { klass ->
                 ClassloaderChangeLog.ChangeLogResourceFiles(klass.packageName, dbChangeFiles, klass.classLoader)
             }
             val dbChange = ClassloaderChangeLog(changeLogResourceFiles)
-            val dbSchema = dbType.getSchemaName(holdingIdentityShortHash)
 
             dataSource.connection.use { connection ->
-                schemaMigrator.updateDb(connection, dbChange, dbSchema)
+                if (isClusterDb) {
+                    val dbSchema = dbType.getSchemaName(holdingIdentityShortHash)
+                    schemaMigrator.updateDb(connection, dbChange, dbSchema)
+                } else {
+                    schemaMigrator.updateDb(connection, dbChange)
+                }
             }
         }
     }

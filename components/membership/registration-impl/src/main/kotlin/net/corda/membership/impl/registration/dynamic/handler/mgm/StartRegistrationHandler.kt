@@ -1,15 +1,15 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
 
-import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.command.registration.RegistrationCommand
-import net.corda.data.membership.db.request.command.RegistrationStatus
 import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
+import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
+import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
@@ -22,6 +22,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
+import net.corda.membership.lib.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -47,13 +48,14 @@ class StartRegistrationHandler(
     private val membershipPersistenceClient: MembershipPersistenceClient,
     private val membershipQueryClient: MembershipQueryClient,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
 ) : RegistrationHandler<StartRegistration> {
 
     private companion object {
         val logger = contextLogger()
     }
 
-    private val keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList> =
+    private val keyValuePairListDeserializer =
         cordaAvroSerializationFactory.createAvroDeserializer({
             logger.error("Deserialization of registration request KeyValuePairList failed.")
         }, KeyValuePairList::class.java)
@@ -80,7 +82,7 @@ class StartRegistrationHandler(
             }
 
             val mgmMemberInfo = getMGMMemberInfo(mgmHoldingId)
-            logger.info("Registering with MGM for holding identity: $mgmHoldingId")
+            logger.info("Registering $pendingMemberHoldingId with MGM for holding identity: $mgmHoldingId")
             val pendingMemberInfo = buildPendingMemberInfo(registrationRequest)
             // Parse the registration request and verify contents
             // The MemberX500Name matches the source MemberX500Name from the P2P messaging
@@ -95,8 +97,9 @@ class StartRegistrationHandler(
             )
             validateRegistrationRequest(
                 existingMemberInfo is MembershipQueryResult.Success
-                        && existingMemberInfo.payload.isEmpty()
-            ) { "Member Info already exists for applying member" }
+                        && (existingMemberInfo.payload.isEmpty()
+                        || !existingMemberInfo.payload.sortedBy { it.modifiedTime }.last().isActive)
+            ) { "The latest member info for given member is in 'Active' status" }
 
             // The group ID matches the group ID of the MGM
             validateRegistrationRequest(
@@ -167,7 +170,6 @@ class StartRegistrationHandler(
             .deserialize(registrationRequest.memberContext.array())
             ?.items?.associate { it.key to it.value }?.toSortedMap()
             ?: emptyMap()
-
         validateRegistrationRequest(memberContext.entries.isNotEmpty()) {
             "Empty member context in the registration request."
         }
@@ -195,12 +197,14 @@ class StartRegistrationHandler(
         }!!
     }
 
-    private fun StartRegistration.toRegistrationRequest(): RegistrationRequest = RegistrationRequest(
-        RegistrationStatus.NEW,
-        memberRegistrationRequest.registrationId,
-        source.toCorda(),
-        memberRegistrationRequest.memberContext,
-        memberRegistrationRequest.memberSignature.publicKey,
-        memberRegistrationRequest.memberSignature.bytes
-    )
+    private fun StartRegistration.toRegistrationRequest(): RegistrationRequest {
+        return RegistrationRequest(
+            RegistrationStatus.NEW,
+            memberRegistrationRequest.registrationId,
+            source.toCorda(),
+            memberRegistrationRequest.memberContext,
+            memberRegistrationRequest.memberSignature.publicKey,
+            memberRegistrationRequest.memberSignature.bytes
+        )
+    }
 }

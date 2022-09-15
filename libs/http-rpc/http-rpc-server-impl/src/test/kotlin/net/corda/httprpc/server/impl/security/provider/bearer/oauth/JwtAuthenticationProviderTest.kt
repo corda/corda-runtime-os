@@ -29,7 +29,7 @@ class JwtAuthenticationProviderTest {
         whenever(buildSubject(any())).thenReturn(TestAdminSubject(username))
     }
 
-    private val provider = JwtAuthenticationProvider(jwtProcessor, claimExtractor, rpcSecurityManager)
+    private val provider = JwtAuthenticationProvider(jwtProcessor, claimExtractor, ::rpcSecurityManager)
 
     @Test
     fun `supports_basicAuthenticationCredential_shouldReturnFalse`() {

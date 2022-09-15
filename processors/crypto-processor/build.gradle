@@ -66,21 +66,24 @@ dependencies {
     runtimeOnly project(':components:crypto:crypto-service-impl')
     runtimeOnly project(':components:crypto:crypto-softhsm-impl')
     runtimeOnly project(":libs:db:db-orm-impl")
+    runtimeOnly project(':libs:flows:external-event-responses-impl')
     runtimeOnly project(":libs:lifecycle:lifecycle-impl")
     runtimeOnly project(":libs:messaging:messaging-impl")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
 
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
-    runtimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
+
+    integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 
     integrationTestImplementation project(":testing:db-message-bus-testkit")
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(":components:crypto:crypto-ecies-core-impl")
     integrationTestRuntimeOnly project(":components:crypto:crypto-ecies-impl")
-    integrationTestRuntimeOnly "org.hibernate:hibernate-core:$hibernateVersion"
-    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
     integrationTestRuntimeOnly "com.sun.activation:javax.activation:$activationVersion"
-}
 
+    integrationTestRuntimeOnly "org.hibernate:hibernate-core:$hibernateVersion"
+    integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
+    integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
+}

@@ -7,6 +7,7 @@ import net.corda.schema.registry.AvroSchemaRegistry
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.function.Consumer
 
 /**
  * Kafka implementation of the Subscription Factory.
@@ -17,7 +18,7 @@ class CordaAvroSerializationFactoryImpl @Activate constructor(
     private val avroSchemaRegistry: AvroSchemaRegistry,
 ) : CordaAvroSerializationFactory {
     override fun <T : Any> createAvroDeserializer(
-        onError: (ByteArray) -> Unit,
+        onError: Consumer<ByteArray>,
         expectedClass: Class<T>
     ): CordaAvroDeserializer<T> {
         return CordaAvroDeserializerImpl(
@@ -28,7 +29,7 @@ class CordaAvroSerializationFactoryImpl @Activate constructor(
     }
 
     override fun <T: Any> createAvroSerializer(
-        onError: (ByteArray) -> Unit
+        onError: Consumer<ByteArray>
     ): CordaAvroSerializer<T> {
         return CordaAvroSerializerImpl(avroSchemaRegistry)
     }

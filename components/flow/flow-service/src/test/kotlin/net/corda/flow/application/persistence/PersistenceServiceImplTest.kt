@@ -1,150 +1,217 @@
 package net.corda.flow.application.persistence
 
 import java.nio.ByteBuffer
-import net.corda.flow.fiber.FlowFiber
-import net.corda.flow.fiber.FlowFiberExecutionContext
-import net.corda.flow.fiber.FlowFiberService
-import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
+import net.corda.flow.application.persistence.external.events.AbstractPersistenceExternalEventFactory
+import net.corda.flow.application.persistence.external.events.FindExternalEventFactory
+import net.corda.flow.application.persistence.external.events.MergeExternalEventFactory
+import net.corda.flow.application.persistence.external.events.PersistExternalEventFactory
+import net.corda.flow.application.persistence.external.events.RemoveExternalEventFactory
+import net.corda.flow.application.persistence.query.PagedQueryFactory
+import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class PersistenceServiceImplTest {
 
-    private lateinit var flowFiberService: FlowFiberService
-    private lateinit var flowFiber: FlowFiber
-    private lateinit var executionContext: FlowFiberExecutionContext
-    private lateinit var sandboxGroupContext: FlowSandboxGroupContext
-    private lateinit var serializationService: SerializationService
-    private lateinit var serializedBytes: SerializedBytes<Any>
+    private val serializationService = mock<SerializationService>()
+    private val pagedQueryFactory = mock<PagedQueryFactory>()
+    private val serializedBytes = mock<SerializedBytes<Any>>()
+    private val externalEventExecutor = mock<ExternalEventExecutor>()
 
     private lateinit var persistenceService: PersistenceService
 
     private val byteBuffer = ByteBuffer.wrap("bytes".toByteArray())
 
+    private val argumentCaptor = argumentCaptor<Class<out AbstractPersistenceExternalEventFactory<Any>>>()
+
     @BeforeEach
     fun setup() {
-        flowFiberService = mock()
-        persistenceService = PersistenceServiceImpl(flowFiberService)
-        flowFiber = mock()
-        executionContext = mock()
-        sandboxGroupContext = mock()
-        serializationService = mock()
-        serializedBytes = mock()
+        persistenceService =
+            PersistenceServiceImpl(externalEventExecutor, pagedQueryFactory, serializationService)
 
-        whenever(flowFiberService.getExecutingFiber()).thenReturn(flowFiber)
-        whenever(flowFiber.getExecutionContext()).thenReturn(executionContext)
-        whenever(executionContext.sandboxGroupContext).thenReturn(sandboxGroupContext)
-        whenever(sandboxGroupContext.amqpSerializer).thenReturn(serializationService)
         whenever(serializationService.serialize(any())).thenReturn(serializedBytes)
         whenever(serializedBytes.bytes).thenReturn(byteBuffer.array())
+        whenever(
+            externalEventExecutor.execute(
+                argumentCaptor.capture(),
+                any()
+            )
+        ).thenReturn(listOf(byteBuffer))
     }
 
     @Test
-    fun `Test persist executes`() {
+    fun `persist executes successfully`() {
         persistenceService.persist(TestObject())
 
-        verify(serializationService, times(1)).serialize(any())
-        verify(flowFiber, times(1)).suspend(any<FlowIORequest.Persist>())
+        verify(serializationService).serialize(any())
+        assertThat(argumentCaptor.firstValue).isEqualTo(PersistExternalEventFactory::class.java)
     }
 
     @Test
-    fun `Test merge executes successfully`() {
-        whenever(flowFiber.suspend<ByteBuffer?>(any())).thenReturn(byteBuffer)
-        whenever(serializationService.deserialize<TestObject>(any<ByteArray>(), any())).thenReturn(TestObject())
+    fun `bulk persist executes successfully`() {
+        persistenceService.persist(listOf(TestObject(), TestObject()))
+        verify(serializationService, times(2)).serialize(any())
+        assertThat(argumentCaptor.firstValue).isEqualTo(PersistExternalEventFactory::class.java)
+    }
+
+    @Test
+    fun `bulk persist with no input entities does nothing`() {
+        persistenceService.persist(emptyList())
+        verify(externalEventExecutor, never()).execute(any<Class<ExternalEventFactory<Any, Any, Any>>>(), any())
+        verify(serializationService, never()).deserialize<TestObject>(any<ByteArray>(), any())
+        verify(serializationService, never()).serialize<TestObject>(any())
+    }
+
+    @Test
+    fun `merge executes successfully`() {
+        whenever(
+            serializationService.deserialize<TestObject>(
+                any<ByteArray>(),
+                any()
+            )
+        ).thenReturn(TestObject())
 
         persistenceService.merge(TestObject())
 
-        verify(serializationService, times(1)).deserialize<TestObject>(any<ByteArray>(), any())
-        verify(serializationService, times(1)).serialize<TestObject>(any())
-        verify(flowFiber, times(1)).suspend(any<FlowIORequest.Merge>())
+        verify(serializationService).deserialize<TestObject>(any<ByteArray>(), any())
+        verify(serializationService).serialize<TestObject>(any())
+        assertThat(argumentCaptor.firstValue).isEqualTo(MergeExternalEventFactory::class.java)
     }
 
     @Test
-    fun `Test merge fails when deserializes to wrong type`() {
-        whenever(flowFiber.suspend<ByteBuffer?>(any())).thenReturn(byteBuffer)
-        whenever(serializationService.deserialize<Any>(any<ByteArray>(), any())).thenReturn(FailTestObject())
+    fun `bulk merge executes successfully`() {
+        whenever(
+            externalEventExecutor.execute(
+                argumentCaptor.capture(),
+                any()
+            )
+        ).thenReturn(listOf(byteBuffer, byteBuffer))
 
-        assertThrows<CordaRuntimeException> { persistenceService.merge(TestObject()) }
+        whenever(
+            serializationService.deserialize<TestObject>(
+                any<ByteArray>(),
+                any()
+            )
+        ).thenReturn(TestObject())
 
-        verify(serializationService, times(1)).deserialize<TestObject>(any<ByteArray>(), any())
-        verify(serializationService, times(1)).serialize<TestObject>(any())
-        verify(flowFiber, times(1)).suspend(any<FlowIORequest.Merge>())
+        persistenceService.merge(listOf(TestObject(), TestObject()))
+
+        verify(serializationService, times(2)).deserialize<TestObject>(any<ByteArray>(), any())
+        verify(serializationService, times(2)).serialize<TestObject>(any())
+        assertThat(argumentCaptor.firstValue).isEqualTo(MergeExternalEventFactory::class.java)
     }
 
     @Test
-    fun `Test remove executes successfully`() {
-        whenever(flowFiber.suspend<ByteBuffer?>(any())).thenReturn(byteBuffer)
-        whenever(serializationService.deserialize<TestObject>(any<ByteArray>(), any())).thenReturn(TestObject())
+    fun `bulk merge with no input entities does nothing`() {
+        persistenceService.merge(emptyList())
+        verify(externalEventExecutor, never()).execute(any<Class<ExternalEventFactory<Any, Any, Any>>>(), any())
+        verify(serializationService, never()).deserialize<TestObject>(any<ByteArray>(), any())
+        verify(serializationService, never()).serialize<TestObject>(any())
+    }
+
+    @Test
+    fun `remove executes successfully`() {
+        whenever(
+            serializationService.deserialize<TestObject>(
+                any<ByteArray>(),
+                any()
+            )
+        ).thenReturn(TestObject())
 
         persistenceService.remove(TestObject())
 
         verify(serializationService, times(0)).deserialize<TestObject>(any<ByteArray>(), any())
-        verify(serializationService, times(1)).serialize<TestObject>(any())
-        verify(flowFiber, times(1)).suspend(any<FlowIORequest.Delete>())
+        verify(serializationService).serialize<TestObject>(any())
+        assertThat(argumentCaptor.firstValue).isEqualTo(RemoveExternalEventFactory::class.java)
     }
 
     @Test
-    fun `Test find executes successfully`() {
+    fun `bulk remove executes successfully`() {
+        whenever(
+            serializationService.deserialize<TestObject>(
+                any<ByteArray>(),
+                any()
+            )
+        ).thenReturn(TestObject())
+
+        persistenceService.remove(listOf(TestObject(), TestObject()))
+
+        verify(serializationService, times(0)).deserialize<TestObject>(any<ByteArray>(), any())
+        verify(serializationService, times(2)).serialize<TestObject>(any())
+        assertThat(argumentCaptor.firstValue).isEqualTo(RemoveExternalEventFactory::class.java)
+    }
+
+    @Test
+    fun `bulk remove with no input entities does nothing`() {
+        persistenceService.remove(emptyList())
+        verify(externalEventExecutor, never()).execute(any<Class<ExternalEventFactory<Any, Any, Any>>>(), any())
+        verify(serializationService, never()).deserialize<TestObject>(any<ByteArray>(), any())
+        verify(serializationService, never()).serialize<TestObject>(any())
+    }
+
+    @Test
+    fun `find executes successfully`() {
         val expectedObj = TestObject()
-        whenever(flowFiber.suspend<ByteBuffer?>(any())).thenReturn(byteBuffer)
         whenever(serializationService.deserialize<TestObject>(any<ByteArray>(), any())).thenReturn(expectedObj)
 
         assertThat(persistenceService.find(TestObject::class.java, "key")).isEqualTo(expectedObj)
 
-        verify(serializationService, times(1)).deserialize<TestObject>(any<ByteArray>(), any())
-        verify(serializationService, times(1)).serialize<String>(any())
-        verify(flowFiber, times(1)).suspend(any<FlowIORequest.Find>())
+        verify(serializationService).deserialize<TestObject>(any<ByteArray>(), any())
+        verify(serializationService).serialize<String>(any())
+        assertThat(argumentCaptor.firstValue).isEqualTo(FindExternalEventFactory::class.java)
     }
 
     @Test
-    fun `Test find fails when deserializes to wrong type`() {
-        whenever(flowFiber.suspend<ByteBuffer?>(any())).thenReturn(byteBuffer)
-        whenever(serializationService.deserialize<Any>(any<ByteArray>(), any())).thenReturn(FailTestObject())
+    fun `bulk find executes successfully`() {
+        val expectedObj = TestObject()
 
-        assertThrows<CordaRuntimeException> { persistenceService.find(TestObject::class.java, "key") }
+        whenever(
+            externalEventExecutor.execute(
+                argumentCaptor.capture(),
+                any()
+            )
+        ).thenReturn(listOf(byteBuffer, byteBuffer))
 
-        verify(serializationService, times(1)).deserialize<TestObject>(any<ByteArray>(), any())
-        verify(serializationService, times(1)).serialize<String>(any())
-        verify(flowFiber, times(1)).suspend(any<FlowIORequest.Find>())
+        whenever(serializationService.deserialize<TestObject>(any<ByteArray>(), any())).thenReturn(expectedObj)
+
+        assertThat(persistenceService.find(TestObject::class.java, listOf("a", "b"))).isEqualTo(listOf(expectedObj, expectedObj))
+
+        verify(serializationService, times(2)).deserialize<TestObject>(any<ByteArray>(), any())
+        verify(serializationService, times(2)).serialize<String>(any())
+        assertThat(argumentCaptor.firstValue).isEqualTo(FindExternalEventFactory::class.java)
     }
 
     @Test
-    fun `Test find all executes successfully`() {
-        val expectedList = listOf(TestObject(),TestObject())
-        whenever(flowFiber.suspend<ByteBuffer?>(any())).thenReturn(byteBuffer)
-        whenever(serializationService.deserialize<List<TestObject>>(any<ByteArray>(), any())).thenReturn(expectedList)
-
-        assertThat(persistenceService.findAll(TestObject::class.java).execute()).isEqualTo(expectedList)
-
-        verify(serializationService, times(1)).deserialize<TestObject>(any<ByteArray>(), any())
-        verify(serializationService, times(0)).serialize<String>(any())
-        verify(flowFiber, times(1)).suspend(any<FlowIORequest.FindAll>())
+    fun `bulk find with no input primary keys does nothing`() {
+        persistenceService.merge(emptyList())
+        verify(externalEventExecutor, never()).execute(any<Class<ExternalEventFactory<Any, Any, Any>>>(), any())
+        verify(serializationService, never()).deserialize<TestObject>(any<ByteArray>(), any())
+        verify(serializationService, never()).serialize<TestObject>(any())
     }
 
     @Test
-    fun `Test find all fails when deserializes to wrong type`() {
-        whenever(flowFiber.suspend<ByteBuffer?>(any())).thenReturn(byteBuffer)
-        whenever(serializationService.deserialize<FailTestObject>(any<ByteArray>(), any())).thenReturn(FailTestObject())
+    fun `find all executes successfully`() {
+        persistenceService.findAll(TestObject::class.java)
+        verify(pagedQueryFactory).createPagedFindQuery<TestObject>(any())
+    }
 
-        assertThrows<CordaRuntimeException> { persistenceService.findAll(TestObject::class.java).execute() }
-
-        verify(serializationService, times(1)).deserialize<TestObject>(any<ByteArray>(), any())
-        verify(serializationService, times(0)).serialize<String>(any())
-        verify(flowFiber, times(1)).suspend(any<FlowIORequest.FindAll>())
+    @Test
+    fun `named query executes successfully`() {
+        persistenceService.query("", TestObject::class.java)
+        verify(pagedQueryFactory).createNamedParameterizedQuery<TestObject>(any(), any())
     }
 
     class TestObject
-    class FailTestObject
 }

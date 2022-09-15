@@ -8,6 +8,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
+import kotlin.jvm.Throws
 
 interface GroupPolicyParser {
 
@@ -22,13 +23,13 @@ interface GroupPolicyParser {
         fun groupIdFromJson(groupPolicyJson: String): String {
             try {
                 return ObjectMapper().readTree(groupPolicyJson).get(GROUP_ID)?.asText()
-                    ?: throw CordaRuntimeException("Failed to parse group policy file. " +
-                            "Could not find `$GROUP_ID` in the JSON")
+                    ?: throw GroupPolicyIdNotFoundException()
             } catch (e: JsonParseException) {
-                throw CordaRuntimeException("Failed to parse group policy file", e)
+                throw GroupPolicyParseException(e.originalMessage, e)
             }
         }
     }
+
     /**
      * Parses a GroupPolicy from [String] to [GroupPolicy].
      *
@@ -39,6 +40,7 @@ interface GroupPolicyParser {
      * @throws [BadGroupPolicyException] if the input string is null, blank, cannot be parsed, or if persisted
      * properties cannot be retrieved.
      */
+    @Throws(BadGroupPolicyException::class)
     fun parse(
         holdingIdentity: HoldingIdentity,
         groupPolicy: String?,
@@ -54,6 +56,7 @@ interface GroupPolicyParser {
      *
      * @throws [BadGroupPolicyException] if the input string is null, blank, or cannot be parsed.
      */
+    @Throws(BadGroupPolicyException::class)
     fun getMgmInfo(
         holdingIdentity: HoldingIdentity,
         groupPolicy: String

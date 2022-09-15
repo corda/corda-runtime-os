@@ -3,7 +3,7 @@ package net.corda.httprpc.tools.annotations.validation
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPUT
-import net.corda.v5.base.stream.returnsDurableCursorBuilder
+import net.corda.httprpc.durablestream.api.returnsDurableCursorBuilder
 import java.lang.reflect.Method
 
 /**

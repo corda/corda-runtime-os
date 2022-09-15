@@ -2,7 +2,7 @@ package net.corda.crypto.service.impl.bus
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.component.test.utils.generateKeyPair
-import net.corda.crypto.config.impl.createDefaultCryptoConfig
+import net.corda.crypto.config.impl.createTestCryptoConfig
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
@@ -70,7 +70,7 @@ class CryptoOpsBusProcessorTests {
     companion object {
         private val configEvent = ConfigChangedEvent(
             setOf(ConfigKeys.CRYPTO_CONFIG),
-            mapOf(ConfigKeys.CRYPTO_CONFIG to createDefaultCryptoConfig(KeyCredentials("pass", "salt")))
+            mapOf(ConfigKeys.CRYPTO_CONFIG to createTestCryptoConfig(KeyCredentials("pass", "salt")))
         )
     }
 

@@ -30,8 +30,8 @@ internal class HostedIdentityEntryFactory(
     private val retrieveCertificates: (String, String) -> String?,
 ) {
 
-    private fun getNode(holdingIdentityShortHash: String): VirtualNodeInfo {
-        return virtualNodeInfoReadService.getByHoldingIdentityShortHash(ShortHash.of(holdingIdentityShortHash))
+    private fun getNode(holdingIdentityShortHash: ShortHash): VirtualNodeInfo {
+        return virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
             ?: throw CertificatesResourceNotFoundException("No node with ID $holdingIdentityShortHash")
     }
 
@@ -85,19 +85,19 @@ internal class HostedIdentityEntryFactory(
     }
 
     fun createIdentityRecord(
-        holdingIdentityShortHash: String,
+        holdingIdentityShortHash: ShortHash,
         certificateChainAlias: String,
         tlsTenantId: String?,
         sessionKeyTenantId: String?,
         sessionKeyId: String?,
     ): Record<String, HostedIdentityEntry> {
-
         val nodeInfo = getNode(holdingIdentityShortHash)
-        val actualSessionKeyTenantId = sessionKeyTenantId ?: holdingIdentityShortHash
+        val actualSessionKeyTenantId = sessionKeyTenantId ?: holdingIdentityShortHash.toString()
         val sessionPublicKey = getKey(actualSessionKeyTenantId, sessionKeyId)
-        val actualTlsTenantId = tlsTenantId ?: holdingIdentityShortHash
+        val actualTlsTenantId = tlsTenantId ?: holdingIdentityShortHash.toString()
         val tlsCertificates = getCertificates(
-            actualTlsTenantId, certificateChainAlias,
+            actualTlsTenantId,
+            certificateChainAlias,
         )
         validateCertificates(actualTlsTenantId, nodeInfo.holdingIdentity, tlsCertificates)
 

@@ -8,6 +8,7 @@ import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.utilities.classload.OsgiClassLoader
 import net.corda.utilities.classload.executeWithThreadContextClassLoader
 import net.corda.utilities.executeWithStdErrSuppressed
+import net.corda.v5.base.util.contextLogger
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
@@ -25,6 +26,9 @@ internal class HealthMonitorImpl @Activate constructor(
     @Reference(service = LifecycleRegistry::class)
     private val lifecycleRegistry: LifecycleRegistry
 ) : HealthMonitor {
+    private companion object {
+        val logger = contextLogger()
+    }
     // The use of Javalin is temporary, and will be replaced in the future.
     private var server: Javalin? = null
     private val objectMapper = ObjectMapper()
@@ -34,12 +38,18 @@ internal class HealthMonitorImpl @Activate constructor(
             .create()
             .apply { startServer(this, port) }
             .get(HTTP_HEALTH_ROUTE) { context ->
-                val anyComponentsUnhealthy = existsComponentWithAnyOf(setOf(LifecycleStatus.ERROR))
-                val status = if (anyComponentsUnhealthy) HTTP_SERVICE_UNAVAILABLE_CODE else HTTP_OK_CODE
+                val unhealthyComponents = componentWithStatus(setOf(LifecycleStatus.ERROR))
+                val status = if (unhealthyComponents.isEmpty()) {
+                    HTTP_OK_CODE
+                } else {
+                    logger.warn("Status is unhealthy. The status of $unhealthyComponents has error.")
+                    HTTP_SERVICE_UNAVAILABLE_CODE
+                }
                 context.status(status)
             }
             .get(HTTP_STATUS_ROUTE) { context ->
-                val anyComponentsNotReady = existsComponentWithAnyOf(setOf(LifecycleStatus.DOWN, LifecycleStatus.ERROR))
+                val anyComponentsNotReady = componentWithStatus(setOf(LifecycleStatus.DOWN, LifecycleStatus.ERROR))
+                    .isNotEmpty()
                 val status = if (anyComponentsNotReady) HTTP_SERVICE_UNAVAILABLE_CODE else HTTP_OK_CODE
                 context.status(status)
                 context.result(objectMapper.writeValueAsString(lifecycleRegistry.componentStatus()))
@@ -72,8 +82,10 @@ internal class HealthMonitorImpl @Activate constructor(
     }
 
     /** Indicates whether any components exist with at least one of the given [statuses]. */
-    private fun existsComponentWithAnyOf(statuses: Iterable<LifecycleStatus>) =
-        lifecycleRegistry.componentStatus().entries.any { coordinatorStatus ->
-            coordinatorStatus.value.status in statuses
+    private fun componentWithStatus(statuses: Collection<LifecycleStatus>) =
+        lifecycleRegistry.componentStatus().values.filter { coordinatorStatus ->
+            statuses.contains(coordinatorStatus.status)
+        }.map {
+            it.name
         }
 }

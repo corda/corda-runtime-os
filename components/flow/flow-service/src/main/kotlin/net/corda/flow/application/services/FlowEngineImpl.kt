@@ -20,7 +20,6 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.security.AccessController
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
-import java.time.Duration
 import java.util.UUID
 
 @Component(service = [FlowEngine::class, SingletonSerializeAsToken::class], scope = PROTOTYPE)
@@ -39,18 +38,8 @@ class FlowEngineImpl @Activate constructor(
     override val virtualNodeName: MemberX500Name
         get() = flowFiberService.getExecutingFiber().getExecutionContext().memberX500Name
 
-    override val flowContextProperties = object : FlowContextProperties {
-        // TODO CORE-5991 placeholder for FlowContextProperties
-        override fun put(key: String, value: String) {}
-        override operator fun get(key: String): String? {
-            return null
-        }
-    }
-
-    @Suspendable
-    override fun sleep(duration: Duration) {
-        TODO("Not yet implemented")
-    }
+    override val flowContextProperties: FlowContextProperties
+        get() = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.flowContext
 
     @Suspendable
     override fun <R> subFlow(subFlow: SubFlow<R>): R {
@@ -92,7 +81,7 @@ class FlowEngineImpl @Activate constructor(
     @Suspendable
     private fun finishSubFlow() {
         try {
-            flowFiberService.getExecutingFiber().suspend(FlowIORequest.SubFlowFinished(peekCurrentFlowStackItem()))
+            flowFiberService.getExecutingFiber().suspend(FlowIORequest.SubFlowFinished(peekCurrentFlowStackItem().sessionIds.toList()))
         } finally {
             popCurrentFlowStackItem()
         }
@@ -101,7 +90,7 @@ class FlowEngineImpl @Activate constructor(
     @Suspendable
     private fun failSubFlow(t: Throwable) {
         try {
-            flowFiberService.getExecutingFiber().suspend(FlowIORequest.SubFlowFailed(t, peekCurrentFlowStackItem()))
+            flowFiberService.getExecutingFiber().suspend(FlowIORequest.SubFlowFailed(t, peekCurrentFlowStackItem().sessionIds.toList()))
         } finally {
             popCurrentFlowStackItem()
         }
@@ -109,12 +98,14 @@ class FlowEngineImpl @Activate constructor(
 
     private fun peekCurrentFlowStackItem(): FlowStackItem {
         return getFiberExecutionContext().flowStackService.peek()
-            ?: throw CordaRuntimeException("Flow [${flowFiberService.getExecutingFiber().flowId}] does not have a flow stack item")
+            ?: throw CordaRuntimeException(
+                "Flow [${flowFiberService.getExecutingFiber().flowId}] does not have a flow stack item")
     }
 
     private fun popCurrentFlowStackItem(): FlowStackItem {
         return getFiberExecutionContext().flowStackService.pop()
-            ?: throw CordaRuntimeException("Flow [${flowFiberService.getExecutingFiber().flowId}] does not have a flow stack item")
+            ?: throw CordaRuntimeException(
+                "Flow [${flowFiberService.getExecutingFiber().flowId}] does not have a flow stack item")
     }
 
     private fun getFiberExecutionContext(): FlowFiberExecutionContext {

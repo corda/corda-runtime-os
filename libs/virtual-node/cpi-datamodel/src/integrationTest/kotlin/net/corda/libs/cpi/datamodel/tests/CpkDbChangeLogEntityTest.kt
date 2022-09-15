@@ -181,7 +181,7 @@ class CpkDbChangeLogEntityTest {
             flush()
             val changeLogs = findDbChangeLogForCpi(
                 this,
-                CpiIdentifier(cpi1.name, cpi1.version, SecureHash.create(cpi1.signerSummaryHash))
+                CpiIdentifier(cpi1.name, cpi1.version, SecureHash.parse(cpi1.signerSummaryHash))
             )
             assertThat(changeLogs.size).isEqualTo(3)
             assertThat(changeLogs.map { it.id }).containsAll(listOf(changeLog1.id, changeLog1b.id, changeLog2.id))

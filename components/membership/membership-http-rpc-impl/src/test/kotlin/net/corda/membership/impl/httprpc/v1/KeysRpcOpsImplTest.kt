@@ -16,6 +16,7 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.membership.httprpc.v1.types.response.KeyMetaData
+import net.corda.membership.httprpc.v1.types.response.KeyPairIdentifier
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.publicKeyId
 import org.assertj.core.api.Assertions.assertThat
@@ -234,7 +235,7 @@ class KeysRpcOpsImplTest {
 
             val id = keysOps.generateKeyPair(tenantId = "tenantId", alias = "alias", hsmCategory = "category", scheme = "scheme")
 
-            assertThat(id).isEqualTo(publicKey.publicKeyId())
+            assertThat(id).isEqualTo(KeyPairIdentifier(publicKey.publicKeyId()))
         }
 
         @Test

@@ -10,6 +10,7 @@ abstract class Pod : Yamlable {
     open val ports: Collection<Port> = emptyList()
     open val rawData: Collection<RawData<*>> = emptyList()
     open val environmentVariables: Map<String, String> = emptyMap()
+    open val arguments: Map<String, String> = emptyMap()
     open val labels: Map<String, String> = emptyMap()
     open val hosts: Collection<String>? = null
     open val readyLog: Regex? = null
@@ -95,6 +96,9 @@ abstract class Pod : Yamlable {
                                     "value" to value
                                 )
                             },
+                            "args" to arguments.map { (key, value) ->
+                                "-$key=$value"
+                            }.toList(),
                             "volumeMounts" to
                                 rawData.map {
                                     it.createVolumeMount(app)

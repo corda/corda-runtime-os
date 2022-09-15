@@ -1,0 +1,16 @@
+#!groovy
+@Library('corda-shared-build-pipeline-steps@5.0') _
+
+cordaPipeline(
+    dailyBuildCron: 'H 04 * * *',
+    runIntegrationTests: true,
+    publishRepoPrefix: 'corda-ent-maven',
+    createPostgresDb: true,
+    publishOSGiImage: true,
+    publishPreTestImage: true,
+    publishHelmChart: false, // do not publish Helm chart, there is nothing specific there architecture-wise
+    e2eTestName: 'corda-runtime-os-e2e-tests',
+    runE2eTests: true,
+    linuxArch: 'arm64',
+    gradleAdditionalArgs: '-PcliBaseTag=arm64-nightly -Dscan.tag.ARM64-Build'
+    )

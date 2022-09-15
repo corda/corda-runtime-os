@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import java.time.Duration
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import net.corda.applications.workers.smoketest.CLUSTER_URI
 import net.corda.applications.workers.smoketest.CPI_NAME
 import net.corda.applications.workers.smoketest.GROUP_ID
@@ -20,17 +21,19 @@ import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRe
 import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
-import java.time.temporal.ChronoUnit
 
+const val CODESIGNER_CERT = "/cordadevcodesign.pem"
 // The CPB we're using in this test
 const val TEST_CPB = "/META-INF/flow-worker-dev.cpb"
 const val CACHE_INVALIDATION_TEST_CPB = "/META-INF/cache-invalidation-testing/flow-worker-dev.cpb"
 
 fun SimpleResponse.toJson(): JsonNode = ObjectMapper().readTree(this.body)!!
+
 /**
  * Any 'unordered' tests are run *last*
  */
@@ -56,7 +59,25 @@ class VirtualNodeRpcTest {
     /**
      * As long as no-one assigns an order lower than this, this test runs first, and all others, after, which is fine.
      *
-     * This *first* test, uploads a CPI into the system.  It must pass.
+     * This *first* test, uploads codesign certificate into the system.
+     */
+    @Test
+    @Order(5)
+    fun `can import codesigner certificate`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+            assertWithRetry {
+                // Certificate upload can be slow in the combined worker, especially after it has just started up.
+                timeout(Duration.ofSeconds(100))
+                interval(Duration.ofSeconds(1))
+                command { importCertificate(CODESIGNER_CERT, "codesigner", "cordadev") }
+                condition { it.code == 204 }
+            }
+        }
+    }
+
+    /**
+     * This test, uploads a CPI into the system.
      */
     @Test
     @Order(10)
@@ -70,11 +91,12 @@ class VirtualNodeRpcTest {
             // BUG:  returning "OK" feels 'weakly' typed
             val json = assertWithRetry {
                 // CPI upload can be slow in the combined worker, especially after it has just started up.
-                timeout(Duration.ofSeconds(60))
+                timeout(Duration.ofSeconds(100))
                 interval(Duration.ofSeconds(2))
                 command { cpiStatus(requestId) }
                 condition {
-                    it.code == 200 && it.toJson()["status"].textValue() == "OK" }
+                    it.code == 200 && it.toJson()["status"].textValue() == "OK"
+                }
                 immediateFailCondition {
                     it.code == 400
                             && null != it.toJson()["details"]
@@ -118,15 +140,14 @@ class VirtualNodeRpcTest {
                 command { cpiStatus(requestId) }
                 condition {
                     try {
-                        if(it.code == 400) {
+                        if (it.code == 400) {
                             val json = it.toJson()["details"]
                             json.has("errorMessage")
                                     && json["errorMessage"].textValue() == EXPECTED_ERROR_NO_GROUP_POLICY
                         } else {
                             false
                         }
-                    }
-                    catch (e: Exception) {
+                    } catch (e: Exception) {
                         println("Failed, repsonse: $it")
                         false
                     }
@@ -141,6 +162,21 @@ class VirtualNodeRpcTest {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
             val requestId = cpiUpload(TEST_CPB, GROUP_ID).let { it.toJson()["id"].textValue() }
+            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
+
+            assertWithRetry {
+                command { cpiStatus(requestId) }
+                condition { it.code == 409 }
+            }
+        }
+    }
+
+    @Test
+    @Order(31)
+    fun `cannot upload same CPI with different groupId`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+            val requestId = cpiUpload(TEST_CPB, "differentGroupId").let { it.toJson()["id"].textValue() }
             assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
 
             assertWithRetry {
@@ -205,7 +241,7 @@ class VirtualNodeRpcTest {
 
             assertWithRetry {
                 command { vNodeCreate(hash, X500_ALICE) }
-                condition { it.code == 500 }
+                condition { it.code == 409 }
             }
         }
     }
@@ -215,11 +251,17 @@ class VirtualNodeRpcTest {
     fun `list virtual nodes`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-            val nodes = vNodeList().toJson()["virtualNodes"].map {
-                it["holdingIdentity"]["x500Name"].textValue()
-            }
 
-            assertThat(nodes).contains(X500_ALICE)
+            assertWithRetry {
+                timeout(Duration.of(30, ChronoUnit.SECONDS))
+                command { vNodeList() }
+                condition { response ->
+                    val nodes = vNodeList().toJson()["virtualNodes"].map {
+                        it["holdingIdentity"]["x500Name"].textValue()
+                    }
+                    response.code == 200 && nodes.contains(X500_ALICE)
+                }
+            }
         }
     }
 
@@ -243,9 +285,9 @@ class VirtualNodeRpcTest {
                 command { vNodeList() }
                 condition {
                     it.code == 200 &&
-                        it.toJson()["virtualNodes"].single { virtualNode ->
-                            virtualNode["holdingIdentity"]["shortHash"].textValue() == vnode.first
-                        }["state"].textValue() == newState
+                            it.toJson()["virtualNodes"].single { virtualNode ->
+                                virtualNode["holdingIdentity"]["shortHash"].textValue() == vnode.first
+                            }["state"].textValue() == newState
                 }
             }
 
@@ -256,9 +298,9 @@ class VirtualNodeRpcTest {
                 command { vNodeList() }
                 condition {
                     it.code == 200 &&
-                        it.toJson()["virtualNodes"].single { virtualNode ->
-                            virtualNode["holdingIdentity"]["shortHash"].textValue() == vnode.first
-                        }["state"].textValue() == oldState
+                            it.toJson()["virtualNodes"].single { virtualNode ->
+                                virtualNode["holdingIdentity"]["shortHash"].textValue() == vnode.first
+                            }["state"].textValue() == oldState
                 }
             }
         }
@@ -298,7 +340,7 @@ class VirtualNodeRpcTest {
             // Check that timestamp for CPK been updated
             // Cannot use `assertWithRetry` as there is a strict type `Instant`
             // Allow ample time for CPI upload to be propagated through the system
-            eventually(Duration.ofSeconds(20)) {
+            eventually(Duration.ofSeconds(100)) {
                 assertThat(getCpkTimestamp()).isAfter(initialCpkTimeStamp)
             }
         }
@@ -330,7 +372,7 @@ class VirtualNodeRpcTest {
                 condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
             }
 
-            eventually(Duration.ofSeconds(20)) {
+            eventually(Duration.ofSeconds(100)) {
                 assertThat(getCpkTimestamp()).isAfter(initialCpkTimeStamp)
             }
         }
@@ -362,7 +404,7 @@ class VirtualNodeRpcTest {
                 condition { it.code == 200 && it.toJson()["status"].textValue() == "OK" }
             }
 
-            eventually(Duration.ofSeconds(20)) {
+            eventually(Duration.ofSeconds(100)) {
                 assertThat(getCpkTimestamp()).isAfter(initialCpkTimeStamp)
             }
 
@@ -371,7 +413,7 @@ class VirtualNodeRpcTest {
     }
 
     private fun runReturnAStringFlow(expectedResult: String) {
-        val className = "net.cordapp.flowworker.development.flows.ReturnAStringFlow"
+        val className = "net.cordapp.flowworker.development.smoketests.virtualnode.ReturnAStringFlow"
 
         val requestId = startRpcFlow(aliceHoldingId, emptyMap(), className)
 
@@ -391,10 +433,14 @@ class VirtualNodeRpcTest {
         return Instant.parse(this.asText())
     }
 
-    fun ClusterBuilder.getCpiChecksum(cpiName: String): String {
-        val cpis = cpiList().toJson()["cpis"]
-        val cpiJson = cpis.toList().first { it["id"]["cpiName"].textValue() == cpiName }
-        return truncateLongHash(cpiJson["cpiFileChecksum"].textValue())
+    private fun ClusterBuilder.getCpiChecksum(cpiName: String): String {
+        val cpiFileChecksum = eventually {
+            val cpis = cpiList().toJson()["cpis"]
+            val cpiJson = cpis.toList().find { it["id"]["cpiName"].textValue() == cpiName }
+            assertNotNull(cpiJson, "Cpi with name $cpiName not yet found in cpi list.")
+            truncateLongHash(cpiJson!!["cpiFileChecksum"].textValue())
+        }
+        return cpiFileChecksum
     }
 
     private fun String.toJson(): JsonNode = ObjectMapper().readTree(this)

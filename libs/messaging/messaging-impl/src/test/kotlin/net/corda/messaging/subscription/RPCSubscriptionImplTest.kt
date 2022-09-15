@@ -39,7 +39,6 @@ import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 
-
 class RPCSubscriptionImplTest {
 
     private val config = createResolvedSubscriptionConfig(SubscriptionType.RPC_RESPONDER)
@@ -54,6 +53,7 @@ class RPCSubscriptionImplTest {
             0,
             "0",
             RPCRequest(
+                "sender",
                 "0",
                 Instant.now(),
                 "$TOPIC_PREFIX${config.topic}.resp",
@@ -76,6 +76,11 @@ class RPCSubscriptionImplTest {
     private lateinit var cordaConsumerBuilder: CordaConsumerBuilder
     private val kafkaProducer: CordaProducer = mock()
     private val cordaProducerBuilder: CordaProducerBuilder = mock()
+    private val thread = mock<Thread>()
+    private val block = argumentCaptor<() -> Unit>()
+    private val threadFactory = mock<(() -> Unit) -> Thread> {
+        on { invoke(block.capture()) } doReturn thread
+    }
 
     @Captor
     private val captor = argumentCaptor<List<Pair<Int, CordaProducerRecord<Int, RPCResponse>>>>()
@@ -109,13 +114,12 @@ class RPCSubscriptionImplTest {
             processor,
             serializer,
             deserializer,
-            lifecycleCoordinatorFactory
+            lifecycleCoordinatorFactory,
+            threadFactory,
         )
 
         subscription.start()
-        while (subscription.isRunning) {
-            Thread.sleep(10)
-        }
+        block.firstValue.invoke()
 
         verify(kafkaConsumer, times(1)).subscribe(config.topic)
         assertThat(processor.incomingRecords.size).isEqualTo(1)
@@ -123,6 +127,8 @@ class RPCSubscriptionImplTest {
         val capturedValue = captor.firstValue
         assertEquals(capturedValue[0].second.value?.responseStatus, ResponseStatus.OK)
         verify(kafkaProducer, times(1)).close()
+        assertThat(capturedValue[0].second.value?.sender).isEqualTo("sender")
+        assertThat(capturedValue[0].second.value?.correlationKey).isEqualTo("0")
     }
 
     @Test
@@ -135,13 +141,12 @@ class RPCSubscriptionImplTest {
             processor,
             serializer,
             deserializer,
-            lifecycleCoordinatorFactory
+            lifecycleCoordinatorFactory,
+            threadFactory,
         )
 
         subscription.start()
-        while (subscription.isRunning) {
-            Thread.sleep(10)
-        }
+        block.firstValue.invoke()
 
         verify(kafkaConsumer, times(1)).subscribe(config.topic)
         assertThat(processor.incomingRecords.size).isEqualTo(1)
@@ -164,13 +169,12 @@ class RPCSubscriptionImplTest {
             processor,
             serializer,
             deserializer,
-            lifecycleCoordinatorFactory
+            lifecycleCoordinatorFactory,
+            threadFactory,
         )
 
         subscription.start()
-        while (subscription.isRunning) {
-            Thread.sleep(10)
-        }
+        block.firstValue.invoke()
 
         verify(kafkaConsumer, times(1)).subscribe(config.topic)
         assertThat(processor.incomingRecords.size).isEqualTo(1)
@@ -224,5 +228,4 @@ class RPCSubscriptionImplTest {
             failNext = true
         }
     }
-
 }
