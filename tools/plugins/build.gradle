@@ -14,25 +14,28 @@ configurations {
 }
 
 dependencies {
-    cliHostDist "net.corda.cli.host:corda-cli:${pluginHostVersion}"
+    cliHostDist "net.corda.cli.host:app:${pluginHostVersion}"
 }
 
 def S3_BUCKET_URI_PROPERTY = 'maven.repo.s3'
 
 tasks.register('copyCliFiles') {
     dependsOn subprojects.collect { it.tasks.named("cliPluginTask").get() }
-    copy {
-        from configurations.named('cliHostDist')
-        into "$buildDir/cli"
-        rename ('.*.jar', 'corda-cli.jar')
-    }
-    copy {
-        from subprojects.collect { it.tasks.named('cliPluginTask') }
-        into "$buildDir/cli/plugins"
-    }
-    copy {
-        from "$projectDir/installScripts"
-        into "$buildDir/cli"
+    doLast {
+        copy {
+            duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+            from configurations.named('cliHostDist')
+            into "$buildDir/cli"
+            rename ('.*.jar', 'corda-cli.jar')
+        }
+        copy {
+            from subprojects.collect { it.tasks.named('cliPluginTask') }
+            into "$buildDir/cli/plugins"
+        }
+        copy {
+            from "$projectDir/installScripts"
+            into "$buildDir/cli"
+        }
     }
 }
 
@@ -78,11 +81,14 @@ tasks.named('jar').configure {
 tasks.register('publishOSGiImage', DeployableContainerBuilder) {
     def sourceTasks = subprojects.collect { it.tasks.named("cliPluginTask").get() }
     def cordaCliIncluded = gradle.includedBuilds.collect { it.name == "corda-cli-plugin-host" }.contains(true)
+    def cordaApiIncluded = gradle.includedBuilds.collect { it.name == "corda-api" }.contains(true)
 
-    if (cordaCliIncluded) {
+    if (cordaCliIncluded && cordaApiIncluded) {
         logger.lifecycle("corda-cli-plugin-host project detected in composite build logic, building base image from include project")
         dependsOn gradle.includedBuild("corda-cli-plugin-host").task(':app:publishOSGiImage')
+        dependsOn gradle.includedBuild("corda-api").task(':application:jar')
     }
+
     it.sourceFiles.setFrom(sourceTasks)
     it.subDir = "plugins/"
     it.setEntry = false
