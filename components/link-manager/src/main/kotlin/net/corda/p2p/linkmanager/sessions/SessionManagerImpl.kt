@@ -117,7 +117,11 @@ internal class SessionManagerImpl(
 
     private val sessionNegotiationLock = ReentrantReadWriteLock()
 
-    private val config = AtomicReference<SessionManagerConfig>()
+    // This default needs to be removed and the lifecycle dependency graph adjusted to ensure the inbound subscription starts only after
+    // the configuration has been received and the session manager has started (see CORE-6730).
+    private val config = AtomicReference(
+        SessionManagerConfig(1000000, 4)
+    )
 
     private val heartbeatManager: HeartbeatManager = HeartbeatManager(
         publisherFactory,
