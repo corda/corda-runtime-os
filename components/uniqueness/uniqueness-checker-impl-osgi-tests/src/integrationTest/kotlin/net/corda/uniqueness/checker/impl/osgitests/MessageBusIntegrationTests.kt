@@ -223,24 +223,6 @@ class MessageBusIntegrationTests {
 
     @BeforeAll
     fun initialSetup() {
-        val coordinator = lifecycleCoordinatorFactory.createCoordinator<MessageBusIntegrationTests> { e, c ->
-            if (e is StartEvent) {
-                logger.info("Starting test coordinator")
-                c.followStatusChangesByName(
-                    setOf(
-                        LifecycleCoordinatorName.forComponent<BackingStore>(),
-                        LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                        LifecycleCoordinatorName.forComponent<UniquenessChecker>()
-                    )
-                )
-            } else if (e is RegistrationStatusChangeEvent) {
-                logger.info("Test coordinator is ${e.status}")
-                c.updateStatus(e.status)
-            }
-        }.also { it.start() }
-
-        externalEventResponseMonitor = TestExternalEventResponseMonitor(subscriptionFactory, bootConfig)
-
         val backingStore = BackingStoreImplFake(lifecycleCoordinatorFactory).also { it.start() }
 
         uniquenessChecker = BatchedUniquenessCheckerImpl(
@@ -275,6 +257,25 @@ class MessageBusIntegrationTests {
 
         configurationReadService.start()
         configurationReadService.bootstrapConfig(bootConfig)
+
+        val coordinator = lifecycleCoordinatorFactory.createCoordinator<MessageBusIntegrationTests> { e, c ->
+            if (e is StartEvent) {
+                logger.info("Starting test coordinator")
+                c.followStatusChangesByName(
+                    setOf(
+                        LifecycleCoordinatorName.forComponent<BackingStore>(),
+                        LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+                        LifecycleCoordinatorName.forComponent<UniquenessChecker>()
+                    )
+                )
+            } else if (e is RegistrationStatusChangeEvent) {
+                logger.info("Test coordinator is ${e.status}")
+                c.updateStatus(e.status)
+            }
+        }.also { it.start() }
+
+        externalEventResponseMonitor =
+            TestExternalEventResponseMonitor(subscriptionFactory, bootConfig)
 
         eventually {
             logger.info("Waiting for required services to start...")

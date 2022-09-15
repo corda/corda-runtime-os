@@ -68,6 +68,7 @@ class UniquenessCheckerClientServiceImpl @Activate constructor(
     ): UniquenessCheckResponse {
         log.info("Received request with id: $txId, sending it to Uniqueness Checker")
 
+        @Suppress("ForbiddenComment")
         // TODO: CORE-4730 to pass through the Vnode holding id plus a sensible event context
         val request = UniquenessCheckRequestAvro(
             HoldingIdentity(),

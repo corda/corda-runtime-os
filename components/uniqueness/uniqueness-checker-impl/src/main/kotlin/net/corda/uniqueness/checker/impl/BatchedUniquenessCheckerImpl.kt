@@ -18,7 +18,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas
@@ -103,7 +102,6 @@ class BatchedUniquenessCheckerImpl(
         coordinatorFactory.createCoordinator<UniquenessChecker>(::eventHandler)
 
     private val dependentComponents = DependentComponents.of(
-        ::configurationReadService,
         ::backingStore
     )
 
@@ -382,6 +380,7 @@ class BatchedUniquenessCheckerImpl(
         log.info("Uniqueness checker received event $event.")
         when (event) {
             is StartEvent -> {
+                configurationReadService.start()
                 dependentComponents.registerAndStartAll(coordinator)
             }
             is StopEvent -> {

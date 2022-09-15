@@ -17,7 +17,7 @@
 # -runjdb: 1044
 
 -runproperties: \
-    org.slf4j.simpleLogger.defaultLogLevel=trace,\
+    org.slf4j.simpleLogger.defaultLogLevel=info,\
     org.slf4j.simpleLogger.showShortLogName=true,\
     org.slf4j.simpleLogger.showThreadName=false,\
     org.slf4j.simpleLogger.showDateTime=true,\

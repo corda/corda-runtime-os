@@ -6,6 +6,10 @@ import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.uniqueness.checker.UniquenessChecker
 
+/**
+ * Processes messages received from the uniqueness check topic, and responds using the external
+ * events response API.
+ */
 class UniquenessCheckMessageProcessor(
     private val uniquenessChecker: UniquenessChecker,
     private val externalEventResponseFactory: ExternalEventResponseFactory
