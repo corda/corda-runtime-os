@@ -14,7 +14,7 @@ configurations {
 }
 
 dependencies {
-    cliHostDist "net.corda.cli.host:app:${pluginHostVersion}"
+    cliHostDist "net.corda.cli.host:corda-cli:${pluginHostVersion}"
 }
 
 def S3_BUCKET_URI_PROPERTY = 'maven.repo.s3'
