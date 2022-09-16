@@ -29,6 +29,7 @@ dependencies {
     implementation project(":libs:serialization:serialization-checkpoint-api")
     implementation project(":libs:serialization:serialization-amqp")
     implementation project(":libs:serialization:serialization-internal")
+    implementation project(":libs:utilities")
     implementation project(":libs:virtual-node:sandbox-group-context")
     implementation project(':libs:virtual-node:virtual-node-info')
 
