@@ -17,7 +17,7 @@ import net.corda.libs.configuration.SmartConfig
 /** RPC operations for flow management. */
 @HttpRpcResource(
     name = "Flow Management API",
-    description = "Flow management endpoints.",
+    description = "The Flow Management API consists of a number of endpoints used to interact with flows.",
     path = "flow"
 )
 interface FlowRpcOps : RpcOps {
@@ -55,10 +55,11 @@ interface FlowRpcOps : RpcOps {
         clientRequestId: String
     ): FlowStatusResponse
 
+    @Suppress("MaxLineLength")
     @HttpRpcGET(
         path = "{holdingIdentityShortHash}",
         title = "Get Multiple Flow Status",
-        description = "Get status of all flows for a holding identity. Returns an empty list if there are no flows running.",
+        description = "This method returns an array containing the statuses of all flows running for a specified holding identity. An empty array is returned if there are no flows running.",
         responseDescription = "The status of the flow."
     )
     fun getMultipleFlowStatus(

@@ -25,7 +25,7 @@
     "description" : "The Flow Info API consists of a number of endpoints used to find out which flows can be invoked using the Flow Management API for a given identity."
   }, {
     "name" : "Flow Management API",
-    "description" : "Flow management endpoints."
+    "description" : "The Flow Management API consists of a number of endpoints used to interact with flows."
   }, {
     "name" : "HSM API",
     "description" : "Hardware Security Modules interaction endpoints."
@@ -485,7 +485,7 @@
     "/flow/{holdingidentityshorthash}" : {
       "get" : {
         "tags" : [ "Flow Management API" ],
-        "description" : "Get status of all flows for a holding identity. Returns an empty list if there are no flows running.",
+        "description" : "This method returns an array containing the statuses of all flows running for a specified holding identity. An empty array is returned if there are no flows running.",
         "operationId" : "get_flow__holdingidentityshorthash_",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
