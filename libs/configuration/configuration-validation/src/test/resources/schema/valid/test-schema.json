@@ -16,6 +16,53 @@
     "testReference": {
       "$ref": "https://corda.r3.com/schema/valid/test-reference.json",
       "default": {}
+    },
+    "testObject": {
+      "type": "object",
+      "default": {
+        "testPropertyA": {
+          "a": 1
+        }
+      },
+      "properties": {
+        "testPropertyA": {
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        "testPropertyB": {
+          "type": "object",
+          "properties": {
+            "b": {
+              "type": "integer",
+              "default": 2
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "dependencies": {
+        "testPropertyA": {
+          "not": {
+            "required": [
+              "testPropertyB"
+            ]
+          }
+        },
+        "testPropertyB": {
+          "not": {
+            "required": [
+              "testPropertyA"
+            ]
+          }
+        }
+      }
     }
   }
 }
