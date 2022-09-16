@@ -54,7 +54,7 @@ interface VirtualNodeMaintenanceRPCOps : RpcOps {
     fun updateVirtualNodeState(
         @HttpRpcPathParameter(description = "Short ID of the virtual node instance to update")
         virtualNodeShortId: String,
-        @HttpRpcPathParameter(description = "State to transition virtual node instance into. Possible values: IN_MAINTENANCE, ACTIVE, etc.")
+        @HttpRpcPathParameter(description = "State to transition virtual node instance into. Possible values are: IN_MAINTENANCE and ACTIVE.")
         newState: String
     ): ChangeVirtualNodeStateResponse
 }

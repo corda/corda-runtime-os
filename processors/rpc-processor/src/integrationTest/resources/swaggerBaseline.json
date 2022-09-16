@@ -61,7 +61,7 @@
     "description" : "Virtual node management endpoints."
   }, {
     "name" : "Virtual Node Maintenance API",
-    "description" : "Maintenance RPC operations for virtual node management. Some of them could be highly disruptive, so great care should be taken when using them."
+    "description" : "The Virtual Node Maintenance API consists of a series of endpoints used for virtual node management.Warning: Using these endpoints could be highly disruptive, so great care should be taken when using them."
   } ],
   "paths" : {
     "/certificates/getprotocolversion" : {
@@ -1284,7 +1284,7 @@
     "/maintenance/virtualnode/forcecpiupload" : {
       "post" : {
         "tags" : [ "Virtual Node Maintenance API" ],
-        "description" : "Force uploads a CPI file. Even if CPI with the same metadata has already been uploaded, this endpoint will overwrite earlier stored CPI record. This operation also purges any sandboxes running an overwritten version of a CPI. This action can take some time to process, therefore it is performed asynchronously.",
+        "description" : "Force uploads a CPI file. Even if CPI with the same metadata has already been uploaded, this endpoint will overwrite the previously stored CPI record. This operation also purges any sandboxes running an overwritten version of a CPI. This action can take some time to process, therefore it is performed asynchronously.",
         "operationId" : "post_maintenance_virtualnode_forcecpiupload",
         "parameters" : [ ],
         "requestBody" : {
@@ -1375,11 +1375,11 @@
         }, {
           "name" : "newstate",
           "in" : "path",
-          "description" : "State to transition virtual node instance into. Possible values: IN_MAINTENANCE, ACTIVE, etc.",
+          "description" : "State to transition virtual node instance into. Possible values are: IN_MAINTENANCE and ACTIVE.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "State to transition virtual node instance into. Possible values: IN_MAINTENANCE, ACTIVE, etc.",
+            "description" : "State to transition virtual node instance into. Possible values are: IN_MAINTENANCE and ACTIVE.",
             "nullable" : false,
             "example" : "string"
           }
