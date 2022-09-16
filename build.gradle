@@ -1,5 +1,6 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import static org.gradle.api.JavaVersion.VERSION_11
+import static org.gradle.jvm.toolchain.JavaLanguageVersion.of
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     id 'org.jetbrains.kotlin.jvm' apply false
@@ -36,9 +37,14 @@ subprojects {
     group = 'net.corda.cli'
     version rootProject.version
 
-
     pluginManager.withPlugin('org.jetbrains.kotlin.jvm'){
         apply plugin: 'io.gitlab.arturbosch.detekt'
+
+        kotlin {
+            jvmToolchain {
+                languageVersion = of(11)
+            }
+        }
 
         dependencies {
             detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:$detektPluginVersion"
