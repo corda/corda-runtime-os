@@ -74,7 +74,7 @@ interface CpiUploadRPCOps : RpcOps {
     @HttpRpcGET(
         title = "CPI info",
         description = "The GET method returns a list of all CPIs uploaded to the cluster.",
-        responseDescription = "Details of all the CPIs uploaded to the cluster."
+        responseDescription = "Details of all of the CPIs uploaded to the cluster."
     )
     fun getAllCpis(): GetCPIsResponse
 }
