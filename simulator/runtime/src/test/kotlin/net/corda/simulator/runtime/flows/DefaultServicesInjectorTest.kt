@@ -5,6 +5,7 @@ import net.corda.simulator.runtime.testflows.HelloFlow
 import net.corda.v5.base.types.MemberX500Name
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
 
 class DefaultServicesInjectorTest {
 
@@ -19,7 +20,7 @@ class DefaultServicesInjectorTest {
 
         fiber.use {
             // When we inject services into it
-            DefaultServicesInjector().injectServices(flow, member, it)
+            DefaultServicesInjector(mock()).injectServices(flow, member, it)
 
             // Then it should have constructed useful things for us
             assertNotNull(flow.flowEngine)
