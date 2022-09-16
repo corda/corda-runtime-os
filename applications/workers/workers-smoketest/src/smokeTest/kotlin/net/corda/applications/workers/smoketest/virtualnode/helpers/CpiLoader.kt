@@ -79,15 +79,5 @@ object CpiLoader {
         ?: throw Exception("alice.p12 not found")
 
     private fun getStaticNetworkPolicy(groupId: String) =
-        getDefaultStaticNetworkGroupPolicy(
-        groupId,
-        listOf(
-            X500_ALICE,
-            X500_BOB,
-            X500_CHARLIE,
-            X500_DAVID
-        ))?.use { inStream ->
-            inStream.reader().use { it.readText() }
-                .replace(groupIdPlaceholder, groupId)
-        } ?: throw Exception("GroupPolicy-static-network.json not found")
+        getDefaultStaticNetworkGroupPolicy(groupId, listOf(X500_ALICE, X500_BOB, X500_CHARLIE, X500_DAVID))
 }
