@@ -12,6 +12,8 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     api "net.corda:corda-cipher-suite"
+    api "net.corda:corda-crypto"
+    api "net.corda:corda-crypto-extensions"
 
     testImplementation "javax.persistence:javax.persistence-api"
     testImplementation "org.assertj:assertj-core:$assertjVersion"

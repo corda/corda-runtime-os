@@ -1,6 +1,5 @@
 package net.corda.chunking.db.impl.persistence.database
 
-import javax.persistence.OptimisticLockException
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
@@ -13,6 +12,13 @@ import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.CpkFileEntity
 import net.corda.libs.cpi.datamodel.CpkKey
 import net.corda.libs.cpi.datamodel.CpkMetadataEntity
+import net.corda.libs.cpi.datamodel.QUERY_NAME_UPDATE_CPK_FILE_DATA
+import net.corda.libs.cpi.datamodel.QUERY_PARAM_DATA
+import net.corda.libs.cpi.datamodel.QUERY_PARAM_ENTITY_VERSION
+import net.corda.libs.cpi.datamodel.QUERY_PARAM_FILE_CHECKSUM
+import net.corda.libs.cpi.datamodel.QUERY_PARAM_ID
+import net.corda.libs.cpi.datamodel.QUERY_PARAM_INCREMENTED_ENTITY_VERSION
+import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
 import net.corda.orm.utils.transaction
@@ -23,12 +29,7 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.LockModeType
 import javax.persistence.NonUniqueResultException
-import net.corda.libs.cpi.datamodel.QUERY_NAME_UPDATE_CPK_FILE_DATA
-import net.corda.libs.cpi.datamodel.QUERY_PARAM_DATA
-import net.corda.libs.cpi.datamodel.QUERY_PARAM_ENTITY_VERSION
-import net.corda.libs.cpi.datamodel.QUERY_PARAM_FILE_CHECKSUM
-import net.corda.libs.cpi.datamodel.QUERY_PARAM_ID
-import net.corda.libs.cpi.datamodel.QUERY_PARAM_INCREMENTED_ENTITY_VERSION
+import javax.persistence.OptimisticLockException
 
 /**
  * This class provides some simple APIs to interact with the database for manipulating CPIs, CPKs and their associated metadata.
@@ -74,7 +75,8 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
                 CpiCpkEntity(
                     CpiCpkKey(
                         cpi.metadata.cpiId.name, cpi.metadata.cpiId.version, cpi.metadata.cpiId.signerSummaryHash?.toString() ?: "",
-                        cpk.metadata.cpkId.name, cpk.metadata.cpkId.version, cpk.metadata.cpkId.signerSummaryHash.toString()
+                        // TODO Fallback to empty string can be removed after package verification is enabled (CORE-5405)
+                        cpk.metadata.cpkId.name, cpk.metadata.cpkId.version, cpk.metadata.cpkId.signerSummaryHash?.toString().orEmpty()
                     ),
                     cpk.originalFileName!!,
                     cpk.metadata.fileChecksum.toString(),
@@ -93,9 +95,20 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
             createOrUpdateCpkFileEntities(em, cpi.cpks)
 
-            cpkDbChangeLogEntities.forEach { em.merge(it) }
+            updateChangeLogs(cpkDbChangeLogEntities, em)
 
             return@persistMetadataAndCpks managedCpiMetadataEntity
+        }
+    }
+
+    private fun updateChangeLogs(
+        cpkDbChangeLogEntities: List<CpkDbChangeLogEntity>,
+        em: EntityManager
+    ) {
+        cpkDbChangeLogEntities.forEach {
+            val inDb = em.find(CpkDbChangeLogEntity::class.java, it.id)
+            if (inDb!=null) it.entityVersion = inDb.entityVersion
+            em.merge(it)
         }
     }
 
@@ -137,7 +150,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
             createOrUpdateCpkFileEntities(em, cpi.cpks)
 
-            cpkDbChangeLogEntities.forEach { em.merge(it) }
+            updateChangeLogs(cpkDbChangeLogEntities, em)
 
             return cpiMetadataEntity
         }
@@ -266,7 +279,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
             val cpkKey = cpk.metadata.cpkId.toCpkKey()
             val existingCpkFile = existingCpkFiles[cpkKey]
 
-            if(existingCpkFile != null) {
+            if (existingCpkFile != null) {
                 // the cpk exists already, lets update it if the file checksum has changed.
                 if (existingCpkFile.fileChecksum != cpk.metadata.fileChecksum.toString()) {
                     val updatedEntities = em.createNamedQuery(QUERY_NAME_UPDATE_CPK_FILE_DATA)
@@ -277,9 +290,11 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
                         .setParameter(QUERY_PARAM_ID, cpkKey)
                         .executeUpdate()
 
-                    if(updatedEntities < 1)
-                        throw OptimisticLockException("Updating ${CpkFileEntity::class.java.simpleName} with id $cpkKey failed due to " +
-                                "optimistic lock version mismatch. Expected entityVersion ${existingCpkFile.entityVersion}.")
+                    if (updatedEntities < 1)
+                        throw OptimisticLockException(
+                            "Updating ${CpkFileEntity::class.java.simpleName} with id $cpkKey failed due to " +
+                                "optimistic lock version mismatch. Expected entityVersion ${existingCpkFile.entityVersion}."
+                        )
                 }
             } else {
                 // the cpk doesn't exist so we'll persist a new file
@@ -290,7 +305,12 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         }
     }
 
-    override fun canUpsertCpi(cpiName: String, groupId: String): Boolean {
+    private fun checkForMatchingEntity(entitiesFound: List<CpiMetadataEntity>, cpiName: String, cpiVersion: String, requestId:String) {
+        if (entitiesFound.singleOrNull { it.name == cpiName && it.version == cpiVersion } == null)
+            throw ValidationException("No instance of same CPI with previous version found", requestId)
+    }
+
+    override fun canUpsertCpi(cpiName: String, groupId: String, forceUpload: Boolean, cpiVersion: String?, requestId:String): Boolean {
         val entitiesFound = entityManagerFactory.createEntityManager().transaction {
             it.createQuery(
                 "FROM ${CpiMetadataEntity::class.simpleName} c WHERE c.groupId = :groupId",
@@ -299,10 +319,16 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         }
 
         // we can insert this CPI, it's the first one with this group id
-        if (entitiesFound.isEmpty()) return true
+        if (entitiesFound.isEmpty() && !forceUpload) return true
 
-        // we can insert this CPI, it has the same name and group id (we are NOT checking the version)
-        if (entitiesFound.map { it.name }.contains(cpiName)) return true
+        if (forceUpload && cpiVersion != null) {
+            checkForMatchingEntity(entitiesFound, cpiName, cpiVersion, requestId)
+            // We can update this CPI if we find one with the same version in the case of a forceUpload
+            return true
+        } else if (entitiesFound.map { it.name }.contains(cpiName)) {
+            // we can insert this CPI, it has the same name and group id (we are NOT checking the version)
+            return true
+        }
 
         return false
     }

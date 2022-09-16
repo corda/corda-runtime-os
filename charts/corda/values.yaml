@@ -35,6 +35,12 @@ logging:
   # -- log level; one of "all", "trace", "debug", "info", "warn" (the default), "error", "fatal", or "off"
   level: "warn"
 
+# -- Path on Kubernetes hosts to mount on Corda workers for collecting dumps
+dumpHostPath: ""
+
+# -- Enables capturing JVM heap dumps from Corda workers on an OutOfMemory error
+heapDumpOnOutOfMemoryError: false
+
 # Open Telemetry configuration
 openTelemetry:
   # -- enables the Open Telemetry Java agent for the Corda workers
@@ -97,13 +103,13 @@ kafka:
       password: ""
   # SASL configuration for client connection to Kafka
   sasl:
-    # -- SASL username for client connection to Kafka 
+    # -- SASL username for client connection to Kafka
     username: "user"
-    # -- SASL password for client connection to Kafka 
+    # -- SASL password for client connection to Kafka
     password: ""
-    # -- SASL mechanism for client connection to Kafka 
+    # -- SASL mechanism for client connection to Kafka
     mechanism: "SCRAM-SHA-256"
-    # -- enable/disable SASL for client connection to Kafka 
+    # -- enable/disable SASL for client connection to Kafka
     enabled: false
 
 # Configuration for cluster bootstrap
@@ -128,6 +134,19 @@ bootstrap:
   db:
     # -- Indicates whether DB bootstrap is enabled as part of installation
     enabled: true
+    # crypto configuration
+    crypto:
+      # JDBC connection pool configuration for crypto DB
+      dbConnectionPool:
+        # -- maximum JDBC connection pool size for crypto DB
+        maxSize: 5
+    # RBAC configuration
+    rbac:
+      # JDBC connection pool configuration for RBAC DB
+      dbConnectionPool:
+        # -- maximum JDBC connection pool size for RBAC DB
+        maxSize: 5
+
 
   # Configuration for Kafka bootstrap
   kafka:
@@ -155,6 +174,9 @@ bootstrap:
     requests: { }
     # -- the CPU/memory resource limits for the bootstrap containers
     limits: { }
+
+  # node selector for the bootstrap containers
+  nodeSelector: { }
 
 # worker configuration
 workers:
@@ -189,6 +211,10 @@ workers:
       requests: {}
       # -- the CPU/memory resource limits for the crypto worker containers
       limits: {}
+    # crypto worker JDBC connection pool configuration for cluster DB
+    clusterDbConnectionPool:
+      # -- crypto worker maximum JDBC connection pool size for cluster DB
+      maxSize: 5
 
   # DB worker configuration
   db:
@@ -218,13 +244,17 @@ workers:
     # -- DB worker salt, defaults to a value randomly-generated on install
     salt: ""
     # -- DB worker passphrase, defaults to a value randomly-generated on install
-    passphrase: ""    
+    passphrase: ""
     # resource limits and requests configuration for the DB worker containers.
     resources:
       # -- the CPU/memory resource requests for the DB worker containers
       requests: {}
       # -- the CPU/memory resource limits for the DB worker containers
       limits: {}
+    # DB worker JDBC connection pool configuration for cluster DB
+    clusterDbConnectionPool:
+      # -- DB worker maximum JDBC connection pool size for cluster DB
+      maxSize: 5
 
   # flow worker configuration
   flow:
@@ -341,7 +371,7 @@ workers:
       # -- p2p-link-manager worker image registry, defaults to image.registry
       registry: ""
       # -- p2p-link-manager worker image repository
-      repository: "corda-os-p2p-link-manager"
+      repository: "corda-os-p2p-link-manager-worker"
       # -- p2p-link-manager worker image tag, defaults to image.tag
       tag: ""
     # -- p2p-link-manager worker replica count
@@ -375,7 +405,7 @@ workers:
       # -- p2p-gateway worker image registry, defaults to image.registry
       registry: ""
       # -- p2p-gateway worker image repository
-      repository: "corda-os-p2p-gateway"
+      repository: "corda-os-p2p-gateway-worker"
       # -- p2p-gateway worker image tag, defaults to image.tag
       tag: ""
     # -- p2p-gateway worker replica count
@@ -401,7 +431,7 @@ workers:
       requests: {}
       # -- the CPU/memory resource limits for the p2p-gateway worker containers
       limits: {}
-    # p2p-gateway worker worker service configuration
+    # p2p-gateway worker service configuration
     service:
       # -- The Gateway HTTP port
       port: 8080

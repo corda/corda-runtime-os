@@ -23,6 +23,7 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly "org.jetbrains.kotlinx:kotlinx-metadata-jvm:$kotlinMetadataVersion"
     compileOnly "org.ow2.asm:asm:$asmVersion"
+    compileOnly "co.paralleluniverse:quasar-osgi-annotations:$quasarVersion"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"

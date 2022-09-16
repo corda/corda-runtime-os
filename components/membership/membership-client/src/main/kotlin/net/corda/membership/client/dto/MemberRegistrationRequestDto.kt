@@ -1,5 +1,7 @@
 package net.corda.membership.client.dto
 
+import net.corda.virtualnode.ShortHash
+
 /**
  * Request sent during member registration.
  *
@@ -8,7 +10,7 @@ package net.corda.membership.client.dto
  * @param context The member or MGM context required for on-boarding within a group.
  */
 data class MemberRegistrationRequestDto(
-    val holdingIdentityShortHash: String,
+    val holdingIdentityShortHash: ShortHash,
     val action: RegistrationActionDto,
     val context: Map<String, String>,
 )

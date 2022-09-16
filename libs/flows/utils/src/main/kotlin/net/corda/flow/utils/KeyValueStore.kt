@@ -39,6 +39,16 @@ fun keyValuePairListOf(map: Map<String, String>) = mutableKeyValuePairList().app
 }
 
 /**
+ * Transforms [KeyValuePairList] into map.
+ */
+fun KeyValuePairList.toMap() = items.associate { it.key to it.value }
+
+/**
+ * Transforms [KeyValuePairList] into a mutable map.
+ */
+fun KeyValuePairList.toMutableMap() = items.associateTo(mutableMapOf()) { it.key to it.value }
+
+/**
  * A KeyValueStore which operates much like a map from the user perspective. Internally it is backed by an Avro array
  * which means serialization and deserialization are guaranteed to produce the same object, which is not the case with
  * Avro's own built in map type.
@@ -61,12 +71,6 @@ class KeyValueStore(private val backingList: KeyValuePairList = mutableKeyValueP
     operator fun set(key: String, value: String) = backingList.setValue(key, value)
     fun put(key: String, value: String) = set(key, value)
     operator fun get(key: String) = backingList.items.find { it.key == key }?.value
-
-    operator fun plusAssign(toAdd: KeyValueStore) {
-        toAdd.avro.items.forEach { keyValuePair ->
-            this[keyValuePair.key] = keyValuePair.value
-        }
-    }
 
     /**
      * Importantly, this property exposes the mutable Avro array directly, no conversion is carried out.

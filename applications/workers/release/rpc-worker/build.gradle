@@ -48,6 +48,8 @@ dependencies {
     runtimeOnly project(':libs:messaging:kafka-message-bus-impl')
     runtimeOnly project(":libs:messaging:messaging-impl")
 
+    e2eTestImplementation project(":libs:configuration:configuration-endpoints")
+    e2eTestImplementation project(":libs:crypto:certificate-generation")
     e2eTestImplementation project(":libs:http-rpc:http-rpc-client")
     e2eTestImplementation project(":libs:permissions:permission-endpoint")
     e2eTestImplementation project(":testing:test-utilities")
@@ -67,6 +69,7 @@ dependencies {
     e2eTestImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     e2eTestImplementation "net.corda:corda-avro-schema"
     e2eTestImplementation "net.corda:corda-topic-schema"
+    e2eTestImplementation 'net.corda:corda-cipher-suite'
     e2eTestRuntimeOnly 'org.osgi:osgi.core'
 
     dockerImage "io.opentelemetry.javaagent:opentelemetry-javaagent:$openTelemetryVersion"
@@ -87,5 +90,41 @@ tasks.named('e2eTest') {
     }
     if(System.getenv("JAVA_SECURITY_AUTH_LOGIN_CONFIG") != null) {
         jvmArgs "-Djava.security.auth.login.config=${System.getenv("JAVA_SECURITY_AUTH_LOGIN_CONFIG")}"
+    }
+    if(System.getenv("E2E_CLUSTER_A_RPC_HOST") == null) {
+        systemProperty "E2E_CLUSTER_A_RPC_HOST", project.getProperties().getOrDefault("e2eClusterARpcHost","localhost")
+    }
+    if(System.getenv("E2E_CLUSTER_A_RPC_PORT") == null) {
+        systemProperty "E2E_CLUSTER_A_RPC_PORT", project.getProperties().getOrDefault("e2eClusterARpcPort","8888")
+    }
+    if(System.getenv("E2E_CLUSTER_B_RPC_HOST") == null) {
+        systemProperty "E2E_CLUSTER_B_RPC_HOST", project.getProperties().getOrDefault("e2eClusterBRpcHost","localhost")
+    }
+    if(System.getenv("E2E_CLUSTER_B_RPC_PORT") == null) {
+        systemProperty "E2E_CLUSTER_B_RPC_PORT", project.getProperties().getOrDefault("e2eClusterBRpcPort","8888")
+    }
+    if(System.getenv("E2E_CLUSTER_C_RPC_HOST") == null) {
+        systemProperty "E2E_CLUSTER_C_RPC_HOST", project.getProperties().getOrDefault("e2eClusterCRpcHost","localhost")
+    }
+    if(System.getenv("E2E_CLUSTER_C_RPC_PORT") == null) {
+        systemProperty "E2E_CLUSTER_C_RPC_PORT", project.getProperties().getOrDefault("e2eClusterCRpcPort","8888")
+    }
+    if(System.getenv("E2E_CLUSTER_A_P2P_HOST") == null) {
+        systemProperty "E2E_CLUSTER_A_P2P_HOST", project.getProperties().getOrDefault("e2eClusterAP2pHost","localhost")
+    }
+    if(System.getenv("E2E_CLUSTER_A_P2P_PORT") == null) {
+        systemProperty "E2E_CLUSTER_A_P2P_PORT", project.getProperties().getOrDefault("e2eClusterAP2pPort","8080")
+    }
+    if(System.getenv("E2E_CLUSTER_B_P2P_HOST") == null) {
+        systemProperty "E2E_CLUSTER_B_P2P_HOST", project.getProperties().getOrDefault("e2eClusterBP2pHost","localhost")
+    }
+    if(System.getenv("E2E_CLUSTER_C_P2P_PORT") == null) {
+        systemProperty "E2E_CLUSTER_C_P2P_PORT", project.getProperties().getOrDefault("e2eClusterBP2pPort","8080")
+    }
+    if(System.getenv("E2E_CLUSTER_C_P2P_HOST") == null) {
+        systemProperty "E2E_CLUSTER_C_P2P_HOST", project.getProperties().getOrDefault("e2eClusterCP2pHost","localhost")
+    }
+    if(System.getenv("E2E_CLUSTER_C_P2P_PORT") == null) {
+        systemProperty "E2E_CLUSTER_C_P2P_PORT", project.getProperties().getOrDefault("e2eClusterCP2pPort","8080")
     }
 }

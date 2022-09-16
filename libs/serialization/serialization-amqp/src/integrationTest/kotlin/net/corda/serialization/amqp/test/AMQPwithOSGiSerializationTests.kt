@@ -15,7 +15,7 @@ import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.utilities.copyTo
 import net.corda.utilities.div
 import net.corda.utilities.reflection.packageName_
-import net.corda.v5.base.types.ByteSequence
+import net.corda.utilities.toByteSequence
 import net.corda.v5.base.types.OpaqueBytes
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
@@ -89,24 +89,24 @@ class AMQPwithOSGiSerializationTests {
             val testSerializationContext = testSerializationContext.withSandboxGroup(sandboxGroup)
 
             // Serialise our object
-            val cashClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle1.Cash")
+            val cashClass = sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle1.Cash")
             val cashInstance = cashClass.getConstructor(Int::class.java).newInstance(100)
 
-            val obligationClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle3.Obligation")
+            val obligationClass = sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle3.Obligation")
 
             val obligationInstance = obligationClass.getConstructor(
                 cashInstance.javaClass
             ).newInstance(cashInstance)
 
-            val documentClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle2.Document")
+            val documentClass = sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle2.Document")
             val content = "This is a transfer document"
             val documentInstance = documentClass.getConstructor(String::class.java).newInstance(content)
 
             // Container is used to test amqp serialization works for OSGi bundled generic types.
-            val containerClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle5.Container")
+            val containerClass = sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle5.Container")
             val containerInstance = containerClass.getConstructor(Object::class.java).newInstance(5)
 
-            val transferClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle4.Transfer")
+            val transferClass = sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle4.Transfer")
 
             val transferInstance = transferClass.getConstructor(
                 obligationInstance.javaClass, documentInstance.javaClass, containerInstance.javaClass
@@ -118,7 +118,7 @@ class AMQPwithOSGiSerializationTests {
             val deserialised =
                 DeserializationInput(factory2).deserializeAndReturnEnvelope(serialised, testSerializationContext)
 
-            assertThat(deserialised.obj.javaClass.name).isEqualTo("net.corda.bundle4.Transfer")
+            assertThat(deserialised.obj.javaClass.name).isEqualTo("net.cordapp.bundle4.Transfer")
             assertThat(deserialised.obj.javaClass.declaredFields.map { it.name }.toList()).contains("document")
 
             val document = deserialised.obj.javaClass.getDeclaredField("document").also { it.trySetAccessible() }
@@ -130,11 +130,11 @@ class AMQPwithOSGiSerializationTests {
             assertThat(deserialisedValue).isEqualTo(content)
 
             assertThat(deserialised.envelope.metadata.values).hasSize(5)
-            assertThat(deserialised.envelope.metadata.values).containsKey("net.corda.bundle1.Cash")
-            assertThat(deserialised.envelope.metadata.values).containsKey("net.corda.bundle2.Document")
-            assertThat(deserialised.envelope.metadata.values).containsKey("net.corda.bundle3.Obligation")
-            assertThat(deserialised.envelope.metadata.values).containsKey("net.corda.bundle5.Container")
-            assertThat(deserialised.envelope.metadata.values).containsKey("net.corda.bundle4.Transfer")
+            assertThat(deserialised.envelope.metadata.values).containsKey("net.cordapp.bundle1.Cash")
+            assertThat(deserialised.envelope.metadata.values).containsKey("net.cordapp.bundle2.Document")
+            assertThat(deserialised.envelope.metadata.values).containsKey("net.cordapp.bundle3.Obligation")
+            assertThat(deserialised.envelope.metadata.values).containsKey("net.cordapp.bundle5.Container")
+            assertThat(deserialised.envelope.metadata.values).containsKey("net.cordapp.bundle4.Transfer")
         } finally {
             sandboxFactory.unloadSandboxGroup(sandboxGroup)
         }
@@ -147,7 +147,7 @@ class AMQPwithOSGiSerializationTests {
             val factory = testDefaultFactory(sandboxGroup)
             val context = testSerializationContext.withSandboxGroup(sandboxGroup)
 
-            val mainBundleItemClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle.MainBundleItem")
+            val mainBundleItemClass = sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle.MainBundleItem")
             val mainBundleItemInstance = mainBundleItemClass.getMethod("newInstance").invoke(null)
 
             assertThrows<SandboxException>(
@@ -181,7 +181,7 @@ class AMQPwithOSGiSerializationTests {
             val uuid = UUID.fromString("8a1a7d89-20b1-412e-bba2-c8612210284f")
             // Uncomment to rebuild resource file + also uncomment older version of SerializableStateToNewerVersion class
             // and the version number in serializable-cpk-evolution-newer/build.gradle
-//            val originalStateClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle.evolution.newer.SerializableStateToNewerVersion")
+//            val originalStateClass = sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle.evolution.newer.SerializableStateToNewerVersion")
 //            val originalStateInstance = originalStateClass.getConstructor(UUID::class.java).newInstance(uuid)
 //            val serialize = SerializationOutput(factory).serialize(originalStateInstance, context)
 //            writeIntegrationTestResource(serialize, testResourceName)
@@ -192,7 +192,7 @@ class AMQPwithOSGiSerializationTests {
                 ?: throw RuntimeException("$testResourceName not found")
             val deserialize: Any =
                 DeserializationInput(factory).deserialize(
-                    ByteSequence.of(resource.readAllBytes()),
+                    resource.readAllBytes().toByteSequence(),
                     Any::class.java,
                     context
                 )
@@ -218,7 +218,7 @@ class AMQPwithOSGiSerializationTests {
             val uuid = UUID.fromString("8a1a7d89-20b1-412e-bba2-c8612210284f")
             // Uncomment to rebuild resource file + also uncomment newer version of SerializableStateToOlderVersion class
             // and the version number in serializable-cpk-evolution-older/build.gradle
-//            val originalStateClass = sandboxGroup.loadClassFromMainBundles("net.corda.bundle.evolution.older.SerializableStateToOlderVersion")
+//            val originalStateClass = sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle.evolution.older.SerializableStateToOlderVersion")
 //            val originalStateInstance = originalStateClass.getConstructor(UUID::class.java, String::class.java).newInstance(uuid, "TEST")
 //            val serialize = SerializationOutput(factory).serialize(originalStateInstance, context)
 //            writeIntegrationTestResource(serialize, testResourceName)
@@ -229,7 +229,7 @@ class AMQPwithOSGiSerializationTests {
                 ?: throw RuntimeException("$testResourceName not found")
             val deserialized: Any =
                 DeserializationInput(factory).deserialize(
-                    ByteSequence.of(resource.readAllBytes()),
+                    resource.readAllBytes().toByteSequence(),
                     Any::class.java,
                     context
                 )
@@ -249,7 +249,7 @@ class AMQPwithOSGiSerializationTests {
             val originalContext = testSerializationContext.withSandboxGroup(originalSandboxGroup)
 
             val originalStateClass =
-                originalSandboxGroup.loadClassFromMainBundles("net.corda.bundle.evolution.different.SerializableStateForDifferentCpk")
+                originalSandboxGroup.loadClassFromMainBundles("net.cordapp.bundle.evolution.different.SerializableStateForDifferentCpk")
             val originalStateInstance =
                 originalStateClass.getConstructor(UUID::class.java).newInstance(UUID.randomUUID())
             SerializationOutput(originalFactory).serialize(originalStateInstance, originalContext)

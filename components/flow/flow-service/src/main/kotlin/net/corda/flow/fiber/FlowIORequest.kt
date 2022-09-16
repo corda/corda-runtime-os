@@ -1,14 +1,9 @@
 package net.corda.flow.fiber
 
 import java.nio.ByteBuffer
-import java.security.PublicKey
 import java.time.Instant
-import net.corda.data.flow.state.checkpoint.FlowStackItem
-import net.corda.v5.application.messaging.FlowInfo
-import net.corda.v5.application.messaging.FlowSession
+import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.SignatureSpec
 
 /**
  * A [FlowIORequest] represents an IO request of a flow when it suspends. It is persisted in checkpoints.
@@ -41,7 +36,12 @@ interface FlowIORequest<out R> {
         override fun toString() = "SendAndReceive(${sessionToPayload.mapValues { (key, value) -> "$key=$value" }})"
     }
 
-    data class InitiateFlow(val x500Name: MemberX500Name, val sessionId: String) : FlowIORequest<Unit>
+    data class InitiateFlow(
+        val x500Name: MemberX500Name,
+        val sessionId: String,
+        val contextUserProperties: Map<String, String>,
+        val contextPlatformProperties: Map<String, String>
+    ) : FlowIORequest<Unit>
 
     /**
      * Closes the specified sessions.
@@ -49,14 +49,6 @@ interface FlowIORequest<out R> {
      * @property sessions the sessions to be closed.
      */
     data class CloseSessions(val sessions: Set<String>) : FlowIORequest<Unit>
-
-    /**
-     * Get the FlowInfo of the specified sessions.
-     *
-     * @property sessions the sessions to get the FlowInfo of.
-     * @return a map from session to FlowInfo.
-     */
-    data class GetFlowInfo(val sessions: Set<FlowSession>) : FlowIORequest<Map<FlowSession, FlowInfo>>
 
     /**
      * Suspend the flow until the specified time.
@@ -84,9 +76,9 @@ interface FlowIORequest<out R> {
 
     data class FlowFinished(val result: String?) : FlowIORequest<String?>
 
-    data class SubFlowFinished(val flowStackItem: FlowStackItem) : FlowIORequest<FlowStackItem?>
+    data class SubFlowFinished(val sessionIds: List<String>) : FlowIORequest<Unit>
 
-    data class SubFlowFailed(val throwable: Throwable, val flowStackItem: FlowStackItem) : FlowIORequest<Unit>
+    data class SubFlowFailed(val throwable: Throwable, val sessionIds: List<String>) : FlowIORequest<Unit>
 
     data class FlowFailed(val exception: Throwable) : FlowIORequest<Unit>
 
@@ -95,22 +87,15 @@ interface FlowIORequest<out R> {
      * @property fiber serialized fiber state at the point of suspension.
      * @property output the IO request that caused the suspension.
      */
-    data class FlowSuspended<SUSPENDRETURN>(val fiber: ByteBuffer, val output: FlowIORequest<SUSPENDRETURN>) : FlowIORequest<Unit>
+    data class FlowSuspended<SUSPENDRETURN>(
+        val fiber: ByteBuffer,
+        val output: FlowIORequest<SUSPENDRETURN>
+    ) : FlowIORequest<Unit>
 
-    data class Find(val requestId: String, val className: String, val primaryKey: ByteArray) : FlowIORequest<ByteBuffer?>
-
-    data class FindAll(val requestId: String, val className: String) : FlowIORequest<ByteBuffer?>
-
-    data class Merge(val requestId: String, val obj: ByteArray) : FlowIORequest<ByteBuffer?>
-
-    data class Persist(val requestId: String, val obj: ByteArray) : FlowIORequest<Unit>
-
-    data class Delete(val requestId: String, val obj: ByteArray) : FlowIORequest<Unit>
-
-    data class SignBytes(
+    data class ExternalEvent(
         val requestId: String,
-        val bytes: ByteArray,
-        val publicKey: PublicKey,
-        val signatureSpec: SignatureSpec
-    ) : FlowIORequest<DigitalSignature.WithKey>
+        val factoryClass: Class<out ExternalEventFactory<out Any, *, *>>,
+        val parameters: Any,
+        val contextProperties: Map<String, String>
+    ) : FlowIORequest<Any>
 }

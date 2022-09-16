@@ -16,12 +16,14 @@ dependencies {
     implementation "info.picocli:picocli:$picocliVersion"
     implementation 'org.slf4j:slf4j-api'
     implementation 'net.corda:corda-base'
+    implementation 'net.corda:corda-ledger-utxo'
 
     implementation project(":components:configuration:configuration-read-service")
     implementation project(":components:flow:flow-mapper-service")
     implementation project(":components:flow:flow-service")
     implementation project(":components:flow:flow-p2p-filter-service")
     implementation project(":components:membership:membership-group-read")
+    implementation project(":components:uniqueness:uniqueness-checker")
     implementation project(":components:virtual-node:cpi-info-read-service")
     implementation project(":components:virtual-node:cpk-read-service")
     implementation project(":components:virtual-node:sandbox-group-context-service")
@@ -33,13 +35,17 @@ dependencies {
 
     runtimeOnly 'javax.persistence:javax.persistence-api'
     runtimeOnly "net.corda:corda-avro-schema"
+    runtimeOnly project(':libs:ledger:ledger-consensual-impl')
     runtimeOnly project(':libs:crypto:merkle-impl')
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
+    runtimeOnly project(":components:uniqueness:uniqueness-checker-client-service-impl")
+    runtimeOnly project(':testing:uniqueness:uniqueness-checker-fake')
     runtimeOnly project(":components:membership:membership-group-read-impl")
     runtimeOnly project(":components:virtual-node:cpi-info-read-service-impl")
     runtimeOnly project(":components:virtual-node:cpk-read-service-impl")
     runtimeOnly project(":libs:application:application-impl")
     runtimeOnly project(':libs:crypto:cipher-suite-impl')
+    runtimeOnly project(":libs:flows:flow-api")
     runtimeOnly project(":libs:flows:flow-mapper-impl")
     runtimeOnly project(":libs:flows:session-manager-impl")
     runtimeOnly project(":libs:messaging:messaging-impl")
@@ -47,6 +53,7 @@ dependencies {
     runtimeOnly project(":libs:sandbox-internal")
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
     runtimeOnly project(":libs:serialization:serialization-kryo")
+    runtimeOnly project(":components:flow:flow-service")
 }
 
 description 'Flow Worker Processor'

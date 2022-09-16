@@ -12,7 +12,6 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.reconciliation.VersionedRecord
-import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.util.contextLogger
@@ -95,10 +94,6 @@ internal class ConfigProcessor(
             config[DB_CONFIG] = dbConfig
         }
 
-        //TODO - remove this as part of https://r3-cev.atlassian.net/browse/CORE-5086
-        if (currentData.containsKey(CRYPTO_CONFIG)) {
-            config[CRYPTO_CONFIG] = configMerger.getCryptoConfig(bootConfig, config[CRYPTO_CONFIG])
-        }
         return config
     }
 

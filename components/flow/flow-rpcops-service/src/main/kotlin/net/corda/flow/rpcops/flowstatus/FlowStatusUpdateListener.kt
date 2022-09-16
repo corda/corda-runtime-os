@@ -1,6 +1,5 @@
 package net.corda.flow.rpcops.flowstatus
 
-import java.util.UUID
 import net.corda.data.flow.output.FlowStatus
 
 /**
@@ -11,7 +10,7 @@ interface FlowStatusUpdateListener : AutoCloseable {
     /**
      * Identifier for this listener.
      */
-    val id: UUID
+    val id: String
 
     /**
      * Update received for flow status.

@@ -104,6 +104,7 @@ internal class PermissionManagementServiceEventHandler(
             }
             is ConfigChangedEvent -> {
                 log.info("Received new configuration event. Creating and starting RPCSender and permission manager.")
+                coordinator.updateStatus(LifecycleStatus.DOWN)
                 val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
                 createAndStartRpcSender(messagingConfig)
                 val rpcConfig = event.config[RPC_CONFIG]!!

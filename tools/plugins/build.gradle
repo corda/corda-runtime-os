@@ -3,6 +3,10 @@ plugins {
     id 'java'
 }
 
+ext {
+    releasable = true
+}
+
 group 'net.corda.cli.deployment'
 
 configurations {
@@ -13,7 +17,10 @@ dependencies {
     cliHostDist "net.corda.cli.host:corda-cli:${pluginHostVersion}"
 }
 
+def S3_BUCKET_URI_PROPERTY = 'maven.repo.s3'
+
 tasks.register('copyCliFiles') {
+    dependsOn subprojects.collect { it.tasks.named("cliPluginTask").get() }
     copy {
         from configurations.named('cliHostDist')
         into "$buildDir/cli"
@@ -29,7 +36,7 @@ tasks.register('copyCliFiles') {
     }
 }
 
-task cliInstallArchive(type: Zip) {
+tasks.register("cliInstallArchive", Zip) {
     dependsOn tasks.named('copyCliFiles')
     from "$buildDir/cli"
     include '*'
@@ -38,8 +45,34 @@ task cliInstallArchive(type: Zip) {
     destinationDir(file("$buildDir/zip"))
 }
 
-artifacts {
-    cliInstallArchive
+tasks.register("cleanDir", Delete) {
+    description 'Removes any previously generated scripts'
+    delete 'build/generatedScripts'
+}
+
+tasks.register("cliS3Download", Copy) {
+    dependsOn cleanDir
+    description 'Copy corda-cli install scripts to a location in build dir and update to use correct version'
+    if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
+        def s3Url = System.getenv('HTTPS_PATH') + project.group.replace('.','/') + "/corda-cli-installer/$version/corda-cli-installer-$version"
+        logger.info ("S3 Https URL: $s3Url")
+        from 'templateScripts'
+        into 'build/generatedScripts'
+        filter {
+            String line -> line.replaceAll("TEMPLATE_URL", s3Url)
+        }
+    }
+    else {
+        logger.info("parameter S3_BUCKET_URI_PROPERTY is required! e.g. -Pmaven.repo.s3=https://demo.s3.com/example/bucket, Taking no action for :cliS3Download")
+    }
+}
+
+
+tasks.named('jar').configure {
+    finalizedBy cliInstallArchive
+    if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
+        finalizedBy cliS3Download
+    }
 }
 
 tasks.register('publishOSGiImage', DeployableContainerBuilder) {
@@ -77,8 +110,8 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
         baseImageName = (cordaCliIncluded) ? "corda-os-docker-dev.software.r3.com/corda-os-cli" : "corda-os-docker.software.r3.com/corda-os-cli"
     }
 
-    if (project.hasProperty('baseTag')) {
-        baseImageTag = baseTag
+    if (project.hasProperty('cliBaseTag')) {
+        baseImageTag = cliBaseTag
     } else {
         it.baseImageTag = (cordaCliIncluded) ? "latest-local" : "unstable"
     }
@@ -88,12 +121,44 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
     }
 }
 
+def s3Script = null
+if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
+    s3Script = artifacts.add('archives', file("$project.buildDir/generatedScripts/corda-cli-downloader.sh")) {
+        builtBy('cliS3Download')
+    }
+    artifacts {
+        cliInstallArchive
+    }
+}
+
+
 publishing {
     publications {
         maven(MavenPublication) {
             artifactId "corda-cli-installer"
             groupId project.group
             artifact cliInstallArchive
+        }
+        if (project.hasProperty(S3_BUCKET_URI_PROPERTY) && s3Script != null) {
+            maven(MavenPublication) {
+                artifactId "corda-cli-downloader"
+                groupId project.group
+                artifact s3Script
+            }
+        }
+    }
+    if (project.hasProperty(S3_BUCKET_URI_PROPERTY) && project.hasProperty('releasable')) {
+        publishing {
+            repositories {
+                maven {
+                    url = project.findProperty(S3_BUCKET_URI_PROPERTY)
+                    credentials(AwsCredentials) {
+                        accessKey "${System.getenv('AWS_ACCESS_KEY_ID')}"
+                        secretKey "${System.getenv('AWS_SECRET_ACCESS_KEY')}"
+                        sessionToken "${System.getenv('AWS_SESSION_TOKEN')}"
+                    }
+                }
+            }
         }
     }
 }

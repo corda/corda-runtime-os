@@ -14,6 +14,7 @@ import net.corda.p2p.linkmanager.sessions.recordsForSessionEstablished
 import net.corda.p2p.markers.TtlExpiredMarker
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.Component
+import net.corda.p2p.markers.LinkManagerDiscardedMarker
 import net.corda.p2p.markers.LinkManagerProcessedMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
@@ -104,11 +105,30 @@ internal class OutboundMessageProcessor(
 
     private fun processUnauthenticatedMessage(message: UnauthenticatedMessage): List<Record<String, *>> {
         logger.debug { "Processing outbound ${message.javaClass} to ${message.header.destination}." }
-        return if (linkManagerHostingMap.isHostedLocally(message.header.destination.toCorda())) {
-            listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(message)))
+
+        if (message.header.source.groupId != message.header.destination.groupId) {
+            logger.warn("Dropping outbound unauthenticated message from ${message.header.source.toCorda()} " +
+                    "to ${message.header.destination.toCorda()} as their group IDs do not match.")
+            return emptyList()
+        }
+
+        val destMemberInfo = members.getMemberInfo(message.header.source.toCorda(), message.header.destination.toCorda())
+        if (linkManagerHostingMap.isHostedLocally(message.header.destination.toCorda())) {
+            return listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(message)))
+        } else if (destMemberInfo != null) {
+            val source = message.header.source.toCorda()
+            val groupInfo = groups.getGroupInfo(source)
+            if (groupInfo == null) {
+                logger.warn("Could not find the group information in the GroupPolicyProvider for $source. The message was discarded.")
+                return emptyList()
+            }
+
+            val linkOutMessage = MessageConverter.linkOutFromUnauthenticatedMessage(message, destMemberInfo, groupInfo)
+            return listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), linkOutMessage))
         } else {
-            val linkOutMessage = MessageConverter.linkOutFromUnauthenticatedMessage(message, groups, members)
-            listOf(Record(Schemas.P2P.LINK_OUT_TOPIC, LinkManager.generateKey(), linkOutMessage))
+            logger.warn("Trying to send unauthenticated message from ${message.header.source.toCorda()} " +
+                    "to ${message.header.destination.toCorda()}, but destination is not part of the network. Message was discarded.")
+            return emptyList()
         }
     }
 
@@ -130,6 +150,14 @@ internal class OutboundMessageProcessor(
             "Processing outbound ${messageAndKey.message.javaClass} with ID ${messageAndKey.message.header.messageId} " +
                 "to ${messageAndKey.message.header.destination}."
         }
+
+        if (messageAndKey.message.header.source.groupId != messageAndKey.message.header.destination.groupId) {
+            logger.warn("Dropping outbound authenticated message ${messageAndKey.message.header.messageId} " +
+                    "from ${messageAndKey.message.header.source.toCorda()} to ${messageAndKey.message.header.destination.toCorda()} " +
+                    "as their group IDs do not match.")
+            return listOf(recordForLMDiscardedMarker(messageAndKey, "Destination and source groups not matching."))
+        }
+
         if (ttlExpired(messageAndKey.message.header.ttl)) {
             val expiryMarker = recordForTTLExpiredMarker(messageAndKey.message.header.messageId)
             return if (isReplay) {
@@ -142,27 +170,34 @@ internal class OutboundMessageProcessor(
             }
         }
 
-        if (linkManagerHostingMap.isHostedLocally(messageAndKey.message.header.destination.toCorda())) {
+        val source = messageAndKey.message.header.source.toCorda()
+        val destination = messageAndKey.message.header.destination.toCorda()
+        if (linkManagerHostingMap.isHostedLocally(destination)) {
             return if (isReplay) {
-                /* This code block was added to fix a race which happens if the OutboundMessageProcessor runs quicker than the
-                 * DeliveryTracker. Under normal circumstances a message to locally hosted holding identity will be added and then removed
-                 * from the delivery tracker, before the message is replayed (as the OutboundMessageProcessor adds both a LinkManagerSent
-                 * and a LinkManagerReceived marker).
-                 */
-                emptyList()
+                listOf(Record(Schemas.P2P.P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)),
+                    recordForLMReceivedMarker(messageAndKey.message.header.messageId)
+                )
             } else {
                 listOf(Record(Schemas.P2P.P2P_IN_TOPIC, messageAndKey.key, AppMessage(messageAndKey.message)),
                     recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId),
                     recordForLMReceivedMarker(messageAndKey.message.header.messageId)
                 )
             }
-        } else {
+        } else if (members.getMemberInfo(source, destination) != null) {
             val markers = if (isReplay) {
                 emptyList()
             } else {
                 listOf(recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId))
             }
             return processNoTtlRemoteAuthenticatedMessage(messageAndKey, isReplay) + markers
+        } else {
+            logger.warn("Trying to send authenticated message (${messageAndKey.message.header.messageId}) from $source to $destination, " +
+                    "but the destination is not part of the network. Message will be retried later.")
+            return if (isReplay) {
+                emptyList()
+            } else {
+                listOf(recordForLMProcessedMarker(messageAndKey, messageAndKey.message.header.messageId))
+            }
         }
     }
     private fun processNoTtlRemoteAuthenticatedMessage(
@@ -237,4 +272,11 @@ internal class OutboundMessageProcessor(
         val marker = AppMessageMarker(LinkManagerSentMarker(), clock.instant().toEpochMilli())
         return Record(Schemas.P2P.P2P_OUT_MARKERS, messageId, marker)
     }
+
+    private fun recordForLMDiscardedMarker(message: AuthenticatedMessageAndKey,
+                                           reason: String): Record<String, AppMessageMarker> {
+        val marker = AppMessageMarker(LinkManagerDiscardedMarker(message, reason), clock.instant().toEpochMilli())
+        return Record(Schemas.P2P.P2P_OUT_MARKERS, message.message.header.messageId, marker)
+    }
+
 }

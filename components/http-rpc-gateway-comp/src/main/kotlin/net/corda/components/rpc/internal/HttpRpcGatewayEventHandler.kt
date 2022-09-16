@@ -1,6 +1,7 @@
 package net.corda.components.rpc.internal
 
 import net.corda.components.rbac.RBACSecurityManagerService
+import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.RpcOps
@@ -35,10 +36,11 @@ import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_CONTEXT_DESCRIPTION
 import net.corda.schema.configuration.ConfigKeys.RPC_CONTEXT_TITLE
 import net.corda.schema.configuration.ConfigKeys.RPC_MAX_CONTENT_LENGTH
+import net.corda.schema.configuration.ConfigKeys.RPC_WEBSOCKET_CONNECTION_IDLE_TIMEOUT_MS
+import net.corda.utilities.NetworkHostAndPort
 import net.corda.utilities.PathProvider
 import net.corda.utilities.TempPathProvider
 import net.corda.v5.base.annotations.VisibleForTesting
-import net.corda.v5.base.util.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
 import java.util.function.Supplier
 
@@ -57,6 +59,8 @@ internal class HttpRpcGatewayEventHandler(
         val log = contextLogger()
 
         const val MULTI_PART_DIR = "multipart"
+
+        const val CONFIG_SUBSCRIPTION = "CONFIG_SUBSCRIPTION"
     }
 
     @VisibleForTesting
@@ -68,14 +72,19 @@ internal class HttpRpcGatewayEventHandler(
     @VisibleForTesting
     internal var registration: RegistrationHandle? = null
 
+    @Volatile
     @VisibleForTesting
-    internal var sub: AutoCloseable? = null
+    internal var rpcConfig: SmartConfig? = null
 
+    @Volatile
+    @VisibleForTesting
+    internal var dependenciesUp = false
+
+    @Suppress("NestedBlockDepth")
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> {
                 log.info("Received start event, following dependencies for status updates.")
-
                 registration?.close()
                 registration = coordinator.followStatusChangesByName(
                     setOf(
@@ -88,18 +97,40 @@ internal class HttpRpcGatewayEventHandler(
                 log.info("Starting permission service and RBAC security manager.")
                 permissionManagementService.start()
                 rbacSecurityManagerService.start()
+
+                log.info("Subscribe to configuration updates.")
+                coordinator.createManagedResource(CONFIG_SUBSCRIPTION) {
+                    configurationReadService.registerComponentForUpdates(
+                        coordinator,
+                        setOf(BOOT_CONFIG, RPC_CONFIG)
+                    )
+                }
+
+                val numberOfRpcOps = dynamicRpcOpsProvider.get().filterIsInstance<Lifecycle>()
+                    .map {
+                        log.info("Starting: ${it.javaClass.simpleName}")
+                        it.start()
+                    }
+                    .count()
+                log.info("Started $numberOfRpcOps RPCOps that have lifecycle.")
             }
             is RegistrationStatusChangeEvent -> {
                 when (event.status) {
                     LifecycleStatus.UP -> {
                         log.info("Registration received UP status. Registering for configuration updates.")
-                        // Http RPC Server can only be created when security manager and permission service are ready.
-                        sub = configurationReadService.registerForUpdates(::onConfigurationUpdated)
-                        coordinator.updateStatus(LifecycleStatus.UP)
+                        dependenciesUp = true
+                        rpcConfig.let {
+                            if (it == null) {
+                                log.info("Configuration has not been received yet")
+                            } else {
+                                upTransition(coordinator, it)
+                            }
+                        }
+
                     }
                     LifecycleStatus.DOWN -> {
                         log.info("Registration received DOWN status. Stopping the Http RPC Gateway.")
-                        coordinator.postEvent(StopEvent())
+                        downTransition()
                     }
                     LifecycleStatus.ERROR -> {
                         log.info("Registration received ERROR status. Stopping the Http RPC Gateway.")
@@ -107,35 +138,49 @@ internal class HttpRpcGatewayEventHandler(
                     }
                 }
             }
+            is ConfigChangedEvent -> {
+                log.info("Gateway component received configuration update event, changedKeys: ${event.keys}")
+                coordinator.updateStatus(LifecycleStatus.DOWN)
+
+                val config = event.config[RPC_CONFIG]!!.withFallback(
+                    event.config[BOOT_CONFIG]
+                )
+                rpcConfig = config
+                if (dependenciesUp) {
+                    upTransition(coordinator, config)
+                } else {
+                    log.info("Dependencies have not been satisfied yet")
+                }
+            }
             is StopEvent -> {
                 log.info("Stop event received, stopping dependencies.")
                 registration?.close()
                 registration = null
-                sub?.close()
-                sub = null
+
                 permissionManagementService.stop()
                 rbacSecurityManagerService.stop()
-                server?.close()
-                server = null
-                sslCertReadService?.stop()
-                sslCertReadService = null
-                dynamicRpcOpsProvider.get().filterIsInstance<Lifecycle>().forEach { it.stop() }
+
+                dynamicRpcOpsProvider.get().filterIsInstance<Lifecycle>().forEach {
+                    log.info("Stopping: ${it.javaClass.simpleName}")
+                    it.stop()
+                }
+
+                downTransition()
             }
         }
     }
 
-    private fun onConfigurationUpdated(changedKeys: Set<String>, currentConfigurationSnapshot: Map<String, SmartConfig>) {
-        log.info("Gateway component received configuration update event, changedKeys: $changedKeys")
+    private fun upTransition(coordinator: LifecycleCoordinator, config: SmartConfig) {
+        createAndStartHttpRpcServer(config)
+        coordinator.updateStatus(LifecycleStatus.UP)
+    }
 
-        if (RPC_CONFIG in changedKeys) {
-            log.info("RPC config received. Recreating HTTP RPC Server.")
-
-            val config = currentConfigurationSnapshot[RPC_CONFIG]!!.withFallback(
-                currentConfigurationSnapshot[BOOT_CONFIG]
-            )
-
-            createAndStartHttpRpcServer(config)
-        }
+    private fun downTransition() {
+        log.info("Performing down transition.")
+        server?.close()
+        server = null
+        sslCertReadService?.stop()
+        sslCertReadService = null
     }
 
     private fun createAndStartHttpRpcServer(config: SmartConfig) {
@@ -159,7 +204,8 @@ internal class HttpRpcGatewayEventHandler(
             ),
             ssl = HttpRpcSSLSettings(keyStoreInfo.path, keyStoreInfo.password),
             sso = config.retrieveSsoOptions(),
-            maxContentLength = config.retrieveMaxContentLength()
+            maxContentLength = config.retrieveMaxContentLength(),
+            webSocketIdleTimeoutMs = config.getInt(RPC_WEBSOCKET_CONNECTION_IDLE_TIMEOUT_MS).toLong()
         )
 
         val multiPartDir = tempPathProvider.getOrCreate(config, MULTI_PART_DIR)
@@ -168,15 +214,10 @@ internal class HttpRpcGatewayEventHandler(
         val rpcOps = dynamicRpcOpsProvider.get()
         server = httpRpcServerFactory.createHttpRpcServer(
             rpcOpsImpls = rpcOps,
-            rpcSecurityManager = rbacSecurityManagerService.securityManager,
+            rpcSecurityManagerSupplier = rbacSecurityManagerService::securityManager,
             httpRpcSettings = httpRpcSettings,
             multiPartDir = multiPartDir
         ).also { it.start() }
-
-        val numberOfRpcOps = rpcOps.filterIsInstance<Lifecycle>()
-            .map { it.start() }
-            .count()
-        log.info("Started $numberOfRpcOps RPCOps that have lifecycle.")
     }
 
     private fun SmartConfig.retrieveSsoOptions(): SsoSettings? {

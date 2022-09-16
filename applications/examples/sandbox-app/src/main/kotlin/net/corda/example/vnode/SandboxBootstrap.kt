@@ -1,5 +1,7 @@
 package net.corda.example.vnode
 
+import co.paralleluniverse.fibers.instrument.QuasarPermission
+import co.paralleluniverse.fibers.instrument.QuasarPermission.CONFIGURATION
 import java.io.FilePermission
 import java.lang.management.ManagementPermission
 import java.lang.reflect.ReflectPermission
@@ -45,9 +47,21 @@ class SandboxBootstrap @Activate constructor(
     init {
         securityManager.updatePermissions(listOf(
             bundleLocationPermission("*", DENY,
+                // Only the OSGi framework itself may register this service.
                 ServicePermission(PermissionAdmin::class.java.name, REGISTER)
             ),
+            bundleLocationPermission("FLOW/*", DENY,
+                // Sandboxes may not alter Quasar's configuration.
+                QuasarPermission(CONFIGURATION),
+
+                // Sandboxes may not administer the OSGi framework.
+                AdminPermission(),
+
+                // Sandboxes are not allowed to create any hooks!
+                ServicePermission("org.osgi.framework.hooks.*", REGISTER)
+            ),
             bundleLocationPermission("FLOW/*", ALLOW,
+                PackagePermission("co.paralleluniverse.fibers.suspend", IMPORT),
                 PackagePermission("net.corda.v5.*", IMPORT),
                 ServicePermission("(location=FLOW/*)", GET),
                 ServicePermission("net.corda.v5.*", GET),
@@ -55,11 +69,16 @@ class SandboxBootstrap @Activate constructor(
             ),
             bundleLocationPermission("FLOW/*", DENY,
                 // OSGi permissions.
-                AdminPermission(),
                 ServicePermission("*", GET),
                 ServicePermission("net.corda.v5.*", REGISTER),
                 PackagePermission("net.corda", "$EXPORTONLY,$IMPORT"),
                 PackagePermission("net.corda.*", "$EXPORTONLY,$IMPORT"),
+
+                // Block access to the Quasar instrumentation agent.
+                PackagePermission("co.paralleluniverse.asm", IMPORT),
+                PackagePermission("co.paralleluniverse.asm.*", IMPORT),
+                PackagePermission("co.paralleluniverse.common.*", IMPORT),
+                PackagePermission("co.paralleluniverse.fibers.*", IMPORT),
 
                 // Prevent the FLOW sandboxes from importing these packages,
                 // which effectively forbids them from executing most OSGi code.

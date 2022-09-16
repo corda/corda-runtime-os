@@ -1,6 +1,7 @@
 package net.corda.applications.workers.smoketest.flow
 
 import java.util.UUID
+import net.corda.applications.workers.smoketest.FlowStatus
 import net.corda.applications.workers.smoketest.GROUP_ID
 import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_FAILED
 import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_SUCCESS
@@ -11,9 +12,9 @@ import net.corda.applications.workers.smoketest.X500_DAVID
 import net.corda.applications.workers.smoketest.awaitMultipleRpcFlowFinished
 import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
 import net.corda.applications.workers.smoketest.createKeyFor
-import net.corda.applications.workers.smoketest.createVirtualNodeFor
 import net.corda.applications.workers.smoketest.getFlowClasses
 import net.corda.applications.workers.smoketest.getHoldingIdShortHash
+import net.corda.applications.workers.smoketest.getOrCreateVirtualNodeFor
 import net.corda.applications.workers.smoketest.getRpcFlowResult
 import net.corda.applications.workers.smoketest.registerMember
 import net.corda.applications.workers.smoketest.startRpcFlow
@@ -35,20 +36,31 @@ import org.junit.jupiter.api.TestMethodOrder
 class FlowTests {
 
     companion object {
-
         var bobHoldingId: String = getHoldingIdShortHash(X500_BOB, GROUP_ID)
-        var charlieHoldingId: String = getHoldingIdShortHash(X500_CHARLIE, GROUP_ID)
         var davidHoldingId: String = getHoldingIdShortHash(X500_DAVID, GROUP_ID)
+        var charlieHoldingId: String = getHoldingIdShortHash(X500_CHARLIE, GROUP_ID)
+
+        val invalidConstructorFlowNames = listOf(
+            "net.cordapp.flowworker.development.smoketests.flow.errors.PrivateConstructorFlow",
+            "net.cordapp.flowworker.development.smoketests.flow.errors.PrivateConstructorJavaFlow",
+            "net.cordapp.flowworker.development.smoketests.flow.errors.NoDefaultConstructorFlow",
+            "net.cordapp.flowworker.development.smoketests.flow.errors.NoDefaultConstructorJavaFlow",
+        )
+
+        val dependencyInjectionFlowNames = listOf(
+            "net.cordapp.flowworker.development.smoketests.flow.DependencyInjectionTestFlow",
+            "net.cordapp.flowworker.development.smoketests.flow.inheritance.DependencyInjectionTestJavaFlow",
+        )
 
         val expectedFlows = listOf(
-            "net.cordapp.flowworker.development.flows.MessagingFlow",
-            "net.cordapp.flowworker.development.flows.PersistenceFlow",
-            "net.cordapp.flowworker.development.flows.ReturnAStringFlow",
-            "net.cordapp.flowworker.development.flows.RpcSmokeTestFlow",
-            "net.cordapp.flowworker.development.flows.TestFlow",
-            "net.cordapp.flowworker.development.errors.BrokenProtocolFlow",
-            "net.cordapp.flowworker.development.errors.NoValidConstructorFlow"
-        )
+            "net.cordapp.flowworker.development.smoketests.virtualnode.ReturnAStringFlow",
+            "net.cordapp.flowworker.development.smoketests.flow.RpcSmokeTestFlow",
+            "net.cordapp.flowworker.development.testflows.TestFlow",
+            "net.cordapp.flowworker.development.testflows.BrokenProtocolFlow",
+            "net.cordapp.flowworker.development.testflows.MessagingFlow",
+            "net.cordapp.flowworker.development.testflows.PersistenceFlow",
+            "net.cordapp.flowworker.development.testflows.UniquenessCheckTestFlow",
+        ) + invalidConstructorFlowNames + dependencyInjectionFlowNames
 
         /*
          * when debugging if you want to run the tests multiple times comment out the @BeforeAll
@@ -57,10 +69,9 @@ class FlowTests {
         @BeforeAll
         @JvmStatic
         internal fun beforeAll() {
-
-            val bobActualHoldingId = createVirtualNodeFor(X500_BOB)
-            val charlieActualHoldingId = createVirtualNodeFor(X500_CHARLIE)
-            val davidActualHoldingId = createVirtualNodeFor(X500_DAVID)
+            val bobActualHoldingId = getOrCreateVirtualNodeFor(X500_BOB)
+            val charlieActualHoldingId = getOrCreateVirtualNodeFor(X500_CHARLIE)
+            val davidActualHoldingId = getOrCreateVirtualNodeFor(X500_DAVID)
 
             // Just validate the function and actual vnode holding ID hash are in sync
             // if this fails the X500_BOB formatting could have changed or the hash implementation might have changed
@@ -111,8 +122,13 @@ class FlowTests {
             data = mapOf("echo_value" to "hello")
         }
 
-        startRpcFlow(bobHoldingId, requestBody, 200)
+        startRpcFlow(bobHoldingId, requestBody)
         startRpcFlow(bobHoldingId, requestBody, 409)
+    }
+
+    @Test
+    fun `start RPC flow for flow not in startable list, returns an error code of 400`() {
+        startRpcFlow(bobHoldingId, emptyMap(), "InvalidFlow", 400)
     }
 
     @Test
@@ -182,18 +198,33 @@ class FlowTests {
     }
 
     @Test
-    fun `Pipeline error results in flow marked as failed`() {
-        val requestID = startRpcFlow(bobHoldingId, mapOf(), "net.cordapp.flowworker.development.errors.NoValidConstructorFlow")
-        val result = awaitRpcFlowFinished(bobHoldingId, requestID)
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
+    fun `error is thrown when flow with invalid constructor is executed`() {
+        invalidConstructorFlowNames.forEach {
+            val requestID = startRpcFlow(bobHoldingId, mapOf(), it)
+            val result = awaitRpcFlowFinished(bobHoldingId, requestID)
+
+            assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
+            assertThat(result.flowError).isNotNull
+            assertThat(result.flowError!!.message).contains(it)
+        }
     }
 
     @Test
-    fun `Persistence - insert a record`() {
+    fun `Persistence - persist a single entity`() {
         val id = UUID.randomUUID()
+        val result = persistDog(id)
+        val flowResult = result.getRpcFlowResult()
+        assertThat(flowResult.result).isEqualTo("dog '${id}' saved")
+    }
+
+    @Test
+    fun `Persistence - persist multiple entities`() {
+        val id = UUID.randomUUID()
+        val id2 = UUID.randomUUID()
+
         val requestBody = RpcSmokeTestInput().apply {
-            command = "persist_insert"
-            data = mapOf("id" to id.toString())
+            command = "persistence_persist_bulk"
+            data = mapOf("ids" to "$id;$id2")
         }
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
@@ -202,90 +233,183 @@ class FlowTests {
 
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         val flowResult = result.getRpcFlowResult()
-        assertThat(flowResult.command).isEqualTo("persist_insert")
-        assertThat(flowResult.result).isEqualTo("dog '${id}' saved")
+        assertThat(flowResult.result).isEqualTo("dogs ${listOf(id, id2)} saved")
     }
 
     @Test
-    fun `Flow persistence`() {
+    fun `Persistence - merge a single entity`() {
+        val id = UUID.randomUUID()
+        persistDog(id)
+        val result = mergeDog(id, "dog2")
+        val flowResult = result.getRpcFlowResult()
+        assertThat(flowResult.result).isEqualTo("dog '${id}' merged")
+    }
+
+    @Test
+    fun `Persistence - merge multiple entities`() {
+        val id = UUID.randomUUID()
+        val id2 = UUID.randomUUID()
+        persistDog(id)
+        persistDog(id2)
+
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "persistence_merge_bulk"
+            data = mapOf(
+                "ids" to "$id;$id2",
+                "name" to "dog2",
+            )
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+
+        val flowResult = result.getRpcFlowResult()
+        assertThat(flowResult.result).isEqualTo("dogs ${listOf(id, id2)} merged")
+    }
+
+    @Test
+    fun `Persistence - find a single entity`() {
+        val id = UUID.randomUUID()
+        val name = "new name"
+        persistDog(id)
+        mergeDog(id, name)
+
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "persistence_find"
+            data = mapOf(
+                "id" to id.toString()
+            )
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        val flowResult = result.getRpcFlowResult()
+        assertThat(flowResult.result).isEqualTo("found dog id='$id' name='$name")
+    }
+
+    @Test
+    fun `Persistence - find multiple entities`() {
+        val id = UUID.randomUUID()
+        val id2 = UUID.randomUUID()
+        val name = "new name"
+        persistDog(id)
+        persistDog(id2)
+        mergeDog(id, name)
+        mergeDog(id2, name)
+
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "persistence_find_bulk"
+            data = mapOf("ids" to "$id;$id2")
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        val flowResult = result.getRpcFlowResult()
+        assertThat(flowResult.result).contains("id='$id' name='$name")
+        assertThat(flowResult.result).contains("id='$id2' name='$name")
+    }
+
+    @Test
+    fun `Persistence - find all entities`() {
+        persistDog(UUID.randomUUID())
+
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "persistence_findall"
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        val flowResult = result.getRpcFlowResult()
+        assertThat(flowResult.result).isEqualTo("found one or more dogs")
+    }
+
+    @Test
+    fun `Persistence - delete a single entity`() {
         val id = UUID.randomUUID()
 
-        // Insert a dog
-        var requestBody = RpcSmokeTestInput().apply {
-            command = "persist_insert"
+        persistDog(id)
+
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "persistence_delete"
+            data = mapOf(
+                "id" to id.toString()
+            )
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        val flowResult = result.getRpcFlowResult()
+        assertThat(flowResult.result).isEqualTo("dog '${id}' deleted")
+    }
+
+    @Test
+    fun `Persistence - delete multiple entities`() {
+        val id = UUID.randomUUID()
+        val id2 = UUID.randomUUID()
+
+        persistDog(id)
+        persistDog(id2)
+
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "persistence_delete_bulk"
+            data = mapOf("ids" to "$id;$id2")
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        val flowResult = result.getRpcFlowResult()
+        assertThat(flowResult.result).isEqualTo("dogs ${listOf(id, id2)} deleted")
+    }
+
+    private fun persistDog(id: UUID): FlowStatus {
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "persistence_persist"
             data = mapOf("id" to id.toString())
         }
 
-        var requestId = startRpcFlow(bobHoldingId, requestBody)
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
 
-        var result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
 
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        var flowResult = result.getRpcFlowResult()
-        assertThat(flowResult.result).isEqualTo("dog '${id}' saved")
 
-        // Update a dog
-        val newDogName = "dog2"
-        requestBody = RpcSmokeTestInput().apply {
-            command = "persist_update"
+        return result
+    }
+
+    private fun mergeDog(id: UUID, name: String): FlowStatus {
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "persistence_merge"
             data = mapOf(
                 "id" to id.toString(),
-                "name" to newDogName,
+                "name" to name,
             )
         }
 
-        requestId = startRpcFlow(bobHoldingId, requestBody)
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
 
-        result = awaitRpcFlowFinished(bobHoldingId, requestId)
-
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        flowResult = result.getRpcFlowResult()
-        assertThat(flowResult.result).isEqualTo("dog '${id}' updated")
-
-        // find a dog
-        requestBody = RpcSmokeTestInput().apply {
-            command = "persist_find"
-            data = mapOf(
-                "id" to id.toString()
-            )
-        }
-
-        requestId = startRpcFlow(bobHoldingId, requestBody)
-
-        result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
 
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        flowResult = result.getRpcFlowResult()
-        assertThat(flowResult.result).isEqualTo("found dog id='${id}' name='${newDogName}")
 
-        // find all dogs
-        requestBody = RpcSmokeTestInput().apply {
-            command = "persist_findall"
-        }
-
-        requestId = startRpcFlow(bobHoldingId, requestBody)
-
-        result = awaitRpcFlowFinished(bobHoldingId, requestId)
-
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        flowResult = result.getRpcFlowResult()
-        assertThat(flowResult.result).isEqualTo("found one or more dogs")
-
-        // delete a dog
-        requestBody = RpcSmokeTestInput().apply {
-            command = "persist_delete"
-            data = mapOf(
-                "id" to id.toString()
-            )
-        }
-
-        requestId = startRpcFlow(bobHoldingId, requestBody)
-
-        result = awaitRpcFlowFinished(bobHoldingId, requestId)
-
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        flowResult = result.getRpcFlowResult()
-        assertThat(flowResult.result).isEqualTo("dog '${id}' deleted")
+        return result
     }
 
     @Test
@@ -386,5 +510,103 @@ class FlowTests {
         assertThat(result.flowError).isNull()
         assertThat(flowResult.command).isEqualTo("crypto_verify_invalid_signature")
         assertThat(flowResult.result).isEqualTo(true.toString())
+    }
+
+    @Test
+    fun `Context is propagated to initiated and sub flows`() {
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "context_propagation"
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        val flowResult = result.getRpcFlowResult()
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(result.flowResult).isNotNull
+        assertThat(result.flowError).isNull()
+        assertThat(flowResult.command).isEqualTo("context_propagation")
+
+        val CONTEXT_JSON =
+            """
+            {
+              "rpcFlow": {
+                "platform": "account-zero",
+                "user1": "user1-set",
+                "user2": "null",
+                "user3": "null"
+              },
+              "rpcSubFlow": {
+                "platform": "account-zero",
+                "user1": "user1-set",
+                "user2": "user2-set",
+                "user3": "null"
+              },
+              "initiatedFlow": {
+                "platform": "account-zero",
+                "user1": "user1-set",
+                "user2": "user2-set",
+                "user3": "user3-set"
+              },
+              "initiatedSubFlow": {
+                "platform": "account-zero",
+                "user1": "user1-set",
+                "user2": "user2-set-ContextPropagationInitiatedFlow",
+                "user3": "user3-set"
+              },
+              "rpcFlowAtComplete": {
+                "platform": "account-zero",
+                "user1": "user1-set",
+                "user2": "null",
+                "user3": "null"
+              }
+            }
+            """.filter { !it.isWhitespace() }
+
+        assertThat(flowResult.result)
+            .isEqualTo(CONTEXT_JSON)
+    }
+
+    @Test
+    fun `flows can use inheritance and platform dependencies are correctly injected`() {
+        dependencyInjectionFlowNames.forEach {
+            val requestId = startRpcFlow(bobHoldingId, mapOf("id" to X500_CHARLIE), it)
+            val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+            assertThat(result.flowError).isNull()
+            assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+            assertThat(result.flowResult).isEqualTo(X500_CHARLIE)
+        }
+    }
+
+    @Test
+    fun `Serialize and deserialize an object`() {
+        val dataToSerialize = "serialize this"
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "serialization"
+            data = mapOf("data" to dataToSerialize)
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        val flowResult = result.getRpcFlowResult()
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(result.flowError).isNull()
+        assertThat(flowResult.result).isEqualTo(dataToSerialize)
+        assertThat(flowResult.command).isEqualTo("serialization")
+    }
+
+    @Test
+    fun `Uniqueness client service flow is finishing without exceptions`() {
+        val requestID =
+            startRpcFlow(
+                bobHoldingId,
+                mapOf(),
+                "net.cordapp.flowworker.development.testflows.UniquenessCheckTestFlow"
+            )
+        val result = awaitRpcFlowFinished(bobHoldingId, requestID)
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
     }
 }

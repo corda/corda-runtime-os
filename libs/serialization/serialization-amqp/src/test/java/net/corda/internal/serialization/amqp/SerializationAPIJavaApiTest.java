@@ -1,6 +1,6 @@
 package net.corda.internal.serialization.amqp;
 
-import net.corda.serialization.EncodingWhitelist;
+import net.corda.serialization.EncodingAllowList;
 import net.corda.serialization.ObjectWithCompatibleContext;
 import net.corda.serialization.SerializationContext;
 import net.corda.serialization.SerializationEncoding;
@@ -25,7 +25,7 @@ public class SerializationAPIJavaApiTest {
     private final SerializationContext serializationContext = mock(SerializationContext.class);
     private final SerializationEncoding serializationEncoding = mock(SerializationEncoding.class);
     private final ClassLoader classLoader = mock(ClassLoader.class);
-    private final EncodingWhitelist encodingWhitelist = mock(EncodingWhitelist.class);
+    private final EncodingAllowList encodingAllowList = mock(EncodingAllowList.class);
     private final MySerializationFactory serializationFactory = new MySerializationFactory();
     private final BaseProxyTestClass baseProxyTestClass = new BaseProxyTestClass();
     private final BaseTestClass<String> obj = new BaseTestClass<>();
@@ -87,12 +87,12 @@ public class SerializationAPIJavaApiTest {
         }
 
         @Test
-        public void getEncodingWhitelist() {
-            when(serializationContext.getEncodingWhitelist()).thenReturn(encodingWhitelist);
-            var result = serializationContext.getEncodingWhitelist();
+        public void getEncodingAllowList() {
+            when(serializationContext.getEncodingAllowList()).thenReturn(encodingAllowList);
+            var result = serializationContext.getEncodingAllowList();
 
             assertThat(result).isNotNull();
-            assertThat(result).isEqualTo(encodingWhitelist);
+            assertThat(result).isEqualTo(encodingAllowList);
         }
 
         @Test
@@ -223,9 +223,9 @@ public class SerializationAPIJavaApiTest {
         }
 
         @Test
-        public void withEncodingWhitelist() {
-            when(serializationContext.withEncodingWhitelist(encodingWhitelist)).thenReturn(serializationContext);
-            var result = serializationContext.withEncodingWhitelist(encodingWhitelist);
+        public void withEncodingAllowList() {
+            when(serializationContext.withEncodingAllowList(encodingAllowList)).thenReturn(serializationContext);
+            var result = serializationContext.withEncodingAllowList(encodingAllowList);
 
             assertThat(result).isNotNull();
             assertThat(result).isEqualTo(serializationContext);
@@ -252,12 +252,12 @@ public class SerializationAPIJavaApiTest {
     }
 
     @Nested
-    public class EncodingWhitelistJavaApiTest {
+    public class EncodingAllowListJavaApiTest {
 
         @Test
         public void acceptEncoding() {
-            when(encodingWhitelist.acceptEncoding(serializationEncoding)).thenReturn(true);
-            var result = encodingWhitelist.acceptEncoding(serializationEncoding);
+            when(encodingAllowList.acceptEncoding(serializationEncoding)).thenReturn(true);
+            var result = encodingAllowList.acceptEncoding(serializationEncoding);
 
             assertThat(result).isNotNull();
             assertThat(result).isEqualTo(true);
@@ -296,12 +296,14 @@ public class SerializationAPIJavaApiTest {
     class BaseProxyTestClass implements SerializationCustomSerializer<BaseTestClass<?>, ProxyTestClass> {
 
         @Override
-        public ProxyTestClass toProxy(BaseTestClass<?> baseTestClass) {
+        @NotNull
+        public ProxyTestClass toProxy(@NotNull BaseTestClass<?> baseTestClass) {
             return proxy;
         }
 
         @Override
-        public BaseTestClass<?> fromProxy(ProxyTestClass proxyTestClass) {
+        @NotNull
+        public BaseTestClass<?> fromProxy(@NotNull ProxyTestClass proxyTestClass) {
             return obj;
         }
     }

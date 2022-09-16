@@ -3,6 +3,7 @@ package net.corda.applications.workers.rpc
 import net.corda.applications.workers.rpc.http.TestToolkitProperty
 import net.corda.applications.workers.rpc.http.SkipWhenRpcEndpointUnavailable
 import net.corda.httprpc.client.exceptions.MissingRequestedResourceException
+import net.corda.httprpc.response.ResponseEntity
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionResponseType
@@ -33,21 +34,29 @@ class CreatePermissionE2eTest {
             val setPermString = testToolkit.uniqueName + "-PermissionString"
             val createPermType = CreatePermissionType(PermissionType.ALLOW, setPermString, null, null)
 
-            fun PermissionResponseType.assertAsExpected(): PermissionResponseType {
+            fun PermissionResponseType.assertResponseType(): PermissionResponseType {
                 assertSoftly {
                     it.assertThat(permissionString).isEqualTo(setPermString)
                     it.assertThat(permissionType).isEqualTo(PermissionType.ALLOW)
                 }
                 return this
             }
+            fun ResponseEntity<PermissionResponseType>.assertCreated(): PermissionResponseType {
+                assertSoftly {
+                    it.assertThat(this.responseCode.statusCode).isEqualTo(201)
+                    it.assertThat(this.responseBody).isNotNull
+                    this.responseBody.assertResponseType()
+                }
+                return this.responseBody
+            }
 
-            val permId = proxy.createPermission(createPermType).assertAsExpected().id
+            val permId = proxy.createPermission(createPermType).assertCreated().id
 
             // Check that the permission does exist now. The distribution of entity records may take some time to complete on the
             // message bus, hence use of `eventually` along with `assertDoesNotThrow`.
             eventually {
                 assertDoesNotThrow {
-                    proxy.getPermission(permId).assertAsExpected()
+                    proxy.getPermission(permId).assertResponseType()
                 }
             }
         }

@@ -6,7 +6,15 @@ plugins {
 description 'VNode Sandbox Example'
 
 osgiRun {
-    frameworkProperties.putAll('org.osgi.framework.security': 'osgi')
+    frameworkProperties.putAll([
+        'co.paralleluniverse.quasar.service': 'true',
+        'org.osgi.framework.security': 'osgi'
+    ])
+}
+
+quasar {
+    cacheLocations = [ 'FLOW/*' ]
+    verbose = false
 }
 
 configurations {
@@ -20,6 +28,7 @@ dependencies {
     compileOnly 'org.osgi:osgi.core'
     compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "co.paralleluniverse:quasar-core-osgi:$quasarVersion:framework-extension"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-config-schema"

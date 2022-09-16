@@ -3,7 +3,12 @@ package net.corda.membership.impl.registration.dynamic.mgm
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.common.RegistrationStatus
+import net.corda.data.membership.event.MembershipEvent
+import net.corda.data.membership.event.registration.MgmOnboarded
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.toAvro
 import net.corda.libs.configuration.helper.getConfig
@@ -33,6 +38,10 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode
+import net.corda.membership.lib.registration.RegistrationRequest
+import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
+import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
+import net.corda.membership.lib.toWire
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.registration.MemberRegistrationService
@@ -42,11 +51,14 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas
+import net.corda.schema.Schemas.Membership.Companion.EVENT_TOPIC
+import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.membership.MembershipSchema.RegistrationContextSchema
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.versioning.Version
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.calculateHash
 import net.corda.virtualnode.HoldingIdentity
@@ -55,16 +67,18 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import java.nio.ByteBuffer
 import java.security.PublicKey
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList")
 @Component(service = [MemberRegistrationService::class])
 class MGMRegistrationService @Activate constructor(
     @Reference(service = PublisherFactory::class)
-    val publisherFactory: PublisherFactory,
+    private val publisherFactory: PublisherFactory,
     @Reference(service = ConfigurationReadService::class)
-    val configurationReadService: ConfigurationReadService,
+    private val configurationReadService: ConfigurationReadService,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = CryptoOpsClient::class)
@@ -72,17 +86,25 @@ class MGMRegistrationService @Activate constructor(
     @Reference(service = KeyEncodingService::class)
     private val keyEncodingService: KeyEncodingService,
     @Reference(service = MemberInfoFactory::class)
-    val memberInfoFactory: MemberInfoFactory,
+    private val memberInfoFactory: MemberInfoFactory,
     @Reference(service = MembershipPersistenceClient::class)
-    val membershipPersistenceClient: MembershipPersistenceClient,
+    private val membershipPersistenceClient: MembershipPersistenceClient,
     @Reference(service = LayeredPropertyMapFactory::class)
-    private val layeredPropertyMapFactory: LayeredPropertyMapFactory
+    private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
+    @Reference(service = CordaAvroSerializationFactory::class)
+    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    @Reference(service = MembershipSchemaValidatorFactory::class)
+    val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
 ) : MemberRegistrationService {
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
      */
     private interface InnerRegistrationService : AutoCloseable {
-        fun register(member: HoldingIdentity, context: Map<String, String>): MembershipRequestRegistrationResult
+        fun register(
+            registrationId: UUID,
+            member: HoldingIdentity,
+            context: Map<String, String>
+        ): MembershipRequestRegistrationResult
     }
 
     private companion object {
@@ -135,6 +157,11 @@ class MGMRegistrationService @Activate constructor(
     private val publisher: Publisher
         get() = _publisher ?: throw IllegalArgumentException("Publisher is not initialized.")
 
+    private val keyValuePairListSerializer =
+        cordaAvroSerializationFactory.createAvroSerializer<KeyValuePairList> {
+            logger.error("Failed to serialize key value pair list.")
+        }
+
     // Component lifecycle coordinator
     private val coordinator = coordinatorFactory.createCoordinator(lifecycleCoordinatorName, ::handleEvent)
 
@@ -167,12 +194,14 @@ class MGMRegistrationService @Activate constructor(
     }
 
     override fun register(
+        registrationId: UUID,
         member: HoldingIdentity,
         context: Map<String, String>
-    ): MembershipRequestRegistrationResult = impl.register(member, context)
+    ): MembershipRequestRegistrationResult = impl.register(registrationId, member, context)
 
     private object InactiveImpl : InnerRegistrationService {
         override fun register(
+            registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
         ): MembershipRequestRegistrationResult =
@@ -186,11 +215,33 @@ class MGMRegistrationService @Activate constructor(
 
     private inner class ActiveImpl : InnerRegistrationService {
         override fun register(
+            registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
         ): MembershipRequestRegistrationResult {
             try {
+                membershipSchemaValidatorFactory
+                    .createValidator()
+                    .validateRegistrationContext(
+                        RegistrationContextSchema.Mgm,
+                        Version(1, 0),
+                        context
+                    )
+            } catch (ex: MembershipSchemaValidationException) {
+                return MembershipRequestRegistrationResult(
+                    MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
+                    "Onboarding MGM failed. The registration context is invalid: " + ex.getErrorSummary()
+                )
+            }
+            try {
                 validateContext(context)
+            } catch (ex: IllegalArgumentException) {
+                return MembershipRequestRegistrationResult(
+                    MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
+                    "Onboarding MGM failed. The registration context is invalid: " + ex.message
+                )
+            }
+            try {
                 val sessionKey = getKeyFromId(context[SESSION_KEY_ID]!!, member.shortHash.value)
                 val ecdhKey = getKeyFromId(context[ECDH_KEY_ID]!!, member.shortHash.value)
                 val now = clock.instant().toString()
@@ -244,8 +295,28 @@ class MGMRegistrationService @Activate constructor(
                     )
                 }
 
+                val serializedMemberContext = keyValuePairListSerializer.serialize(memberContext.toWire())
+                    ?: throw IllegalArgumentException("Failed to serialize the member context for this request.")
+                val registrationRequestPersistenceResult = membershipPersistenceClient.persistRegistrationRequest(
+                    viewOwningIdentity = member,
+                    registrationRequest = RegistrationRequest(
+                        status = RegistrationStatus.APPROVED,
+                        registrationId = registrationId.toString(),
+                        requester = member,
+                        memberContext = ByteBuffer.wrap(serializedMemberContext),
+                        publicKey = ByteBuffer.wrap(byteArrayOf()),
+                        signature = ByteBuffer.wrap(byteArrayOf()),
+                    )
+                )
+                if (registrationRequestPersistenceResult is MembershipPersistenceResult.Failure) {
+                    return MembershipRequestRegistrationResult(
+                        MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
+                        "Registration failed, persistence error. Reason: ${registrationRequestPersistenceResult.errorMsg}"
+                    )
+                }
+
                 val mgmRecord = Record(
-                    Schemas.Membership.MEMBER_LIST_TOPIC,
+                    MEMBER_LIST_TOPIC,
                     "${member.shortHash}-${member.shortHash}",
                     PersistentMemberInfo(
                         member.toAvro(),
@@ -253,7 +324,16 @@ class MGMRegistrationService @Activate constructor(
                         mgmInfo.mgmProvidedContext.toAvro()
                     )
                 )
-                publisher.publish(listOf(mgmRecord)).first().get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+
+                val eventRecord = Record(
+                    EVENT_TOPIC,
+                    "${member.shortHash}",
+                    MembershipEvent(
+                        MgmOnboarded(member.toAvro())
+                    )
+                )
+
+                publisher.publish(listOf(mgmRecord, eventRecord)).first().get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             } catch (e: Exception) {
                 logger.warn("Registration failed.", e)
                 return MembershipRequestRegistrationResult(
@@ -261,6 +341,7 @@ class MGMRegistrationService @Activate constructor(
                     "Registration failed. Reason: ${e.message}"
                 )
             }
+
             return MembershipRequestRegistrationResult(MembershipRequestRegistrationOutcome.SUBMITTED)
         }
 

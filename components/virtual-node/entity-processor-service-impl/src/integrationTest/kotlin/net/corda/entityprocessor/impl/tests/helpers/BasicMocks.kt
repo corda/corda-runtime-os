@@ -2,9 +2,13 @@ package net.corda.entityprocessor.impl.tests.helpers
 
 import net.corda.db.connection.manager.DbConnectionManager
 import org.mockito.Mockito
+import org.mockito.Mockito.mock
+import org.mockito.kotlin.whenever
 import org.osgi.service.component.ComponentContext
+import javax.persistence.Entity
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
+import javax.persistence.EntityTransaction
 
 /** Most **basic** mocks possible. */
 object BasicMocks {
@@ -23,5 +27,10 @@ object BasicMocks {
 
     fun componentContext() = Mockito.mock(ComponentContext::class.java)!!
 
-    fun entityManager() = Mockito.mock(EntityManager::class.java)!!
+    fun entityManager():EntityManager {
+        val em = Mockito.mock(EntityManager::class.java)!!
+        val t = Mockito.mock(EntityTransaction::class.java)
+        whenever(em.transaction).thenReturn(t)
+        return em
+    }
 }

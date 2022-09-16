@@ -2,6 +2,7 @@ package net.corda.crypto.component.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -15,6 +16,13 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicInteger
 
+/**
+ * A base abstract class that can be used to provide basic functionality relating to lifecycle management for components
+ * which depend on the configuration. It can handle the bootstrap config as well by making sure that the active
+ * implementation is activated only after receiving both configs - bootstrap and the normal. To enable bootstrap
+ * handling just override the isReady to by like: `override fun isReady(): Boolean = bootConfig != null`. The bootstrap
+ * configuration, if required, will be received only once.
+ */
 @Suppress("LongParameterList")
 abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponent.AbstractImpl>(
     coordinatorFactory: LifecycleCoordinatorFactory,
@@ -54,6 +62,11 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
     @Volatile
     private var _impl: IMPL? = null
 
+    private var unprocessedConfigChanges: MutableList<ConfigChangedEvent> = mutableListOf()
+
+    @Volatile
+    protected var bootConfig: SmartConfig? = null
+
     val impl: IMPL get() {
         val tmp = _impl
         if(tmp == null || lifecycleCoordinator.status != LifecycleStatus.UP) {
@@ -77,6 +90,7 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
         lifecycleCoordinator.stop()
     }
 
+    @Suppress("ComplexMethod", "NestedBlockDepth")
     protected open fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         logger.info("LifecycleEvent received: $event")
         when (event) {
@@ -96,11 +110,37 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
             is ConfigChangedEvent -> {
                 onConfigChange(event, coordinator)
             }
+            is BootstrapConfigProvided -> {
+                if (bootConfig != null) {
+                    logger.info("New bootstrap configuration received: ${event.config}, Old configuration: $bootConfig")
+                    if (bootConfig != event.config) {
+                        val errorString = "An attempt was made to set the bootstrap configuration twice with " +
+                                "different config. Current: $bootConfig, New: ${event.config}"
+                        logger.error(errorString)
+                        throw IllegalStateException(errorString)
+                    }
+                } else {
+                    bootConfig = event.config
+                    if(unprocessedConfigChanges.isNotEmpty()) {
+                        logger.info(
+                            "Processing {} as the component is ready and already received the {}",
+                            event::class.java.simpleName,
+                            event::class.java.simpleName
+                        )
+                        unprocessedConfigChanges.forEach {
+                            onConfigChange(it, coordinator)
+                        }
+                    }
+                    unprocessedConfigChanges.clear()
+                }
+            }
             is TryAgainCreateActiveImpl -> {
                 onTryAgainCreateActiveImpl(event.configChangedEvent, coordinator)
             }
         }
     }
+
+    protected open fun isReady(): Boolean = true
 
     private fun onStop() {
         upstream.clear()
@@ -139,8 +179,13 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
     }
 
     private fun onConfigChange(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
-        doActivation(event, coordinator)
-        updateLifecycleStatus(coordinator)
+        if(isReady()) {
+            doActivation(event, coordinator)
+            updateLifecycleStatus(coordinator)
+        } else {
+            logger.info("The {} will not be processed as the component is not ready yet", event::class.java.simpleName)
+            unprocessedConfigChanges.add(event)
+        }
     }
 
     private fun onTryAgainCreateActiveImpl(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
@@ -198,7 +243,12 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
         }
     }
 
+    /**
+     * Override that method to create the active implementation.
+     */
     protected abstract fun createActiveImpl(event: ConfigChangedEvent): IMPL
 
-    class TryAgainCreateActiveImpl(val configChangedEvent: ConfigChangedEvent) : LifecycleEvent
+    data class BootstrapConfigProvided(val config: SmartConfig) : LifecycleEvent
+
+    data class TryAgainCreateActiveImpl(val configChangedEvent: ConfigChangedEvent) : LifecycleEvent
 }

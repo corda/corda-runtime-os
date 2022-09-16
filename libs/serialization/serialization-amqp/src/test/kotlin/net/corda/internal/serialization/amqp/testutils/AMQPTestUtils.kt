@@ -12,6 +12,7 @@ import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.amqp.TransformsSchema
 import net.corda.internal.serialization.amqp.currentSandboxGroup
+import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.serialization.SerializationContext
 import net.corda.serialization.SerializationEncoding
 import net.corda.utilities.copyTo
@@ -49,7 +50,10 @@ fun testDefaultFactory(
     descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
         DefaultDescriptorBasedSerializerRegistry()
 ) =
-    SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup(), descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry)
+    SerializerFactoryBuilder.build(
+        testSerializationContext.currentSandboxGroup(),
+        descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry
+    )
 
 @JvmOverloads
 fun testDefaultFactoryNoEvolution(

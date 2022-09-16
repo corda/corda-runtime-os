@@ -1,8 +1,7 @@
 @file:JvmName("Constants")
-
 package net.corda.example.vnode
 
-import co.paralleluniverse.fibers.instrument.Retransform
+import co.paralleluniverse.fibers.instrument.QuasarInstrumentor
 import com.sun.management.HotSpotDiagnosticMXBean
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
@@ -52,22 +51,23 @@ const val VNODE_SERVICE = "vnode"
 const val SHUTDOWN_GRACE = 30L
 
 @Suppress("unused", "LongParameterList")
-@Component(
-    reference = [
-        Reference(
-            name = VNODE_SERVICE,
-            service = VNodeService::class,
-            cardinality = OPTIONAL,
-            policy = DYNAMIC
-        )
-    ]
-)
+@Component(reference = [
+    Reference(
+        name = VNODE_SERVICE,
+        service = VNodeService::class,
+        cardinality = OPTIONAL,
+        policy = DYNAMIC
+    )
+])
 class CordaVNode @Activate constructor(
     @Reference
     private val flowEventProcessorFactory: FlowEventProcessorFactory,
 
     @Reference
     private val shutdown: Shutdown,
+
+    @Reference(cardinality = OPTIONAL)
+    private val quasar: QuasarInstrumentor?,
 
     private val componentContext: ComponentContext
 ) : Application {
@@ -235,24 +235,23 @@ class CordaVNode @Activate constructor(
             dumpHeap("finished")
             shutdown.shutdown(componentContext.usingBundle)
 
-            val instrumentor = Retransform.getInstrumentor()
-            logger.info("Instrumentor: {}", instrumentor::class.java)
-            val dbField = instrumentor::class.java.getDeclaredField("dbForClassloader").apply {
-                isAccessible = true
-            }
+            quasar?.also { instrumentor ->
+                logger.info("Instrumentor: {}", instrumentor::class.java)
+                val dbField = instrumentor::class.java.getDeclaredField("dbForClassloader").apply {
+                    isAccessible = true
+                }
 
-            @Suppress("unchecked_cast")
-            val classLoaders = (dbField.get(instrumentor) as Map<ClassLoader, *>).keys
-            for (classLoader in classLoaders) {
-                if (classLoader is BundleReference) {
-                    val bundle = classLoader.bundle
-                    if (bundle == null) {
-                        logger.info("CLASSLOADER>> {} is DEAD", classLoader)
-                    } else if (bundle.location.startsWith("FLOW/")) {
-                        logger.info(
-                            "BUNDLE>> {} is-in-use={} (classloader={})",
-                            bundle, bundle.adapt(BundleWiring::class.java)?.isInUse, classLoader::class.java
-                        )
+                @Suppress("unchecked_cast")
+                val classLoaders = (dbField.get(instrumentor) as Map<ClassLoader, *>).keys
+                for (classLoader in classLoaders) {
+                    if (classLoader is BundleReference) {
+                        val bundle = classLoader.bundle
+                        if (bundle == null) {
+                            logger.info("CLASSLOADER>> {} is DEAD", classLoader)
+                        } else if (bundle.location.startsWith("FLOW/")) {
+                            logger.info("BUNDLE>> {} is-in-use={} (classloader={})",
+                                bundle, bundle.adapt(BundleWiring::class.java)?.isInUse, classLoader::class.java)
+                        }
                     }
                 }
             }

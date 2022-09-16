@@ -1,8 +1,8 @@
 package net.corda.entityprocessor.impl.tests.helpers
 
-import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.createCatInstance
-import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.createDogInstance
-import java.time.Instant
+import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.createCat
+import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.createDog
+import net.corda.sandboxgroupcontext.SandboxGroupContext
 import java.util.UUID
 
 object AnimalCreator {
@@ -25,30 +25,16 @@ object AnimalCreator {
         "Schrodinger's Cat" to "Maybe Maybe Not"
     )
 
-    /** Persist some dogs.  Returns the total persisted. */
-    fun persistDogs(ctx: DbTestContext, times: Int): Int {
-        dogNames.forEach {
-            for (i in 1..times) {
-                val name = "${it.first} $i"
-                val dog = ctx.sandbox.createDogInstance(UUID.randomUUID(), name, Instant.now(), it.second)
-                ctx.persist(dog)
-            }
-        }
+    private val colours = listOf("Black and white", "Tabby", "White", "Black", "Tortoiseshell")
 
-        return dogNames.size * times
-    }
+
+    /** Create some dogs */
+    fun createDogs(sandbox: SandboxGroupContext, times: Int=1): List<SandboxHelper.Box> = dogNames.map {
+            (1..times).map { i -> sandbox.createDog( "${it.first} $i", owner=it.second) }
+        }.flatten()
 
     /** Persist some cats.  Returns the total persisted. */
-    fun persistCats(ctx: DbTestContext, times: Int): Int {
-        val colours = listOf("Black and white", "Tabby", "White", "Black", "Tortoiseshell")
-        catNames.forEach {
-            for (i in 1..times) {
-                val name = "${it.first} $i"
-                val obj = ctx.sandbox.createCatInstance(UUID.randomUUID(), name, colours.random(), UUID.randomUUID(), it.second, (20..30).random())
-                ctx.persist(obj)
-            }
-        }
-
-        return catNames.size * times
-    }
+    fun createCats(sandbox: SandboxGroupContext, times: Int): List<SandboxHelper.Box> = catNames.map { name ->
+            (1..times).map {i -> sandbox.createCat("${name.first} $i", colour=colours.random(), ownerName=name.second, ownerAge = (20..30).random()) }
+        }.flatten()
 }

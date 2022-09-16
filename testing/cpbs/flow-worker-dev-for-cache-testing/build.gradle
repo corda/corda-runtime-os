@@ -2,7 +2,7 @@ plugins {
     id 'net.corda.plugins.cordapp-cpb'
 }
 
-jar {
+tasks.named("jar") {
     baseName 'flow-worker-dev'
 }
 

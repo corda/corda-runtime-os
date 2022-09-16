@@ -33,4 +33,19 @@ dependencies {
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     dockerImage "io.opentelemetry.javaagent:opentelemetry-javaagent:$openTelemetryVersion"
+
+    // This puts the jdbc driver into the docker image in the /opt/jdbc-driver folder
+    // this folder can contain many jdbc drivers (and DataSourceFactory provider bundles).
+    // Postgres doesn't need a DataSourceFactory provider bundle (e.g. pax-jdbc), because
+    // the postgres devs have written their own and it's in this jar (PGDataSourceFactory).
+    dockerImageJdbc "org.postgresql:postgresql:$postgresDriverVersion"
+
+    // If we were to do this for a different database that is *not natively an OSGi bundle*
+    // we would need the wrapped OSGi bundle version and the pax-jdbc loader, i.e.
+    //
+    // dockerImageJdbc "org.ops4j.pax.jdbc:pax-jdbc-VENDOR:1.5.3"
+    // dockerImageJdbc "com.VENDOR.database.jdbc:vendor-jdbc-WRAPPED-AS-A-BUNDLE:$vendorVersion"
+    //
+    // NOTE: PLEASE MAKE SURE NOT TO PUBLISH A DOCKER IMAGE PUBLICLY WITH THESE WRAPPED DRIVERS,
+    //             UNLESS ABSOLUTELY SURE WE CAN DISTRIBUTE IT!!
 }

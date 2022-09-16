@@ -1,6 +1,6 @@
 package net.corda.kryoserialization
 
-import net.corda.bundle1.Cash
+import net.cordapp.bundle1.Cash
 import net.corda.sandbox.SandboxException
 import net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFactory
 import net.corda.testing.sandboxes.SandboxSetup
@@ -76,7 +76,7 @@ class KryoCheckpointTest {
             .build()
 
         val cash = sandboxManagementService.group1
-            .loadClassFromMainBundles("net.corda.bundle1.Cash")
+            .loadClassFromMainBundles("net.cordapp.bundle1.Cash")
             .constructors.first().newInstance(1)
 
         // Serialize with serializerSandbox1

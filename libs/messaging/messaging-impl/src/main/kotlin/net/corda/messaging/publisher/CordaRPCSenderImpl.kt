@@ -34,7 +34,7 @@ import net.corda.v5.base.util.debug
 import org.slf4j.Logger
 import java.nio.ByteBuffer
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
@@ -47,7 +47,17 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private val cordaProducerBuilder: CordaProducerBuilder,
     private val serializer: CordaAvroSerializer<REQUEST>,
     private val deserializer: CordaAvroDeserializer<RESPONSE>,
-    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
+    lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    private val threadFactory: (() -> Unit) -> Thread = {
+        thread(
+            start = true,
+            isDaemon = true,
+            contextClassLoader = null,
+            name = "rpc response subscription thread ${config.group}-${config.topic}",
+            priority = -1,
+            block = it,
+        )
+    }
 ) : RPCSender<REQUEST, RESPONSE>, RPCSubscription<REQUEST, RESPONSE> {
 
     private companion object {
@@ -58,7 +68,6 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private var stopped = false
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
-
 
     override val isRunning: Boolean
         get() = !stopped
@@ -85,18 +94,10 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             if (consumeLoopThread == null) {
                 stopped = false
                 lifecycleCoordinator.start()
-                consumeLoopThread = thread(
-                    start = true,
-                    isDaemon = true,
-                    contextClassLoader = null,
-                    name = "rpc response subscription thread ${config.group}-${config.topic}",
-                    priority = -1,
-                    block = ::runConsumeLoop
-                )
+                consumeLoopThread = threadFactory.invoke(::runConsumeLoop)
             }
         }
     }
-
 
     override fun stop() {
         if (!stopped) {
@@ -130,7 +131,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
             attempts++
             try {
                 log.debug { "Creating rpc response consumer.  Attempt: $attempts" }
-                val producerConfig = ProducerConfig(config.clientId, config.instanceId,false, ProducerRoles.RPC_SENDER)
+                val producerConfig = ProducerConfig(config.clientId, config.instanceId, false, ProducerRoles.RPC_SENDER)
                 producer = cordaProducerBuilder.createProducer(producerConfig, config.messageBusConfig)
                 val consumerConfig = ConsumerConfig(config.group, config.clientId, ConsumerRoles.RPC_SENDER)
                 cordaConsumerBuilder.createConsumer(
@@ -186,77 +187,84 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
 
     @Suppress("TooGenericExceptionCaught")
     private fun processRecords(cordaConsumerRecords: List<CordaConsumerRecord<String, RPCResponse>>) {
-        cordaConsumerRecords.forEach {
-            val correlationKey = it.key
-            val partition = it.partition
-            val future = futureTracker.getFuture(correlationKey, partition)
-            val rpcResponse = it.value ?: throw CordaMessageAPIFatalException("Is this bad here?")
+        cordaConsumerRecords
+            .filter { it.value?.sender == config.clientId }
+            .forEach {
+                val correlationKey = it.key
+                val partition = it.partition
+                val future = futureTracker.getFuture(correlationKey, partition)
+                val rpcResponse = it.value ?: throw CordaMessageAPIFatalException("Is this bad here?")
 
-            val responseStatus = rpcResponse.responseStatus
-                ?: throw CordaMessageAPIFatalException("Response status came back NULL. This should never happen")
+                val responseStatus = rpcResponse.responseStatus
+                    ?: throw CordaMessageAPIFatalException("Response status came back NULL. This should never happen")
 
-            if (future != null) {
-                when (responseStatus) {
-                    ResponseStatus.OK -> {
-                        val responseBytes = rpcResponse.payload
-                        val response = deserializer.deserialize(responseBytes.array())
-                        log.info("Response for request $correlationKey was received at ${rpcResponse.sendTime}")
+                if (future != null) {
+                    when (responseStatus) {
+                        ResponseStatus.OK -> {
+                            val responseBytes = rpcResponse.payload
+                            val response = deserializer.deserialize(responseBytes.array())
+                            log.info("Response for request $correlationKey was received at ${rpcResponse.sendTime}")
 
-                        future.complete(response)
-                    }
-                    ResponseStatus.FAILED -> {
-                        val responseBytes = rpcResponse.payload
-                        val response = ExceptionEnvelope.fromByteBuffer(responseBytes)
-                        future.completeExceptionally(
-                            CordaRPCAPIResponderException(
-                                errorType = response.errorType,
-                                message = response.errorMessage
+                            future.complete(response)
+                        }
+                        ResponseStatus.FAILED -> {
+                            val responseBytes = rpcResponse.payload
+                            val response = ExceptionEnvelope.fromByteBuffer(responseBytes)
+                            future.completeExceptionally(
+                                CordaRPCAPIResponderException(
+                                    errorType = response.errorType,
+                                    message = response.errorMessage
+                                )
                             )
-                        )
-                        log.warn("Cause:${response.errorType}. Message: ${response.errorMessage}")
+                            log.warn("Cause:${response.errorType}. Message: ${response.errorMessage}")
+                        }
+                        ResponseStatus.CANCELLED -> {
+                            future.cancel(true)
+                        }
                     }
-                    ResponseStatus.CANCELLED -> {
-                        future.cancel(true)
-                    }
-                }
-                futureTracker.removeFuture(correlationKey, partition)
-            } else {
-                log.info(
-                    "Response for request $correlationKey was received at ${rpcResponse.sendTime}. " +
+                    futureTracker.removeFuture(correlationKey, partition)
+                } else {
+                    log.info(
+                        "Response for request $correlationKey was received at ${rpcResponse.sendTime}. " +
                             "There is no future assigned for $correlationKey meaning that this request was either orphaned during " +
                             "a repartition event or the client dropped their future. The response status for it was $responseStatus"
-                )
+                    )
+                }
             }
-        }
     }
 
     override fun sendRequest(req: REQUEST): CompletableFuture<RESPONSE> {
         val correlationId = UUID.randomUUID().toString()
         val future = CompletableFuture<RESPONSE>()
         val partitions = partitionListener.getPartitions()
-        var reqBytes: ByteArray? = null
-        try {
-            reqBytes = serializer.serialize(req)
+
+        val reqBytes = try {
+            serializer.serialize(req)
         } catch (ex: Exception) {
             future.completeExceptionally(
                 CordaRPCAPISenderException(
                     "Serializing your request resulted in an exception. " +
-                            "Verify that the fields of the request are populated correctly", ex
+                        "Verify that the fields of the request are populated correctly",
+                    ex
                 )
             )
             log.error(
                 "Serializing your request resulted in an exception. " +
-                        "Verify that the fields of the request are populated correctly. " +
-                        "Request was: $req", ex
+                    "Verify that the fields of the request are populated correctly. " +
+                    "Request was: $req",
+                ex
             )
+            return future
         }
 
         if (partitions.isEmpty()) {
-            future.completeExceptionally(CordaRPCAPISenderException("No partitions for topic ${config.topic}. Couldn't send"))
-            log.error("No partitions for topic ${config.topic}. Couldn't send")
+            val error = "No partitions for topic ${getRPCResponseTopic(config.topic)}. Couldn't send."
+            future.completeExceptionally(CordaRPCAPISenderException(error))
+            log.error(error)
         } else {
             val partition = partitions[0].partition
             val request = RPCRequest(
+                config.clientId,
                 correlationId,
                 Instant.now(),
                 getRPCResponseTopic(config.topic),

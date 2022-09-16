@@ -1,6 +1,6 @@
 package net.corda.internal.serialization.amqp;
 
-import net.corda.internal.serialization.amqp.testutils.TestSerializationContext;
+import net.corda.internal.serialization.amqp.helper.TestSerializationContext;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 

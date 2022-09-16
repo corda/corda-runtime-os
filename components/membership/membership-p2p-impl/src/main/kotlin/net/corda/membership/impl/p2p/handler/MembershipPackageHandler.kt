@@ -1,10 +1,11 @@
 package net.corda.membership.impl.p2p.handler
 
 import net.corda.data.membership.command.synchronisation.SynchronisationCommand
+import net.corda.data.membership.command.synchronisation.SynchronisationMetaData
 import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AuthenticatedMessageHeader
-import net.corda.schema.Schemas.Membership.Companion.SYNCHRONISATION_TOPIC
+import net.corda.schema.Schemas.Membership.Companion.SYNCHRONIZATION_TOPIC
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.schema.registry.deserialize
 import net.corda.v5.base.util.contextLogger
@@ -22,14 +23,16 @@ internal class MembershipPackageHandler(
         header: AuthenticatedMessageHeader,
         payload: ByteBuffer
     ): Record<String, SynchronisationCommand> {
-        logger.info("Received membership data package. Publishing to topic $SYNCHRONISATION_TOPIC.")
+        logger.info("Received membership data package. Publishing to topic $SYNCHRONIZATION_TOPIC.")
         return Record(
-            SYNCHRONISATION_TOPIC,
+            SYNCHRONIZATION_TOPIC,
             header.destination.toCorda().shortHash.value,
             SynchronisationCommand(
                 ProcessMembershipUpdates(
-                    header.destination,
-                    header.source,
+                    SynchronisationMetaData(
+                        header.source,
+                        header.destination
+                    ),
                     avroSchemaRegistry.deserialize(payload)
                 )
             )

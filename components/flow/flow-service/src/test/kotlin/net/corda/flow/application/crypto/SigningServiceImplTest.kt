@@ -1,28 +1,27 @@
 package net.corda.flow.application.crypto
 
-import net.corda.flow.fiber.FlowFiber
-import net.corda.flow.fiber.FlowFiberService
-import net.corda.flow.fiber.FlowIORequest
+import net.corda.flow.application.crypto.external.events.CreateSignatureExternalEventFactory
+import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
 class SigningServiceImplTest {
 
-    private val flowFiber = mock<FlowFiber>()
-    private val flowFiberService = mock<FlowFiberService>()
     private val keyEncodingService = mock<KeyEncodingService>()
-    private val signingService = SigningServiceImpl(flowFiberService, keyEncodingService)
+    private val externalEventExecutor = mock<ExternalEventExecutor>()
+    private val signingService = SigningServiceImpl(externalEventExecutor, keyEncodingService)
 
     @Test
     fun `sign returns the signature returned from the flow resuming`() {
         val signature = DigitalSignature.WithKey(mock(), byteArrayOf(1), emptyMap())
-        whenever(flowFiber.suspend(any<FlowIORequest.SignBytes>())).thenReturn(signature)
-        whenever(flowFiberService.getExecutingFiber()).thenReturn(flowFiber)
+        whenever(externalEventExecutor.execute(eq(CreateSignatureExternalEventFactory::class.java), any()))
+            .thenReturn(signature)
         assertEquals(signature, signingService.sign(byteArrayOf(1), mock(), mock()))
     }
 }

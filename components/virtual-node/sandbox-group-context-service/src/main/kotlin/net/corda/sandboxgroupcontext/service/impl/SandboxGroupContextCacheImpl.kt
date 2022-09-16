@@ -15,7 +15,7 @@ internal class SandboxGroupContextCacheImpl(override val cacheSize: Long): Sandb
         Caffeine.newBuilder()
             .maximumSize(cacheSize)
             .removalListener { key, value, cause ->
-                logger.info("Evicting ${key!!.sandboxGroupType} sandbox for: ${key.holdingIdentity.x500Name} [${cause.name}]")
+                logger.info("Evicting {} sandbox for: {} [{}]", key!!.sandboxGroupType, key.holdingIdentity.x500Name, cause.name)
                 value?.close()
             })
 
@@ -28,8 +28,8 @@ internal class SandboxGroupContextCacheImpl(override val cacheSize: Long): Sandb
         createFunction: (VirtualNodeContext) -> CloseableSandboxGroupContext
     ): SandboxGroupContext {
         return contexts.get(virtualNodeContext) {
-            logger.info("Caching ${virtualNodeContext.sandboxGroupType} sandbox for: " +
-                    "${virtualNodeContext.holdingIdentity.x500Name} (cache size: ${contexts.estimatedSize()}")
+            logger.info("Caching {} sandbox for: {} (cache size: {})",
+                virtualNodeContext.sandboxGroupType, virtualNodeContext.holdingIdentity.x500Name, contexts.estimatedSize())
             createFunction(virtualNodeContext)
         }
     }

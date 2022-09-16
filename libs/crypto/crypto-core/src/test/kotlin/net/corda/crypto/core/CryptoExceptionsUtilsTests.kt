@@ -1,8 +1,8 @@
 package net.corda.crypto.core
 
-import net.corda.v5.crypto.failures.CryptoException
-import net.corda.v5.crypto.failures.CryptoRetryException
-import net.corda.v5.crypto.failures.CryptoSignatureException
+import net.corda.v5.crypto.exceptions.CryptoException
+import net.corda.v5.crypto.exceptions.CryptoRetryException
+import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
 import java.security.SignatureException

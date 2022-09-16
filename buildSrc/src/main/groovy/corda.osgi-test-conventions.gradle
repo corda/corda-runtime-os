@@ -33,7 +33,7 @@ dependencies {
     quasarBundles("co.paralleluniverse:quasar-core-osgi:$quasarVersion") {
         exclude group: 'org.slf4j'
     }
-    integrationTestRuntimeOnly("co.paralleluniverse:quasar-core-osgi:$quasarVersion:agent") {
+    integrationTestRuntimeOnly("co.paralleluniverse:quasar-core-osgi:$quasarVersion:framework-extension") {
         transitive = false
     }
     integrationTestRuntimeOnly files(configurations.quasarBundles)
@@ -84,6 +84,13 @@ def testOSGi = tasks.register('testOSGi', TestOSGi) {
     resultsDirectory = file("$testResultsDir/integrationTest")
     bundles = files(sourceSets.integrationTest.runtimeClasspath, configurations.archives.artifacts.files)
     bndrun = resolve.flatMap { it.outputBndrun }
+
+    // These properties are for Quasar's framework extension, should it be present.
+    properties.put '-runproperties.quasarExcludePackages', 'co.paralleluniverse.quasar.excludePackages="aQute.**,kotlin**,org.osgi.**,org.apache.felix.**,org.slf4j**,org.junit.**,org.assertj.**,org.opentest4j**"'
+    properties.put '-runproperties.quasarSuspendableAnnotation', 'co.paralleluniverse.quasar.suspendableAnnotation=net.corda.v5.base.annotations.Suspendable'
+
+    // Ensure we still get Gradle's project properties too.
+    properties.put 'project', '__convention__'
 }
 
 tasks.named('check') {

@@ -1,8 +1,8 @@
 package net.corda.internal.serialization.amqp
 
+import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.internal.serialization.amqp.testutils.TestSerializationOutput
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
-import net.corda.internal.serialization.amqp.testutils.testSerializationContext
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Java6Assertions.assertThat

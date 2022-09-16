@@ -22,6 +22,7 @@ import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.libs.cpiupload.DuplicateCpiUploadException
+import net.corda.libs.cpiupload.ReUsedGroupIdException
 import net.corda.libs.cpiupload.ValidationException
 
 @Component(service = [PluggableRPCOps::class])
@@ -51,12 +52,13 @@ class CpiUploadRPCOpsImpl @Activate constructor(
 
     override fun start() = coordinator.start()
 
-    override fun stop() = coordinator.close()
+    override fun stop() = coordinator.stop()
 
     override fun cpi(upload: HttpFileUpload): CpiUploadRPCOps.CpiUploadResponse {
         logger.info("Uploading CPI: ${upload.fileName}")
         requireRunning()
         val cpiUploadRequestId = cpiUploadManager.uploadCpi(upload.fileName, upload.content)
+        logger.info("Request ID for uploading CPI ${upload.fileName} is ${cpiUploadRequestId}")
         return CpiUploadRPCOps.CpiUploadResponse(cpiUploadRequestId.requestId)
     }
 
@@ -91,6 +93,7 @@ class CpiUploadRPCOpsImpl @Activate constructor(
         when (ex.errorType) {
             ValidationException::class.java.name -> throw BadRequestException(ex.errorMessage, details)
             DuplicateCpiUploadException::class.java.name -> throw ResourceAlreadyExistsException(ex.errorMessage)
+            ReUsedGroupIdException::class.java.name -> throw ResourceAlreadyExistsException(ex.errorMessage)
             else -> throw InternalServerException(ex.toString(), details)
         }
     }

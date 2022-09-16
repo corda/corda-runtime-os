@@ -22,6 +22,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceCardinality
 import org.osgi.service.component.annotations.ReferencePolicyOption
+import java.util.UUID
 
 @Component(service = [RegistrationProxy::class])
 class RegistrationProxyImpl @Activate constructor(
@@ -41,7 +42,11 @@ class RegistrationProxyImpl @Activate constructor(
      * Private interface used for implementation swapping in response to lifecycle events.
      */
     private interface InnerRegistrationProxy {
-        fun register(member: HoldingIdentity, context: Map<String, String>): MembershipRequestRegistrationResult
+        fun register(
+            registrationId: UUID,
+            member: HoldingIdentity,
+            context: Map<String, String>)
+        : MembershipRequestRegistrationResult
     }
 
     companion object {
@@ -124,21 +129,23 @@ class RegistrationProxyImpl @Activate constructor(
     }
 
     override fun register(
+        registrationId: UUID,
         member: HoldingIdentity,
         context: Map<String, String>
-    ): MembershipRequestRegistrationResult = impl.register(member, context)
+    ): MembershipRequestRegistrationResult = impl.register(registrationId, member, context)
 
     private object InactiveImpl : InnerRegistrationProxy {
         override fun register(
+            registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
         ): MembershipRequestRegistrationResult =
             throw IllegalStateException("RegistrationProxy currently inactive.")
-
     }
 
     private inner class ActiveImpl: InnerRegistrationProxy {
         override fun register(
+            registrationId: UUID,
             member: HoldingIdentity,
             context: Map<String, String>
         ): MembershipRequestRegistrationResult {
@@ -151,7 +158,7 @@ class RegistrationProxyImpl @Activate constructor(
                 throw RegistrationProtocolSelectionException(err, e)
             } ?: throw RegistrationProtocolSelectionException("Could not find group policy file for holding identity: [$member]")
 
-            return getRegistrationService(protocol).register(member, context)
+            return getRegistrationService(protocol).register(registrationId, member, context)
         }
 
         private fun getRegistrationService(protocol: String): MemberRegistrationService {

@@ -52,7 +52,7 @@ spec:
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
-          args: [ 'initial-config', 'create-db-config', '-u', 'rbac_user', '-p', 'rbac_password', '--name', 'corda-rbac', '--jdbcURL', 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}', '--salt', "$(SALT)", '--passphrase', "$(PASSPHRASE)", '-l', '/tmp/working_dir']
+          args: [ 'initial-config', 'create-db-config', '-u', 'rbac_user', '-p', 'rbac_password', '--name', 'corda-rbac', '--jdbcURL', 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}', '--jdbcPoolMaxSize', {{ .Values.bootstrap.db.rbac.dbConnectionPool.maxSize | quote }}, '--salt', "$(SALT)", '--passphrase', "$(PASSPHRASE)", '-l', '/tmp/working_dir']
           volumeMounts:
             - mountPath: /tmp/working_dir
               name: working-volume
@@ -85,7 +85,7 @@ spec:
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
-          args: [ 'initial-config', 'create-db-config', '-u', 'crypto_user', '-p', 'crypto_password', '--name', 'corda-crypto', '--jdbcURL', 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}?currentSchema=CRYPTO', '--salt', "$(SALT)", '--passphrase', "$(PASSPHRASE)", '-l', '/tmp/working_dir']
+          args: [ 'initial-config', 'create-db-config', '-u', 'crypto_user', '-p', 'crypto_password', '--name', 'corda-crypto', '--jdbcURL', 'jdbc:{{ include "corda.clusterDbType" . }}://{{ required "A db host is required" .Values.db.cluster.host }}:{{ include "corda.clusterDbPort" . }}/{{ include "corda.clusterDbName" . }}?currentSchema=CRYPTO', '--jdbcPoolMaxSize', {{ .Values.bootstrap.db.crypto.dbConnectionPool.maxSize | quote }}, '--salt', "$(SALT)", '--passphrase', "$(PASSPHRASE)", '-l', '/tmp/working_dir']
           volumeMounts:
             - mountPath: /tmp/working_dir
               name: working-volume
@@ -169,10 +169,45 @@ spec:
                 secretKeyRef:
                   name: {{ include "corda.clusterDbSecretName" . }}
                   key: password
+        - name: create-initial-crypto-worker-config
+          image: {{ include "corda.bootstrapImage" . }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "corda.bootstrapResources" . | nindent 10 }}
+          args: [ 'initial-config', 'create-crypto-config', '--salt', "$(SALT)", '--passphrase', "$(PASSPHRASE)", '-l', '/tmp/working_dir']
+          volumeMounts:
+            - mountPath: /tmp/working_dir
+              name: working-volume
+          env:
+            - name: SALT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
+                  key: salt
+            - name: PASSPHRASE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ printf "%s-db-worker" (include "corda.fullname" .) }}
+                  key: passphrase
+        - name: apply-initial-crypto-worker-config
+          image: {{ include "corda.dbClientImage" . }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "corda.bootstrapResources" . | nindent 10 }}
+          command: [ 'sh', '-c', 'psql -h {{ required "A db host is required" .Values.db.cluster.host }} -p {{ include "corda.clusterDbPort" . }} -U {{ include "corda.clusterDbUser" . }} -f /tmp/working_dir/crypto-config.sql --dbname {{ include "corda.clusterDbName" . }}' ]
+          volumeMounts:
+            - mountPath: /tmp/working_dir
+              name: working-volume
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "corda.clusterDbSecretName" . }}
+                  key: password
 
       volumes:
         - name: working-volume
           emptyDir: {}
+
+      {{- include "corda.bootstrapNodeSelector" . | nindent 6 }}
 
       restartPolicy: Never
 {{- end }}

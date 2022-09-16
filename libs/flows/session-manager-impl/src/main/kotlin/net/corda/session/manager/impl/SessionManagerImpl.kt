@@ -1,5 +1,6 @@
 package net.corda.session.manager.impl
 
+import java.time.Instant
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionAck
@@ -16,7 +17,6 @@ import net.corda.session.manager.SessionManager
 import net.corda.session.manager.impl.factory.SessionEventProcessorFactory
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import org.osgi.service.component.annotations.Component
-import java.time.Instant
 
 @Component
 class SessionManagerImpl : SessionManager {
