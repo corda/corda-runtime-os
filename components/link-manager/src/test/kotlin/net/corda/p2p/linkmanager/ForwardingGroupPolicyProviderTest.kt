@@ -17,6 +17,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mockConstruction
 import org.mockito.Mockito.verify
+import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -137,7 +138,7 @@ class ForwardingGroupPolicyProviderTest {
         val listener = mock<GroupPolicyListener>()
         forwardingGroupPolicyProvider.registerListener(listener)
         val capturedListener = argumentCaptor<(net.corda.virtualnode.HoldingIdentity, GroupPolicy) -> Unit>()
-        verify(realGroupPolicyProvider).registerListener(capturedListener.capture())
+        verify(realGroupPolicyProvider).registerListener(any(), capturedListener.capture())
 
         capturedListener.firstValue.invoke(alice, groupPolicy)
         verify(listener).groupAdded(groupInfo)

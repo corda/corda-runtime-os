@@ -19,6 +19,9 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
                                              virtualNodeInfoReadService: VirtualNodeInfoReadService,
                                              cpiInfoReadService: CpiInfoReadService,
                                              membershipQueryClient: MembershipQueryClient): LinkManagerGroupPolicyProvider {
+    private companion object {
+        const val LISTENER_NAME = "link.manager.group.policy.listener"
+    }
 
 
     private val dependentChildren = setOf(
@@ -47,7 +50,7 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
     }
 
     override fun registerListener(groupPolicyListener: GroupPolicyListener) {
-        groupPolicyProvider.registerListener { holdingIdentity, groupPolicy ->
+        groupPolicyProvider.registerListener(LISTENER_NAME) { holdingIdentity, groupPolicy ->
             val groupInfo = toGroupInfo(holdingIdentity, groupPolicy)
             groupPolicyListener.groupAdded(groupInfo)
         }
