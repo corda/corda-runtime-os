@@ -11,7 +11,7 @@ import org.osgi.service.component.annotations.Component
 
 @HttpRpcResource(name = "Hello RPC API", description = "The endpoint used to test interactions via HTTP RPC API. " +
         "It verifies that a call to HTTP RPC can be made, identity of the user making a call is recognized, " +
-        "RBAC permissions checked and the call is successfully processed by the HTTP RPC worker.",
+        "RBAC permissions are checked and the call is successfully processed by the HTTP-RPC worker.",
     path = "hello")
 interface HelloRpcOps : RpcOps {
 
