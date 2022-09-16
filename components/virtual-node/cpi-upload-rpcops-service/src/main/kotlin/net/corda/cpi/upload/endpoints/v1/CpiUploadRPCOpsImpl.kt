@@ -63,10 +63,10 @@ class CpiUploadRPCOpsImpl @Activate constructor(
     }
 
     // We're mostly returning the enumeration to a string in this version
-    override fun status(id: String): CpiUploadRPCOps.CpiUploadStatus {
-        logger.info("Upload status request for CPI id: $id")
+    override fun status(requestId: String): CpiUploadRPCOps.CpiUploadStatus {
+        logger.info("Upload status request for CPI id: $requestId")
         requireRunning()
-        val uploadStatus = cpiUploadManager.status(id) ?: throw InvalidInputDataException("No such requestId=$id")
+        val uploadStatus = cpiUploadManager.status(requestId) ?: throw InvalidInputDataException("No such requestId=$requestId")
 
         // HTTP response status values are passed back via exceptions.
         if (uploadStatus.exception != null) {

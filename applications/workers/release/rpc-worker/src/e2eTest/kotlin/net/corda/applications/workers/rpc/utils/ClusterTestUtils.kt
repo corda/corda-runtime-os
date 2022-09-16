@@ -52,7 +52,7 @@ fun E2eCluster.uploadCpi(
                 fileName = "$uniqueName.cpb",
                 size = jar.size.toLong(),
             )
-            val id = cpi(upload).id
+            val id = cpi(upload).requestId
             eventually {
                 val status = status(id)
                 assertThat(status.status).isEqualTo("OK")

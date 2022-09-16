@@ -21,7 +21,6 @@ import java.io.ByteArrayInputStream
 import java.util.UUID
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.exception.InvalidInputDataException
-import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.assertThrows
 
 class CpiUploadRPCOpsImplTest {
@@ -67,7 +66,7 @@ class CpiUploadRPCOpsImplTest {
 
         val httpResponse = cpiUploadRPCOpsImpl.cpi(HttpFileUpload(cpiContent, DUMMY_FILE_NAME))
         assertNotNull(httpResponse)
-        assertEquals(cpiUploadRequestId.requestId, httpResponse.id)
+        assertEquals(cpiUploadRequestId.requestId, httpResponse.requestId)
     }
 
     @Test
