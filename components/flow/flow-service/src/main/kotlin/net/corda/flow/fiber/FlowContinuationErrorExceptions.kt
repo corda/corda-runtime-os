@@ -1,6 +1,6 @@
 package net.corda.flow.fiber
 
-import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.exceptions.CordaRuntimeException
 
 /**
  * An exception thrown by a flow fiber when it wishes to discontinue execution because it has received notification that
@@ -16,39 +16,12 @@ import net.corda.v5.base.annotations.Suspendable
  * which Corda has already handled in some way and should not be treated as if Corda failed at the point they are
  * thrown.
  *
+ * Note that this exception type inherits from [CordaRuntimeException] in order that any internal code which catches
+ * [CordaRuntimeException] types and rethrows as some other [Throwable] inherited type will still work. In those cases
+ * the information about them being [FlowContinuationErrorException] is of course lost, and the consequences of that
+ * will be the flow top level exception catching code will treat them as internal Corda errors with no special handling.
+ * In general this means the log will contain the callstack from the point of the rethrow.
+ *
  * @param cause The original [Throwable] thrown from the failing flow fiber
  */
-open class FlowContinuationErrorException(cause: Throwable) : Exception(cause)
-
-/**
- * A more specific [FlowContinuationErrorException] exception which can be used to disambiguate exceptions thrown in
- * user code from those thrown by the platform. Note that the only way Corda can know if it is executing user code is if
- * the invoking of that code is wrapped in a call to [userCodeExceptionWrapper].
- *
- * @param cause The original [FlowContinuationErrorException] thrown from the failing flow fiber
- */
-class FlowContinuationErrorInUserCodeException(e: FlowContinuationErrorException) :
-    FlowContinuationErrorException(e) {
-    val originatingCause
-        get() = cause!!.cause!! // The arguments supplied to the exceptions are not nullable
-}
-
-/**
- * Executes the block provided and Translates any thrown FlowContinuationErrorException exceptions into
- * FlowContinuationErrorInUserCodeException exceptions. This is useful to disambiguate exceptions thrown in user
- * code from those thrown by the Corda platform, which means the handling of those exceptions can differ. Primarily
- * this helps determine whether it's useful for the callstack to end up in the log or not.
- *
- * @param block Code to execute, should be a call to invoke user flow code.
- *
- * @return The return from the block.
- *
- * @throws [FlowContinuationErrorInUserCodeException] whenever a [FlowContinuationErrorException] is thrown from the
- * block, all other exceptions are untouched and will throw as the block throws them.
- */
-@Suspendable
-fun <R> userCodeExceptionWrapper(block: () -> R): R = try {
-    block()
-} catch (e: FlowContinuationErrorException) {
-    throw FlowContinuationErrorInUserCodeException(e)
-}
+class FlowContinuationErrorException(cause: Throwable) : CordaRuntimeException(null, null, cause)
