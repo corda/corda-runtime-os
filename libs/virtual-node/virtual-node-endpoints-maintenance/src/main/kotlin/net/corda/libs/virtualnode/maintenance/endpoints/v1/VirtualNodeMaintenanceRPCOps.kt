@@ -33,7 +33,7 @@ interface VirtualNodeMaintenanceRPCOps : RpcOps {
         path = "forceCpiUpload",
         title = "Force upload a CPI",
         description = "Force uploads a CPI file. Even if CPI with the same metadata has already been uploaded, " +
-                "this endpoint will overwrite earlier stored CPI record. This operation also purges any sandboxes running " +
+                "this endpoint will overwrite the previously stored CPI record. This operation also purges any sandboxes running " +
                 "an overwritten version of a CPI. This action can take some time to process, therefore it is performed asynchronously.",
         responseDescription = "The response ID which can be used to track the progress of the force CPI upload operation."
     )
