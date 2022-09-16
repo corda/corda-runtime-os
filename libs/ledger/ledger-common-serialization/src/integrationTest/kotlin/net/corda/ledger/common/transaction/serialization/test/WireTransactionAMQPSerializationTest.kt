@@ -14,6 +14,7 @@ import net.corda.serialization.SerializationContext
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
+import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.serialization.SerializedBytes
@@ -68,6 +69,9 @@ class WireTransactionAMQPSerializationTest {
     @InjectService(timeout = 1000)
     lateinit var merkleTreeFactory: MerkleTreeFactory
 
+    @InjectService(timeout = 1000)
+    lateinit var jsonMarshallingService: JsonMarshallingService
+
     private lateinit var sandboxFactory: SandboxFactory
 
     @BeforeAll
@@ -88,7 +92,7 @@ class WireTransactionAMQPSerializationTest {
 
     private fun testDefaultFactory(sandboxGroup: SandboxGroup): SerializerFactory =
         SerializerFactoryBuilder.build(sandboxGroup, allowEvolution = true).also{
-            it.register(WireTransactionSerializer(merkleTreeFactory, digestService), it)
+            it.register(WireTransactionSerializer(merkleTreeFactory, digestService, jsonMarshallingService), it)
         }
 
     @Throws(NotSerializableException::class)
@@ -109,7 +113,7 @@ class WireTransactionAMQPSerializationTest {
             // Initialise the serialisation context
             val testSerializationContext = testSerializationContext.withSandboxGroup(sandboxGroup)
 
-            val wireTransaction = getWireTransaction(digestService, merkleTreeFactory)
+            val wireTransaction = getWireTransaction(digestService, merkleTreeFactory, jsonMarshallingService)
 
             val serialised = SerializationOutput(factory1).serialize(wireTransaction, testSerializationContext)
 

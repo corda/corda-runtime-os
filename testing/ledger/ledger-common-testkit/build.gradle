@@ -16,5 +16,5 @@ dependencies {
 
     implementation project(":libs:ledger:ledger-common-impl")
 
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    implementation project(":libs:application:application-impl")
 }

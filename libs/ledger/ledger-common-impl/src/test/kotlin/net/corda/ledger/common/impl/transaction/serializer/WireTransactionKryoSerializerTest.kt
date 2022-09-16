@@ -1,5 +1,6 @@
 package net.corda.ledger.common.impl.transaction.serializer
 
+import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeFactoryImpl
@@ -7,6 +8,7 @@ import net.corda.kryoserialization.testkit.createCheckpointSerializer
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.common.testkit.WireTransactionExample.Companion.getWireTransaction
+import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import org.assertj.core.api.Assertions.assertThat
@@ -18,6 +20,7 @@ class WireTransactionKryoSerializerTest {
     companion object {
         private lateinit var digestService: DigestService
         private lateinit var merkleTreeFactory: MerkleTreeFactory
+        private lateinit var jsonMarshallingService: JsonMarshallingService
 
         @BeforeAll
         @JvmStatic
@@ -25,13 +28,22 @@ class WireTransactionKryoSerializerTest {
             val schemeMetadata = CipherSchemeMetadataImpl()
             digestService = DigestServiceImpl(schemeMetadata, null)
             merkleTreeFactory = MerkleTreeFactoryImpl(digestService)
+            jsonMarshallingService = JsonMarshallingServiceImpl()
         }
     }
 
     @Test
     fun `serialization of a Wire Tx object using the kryo default serialization`() {
-        val wireTransaction = getWireTransaction(digestService, merkleTreeFactory)
-        val wireTransactionKryoSerializer = WireTransactionKryoSerializer(merkleTreeFactory, digestService)
+        val wireTransaction = getWireTransaction(
+            digestService,
+            merkleTreeFactory,
+            jsonMarshallingService
+        )
+        val wireTransactionKryoSerializer = WireTransactionKryoSerializer(
+            merkleTreeFactory,
+            digestService,
+            jsonMarshallingService
+        )
 
         val serializer = createCheckpointSerializer(
             mapOf(

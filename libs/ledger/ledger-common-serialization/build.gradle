@@ -27,6 +27,7 @@ dependencies {
     testImplementation project(":libs:serialization:serialization-amqp")
     testImplementation project(":libs:crypto:cipher-suite-impl")
     testImplementation project(":libs:crypto:merkle-impl")
+    testImplementation project(":libs:application:application-impl")
 
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"

@@ -14,7 +14,6 @@ dependencies {
     implementation project(":libs:membership:membership-common")
     implementation project(':libs:membership:membership-impl')
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation "net.corda:corda-ledger-common"
     implementation "net.corda:corda-ledger-consensual"
     implementation "net.corda:corda-base"
@@ -35,6 +34,7 @@ dependencies {
     testImplementation project(':libs:flows:flow-api')
     testImplementation project(":libs:serialization:serialization-amqp")
     testImplementation project(":libs:serialization:serialization-internal")
+    testImplementation project(":libs:application:application-impl")
     testImplementation project(':testing:test-serialization')
 
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
@@ -50,4 +50,5 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
     integrationTestRuntimeOnly project(":libs:crypto:crypto-serialization-impl")
     integrationTestRuntimeOnly project(':testing:test-serialization')
+    integrationTestRuntimeOnly project(":libs:application:application-impl")
 }

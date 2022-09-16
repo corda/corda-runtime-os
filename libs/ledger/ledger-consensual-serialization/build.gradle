@@ -20,7 +20,6 @@ dependencies {
     implementation project(":libs:ledger:ledger-consensual-impl")
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
-    testImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 
     testImplementation project(':testing:test-serialization')
     testImplementation project(':testing:ledger:ledger-consensual-testkit')
@@ -29,6 +28,7 @@ dependencies {
     testImplementation project(":libs:ledger:ledger-common-serialization")
     testImplementation project(":libs:crypto:cipher-suite-impl")
     testImplementation project(":libs:crypto:merkle-impl")
+    testImplementation project(":libs:application:application-impl")
 
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"

@@ -19,6 +19,7 @@ import net.corda.serialization.SerializationContext
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
+import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
@@ -78,6 +79,9 @@ class ConsensualSignedTransactionImplAMQPSerializationTest {
     @InjectService(timeout = 1000)
     lateinit var merkleTreeFactory: MerkleTreeFactory
 
+    @InjectService(timeout = 1000)
+    lateinit var jsonMarshallingService: JsonMarshallingService
+
     private lateinit var sandboxFactory: SandboxFactory
 
     @BeforeAll
@@ -101,7 +105,7 @@ class ConsensualSignedTransactionImplAMQPSerializationTest {
             registerCustomSerializers(it)
             it.register(PublicKeySerializer(schemeMetadata), it)
             it.register(PartySerializer(), it)
-            it.register(WireTransactionSerializer(merkleTreeFactory, digestService), it)
+            it.register(WireTransactionSerializer(merkleTreeFactory, digestService, jsonMarshallingService), it)
             it.register(ConsensualSignedTransactionImplSerializer(serializationService), it)
         }
 
@@ -120,7 +124,8 @@ class ConsensualSignedTransactionImplAMQPSerializationTest {
             it.register(PartySerializer(), it)
             it.register(WireTransactionSerializer(
                 merkleTreeFactory,
-                digestService
+                digestService,
+                jsonMarshallingService
             ), it)
         } , schemeMetadata)
 
@@ -128,7 +133,8 @@ class ConsensualSignedTransactionImplAMQPSerializationTest {
             it.register(PartySerializer(), it)
             it.register(WireTransactionSerializer(
                 merkleTreeFactory,
-                digestService
+                digestService,
+                jsonMarshallingService
             ), it)
             it.register(ConsensualSignedTransactionImplSerializer(serializationServiceNullCfg), it)
         } , schemeMetadata)
@@ -141,7 +147,12 @@ class ConsensualSignedTransactionImplAMQPSerializationTest {
             // Initialise the serialisation context
             val testSerializationContext = testSerializationContext.withSandboxGroup(sandboxGroup)
 
-            val signedTransaction = getConsensualSignedTransactionImpl(digestService, merkleTreeFactory, serializationService)
+            val signedTransaction = getConsensualSignedTransactionImpl(
+                digestService,
+                merkleTreeFactory,
+                serializationService,
+                jsonMarshallingService
+            )
             val serialised = SerializationOutput(factory1).serialize(signedTransaction, testSerializationContext)
 
             // Perform deserialization and check if the correct class is deserialised

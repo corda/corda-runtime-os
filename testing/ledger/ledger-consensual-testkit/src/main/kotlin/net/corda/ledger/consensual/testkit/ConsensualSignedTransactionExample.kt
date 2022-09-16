@@ -4,6 +4,7 @@ import net.corda.ledger.common.testkit.WireTransactionExample.Companion.getWireT
 import net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
+import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.DigitalSignature
@@ -17,8 +18,9 @@ class ConsensualSignedTransactionImplExample {
             digestService: DigestService,
             merkleTreeFactory: MerkleTreeFactory,
             serializationService: SerializationService,
+            jsonMarshallingService: JsonMarshallingService
         ): ConsensualSignedTransactionImpl{
-            val wireTransaction = getWireTransaction(digestService, merkleTreeFactory)
+            val wireTransaction = getWireTransaction(digestService, merkleTreeFactory, jsonMarshallingService)
 
             val kpg = KeyPairGenerator.getInstance("RSA")
             kpg.initialize(512)
