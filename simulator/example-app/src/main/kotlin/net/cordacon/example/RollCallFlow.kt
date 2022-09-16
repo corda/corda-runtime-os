@@ -10,7 +10,6 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
@@ -19,7 +18,6 @@ import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import net.cordacon.example.utils.createScript
 import net.cordacon.example.utils.findStudents
-import net.cordacon.example.utils.rollCallName
 
 
 @InitiatingFlow("roll-call")
@@ -41,9 +39,6 @@ class RollCallFlow: RPCStartableFlow {
 
     @CordaInject
     lateinit var flowEngine: FlowEngine
-
-    @CordaInject
-    lateinit var persistenceService: PersistenceService
 
     @CordaInject
     lateinit var memberLookup: MemberLookup
@@ -123,7 +118,6 @@ class RollCallFlow: RPCStartableFlow {
         absenteeSessions.map { session ->
                 val absenceResponses = retryRollCall(session)
                 if (absenceResponses.none { (response) -> response.isNotEmpty() }) {
-                    persistenceService.persist(TruancyEntity(name = session.counterparty.rollCallName))
                     absenceResponses.map { SessionAndResponse(session, "") }
                 } else {
                     listOf(
