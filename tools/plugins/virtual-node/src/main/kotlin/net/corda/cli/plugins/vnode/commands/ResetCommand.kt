@@ -82,7 +82,7 @@ class ResetCommand : Runnable {
                 }
                 try {
                     println("Uploading CPI to host: $targetUrl")
-                    virtualNodeMaintenanceResult = this.forceCpiUpload(HttpFileUpload(cpi.inputStream(), cpi.name)).requestId
+                    virtualNodeMaintenanceResult = this.forceCpiUpload(HttpFileUpload(cpi.inputStream(), cpi.name)).id
                 } catch (e: Exception) {
                     println(e.message)
                     logger.error(e.stackTrace.toString())

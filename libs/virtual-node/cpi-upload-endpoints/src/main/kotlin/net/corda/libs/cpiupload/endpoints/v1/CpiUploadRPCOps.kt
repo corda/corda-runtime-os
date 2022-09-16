@@ -18,9 +18,9 @@ interface CpiUploadRPCOps : RpcOps {
     /**
      * Response from CPI Upload Request
      *
-     * @param requestId ID of the CPI Upload Request.
+     * @param id ID of the CPI Upload Request.
      */
-    data class CpiUploadResponse(val requestId: String)
+    data class CpiUploadResponse(val id: String)
 
     /**
      * HTTP POST resource to upload a CPI to Kafka.
@@ -51,11 +51,11 @@ interface CpiUploadRPCOps : RpcOps {
     /**
      * Get the status of the upload.
      *
-     * @param requestId request id returned from the [cpi] method
+     * @param id request id returned from the [cpi] method
      * @return a status object that is converted to json on the client side `{status: OK}`
      */
     @HttpRpcGET(
-        path = "status/{requestId}",
+        path = "status/{id}",
         title = "CPI upload status",
         description = "The status endpoint uses the GET method to return status information for the CPI upload with the " +
                 "given request ID.")
@@ -63,7 +63,7 @@ interface CpiUploadRPCOps : RpcOps {
         @HttpRpcPathParameter(
             description = "The ID returned from the CPI upload request."
         )
-        requestId: String,
+        id: String,
     ): CpiUploadStatus
 
     /**
