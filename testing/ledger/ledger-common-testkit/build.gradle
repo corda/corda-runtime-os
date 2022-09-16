@@ -16,12 +16,5 @@ dependencies {
 
     implementation project(":libs:ledger:ledger-common-impl")
 
-    implementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
-
-//    implementation project(":libs:crypto:cipher-suite-impl")
-//    implementation project(":libs:crypto:merkle-impl")
-
-//    implementation project(':testing:test-serialization')
-//    implementation project(":libs:serialization:serialization-amqp")
 }
