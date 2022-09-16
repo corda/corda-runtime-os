@@ -7,6 +7,7 @@ import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.application.persistence.ParameterisedQuery
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.base.util.contextLogger
 import org.hibernate.Session
 import org.hibernate.cfg.AvailableSettings.DIALECT
 import org.hibernate.cfg.AvailableSettings.JPA_JDBC_DRIVER
@@ -24,7 +25,9 @@ class DbPersistenceService(member : MemberX500Name) : CloseablePersistenceServic
     private val emf = createEntityManagerFactory(member)
 
     companion object {
+        val log = contextLogger()
         fun createEntityManagerFactory(member: MemberX500Name): EntityManagerFactory {
+            log.info("Creating EntityManagerFactory")
             val emf = HibernatePersistenceProvider()
                 .createContainerEntityManagerFactory(
                     JpaPersistenceUnitInfo(),
@@ -43,6 +46,8 @@ class DbPersistenceService(member : MemberX500Name) : CloseablePersistenceServic
             //  alternative option would be to create a connection manually here.
             emf.createEntityManager().use { em ->
                 em.unwrap(Session::class.java).doWork {
+
+                    log.info("Running migrations")
                      runMigrations(it)
                 }
             }
