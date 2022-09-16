@@ -8,15 +8,29 @@ flows or handle more than one version of any Flow.  It is intended only for low-
 quick feedback and documenting examples of how things work) or demoing CorDapps. For full testing, use a real or
 production-like implementation of Corda.
 
+## Setting up dependencies
+
+You will need to set up the following dependencies in your build file, assuming you are using this for testing:
+
+```
+      testImplementation "net.corda:simulator-api:$simulatorVersion"
+      testRuntimeOnly "net.corda:simulator-runtime:$simulatorVersion"
+```
+
+Do not use the runtime libraries as an implementation dependency, as your code may fail to compile or run
+when Simulator is updated. The API is much more stable.
+
+## How to run Simulator
+
 The main class for starting your CorDapps is `net.corda.simulator.Simulator`. "Uploading" your flow for a given party 
 will create a simulated "virtual node" which can then be invoked using the initiating flow class (in a real Corda
 network this would be done using the `CPI_HASH`).
 
 ```kotlin
-  val corda = Simulator()
+  val simulator = Simulator()
   val member = MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB")
   val holdingIdentity = HoldingIdentity.create(member)
-  val node = corda.createVirtualNode(holdingIdentity, HelloFlow::class.java)
+  val node = simulator.createVirtualNode(holdingIdentity, HelloFlow::class.java)
 
   val response = node.callFlow(
       RequestData.create("r1", HelloFlow::class.java.name, "{ \"name\" : \"CordaDev\" }")
@@ -26,6 +40,32 @@ network this would be done using the `CPI_HASH`).
 Simulator will wire up your flow with lightweight versions of the same injected services that you'd get with
 the real Corda, enabling your flows to communicate with each other, persist data (currently to an in-memory database)
 and "sign" data (see below).
+
+To release resources used by Simulator, including any database connections, call
+
+```kotlin
+  simulator.close()
+```
+
+## Configuration
+
+Simulator configuration can be set using the `SimulatorConfigurationBuilder`. You can configure:
+- the clock (defaults to system default clock)
+- timeouts for flows (defaults to 1 minute)
+- polling interval (defaults to 100 ms)
+
+The default timeout should be suitable for most tests. For demos, showcasing proofs of concept etc. you may want
+to make it longer.
+
+The polling interval is used to check for any exceptions thrown by responder flows.
+
+```kotlin
+val simulator = Simulator(SimulatorConfigurationBuilder.create()
+    .withTimeout(Duration.ofMinutes(2))
+    .withPollInterval(Duration.ofMillis(50))
+    .build()
+)
+```
 
 ## RequestData
 
@@ -87,7 +127,7 @@ whenever(responder.call(any())).then {
     session.send(RollCallResponse(""))
 }
 
-val node = corda.createVirtualNode(
+val node = simulator.createVirtualNode(
     HoldingIdentity.create(MemberX500Name.parse(studentId)),
     "roll-call",
     responder

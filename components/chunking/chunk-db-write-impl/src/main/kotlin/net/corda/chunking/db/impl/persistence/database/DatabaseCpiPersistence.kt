@@ -18,6 +18,7 @@ import net.corda.libs.cpi.datamodel.QUERY_PARAM_ENTITY_VERSION
 import net.corda.libs.cpi.datamodel.QUERY_PARAM_FILE_CHECKSUM
 import net.corda.libs.cpi.datamodel.QUERY_PARAM_ID
 import net.corda.libs.cpi.datamodel.QUERY_PARAM_INCREMENTED_ENTITY_VERSION
+import net.corda.libs.cpi.datamodel.findDbChangeLogForCpi
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
@@ -72,20 +73,30 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         entityManagerFactory.createEntityManager().transaction { em ->
 
             val cpiCpkEntities = cpi.cpks.mapTo(HashSet()) { cpk ->
+                val cpiCpkKey = CpiCpkKey(
+                    cpi.metadata.cpiId.name,
+                    cpi.metadata.cpiId.version,
+                    cpi.metadata.cpiId.signerSummaryHash?.toString() ?: "",
+                    // TODO Fallback to empty string can be removed after package verification is enabled (CORE-5405)
+                    cpk.metadata.cpkId.name,
+                    cpk.metadata.cpkId.version,
+                    cpk.metadata.cpkId.signerSummaryHash?.toString().orEmpty()
+                )
+                val cpiCpkInDb = em.find(CpiCpkEntity::class.java, cpiCpkKey)
+                val cpkMetadataKey = cpk.metadata.cpkId.toCpkKey()
+                val cpkMetadataInDb = em.find(CpkMetadataEntity::class.java, cpkMetadataKey)
                 CpiCpkEntity(
-                    CpiCpkKey(
-                        cpi.metadata.cpiId.name, cpi.metadata.cpiId.version, cpi.metadata.cpiId.signerSummaryHash?.toString() ?: "",
-                        // TODO Fallback to empty string can be removed after package verification is enabled (CORE-5405)
-                        cpk.metadata.cpkId.name, cpk.metadata.cpkId.version, cpk.metadata.cpkId.signerSummaryHash?.toString().orEmpty()
-                    ),
+                    cpiCpkKey,
                     cpk.originalFileName!!,
                     cpk.metadata.fileChecksum.toString(),
                     CpkMetadataEntity(
-                        cpk.metadata.cpkId.toCpkKey(),
+                        cpkMetadataKey,
                         cpk.metadata.fileChecksum.toString(),
                         cpk.metadata.manifest.cpkFormatVersion.toString(),
-                        cpk.metadata.toJsonAvro()
-                    )
+                        cpk.metadata.toJsonAvro(),
+                        entityVersion = cpkMetadataInDb?.entityVersion ?: 0
+                    ),
+                    cpiCpkInDb?.entityVersion ?: 0
                 )
             }
 
@@ -95,7 +106,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
             createOrUpdateCpkFileEntities(em, cpi.cpks)
 
-            updateChangeLogs(cpkDbChangeLogEntities, em)
+            updateChangeLogs(cpkDbChangeLogEntities, em, cpi)
 
             return@persistMetadataAndCpks managedCpiMetadataEntity
         }
@@ -103,11 +114,22 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
     private fun updateChangeLogs(
         cpkDbChangeLogEntities: List<CpkDbChangeLogEntity>,
-        em: EntityManager
+        em: EntityManager,
+        cpi: Cpi
     ) {
+        // The incoming changelogs will not be marked deleted
+        cpkDbChangeLogEntities.forEach { require(!it.isDeleted) }
+        // We first mark each existing changelog for this CPI as deleted.
+        val allChangelogs = findDbChangeLogForCpi(em, cpi.metadata.cpiId)
+        allChangelogs.forEach { rec ->
+            rec.isDeleted = true
+            em.merge(rec)
+        }
+        // Then, for the currently declared changelog, we'll save the record and clear any isDeleted flags.
+        // This all happens under one transaction so no one will see the isDeleted flags flicker.
         cpkDbChangeLogEntities.forEach {
             val inDb = em.find(CpkDbChangeLogEntity::class.java, it.id)
-            if (inDb!=null) it.entityVersion = inDb.entityVersion
+            if (inDb != null) it.entityVersion = inDb.entityVersion
             em.merge(it)
         }
     }
@@ -150,7 +172,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
             createOrUpdateCpkFileEntities(em, cpi.cpks)
 
-            updateChangeLogs(cpkDbChangeLogEntities, em)
+            updateChangeLogs(cpkDbChangeLogEntities, em, cpi)
 
             return cpiMetadataEntity
         }
@@ -237,10 +259,17 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
                 entityToUpdate.metadata.formatVersion = cpk.metadata.manifest.cpkFormatVersion.toString()
                 entityToUpdate
             } else {
+                // Is it possible that this code can fail with OptimisticLockException due to not setting
+                // entityVersion in CpiCpkEntity or CpkMetadataEntity?
+                // (better to eliminate the duplication with similar logic in persistMetadataAndCpks
                 CpiCpkEntity(
                     CpiCpkKey(
-                        cpi.metadata.cpiId.name, cpi.metadata.cpiId.version, cpi.metadata.cpiId.signerSummaryHash.toString(),
-                        cpk.metadata.cpkId.name, cpk.metadata.cpkId.version, cpk.metadata.cpkId.signerSummaryHash.toString()
+                        cpi.metadata.cpiId.name,
+                        cpi.metadata.cpiId.version,
+                        cpi.metadata.cpiId.signerSummaryHash.toString(),
+                        cpk.metadata.cpkId.name,
+                        cpk.metadata.cpkId.version,
+                        cpk.metadata.cpkId.signerSummaryHash.toString()
                     ),
                     cpk.originalFileName!!,
                     cpk.metadata.fileChecksum.toString(),

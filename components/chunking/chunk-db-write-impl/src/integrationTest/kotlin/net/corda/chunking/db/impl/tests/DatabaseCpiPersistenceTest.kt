@@ -23,6 +23,9 @@ import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
 import net.corda.libs.cpi.datamodel.CpkFileEntity
 import net.corda.libs.cpi.datamodel.CpkKey
 import net.corda.libs.cpi.datamodel.CpkMetadataEntity
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
+import net.corda.libs.cpi.datamodel.findDbChangeLogForCpi
 import net.corda.libs.cpi.datamodel.QUERY_NAME_UPDATE_CPK_FILE_DATA
 import net.corda.libs.cpi.datamodel.QUERY_PARAM_DATA
 import net.corda.libs.cpi.datamodel.QUERY_PARAM_ENTITY_VERSION
@@ -80,7 +83,7 @@ internal class DatabaseCpiPersistenceTest {
             eu odio. Vivamus vel placerat eros, sed convallis est. Proin tristique ut odio at 
             finibus. 
         """.trimIndent()
-
+    private val mockChangeLogContent = "lorum ipsum"
     /**
      * Creates an in-memory database, applies the relevant migration scripts, and initialises
      * [entityManagerFactory].
@@ -164,13 +167,13 @@ internal class DatabaseCpiPersistenceTest {
         whenever(cpk.metadata).thenReturn(metadata)
     }
 
-    private fun mockCpi(cpks: Collection<Cpk>): Cpi {
+    private fun mockCpi(cpks: Collection<Cpk>, signerSummaryHash: SecureHash? = null): Cpi {
         // We need a random name here as the database primary key is (name, version, signerSummaryHash)
         // and we'd end up trying to insert the same mock cpi.
         val id = mock<CpiIdentifier> {
             whenever(it.name).thenReturn("test " + UUID.randomUUID().toString())
             whenever(it.version).thenReturn("1.0")
-            whenever(it.signerSummaryHash).thenReturn(SecureHash("SHA-256", ByteArray(12)))
+            whenever(it.signerSummaryHash).thenReturn(signerSummaryHash ?: SecureHash("SHA-256", ByteArray(12)))
         }
 
         return mockCpiWithId(cpks, id)
@@ -736,6 +739,105 @@ internal class DatabaseCpiPersistenceTest {
         assertThat(file.insertTimestamp)
             .withFailMessage("Insert timestamp should be updated")
             .isAfter(initialTimestamp)
+    }
+    
+    @Test
+    fun `force upload can remove all changelogs`() {
+        val (cpkWithChangelogs, cpkWithoutChangelogs) = makeCpks(2)
+        val cpi = mockCpi(listOf(cpkWithChangelogs))
+        val cpiEntity = cpiPersistence.persistMetadataAndCpks(
+            cpi, "test.cpi", newRandomSecureHash(), UUID.randomUUID().toString(),
+            "group-A", makeChangeLogs(arrayOf(cpkWithChangelogs))
+        )
+
+        fun findChangelogs(cpiEntity: CpiMetadataEntity) = entityManagerFactory.createEntityManager().transaction {
+            findDbChangeLogForCpi(
+                it,
+                CpiIdentifier(
+                    name = cpiEntity.name,
+                    version = cpiEntity.version,
+                    signerSummaryHash = SecureHash.parse(cpiEntity.signerSummaryHash)
+                )
+            )
+        }
+
+        val changelogsWith = findChangelogs(cpiEntity)
+        assertThat(changelogsWith.size).isEqualTo(1)
+        val updatedCpi = mockCpiWithId(listOf(cpkWithoutChangelogs), cpi.metadata.cpiId)
+        val updateCpiEntity = cpiPersistence.updateMetadataAndCpks(
+            updatedCpi, "test.cpi", newRandomSecureHash(), UUID.randomUUID().toString(), "group-A", emptyList()
+        )
+        val changelogsWithout = findChangelogs(updateCpiEntity)
+        assertThat(changelogsWithout.size).isEqualTo(0)
+    }
+
+    @Test
+    fun `persist changelog writes data and can be read back`() {
+        val (cpk) = makeCpks()
+        val cpi = mockCpi(listOf(cpk))
+        cpiPersistence.persistMetadataAndCpks(
+            cpi, "test1.cpi", newRandomSecureHash(), UUID.randomUUID().toString(), "group-A",
+            makeChangeLogs(arrayOf(cpk))
+        )
+    }
+
+    @Test
+    fun `version number of changelog increases when changelogs are updated`() {
+        val signerSummaryHash = newRandomSecureHash()
+        val name = "${UUID.randomUUID()}.cpk"
+        val cpks = makeCpks(5, name = name, signerSummaryHash = signerSummaryHash)
+        for ((i, cpk) in cpks.withIndex()) {
+            val cpi = mockCpi(listOf(cpk), signerSummaryHash = signerSummaryHash)
+            cpiPersistence.persistMetadataAndCpks(
+                cpi, "test.cpi",
+                newRandomSecureHash(), UUID.randomUUID().toString(), "group-A",
+                makeChangeLogs(arrayOf(cpk))
+            )
+            val allTestCpks = query<CpkDbChangeLogEntity, String>("cpk_name", cpk.originalFileName!!)
+            assertThat(allTestCpks.size).isGreaterThan(0)
+            val changeLog =
+                query<CpkDbChangeLogEntity, String>(
+                    "cpk_signer_summary_hash",
+                    signerSummaryHash.toString()
+                ).first()
+            assertThat(changeLog.entityVersion).isEqualTo(i)
+        }
+    }
+
+    private inline fun <reified T : Any, K> query(key: String, value: K): List<T> {
+        val query = "FROM ${T::class.simpleName} where $key = :value"
+        return entityManagerFactory.createEntityManager().transaction {
+            it.createQuery(query, T::class.java)
+                .setParameter("value", value)
+                .resultList
+        }!!
+    }
+
+    private fun makeCpks(
+        n: Int = 1,
+        name: String? = null,
+        fileChecksum: SecureHash? = null,
+        signerSummaryHash: SecureHash? = null
+    ): Array<Cpk> =
+        (1..n).map {
+            mockCpk(
+                name ?: "${UUID.randomUUID()}.cpk",
+                fileChecksum ?: newRandomSecureHash(),
+                signerSummaryHash ?: newRandomSecureHash()
+            )
+        }.toTypedArray()
+
+    private fun makeChangeLogs(cpks: Array<Cpk>) = cpks.map {
+        CpkDbChangeLogEntity(
+            CpkDbChangeLogKey(
+                it.metadata.cpkId.name,
+                it.metadata.cpkId.version,
+                it.metadata.cpkId.signerSummaryHash.toString(),
+                "resources/db.changelog-master.xml"
+            ),
+            newRandomSecureHash().toString(),
+            mockChangeLogContent
+        )
     }
 
     private fun findAndAssertCpk(
