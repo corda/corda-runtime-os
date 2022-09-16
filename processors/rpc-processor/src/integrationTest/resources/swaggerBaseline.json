@@ -1284,7 +1284,7 @@
     "/maintenance/virtualnode/forcecpiupload" : {
       "post" : {
         "tags" : [ "Virtual Node Maintenance API" ],
-        "description" : "Force uploads a CPI file. Even if CPI with the same metadata has already been previously uploaded, this endpoint will overwrite earlier stored CPI record. This operation also purges any sandboxes running an overwritten version of a CPI. This action can take sometime to process, therefore it is performed asynchronously.",
+        "description" : "Force uploads a CPI file. Even if CPI with the same metadata has already been  uploaded, this endpoint will overwrite earlier stored CPI record. This operation also purges any sandboxes running an overwritten version of a CPI. This action can take some time to process, therefore it is performed asynchronously.",
         "operationId" : "post_maintenance_virtualnode_forcecpiupload",
         "parameters" : [ ],
         "requestBody" : {
