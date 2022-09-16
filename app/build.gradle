@@ -58,11 +58,10 @@ tasks.named("run") {
     }
 }
 
-def fatJar = tasks.register('fatJar', Jar) {
+def cordaCLi = tasks.named('jar', Jar) {
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
-    dependsOn(tasks.named('jar', Jar))
 
-    from(sourceSets.main.output)
+    from (sourceSets.main.output)
     from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } } {
         exclude "META-INF/*.SF"
         exclude "META-INF/*.DSA"
@@ -83,8 +82,8 @@ def fatJar = tasks.register('fatJar', Jar) {
 }
 
 tasks.register('publishOSGiImage', DeployableContainerBuilder) {
-    sourceTasks = Arrays.asList(fatJar.get())
-    dependsOn(fatJar)
+    sourceTasks = Arrays.asList(cordaCLi.get())
+    dependsOn(cordaCLi)
     overrideEntryName = 'cli'
     overrideContainerName = 'cli'
     arguments = Arrays.asList("-Dpf4j.pluginsDir=/opt/override/plugins")
@@ -107,10 +106,10 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
 }
 
 artifacts {
-    archives fatJar
+    archives cordaCLi
 }
 
-// required as fatJar artifact not handled by r3Publish
+// required as cordaCLi artifact not handled by r3Publish
 publishing {
     publications {
         configureEach {
@@ -141,15 +140,9 @@ publishing {
             }
         }
 
-        mavenFatJar(MavenPublication) {
-            artifact fatJar
+        mavenCordaCLi(MavenPublication) {
+            artifact cordaCLi
             artifactId = "corda-cli"
-            version = project.version
-        }
-
-        mavenAppJar(MavenPublication) {
-            artifact jar
-            artifactId = "app"
             version = project.version
         }
     }
