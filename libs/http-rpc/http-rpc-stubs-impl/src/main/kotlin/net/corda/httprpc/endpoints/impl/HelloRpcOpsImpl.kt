@@ -9,7 +9,7 @@ import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Component
 
-@HttpRpcResource(name = "Hello RPC API", description = "Endpoint to test interaction via HTTP RPC API. " +
+@HttpRpcResource(name = "Hello RPC API", description = "The endpoint used to test interactions via HTTP RPC API. " +
         "It verifies that a call to HTTP RPC can be made, identity of the user making a call is recognized, " +
         "RBAC permissions checked and the call is successfully processed by the HTTP RPC worker.",
     path = "hello")
