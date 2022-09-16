@@ -16,7 +16,7 @@ import net.corda.libs.virtualnode.maintenance.endpoints.v1.types.ChangeVirtualNo
  */
 @HttpRpcResource(
     name = "Virtual Node Maintenance API",
-    description = "Maintenance RPC operations for virtual node management. " +
+    description = "The Virtual Node Maintenance API consists of a series of endpoints used for virtual node management." +
             "Warning: Using these endpoints could be highly disruptive, so great care should be taken when using them.",
     path = "maintenance/virtualnode"
 )
