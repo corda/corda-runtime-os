@@ -1,6 +1,9 @@
 package net.corda.simulator.runtime.flows
 
+import net.corda.simulator.SimulatorConfiguration
+import net.corda.simulator.exceptions.NoProtocolAnnotationException
 import net.corda.simulator.runtime.messaging.ConcurrentFlowMessaging
+import net.corda.simulator.runtime.messaging.FlowContext
 import net.corda.simulator.runtime.messaging.SimFiber
 import net.corda.simulator.runtime.signing.SimKeyStore
 import net.corda.simulator.runtime.signing.SimWithJsonSignatureVerificationService
@@ -11,6 +14,8 @@ import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.FlowEngine
+import net.corda.v5.application.flows.InitiatedBy
+import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
@@ -20,7 +25,7 @@ import net.corda.v5.base.types.MemberX500Name
 /**
  * Injector for default services for Simulator.
  */
-class DefaultServicesInjector : FlowServicesInjector {
+class DefaultServicesInjector(private val configuration: SimulatorConfiguration) : FlowServicesInjector {
 
     /**
      * Injects sensible default services into the provided flow. Currently injects:<br>
@@ -43,26 +48,20 @@ class DefaultServicesInjector : FlowServicesInjector {
         flowFactory: FlowFactory,
         keyStore: SimKeyStore
     ) {
-        val flowClass = flow.javaClass
-        flow.injectIfRequired(JsonMarshallingService::class.java,
-            createJsonMarshallingService())
-        flow.injectIfRequired(FlowEngine::class.java,
-            createFlowEngine(member, fiber))
-        flow.injectIfRequired(FlowMessaging::class.java,
-            createFlowMessaging(member, flowClass, fiber, flowFactory))
-        flow.injectIfRequired(
-            PersistenceService::class.java,
-            getOrCreatePersistenceService(member, fiber))
-        flow.injectIfRequired(
-            MemberLookup::class.java,
-            getOrCreateMemberLookup(member, fiber))
-        flow.injectIfRequired(
-            SigningService::class.java,
-            getOrCreateSigningService(createJsonMarshallingService(), keyStore))
-        flow.injectIfRequired(
-            DigitalSignatureVerificationService::class.java,
+
+        flow.injectIfRequired(JsonMarshallingService::class.java) { createJsonMarshallingService() }
+        flow.injectIfRequired(FlowEngine::class.java) { createFlowEngine(configuration, member, fiber) }
+        flow.injectIfRequired(FlowMessaging::class.java) {
+            createFlowMessaging(configuration, flow, member, fiber, flowFactory)
+        }
+        flow.injectIfRequired(PersistenceService::class.java) { getOrCreatePersistenceService(member, fiber) }
+        flow.injectIfRequired(MemberLookup::class.java) { getOrCreateMemberLookup(member, fiber) }
+        flow.injectIfRequired(SigningService::class.java) {
+            getOrCreateSigningService(createJsonMarshallingService(), keyStore)
+        }
+        flow.injectIfRequired(DigitalSignatureVerificationService::class.java) {
             SimWithJsonSignatureVerificationService()
-        )
+        }
     }
 
     private fun getOrCreateSigningService(
@@ -81,13 +80,29 @@ class DefaultServicesInjector : FlowServicesInjector {
     }
 
     private fun createJsonMarshallingService() : JsonMarshallingService = SimpleJsonMarshallingService()
-    private fun createFlowEngine(member: MemberX500Name, fiber: SimFiber): FlowEngine
-        = InjectingFlowEngine(member, fiber)
-    private fun createFlowMessaging(
+    private fun createFlowEngine(
+        configuration: SimulatorConfiguration,
         member: MemberX500Name,
-        flowClass: Class<out Flow>,
+        fiber: SimFiber
+    ): FlowEngine = InjectingFlowEngine(configuration, member, fiber)
+    private fun createFlowMessaging(
+        configuration: SimulatorConfiguration,
+        flow: Flow,
+        member: MemberX500Name,
         fiber: SimFiber,
         flowFactory: FlowFactory
-    ): FlowMessaging = ConcurrentFlowMessaging(member, flowClass, fiber, this, flowFactory)
+    ): FlowMessaging {
+        val flowClass = flow.javaClass
+        val protocol = flowClass.getAnnotation(InitiatingFlow::class.java)?.protocol
+            ?: flowClass.getAnnotation(InitiatedBy::class.java)?.protocol
+            ?: throw NoProtocolAnnotationException(flowClass)
+
+        return ConcurrentFlowMessaging(
+            FlowContext(configuration, member, protocol),
+            fiber,
+            this,
+            flowFactory
+        )
+    }
 }
 
