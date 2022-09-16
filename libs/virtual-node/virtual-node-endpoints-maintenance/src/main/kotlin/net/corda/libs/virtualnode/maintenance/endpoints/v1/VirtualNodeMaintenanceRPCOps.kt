@@ -35,7 +35,7 @@ interface VirtualNodeMaintenanceRPCOps : RpcOps {
         description = "Force uploads a CPI file. Even if CPI with the same metadata has already been previously uploaded, " +
                 "this endpoint will overwrite earlier stored CPI record. This operation also purges any sandboxes running " +
                 "an overwritten version of a CPI. This action can take some time to process, therefore it is performed asynchronously.",
-        responseDescription = "The response Id which can be used to track the progress of the force CPI upload operation."
+        responseDescription = "The response ID which can be used to track the progress of the force CPI upload operation."
     )
     fun forceCpiUpload(upload: HttpFileUpload): CpiUploadRPCOps.CpiUploadResponse
 
