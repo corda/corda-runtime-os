@@ -2,6 +2,16 @@ package net.corda.v5.crypto.merkle
 
 import net.corda.v5.base.annotations.CordaSerializable
 
+/**
+ * [IndexedMerkleLeaf]s are building blocks of [MerkleProof]s.
+ * They contain the required information about a particular leaf which is needed for the verification.
+ *
+ * @property index The leaf's index.
+ * @property nonce The leaf's optional nonce.
+ * @property leafData The leaf's data.
+ *
+ */
+
 @CordaSerializable
 class IndexedMerkleLeaf(
     val index: Int,
