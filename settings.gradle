@@ -169,7 +169,8 @@ include 'components:virtual-node:entity-processor-service'
 include 'components:virtual-node:entity-processor-service-impl'
 include 'components:virtual-node:sandbox-group-context-service'
 include 'components:virtual-node:virtual-node-info-read-service'
-include 'components:virtual-node:virtual-node-rpcops-common'
+include 'components:virtual-node:virtual-node-info-read-service-rpc-extensions'
+include 'components:virtual-node:virtual-node-management-sender'
 include 'components:virtual-node:virtual-node-rpcops-service-impl'
 include 'components:virtual-node:virtual-node-rpcops-maintenance-impl'
 include 'components:virtual-node:virtual-node-write-service'
@@ -239,6 +240,7 @@ include 'libs:membership:ledger-identity'
 include 'libs:membership:membership-common'
 include 'libs:membership:membership-datamodel'
 include 'libs:membership:membership-impl'
+include 'libs:membership:schema-validation'
 include 'libs:messaging:db-message-bus-datamodel'
 include 'libs:messaging:db-message-bus-impl'
 include 'libs:messaging:db-topic-admin-impl'
@@ -397,6 +399,7 @@ if (compositeBuild.toBoolean() && file(cordaApiLocation).exists()) {
             substitute module('net.corda:corda-avro-schema') using project(':data:avro-schema')
             substitute module('net.corda:corda-config-schema') using project(':data:config-schema')
             substitute module('net.corda:corda-db-schema') using project(':data:db-schema')
+            substitute module('net.corda:corda-membership-schema') using project(':data:membership-schema')
             substitute module('net.corda:corda-topic-schema') using project(':data:topic-schema')
             substitute module('net.corda:corda-ledger-common') using project(':ledger:ledger-common')
             substitute module('net.corda:corda-ledger-consensual') using project(':ledger:ledger-consensual')
@@ -407,7 +410,13 @@ if (compositeBuild.toBoolean() && file(cordaApiLocation).exists()) {
     }
 }
 if (compositeBuild.toBoolean() && file(cordaCliHostLocation).exists()) {
-    includeBuild(cordaCliHostLocation)
+    includeBuild(cordaCliHostLocation){
+        dependencySubstitution {
+            substitute module("net.corda.cli.host:corda-cli") with project(":app")
+            substitute module("net.corda.cli.host:api") with project(":api")
+            substitute module("net.corda.cli.host:plugins") with project(":plugins")
+        }
+    }
 }
 
 gradleEnterprise {

@@ -90,7 +90,6 @@ class CertificatesRpcOpsImpl @Activate constructor(
         tenantId: String,
         keyId: String,
         x500Name: String,
-        certificateRole: String,
         subjectAlternativeNames: List<String>?,
         contextMap: Map<String, String?>?,
     ): String {

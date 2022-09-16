@@ -21,7 +21,7 @@
     "sessionPki": "Standard",
     "tlsPki": "Standard",
     "tlsVersion" : "1.3",
-    "protocolMode": "Authentication_Encryption"
+    "protocolMode": "Authenticated_Encryption"
   },
   "mgmInfo": {
     "corda.name": "C=GB, L=London, O=Corda Network, OU=MGM, CN=Corda Network MGM",

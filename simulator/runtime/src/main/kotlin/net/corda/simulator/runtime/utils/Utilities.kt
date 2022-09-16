@@ -6,10 +6,10 @@ import net.corda.v5.base.types.MemberX500Name
 
 fun <T> Flow.injectIfRequired(
     field: Class<T>,
-    value: T
+    valueCreator: () -> T
 ) = this.javaClass.declaredFields.firstOrNull {
     it.type.equals(field) && it.canAccess(this) && it.isAnnotationPresent(CordaInject::class.java)
-}?.set(this, value)
+}?.set(this, valueCreator())
 
 val MemberX500Name.sandboxName: Any
     get() {
