@@ -22,7 +22,7 @@
     "description" : "Cluster configuration management endpoints."
   }, {
     "name" : "Flow Info API",
-    "description" : "Startable flow classes endpoints."
+    "description" : "The Flow Info API consists of a number of endpoints used to find out which flows can be invoked using the Flow Management API for a given identity."
   }, {
     "name" : "Flow Management API",
     "description" : "Flow management endpoints."
@@ -645,16 +645,16 @@
     "/flowclass/{holdingidentityshorthash}" : {
       "get" : {
         "tags" : [ "Flow Info API" ],
-        "description" : "Get all the flows that are startable for this holding identity.",
+        "description" : "This method gets all flows that can be used by the specified holding identity.",
         "operationId" : "get_flowclass__holdingidentityshorthash_",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "Short hash of the holding identity",
+          "description" : "Short hash of the holding identity. Obtained during node registration.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Short hash of the holding identity",
+            "description" : "Short hash of the holding identity. Obtained during node registration.",
             "nullable" : false,
             "example" : "string"
           }
