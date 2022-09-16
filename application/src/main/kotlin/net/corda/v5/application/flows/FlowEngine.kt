@@ -1,6 +1,7 @@
 package net.corda.v5.application.flows
 
 import java.util.UUID
+import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
@@ -10,7 +11,7 @@ import net.corda.v5.base.types.MemberX500Name
 /**
  * [FlowEngine] provides core flow related functionality.
  *
- * This service can be injected using [CordaInject].
+ * Corda provides an instance of [DigitalSignatureVerificationService] to flows via property injection.
  */
 @DoNotImplement
 interface FlowEngine {
