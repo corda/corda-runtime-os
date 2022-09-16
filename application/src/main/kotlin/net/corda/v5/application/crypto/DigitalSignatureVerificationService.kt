@@ -7,9 +7,9 @@ import java.security.PublicKey
 import java.security.SignatureException
 
 /**
- * [DigitalSignatureVerificationService] allows flows to verify digital signatures.
+ * Allows flows to verify digital signatures.
  *
- * The platform will provide an instance of [DigitalSignatureVerificationService] to flows via property injection.
+ * Corda provides an instance of [DigitalSignatureVerificationService] to flows via property injection.
  */
 @DoNotImplement
 interface DigitalSignatureVerificationService {
