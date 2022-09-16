@@ -1309,7 +1309,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "The response Id which can be used to track the progress of the force CPI upload operation.",
+            "description" : "The response ID which can be used to track the progress of the force CPI upload operation.",
             "content" : {
               "application/json" : {
                 "schema" : {
