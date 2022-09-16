@@ -21,7 +21,7 @@ interface GroupPolicyProvider : Lifecycle {
     /**
      * Registers a listener callback in order to be notified for creation of a new group policy or update of an existing one.
      *
-     * @param callback A call back that will be called when a new group is created of an exiting group had changed.
+     * @param callback A call back that will be called when a new group is created or an existing group changed.
      * @param name The listener name (the call back will be called only to one instance with that name).
      */
     fun registerListener(name: String, callback: (HoldingIdentity, GroupPolicy) -> Unit)
