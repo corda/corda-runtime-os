@@ -71,7 +71,9 @@ import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
+import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.Timeout
 import org.mockito.kotlin.mock
 import java.io.StringWriter
@@ -94,7 +96,6 @@ class P2PLayerEndToEndTest {
         private const val SUBSYSTEM = "e2e.test.app"
         private val logger = contextLogger()
         private const val GROUP_ID = "group-1"
-        private const val TLS_KEY_TENANT_ID = "p2p"
 
         fun Key.toPem(): String {
             return StringWriter().use { str ->
@@ -110,11 +111,11 @@ class P2PLayerEndToEndTest {
         .create(ConfigFactory.empty().withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1)))
 
     @Test
-    @Timeout(60)
+    @Timeout(600)
     fun `two hosts can exchange data messages over p2p using RSA keys`() {
         val numberOfMessages = 10
-        val aliceId = Identity("O=Alice, L=London, C=GB", GROUP_ID, "sslkeystore_alice")
-        val chipId = Identity("O=Chip, L=London, C=GB", GROUP_ID, "sslkeystore_chip")
+        val aliceId = Identity("O=Alice, L=London, C=GB", "sslkeystore_alice")
+        val chipId = Identity("O=Chip, L=London, C=GB", "sslkeystore_chip")
         Host(
             listOf(aliceId),
             "www.alice.net",
@@ -153,9 +154,13 @@ class P2PLayerEndToEndTest {
                     assertThat(messagesWithReceivedMarker).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
                     assertThat(hostAReceivedMessages).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { "pong ($it)" })
                 }
-                hostAApplicationReader.close()
-                hostBApplicationReaderWriter.close()
-                hostAMarkerReader.close()
+                hostAApplicationReader.stop()
+                hostBApplicationReaderWriter.stop()
+                hostAMarkerReader.stop()
+
+                val threeMinutesInMillis: Long = 3*60*1000
+                Thread.sleep(threeMinutesInMillis)
+
             }
         }
     }
@@ -164,8 +169,8 @@ class P2PLayerEndToEndTest {
     @Timeout(60)
     fun `two hosts can exchange data messages over p2p with ECDSA keys`() {
         val numberOfMessages = 10
-        val receiverId = Identity("O=Alice, L=London, C=GB", GROUP_ID, "receiver")
-        val senderId = Identity("O=Chip, L=London, C=GB", GROUP_ID, "sender")
+        val receiverId = Identity("O=Alice, L=London, C=GB", "receiver")
+        val senderId = Identity("O=Chip, L=London, C=GB", "sender")
         Host(
             listOf(receiverId),
             "www.receiver.net",
@@ -215,8 +220,8 @@ class P2PLayerEndToEndTest {
     @Timeout(60)
     fun `messages can be looped back between locally hosted identities`() {
         val numberOfMessages = 10
-        val receiverId = Identity("O=Alice, L=London, C=GB", GROUP_ID, "receiver")
-        val senderId = Identity("O=Chip, L=London, C=GB", GROUP_ID, "sender")
+        val receiverId = Identity("O=Alice, L=London, C=GB", "receiver")
+        val senderId = Identity("O=Chip, L=London, C=GB", "sender")
         Host(
             listOf(receiverId, senderId),
             "www.alice.net",
@@ -249,8 +254,8 @@ class P2PLayerEndToEndTest {
     @Timeout(60)
     fun `messages with expired ttl have processed marker and ttl expired marker and no received marker`() {
         val numberOfMessages = 10
-        val aliceId = Identity("O=Alice, L=London, C=GB", GROUP_ID, "sslkeystore_alice")
-        val chipId = Identity("O=Chip, L=London, C=GB", GROUP_ID, "sslkeystore_chip")
+        val aliceId = Identity("O=Alice, L=London, C=GB", "sslkeystore_alice")
+        val chipId = Identity("O=Chip, L=London, C=GB", "sslkeystore_chip")
         Host(
             listOf(aliceId),
             "www.alice.net",
@@ -347,7 +352,6 @@ class P2PLayerEndToEndTest {
 
     internal data class Identity(
         val x500Name: String,
-        val groupId: String,
         val keyStoreFileName: String,
     )
 
@@ -382,7 +386,7 @@ class P2PLayerEndToEndTest {
         private val configPublisher = publisherFactory.createPublisher(PublisherConfig("config-writer", false), bootstrapConfig)
         private val gatewayConfig = createGatewayConfig(p2pPort, p2pAddress, sslConfig)
         private val tlsTenantId by lazy {
-            TLS_KEY_TENANT_ID
+            GROUP_ID
         }
         private val linkManagerConfig by lazy {
             ConfigFactory.empty()
@@ -484,7 +488,7 @@ class P2PLayerEndToEndTest {
         }
         private val groupPolicyEntry = ourIdentities.map {
             GroupPolicyEntry(
-                HoldingIdentity(it.x500Name, it.groupId),
+                HoldingIdentity(it.x500Name, GROUP_ID),
                 NetworkType.CORDA_5,
                 listOf(
                     ProtocolMode.AUTHENTICATION_ONLY,
@@ -498,7 +502,7 @@ class P2PLayerEndToEndTest {
 
         private val memberInfoEntry = ourIdentities.mapIndexed { i, identity ->
             MemberInfoEntry(
-                HoldingIdentity(identity.x500Name, identity.groupId),
+                HoldingIdentity(identity.x500Name, GROUP_ID),
                 keyPairs[i].public.toPem(),
                 "http://$p2pAddress:$p2pPort",
             )
@@ -507,18 +511,18 @@ class P2PLayerEndToEndTest {
         private fun publishNetworkMapAndIdentityKeys(otherHost: Host? = null) {
             val publisherForHost = publisherFactory.createPublisher(PublisherConfig("test-runner-publisher", false), bootstrapConfig)
             val memberInfoRecords = ourIdentities.mapIndexed { i, identity ->
-                Record(MEMBER_INFO_TOPIC, "${identity.x500Name}-${identity.groupId}", memberInfoEntry[i])
+                Record(MEMBER_INFO_TOPIC, "${identity.x500Name}-$GROUP_ID", memberInfoEntry[i])
             }
             val otherHostMemberInfoRecords = otherHost?.ourIdentities?.mapIndexed { i, identity ->
-                Record(MEMBER_INFO_TOPIC, "${identity.x500Name}-${identity.groupId}", otherHost.memberInfoEntry[i])
+                Record(MEMBER_INFO_TOPIC, "${identity.x500Name}-$GROUP_ID", otherHost.memberInfoEntry[i])
             }?.toList() ?: emptyList()
 
             val hostingMapRecords = ourIdentities.mapIndexed { i, identity ->
                 Record(
                     P2P_HOSTED_IDENTITIES_TOPIC, "hosting-1",
                     HostedIdentityEntry(
-                        HoldingIdentity(identity.x500Name, identity.groupId),
-                        TLS_KEY_TENANT_ID,
+                        HoldingIdentity(identity.x500Name, GROUP_ID),
+                        GROUP_ID,
                         identity.x500Name,
                         tlsCertificatesPem[i],
                         keyPairs[i].public.toPem(),
@@ -631,8 +635,8 @@ class P2PLayerEndToEndTest {
             val initialMessages = (1..messagesToSend).map { index ->
                 val incrementalId = index.toString()
                 val messageHeader = AuthenticatedMessageHeader(
-                    HoldingIdentity(peer.x500Name, peer.groupId),
-                    HoldingIdentity(ourIdentity.x500Name, ourIdentity.groupId),
+                    HoldingIdentity(peer.x500Name, GROUP_ID),
+                    HoldingIdentity(ourIdentity.x500Name, GROUP_ID),
                     ttl,
                     incrementalId,
                     incrementalId,
