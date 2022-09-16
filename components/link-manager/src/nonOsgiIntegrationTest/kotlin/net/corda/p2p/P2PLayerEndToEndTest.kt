@@ -111,7 +111,7 @@ class P2PLayerEndToEndTest {
         .create(ConfigFactory.empty().withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(1)))
 
     @Test
-    @Timeout(600)
+    @Timeout(60)
     fun `two hosts can exchange data messages over p2p using RSA keys`() {
         val numberOfMessages = 10
         val aliceId = Identity("O=Alice, L=London, C=GB", "sslkeystore_alice")
@@ -154,13 +154,10 @@ class P2PLayerEndToEndTest {
                     assertThat(messagesWithReceivedMarker).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { it.toString() })
                     assertThat(hostAReceivedMessages).containsExactlyInAnyOrderElementsOf((1..numberOfMessages).map { "pong ($it)" })
                 }
-                hostAApplicationReader.stop()
-                hostBApplicationReaderWriter.stop()
-                hostAMarkerReader.stop()
 
-                val threeMinutesInMillis: Long = 3*60*1000
-                Thread.sleep(threeMinutesInMillis)
-
+                hostAApplicationReader.close()
+                hostBApplicationReaderWriter.close()
+                hostAMarkerReader.close()
             }
         }
     }
