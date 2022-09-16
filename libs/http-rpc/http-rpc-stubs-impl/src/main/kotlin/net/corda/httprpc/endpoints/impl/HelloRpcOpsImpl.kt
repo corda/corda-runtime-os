@@ -16,7 +16,7 @@ import org.osgi.service.component.annotations.Component
 interface HelloRpcOps : RpcOps {
 
     @HttpRpcPOST(description = "Produces a greeting phrase for the addressee.")
-    fun greet(@HttpRpcQueryParameter(description = "Can be an arbitrary name to be greeted.") addressee: String): String
+    fun greet(@HttpRpcQueryParameter(description = "An arbitrary name can be used for the greeting.") addressee: String): String
 }
 
 @Component(service = [PluggableRPCOps::class])
