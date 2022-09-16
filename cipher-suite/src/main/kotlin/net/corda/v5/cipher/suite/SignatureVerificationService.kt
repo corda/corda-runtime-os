@@ -41,7 +41,7 @@ interface SignatureVerificationService {
 
     /**
      * Verifies a digital signature by using [signatureSpec].
-     * It returns true if it succeeds and false if not. Normally you should use the function which throws,
+     * It returns true if it succeeds and false if not. Normally you should use the function which throws an exception,
      * as it avoids the risk of failing to test the result.
      *
      * @param publicKey the signer's [PublicKey].
@@ -58,7 +58,7 @@ interface SignatureVerificationService {
 
     /**
      * Verifies a digital signature by inferring [SignatureSpec] from the [PublicKey] and [DigestAlgorithmName].
-     * It returns true if it succeeds and false if not. Normally you should use the function which throws,
+     * It returns true if it succeeds and false if not. Normally you should use the function which throws an exception,
      * as it avoids the risk of failing to test the result.
      *
      * @param publicKey the signer's [PublicKey].
