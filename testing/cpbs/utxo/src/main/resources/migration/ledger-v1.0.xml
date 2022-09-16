@@ -1,0 +1,17 @@
+<?xml version="1.1" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet author="R3.Corda" id="utxo-v1.0">
+        <createTable tableName="ledger">
+            <column name="txid" type="NUMERIC">
+                <constraints nullable="false"/>
+            </column>
+            <column name="block" type="bytea">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey columnNames="txid" constraintName="tx_block" tableName="ledger"/>
+    </changeSet>
+</databaseChangeLog>
