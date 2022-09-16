@@ -14,8 +14,12 @@ import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.verify.verifyCpi
 import net.corda.membership.certificate.service.CertificatesService
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
+import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
+import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
+import net.corda.schema.membership.MembershipSchema.GroupPolicySchema
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.versioning.Version
 import net.corda.v5.crypto.SecureHash
 import java.nio.file.Files
 import java.nio.file.Path
@@ -30,6 +34,7 @@ class CpiValidatorImpl constructor(
     private val chunkPersistence: ChunkPersistence,
     private val cpiPersistence: CpiPersistence,
     private val cpiInfoWriteService: CpiInfoWriteService,
+    private val membershipSchemaValidator: MembershipSchemaValidator,
     private val cpiCacheDir: Path,
     private val cpiPartsDir: Path,
     private val certificatesService: CertificatesService,
@@ -54,6 +59,17 @@ class CpiValidatorImpl constructor(
 
         publisher.update(requestId, "Validating CPI")
         val cpi: Cpi = fileInfo.validateAndGetCpi(cpiPartsDir, requestId)
+
+        publisher.update(requestId, "Checking group policy is well formed.")
+        try {
+            membershipSchemaValidator.validateGroupPolicy(
+                GroupPolicySchema.Default,
+                Version(cpi.validateAndGetGroupPolicyFileVersion(), 0),
+                cpi.metadata.groupPolicy!!
+            )
+        } catch (ex: MembershipSchemaValidationException) {
+            throw ValidationException("Group policy file in the CPI is invalid. ${ex.getErrorSummary()}", null, ex)
+        }
 
         publisher.update(requestId, "Checking group id in CPI")
         val groupId = cpi.validateAndGetGroupId(requestId, GroupPolicyParser::groupIdFromJson)

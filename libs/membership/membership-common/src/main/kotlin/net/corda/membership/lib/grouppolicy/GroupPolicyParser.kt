@@ -3,6 +3,7 @@ package net.corda.membership.lib.grouppolicy
 import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.membership.lib.exceptions.BadGroupPolicyException
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.FILE_FORMAT_VERSION
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyKeys.Root.GROUP_ID
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.LayeredPropertyMap
@@ -13,6 +14,25 @@ import kotlin.jvm.Throws
 interface GroupPolicyParser {
 
     companion object {
+        /**
+         * Gets the file format version for the given JSON string representation of the group policy file.
+         *
+         * Note: this should only be use for VNode creation for validating against the schema.
+         *
+         * @throws CordaRuntimeException if there is a failure parsing the GroupPolicy JSON.
+         *
+         * @return the file format version to use for the given GroupPolicy file.
+         */
+        fun getFileFormatVersion(groupPolicyJson: String): Int {
+            try {
+                return ObjectMapper().readTree(groupPolicyJson).get(FILE_FORMAT_VERSION)?.asInt()
+                    ?: throw CordaRuntimeException("Failed to parse group policy file. " +
+                            "Could not find `$FILE_FORMAT_VERSION` in the JSON")
+            } catch (e: JsonParseException) {
+                throw CordaRuntimeException("Failed to parse group policy file", e)
+            }
+        }
+
         /**
          * Gets the group ID for the given JSON string representation of the group policy file.
          *

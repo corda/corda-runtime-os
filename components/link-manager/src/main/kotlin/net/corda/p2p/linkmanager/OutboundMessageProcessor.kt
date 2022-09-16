@@ -14,6 +14,7 @@ import net.corda.p2p.linkmanager.sessions.recordsForSessionEstablished
 import net.corda.p2p.markers.TtlExpiredMarker
 import net.corda.p2p.markers.AppMessageMarker
 import net.corda.p2p.markers.Component
+import net.corda.p2p.markers.LinkManagerDiscardedMarker
 import net.corda.p2p.markers.LinkManagerProcessedMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
@@ -104,6 +105,13 @@ internal class OutboundMessageProcessor(
 
     private fun processUnauthenticatedMessage(message: UnauthenticatedMessage): List<Record<String, *>> {
         logger.debug { "Processing outbound ${message.javaClass} to ${message.header.destination}." }
+
+        if (message.header.source.groupId != message.header.destination.groupId) {
+            logger.warn("Dropping outbound unauthenticated message from ${message.header.source.toCorda()} " +
+                    "to ${message.header.destination.toCorda()} as their group IDs do not match.")
+            return emptyList()
+        }
+
         val destMemberInfo = members.getMemberInfo(message.header.source.toCorda(), message.header.destination.toCorda())
         if (linkManagerHostingMap.isHostedLocally(message.header.destination.toCorda())) {
             return listOf(Record(Schemas.P2P.P2P_IN_TOPIC, LinkManager.generateKey(), AppMessage(message)))
@@ -142,6 +150,14 @@ internal class OutboundMessageProcessor(
             "Processing outbound ${messageAndKey.message.javaClass} with ID ${messageAndKey.message.header.messageId} " +
                 "to ${messageAndKey.message.header.destination}."
         }
+
+        if (messageAndKey.message.header.source.groupId != messageAndKey.message.header.destination.groupId) {
+            logger.warn("Dropping outbound authenticated message ${messageAndKey.message.header.messageId} " +
+                    "from ${messageAndKey.message.header.source.toCorda()} to ${messageAndKey.message.header.destination.toCorda()} " +
+                    "as their group IDs do not match.")
+            return listOf(recordForLMDiscardedMarker(messageAndKey, "Destination and source groups not matching."))
+        }
+
         if (ttlExpired(messageAndKey.message.header.ttl)) {
             val expiryMarker = recordForTTLExpiredMarker(messageAndKey.message.header.messageId)
             return if (isReplay) {
@@ -256,4 +272,11 @@ internal class OutboundMessageProcessor(
         val marker = AppMessageMarker(LinkManagerSentMarker(), clock.instant().toEpochMilli())
         return Record(Schemas.P2P.P2P_OUT_MARKERS, messageId, marker)
     }
+
+    private fun recordForLMDiscardedMarker(message: AuthenticatedMessageAndKey,
+                                           reason: String): Record<String, AppMessageMarker> {
+        val marker = AppMessageMarker(LinkManagerDiscardedMarker(message, reason), clock.instant().toEpochMilli())
+        return Record(Schemas.P2P.P2P_OUT_MARKERS, message.message.header.messageId, marker)
+    }
+
 }

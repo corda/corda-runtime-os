@@ -13,6 +13,7 @@ import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.CpiReader
 import net.corda.libs.packaging.core.exception.PackagingException
+import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.grouppolicy.GroupPolicyIdNotFoundException
 import net.corda.membership.lib.grouppolicy.GroupPolicyParseException
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -149,6 +150,15 @@ fun CpiPersistence.persistCpiToDatabase(
 }
 
 /**
+ * Checks that a CPI has a group policy.
+ *
+ * @throws ValidationException if there is no group policy json.
+ */
+private fun Cpi.validateHasGroupPolicy(requestId: String? = null) {
+    if (this.metadata.groupPolicy.isNullOrEmpty()) throw ValidationException("CPI is missing a group policy file", requestId)
+}
+
+/**
  * Get groupId from group policy JSON on the [Cpi] object.
  *
  * @param getGroupIdFromJson lambda that takes a json string and returns the `groupId`
@@ -159,7 +169,7 @@ fun CpiPersistence.persistCpiToDatabase(
  */
 @Suppress("ThrowsCount")
 fun Cpi.validateAndGetGroupId(requestId: String, getGroupIdFromJson: (String) -> String): String {
-    if (this.metadata.groupPolicy.isNullOrEmpty()) throw ValidationException("CPI is missing a group policy file", requestId)
+    validateHasGroupPolicy(requestId)
     val groupId = try {
         getGroupIdFromJson(this.metadata.groupPolicy!!)
         // catch specific exceptions, and wrap them up so as to capture the request ID
@@ -173,6 +183,18 @@ fun Cpi.validateAndGetGroupId(requestId: String, getGroupIdFromJson: (String) ->
     }
     if (groupId.isBlank()) throw ValidationException("Unable to upload CPI due to group ID being blank", requestId)
     return groupId
+}
+
+/**
+ * Get fileFormatVersion from group policy JSON on the [Cpi] object.
+ *
+ * @throws ValidationException if there is no group policy json.
+ * @throws CordaRuntimeException if there is an error parsing the group policy json.
+ * @return the group policy file format version
+ */
+fun Cpi.validateAndGetGroupPolicyFileVersion(): Int {
+    validateHasGroupPolicy()
+    return GroupPolicyParser.getFileFormatVersion(this.metadata.groupPolicy!!)
 }
 
 /**
