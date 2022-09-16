@@ -8,115 +8,127 @@ import net.corda.v5.base.annotations.Suspendable
  * [PersistenceService] allows a flow to insert, find, update and delete custom entities in the persistent
  * store provided by the platform.
  *
- * The platform will provide an instance of [PersistenceService] to flows via property injection.
+ * Corda provides an instance of [PersistenceService] to flows via property injection.
  */
 @DoNotImplement
 @Suppress("LongParameterList", "TooManyFunctions")
 interface PersistenceService {
+
     /**
-     * Persist a single [entity] to the store.
+     * Persists a single [entity] to the store.
      *
      * @param entity The entity to persist.
      *
-     * @throws CordaPersistenceException if an error happens during persist operation.
+     * @throws IllegalArgumentException If [entity] is a primitive type.
+     * @throws CordaPersistenceException If an error occurs during execution.
      */
     @Suspendable
     fun persist(entity: Any)
 
     /**
-     * Persist multiple [entities] in the persistence context in a single transaction.
+     * Persists multiple [entities] in the persistence context in a single transaction.
      *
      * @param entities List of entities to be persisted.
      *
-     * @throws CordaPersistenceException if an error happens during persist operation.
+     * @throws IllegalArgumentException If [entities] contains any primitive types.
+     * @throws CordaPersistenceException If an error occurs during execution.
      */
     @Suspendable
     fun persist(entities: List<Any>)
 
     /**
-     * Merge a single [entity] in the persistence context in a transaction.
+     * Merges a single [entity] in the persistence context in a transaction.
      *
      * @param entity The entity to merge.
      *
      * @return The merged entity.
      *
-     * @throws CordaPersistenceException if an error happens during merge operation.
+     * @throws IllegalArgumentException If [entity] is a primitive type.
+     * @throws CordaPersistenceException If an error occurs during execution.
      */
     @Suspendable
     fun <T : Any> merge(entity: T): T?
 
     /**
-     * Merge multiple [entities] in the persistence context in a single transaction.
+     * Merges multiple [entities] in the persistence context in a single transaction.
      *
      * @param entities List of entities to be merged.
      *
      * @return The list of merged entities.
      *
-     * @throws CordaPersistenceException if an error happens during merge operation.
+     * @throws IllegalArgumentException If [entities] contains any primitive types.
+     * @throws CordaPersistenceException If an error occurs during execution.
      */
     @Suspendable
     fun <T : Any> merge(entities: List<T>): List<T>
 
     /**
-     * Remove a single [entity] from the persistence context in a transaction.
+     * Removes a single [entity] from the persistence context in a transaction.
      *
      * @param entity The entity to remove.
      *
-     * @throws CordaPersistenceException if an error happens during remove operation
+     * @throws IllegalArgumentException If [entity] is a primitive type.
+     * @throws CordaPersistenceException If an error occurs during execution.
      */
     @Suspendable
     fun remove(entity: Any)
 
     /**
-     * Remove multiple [entities] from the persistence context in a single transaction.
+     * Removes multiple [entities] from the persistence context in a single transaction.
      *
      * @param entities List of entities to be removed.
      *
-     * @throws CordaPersistenceException if an error happens during remove operation.
+     * @throws IllegalArgumentException If [entities] contains any primitive types.
+     * @throws CordaPersistenceException If an error occurs during execution.
      */
     @Suspendable
     fun remove(entities: List<Any>)
 
     /**
-     * Find a single entity in the persistence context given the [entityClass] and [primaryKey] of the entity.
+     * Finds a single entity in the persistence context of the specified entity type [T] and with the specified
+     * [primaryKey].
      *
      * @param entityClass The type of entity to find.
      * @param primaryKey The primary key of the entity to find.
      *
-     * @return The found entity, null if it could not be found in the persistence context.
+     * @return The found entity. Null if it could not be found in the persistence context.
      *
-     * @throws CordaPersistenceException if an error happens during find operation.
+     * @throws IllegalArgumentException If [entityClass] is a primitive type.
+     * @throws CordaPersistenceException If an error occurs during execution.
      */
     @Suspendable
     fun <T : Any> find(entityClass: Class<T>, primaryKey: Any): T?
 
     /**
-     * Find multiple entities of the same type with different primary keys in a single transaction
+     * Finds multiple entities of the same type with different primary keys in a single transaction.
      *
      * @param entityClass The type of the entities to find.
      * @param primaryKeys List of primary keys to find with the given [entityClass] type.
      *
      * @return List of entities found. Empty list if none were found.
      *
-     * @throws CordaPersistenceException if an error happens during find operation.
+     * @throws IllegalArgumentException If [entityClass] is a primitive type.
+     * @throws CordaPersistenceException If an error occurs during execution.
      */
     @Suspendable
     fun <T : Any> find(entityClass: Class<T>, primaryKeys: List<Any>): List<T>
 
     /**
-     * Create a [PagedQuery] to find all entities of the same type from the persistence context in a single transaction.
+     * Creates a [PagedQuery] to find all entities of the same type from the persistence context in a single transaction.
      *
      * @param entityClass The type of the entities to find.
      * @return A [PagedQuery] That returns the list of entities found.
      *
-     * @throws CordaPersistenceException if an error happens during find operation.
+     * @throws IllegalArgumentException If [entityClass] is a primitive type.
+     * @throws CordaPersistenceException If an error occurs during execution.
      */
     @Suspendable
     fun <T : Any> findAll(entityClass: Class<T>): PagedQuery<T>
 
     /**
-     * Create a [ParameterisedQuery] to support a named query to return a list of entities of the given type in a single
-     * transaction. Casts result set to the specified type [T].
+     * Creates a [ParameterisedQuery] to support a named query to return a list of entities of the given type in a
+     * single transaction. Casts result set to the specified type [T].
+     *
      * Example usage:
      *
      * - Kotlin:
@@ -207,8 +219,10 @@ interface PersistenceService {
      * @param queryName The name of the named query registered in the persistence context.
      * @param entityClass The type of the entities to find.
      * @param T The type of the results.
-     * @return A [ParameterisedQuery] That returns the list of entities found. Empty list if none were found.
-     * @throws CordaPersistenceException if an error happens during query operation
+     *
+     * @return A [ParameterisedQuery] that returns the list of entities found. Empty list if none were found.
+     *
+     * @throws IllegalArgumentException If [entityClass] is a primitive type.
      */
     @Suspendable
     fun <T : Any> query(
@@ -218,17 +232,18 @@ interface PersistenceService {
 }
 
 /**
- * Find a single entity in the persistence context given the entity type [T] and [primaryKey] of the entity.
+ * Finds a single entity in the persistence context of the specified entity type [T] and with the specified
+ * [primaryKey].
  *
  * @param primaryKey The primary key of the entity to find.
  * @param T The type of entity to find.
  *
- * @return The found entity, null if it could not be found in the persistence context.
+ * @return The found entity. Null if it could not be found in the persistence context.
  */
 inline fun <reified T : Any> PersistenceService.find(primaryKey: Any): T? = find(T::class.java, primaryKey)
 
 /**
- * Find multiple entities of the same type with different primary keys from the persistence context in a single
+ * Finds multiple entities of the same type with different primary keys from the persistence context in a single
  * transaction.
  *
  * @param primaryKeys List of primary keys to find with the given entity type [T].
@@ -239,7 +254,7 @@ inline fun <reified T : Any> PersistenceService.find(primaryKey: Any): T? = find
 inline fun <reified T : Any> PersistenceService.find(primaryKeys: List<Any>): List<T> = find(T::class.java, primaryKeys)
 
 /**
- * Find all entities of the same type in a single transaction.
+ * Finds all entities of the same type in a single transaction.
  *
  * @param T The type of the entities to find.
  *
