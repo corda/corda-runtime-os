@@ -26,7 +26,7 @@ class PingAckFlow : RPCStartableFlow {
     override fun call(requestBody: RPCRequestData): String {
         val whoToPing = jsonMarshallingService.parse<MemberX500Name>(requestBody.getRequestBody())
         val session = flowMessaging.initiateFlow(whoToPing)
-        session.send(jsonMarshallingService.format(PingAckMessage("Ping")))
+        session.send(jsonMarshallingService.format(PingAckMessage("Ping to ${session.counterparty}")))
         return session.receive(PingAckMessage::class.java).message
     }
 }
@@ -35,7 +35,7 @@ class PingAckFlow : RPCStartableFlow {
 class PingAckResponderFlow : ResponderFlow {
     @Suspendable
     override fun call(session: FlowSession) {
-        session.send(PingAckMessage("Ack"))
+        session.send(PingAckMessage("Ack to ${session.counterparty}"))
     }
 }
 

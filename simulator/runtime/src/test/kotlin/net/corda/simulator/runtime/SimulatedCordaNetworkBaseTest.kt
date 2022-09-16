@@ -27,7 +27,7 @@ class SimulatedCordaNetworkBaseTest {
     fun `should pass on any errors from the flow checker`() {
         // Given a mock flow checker in our simulated Corda network
         val flowChecker = mock<FlowChecker>()
-        val corda = SimulatedCordaNetworkBase(flowChecker)
+        val corda = SimulatorDelegateBase(mock(), flowChecker)
 
         // That is set to provide an error
         whenever(flowChecker.check(any())).doThrow(NoDefaultConstructorException(HelloFlow::class.java))
@@ -40,7 +40,7 @@ class SimulatedCordaNetworkBaseTest {
     @Test
     fun `should be able to choose between multiple flows for a given party`() {
         // Given a simulated Corda network
-        val corda = SimulatedCordaNetworkBase()
+        val corda = SimulatorDelegateBase(mock())
 
         // When I upload two flows
         val helloVirtualNode = corda.createVirtualNode(holdingId, HelloFlow::class.java, ValidStartingFlow::class.java)
@@ -58,7 +58,7 @@ class SimulatedCordaNetworkBaseTest {
     fun `should be able to upload a concrete instance of a responder for a member and protocol`() {
         // Given a simulated Corda network with a simulated fiber we control
         val fiber = mock<SimFiber>()
-        val corda = SimulatedCordaNetworkBase(fiber = fiber)
+        val corda = SimulatorDelegateBase(mock(), fiber = fiber)
 
         // And a concrete responder
         val responder = object : ResponderFlow {
@@ -77,7 +77,7 @@ class SimulatedCordaNetworkBaseTest {
     fun `should register initiating members with the fiber`() {
         // Given a simulated Corda network with a simulated fiber we control
         val fiber = mock<SimFiber>()
-        val corda = SimulatedCordaNetworkBase(fiber = fiber)
+        val corda = SimulatorDelegateBase(mock(), fiber = fiber)
 
         // When I upload an initiating flow
         corda.createVirtualNode(holdingId, PingAckFlow::class.java)
@@ -90,7 +90,7 @@ class SimulatedCordaNetworkBaseTest {
     fun `should close the fiber when it is closed`() {
         // Given a simulated Corda network with a fiber we control
         val fiber = mock<SimFiber>()
-        val corda = SimulatedCordaNetworkBase(fiber = fiber)
+        val corda = SimulatorDelegateBase(mock(), fiber = fiber)
 
         // When we close Corda
         corda.close()
@@ -101,7 +101,7 @@ class SimulatedCordaNetworkBaseTest {
 
     @Test
     fun `should error if no flows are provided`() {
-        val corda = SimulatedCordaNetworkBase()
+        val corda = SimulatorDelegateBase(mock())
         assertThrows<java.lang.IllegalArgumentException> { corda.createVirtualNode(holdingId) }
     }
 }
