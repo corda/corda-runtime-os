@@ -12,7 +12,8 @@ import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
-import net.corda.layeredpropertymap.LayeredPropertyMapFactory
+import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
+import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
@@ -24,12 +25,9 @@ import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
-import net.corda.membership.read.MembershipGroupReader
-import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.test.util.time.TestClock
-import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MGMContext
@@ -40,7 +38,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
-import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -96,53 +93,47 @@ class StartRegistrationHandlerTest {
     }
 
     // Class under test
-    private lateinit var handler: StartRegistrationHandler
+    private lateinit var handler: RegistrationHandler<StartRegistration>
 
     // test dependencies
-    lateinit var memberInfoFactory: MemberInfoFactory
-    lateinit var membershipGroupReader: MembershipGroupReader
-    lateinit var membershipGroupReaderProvider: MembershipGroupReaderProvider
+    private lateinit var memberInfoFactory: MemberInfoFactory
     lateinit var membershipPersistenceClient: MembershipPersistenceClient
-    lateinit var membershipQueryClient: MembershipQueryClient
+    private lateinit var membershipQueryClient: MembershipQueryClient
 
-    val memberMemberContext: MemberContext = mock {
+    private val memberMemberContext: MemberContext = mock {
         on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
         on { parseList(eq(ENDPOINTS), eq(EndpointInfo::class.java)) } doReturn listOf(mock())
     }
-    val memberMgmContext: MGMContext = mock {
+    private val memberMgmContext: MGMContext = mock {
         on { parse(eq(MODIFIED_TIME), eq(Instant::class.java)) } doReturn clock.instant()
         on { entries } doReturn emptySet()
     }
-    val memberInfo: MemberInfo = mock {
+    private val memberInfo: MemberInfo = mock {
         on { name } doReturn x500Name
         on { isActive } doReturn true
         on { memberProvidedContext } doReturn memberMemberContext
         on { mgmProvidedContext } doReturn memberMgmContext
     }
-    val declinedMember: MemberInfo = mock {
+    private val declinedMember: MemberInfo = mock {
         on { isActive } doReturn false
         on { memberProvidedContext } doReturn memberMemberContext
         on { mgmProvidedContext } doReturn memberMgmContext
     }
 
-    val mgmMemberContext: MemberContext = mock {
+    private val mgmMemberContext: MemberContext = mock {
         on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
     }
-    val mgmContext: MGMContext = mock {
+    private val mgmContext: MGMContext = mock {
         on { parseOrNull(eq(IS_MGM), any<Class<Boolean>>()) } doReturn true
     }
-    val mgmMemberInfo: MemberInfo = mock {
+    private val mgmMemberInfo: MemberInfo = mock {
         on { name } doReturn mgmX500Name
         on { memberProvidedContext } doReturn mgmMemberContext
         on { mgmProvidedContext } doReturn mgmContext
     }
-    private val layeredPropertyMapFactor = mock<LayeredPropertyMapFactory> {
-        on { createMap(any()) } doAnswer {
-            val argument = it.getArgument<Map<String, String?>>(0)
-            mock<LayeredPropertyMap> {
-                on { entries } doReturn argument.entries
-            }
-        }
+
+    private val memberTypeChecker = mock<MemberTypeChecker> {
+        on { getMgmMemberInfo(mgmHoldingIdentity.toCorda()) } doReturn mgmMemberInfo
     }
 
     @BeforeEach
@@ -155,12 +146,6 @@ class StartRegistrationHandlerTest {
         }
         memberInfoFactory = mock {
             on { create(any<SortedMap<String, String?>>(), any()) } doReturn memberInfo
-        }
-        membershipGroupReader = mock {
-            on { lookup(eq(mgmX500Name)) } doReturn mgmMemberInfo
-        }
-        membershipGroupReaderProvider = mock {
-            on { getGroupReader(eq(mgmHoldingIdentity.toCorda())) } doReturn membershipGroupReader
         }
         membershipPersistenceClient = mock {
             on { persistRegistrationRequest(any(), any()) } doReturn MembershipPersistenceResult.success()
@@ -178,11 +163,10 @@ class StartRegistrationHandlerTest {
         handler = StartRegistrationHandler(
             clock,
             memberInfoFactory,
-            membershipGroupReaderProvider,
+            memberTypeChecker,
             membershipPersistenceClient,
             membershipQueryClient,
             cordaAvroSerializationFactory,
-            layeredPropertyMapFactor,
         )
     }
 
@@ -205,8 +189,7 @@ class StartRegistrationHandlerTest {
         }
         verifyServices(
             persistRegistrationRequest = true,
-            getGroupReader = true,
-            lookup = true,
+            verify = true,
             queryMemberInfo = true,
             persistMemberInfo = true
         )
@@ -231,8 +214,8 @@ class StartRegistrationHandlerTest {
     }
 
     @Test
-    fun `declined if target MGM info cannot be found`() {
-        whenever(membershipGroupReader.lookup(eq(mgmX500Name))) doReturn null
+    fun `declined if target MGM is not an mgm`() {
+        whenever(memberTypeChecker.getMgmMemberInfo(mgmHoldingIdentity.toCorda())).doReturn(null)
 
         with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull
@@ -244,17 +227,13 @@ class StartRegistrationHandlerTest {
         }
         verifyServices(
             persistRegistrationRequest = true,
-            getGroupReader = true,
-            lookup = true,
+            verify = true,
         )
     }
 
     @Test
-    fun `declined if target MGM is not an mgm`() {
-        val newMgmContext: MGMContext = mock {
-            on { parseOrNull(eq(IS_MGM), any<Class<Boolean>>()) } doReturn false
-        }
-        whenever(mgmMemberInfo.mgmProvidedContext).thenReturn(newMgmContext)
+    fun `declined if target member is an mgm`() {
+        whenever(memberTypeChecker.isMgm(holdingIdentity.toCorda())).doReturn(true)
 
         with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
             assertThat(updatedState).isNotNull
@@ -264,11 +243,6 @@ class StartRegistrationHandlerTest {
 
             assertDeclinedRegistration()
         }
-        verifyServices(
-            persistRegistrationRequest = true,
-            getGroupReader = true,
-            lookup = true,
-        )
     }
 
     @Test
@@ -295,8 +269,7 @@ class StartRegistrationHandlerTest {
         }
         verifyServices(
             persistRegistrationRequest = true,
-            getGroupReader = true,
-            lookup = true,
+            verify = true,
         )
     }
 
@@ -325,8 +298,7 @@ class StartRegistrationHandlerTest {
         }
         verifyServices(
             persistRegistrationRequest = true,
-            getGroupReader = true,
-            lookup = true,
+            verify = true,
         )
     }
 
@@ -346,8 +318,7 @@ class StartRegistrationHandlerTest {
         }
         verifyServices(
             persistRegistrationRequest = true,
-            getGroupReader = true,
-            lookup = true,
+            verify = true,
             queryMemberInfo = true,
         )
     }
@@ -381,8 +352,7 @@ class StartRegistrationHandlerTest {
         }
         verifyServices(
             persistRegistrationRequest = true,
-            getGroupReader = true,
-            lookup = true,
+            verify = true,
             queryMemberInfo = true,
         )
     }
@@ -402,8 +372,7 @@ class StartRegistrationHandlerTest {
         }
         verifyServices(
             persistRegistrationRequest = true,
-            getGroupReader = true,
-            lookup = true,
+            verify = true,
             queryMemberInfo = true,
             persistMemberInfo = true
         )
@@ -427,8 +396,7 @@ class StartRegistrationHandlerTest {
     @Suppress("LongParameterList")
     private fun verifyServices(
         persistRegistrationRequest: Boolean = false,
-        getGroupReader: Boolean = false,
-        lookup: Boolean = false,
+        verify: Boolean = false,
         queryMemberInfo: Boolean = false,
         persistMemberInfo: Boolean = false
     ) {
@@ -437,16 +405,13 @@ class StartRegistrationHandlerTest {
         verify(membershipPersistenceClient, getVerificationMode(persistRegistrationRequest))
             .persistRegistrationRequest(eq(mgmHoldingIdentity.toCorda()), any())
 
-        verify(membershipGroupReaderProvider, getVerificationMode(getGroupReader))
-            .getGroupReader(eq(mgmHoldingIdentity.toCorda()))
-
-        verify(membershipGroupReader, getVerificationMode(lookup))
-            .lookup(eq(mgmX500Name))
-
         verify(membershipQueryClient, getVerificationMode(queryMemberInfo))
             .queryMemberInfo(eq(mgmHoldingIdentity.toCorda()), any())
 
         verify(membershipPersistenceClient, getVerificationMode(persistMemberInfo))
             .persistMemberInfo(eq(mgmHoldingIdentity.toCorda()), any())
+
+        verify(memberTypeChecker, getVerificationMode(verify))
+            .getMgmMemberInfo(eq(mgmHoldingIdentity.toCorda()))
     }
 }

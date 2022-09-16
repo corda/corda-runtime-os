@@ -6,11 +6,14 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
+import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
+import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
@@ -30,6 +33,7 @@ import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
+import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -147,6 +151,10 @@ class ApproveRegistrationHandlerTest {
             )
         } doReturn membershipPackage
     }
+    private val memberTypeChecker = mock<MemberTypeChecker> {
+        on { isMgm(member.toAvro()) } doReturn false
+        on { getMgmMemberInfo(owner) } doReturn mgm
+    }
 
     private val handler = ApproveRegistrationHandler(
         membershipPersistenceClient,
@@ -156,6 +164,7 @@ class ApproveRegistrationHandlerTest {
         cryptoOpsClient,
         cordaAvroSerializationFactory,
         merkleTreeFactory,
+        memberTypeChecker,
         signerFactory,
         merkleTreeGenerator,
         p2pRecordsFactory,
@@ -245,7 +254,6 @@ class ApproveRegistrationHandlerTest {
         assertThat(reply.outputStates).containsAll(membersRecord)
     }
 
-
     @Test
     fun `invoke sends the approved state to the member over P2P`() {
         val record = mock<Record<String, AppMessage>>()
@@ -278,11 +286,42 @@ class ApproveRegistrationHandlerTest {
 
     @Test
     fun `Error is thrown when there is no MGM`() {
-        whenever(membershipQueryClient.queryMemberInfo(owner)).doReturn(MembershipQueryResult.Success(activeMembersWithoutMgm))
+        whenever(
+            memberTypeChecker.getMgmMemberInfo(owner)
+        ).doReturn(null)
 
-        assertThrows<ApproveRegistrationHandler.FailToFindMgm> {
-            handler.invoke(state, key, command)
-        }
+        val results = handler.invoke(state, key, command)
+
+        assertThat(results.outputStates)
+            .hasSize(1)
+            .allSatisfy {
+                assertThat(it.topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
+                val value = (it.value as? RegistrationCommand)?.command
+                assertThat(value)
+                    .isNotNull
+                    .isInstanceOf(DeclineRegistration::class.java)
+                assertThat((value as? DeclineRegistration)?.reason).isNotBlank()
+            }
+    }
+
+    @Test
+    fun `Error is thrown when the member is not a member`() {
+        whenever(
+            memberTypeChecker.isMgm(member.toAvro())
+        ).doReturn(true)
+
+        val results = handler.invoke(state, key, command)
+
+        assertThat(results.outputStates)
+            .hasSize(1)
+            .allSatisfy {
+                assertThat(it.topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
+                val value = (it.value as? RegistrationCommand)?.command
+                assertThat(value)
+                    .isNotNull
+                    .isInstanceOf(DeclineRegistration::class.java)
+                assertThat((value as? DeclineRegistration)?.reason).isNotBlank()
+            }
     }
 
     @Test
