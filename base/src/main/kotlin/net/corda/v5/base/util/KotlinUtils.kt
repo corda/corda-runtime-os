@@ -1,13 +1,10 @@
 @file:JvmName("KotlinUtils")
 package net.corda.v5.base.util
 
-import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.types.LayeredPropertyMap
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
-import java.util.function.Supplier
-import kotlin.reflect.KProperty
 
 //
 // READ ME FIRST:
@@ -79,55 +76,9 @@ val Int.seconds: Duration get() = Duration.ofSeconds(toLong())
  */
 val Int.millis: Duration get() = Duration.ofMillis(toLong())
 
-/**
- * A simple wrapper that enables the use of Kotlin's `val x by transient { ... }` syntax. Such a property
- * will not be serialized, and if it's missing (or the first time it's accessed), the initializer will be
- * used to set it up.
- */
-fun <T> transient(initializer: Supplier<T>): PropertyDelegate<T> = TransientProperty(initializer)
-
-/**
- * Simple interface encapsulating the implicit Kotlin contract for immutable property delegates.
- */
-interface PropertyDelegate<out T> {
-    /**
-     * Invoked as part of Kotlin delegated properties construct.
-     */
-    operator fun getValue(thisRef: Any?, property: KProperty<*>): T
-}
-
-/**
- * Simple interface encapsulating the implicit Kotlin contract for mutable property delegates.
- */
-interface VariablePropertyDelegate<T> : PropertyDelegate<T> {
-    /**
-     * Invoked as part of Kotlin delegated properties construct.
-     */
-    operator fun setValue(thisRef: Any?, property: KProperty<*>, value: T)
-}
-
-@CordaSerializable
-private class TransientProperty<out T>(private val initialiser: Supplier<T>) : PropertyDelegate<T> {
-    @Transient
-    private var initialised = false
-
-    @Transient
-    private var value: T? = null
-
-    @Synchronized
-    override operator fun getValue(thisRef: Any?, property: KProperty<*>): T {
-        if (!initialised) {
-            value = initialiser.get()
-            initialised = true
-        }
-        return uncheckedCast(value)
-    }
-}
 
 @Suppress("UNCHECKED_CAST")
 fun <T, U : T> uncheckedCast(obj: T) = obj as U
-
-fun <T> Class<T>.castIfPossible(obj: Any): T? = if (isInstance(obj)) cast(obj) else null
 
 /**
  * Function for reading and parsing the String values stored in the values to actual objects.
