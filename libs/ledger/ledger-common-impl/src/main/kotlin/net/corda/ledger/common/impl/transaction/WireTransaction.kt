@@ -27,9 +27,16 @@ class WireTransaction(
         rootMerkleTree.root
     }
 
+    val metadata: TransactionMetaData
+
     init {
         check(componentGroupLists.all { it.isNotEmpty() }) { "Empty component groups are not allowed" }
         check(componentGroupLists.all { i -> i.all { j-> j.isNotEmpty() } }) { "Empty components are not allowed" }
+
+        val mapper = jacksonObjectMapper()
+        val metadataBytes = componentGroupLists[ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first()
+        metadata = mapper.readValue(metadataBytes, TransactionMetaData::class.java) // TODO(update with CORE-5940)
+
         check(metadata.getDigestSettings() == WireTransactionDigestSettings.defaultValues) {
             "Only the default digest settings are acceptable now! ${metadata.getDigestSettings()} vs " +
                     "${WireTransactionDigestSettings.defaultValues}"
@@ -38,13 +45,6 @@ class WireTransaction(
 
     fun getComponentGroupList(componentGroupId: Int): List<ByteArray> =
         componentGroupLists[componentGroupId]
-
-    val metadata: TransactionMetaData
-        get() {
-            val mapper = jacksonObjectMapper()
-            val metadataBytes = componentGroupLists[ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first()
-            return mapper.readValue(metadataBytes, TransactionMetaData::class.java) // CORE-5940
-        }
 
     val wrappedLedgerTransactionClassName: String
         get() {

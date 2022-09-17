@@ -35,7 +35,6 @@ class ConfigProcessorTest {
     private val configMerger: ConfigMerger = mock {
         on { getMessagingConfig(any(), any()) } doAnswer { it.arguments[1] as SmartConfig }
         on { getDbConfig(any(), anyOrNull()) } doAnswer { SmartConfigImpl.empty()  }
-        on { getCryptoConfig(any(), any()) } doAnswer { it.arguments[1] as SmartConfig  }
     }
 
     companion object {

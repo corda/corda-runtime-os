@@ -39,7 +39,8 @@ class HttpsRpcServerWebsocketTest : AbstractWebsocketTest() {
                 context,
                 sslConfig,
                 null,
-                HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE
+                HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
+                20000L
             )
 
             server = HttpRpcServerImpl(

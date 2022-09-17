@@ -139,12 +139,16 @@ class RegistrationManagementServiceImpl @Activate constructor(
                 } else {
                     logger.info("Setting deactive state due to receiving registration status ${event.status}")
                     coordinator.updateStatus(LifecycleStatus.DOWN)
+                    subRegistration?.close()
+                    subRegistration = null
                     subscription?.close()
                     subscription = null
                 }
             }
             is ConfigChangedEvent -> {
                 val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+                subRegistration?.close()
+                subRegistration = null
                 subscription?.close()
                 subscription = subscriptionFactory.createStateAndEventSubscription(
                     SubscriptionConfig(
@@ -166,7 +170,6 @@ class RegistrationManagementServiceImpl @Activate constructor(
                     messagingConfig
                 ).also {
                     it.start()
-                    subRegistration?.close()
                     subRegistration = coordinator.followStatusChangesByName(setOf(it.subscriptionName))
                 }
             }

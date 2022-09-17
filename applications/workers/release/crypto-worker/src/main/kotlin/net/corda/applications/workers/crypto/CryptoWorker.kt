@@ -8,8 +8,7 @@ import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBo
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setUpHealthMonitor
-import net.corda.crypto.config.impl.addDefaultBootCryptoConfig
-import net.corda.crypto.core.aes.KeyCredentials
+import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.osgi.api.Application
@@ -42,18 +41,20 @@ class CryptoWorker @Activate constructor(
         private val logger = contextLogger()
     }
 
-    /** Parses the arguments, then initialises and starts the [processor] and [dependenciesProcessor]. */
     override fun startup(args: Array<String>) {
         logger.info("Crypto worker starting.")
         JavaSerialisationFilter.install()
-
         val params = getParams(args, CryptoWorkerParams())
-        if (printHelpOrVersion(params.defaultParams, CryptoWorker::class.java, shutDownService)) return
+        if (printHelpOrVersion(params.defaultParams, CryptoWorker::class.java, shutDownService)) {
+            return
+        }
+        if (params.hsmId.isBlank()) {
+            throw IllegalStateException("Please specify which HSM the worker must handle, like --hsm-id SOFT")
+        }
         setUpHealthMonitor(healthMonitor, params.defaultParams)
-
-        val config = buildBoostrapConfig(params, configurationValidatorFactory)
-
-        processor.start(config)
+        processor.start(
+            buildBoostrapConfig(params, configurationValidatorFactory)
+        )
     }
 
     override fun shutdown() {
@@ -61,19 +62,20 @@ class CryptoWorker @Activate constructor(
         processor.stop()
         healthMonitor.stop()
     }
-}
 
-fun buildBoostrapConfig(params: CryptoWorkerParams, configurationValidatorFactory: ConfigurationValidatorFactory): SmartConfig {
-    val databaseConfig = PathAndConfig(BootConfig.BOOT_DB_PARAMS, params.databaseParams)
-    val cryptoConfig = PathAndConfig(BOOT_CRYPTO, params.cryptoParams)
-    return getBootstrapConfig(
-        params.defaultParams, configurationValidatorFactory.createConfigValidator(), listOf(databaseConfig, cryptoConfig)
-    ).addDefaultBootCryptoConfig(
-        fallbackMasterWrappingKey = KeyCredentials("master-passphrase", "master-salt")
+    private fun buildBoostrapConfig(
+        params: CryptoWorkerParams,
+        configurationValidatorFactory: ConfigurationValidatorFactory
+    ): SmartConfig = getBootstrapConfig(
+        params.defaultParams,
+        configurationValidatorFactory.createConfigValidator(),
+        listOf(
+            PathAndConfig(BootConfig.BOOT_DB_PARAMS, params.databaseParams),
+            PathAndConfig(BOOT_CRYPTO, createCryptoBootstrapParamsMap(params.hsmId))
+        )
     )
 }
 
-/** Additional parameters for the crypto worker are added here. */
 class CryptoWorkerParams {
     @Mixin
     var defaultParams = DefaultWorkerParams()
@@ -81,6 +83,6 @@ class CryptoWorkerParams {
     @CommandLine.Option(names = ["-d", "--databaseParams"], description = ["Database parameters for the worker."])
     var databaseParams = emptyMap<String, String>()
 
-    @CommandLine.Option(names = ["--cryptoParams"], description = ["Crypto parameters for the worker."])
-    var cryptoParams = emptyMap<String, String>()
+    @CommandLine.Option(names = ["--hsm-id"], description = ["HSM ID which is handled by this worker instance."])
+    var hsmId = ""
 }

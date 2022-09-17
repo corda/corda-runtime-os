@@ -52,7 +52,7 @@ class FlowSessionManagerImplTest {
         private const val PROTOCOL = "protocol"
         val X500_NAME = MemberX500Name(
             commonName = "Alice",
-            organisation = "Alice Corp",
+            organization = "Alice Corp",
             locality = "LDN",
             country = "GB"
         )

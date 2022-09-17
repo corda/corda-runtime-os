@@ -18,7 +18,8 @@ import org.osgi.service.component.annotations.ServiceScope
         SerializationServiceInternal::class,
         SingletonSerializeAsToken::class
     ],
-    scope = ServiceScope.PROTOTYPE
+    scope = ServiceScope.PROTOTYPE,
+    property = [ "corda.system=true" ]
 )
 class SerializationServiceImpl @Activate constructor(
     @Reference(service = FlowFiberService::class)

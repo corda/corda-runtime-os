@@ -1,6 +1,8 @@
 package net.corda.simulator
 
 import net.corda.simulator.exceptions.ServiceConfigurationException
+import net.corda.simulator.factories.SimulatorConfigurationBuilder
+import net.corda.simulator.factories.SimulatorDelegateFactory
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.ResponderFlow
 import java.util.ServiceLoader
@@ -22,10 +24,12 @@ import java.util.ServiceLoader
  * @fiber The simulated "fiber" with which responder flows will be registered by protocol
  * @injector An injector to initialize services annotated with @CordaInject in flows and subflows
  */
-class Simulator : SimulatedCordaNetwork {
+class Simulator(
+    configuration: SimulatorConfiguration = SimulatorConfigurationBuilder.create().build()
+) : SimulatedCordaNetwork {
 
     private val delegate : SimulatedCordaNetwork =
-        ServiceLoader.load(SimulatedCordaNetwork::class.java).firstOrNull() ?:
+        ServiceLoader.load(SimulatorDelegateFactory::class.java).firstOrNull()?.create(configuration) ?:
         throw ServiceConfigurationException(SimulatedCordaNetwork::class.java)
 
     /**

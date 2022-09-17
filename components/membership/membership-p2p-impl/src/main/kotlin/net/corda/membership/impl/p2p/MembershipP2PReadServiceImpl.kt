@@ -106,11 +106,16 @@ class MembershipP2PReadServiceImpl @Activate constructor(
                 } else {
                     logger.info("Setting deactive state due to receiving registration status ${event.status}")
                     coordinator.updateStatus(LifecycleStatus.DOWN)
+                    subRegistrationHandle?.close()
+                    subRegistrationHandle = null
                     subscription?.close()
+                    subscription = null
                 }
             }
             is ConfigChangedEvent -> {
                 val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+                subRegistrationHandle?.close()
+                subRegistrationHandle = null
                 subscription?.close()
                 subscription = subscriptionFactory.createDurableSubscription(
                     SubscriptionConfig(
@@ -122,7 +127,6 @@ class MembershipP2PReadServiceImpl @Activate constructor(
                     null
                 ).also {
                     it.start()
-                    subRegistrationHandle?.close()
                     subRegistrationHandle = coordinator.followStatusChangesByName(setOf(it.subscriptionName))
                 }
             }

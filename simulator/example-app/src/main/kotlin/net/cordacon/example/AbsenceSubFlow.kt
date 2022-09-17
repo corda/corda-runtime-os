@@ -17,6 +17,6 @@ class AbsenceSubFlow(private val counterparty: MemberX500Name) : SubFlow<String>
     override fun call(): String {
         val session = flowMessaging.initiateFlow(counterparty)
         session.send(RollCallRequest(counterparty))
-        return session.receive(RollCallResponse::class.java).unwrap {it}.response
+        return session.receive(RollCallResponse::class.java).response
     }
 }

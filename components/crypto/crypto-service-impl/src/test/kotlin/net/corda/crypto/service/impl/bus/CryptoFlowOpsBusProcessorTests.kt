@@ -6,7 +6,7 @@ import java.time.Instant
 import java.util.*
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.client.CryptoOpsProxyClient
-import net.corda.crypto.config.impl.createDefaultCryptoConfig
+import net.corda.crypto.config.impl.createTestCryptoConfig
 import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_TTL_KEY
@@ -56,7 +56,7 @@ class CryptoFlowOpsBusProcessorTests {
     companion object {
         private val configEvent = ConfigChangedEvent(
             setOf(ConfigKeys.CRYPTO_CONFIG),
-            mapOf(ConfigKeys.CRYPTO_CONFIG to createDefaultCryptoConfig(KeyCredentials("pass", "salt")))
+            mapOf(ConfigKeys.CRYPTO_CONFIG to createTestCryptoConfig(KeyCredentials("pass", "salt")))
         )
     }
 

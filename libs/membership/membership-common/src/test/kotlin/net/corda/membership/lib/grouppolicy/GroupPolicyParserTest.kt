@@ -35,4 +35,42 @@ class GroupPolicyParserTest {
             GroupPolicyParser.groupIdFromJson(groupPolicyJson)
         }
     }
+
+    @Test
+    fun `group policy parser can extract file format version`() {
+        val fileFormatVersion = 1
+        val groupPolicyJson = """{ "fileFormatVersion" : $fileFormatVersion}"""
+
+        val parsedFileFormatVersion = GroupPolicyParser.getFileFormatVersion(groupPolicyJson)
+
+        assertThat(parsedFileFormatVersion).isEqualTo(fileFormatVersion)
+    }
+
+    @Test
+    fun `group policy parser fails to extract file format version`() {
+        val groupPolicyJson = "{}"
+
+        assertThrows<CordaRuntimeException> {
+            GroupPolicyParser.getFileFormatVersion(groupPolicyJson)
+        }
+    }
+
+    @Test
+    fun `group policy parser fails to extract file format version if json can't be parsed`() {
+        val fileFormatVersion = 1
+        val groupPolicyJson = """{[{ "fileFormatVersion" : $fileFormatVersion}"""
+
+        assertThrows<CordaRuntimeException> {
+            GroupPolicyParser.getFileFormatVersion(groupPolicyJson)
+        }
+    }
+
+    @Test
+    fun `group policy parser fails to extract file format version if version isn't an int`() {
+        val groupPolicyJson = """{[{ "fileFormatVersion" : "BAD_INT"}"""
+
+        assertThrows<CordaRuntimeException> {
+            GroupPolicyParser.getFileFormatVersion(groupPolicyJson)
+        }
+    }
 }

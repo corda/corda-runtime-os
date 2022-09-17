@@ -1,7 +1,6 @@
 package net.corda.membership.impl.httprpc.v1
 
 import net.corda.httprpc.PluggableRPCOps
-import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.exception.ServiceUnavailableException
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -15,6 +14,8 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.virtualnode.read.rpc.extensions.getByHoldingIdentityShortHashOrThrow
+import net.corda.virtualnode.read.rpc.extensions.ofOrThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -38,8 +39,8 @@ class MemberLookupRpcOpsImpl @Activate constructor(
         fun lookup(
             holdingIdentityShortHash: ShortHash,
             commonName: String?,
-            organisation: String?,
-            organisationUnit: String?,
+            organization: String?,
+            organizationUnit: String?,
             locality: String?,
             state: String?,
             country: String?
@@ -85,16 +86,16 @@ class MemberLookupRpcOpsImpl @Activate constructor(
     override fun lookup(
         holdingIdentityShortHash: String,
         commonName: String?,
-        organisation: String?,
-        organisationUnit: String?,
+        organization: String?,
+        organizationUnit: String?,
         locality: String?,
         state: String?,
         country: String?
     ) = impl.lookup(
-        holdingIdentityShortHash.toShortHash(),
+        ShortHash.ofOrThrow(holdingIdentityShortHash),
         commonName,
-        organisation,
-        organisationUnit,
+        organization,
+        organizationUnit,
         locality,
         state,
         country
@@ -114,8 +115,8 @@ class MemberLookupRpcOpsImpl @Activate constructor(
         override fun lookup(
             holdingIdentityShortHash: ShortHash,
             commonName: String?,
-            organisation: String?,
-            organisationUnit: String?,
+            organization: String?,
+            organizationUnit: String?,
             locality: String?,
             state: String?,
             country: String?
@@ -129,21 +130,22 @@ class MemberLookupRpcOpsImpl @Activate constructor(
         override fun lookup(
             holdingIdentityShortHash: ShortHash,
             commonName: String?,
-            organisation: String?,
-            organisationUnit: String?,
+            organization: String?,
+            organizationUnit: String?,
             locality: String?,
             state: String?,
             country: String?
         ): RpcMemberInfoList {
-            val holdingIdentity = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
-                ?: throw ResourceNotFoundException("Could not find holding identity associated with member.")
+            val holdingIdentity = virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(
+                holdingIdentityShortHash
+            ) { "Could not find holding identity '$holdingIdentityShortHash' associated with member." }.holdingIdentity
 
             val reader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
             val filteredMembers = reader.lookup().filter { member ->
                 val memberName = member.name
                 commonName?.let { memberName.commonName.equals(it, true) } ?: true &&
-                organisation?.let { memberName.organisation.equals(it, true) } ?: true &&
-                organisationUnit?.let { memberName.organisationUnit.equals(it, true) } ?: true &&
+                organization?.let { memberName.organization.equals(it, true) } ?: true &&
+                organizationUnit?.let { memberName.organizationUnit.equals(it, true) } ?: true &&
                 locality?.let { memberName.locality.equals(it, true) } ?: true &&
                 state?.let { memberName.state.equals(it, true) } ?: true &&
                 country?.let { memberName.country.equals(it, true) } ?: true

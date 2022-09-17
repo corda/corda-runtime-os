@@ -1162,9 +1162,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "type" : "string",
-                  "nullable" : false,
-                  "example" : "string"
+                  "$ref" : "#/components/schemas/KeyPairIdentifier"
                 }
               }
             }
@@ -1464,22 +1462,22 @@
         }, {
           "name" : "o",
           "in" : "query",
-          "description" : "Organisation (O) attribute of the X.500 name to filter members by",
+          "description" : "Organization (O) attribute of the X.500 name to filter members by",
           "required" : false,
           "schema" : {
             "type" : "string",
-            "description" : "Organisation (O) attribute of the X.500 name to filter members by",
+            "description" : "Organization (O) attribute of the X.500 name to filter members by",
             "nullable" : true,
             "example" : "string"
           }
         }, {
           "name" : "ou",
           "in" : "query",
-          "description" : "Organisation Unit (OU) attribute of the X.500 name to filter members by",
+          "description" : "Organization Unit (OU) attribute of the X.500 name to filter members by",
           "required" : false,
           "schema" : {
             "type" : "string",
-            "description" : "Organisation Unit (OU) attribute of the X.500 name to filter members by",
+            "description" : "Organization Unit (OU) attribute of the X.500 name to filter members by",
             "nullable" : true,
             "example" : "string"
           }
@@ -2838,14 +2836,8 @@
         }
       },
       "GenerateCsrWrapperRequest" : {
-        "required" : [ "certificateRole", "x500Name" ],
+        "required" : [ "x500Name" ],
         "properties" : {
-          "certificateRole" : {
-            "type" : "string",
-            "description" : "Certificate role. For example: TLS, SESSION_INIT, ...",
-            "nullable" : false,
-            "example" : "string"
-          },
           "contextMap" : {
             "type" : "object",
             "additionalProperties" : {
@@ -3035,6 +3027,17 @@
             "example" : "string"
           },
           "scheme" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }
+      },
+      "KeyPairIdentifier" : {
+        "required" : [ "id" ],
+        "type" : "object",
+        "properties" : {
+          "id" : {
             "type" : "string",
             "nullable" : false,
             "example" : "string"

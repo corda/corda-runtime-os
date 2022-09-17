@@ -62,7 +62,7 @@ class ConsensualTransactionBuilderImpl(
                 LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
                 LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
                 DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues
-                // CORE-5940 set CPK identifier/etc
+                // TODO(CORE-5940 set CPK identifier/etc)
             )
         )
     }
@@ -80,7 +80,7 @@ class ConsensualTransactionBuilderImpl(
         for (componentGroupIndex in ConsensualComponentGroupEnum.values()) {
             componentGroupLists += when (componentGroupIndex) {
                 ConsensualComponentGroupEnum.METADATA ->
-                    listOf(mapper.writeValueAsBytes(calculateMetaData())) // CORE-5940
+                    listOf(mapper.writeValueAsBytes(calculateMetaData())) // TODO(update with CORE-5940)
                 ConsensualComponentGroupEnum.TIMESTAMP ->
                     listOf(serializer.serialize(Instant.now()).bytes)
                 ConsensualComponentGroupEnum.REQUIRED_SIGNING_KEYS ->
@@ -96,7 +96,7 @@ class ConsensualTransactionBuilderImpl(
 
     override fun signInitial(publicKey: PublicKey): ConsensualSignedTransaction {
         val wireTransaction = buildWireTransaction()
-        // CORE-5091 we just fake the signature for now...
+        // TODO(CORE-5091 we just fake the signature for now...)
 //        val signature = signingService.sign(wireTransaction.id.bytes, publicKey, SignatureSpec.RSA_SHA256)
         val signature = DigitalSignature.WithKey(publicKey, "0".toByteArray(), mapOf())
         val digitalSignatureMetadata = DigitalSignatureMetadata(Instant.now(), mapOf()) //CORE-5091 populate this properly...
@@ -105,8 +105,8 @@ class ConsensualTransactionBuilderImpl(
     }
 
     private fun buildWireTransaction() : WireTransaction{
-        // CORE-5982 more verifications
-        // CORE-5940 ? metadata verifications: nulls, order of CPKs, at least one CPK?)
+        // TODO(CORE-5982 more verifications)
+        // TODO(CORE-5940 ? metadata verifications: nulls, order of CPKs, at least one CPK?))
         require(states.isNotEmpty()){"At least one Consensual State is required"}
         require(states.all{it.participants.isNotEmpty()}){"All consensual states needs to have participants"}
         val componentGroupLists = calculateComponentGroupLists(serializer)

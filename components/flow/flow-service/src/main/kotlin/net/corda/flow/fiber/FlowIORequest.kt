@@ -2,10 +2,7 @@ package net.corda.flow.fiber
 
 import java.nio.ByteBuffer
 import java.time.Instant
-import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.external.events.factory.ExternalEventFactory
-import net.corda.v5.application.messaging.FlowInfo
-import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
 
 /**
@@ -54,14 +51,6 @@ interface FlowIORequest<out R> {
     data class CloseSessions(val sessions: Set<String>) : FlowIORequest<Unit>
 
     /**
-     * Get the FlowInfo of the specified sessions.
-     *
-     * @property sessions the sessions to get the FlowInfo of.
-     * @return a map from session to FlowInfo.
-     */
-    data class GetFlowInfo(val sessions: Set<FlowSession>) : FlowIORequest<Map<FlowSession, FlowInfo>>
-
-    /**
      * Suspend the flow until the specified time.
      *
      * @property wakeUpAfter the time to sleep until.
@@ -87,9 +76,9 @@ interface FlowIORequest<out R> {
 
     data class FlowFinished(val result: String?) : FlowIORequest<String?>
 
-    data class SubFlowFinished(val flowStackItem: FlowStackItem) : FlowIORequest<FlowStackItem?>
+    data class SubFlowFinished(val sessionIds: List<String>) : FlowIORequest<Unit>
 
-    data class SubFlowFailed(val throwable: Throwable, val flowStackItem: FlowStackItem) : FlowIORequest<Unit>
+    data class SubFlowFailed(val throwable: Throwable, val sessionIds: List<String>) : FlowIORequest<Unit>
 
     data class FlowFailed(val exception: Throwable) : FlowIORequest<Unit>
 

@@ -23,7 +23,7 @@ class StandardTypesModuleTest {
 
             val name = MemberX500NameDeserializer.deserialize(parser, mock())
 
-            assertThat(name.organisation).isEqualTo("Alice")
+            assertThat(name.organization).isEqualTo("Alice")
         }
 
         @Test
