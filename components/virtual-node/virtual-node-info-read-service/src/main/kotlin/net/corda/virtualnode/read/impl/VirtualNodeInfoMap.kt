@@ -2,6 +2,7 @@ package net.corda.virtualnode.read.impl
 
 import net.corda.data.identity.HoldingIdentity
 import net.corda.data.virtualnode.VirtualNodeInfo
+import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.toCorda
 import java.util.Collections
@@ -18,6 +19,10 @@ internal class VirtualNodeInfoMap {
         Collections.synchronizedMap(mutableMapOf())
     private val virtualNodeInfoById: MutableMap<ShortHash, VirtualNodeInfo> =
         Collections.synchronizedMap(mutableMapOf())
+
+    companion object {
+        val logger = contextLogger()
+    }
 
     /** Class to be used as a key for putting items. */
     data class Key(val holdingIdentity: HoldingIdentity, val holdingIdShortHash: ShortHash)
@@ -63,7 +68,13 @@ internal class VirtualNodeInfoMap {
     fun get(holdingIdentity: HoldingIdentity): VirtualNodeInfo? = virtualNodeInfoByHoldingIdentity[holdingIdentity]
 
     /** Get a [VirtualNodeInfo] by short hash ([net.corda.virtualnode.HoldingIdentity.shortHash]), `null` if not found */
-    fun getById(holdingIdShortHash: ShortHash): VirtualNodeInfo? = virtualNodeInfoById[holdingIdShortHash]
+    fun getById(holdingIdShortHash: ShortHash): VirtualNodeInfo? {
+        logger.info("virtual node data:")
+        virtualNodeInfoById.forEach {
+            logger.info("${it.key}")
+        }
+        return virtualNodeInfoById[holdingIdShortHash]
+    }
 
     /** Remove the [VirtualNodeInfo] for a given key, specifically from the 'by id' map, in this method. */
     private fun removeById(key: Key) {

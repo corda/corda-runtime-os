@@ -18,6 +18,7 @@ internal class PersistRegistrationRequestHandler(
 
     override fun invoke(context: MembershipRequestContext, request: PersistRegistrationRequest) {
         logger.info("Persisting registration request with ID [${request.registrationRequest.registrationId}].")
+        logger.info("context's id: ${context.holdingIdentity.toCorda().shortHash}")
         transaction(context.holdingIdentity.toCorda().shortHash) { em ->
             val now = clock.instant()
             em.merge(
