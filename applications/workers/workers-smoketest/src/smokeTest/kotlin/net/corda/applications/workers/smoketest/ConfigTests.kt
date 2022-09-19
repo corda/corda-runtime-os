@@ -1,8 +1,7 @@
 package net.corda.applications.workers.smoketest
 
-import net.corda.applications.workers.smoketest.virtualnode.helpers.ClusterBuilder
-import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetry
-import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
+import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
+import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CONFIG_INTERVAL_MS
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -10,61 +9,26 @@ import org.junit.jupiter.api.Test
 @Order(40)
 class ConfigTests {
     @Test
-    fun `can update config`() {
-        cluster {
-            val cb = this
-            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+    fun `get config includes defaults`() {
+        val existing = getConfig(RECONCILIATION_CONFIG)
+        val sourceConfigValues = existing.sourceConfigNode().count()
+        val defaultedConfigValues = existing.configWithDefaultsNode().count()
 
-            val existing = getConfig(this, "corda.reconciliation")
-
-            val payload = getReconConfig(getConfigVersion(existing.body))
-
-            val response = assertWithRetry {
-                command {
-                    putConfig(cb, payload)
-                }
-                condition { it.code == 200 }
-            }
-
-            val expectedConfig = getConfigValue(payload)
-            val actualConfig = getConfigValue(response.body)
-            assertThat(actualConfig).isEqualTo(expectedConfig)
-        }
+        assertThat(defaultedConfigValues).isGreaterThan(sourceConfigValues)
     }
 
     @Test
-    fun `get config includes defaults`() {
-        cluster {
-            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+    fun `can update config`() {
+        val currentValue = getConfig(RECONCILIATION_CONFIG).configWithDefaultsNode()[RECONCILIATION_CONFIG_INTERVAL_MS].asInt()
+        val newValue = (currentValue * 1.5).toInt()
+        updateConfig(mapOf(RECONCILIATION_CONFIG_INTERVAL_MS to newValue).toJsonString(), RECONCILIATION_CONFIG)
 
-            val existing = getConfig(this, "corda.reconciliation")
-
-            val sourceConfigValues = existing.body.toJson()["sourceConfig"].textValue().toJson().count()
-            val defaultedConfigValues = existing.body.toJson()["configWithDefaults"].textValue().toJson().count()
-            assertThat(defaultedConfigValues).isGreaterThan(sourceConfigValues)
+        try {
+            val updatedValue = getConfig(RECONCILIATION_CONFIG).sourceConfigNode()[RECONCILIATION_CONFIG_INTERVAL_MS].asInt()
+            assertThat(updatedValue).isEqualTo(newValue)
+        } finally {
+            // Be a good neighbour and rollback the configuration change back to what it was
+            updateConfig(mapOf(RECONCILIATION_CONFIG_INTERVAL_MS to currentValue).toJsonString(), RECONCILIATION_CONFIG)
         }
     }
-
-    private fun getReconConfig(version: String) = """
-    {
-        "config": "{\"configIntervalMs\":15000}",
-        "schemaVersion": {
-          "major": 1,
-          "minor": 0
-        },
-        "section": "corda.reconciliation",
-        "version": $version
-    }
-    """.trimIndent()
-
-    private fun getConfigVersion(body: String) = body.toJson()["version"].toString()
-
-    private fun getConfigValue(body: String) = body.toJson()["config"].toString()
-
-    private fun getConfig(builder: ClusterBuilder, section: String) =
-        builder.get("/api/v1/config/$section")
-
-
-    private fun putConfig(builder: ClusterBuilder, config: String) =
-        builder.put("/api/v1/config", config)
 }

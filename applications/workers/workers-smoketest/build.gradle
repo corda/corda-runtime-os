@@ -52,6 +52,9 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.4.2"
 
+    // Avoid having the schema names and keys scattered across projects
+    smokeTestImplementation "net.corda:corda-config-schema:$cordaApiVersion"
+
     // But building a cpb for use in a test is ok.
     cpis project(path: ':testing:cpbs:flow-worker-dev', configuration: 'cordaCPB')
     cpiForFlowCacheTest project(path: ':testing:cpbs:flow-worker-dev-for-cache-testing', configuration: 'cordaCPB')
