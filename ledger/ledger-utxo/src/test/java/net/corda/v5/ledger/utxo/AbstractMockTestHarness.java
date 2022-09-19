@@ -1,5 +1,6 @@
 package net.corda.v5.ledger.utxo;
 
+import net.corda.v5.cipher.suite.DigestService;
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction;
 import org.mockito.Mockito;
 
@@ -22,6 +23,9 @@ public class AbstractMockTestHarness {
     protected final VerifiableCommand command = Mockito.mock(VerifiableCommand.class);
     protected final CommandAndSignatories<VerifiableCommand> commandAndSignatories = Mockito.mock(CommandAndSignatories.class);
     protected final UtxoLedgerTransaction utxoLedgerTransaction = Mockito.mock(UtxoLedgerTransaction.class);
+    protected final CpkConstraint constraint = Mockito.mock(CpkConstraint.class);
+    protected final CpkConstraintContext constraintContext = Mockito.mock(CpkConstraintContext.class);
+    protected final DigestService digestService = Mockito.mock(DigestService.class);
 
     // Mocked Data
     protected final Set<PublicKey> participants = Set.of(aliceKey, bobKey);
@@ -37,6 +41,7 @@ public class AbstractMockTestHarness {
         initializeContract();
         initializeCommand();
         initializeCommandAndSignatories();
+        initializeConstraint();
     }
 
     private void initializeContractState() {
@@ -67,12 +72,16 @@ public class AbstractMockTestHarness {
         Mockito.doNothing().when(contract).verify(utxoLedgerTransaction);
     }
 
-    public void initializeCommand() {
+    private void initializeCommand() {
         Mockito.doNothing().when(command).verify(utxoLedgerTransaction, participants);
     }
 
-    public void initializeCommandAndSignatories() {
+    private void initializeCommandAndSignatories() {
         Mockito.when(commandAndSignatories.getCommand()).thenReturn(command);
         Mockito.when(commandAndSignatories.getSignatories()).thenReturn(participants);
+    }
+
+    private void initializeConstraint() {
+        Mockito.when(constraint.isSatisfiedBy(digestService, constraintContext)).thenReturn(true);
     }
 }

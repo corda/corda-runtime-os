@@ -14,6 +14,7 @@ dependencies {
     api project(':application')
     api project(':base')
     api project(':crypto')
+    api project(':cipher-suite')
 
     compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:osgi.annotation'
