@@ -1,5 +1,6 @@
 package net.corda.simulator.runtime.flows
 
+import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.runtime.messaging.SimFiber
 import net.corda.simulator.runtime.tools.CordaFlowChecker
 import net.corda.simulator.tools.FlowChecker
@@ -23,9 +24,10 @@ import java.util.UUID
  * @return the value returned by the subflow when called
  */
 class InjectingFlowEngine(
+    private val configuration: SimulatorConfiguration,
     override val virtualNodeName: MemberX500Name,
     private val fiber: SimFiber,
-    private val injector: FlowServicesInjector = DefaultServicesInjector(),
+    private val injector: FlowServicesInjector = DefaultServicesInjector(configuration),
     private val flowChecker: FlowChecker = CordaFlowChecker()
 ) : FlowEngine {
     override val flowId: UUID

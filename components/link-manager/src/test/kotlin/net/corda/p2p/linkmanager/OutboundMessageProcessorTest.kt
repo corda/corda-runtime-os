@@ -16,6 +16,7 @@ import net.corda.p2p.crypto.protocol.api.AuthenticationResult
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.p2p.linkmanager.utilities.mockMembersAndGroups
 import net.corda.p2p.markers.AppMessageMarker
+import net.corda.p2p.markers.LinkManagerDiscardedMarker
 import net.corda.p2p.markers.LinkManagerReceivedMarker
 import net.corda.p2p.markers.LinkManagerSentMarker
 import net.corda.p2p.markers.LinkManagerProcessedMarker
@@ -73,7 +74,7 @@ class OutboundMessageProcessorTest {
     )
 
     @Test
-    fun `if destination identity is hosted locally, authenticated messages are looped back and immediately acknowledged`() {
+    fun `authenticated messages are dropped when source and destination identities are in different groups`() {
         val payload = "test"
         val authenticatedMsg = AuthenticatedMessage(
             AuthenticatedMessageHeader(
@@ -118,6 +119,37 @@ class OutboundMessageProcessorTest {
             softAssertions.assertThat(messages).hasSize(1)
             softAssertions.assertThat(messages.first()).isEqualTo(appMessage)
         }
+    }
+
+    @Test
+    fun `authenticated messages are dropped if source and destination are in different groups`() {
+        val payload = "test"
+        val authenticatedMsg = AuthenticatedMessage(
+            AuthenticatedMessageHeader(
+                myIdentity.copy(groupId = "Group-other").toAvro(),
+                localIdentity.toAvro(),
+                null, "message-id", "trace-id", "system-1"
+            ),
+            ByteBuffer.wrap(payload.toByteArray())
+        )
+        val appMessage = AppMessage(authenticatedMsg)
+
+        val records = processor.onNext(
+            listOf(
+                EventLogRecord(
+                    Schemas.P2P.P2P_OUT_TOPIC,
+                    "key",
+                    appMessage, 1, 0
+                )
+            )
+        )
+
+        assertThat(records.filter { it.topic == Schemas.P2P.P2P_IN_TOPIC }).isEmpty()
+        val markers = records.filter { it.topic == Schemas.P2P.P2P_OUT_MARKERS }.map { it.value }
+            .filterIsInstance<AppMessageMarker>()
+        val discardedMarkers = markers.map { it.marker }.filterIsInstance<LinkManagerDiscardedMarker>()
+        assertThat(discardedMarkers).hasSize(1)
+        assertThat(discardedMarkers.single().message.message).isEqualTo(appMessage.message)
     }
 
     @Test
@@ -179,6 +211,34 @@ class OutboundMessageProcessorTest {
         }.allMatch {
             (it.value as? LinkOutMessage)?.payload == unauthenticatedMsg
         }
+    }
+
+    @Test
+    fun `unauthenticated messages are dropped if source and destination are in different groups`() {
+        val payload = "test"
+        val unauthenticatedMsg = UnauthenticatedMessage(
+            UnauthenticatedMessageHeader(
+                remoteIdentity.copy(groupId = "Group-other").toAvro(),
+                myIdentity.toAvro(),
+                "subsystem"
+            ),
+            ByteBuffer.wrap(payload.toByteArray()),
+        )
+        val appMessage = AppMessage(unauthenticatedMsg)
+
+        val records = processor.onNext(
+            listOf(
+                EventLogRecord(
+                    Schemas.P2P.P2P_OUT_TOPIC,
+                    "key",
+                    appMessage,
+                    1,
+                    0
+                )
+            )
+        )
+
+        assertThat(records).isEmpty()
     }
 
     @Test
