@@ -15,7 +15,9 @@ import net.corda.httprpc.annotations.HttpRpcResource
  */
 @HttpRpcResource(
     name = "Certificates API",
-    description = "The Certificates API consists of endpoints used to work with certificates and related operations.",
+    description = "The Certificates API consists of endpoints used to work with certificates and related operations. " +
+            "The API allows you to import a certificate chain, and generate a certificate signing request (CSR) to be" +
+            " submitted to a certificate authority (CA).",
     path = "certificates"
 )
 interface CertificatesRpcOps : RpcOps {
@@ -30,13 +32,17 @@ interface CertificatesRpcOps : RpcOps {
      *
      * Example usage:
      * ```
-     * certificatesOps.importCertificateChain("58B6030FABDD", "cert58B6030FABDD", certificateChain)
+     * certificatesOps.importCertificateChain(tenantId = "58B6030FABDD", alias = "cert58B6030FABDD",
+     * certificates = "-----BEGIN CERTIFICATE-----\n{truncated for readability}\n-----END CERTIFICATE-----")
+     *
+     * certificatesOps.importCertificateChain(tenantId = "rpc-api", alias = "cert58B6030FABDD",
+     * certificates = "-----BEGIN CERTIFICATE-----\n{truncated for readability}\n-----END CERTIFICATE-----")
      * ```
      *
      * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
      * services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.
-     * @param alias Unique alias under which the certificate chain will be stored.
-     * @param certificates Valid certificate chain in PEM format obtained from a certificate authority.
+     * @param alias The unique alias under which the certificate chain will be stored.
+     * @param certificates A valid certificate chain in PEM format obtained from a certificate authority.
      */
     @HttpRpcPUT(
         path = "{tenantId}",
@@ -47,12 +53,12 @@ interface CertificatesRpcOps : RpcOps {
                 " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.")
         tenantId: String,
         @HttpRpcRequestBodyParameter(
-            description = "Unique alias under which the certificate chain will be stored.",
+            description = "The unique alias under which the certificate chain will be stored.",
             required = true,
         )
         alias: String,
         @HttpRpcRequestBodyParameter(
-            description = "Valid certificate chain in PEM format obtained from a certificate authority.",
+            description = "A valid certificate chain in PEM format obtained from a certificate authority.",
             required = true,
             name = "certificate"
         )
@@ -66,8 +72,11 @@ interface CertificatesRpcOps : RpcOps {
      *
      * Example usage:
      * ```
-     * certificatesOps.generateCsr("58B6030FABDD", "3B9A266F96E2", "C=GB, L=London, O=MGM", "TLS", ["localhost"],
-     * {"signatureSpec": "SHA256withECDSA"})
+     * certificatesOps.generateCsr(tenantId = "58B6030FABDD", keyId = "3B9A266F96E2", x500Name = "C=GB, L=London, O=MGM",
+     * certificateRole = "TLS", subjectAlternativeNames = ["localhost"], contextMap = {"signatureSpec": "SHA256withECDSA"})
+     *
+     * certificatesOps.generateCsr(tenantId = "p2p", keyId = "3B9A266F96E2", x500Name = "C=GB, L=London, O=MGM",
+     * certificateRole = "TLS", subjectAlternativeNames = ["localhost"], contextMap = {"signatureSpec": "SHA256withECDSA"})
      * ```
      *
      * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P

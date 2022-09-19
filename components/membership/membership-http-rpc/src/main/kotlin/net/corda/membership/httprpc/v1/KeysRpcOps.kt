@@ -16,25 +16,29 @@ import net.corda.membership.httprpc.v1.types.response.KeyPairIdentifier
  */
 @HttpRpcResource(
     name = "Keys Management API",
-    description = "The Keys Management API consists of endpoints used to work with cryptographic keys and related operations.",
+    description = "The Keys Management API consists of endpoints used to work with cryptographic keys and related" +
+            " operations. The API allows you to list scheme codes which are supported by the associated HSM integration," +
+            " retrieve keys owned by a tenant, generate a key pair for a tenant, and retrieve a tenant's key in PEM format.",
     path = "keys"
 )
 interface KeysRpcOps : RpcOps {
     /**
      * The [listSchemes] method enables you to retrieve a list of supported key schemes for a specified tenant and HSM
-     * category. For example, 'CORDA.RSA', 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA_SECP256R1', 'CORDA.EDDSA.ED25519',
+     * category. Some examples of schemes are 'CORDA.RSA', 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA_SECP256R1', 'CORDA.EDDSA.ED25519',
      * 'CORDA.SPHINCS-256'.
      *
      * Example usage:
      * ```
      * keysOps.listSchemes(tenantId = "58B6030FABDD", hsmCategory = "SESSION_INIT")
+     *
+     * keysOps.listSchemes(tenantId = "rpc-api", hsmCategory = "SESSION_INIT")
      * ```
      *
      * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
      * services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.
      * @param hsmCategory Can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'.
      *
-     * @return List of scheme codes which are supported by the associated HSM integration.
+     * @return The list of scheme codes which are supported by the associated HSM integration.
      */
     @HttpRpcGET(
         path = "{tenantId}/schemes/{hsmCategory}",
@@ -45,7 +49,7 @@ interface KeysRpcOps : RpcOps {
         @HttpRpcPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
                 " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.")
         tenantId: String,
-        @HttpRpcPathParameter(description = "Category of the HSM. Can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY'," +
+        @HttpRpcPathParameter(description = "The category of the HSM. Can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY'," +
                 " 'SESSION_INIT', 'TLS', or 'JWT_KEY'.")
         hsmCategory: String,
     ): Collection<String>
@@ -56,11 +60,16 @@ interface KeysRpcOps : RpcOps {
      * parameters.
      *
      * Example usage:
+     *
+     * 1. Retrieve keys belonging to the tenant with holding identity ID '58B6030FABDD'. Only return keys under the 'CI' HSM
+     * category, skip the first 4 key records and return up to 400 keys, ordered according to their aliases.
      * ```
      * keysOps.listKeys(tenantId = "58B6030FABDD", skip = 4, take = 400, orderBy = "ALIAS", category = CI, alias = null,
      * masterKeyAlias = null, createdAfter = null, createdBefore = null, schemeCodeName = null, ids = emptyList())
-     *
-     * keysOps.listKeys(tenantId = "58B6030FABDD", skip = null, take = null, orderBy = null, category = null,
+     * ```
+     * 2. Retrieve keys belonging to the 'p2p' tenant associated with the key IDs '3B9A266F96E2' and '4A9A266F96E2'.
+     * ```
+     * keysOps.listKeys(tenantId = "p2p", skip = null, take = null, orderBy = null, category = null,
      * alias = null, masterKeyAlias = null, createdAfter = null, createdBefore = null, schemeCodeName = null,
      * ids = ["3B9A266F96E2", "4A9A266F96E2"])
      * ```
@@ -68,8 +77,8 @@ interface KeysRpcOps : RpcOps {
      * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
      * services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.
      * @param skip Optional. The response paging information, number of records to skip.
-     * @param take Optional. The response paging information, number of records to return, the actual number may be less than
-     * requested.
+     * @param take Optional. The response paging information, that is, the number of records to return. The actual
+     * number returned may be less than requested.
      * @param orderBy Optional. Specifies how to order the results. Can be one of 'NONE', 'TIMESTAMP', 'CATEGORY', 'SCHEME_CODE_NAME',
      * 'ALIAS', 'MASTER_KEY_ALIAS', 'EXTERNAL_ID', 'ID', 'TIMESTAMP_DESC', 'CATEGORY_DESC', 'SCHEME_CODE_NAME_DESC', 'ALIAS_DESC',
      * 'MASTER_KEY_ALIAS_DESC', 'EXTERNAL_ID_DESC', 'ID_DESC'.
@@ -105,8 +114,8 @@ interface KeysRpcOps : RpcOps {
         )
         skip: Int,
         @HttpRpcQueryParameter(
-            description = "The response paging information, number of records to return, the actual number may be less" +
-                    " than requested.",
+            description = "The response paging information, that is, the number of records to return. The actual number" +
+                    " returned may be less than requested.",
             default = "20",
             required = false,
         )
@@ -170,6 +179,8 @@ interface KeysRpcOps : RpcOps {
      * Example usage:
      * ```
      * keysOps.generateKeyPair(tenantId = "58B6030FABDD", alias = "alias", hsmCategory = "TLS", scheme = "CORDA.RSA")
+     *
+     * keysOps.generateKeyPair(tenantId = "p2p", alias = "alias", hsmCategory = "TLS", scheme = "CORDA.RSA")
      * ```
      *
      * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
@@ -214,6 +225,8 @@ interface KeysRpcOps : RpcOps {
      * Example usage:
      * ```
      * keysOps.generateKeyPem(tenantId = "58B6030FABDD", keyId = "3B9A266F96E2")
+     *
+     * keysOps.generateKeyPem(tenantId = "rpc-api", keyId = "3B9A266F96E2")
      * ```
      *
      * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P

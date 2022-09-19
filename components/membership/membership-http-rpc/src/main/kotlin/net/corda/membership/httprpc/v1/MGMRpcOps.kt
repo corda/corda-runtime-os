@@ -14,7 +14,8 @@ import net.corda.httprpc.annotations.HttpRpcResource
     name = "MGM API",
     description = "The MGM API consists of a number of endpoints used to manage membership groups. A membership group" +
             " is a logical grouping of a number of Corda Identities to communicate and transact with one another with" +
-            " a specific set of CorDapps.",
+            " a specific set of CorDapps. The API allows you to generate the group policy for a membership group," +
+            " required for new members to join the group.",
     path = "mgm"
 )
 interface MGMRpcOps : RpcOps {

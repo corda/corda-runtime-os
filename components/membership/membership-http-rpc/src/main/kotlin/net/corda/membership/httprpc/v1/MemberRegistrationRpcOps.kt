@@ -19,13 +19,17 @@ import net.corda.membership.httprpc.v1.types.response.RegistrationRequestStatus
 @HttpRpcResource(
     name = "Member Registration API",
     description = "The Member Registration API consists of a number of endpoints which manage holding identities'" +
-            " participation in membership groups.",
+            " participation in membership groups. To participate in a membership group, the holding identity is" +
+            " required to make a registration request that needs to be approved by the MGM for that group." +
+            " This API allows you to start the registration process for a holding identity, and check the status of" +
+            " a previously created registration request.",
     path = "membership"
 )
 interface MemberRegistrationRpcOps : RpcOps {
     /**
      * The [startRegistration] method enables you to start the registration process for a holding identity represented
-     * by [holdingIdentityShortHash].
+     * by [holdingIdentityShortHash]. Re-registration is not currently supported, if a holding identity has previously
+     * registered successfully, this endpoint may not be used again.
      *
      * Example usage:
      * ```

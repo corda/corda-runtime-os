@@ -25,7 +25,9 @@ interface HsmRpcOps : RpcOps {
      *
      * Example usage:
      * ```
-     * hsmOps.assignedHsm("58B6030FABDD", "TLS")
+     * hsmOps.assignedHsm(tenantId = "58B6030FABDD", category = "TLS")
+     *
+     * hsmOps.assignedHsm(tenantId = "p2p", category = "TLS")
      * ```
      *
      * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
@@ -53,7 +55,9 @@ interface HsmRpcOps : RpcOps {
      *
      * Example usage:
      * ```
-     * hsmOps.assignSoftHsm("58B6030FABDD", "CI")
+     * hsmOps.assignSoftHsm(tenantId = "58B6030FABDD", category = "CI")
+     *
+     * hsmOps.assignSoftHsm(tenantId = "p2p", category = "CI")
      * ```
      *
      * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
@@ -80,7 +84,9 @@ interface HsmRpcOps : RpcOps {
      *
      * Example usage:
      * ```
-     * hsmOps.assignHsm("58B6030FABDD", "LEDGER")
+     * hsmOps.assignHsm(tenantId = "58B6030FABDD", category = "LEDGER")
+     *
+     * hsmOps.assignHsm(tenantId = "rpc-api", category = "LEDGER")
      * ```
      *
      * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
