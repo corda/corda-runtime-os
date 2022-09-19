@@ -1,8 +1,8 @@
 package net.corda.httprpc.annotations
 
-import net.corda.httprpc.response.ResponseEntity
 import net.corda.httprpc.ResponseCode
 import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.response.ResponseEntity
 
 /**
  * Annotation that is meant to be applied on annotations to flag the fact that they are meant for exposing
@@ -82,7 +82,7 @@ annotation class HttpRpcPUT(
  * @property description The description of the endpoint, used for documentation. Defaults to empty string.
  * @property responseDescription The description of the response, used for documentation. Defaults to empty string.
  */
-@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY_GETTER)
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY_GETTER, AnnotationTarget.PROPERTY)
 @Retention(AnnotationRetention.RUNTIME)
 @HttpRpcEndpoint
 annotation class HttpRpcGET(
