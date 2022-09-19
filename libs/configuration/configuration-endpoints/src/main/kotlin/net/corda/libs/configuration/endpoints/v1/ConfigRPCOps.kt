@@ -6,6 +6,7 @@ import net.corda.httprpc.annotations.HttpRpcPUT
 import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.libs.configuration.endpoints.v1.types.GetConfigResponse
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse
@@ -25,8 +26,8 @@ interface ConfigRPCOps : RpcOps {
      * @property version Version number used for optimistic locking.
      * @property config Updated configuration in JSON or HOCON format.
      * @property schemaVersion Schema version of the configuration.
-     * @throws `ConfigRPCOpsServiceException` If the updated configuration could not be published.
-     * @throws `HttpApiException` If the request returns an exceptional response.
+     * @throws ConfigRPCOpsServiceException If the updated configuration could not be published.
+     * @throws HttpApiException If the request returns an exceptional response.
      */
     @HttpRpcPUT(
         title = "Update cluster configuration",
@@ -41,6 +42,7 @@ interface ConfigRPCOps : RpcOps {
     /**
      * Get the configuration data the cluster is set with for a specific [section].
      * @param section the top level section of cluster configuration to return.
+     * @throws ResourceNotFoundException when the config [section] does not exist
      */
     @HttpRpcGET(
         path = "{section}",
