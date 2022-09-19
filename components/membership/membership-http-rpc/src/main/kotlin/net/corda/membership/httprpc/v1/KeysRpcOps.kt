@@ -10,7 +10,7 @@ import net.corda.membership.httprpc.v1.types.response.KeyMetaData
 import net.corda.membership.httprpc.v1.types.response.KeyPairIdentifier
 
 /**
- * The Keys Management API consists of endpoints used to work with cryptographic keys and related operations. The API
+ * The Keys Management API consists of endpoints used to manage public and private encryption keys. The API
  * allows you to list scheme codes which are supported by the associated HSM integration, retrieve keys owned by a
  * tenant, generate a key pair for a tenant, and retrieve a tenant's key in PEM format.
  */
@@ -42,9 +42,11 @@ interface KeysRpcOps : RpcOps {
         responseDescription = "List of scheme codes which are supported by the associated HSM integration."
     )
     fun listSchemes(
-        @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity ID.")
+        @HttpRpcPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
+                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.")
         tenantId: String,
-        @HttpRpcPathParameter(description = "Category of the HSM. Can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'.")
+        @HttpRpcPathParameter(description = "Category of the HSM. Can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY'," +
+                " 'SESSION_INIT', 'TLS', or 'JWT_KEY'.")
         hsmCategory: String,
     ): Collection<String>
 
@@ -55,9 +57,12 @@ interface KeysRpcOps : RpcOps {
      *
      * Example usage:
      * ```
-     * keysOps.listKeys(tenantId = "58B6030FABDD", skip = 4, take = 400, orderBy = "ALIAS", category = CI, alias = null, masterKeyAlias = null, createdAfter = null, createdBefore = null, schemeCodeName = null, ids = emptyList())
+     * keysOps.listKeys(tenantId = "58B6030FABDD", skip = 4, take = 400, orderBy = "ALIAS", category = CI, alias = null,
+     * masterKeyAlias = null, createdAfter = null, createdBefore = null, schemeCodeName = null, ids = emptyList())
      *
-     * keysOps.listKeys(tenantId = "58B6030FABDD", skip = null, take = null, orderBy = null, category = null, alias = null, masterKeyAlias = null, createdAfter = null, createdBefore = null, schemeCodeName = null, ids = ["3B9A266F96E2", "4A9A266F96E2"])
+     * keysOps.listKeys(tenantId = "58B6030FABDD", skip = null, take = null, orderBy = null, category = null,
+     * alias = null, masterKeyAlias = null, createdAfter = null, createdBefore = null, schemeCodeName = null,
+     * ids = ["3B9A266F96E2", "4A9A266F96E2"])
      * ```
      *
      * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
@@ -90,7 +95,8 @@ interface KeysRpcOps : RpcOps {
     )
     @Suppress("LongParameterList")
     fun listKeys(
-        @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity ID.")
+        @HttpRpcPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
+                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.")
         tenantId: String,
         @HttpRpcQueryParameter(
             description = "The response paging information, number of records to skip.",
@@ -99,24 +105,30 @@ interface KeysRpcOps : RpcOps {
         )
         skip: Int,
         @HttpRpcQueryParameter(
-            description = "The response paging information, number of records to return, the actual number may be less than requested.",
+            description = "The response paging information, number of records to return, the actual number may be less" +
+                    " than requested.",
             default = "20",
             required = false,
         )
         take: Int,
         @HttpRpcQueryParameter(
-            description = "Specifies how to order the results. Can be one of 'NONE', 'TIMESTAMP', 'CATEGORY', 'SCHEME_CODE_NAME', 'ALIAS', 'MASTER_KEY_ALIAS', 'EXTERNAL_ID', 'ID', 'TIMESTAMP_DESC', 'CATEGORY_DESC', 'SCHEME_CODE_NAME_DESC', 'ALIAS_DESC', 'MASTER_KEY_ALIAS_DESC', 'EXTERNAL_ID_DESC', 'ID_DESC'.",
+            description = "Specifies how to order the results. Can be one of 'NONE', 'TIMESTAMP', 'CATEGORY'," +
+                    " 'SCHEME_CODE_NAME', 'ALIAS', 'MASTER_KEY_ALIAS', 'EXTERNAL_ID', 'ID', 'TIMESTAMP_DESC'," +
+                    " 'CATEGORY_DESC', 'SCHEME_CODE_NAME_DESC', 'ALIAS_DESC', 'MASTER_KEY_ALIAS_DESC', 'EXTERNAL_ID_DESC'," +
+                    " 'ID_DESC'.",
             default = "none",
             required = false,
         )
         orderBy: String,
         @HttpRpcQueryParameter(
-            description = "Category of the HSM which handles the keys. Can be one of 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY'.",
+            description = "Category of the HSM which handles the keys. Can be one of 'ACCOUNTS', 'CI', 'LEDGER'," +
+                    " 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY'.",
             required = false,
         )
         category: String?,
         @HttpRpcQueryParameter(
-            description = "The keys' signature scheme name. For example, 'CORDA.RSA', 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA_SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'.",
+            description = "The keys' signature scheme name. For example, 'CORDA.RSA', 'CORDA.ECDSA.SECP256K1'," +
+                    " 'CORDA.ECDSA_SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'.",
             required = false,
         )
         schemeCodeName: String?,
@@ -131,17 +143,20 @@ interface KeysRpcOps : RpcOps {
         )
         masterKeyAlias: String?,
         @HttpRpcQueryParameter(
-            description = "Only include keys which were created on or after the specified time. Must be a valid instant in UTC, such as 2022-12-03T10:15:30.00Z.",
+            description = "Only include keys which were created on or after the specified time. Must be a valid instant" +
+                    " in UTC, such as 2022-12-03T10:15:30.00Z.",
             required = false,
         )
         createdAfter: String?,
         @HttpRpcQueryParameter(
-            description = "Only include keys which were created on or before the specified time. Must be a valid instant in UTC, such as 2022-12-03T10:15:30.00Z.",
+            description = "Only include keys which were created on or before the specified time. Must be a valid instant" +
+                    " in UTC, such as 2022-12-03T10:15:30.00Z.",
             required = false,
         )
         createdBefore: String?,
         @HttpRpcQueryParameter(
-            description = "Only retrieve keys associated with the specified list of key IDs. If specified, other filter parameters will be ignored.",
+            description = "Only retrieve keys associated with the specified list of key IDs. If specified, other filter" +
+                    " parameters will be ignored.",
             required = false,
             name = "id",
         )
@@ -162,8 +177,8 @@ interface KeysRpcOps : RpcOps {
      * @param alias The alias under which the new key will be stored.
      * @param hsmCategory Category of the HSM which handles the keys. Can be one of 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY',
      * 'SESSION_INIT', 'TLS', 'JWT_KEY'.
-     * @param scheme The key's scheme describing which type of the key to generate. For example, 'CORDA.RSA', 'CORDA.ECDSA.SECP256K1',
-     * 'CORDA.ECDSA_SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'.
+     * @param scheme The key's scheme describing which type of the key to generate. For example, 'CORDA.RSA',
+     * 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA_SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'.
      *
      * @return The ID of the newly generated key pair in the form of [KeyPairIdentifier].
      */
@@ -173,18 +188,21 @@ interface KeysRpcOps : RpcOps {
         responseDescription = "The ID of the newly generated key pair."
     )
     fun generateKeyPair(
-        @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity ID.")
+        @HttpRpcPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
+                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.")
         tenantId: String,
         @HttpRpcPathParameter(
             description = "The alias under which the new key will be stored."
         )
         alias: String,
         @HttpRpcPathParameter(
-            description = "Category of the HSM which handles the keys. Can be one of 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY'."
+            description = "Category of the HSM which handles the keys. Can be one of 'ACCOUNTS', 'CI', 'LEDGER'," +
+                    " 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY'."
         )
         hsmCategory: String,
         @HttpRpcPathParameter(
-            description = "The key's scheme describing which type of the key to generate. For example, 'CORDA.RSA', 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA_SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'."
+            description = "The key's scheme describing which type of the key to generate. For example, 'CORDA.RSA'," +
+                    " 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA_SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'."
         )
         scheme: String
     ): KeyPairIdentifier
@@ -210,7 +228,8 @@ interface KeysRpcOps : RpcOps {
         responseDescription = "The public key in PEM format."
     )
     fun generateKeyPem(
-        @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity ID.")
+        @HttpRpcPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
+                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.")
         tenantId: String,
         @HttpRpcPathParameter(description = "Identifier of the key to be retrieved.")
         keyId: String,

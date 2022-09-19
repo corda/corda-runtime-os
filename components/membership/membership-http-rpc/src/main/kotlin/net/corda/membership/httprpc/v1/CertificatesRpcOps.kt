@@ -43,7 +43,8 @@ interface CertificatesRpcOps : RpcOps {
         description = "Enables you to import a certificate chain for a tenant."
     )
     fun importCertificateChain(
-        @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity ID.")
+        @HttpRpcPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
+                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.")
         tenantId: String,
         @HttpRpcRequestBodyParameter(
             description = "Unique alias under which the certificate chain will be stored.",
@@ -65,7 +66,8 @@ interface CertificatesRpcOps : RpcOps {
      *
      * Example usage:
      * ```
-     * certificatesOps.generateCsr("58B6030FABDD", "3B9A266F96E2", "C=GB, L=London, O=MGM", "TLS", ["localhost"], {"signatureSpec": "SHA256withECDSA"})
+     * certificatesOps.generateCsr("58B6030FABDD", "3B9A266F96E2", "C=GB, L=London, O=MGM", "TLS", ["localhost"],
+     * {"signatureSpec": "SHA256withECDSA"})
      * ```
      *
      * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
@@ -84,7 +86,8 @@ interface CertificatesRpcOps : RpcOps {
         description = "Enables you to generate a certificate signing request (CSR) for a tenant."
     )
     fun generateCsr(
-        @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity ID.")
+        @HttpRpcPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
+                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.")
         tenantId: String,
         @HttpRpcPathParameter(description = "Identifier of the public key that will be included in the certificate.")
         keyId: String,

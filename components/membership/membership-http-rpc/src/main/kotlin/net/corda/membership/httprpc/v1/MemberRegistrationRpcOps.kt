@@ -11,69 +11,97 @@ import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgres
 import net.corda.membership.httprpc.v1.types.response.RegistrationRequestStatus
 
 /**
- * RPC operations for registering a member (i.e. holding identity) within a group.
+ * The Member Registration API consists of a number of endpoints which manage holding identities' participation in
+ * membership groups. To participate in a membership group, the holding identity is required to make a registration
+ * request that needs to be approved by the MGM for that group. This API allows you to start the registration process
+ * for a holding identity, and check the status of a previously created registration request.
  */
 @HttpRpcResource(
     name = "Member Registration API",
-    description = "Membership Registration endpoints.",
+    description = "The Member Registration API consists of a number of endpoints which manage holding identities'" +
+            " participation in membership groups.",
     path = "membership"
 )
 interface MemberRegistrationRpcOps : RpcOps {
     /**
-     * POST endpoint which starts the registration process for a member.
+     * The [startRegistration] method enables you to start the registration process for a holding identity represented
+     * by [holdingIdentityShortHash].
      *
-     * @param memberRegistrationRequest Data necessary to include in order to initiate registration.
-     * @param holdingIdentityShortHash The ID of the holding identity the member is using.
+     * Example usage:
+     * ```
+     * memberRegistrationOps.startRegistration(holdingIdentityShortHash = "58B6030FABDD", memberRegistrationRequest
+     * = MemberRegistrationRequest(action = "requestJoin", context = {"corda.session.key.id": "D2FAF709052F"}))
+     * ```
+     *
+     * @param holdingIdentityShortHash The holding identity ID of the requesting virtual node.
+     * @param memberRegistrationRequest The request sent during registration which contains the requested registration
+     * action (e.g. 'requestJoin') along with a context map containing data required to initiate the registration process.
      *
      * @return [RegistrationRequestProgress] to indicate the status of the request at time of submission.
      */
     @HttpRpcPOST(
         path = "{holdingIdentityShortHash}",
-        description = "Start registration process for a virtual node."
+        description = "Enables you to start the registration process for a holding identity."
     )
     fun startRegistration(
-        @HttpRpcPathParameter(description = "ID of the holding identity to be checked.")
+        @HttpRpcPathParameter(description = "The holding identity ID of the requesting virtual node.")
         holdingIdentityShortHash: String,
         @HttpRpcRequestBodyParameter(
-            description = "Data required to initialise the registration process."
+            description = "The request sent during registration which contains the requested registration action" +
+                    " (e.g. 'requestJoin') along with a context map containing data required to initiate the registration process."
         )
         memberRegistrationRequest: MemberRegistrationRequest
     ): RegistrationRequestProgress
 
     /**
-     * GET endpoint which checks all known status of registration based on a member's own local data and without
-     * outwards communication.
+     * The [checkRegistrationProgress] method enables you to check the statuses of all registration requests for a holding
+     * identity. This method returns a list of statuses based on the holding identity's own local data, no outward
+     * communication is involved.
      *
-     * @param holdingIdentityShortHash The ID of the holding identity to be checked.
-     * @return [RegistrationRequestStatus] to indicate the last known status of the registration request based on
-     *  local member data.
+     * Example usage:
+     * ```
+     * memberRegistrationOps.checkRegistrationProgress(holdingIdentityShortHash = "58B6030FABDD")
+     * ```
+     *
+     * @param holdingIdentityShortHash The ID of the holding identity whose registration progress is to be checked.
+     *
+     * @return List of [RegistrationRequestStatus] to indicate the last known statuses of all registration requests made
+     * by [holdingIdentityShortHash].
      */
     @HttpRpcGET(
         path = "{holdingIdentityShortHash}",
-        description = "Checks the status of the registration request."
+        description = "Enables you to check the statuses of all registration requests for a holding identity."
     )
     fun checkRegistrationProgress(
-        @HttpRpcPathParameter(description = "ID of the holding identity to be checked.")
+        @HttpRpcPathParameter(description = "The ID of the holding identity whose registration progress is to be checked.")
         holdingIdentityShortHash: String
     ): List<RegistrationRequestStatus>
 
     /**
-     * GET endpoint which checks specific status of registration based on a member's own local data and without
-     * outwards communication.
+     * The [checkSpecificRegistrationProgress] method enables you to check the status of the registration request
+     * specified by [registrationRequestId] for a holding identity. This method returns the status based on the holding
+     * identity's own local data, no outward communication is involved.
      *
-     * @param holdingIdentityShortHash The ID of the holding identity to be checked.
+     * Example usage:
+     * ```
+     * memberRegistrationOps.checkSpecificRegistrationProgress(holdingIdentityShortHash = "58B6030FABDD",
+     * registrationRequestId = "3B9A266F96E2")
+     * ```
+     *
+     * @param holdingIdentityShortHash The ID of the holding identity whose registration progress is to be checked.
      * @param registrationRequestId The ID of the registration request.
-     * @return [RegistrationRequestStatus] to indicate the last known status of the registration request based on
-     *  local member data.
+     *
+     * @return [RegistrationRequestStatus] to indicate the last known status of the specified registration request made
+     * by [holdingIdentityShortHash].
      */
     @HttpRpcGET(
         path = "{holdingIdentityShortHash}/{registrationRequestId}",
-        description = "Checks the status of the registration request."
+        description = "Enables you to check the status of the specified registration request for a holding identity."
     )
     fun checkSpecificRegistrationProgress(
-        @HttpRpcPathParameter(description = "ID of the holding identity to be checked.")
+        @HttpRpcPathParameter(description = "The ID of the holding identity whose registration progress is to be checked.")
         holdingIdentityShortHash: String,
-        @HttpRpcPathParameter(description = "ID of the request to be checked.")
+        @HttpRpcPathParameter(description = "The ID of the registration request.")
         registrationRequestId: String,
     ): RegistrationRequestStatus?
 }
