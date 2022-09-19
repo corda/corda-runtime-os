@@ -99,26 +99,28 @@ tasks.named('jar', Jar) {
     dependsOn(download)
 }
 
+tasks.register("cleanInstallerDir", Delete) {
+    delete "$buildDir/zip"
+}
+
 tasks.register("combinedWorkerInstallArchive", Zip) {
-    from "$projectDir/installScripts" 
-    from jar
+    dependsOn cleanInstallerDir
+    from "$projectDir/installScripts"
+    from appJar
     archiveName 'corda-combined-worker-dist.zip'
     destinationDir(file("$buildDir/zip"))
 }
-
-
 
 // Allow us to publish to S3 bucket for DP2 - to be extracted to plugin
 if (project.hasProperty('maven.repo.s3') && project.hasProperty('releasable')) {
     publishing {
         publications {
-        maven(MavenPublication) {
-            artifactId "corda-combined-worker-installer"
-            groupId project.group
-            artifact combinedWorkerInstallArchive
+            maven(MavenPublication) {
+                artifactId "corda-combined-worker-installer"
+                groupId project.group
+                artifact combinedWorkerInstallArchive
+            }
         }
-    }
-
         repositories {
             maven {
                 url = project.findProperty('maven.repo.s3')
