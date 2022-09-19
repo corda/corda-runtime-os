@@ -15,6 +15,7 @@ import java.util.UUID
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
+import javax.persistence.Table
 
 @InitiatedBy("truancy-record")
 class TruancyResponderFlow : ResponderFlow {
@@ -50,10 +51,11 @@ class TruancyResponderFlow : ResponderFlow {
 
 @CordaSerializable
 @Entity
+@Table(name = "truancy_entity")
 data class TruancyEntity(
     @Id
-    @Column
+    @Column(name = "id")
     val id: UUID = UUID.randomUUID(),
-    @Column
+    @Column(name = "student_name")
     val name: String
 )

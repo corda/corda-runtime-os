@@ -47,6 +47,9 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.registration.RegistrationRequest
+import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
+import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
+import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome
@@ -59,6 +62,7 @@ import net.corda.schema.Schemas.Membership.Companion.EVENT_TOPIC
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.membership.MembershipSchema
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.KeyEncodingService
@@ -75,6 +79,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
@@ -83,7 +88,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.PublicKey
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.CompletableFuture
 
 class MGMRegistrationServiceTest {
@@ -172,13 +177,22 @@ class MGMRegistrationServiceTest {
     private val membershipPersistenceClient = mock<MembershipPersistenceClient> {
         on { persistMemberInfo(any(), any()) } doReturn MembershipPersistenceResult.Success(Unit)
         on { persistGroupPolicy(any(), any()) } doReturn MembershipPersistenceResult.Success(2)
-        on { persistRegistrationRequest(eq(mgm), statusUpdate.capture()) } doReturn MembershipPersistenceResult.success()
+        on {
+            persistRegistrationRequest(
+                eq(mgm),
+                statusUpdate.capture()
+            )
+        } doReturn MembershipPersistenceResult.success()
     }
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> = mock {
         on { serialize(any()) } doReturn byteArrayOf(1, 2, 3)
     }
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
         on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
+    }
+    private val membershipSchemaValidator: MembershipSchemaValidator = mock()
+    private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory = mock {
+        on { createValidator() } doReturn membershipSchemaValidator
     }
     private val registrationService = MGMRegistrationService(
         publisherFactory,
@@ -190,6 +204,7 @@ class MGMRegistrationServiceTest {
         membershipPersistenceClient,
         layeredPropertyMapFactory,
         cordaAvroSerializationFactory,
+        membershipSchemaValidatorFactory
     )
 
     private val properties = mapOf(
@@ -203,8 +218,10 @@ class MGMRegistrationServiceTest {
         "corda.group.pki.tls" to "C5",
         "corda.endpoints.0.connectionURL" to "localhost:1080",
         "corda.endpoints.0.protocolVersion" to "1",
-        "corda.group.truststore.session.0" to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
-        "corda.group.truststore.tls.0" to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
+        "corda.group.truststore.session.0"
+                to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
+        "corda.group.truststore.tls.0"
+                to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
     )
 
     private fun postStartEvent() {
@@ -354,8 +371,10 @@ class MGMRegistrationServiceTest {
                     "key.session.policy" to "Combined",
                     "pki.session" to "Standard",
                     "pki.tls" to "C5",
-                    "truststore.session.0" to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
-                    "truststore.tls.0" to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
+                    "truststore.session.0"
+                            to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
+                    "truststore.tls.0"
+                            to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",
                 ).entries
             )
         registrationService.stop()
@@ -372,8 +391,8 @@ class MGMRegistrationServiceTest {
             eq(mgm),
             argThat {
                 this.size == 1 &&
-                    this.first().isMgm &&
-                    this.first().name == mgmName
+                        this.first().isMgm &&
+                        this.first().name == mgmName
             }
         )
     }
@@ -427,14 +446,47 @@ class MGMRegistrationServiceTest {
         val testProperties =
             properties + mapOf(
                 "corda.group.truststore.tls.100" to
-                    "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----"
+                        "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----"
             )
         registrationService.start()
         val result = registrationService.register(registrationRequest, mgm, testProperties)
         assertSoftly {
             it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
             it.assertThat(result.message)
-                .isEqualTo("Registration failed. Reason: Provided TLS trust stores are incorrectly numbered.")
+                .isEqualTo(
+                    "Onboarding MGM failed. " +
+                            "The registration context is invalid: Provided TLS trust stores are incorrectly numbered."
+                )
+        }
+        registrationService.stop()
+    }
+
+    @Test
+    fun `registration fails if the registration context doesn't match the schema`() {
+        postConfigChangedEvent()
+        val err = "ERROR-MESSAGE"
+        val errReason = "ERROR-REASON"
+        whenever(
+            membershipSchemaValidator.validateRegistrationContext(
+                eq(MembershipSchema.RegistrationContextSchema.Mgm),
+                any(),
+                any()
+            )
+        ).doThrow(
+            MembershipSchemaValidationException(
+                err,
+                null,
+                MembershipSchema.RegistrationContextSchema.Mgm,
+                listOf(errReason)
+            )
+        )
+
+        registrationService.start()
+        val result = registrationService.register(registrationRequest, mgm, properties)
+        assertSoftly {
+            it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+            it.assertThat(result.message).contains(err)
+            it.assertThat(result.message).contains(errReason)
         }
         registrationService.stop()
     }

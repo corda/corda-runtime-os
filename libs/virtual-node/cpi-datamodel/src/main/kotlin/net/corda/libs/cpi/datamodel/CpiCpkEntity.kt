@@ -40,10 +40,10 @@ data class CpiCpkEntity(
         ),
     )
     var metadata: CpkMetadataEntity,
-) {
     @Version
     @Column(name = "entity_version", nullable = false)
     var entityVersion: Int = 0
+) {
     // Initial population of this TS is managed on the DB itself
     @Column(name = "insert_ts", insertable = false, updatable = true)
     var insertTimestamp: Instant? = null

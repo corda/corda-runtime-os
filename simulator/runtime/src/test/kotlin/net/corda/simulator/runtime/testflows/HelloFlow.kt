@@ -4,6 +4,7 @@ import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.FlowEngine
+import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.SubFlow
@@ -14,6 +15,7 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.annotations.Suspendable
 
+@InitiatingFlow("hello")
 class HelloFlow : RPCStartableFlow {
 
     @CordaInject

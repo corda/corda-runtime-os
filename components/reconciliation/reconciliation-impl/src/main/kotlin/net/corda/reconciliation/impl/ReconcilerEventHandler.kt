@@ -63,7 +63,7 @@ internal class ReconcilerEventHandler<K : Any, V : Any>(
             reconcileAndScheduleNext(coordinator)
             coordinator.updateStatus(LifecycleStatus.UP)
         } else {
-            logger.warn(
+            logger.info(
                 "Received a ${RegistrationStatusChangeEvent::class.java.simpleName} with status ${event.status}." +
                         " Switching to ${event.status}"
             )
