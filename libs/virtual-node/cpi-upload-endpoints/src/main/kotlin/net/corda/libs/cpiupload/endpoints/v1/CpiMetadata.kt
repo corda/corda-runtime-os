@@ -6,7 +6,7 @@ import java.time.Instant
  * NOTE:
  * This class is visible to end-users via json serialization,
  * so the variable names are significant, and should be consistent
- * with anywhere they are used as parameter inputs, e.g.`cpiFileChecksum`
+ * with anywhere they are used as parameter inputs, for example, `cpiFileChecksum`.
  */
 /**
  * CPI info
