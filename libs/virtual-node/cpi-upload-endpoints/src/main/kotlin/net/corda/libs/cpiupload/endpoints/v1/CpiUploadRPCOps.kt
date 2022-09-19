@@ -52,7 +52,7 @@ interface CpiUploadRPCOps : RpcOps {
      * Get the status of the upload.
      *
      * @param id Request ID returned from the [cpi] method.
-     * @return a status object that is converted to json on the client side `{status: OK}`
+     * @return A status object that is converted to .json on the client side `{status: OK}`.
      */
     @HttpRpcGET(
         path = "status/{id}",
