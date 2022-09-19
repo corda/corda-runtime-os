@@ -1,5 +1,6 @@
 package net.corda.virtualnode.rpcops.impl.v1
 
+import java.time.Duration
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
@@ -40,7 +41,6 @@ import net.corda.virtualnode.rpcops.impl.v1.ExceptionTranslator.Companion.transl
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.time.Duration
 import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity as HoldingIdentityEndpointType
 
 @Component(service = [PluggableRPCOps::class])
@@ -89,8 +89,6 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
                     )
                 }
                 dependentComponents.registerAndStartAll(coordinator)
-                coordinator.updateStatus(LifecycleStatus.UP)
-                logger.info("${this::javaClass.name} is now Up")
             }
             is StopEvent -> coordinator.updateStatus(LifecycleStatus.DOWN)
             is RegistrationStatusChangeEvent -> {
@@ -124,6 +122,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
                         virtualNodeSenderFactory.createSender(duration, messagingConfig)
                     }
                     coordinator.updateStatus(LifecycleStatus.UP)
+                    logger.info("${this::javaClass.name} is now Up")
                 }
             }
         }

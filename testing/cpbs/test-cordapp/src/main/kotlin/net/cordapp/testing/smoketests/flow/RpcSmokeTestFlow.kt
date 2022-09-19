@@ -21,11 +21,11 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
+import net.cordapp.testing.bundles.dogs.Dog
 import net.cordapp.testing.smoketests.flow.context.launchContextPropagationFlows
 import net.cordapp.testing.smoketests.flow.messages.InitiatedSmokeTestMessage
 import net.cordapp.testing.smoketests.flow.messages.RpcSmokeTestInput
 import net.cordapp.testing.smoketests.flow.messages.RpcSmokeTestOutput
-import net.cordapp.testing.bundles.dogs.Dog
 
 @Suppress("unused", "TooManyFunctions")
 @InitiatingFlow(protocol = "smoke-test-protocol")
@@ -182,17 +182,17 @@ class RpcSmokeTestFlow : RPCStartableFlow {
     @Suspendable
     private fun throwPlatformError(input: RpcSmokeTestInput): String {
         val x500 = input.getValue("x500")
-        net.cordapp.testing.smoketests.flow.RpcSmokeTestFlow.Companion.log.info("Creating session for '${x500}'...")
+        log.info("Creating session for '${x500}'...")
         val session = flowMessaging.initiateFlow(MemberX500Name.parse(x500))
-        net.cordapp.testing.smoketests.flow.RpcSmokeTestFlow.Companion.log.info("Sending first time to session for '${x500}'...")
+        log.info("Sending first time to session for '${x500}'...")
         session.send(InitiatedSmokeTestMessage("test 1"))
-        net.cordapp.testing.smoketests.flow.RpcSmokeTestFlow.Companion.log.info("Closing session for '${session}'...")
+        log.info("Closing session for '${session}'...")
         session.close()
-        net.cordapp.testing.smoketests.flow.RpcSmokeTestFlow.Companion.log.info("Try and send on a closed session to generate an error '${session}'...")
+        log.info("Try and send on a closed session to generate an error '${session}'...")
         try {
             session.send(InitiatedSmokeTestMessage("test 2"))
         } catch (e: Exception) {
-            net.cordapp.testing.smoketests.flow.RpcSmokeTestFlow.Companion.log.info("Caught exception for '${session}'...", e)
+            log.info("Caught exception for '${session}'...", e)
             return e.message ?: "Error with no message"
         }
 
@@ -204,7 +204,7 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         return try {
             UUID.fromString(id)
         } catch (e: Exception) {
-            net.cordapp.testing.smoketests.flow.RpcSmokeTestFlow.Companion.log.error("your dog must have a valid UUID, '${id}' is no good!")
+            log.error("your dog must have a valid UUID, '${id}' is no good!")
             throw e
         }
     }
@@ -215,7 +215,7 @@ class RpcSmokeTestFlow : RPCStartableFlow {
             try {
                 UUID.fromString(id)
             } catch (e: Exception) {
-                net.cordapp.testing.smoketests.flow.RpcSmokeTestFlow.Companion.log.error("your dog must have a valid UUID, '${id}' is no good!")
+                log.error("your dog must have a valid UUID, '${id}' is no good!")
                 throw e
             }
         }
@@ -229,17 +229,17 @@ class RpcSmokeTestFlow : RPCStartableFlow {
             throw IllegalStateException("Sessions test run with unmatched messages to sessions")
         }
 
-        net.cordapp.testing.smoketests.flow.RpcSmokeTestFlow.Companion.log.info("Starting sessions for '${input.getValue("sessions")}'")
+        log.info("Starting sessions for '${input.getValue("sessions")}'")
         val outputs = mutableListOf<String>()
         sessions.forEachIndexed { idx, x500 ->
-            net.cordapp.testing.smoketests.flow.RpcSmokeTestFlow.Companion.log.info("Creating session for '${x500}'...")
+            log.info("Creating session for '${x500}'...")
             val session = flowMessaging.initiateFlow(MemberX500Name.parse(x500))
 
-            net.cordapp.testing.smoketests.flow.RpcSmokeTestFlow.Companion.log.info("Creating session '${session}' now sending and waiting for response ...")
+            log.info("Creating session '${session}' now sending and waiting for response ...")
             val response = session
                 .sendAndReceive<InitiatedSmokeTestMessage>(InitiatedSmokeTestMessage(messages[idx]))
 
-            net.cordapp.testing.smoketests.flow.RpcSmokeTestFlow.Companion.log.info("Received response from session '${session}'.")
+            log.info("Received response from session '${session}'.")
 
             outputs.add("${x500}=${response.message}")
         }
@@ -258,7 +258,7 @@ class RpcSmokeTestFlow : RPCStartableFlow {
             throw IllegalStateException("Sessions test run with unmatched messages to sessions")
         }
 
-        net.cordapp.testing.smoketests.flow.RpcSmokeTestFlow.Companion.log.info("SubFlow - Starting sessions for '${input.getValue("sessions")}'")
+        log.info("SubFlow - Starting sessions for '${input.getValue("sessions")}'")
         val outputs = mutableListOf<String>()
         sessions.forEachIndexed { idx, x500 ->
             val response = flowEngine.subFlow(
@@ -290,11 +290,11 @@ class RpcSmokeTestFlow : RPCStartableFlow {
     private fun signAndVerify(input: RpcSmokeTestInput): String {
         val publicKey = signingService.decodePublicKey(input.getValue("publicKey"))
         val bytesToSign = byteArrayOf(1, 2, 3, 4, 5)
-        net.cordapp.testing.smoketests.flow.RpcSmokeTestFlow.Companion.log.info("Crypto - Signing bytes $bytesToSign with public key '$publicKey'")
+        log.info("Crypto - Signing bytes $bytesToSign with public key '$publicKey'")
         val signedBytes = signingService.sign(bytesToSign, publicKey, SignatureSpec.RSA_SHA256)
-        net.cordapp.testing.smoketests.flow.RpcSmokeTestFlow.Companion.log.info("Crypto - Signature $signedBytes received")
+        log.info("Crypto - Signature $signedBytes received")
         digitalSignatureVerificationService.verify(publicKey, SignatureSpec.RSA_SHA256, signedBytes.bytes, bytesToSign)
-        net.cordapp.testing.smoketests.flow.RpcSmokeTestFlow.Companion.log.info("Crypto - Verified $signedBytes as the signature of $bytesToSign")
+        log.info("Crypto - Verified $signedBytes as the signature of $bytesToSign")
         return true.toString()
     }
 
@@ -302,9 +302,9 @@ class RpcSmokeTestFlow : RPCStartableFlow {
     private fun verifyInvalidSignature(input: RpcSmokeTestInput): String {
         val publicKey = signingService.decodePublicKey(input.getValue("publicKey"))
         val bytesToSign = byteArrayOf(1, 2, 3, 4, 5)
-        net.cordapp.testing.smoketests.flow.RpcSmokeTestFlow.Companion.log.info("Crypto - Signing bytes $bytesToSign with public key '$publicKey'")
+        log.info("Crypto - Signing bytes $bytesToSign with public key '$publicKey'")
         val signedBytes = signingService.sign(bytesToSign, publicKey, SignatureSpec.RSA_SHA256)
-        net.cordapp.testing.smoketests.flow.RpcSmokeTestFlow.Companion.log.info("Crypto - Signature $signedBytes received")
+        log.info("Crypto - Signature $signedBytes received")
         return try {
             digitalSignatureVerificationService.verify(
                 publicKey,
@@ -314,7 +314,7 @@ class RpcSmokeTestFlow : RPCStartableFlow {
             )
             false
         } catch (e: CryptoSignatureException) {
-            net.cordapp.testing.smoketests.flow.RpcSmokeTestFlow.Companion.log.info("Crypto - Failed to verify $signedBytes as the signature of $bytesToSign when using wrong signature spec")
+            log.info("Crypto - Failed to verify $signedBytes as the signature of $bytesToSign when using wrong signature spec")
             true
         }.toString()
     }
