@@ -13,7 +13,7 @@ class ReturnAStringFlow : RPCStartableFlow {
 
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
-        net.cordapp.testing.smoketests.virtualnode.ReturnAStringFlow.Companion.log.info("ReturnAStringFlow starting...")
+        log.info("ReturnAStringFlow starting...")
         return "force-uploaded-cpi"
     }
 }

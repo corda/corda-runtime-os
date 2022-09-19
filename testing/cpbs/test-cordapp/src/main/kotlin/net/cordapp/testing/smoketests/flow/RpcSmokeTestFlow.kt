@@ -262,7 +262,7 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         val outputs = mutableListOf<String>()
         sessions.forEachIndexed { idx, x500 ->
             val response = flowEngine.subFlow(
-                net.cordapp.testing.smoketests.flow.InitiatingSubFlowSmokeTestFlow(
+                InitiatingSubFlowSmokeTestFlow(
                     MemberX500Name.parse(x500),
                     initiateSessionInInitiatingFlow,
                     messages[idx]

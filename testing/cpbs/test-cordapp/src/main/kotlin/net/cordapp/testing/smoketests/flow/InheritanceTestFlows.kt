@@ -16,7 +16,7 @@ interface MemberResolver {
 }
 
 @Suppress("unused")
-abstract class AbstractFlow : RPCStartableFlow, net.cordapp.testing.smoketests.flow.MemberResolver {
+abstract class AbstractFlow : RPCStartableFlow, MemberResolver {
     private companion object {
         val log = contextLogger()
     }
@@ -49,7 +49,7 @@ abstract class AbstractFlow : RPCStartableFlow, net.cordapp.testing.smoketests.f
  * Used to verify that dependency injection works while using inheritance, interfaces and Corda native services.
  */
 @Suppress("unused")
-class DependencyInjectionTestFlow : net.cordapp.testing.smoketests.flow.AbstractFlow() {
+class DependencyInjectionTestFlow : AbstractFlow() {
     override fun buildOutput(memberInfo: MemberInfo?): String {
         return memberInfo?.name?.toString() ?: "Failed to find MemberInfo"
     }
