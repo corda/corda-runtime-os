@@ -82,7 +82,7 @@ annotation class HttpRpcPUT(
  * @property description The description of the endpoint, used for documentation. Defaults to empty string.
  * @property responseDescription The description of the response, used for documentation. Defaults to empty string.
  */
-@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY_GETTER, AnnotationTarget.PROPERTY)
+@Target(AnnotationTarget.FUNCTION, AnnotationTarget.PROPERTY_GETTER)
 @Retention(AnnotationRetention.RUNTIME)
 @HttpRpcEndpoint
 annotation class HttpRpcGET(
