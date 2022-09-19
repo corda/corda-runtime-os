@@ -1,19 +1,25 @@
 package net.corda.libs.cpiupload.endpoints.v1
 
 import net.corda.httprpc.RpcOps
-import net.corda.httprpc.annotations.HttpRpcGET
-import net.corda.httprpc.annotations.HttpRpcPOST
-import net.corda.httprpc.annotations.HttpRpcPathParameter
-import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.httprpc.HttpFileUpload
+import net.corda.httprpc.annotations.HttpRpcGET
+import net.corda.httprpc.annotations.HttpRpcPathParameter
+import net.corda.httprpc.annotations.HttpRpcPOST
+import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
+import net.corda.httprpc.annotations.HttpRpcResource
 
 @HttpRpcResource(
-    name = "CPI Upload API",
-    description = "CPI Upload management endpoints.",
+    name = "CPI API",
+    description = "The CPI API consists of a number of endpoints used to manage Corda Package Installer (CPI) " +
+            "files in the Corda cluster.",
     path = "cpi"
 )
 interface CpiUploadRPCOps : RpcOps {
-    /** Simple class to return some information back to the caller regarding the upload request */
+    /**
+     * Response from CPI Upload Request
+     *
+     * @param id ID of the CPI Upload Request.
+     */
     data class CpiUploadResponse(val id: String)
 
     /**
@@ -22,24 +28,41 @@ interface CpiUploadRPCOps : RpcOps {
      * Please note that this method will not close [HttpFileUpload.content] input stream, the caller must close it.
      */
     @HttpRpcPOST(
-        title = "CPI API",
-        description = "CPI management endpoints.",
-        responseDescription = "The request Id calculated for a CPI upload request"
+        title = "CPI upload",
+        description = "The upload endpoint uses the POST method to upload a Corda Package Installer (CPI) file to the " +
+                "Corda cluster.",
+        responseDescription = "The Id for the CPI upload request."
     )
-    fun cpi(upload: HttpFileUpload): CpiUploadResponse
+    fun cpi(
+        @HttpRpcRequestBodyParameter(
+            description = "The CPI file to be uploaded.",
+            required = true
+        )
+        upload: HttpFileUpload): CpiUploadResponse
 
-    /** Simple class to return the status of the upload request */
+    /**
+     * Status of the CPI Upload Request
+     *
+     * @param status Status of the Upload request.
+     * @param cpiFileChecksum Checksum for the file to be uploaded.
+     */
     data class CpiUploadStatus(val status: String, val cpiFileChecksum: String)
 
     /**
      * Get the status of the upload.
      *
-     * @param id request id returned from the [cpi] method
-     * @return a status object that is converted to json on the client side `{status: OK}`
+     * @param id Request ID returned from the [cpi] method.
+     * @return A status object that is converted to .json on the client side `{status: OK}`.
      */
-    @HttpRpcGET(path = "status/{id}", title = "CPI upload status", description = "Check upload status for given requestId")
+    @HttpRpcGET(
+        path = "status/{id}",
+        title = "CPI upload status",
+        description = "The status endpoint uses the GET method to return status information for the CPI upload with the " +
+                "given request ID.")
     fun status(
-        @HttpRpcPathParameter(description = "The requestId")
+        @HttpRpcPathParameter(
+            description = "The ID returned from the CPI upload request."
+        )
         id: String,
     ): CpiUploadStatus
 
@@ -49,9 +72,9 @@ interface CpiUploadRPCOps : RpcOps {
      * @throws `HttpApiException` If the request returns an exceptional response.
      */
     @HttpRpcGET(
-        title = "List all CPIs uploaded to the cluster",
-        description = "List all CPIs uploaded to the cluster.",
-        responseDescription = "List details of the all CPIs uploaded to the cluster."
+        title = "CPI info",
+        description = "The GET method returns a list of all CPIs uploaded to the cluster.",
+        responseDescription = "Details of all of the CPIs uploaded to the cluster."
     )
     fun getAllCpis(): GetCPIsResponse
 }

@@ -12,8 +12,8 @@
     "basicAuth" : [ ]
   } ],
   "tags" : [ {
-    "name" : "CPI Upload API",
-    "description" : "CPI Upload management endpoints."
+    "name" : "CPI API",
+    "description" : "The CPI API consists of a number of endpoints used to manage Corda Package Installer (CPI) files in the Corda cluster."
   }, {
     "name" : "Certificates API",
     "description" : "Certificates management endpoints."
@@ -319,13 +319,13 @@
     },
     "/cpi" : {
       "get" : {
-        "tags" : [ "CPI Upload API" ],
-        "description" : "List all CPIs uploaded to the cluster.",
+        "tags" : [ "CPI API" ],
+        "description" : "The GET method returns a list of all CPIs uploaded to the cluster.",
         "operationId" : "get_cpi",
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "List details of the all CPIs uploaded to the cluster.",
+            "description" : "Details of all of the CPIs uploaded to the cluster.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -343,8 +343,8 @@
         }
       },
       "post" : {
-        "tags" : [ "CPI Upload API" ],
-        "description" : "CPI management endpoints.",
+        "tags" : [ "CPI API" ],
+        "description" : "The upload endpoint uses the POST method to upload a Corda Package Installer (CPI) file to the Corda cluster.",
         "operationId" : "post_cpi",
         "parameters" : [ ],
         "requestBody" : {
@@ -356,7 +356,7 @@
                 "properties" : {
                   "upload" : {
                     "type" : "string",
-                    "description" : "A file to upload.",
+                    "description" : "The CPI file to be uploaded.",
                     "format" : "binary",
                     "nullable" : false,
                     "example" : "No example available for this type"
@@ -369,7 +369,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "The request Id calculated for a CPI upload request",
+            "description" : "The Id for the CPI upload request.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -389,7 +389,7 @@
     },
     "/cpi/getprotocolversion" : {
       "get" : {
-        "tags" : [ "CPI Upload API" ],
+        "tags" : [ "CPI API" ],
         "description" : "",
         "operationId" : "get_cpi_getprotocolversion",
         "parameters" : [ ],
@@ -418,17 +418,17 @@
     },
     "/cpi/status/{id}" : {
       "get" : {
-        "tags" : [ "CPI Upload API" ],
-        "description" : "Check upload status for given requestId",
+        "tags" : [ "CPI API" ],
+        "description" : "The status endpoint uses the GET method to return status information for the CPI upload with the given request ID.",
         "operationId" : "get_cpi_status__id_",
         "parameters" : [ {
           "name" : "id",
           "in" : "path",
-          "description" : "The requestId",
+          "description" : "The ID returned from the CPI upload request.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The requestId",
+            "description" : "The ID returned from the CPI upload request.",
             "nullable" : false,
             "example" : "string"
           }
