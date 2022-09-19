@@ -455,3 +455,6 @@ gradleEnterprise {
         }
     }
 }
+include 'libs:ledger:ledger-utxo-impl'
+findProject(':libs:ledger:ledger-utxo-impl')?.name = 'ledger-utxo-impl'
+
