@@ -1661,4 +1661,76 @@ class SessionManagerTest {
                 "to the inbound message processor. Sessions: [sessionId] will not be initiated."
         )
     }
+
+
+
+
+    @Test
+    fun `DRAFT when a responder handshake message is received, heartbeats are sent, this continues if the heartbeat manager gets a new config`() {
+        val messages = Collections.synchronizedList(mutableListOf<AuthenticatedDataMessage>())
+
+        fun callback(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
+            val record = records.single()
+            val message = (record.value as LinkOutMessage).payload as AuthenticatedDataMessage
+            messages.add(message)
+            return listOf(CompletableFuture.completedFuture(Unit))
+        }
+
+        val resourcesHolder = ResourcesHolder()
+        val sessionManager = SessionManagerImpl(
+            groups, members,
+            cryptoService,
+            pendingSessionMessageQueues,
+            mock(),
+            mock(),
+            mock(),
+            mock(),
+            mock {
+                val dominoTile = mock<SimpleDominoTile> {
+                    whenever(it.coordinatorName).doReturn(LifecycleCoordinatorName("", ""))
+                }
+                on { it.dominoTile } doReturn dominoTile
+            },
+            linkManagerHostingMap,
+            protocolFactory,
+            mockTimeFacilitiesProvider.clock,
+            sessionReplayer,
+        ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
+            setRunning()
+            configHandler.applyNewConfiguration(
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1),
+                null,
+                mock(),
+            )
+            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock())
+        }
+        @Suppress("UNCHECKED_CAST")
+        publisherWithDominoLogicByClientId[SessionManagerImpl.HeartbeatManager.HEARTBEAT_MANAGER_CLIENT_ID]!!.forEach {
+            whenever(it.publish(any())).doAnswer { invocation ->
+                callback(invocation.arguments.first() as List<Record<*, *>>)
+            }
+        }
+        sessionManager.start()
+        startSendingHeartbeats(sessionManager)
+
+        mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
+        mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
+        assertThat(messages.size).isEqualTo(2)
+
+        mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.days))
+        assertThat(messages.size).isEqualTo(3)
+
+        mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(1.days))
+        loggingInterceptor.assertInfoContains("Outbound session sessionId" +
+                " (local=HoldingIdentity(x500Name=CN=Alice, O=Alice Corp, L=LDN, C=GB, groupId=myGroup)," +
+                " remote=HoldingIdentity(x500Name=CN=Bob, O=Bob Corp, L=LDN, C=GB, groupId=myGroup))" +
+                " timed out to refresh ephemeral keys and it will be cleaned up."
+        )
+
+        mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.days))
+        assertThat(messages.size).isEqualTo(3)
+
+        sessionManager.stop()
+        resourcesHolder.close()
+    }
 }

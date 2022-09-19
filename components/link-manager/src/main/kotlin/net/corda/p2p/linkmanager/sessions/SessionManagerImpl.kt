@@ -73,6 +73,7 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
+import kotlin.time.Duration.Companion.days
 
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class SessionManagerImpl(
@@ -136,7 +137,7 @@ internal class SessionManagerImpl(
     )
     private val outboundSessionPool = OutboundSessionPool(heartbeatManager::calculateWeightForSession)
 
-    private val fiveDaysInMilliseconds = 5*24*60*60*1000L
+    private val fiveDays = 5.days
 
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
@@ -556,7 +557,7 @@ internal class SessionManagerImpl(
         )
         executorService.schedule(
             { refreshSessionAndLog(sessionCounterparties, message.header.sessionId) },
-            fiveDaysInMilliseconds,
+            fiveDays,
             TimeUnit.MILLISECONDS
         )
         return null
