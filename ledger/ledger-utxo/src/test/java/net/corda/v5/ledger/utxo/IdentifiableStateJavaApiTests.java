@@ -12,7 +12,7 @@ public final class IdentifiableStateJavaApiTests extends AbstractMockTestHarness
     @Test
     public void getParticipantsShouldReturnTheExpectedValue() {
         Set<PublicKey> value = identifiableState.getParticipants();
-        Assertions.assertEquals(participants, value);
+        Assertions.assertEquals(keys, value);
     }
 
     @Test

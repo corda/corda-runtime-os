@@ -3,7 +3,7 @@ package net.corda.v5.ledger.utxo;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class CpkConstraintJavaApiTests extends AbstractMockTestHarness {
+public final class CpkConstraintJavaApiTests extends AbstractMockTestHarness {
 
     @Test
     public void isSatisfiedByShouldBeCallable() {

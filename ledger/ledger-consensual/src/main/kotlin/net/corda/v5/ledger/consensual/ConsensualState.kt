@@ -1,6 +1,7 @@
 package net.corda.v5.ledger.consensual
 
 import net.corda.v5.base.annotations.CordaSerializable
+import net.corda.v5.ledger.common.transaction.Party
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 
 /**

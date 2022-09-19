@@ -11,7 +11,7 @@ public final class BearableStateJavaApiTests extends AbstractMockTestHarness {
     @Test
     public void getParticipantsShouldReturnTheExpectedValue() {
         Set<PublicKey> value = bearableState.getParticipants();
-        Assertions.assertEquals(participants, value);
+        Assertions.assertEquals(keys, value);
     }
 
     @Test

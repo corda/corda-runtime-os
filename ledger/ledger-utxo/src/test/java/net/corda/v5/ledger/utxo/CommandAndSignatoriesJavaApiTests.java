@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import java.security.PublicKey;
 import java.util.Set;
 
-public class CommandAndSignatoriesJavaApiTests extends AbstractMockTestHarness {
+public final class CommandAndSignatoriesJavaApiTests extends AbstractMockTestHarness {
 
     @Test
     public void getCommandShouldReturnTheExpectedValue() {
@@ -17,6 +17,6 @@ public class CommandAndSignatoriesJavaApiTests extends AbstractMockTestHarness {
     @Test
     public void getSignatoriesShouldReturnTheExpectedValue() {
         Set<PublicKey> value = commandAndSignatories.getSignatories();
-        Assertions.assertEquals(participants, value);
+        Assertions.assertEquals(keys, value);
     }
 }

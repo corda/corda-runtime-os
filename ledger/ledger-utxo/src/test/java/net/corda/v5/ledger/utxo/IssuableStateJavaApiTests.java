@@ -11,7 +11,7 @@ public final class IssuableStateJavaApiTests extends AbstractMockTestHarness {
     @Test
     public void getParticipantsShouldReturnTheExpectedValue() {
         Set<PublicKey> value = issuableState.getParticipants();
-        Assertions.assertEquals(participants, value);
+        Assertions.assertEquals(keys, value);
     }
 
     @Test

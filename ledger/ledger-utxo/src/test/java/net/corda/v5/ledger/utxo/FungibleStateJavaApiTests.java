@@ -12,7 +12,7 @@ public final class FungibleStateJavaApiTests extends AbstractMockTestHarness {
     @Test
     public void getParticipantsShouldReturnTheExpectedValue() {
         Set<PublicKey> value = fungibleState.getParticipants();
-        Assertions.assertEquals(participants, value);
+        Assertions.assertEquals(keys, value);
     }
 
     @Test

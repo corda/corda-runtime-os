@@ -11,6 +11,6 @@ public final class ContractStateJavaApiTests extends AbstractMockTestHarness {
     @Test
     public void getParticipantsShouldReturnTheExpectedValue() {
         Set<PublicKey> value = contractState.getParticipants();
-        Assertions.assertEquals(participants, value);
+        Assertions.assertEquals(keys, value);
     }
 }

@@ -1,4 +1,4 @@
-package net.corda.v5.ledger.consensual;
+package net.corda.v5.ledger.common.transaction;
 
 import net.corda.v5.base.types.MemberX500Name;
 import org.assertj.core.api.Assertions;
@@ -7,10 +7,7 @@ import org.mockito.Mockito;
 
 import java.security.PublicKey;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class PartyJavaApiTest {
     private final Party party = mock(Party.class);
