@@ -13,21 +13,20 @@ import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigResponse
 /** RPC operations for cluster configuration management. */
 @HttpRpcResource(
     name = "Configuration API",
-    description = "The Configuration API consists of a number of endpoints used to manage the configuration of Corda clusters.",
+    description = "Cluster configuration management endpoints.",
     path = "config"
 )
 interface ConfigRPCOps : RpcOps {
 
     /**
-     * Sends a request to update the clusters configuration.
+     * Updates cluster configuration.
      *
-     * @param request the configuration data to update the cluster with.
      * @throws `ConfigRPCOpsServiceException` If the updated configuration could not be published.
      * @throws `HttpApiException` If the request returns an exceptional response.
      */
     @HttpRpcPUT(
         title = "Update cluster configuration",
-        description = "This method updates a section of the cluster configuration.",
+        description = "Updates a section of the cluster configuration.",
         responseDescription = "The updated cluster configuration for the specified section."
     )
     fun updateConfig(
@@ -35,10 +34,6 @@ interface ConfigRPCOps : RpcOps {
         request: UpdateConfigParameters
     ): UpdateConfigResponse
 
-    /**
-     * Get the configuration date the cluster is to set with for a specific [section].
-     * @param section the top level section of cluster configuration to return.
-     */
     @HttpRpcGET(
         path = "{section}",
         title = "Get Configuration.",
