@@ -31,7 +31,7 @@ abstract class AbstractFlow : RPCStartableFlow, net.cordapp.testing.smoketests.f
 
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
-        net.cordapp.testing.smoketests.flow.AbstractFlow.Companion.log.info("Executing Flow...")
+        log.info("Executing Flow...")
 
         try {
             val request = requestBody.getRequestBodyAs<Map<String, String>>(jsonMarshallingService)
@@ -39,7 +39,7 @@ abstract class AbstractFlow : RPCStartableFlow, net.cordapp.testing.smoketests.f
 
             return buildOutput(findMember(memberInfoRequest))
         } catch (e: Exception) {
-            net.cordapp.testing.smoketests.flow.AbstractFlow.Companion.log.error("Unexpected error while processing the flow", e)
+            log.error("Unexpected error while processing the flow", e)
             throw e
         }
     }
