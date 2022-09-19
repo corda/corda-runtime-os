@@ -52,6 +52,10 @@ spec:
         {{- end }}
           - name: health
             containerPort: 7000
+        {{- if .Values.workers.p2pLinkManager.profiling.enabled }}
+          - name: profiling
+            containerPort: 10045
+        {{- end }}
         {{- if not .Values.workers.p2pLinkManager.debug.enabled }}
         livenessProbe:
           httpGet:
