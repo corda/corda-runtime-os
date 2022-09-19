@@ -22,7 +22,7 @@ interface ConfigRPCOps : RpcOps {
     /**
      * Sends a request to update the clusters configuration.
      *
-     * @property request Details of the updated configuration.
+     * @param request Details of the updated configuration.
      * @throws ConfigRPCOpsServiceException If the updated configuration could not be published.
      * @throws HttpApiException If the request returns an exceptional response.
      */
