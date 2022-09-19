@@ -6,7 +6,7 @@ package net.corda.libs.virtualnode.endpoints.v1.types
  * These field names are what the end-users see.
  */
 /**
- * List of Virtual Nodes
+ * List of virtual nodes
  *
  * @param virtualNodes List of [VirtualNodeInfo].
  */
