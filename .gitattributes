@@ -1,6 +1,9 @@
 #
 # https://help.github.com/articles/dealing-with-line-endings/
 #
+# Ensure shell scripts have the correct line endings on check out
+*.sh            text = auto
+
 # These are explicitly windows files and should use crlf
 *.bat           text eol=crlf
 
