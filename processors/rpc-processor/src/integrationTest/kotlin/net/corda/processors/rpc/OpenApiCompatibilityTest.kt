@@ -101,7 +101,7 @@ class OpenApiCompatibilityTest {
         val stream = requireNotNull(javaClass.classLoader.getResourceAsStream("/swaggerBaseline.json"))
         return stream.use {
             val jsonString = String(it.readAllBytes())
-            Json.mapper().readValue(jsonString, OpenAPI::class.java)
+            Json.mapper().readValue(removeDocContentFromJson(jsonString), OpenAPI::class.java)
         }
     }
 
@@ -145,7 +145,8 @@ class OpenApiCompatibilityTest {
 
             val response = client.send(request, HttpResponse.BodyHandlers.ofString())
             val body = response.body()
-            body to Json.mapper().readValue(body, OpenAPI::class.java)
+            val jsonWithDocsRemoved = removeDocContentFromJson(body)
+            body to Json.mapper().readValue(jsonWithDocsRemoved, OpenAPI::class.java)
         }
     }
 }
