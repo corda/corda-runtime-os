@@ -1,5 +1,5 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
-
+/*
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
@@ -414,4 +414,4 @@ class StartRegistrationHandlerTest {
         verify(memberTypeChecker, getVerificationMode(verify))
             .getMgmMemberInfo(eq(mgmHoldingIdentity.toCorda()))
     }
-}
+}*/

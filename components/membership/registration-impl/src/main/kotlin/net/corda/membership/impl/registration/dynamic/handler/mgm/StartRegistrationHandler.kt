@@ -1,5 +1,5 @@
 package net.corda.membership.impl.registration.dynamic.handler.mgm
-/*
+
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
@@ -209,4 +209,4 @@ internal class StartRegistrationHandler(
             memberRegistrationRequest.memberSignature.bytes
         )
     }
-}*/
+}
