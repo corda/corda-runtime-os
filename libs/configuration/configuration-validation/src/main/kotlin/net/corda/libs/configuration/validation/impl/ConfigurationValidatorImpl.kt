@@ -11,7 +11,6 @@ import com.networknt.schema.ValidationMessage
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
-import java.io.InputStream
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.validation.ConfigurationSchemaFetchException
@@ -21,6 +20,7 @@ import net.corda.schema.configuration.provider.SchemaProvider
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.versioning.Version
+import java.io.InputStream
 
 internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProvider) : ConfigurationValidator {
 
@@ -60,7 +60,7 @@ internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProv
         val configAsJSONNode = objectMapper.createObjectNode()
         val errors = try {
             val schema = getSchema(schemaInput, applyDefaults = true)
-            schema.walk(configAsJSONNode, false).validationMessages
+            schema.walk(configAsJSONNode, true).validationMessages
         } catch (e: Exception) {
             val message = "Could not retrieve schema defaults for key $key at schema version $version: ${e.message}"
             logger.error(message, e)
