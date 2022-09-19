@@ -15,7 +15,7 @@ import java.time.Instant
  * @param mainBundle Name for the CPK's main bundle.
  * @param libraries List of library dependencies.
  * @param dependencies List of CPKs that are a dependency.
- * @param type Type of CPK (e.g. Contract, Workflow).
+ * @param type Type of CPK (for example, contract, workflow).
  * @param hash File hash of the CPK.
  * @param timestamp Timestamp indicating when the CPK was uploaded.
  */
