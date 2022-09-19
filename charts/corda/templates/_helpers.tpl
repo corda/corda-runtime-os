@@ -66,7 +66,7 @@ imagePullSecrets:
 Worker name
 */}}
 {{- define "corda.workerName" -}}
-"{{ include "corda.fullname" . }}-{{ .worker | kebabcase | replace "p-2p" "p2p" }}-worker"
+{{ include "corda.fullname" . }}-{{ .worker | kebabcase | replace "p-2p" "p2p" }}-worker
 {{- end }}
 
 {{/*
@@ -145,6 +145,17 @@ resources:
   {{- if or .Values.resources.limits.memory .Values.bootstrap.resources.limits.memory }}
     memory: {{ default .Values.resources.limits.memory .Values.bootstrap.resources.limits.memory }}
   {{- end }}
+{{- end }}
+
+{{/*
+Node selector for the bootstrapper
+*/}}
+
+{{- define "corda.bootstrapNodeSelector" }}
+{{- with .Values.bootstrap.nodeSelector | default .Values.nodeSelector }}
+nodeSelector:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
 {{- end }}
 
 {{/*
@@ -281,8 +292,8 @@ resources:
     cpu: {{ default .Values.resources.limits.cpu ( get .Values.workers .worker ).resources.limits.cpu }}
   {{- end }}
   {{- if or .Values.resources.limits.memory ( get .Values.workers .worker ).resources.limits.memory }}
-    memory: {{ default .Values.resources.limits.memory ( get .Values.workers .worker ).resources.limits.memory }}  
-  {{- end }} 
+    memory: {{ default .Values.resources.limits.memory ( get .Values.workers .worker ).resources.limits.memory }}
+  {{- end }}
 {{- end }}
 
 {{/*
@@ -325,7 +336,7 @@ Volumes for corda workers
 {{- if .Values.dumpHostPath }}
 - name: dumps
   hostPath:
-    path: {{ .Values.dumpHostPath }}/{{ .Release.Namespace }}/{{ include "corda.workerName" . }}/
+    path: {{ .Values.dumpHostPath }}/{{ .Release.Namespace }}/{{ (include "corda.workerName" .) }}/
     type: DirectoryOrCreate
 {{- end }}
 {{- end }}
