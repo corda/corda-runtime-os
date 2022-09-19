@@ -21,7 +21,7 @@ class StartFlow(private val context: TaskContext) : Task {
         val namedFlows = mapOf(
             "default" to getStartRPCEventRecord(
                 clientId = UUID.randomUUID().toString(),
-                flowName = "net.cordapp.flowworker.development.testflows.MessagingFlow",
+                flowName = " net.cordapp.testing.testflows.MessagingFlow",
                 x500Name = context.startArgs.x500NName,
                 groupId = "test-cordapp",
                 jsonArgs = "{ \"who\":\"${context.startArgs.x500NName}\"}"
@@ -47,7 +47,7 @@ class StartFlow(private val context: TaskContext) : Task {
     fun getSmokeTestStartRecord(args: String): Record<*, *> {
         return getStartRPCEventRecord(
             clientId = UUID.randomUUID().toString(),
-            flowName = "net.cordapp.flowworker.development.flows.RpcSmokeTestFlow",
+            flowName = " net.cordapp.testing.flows.RpcSmokeTestFlow",
             x500Name = context.startArgs.x500NName,
             groupId = "test-cordapp",
             jsonArgs = args
