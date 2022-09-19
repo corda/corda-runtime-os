@@ -28,6 +28,7 @@ dependencies {
     implementation project(':components:virtual-node:cpi-info-read-service')
     implementation project(':components:virtual-node:entity-processor-service')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
+    implementation project(':components:virtual-node:persistence-service-common')
     implementation project(':components:virtual-node:sandbox-group-context-service')
     implementation project(':libs:configuration:configuration-core')
     implementation project(':libs:configuration:configuration-datamodel')

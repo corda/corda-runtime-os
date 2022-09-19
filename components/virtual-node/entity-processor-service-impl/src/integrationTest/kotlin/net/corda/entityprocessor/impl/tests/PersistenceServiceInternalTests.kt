@@ -21,9 +21,6 @@ import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.entityprocessor.impl.internal.EntityMessageProcessor
-import net.corda.entityprocessor.impl.internal.EntitySandboxServiceImpl
-import net.corda.entityprocessor.impl.internal.PersistenceServiceInternal
-import net.corda.entityprocessor.impl.internal.exceptions.KafkaMessageSizeException
 import net.corda.entityprocessor.impl.internal.getClass
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.messaging.api.records.Record
@@ -74,7 +71,10 @@ import net.corda.db.persistence.testkit.helpers.SandboxHelper.getCatClass
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getDogClass
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getOwnerClass
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getSerializer
-import net.corda.entityprocessor.impl.internal.EntitySandboxContextTypes.SANDBOX_SERIALIZER
+import net.corda.entityprocessor.impl.internal.PersistenceServiceInternal
+import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_SERIALIZER
+import net.corda.persistence.common.EntitySandboxServiceImpl
+import net.corda.persistence.common.exceptions.KafkaMessageSizeException
 
 sealed class QuerySetup {
     data class NamedQuery(val params: Map<String, String>, val query: String = "Dog.summon") : QuerySetup()

@@ -7,8 +7,8 @@ import net.corda.db.persistence.testkit.helpers.BasicMocks
 import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.createDog
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getSerializer
-import net.corda.entityprocessor.impl.internal.EntitySandboxContextTypes
-import net.corda.entityprocessor.impl.internal.EntitySandboxServiceImpl
+import net.corda.persistence.common.EntitySandboxContextTypes
+import net.corda.persistence.common.EntitySandboxServiceImpl
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle

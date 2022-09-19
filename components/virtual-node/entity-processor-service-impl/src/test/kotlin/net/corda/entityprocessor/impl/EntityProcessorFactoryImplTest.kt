@@ -1,6 +1,6 @@
 package net.corda.entityprocessor.impl
 
-import net.corda.entityprocessor.impl.internal.exceptions.KafkaMessageSizeException
+import net.corda.persistence.common.exceptions.KafkaMessageSizeException
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.nio.ByteBuffer
