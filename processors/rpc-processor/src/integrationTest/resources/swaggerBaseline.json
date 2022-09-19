@@ -58,7 +58,7 @@
     "description" : "Role Based Access Control User Management endpoints."
   }, {
     "name" : "Virtual Node API",
-    "description" : "Virtual node management endpoints."
+    "description" : "The Virtual Nodes API consists of a number of endpoints to manage virtual nodes."
   }, {
     "name" : "Virtual Node Maintenance API",
     "description" : "The Virtual Node Maintenance API consists of a series of endpoints used for virtual node management.Warning: Using these endpoints could be highly disruptive, so great care should be taken when using them."
@@ -2406,12 +2406,12 @@
     "/virtualnode" : {
       "get" : {
         "tags" : [ "Virtual Node API" ],
-        "description" : "List all virtual nodes in the cluster.",
+        "description" : "The virtual node endpoint uses the GET method to list all virtual nodes in the cluster.",
         "operationId" : "get_virtualnode",
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "List details of the all virtual nodes in the cluster.",
+            "description" : "List of virtual node details.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2430,7 +2430,7 @@
       },
       "post" : {
         "tags" : [ "Virtual Node API" ],
-        "description" : "Creates a new virtual node.",
+        "description" : "The virtual node endpoint uses the POST method to create a new virtual node.",
         "operationId" : "post_virtualnode",
         "parameters" : [ ],
         "requestBody" : {
@@ -2699,6 +2699,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -2838,6 +2839,7 @@
       },
       "GenerateCsrWrapperRequest" : {
         "required" : [ "certificateRole", "x500Name" ],
+        "type" : "object",
         "properties" : {
           "certificateRole" : {
             "type" : "string",
@@ -3124,6 +3126,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -3167,6 +3170,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -3244,6 +3248,7 @@
             "example" : "2022-06-24T10:15:30Z"
           },
           "registrationStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "PENDING_MEMBER_VERIFICATION",
             "enum" : [ "NEW", "PENDING_MEMBER_VERIFICATION", "PENDING_APPROVAL_FLOW", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "APPROVED" ]
