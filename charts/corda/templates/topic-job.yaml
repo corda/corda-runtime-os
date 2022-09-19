@@ -1,9 +1,8 @@
 {{- if .Values.bootstrap.kafka.enabled }}
-{{- $_ := set . "job" "topic" }}
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "corda.jobName" . }}
+  name: {{ include "corda.fullname" . }}
   labels:
     {{- include "corda.labels" . | nindent 4 }}
   annotations:
