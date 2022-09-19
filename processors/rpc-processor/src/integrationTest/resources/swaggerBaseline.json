@@ -34,7 +34,7 @@
     "description" : "The endpoint used to test interactions via HTTP RPC API. It verifies that a call to HTTP-RPC can be made, and that the identity of the user making the call can be recognized.RBAC permissions are checked and the call is successfully processed by the HTTP-RPC worker."
   }, {
     "name" : "Keys Management API",
-    "description" : "The Keys Management API consists of endpoints used to work with cryptographic keys and related operations. The API allows you to list scheme codes which are supported by the associated HSM integration, retrieve keys owned by a tenant, generate a key pair for a tenant, and retrieve a tenant's key in PEM format."
+    "description" : "The Keys Management API consists of endpoints used to manage public and private key pairs. The API allows you to list scheme codes which are supported by the associated HSM integration, retrieve information about key pairs owned by a tenant, generate a key pair for a tenant, and retrieve a tenant's public key in PEM format."
   }, {
     "name" : "MGM API",
     "description" : "The MGM API consists of a number of endpoints used to manage membership groups. A membership group is a logical grouping of a number of Corda Identities to communicate and transact with one another with a specific set of CorDapps. The API allows you to generate the group policy for a membership group, required for new members to join the group."
@@ -953,7 +953,7 @@
     "/keys/{tenantid}" : {
       "get" : {
         "tags" : [ "Keys Management API" ],
-        "description" : "Enables you to retrieve a list of keys belonging to a tenant.",
+        "description" : "Enables you to retrieve information about a list of key pairs belonging to a tenant. ",
         "operationId" : "get_keys__tenantid_",
         "parameters" : [ {
           "name" : "tenantid",
@@ -1004,33 +1004,33 @@
         }, {
           "name" : "category",
           "in" : "query",
-          "description" : "Category of the HSM which handles the keys. Can be one of 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY'.",
+          "description" : "Category of the HSM which handles the key pairs. Can be one of 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY'.",
           "required" : false,
           "schema" : {
             "type" : "string",
-            "description" : "Category of the HSM which handles the keys. Can be one of 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY'.",
+            "description" : "Category of the HSM which handles the key pairs. Can be one of 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY'.",
             "nullable" : true,
             "example" : "string"
           }
         }, {
           "name" : "schemecodename",
           "in" : "query",
-          "description" : "The keys' signature scheme name. For example, 'CORDA.RSA', 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA_SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'.",
+          "description" : "The key pairs' signature scheme name. For example, 'CORDA.RSA', 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA_SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'.",
           "required" : false,
           "schema" : {
             "type" : "string",
-            "description" : "The keys' signature scheme name. For example, 'CORDA.RSA', 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA_SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'.",
+            "description" : "The key pairs' signature scheme name. For example, 'CORDA.RSA', 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA_SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'.",
             "nullable" : true,
             "example" : "string"
           }
         }, {
           "name" : "alias",
           "in" : "query",
-          "description" : "The alias under which the key is stored.",
+          "description" : "The alias under which the key pair is stored.",
           "required" : false,
           "schema" : {
             "type" : "string",
-            "description" : "The alias under which the key is stored.",
+            "description" : "The alias under which the key pair is stored.",
             "nullable" : true,
             "example" : "string"
           }
@@ -1048,29 +1048,29 @@
         }, {
           "name" : "createdafter",
           "in" : "query",
-          "description" : "Only include keys which were created on or after the specified time. Must be a valid instant in UTC, such as 2022-12-03T10:15:30.00Z.",
+          "description" : "Only include key pairs which were created on or after the specified time. Must be a valid instant in UTC, such as 2022-12-03T10:15:30.00Z.",
           "required" : false,
           "schema" : {
             "type" : "string",
-            "description" : "Only include keys which were created on or after the specified time. Must be a valid instant in UTC, such as 2022-12-03T10:15:30.00Z.",
+            "description" : "Only include key pairs which were created on or after the specified time. Must be a valid instant in UTC, such as 2022-12-03T10:15:30.00Z.",
             "nullable" : true,
             "example" : "string"
           }
         }, {
           "name" : "createdbefore",
           "in" : "query",
-          "description" : "Only include keys which were created on or before the specified time. Must be a valid instant in UTC, such as 2022-12-03T10:15:30.00Z.",
+          "description" : "Only include key pairs which were created on or before the specified time. Must be a valid instant in UTC, such as 2022-12-03T10:15:30.00Z.",
           "required" : false,
           "schema" : {
             "type" : "string",
-            "description" : "Only include keys which were created on or before the specified time. Must be a valid instant in UTC, such as 2022-12-03T10:15:30.00Z.",
+            "description" : "Only include key pairs which were created on or before the specified time. Must be a valid instant in UTC, such as 2022-12-03T10:15:30.00Z.",
             "nullable" : true,
             "example" : "string"
           }
         }, {
           "name" : "id",
           "in" : "query",
-          "description" : "Only retrieve keys associated with the specified list of key IDs. If specified, other filter parameters will be ignored.",
+          "description" : "Only include key pairs associated with the specified list of key IDs. If specified, other filter parameters will be ignored.",
           "required" : false,
           "schema" : {
             "uniqueItems" : false,
@@ -1084,7 +1084,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "A map of key IDs to the respective key information.",
+            "description" : "A map of key IDs to the respective key pair information.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1126,33 +1126,33 @@
         }, {
           "name" : "alias",
           "in" : "path",
-          "description" : "The alias under which the new key will be stored.",
+          "description" : "The alias under which the new key pair will be stored.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The alias under which the new key will be stored.",
+            "description" : "The alias under which the new key pair will be stored.",
             "nullable" : false,
             "example" : "string"
           }
         }, {
           "name" : "hsmcategory",
           "in" : "path",
-          "description" : "Category of the HSM which handles the keys. Can be one of 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY'.",
+          "description" : "Category of the HSM which handles the key pairs. Can be one of 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY'.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Category of the HSM which handles the keys. Can be one of 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY'.",
+            "description" : "Category of the HSM which handles the key pairs. Can be one of 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY'.",
             "nullable" : false,
             "example" : "string"
           }
         }, {
           "name" : "scheme",
           "in" : "path",
-          "description" : "The key's scheme describing which type of the key to generate. For example, 'CORDA.RSA', 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA_SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'.",
+          "description" : "The key's scheme describing which type of the key pair to generate. For example, 'CORDA.RSA', 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA_SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The key's scheme describing which type of the key to generate. For example, 'CORDA.RSA', 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA_SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'.",
+            "description" : "The key's scheme describing which type of the key pair to generate. For example, 'CORDA.RSA', 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA_SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'.",
             "nullable" : false,
             "example" : "string"
           }
@@ -1207,7 +1207,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "List of scheme codes which are supported by the associated HSM integration.",
+            "description" : "The list of scheme codes which are supported by the associated HSM integration.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1250,11 +1250,11 @@
         }, {
           "name" : "keyid",
           "in" : "path",
-          "description" : "Identifier of the key to be retrieved.",
+          "description" : "Identifier of the public key to be retrieved.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Identifier of the key to be retrieved.",
+            "description" : "Identifier of the public key to be retrieved.",
             "nullable" : false,
             "example" : "string"
           }
