@@ -10,7 +10,7 @@ import net.corda.v5.crypto.SecureHash
  */
 interface MerkleTree {
     /**
-     * @property leaves are the input data elements. Usually the hashes of something larger deterministically serialized.
+(     * @property leaves The input data elements. Usually something deterministically serialized.
      */
     val leaves: List<ByteArray>
 
@@ -25,8 +25,10 @@ interface MerkleTree {
     val root: SecureHash
 
     /**
-     * [createAuditProof] can be used to create a [MerkleProof] for a set of leaves
+     * Creates a [MerkleProof] for a set of leaves.
      * @param leafIndices whose leaf's inclusion is to be proven by the proof.
+     *
+     * @return [MerkleProof] for the input leaves.
      */
     fun createAuditProof(leafIndices: List<Int>): MerkleProof
 }
