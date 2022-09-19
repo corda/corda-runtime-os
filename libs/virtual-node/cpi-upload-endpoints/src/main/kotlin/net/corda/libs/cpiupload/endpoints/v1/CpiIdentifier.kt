@@ -2,7 +2,7 @@ package net.corda.libs.cpiupload.endpoints.v1
 
 /**
  * NOTE:
- * This class is visible to end-users via json serialization,
+ * This class is visible to end-users via JSON serialization,
  * so the variable names are significant and should be consistent
  * anywhere they are used as parameters.
  */
