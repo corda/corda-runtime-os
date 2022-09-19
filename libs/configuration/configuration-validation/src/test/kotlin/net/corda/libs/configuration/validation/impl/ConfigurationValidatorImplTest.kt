@@ -66,6 +66,18 @@ class ConfigurationValidatorImplTest {
     }
 
     @Test
+    fun `calling get defaults before validate allows defaults to still be populated`() {
+        val validator = createSchemaValidator()
+        val smartConfig = loadData(VALID_DATA)
+        val defaults = validator.getDefaults(TEST_SCHEMA, TEST_VERSION)
+        val outputConfig = validator.validate(TEST_SCHEMA, TEST_VERSION, smartConfig, true)
+        assertThat(smartConfig).isNotEqualTo(outputConfig)
+        assertThat(outputConfig.getBoolean("testReference.bar")).isEqualTo(false)
+        assertThat(outputConfig.getInt("testObject.testPropertyB.b")).isEqualTo(2)
+        assertThat(defaults.getInt("testObject.testPropertyA.a")).isEqualTo(1)
+    }
+
+    @Test
     fun `invalid document against test schema`() {
         val json = loadData(INVALID_DATA)
         val validator = createSchemaValidator()
@@ -116,6 +128,8 @@ class ConfigurationValidatorImplTest {
         val expectedConfig = ConfigFactory.parseString("""
             testInteger=7
             testReference.bar=false
+            testReference.foo=[1,2,3]
+            testObject.testPropertyA.a=1
         """.trimIndent())
 
         val outputConfig = validator.getDefaults(TEST_SCHEMA, TEST_VERSION)
