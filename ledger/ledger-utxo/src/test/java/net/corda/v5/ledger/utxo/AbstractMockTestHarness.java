@@ -1,5 +1,6 @@
 package net.corda.v5.ledger.utxo;
 
+import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction;
 import org.mockito.Mockito;
 
 import java.math.BigDecimal;
@@ -17,6 +18,10 @@ public class AbstractMockTestHarness {
     protected final FungibleState<BigDecimal> fungibleState = Mockito.mock(FungibleState.class);
     protected final IssuableState issuableState = Mockito.mock(IssuableState.class);
     protected final BearableState bearableState = Mockito.mock(BearableState.class);
+    protected final Contract contract = Mockito.mock(Contract.class);
+    protected final VerifiableCommand command = Mockito.mock(VerifiableCommand.class);
+    protected final CommandAndSignatories<VerifiableCommand> commandAndSignatories = Mockito.mock(CommandAndSignatories.class);
+    protected final UtxoLedgerTransaction utxoLedgerTransaction = Mockito.mock(UtxoLedgerTransaction.class);
 
     // Mocked Data
     protected final Set<PublicKey> participants = Set.of(aliceKey, bobKey);
@@ -29,6 +34,9 @@ public class AbstractMockTestHarness {
         initializeFungibleState();
         initializeIssuableState();
         initializeBearableState();
+        initializeContract();
+        initializeCommand();
+        initializeCommandAndSignatories();
     }
 
     private void initializeContractState() {
@@ -53,5 +61,18 @@ public class AbstractMockTestHarness {
     private void initializeBearableState() {
         Mockito.when(bearableState.getBearer()).thenReturn(bobKey);
         Mockito.when(bearableState.getParticipants()).thenReturn(participants);
+    }
+
+    private void initializeContract() {
+        Mockito.doNothing().when(contract).verify(utxoLedgerTransaction);
+    }
+
+    public void initializeCommand() {
+        Mockito.doNothing().when(command).verify(utxoLedgerTransaction, participants);
+    }
+
+    public void initializeCommandAndSignatories() {
+        Mockito.when(commandAndSignatories.getCommand()).thenReturn(command);
+        Mockito.when(commandAndSignatories.getSignatories()).thenReturn(participants);
     }
 }
