@@ -60,8 +60,8 @@ class MemberProcessorImpl @Activate constructor(
     private val synchronisationProxy: SynchronisationProxy,
 ) : MemberProcessor {
 
-    companion object {
-        val logger = contextLogger()
+    private companion object {
+        private val logger = contextLogger()
     }
 
     private val dependentComponents = DependentComponents.of(
