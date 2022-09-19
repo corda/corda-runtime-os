@@ -30,6 +30,7 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.ledger.consensual.FindTransaction
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getSerializer
+import net.corda.db.testkit.DbUtils
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.transaction.serialization.internal.WireTransactionSerializer
 import net.corda.ledger.persistence.impl.internal.ConsensualLedgerMessageProcessor
@@ -41,6 +42,7 @@ import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -152,6 +154,9 @@ class ConsensualLedgerMessageProcessorTests {
 
     @Test
     fun `persistTransaction for consensual ledger deserialises the tx and persists`() {
+        // Native SQL is used that is specific to Postgres and won't worj with in-memory DB
+        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
+
         // create ConsensualSignedTransactionImpl instance (or WireTransaction at first)
         val mapper = jacksonObjectMapper()
 

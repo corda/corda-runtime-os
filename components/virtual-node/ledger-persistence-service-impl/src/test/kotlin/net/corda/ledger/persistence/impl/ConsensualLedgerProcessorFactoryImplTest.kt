@@ -1,5 +1,6 @@
 package net.corda.ledger.persistence.impl
 
+import net.corda.persistence.common.PayloadChecker
 import net.corda.persistence.common.exceptions.KafkaMessageSizeException
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -10,6 +11,6 @@ internal class ConsensualLedgerProcessorFactoryImplTest {
     fun `payload check throws if max bytes exceeded`() {
         val maxSize = 1024 * 10
         val bytes = ByteBuffer.wrap(ByteArray(maxSize + 1))
-        assertThrows<KafkaMessageSizeException> { ConsensualLedgerProcessorFactoryImpl.PayloadChecker(maxSize).checkSize(bytes) }
+        assertThrows<KafkaMessageSizeException> { PayloadChecker(maxSize).checkSize(bytes) }
     }
 }
