@@ -43,15 +43,15 @@ interface KeysRpcOps : RpcOps {
      */
     @HttpRpcGET(
         path = "{tenantId}/schemes/{hsmCategory}",
-        description = "Enables you to retrieve a list of supported key schemes for a specified tenant and HSM category.",
-        responseDescription = "The list of scheme codes which are supported by the associated HSM integration."
+        description = "Enables you to retrieve a list of supported key schemes for a specified tenant and HSM category",
+        responseDescription = "The list of scheme codes which are supported by the associated HSM integration"
     )
     fun listSchemes(
         @HttpRpcPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
-                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.")
+                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API")
         tenantId: String,
         @HttpRpcPathParameter(description = "The category of the HSM. Can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY'," +
-                " 'SESSION_INIT', 'TLS', or 'JWT_KEY'.")
+                " 'SESSION_INIT', 'TLS', or 'JWT_KEY'")
         hsmCategory: String,
     ): Collection<String>
 
@@ -102,16 +102,16 @@ interface KeysRpcOps : RpcOps {
      */
     @HttpRpcGET(
         path = "{tenantId}",
-        description = "Enables you to retrieve information about a list of key pairs belonging to a tenant. ",
-        responseDescription = "A map of key IDs to the respective key pair information."
+        description = "Enables you to retrieve information about a list of key pairs belonging to a tenant",
+        responseDescription = "A map of key IDs to the respective key pair information"
     )
     @Suppress("LongParameterList")
     fun listKeys(
         @HttpRpcPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
-                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.")
+                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API")
         tenantId: String,
         @HttpRpcQueryParameter(
-            description = "The response paging information, number of records to skip.",
+            description = "The response paging information, number of records to skip",
             default = "0",
             required = false,
         )
@@ -145,12 +145,12 @@ interface KeysRpcOps : RpcOps {
         )
         schemeCodeName: String?,
         @HttpRpcQueryParameter(
-            description = "The alias under which the key pair is stored.",
+            description = "The alias under which the key pair is stored",
             required = false,
         )
         alias: String?,
         @HttpRpcQueryParameter(
-            description = "The alias of the wrapping key.",
+            description = "The alias of the wrapping key",
             required = false,
         )
         masterKeyAlias: String?,
@@ -198,15 +198,15 @@ interface KeysRpcOps : RpcOps {
      */
     @HttpRpcPOST(
         path = "{tenantId}/alias/{alias}/category/{hsmCategory}/scheme/{scheme}",
-        description = "Enables you to generate a new key pair for a tenant.",
-        responseDescription = "The ID of the newly generated key pair."
+        description = "Enables you to generate a new key pair for a tenant",
+        responseDescription = "The ID of the newly generated key pair"
     )
     fun generateKeyPair(
         @HttpRpcPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
-                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.")
+                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API")
         tenantId: String,
         @HttpRpcPathParameter(
-            description = "The alias under which the new key pair will be stored."
+            description = "The alias under which the new key pair will be stored"
         )
         alias: String,
         @HttpRpcPathParameter(
@@ -240,14 +240,14 @@ interface KeysRpcOps : RpcOps {
      */
     @HttpRpcGET(
         path = "{tenantId}/{keyId}",
-        description = "Enables you to retrieve a tenant's public key in PEM format.",
-        responseDescription = "The public key in PEM format."
+        description = "Enables you to retrieve a tenant's public key in PEM format",
+        responseDescription = "The public key in PEM format"
     )
     fun generateKeyPem(
         @HttpRpcPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
-                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.")
+                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API")
         tenantId: String,
-        @HttpRpcPathParameter(description = "Identifier of the public key to be retrieved.")
+        @HttpRpcPathParameter(description = "Identifier of the public key to be retrieved")
         keyId: String,
     ): String
 }

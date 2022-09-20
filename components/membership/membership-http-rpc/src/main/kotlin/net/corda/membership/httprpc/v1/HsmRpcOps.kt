@@ -32,20 +32,21 @@ interface HsmRpcOps : RpcOps {
      *
      * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
      * services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.
-     * @param category Can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'.
+     * @param category The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT',
+     * 'TLS', or 'JWT_KEY'.
      *
      * @return Information on the assigned HSM, or null if no HSM is assigned.
      */
     @HttpRpcGET(
         path = "{tenantId}/{category}",
-        description = "Enables you to retrieve information on the HSM of the specified category assigned to the tenant."
+        description = "Enables you to retrieve information on the HSM of the specified category assigned to the tenant"
     )
     fun assignedHsm(
         @HttpRpcPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
-                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.")
+                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API")
         tenantId: String,
-        @HttpRpcPathParameter(description = "Category of the HSM. Can be the value 'ACCOUNTS', 'CI', 'LEDGER'," +
-                " 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'.")
+        @HttpRpcPathParameter(description = "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER'," +
+                " 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'")
         category: String
     ): HsmAssociationInfo?
 
@@ -62,20 +63,21 @@ interface HsmRpcOps : RpcOps {
      *
      * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
      * services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.
-     * @param category Can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'.
+     * @param category The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT',
+     * 'TLS', or 'JWT_KEY'.
      *
      * @return Information on the newly assigned HSM.
      */
     @HttpRpcPOST(
         path = "soft/{tenantId}/{category}",
-        description = "Enables you to assign a soft HSM to the tenant for the specified category."
+        description = "Enables you to assign a soft HSM to the tenant for the specified category"
     )
     fun assignSoftHsm(
         @HttpRpcPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
-                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.")
+                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API")
         tenantId: String,
-        @HttpRpcPathParameter(description = "Category of the HSM. Can be the value 'ACCOUNTS', 'CI', 'LEDGER'," +
-                " 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'.")
+        @HttpRpcPathParameter(description = "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER'," +
+                " 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'")
         category: String
     ): HsmAssociationInfo
 
@@ -91,20 +93,21 @@ interface HsmRpcOps : RpcOps {
      *
      * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
      * services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.
-     * @param category Can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'.
+     * @param category The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT',
+     * 'TLS', or 'JWT_KEY'.
      *
      * @return Information on the newly assigned HSM.
      */
     @HttpRpcPOST(
         path = "{tenantId}/{category}",
-        description = "Enables you to assign a hardware-backed HSM to the tenant for the specified category."
+        description = "Enables you to assign a hardware-backed HSM to the tenant for the specified category"
     )
     fun assignHsm(
         @HttpRpcPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
-                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.")
+                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API")
         tenantId: String,
-        @HttpRpcPathParameter(description = "Category of the HSM. Can be the value 'ACCOUNTS', 'CI', 'LEDGER'," +
-                " 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'.")
+        @HttpRpcPathParameter(description = "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER'," +
+                " 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'")
         category: String
     ): HsmAssociationInfo
 }

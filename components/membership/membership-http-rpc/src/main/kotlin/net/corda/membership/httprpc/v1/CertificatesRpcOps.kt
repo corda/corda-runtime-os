@@ -46,19 +46,19 @@ interface CertificatesRpcOps : RpcOps {
      */
     @HttpRpcPUT(
         path = "{tenantId}",
-        description = "Enables you to import a certificate chain for a tenant."
+        description = "Enables you to import a certificate chain for a tenant"
     )
     fun importCertificateChain(
         @HttpRpcPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
-                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.")
+                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API")
         tenantId: String,
         @HttpRpcRequestBodyParameter(
-            description = "The unique alias under which the certificate chain will be stored.",
+            description = "The unique alias under which the certificate chain will be stored",
             required = true,
         )
         alias: String,
         @HttpRpcRequestBodyParameter(
-            description = "A valid certificate chain in PEM format obtained from a certificate authority.",
+            description = "A valid certificate chain in PEM format obtained from a certificate authority",
             required = true,
             name = "certificate"
         )
@@ -84,39 +84,39 @@ interface CertificatesRpcOps : RpcOps {
      * @param keyId Identifier of the public key that will be included in the certificate.
      * @param x500Name X.500 name that will be the subject associated with the request.
      * @param certificateRole Can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'.
-     * @param subjectAlternativeNames Optional. Lets you specify additional subject names.
-     * @param contextMap Optional. Lets you add additional attributes to the CSR e.g. signature spec.
+     * @param subjectAlternativeNames Optional. Used to specify additional subject names.
+     * @param contextMap Optional. Used to add additional attributes to the CSR; for example, signature spec.
      *
      * @return The CSR in PEM format.
      */
     @Suppress("LongParameterList")
     @HttpRpcPOST(
         path = "{tenantId}/{keyId}",
-        description = "Enables you to generate a certificate signing request (CSR) for a tenant."
+        description = "Enables you to generate a certificate signing request (CSR) for a tenant"
     )
     fun generateCsr(
         @HttpRpcPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
-                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.")
+                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API")
         tenantId: String,
-        @HttpRpcPathParameter(description = "Identifier of the public key that will be included in the certificate.")
+        @HttpRpcPathParameter(description = "Identifier of the public key that will be included in the certificate")
         keyId: String,
         @HttpRpcRequestBodyParameter(
-            description = "X.500 name that will be the subject associated with the request.",
+            description = "X.500 name that will be the subject associated with the request",
             required = true,
         )
         x500Name: String,
         @HttpRpcRequestBodyParameter(
-            description = "Can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'.",
+            description = "Can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'",
             required = true,
         )
         certificateRole: String,
         @HttpRpcRequestBodyParameter(
-            description = "Lets you specify additional subject names.",
+            description = "Used to specify additional subject names",
             required = false,
         )
         subjectAlternativeNames: List<String>?,
         @HttpRpcRequestBodyParameter(
-            description = "Lets you add additional attributes to the CSR e.g. signature spec.",
+            description = "Used to add additional attributes to the CSR; for example, signature spec",
             required = false,
         )
         contextMap: Map<String, String?>?,

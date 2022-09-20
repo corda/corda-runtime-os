@@ -45,10 +45,10 @@ interface MemberRegistrationRpcOps : RpcOps {
      */
     @HttpRpcPOST(
         path = "{holdingIdentityShortHash}",
-        description = "Enables you to start the registration process for a holding identity."
+        description = "Enables you to start the registration process for a holding identity"
     )
     fun startRegistration(
-        @HttpRpcPathParameter(description = "The holding identity ID of the requesting virtual node.")
+        @HttpRpcPathParameter(description = "The holding identity ID of the requesting virtual node")
         holdingIdentityShortHash: String,
         @HttpRpcRequestBodyParameter(
             description = "The request sent during registration which contains the requested registration action" +
@@ -74,10 +74,10 @@ interface MemberRegistrationRpcOps : RpcOps {
      */
     @HttpRpcGET(
         path = "{holdingIdentityShortHash}",
-        description = "Enables you to check the statuses of all registration requests for a holding identity."
+        description = "Enables you to check the statuses of all registration requests for a holding identity"
     )
     fun checkRegistrationProgress(
-        @HttpRpcPathParameter(description = "The ID of the holding identity whose registration progress is to be checked.")
+        @HttpRpcPathParameter(description = "The ID of the holding identity whose registration progress is to be checked")
         holdingIdentityShortHash: String
     ): List<RegistrationRequestStatus>
 
@@ -100,12 +100,12 @@ interface MemberRegistrationRpcOps : RpcOps {
      */
     @HttpRpcGET(
         path = "{holdingIdentityShortHash}/{registrationRequestId}",
-        description = "Enables you to check the status of the specified registration request for a holding identity."
+        description = "Enables you to check the status of the specified registration request for a holding identity"
     )
     fun checkSpecificRegistrationProgress(
-        @HttpRpcPathParameter(description = "The ID of the holding identity whose registration progress is to be checked.")
+        @HttpRpcPathParameter(description = "The ID of the holding identity whose registration progress is to be checked")
         holdingIdentityShortHash: String,
-        @HttpRpcPathParameter(description = "The ID of the registration request.")
+        @HttpRpcPathParameter(description = "The ID of the registration request")
         registrationRequestId: String,
     ): RegistrationRequestStatus?
 }
