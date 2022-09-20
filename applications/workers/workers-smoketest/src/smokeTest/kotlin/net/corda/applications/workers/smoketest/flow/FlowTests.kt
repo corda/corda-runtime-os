@@ -475,7 +475,7 @@ class FlowTests {
 
         val requestBody = RpcSmokeTestInput().apply {
             command = "crypto_sign_and_verify"
-            data = mapOf("publicKey" to publicKey)
+            data = mapOf("publicKey" to publicKey, "memberX500" to X500_BOB)
         }
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)

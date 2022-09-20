@@ -11,6 +11,7 @@ import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.sendAndReceive
 import net.corda.v5.application.persistence.PersistenceService
@@ -19,7 +20,6 @@ import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.cordapp.flowworker.development.smoketests.flow.context.launchContextPropagationFlows
@@ -78,7 +78,7 @@ class RpcSmokeTestFlow : RPCStartableFlow {
     lateinit var serializationService: SerializationService
 
     @CordaInject
-    lateinit var keyEncodingService: KeyEncodingService
+    lateinit var memberLookup: MemberLookup
 
     @CordaInject
     lateinit var signingService: SigningService
@@ -292,7 +292,10 @@ class RpcSmokeTestFlow : RPCStartableFlow {
 
     @Suspendable
     private fun signAndVerify(input: RpcSmokeTestInput): String {
-        val publicKey = keyEncodingService.decodePublicKey(input.getValue("publicKey"))
+        val x500Name = input.getValue("memberX500")
+        val member = memberLookup.lookup(MemberX500Name.parse(x500Name))
+        checkNotNull(member) { "Member $x500Name could not be looked up" }
+        val publicKey = member.ledgerKeys[0]
         val bytesToSign = byteArrayOf(1, 2, 3, 4, 5)
         log.info("Crypto - Signing bytes $bytesToSign with public key '$publicKey'")
         val signedBytes = signingService.sign(bytesToSign, publicKey, SignatureSpec.RSA_SHA256)
@@ -304,7 +307,10 @@ class RpcSmokeTestFlow : RPCStartableFlow {
 
     @Suspendable
     private fun verifyInvalidSignature(input: RpcSmokeTestInput): String {
-        val publicKey = keyEncodingService.decodePublicKey(input.getValue("publicKey"))
+        val x500Name = input.getValue("memberX500")
+        val member = memberLookup.lookup(MemberX500Name.parse(x500Name))
+        checkNotNull(member) { "Member $x500Name could not be looked up" }
+        val publicKey = member.ledgerKeys[0]
         val bytesToSign = byteArrayOf(1, 2, 3, 4, 5)
         log.info("Crypto - Signing bytes $bytesToSign with public key '$publicKey'")
         val signedBytes = signingService.sign(bytesToSign, publicKey, SignatureSpec.RSA_SHA256)
