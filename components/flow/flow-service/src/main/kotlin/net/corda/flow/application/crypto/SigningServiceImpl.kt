@@ -27,7 +27,7 @@ class SigningServiceImpl @Activate constructor(
     override fun sign(bytes: ByteArray, publicKey: PublicKey, signatureSpec: SignatureSpec): DigitalSignature.WithKey {
         return externalEventExecutor.execute(
             CreateSignatureExternalEventFactory::class.java,
-            SignParameters(bytes, publicKey, signatureSpec)
+            SignParameters(bytes, keyEncodingService.encodeAsByteArray(publicKey), signatureSpec)
         )
     }
 

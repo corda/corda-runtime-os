@@ -8,6 +8,7 @@ import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.schema.Schemas
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SignatureSpec
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -28,7 +29,7 @@ class CreateSignatureExternalEventFactory @Activate constructor(
         val flowOpsRequest = cryptoFlowOpsTransformer.createSign(
             requestId = flowExternalEventContext.requestId,
             tenantId = checkpoint.holdingIdentity.shortHash.value,
-            publicKey = parameters.publicKey,
+            encodedPublicKeyBytes = parameters.encodedPublicKeyBytes,
             signatureSpec = parameters.signatureSpec,
             data = parameters.bytes,
             context = emptyMap(),
@@ -41,3 +42,5 @@ class CreateSignatureExternalEventFactory @Activate constructor(
         return cryptoFlowOpsTransformer.transform(response) as DigitalSignature.WithKey
     }
 }
+
+data class SignParameters(val bytes: ByteArray, val encodedPublicKeyBytes: ByteArray, val signatureSpec: SignatureSpec)

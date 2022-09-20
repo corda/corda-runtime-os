@@ -43,7 +43,7 @@ interface CryptoFlowOpsTransformer {
     fun createSign(
         requestId: String,
         tenantId: String,
-        publicKey: PublicKey,
+        encodedPublicKeyBytes: ByteArray,
         signatureSpec: SignatureSpec,
         data: ByteArray,
         context: Map<String, String> = EMPTY_CONTEXT,
