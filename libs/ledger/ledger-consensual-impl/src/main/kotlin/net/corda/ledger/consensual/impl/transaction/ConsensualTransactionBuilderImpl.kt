@@ -1,10 +1,10 @@
 package net.corda.ledger.consensual.impl.transaction
 
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
-import net.corda.ledger.common.internal.transaction.TransactionMetaData
-import net.corda.ledger.common.internal.transaction.TransactionMetaData.Companion.DIGEST_SETTINGS_KEY
-import net.corda.ledger.common.internal.transaction.TransactionMetaData.Companion.LEDGER_MODEL_KEY
-import net.corda.ledger.common.internal.transaction.TransactionMetaData.Companion.LEDGER_VERSION_KEY
+import net.corda.ledger.common.impl.transaction.TransactionMetaData
+import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.DIGEST_SETTINGS_KEY
+import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.LEDGER_MODEL_KEY
+import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.LEDGER_VERSION_KEY
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
