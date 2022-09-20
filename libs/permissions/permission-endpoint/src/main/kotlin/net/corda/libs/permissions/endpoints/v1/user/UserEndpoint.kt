@@ -64,7 +64,7 @@ interface UserEndpoint : RpcOps {
      * Get a user by loginName in the RBAC permission system.
      */
     @HttpRpcGET(description = "This method returns a user based on the specified login name.",
-        responseDescription = """Newly created user with the following attributes:
+        responseDescription = """A newly created user with the following attributes:
             id: Unique server generated identifier for the user
             version: The version of the user; version 0 is assigned to a newly created user
             updateTimestamp: The date and time when the user was last updated
