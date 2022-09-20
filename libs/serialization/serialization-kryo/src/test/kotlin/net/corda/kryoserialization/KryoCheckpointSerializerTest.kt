@@ -6,8 +6,8 @@ import net.corda.kryoserialization.TestClass.Companion.TEST_INT
 import net.corda.kryoserialization.TestClass.Companion.TEST_STRING
 import net.corda.kryoserialization.resolver.CordaClassResolver
 import net.corda.kryoserialization.serializers.ClassSerializer
-import net.corda.kryoserialization.testkit.KryoTestUtils.Companion.mockSandboxGroup
-import net.corda.kryoserialization.testkit.KryoTestUtils.Companion.createCheckpointSerializer
+import net.corda.kryoserialization.testkit.createCheckpointSerializer
+import net.corda.kryoserialization.testkit.mockSandboxGroup
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -40,8 +40,10 @@ internal class KryoCheckpointSerializerTest {
         val tester = NonSerializableTestClass()
 
         val error = assertThrows<UnsupportedOperationException> { serializer.serialize(tester) }
-        assertThat(error.message).isEqualTo("net.corda.kryoserialization.NonSerializableTestClass, " +
-                "has been marked as a non-serializable type is should never be serialised into a checkpoint.")
+        assertThat(error.message).isEqualTo(
+            "net.corda.kryoserialization.NonSerializableTestClass, " +
+                    "has been marked as a non-serializable type is should never be serialised into a checkpoint."
+        )
     }
 
     @Test

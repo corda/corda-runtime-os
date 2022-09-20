@@ -15,49 +15,46 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import java.util.*
 
-class KryoTestUtils {
-    companion object{
-        fun createCheckpointSerializer(
-            serializers: Map<Class<*>, CheckpointInternalCustomSerializer<*>> = emptyMap(),
-            singletonInstances: List<SingletonSerializeAsToken> = emptyList()
-        ): KryoCheckpointSerializer {
-            val singletonSerializer = SingletonSerializeAsTokenSerializer(singletonInstances.associateBy { it.tokenName })
-            val sandboxGroup = mockSandboxGroup(serializers.keys + singletonInstances.map { it::class.java })
-            val kryo = Kryo()
-            kryo.addDefaultSerializer(SingletonSerializeAsToken::class.java, singletonSerializer)
-            val checkpointSerializer = KryoCheckpointSerializerBuilderImpl(CipherSchemeMetadataImpl(), sandboxGroup, kryo).let { builder ->
-                builder.addSingletonSerializableInstances(singletonInstances.toSet())
-                builder.addSingletonSerializableInstances(setOf(sandboxGroup))
-                serializers.forEach { (clazz, serializer) -> builder.addSerializer(clazz, serializer)}
+fun createCheckpointSerializer(
+    serializers: Map<Class<*>, CheckpointInternalCustomSerializer<*>> = emptyMap(),
+    singletonInstances: List<SingletonSerializeAsToken> = emptyList()
+): KryoCheckpointSerializer {
+    val singletonSerializer = SingletonSerializeAsTokenSerializer(singletonInstances.associateBy { it.tokenName })
+    val sandboxGroup = mockSandboxGroup(serializers.keys + singletonInstances.map { it::class.java })
+    val kryo = Kryo()
+    kryo.addDefaultSerializer(SingletonSerializeAsToken::class.java, singletonSerializer)
+    val checkpointSerializer =
+        KryoCheckpointSerializerBuilderImpl(CipherSchemeMetadataImpl(), sandboxGroup, kryo).let { builder ->
+            builder.addSingletonSerializableInstances(singletonInstances.toSet())
+            builder.addSingletonSerializableInstances(setOf(sandboxGroup))
+            serializers.forEach { (clazz, serializer) -> builder.addSerializer(clazz, serializer) }
 
-                builder.build()
-            }
-            return checkpointSerializer
+            builder.build()
         }
+    return checkpointSerializer
+}
 
-        fun mockSandboxGroup(taggedClasses: Set<Class<*>>): SandboxGroup {
-            val standardClasses = listOf(
-                String::class.java,
-                Class::class.java,
-                Arrays.asList("")::class.java,
-                List::class.java,
-                Collections.singletonList("")::class.java,
-                ByteArray::class.java
-            )
-            return mock<SandboxGroup>().also {
-                var index = 0
-                val bundleClasses = (standardClasses + taggedClasses).associateBy { "${index++}" }
-                val tagCaptor = argumentCaptor<Class<*>>()
-                `when`(it.getStaticTag(tagCaptor.capture())).thenAnswer {
-                    bundleClasses.keys.firstOrNull { value -> bundleClasses[value] == tagCaptor.lastValue }?.toString()
-                        ?: throw SandboxException("Class ${tagCaptor.lastValue} was not loaded from any bundle.")
-                }
-                val classCaptor = argumentCaptor<String>()
-                `when`(it.getClass(any(), classCaptor.capture())).thenAnswer {
-                    bundleClasses[classCaptor.lastValue]
-                        ?: throw SandboxException("Class ${tagCaptor.lastValue} was not loaded from any bundle.")
-                }
-            }
+fun mockSandboxGroup(taggedClasses: Set<Class<*>>): SandboxGroup {
+    val standardClasses = listOf(
+        String::class.java,
+        Class::class.java,
+        Arrays.asList("")::class.java,
+        List::class.java,
+        Collections.singletonList("")::class.java,
+        ByteArray::class.java
+    )
+    return mock<SandboxGroup>().also {
+        var index = 0
+        val bundleClasses = (standardClasses + taggedClasses).associateBy { "${index++}" }
+        val tagCaptor = argumentCaptor<Class<*>>()
+        `when`(it.getStaticTag(tagCaptor.capture())).thenAnswer {
+            bundleClasses.keys.firstOrNull { value -> bundleClasses[value] == tagCaptor.lastValue }?.toString()
+                ?: throw SandboxException("Class ${tagCaptor.lastValue} was not loaded from any bundle.")
+        }
+        val classCaptor = argumentCaptor<String>()
+        `when`(it.getClass(any(), classCaptor.capture())).thenAnswer {
+            bundleClasses[classCaptor.lastValue]
+                ?: throw SandboxException("Class ${tagCaptor.lastValue} was not loaded from any bundle.")
         }
     }
 }

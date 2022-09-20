@@ -4,7 +4,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeFactoryImpl
-import net.corda.kryoserialization.testkit.KryoTestUtils
+import net.corda.kryoserialization.testkit.createCheckpointSerializer
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.TransactionMetaData
 import net.corda.ledger.common.impl.transaction.WireTransaction
@@ -54,7 +54,7 @@ class WireTransactionKryoSerializerTest {
 
         val wireTransactionKryoSerializer = WireTransactionKryoSerializer(merkleTreeFactory, digestService)
 
-        val serializer = KryoTestUtils.createCheckpointSerializer(
+        val serializer = createCheckpointSerializer(
             mapOf(
                 WireTransaction::class.java to wireTransactionKryoSerializer,
                 PrivacySaltImpl::class.java to PrivacySaltImplKryoSerializer()
@@ -65,7 +65,7 @@ class WireTransactionKryoSerializerTest {
         val deserialized = serializer.deserialize(bytes, WireTransaction::class.java)
 
         assertThat(deserialized).isEqualTo(wireTransaction)
-        org.junit.jupiter.api.Assertions.assertDoesNotThrow{
+        org.junit.jupiter.api.Assertions.assertDoesNotThrow {
             deserialized.id
         }
         assertEquals(wireTransaction.id, deserialized.id)
