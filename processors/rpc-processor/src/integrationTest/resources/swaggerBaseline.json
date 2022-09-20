@@ -12,8 +12,8 @@
     "basicAuth" : [ ]
   } ],
   "tags" : [ {
-    "name" : "CPI Upload API",
-    "description" : "CPI Upload management endpoints."
+    "name" : "CPI API",
+    "description" : "The CPI API consists of a number of endpoints used to manage Corda Package Installer (CPI) files in the Corda cluster."
   }, {
     "name" : "Certificates API",
     "description" : "Certificates management endpoints."
@@ -58,7 +58,7 @@
     "description" : "Role Based Access Control User Management endpoints."
   }, {
     "name" : "Virtual Node API",
-    "description" : "Virtual node management endpoints."
+    "description" : "The Virtual Nodes API consists of a number of endpoints to manage virtual nodes."
   }, {
     "name" : "Virtual Node Maintenance API",
     "description" : "The Virtual Node Maintenance API consists of a series of endpoints used for virtual node management.Warning: Using these endpoints could be highly disruptive, so great care should be taken when using them."
@@ -319,13 +319,13 @@
     },
     "/cpi" : {
       "get" : {
-        "tags" : [ "CPI Upload API" ],
-        "description" : "List all CPIs uploaded to the cluster.",
+        "tags" : [ "CPI API" ],
+        "description" : "The GET method returns a list of all CPIs uploaded to the cluster.",
         "operationId" : "get_cpi",
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "List details of the all CPIs uploaded to the cluster.",
+            "description" : "Details of all of the CPIs uploaded to the cluster.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -343,8 +343,8 @@
         }
       },
       "post" : {
-        "tags" : [ "CPI Upload API" ],
-        "description" : "CPI management endpoints.",
+        "tags" : [ "CPI API" ],
+        "description" : "The upload endpoint uses the POST method to upload a Corda Package Installer (CPI) file to the Corda cluster.",
         "operationId" : "post_cpi",
         "parameters" : [ ],
         "requestBody" : {
@@ -356,7 +356,7 @@
                 "properties" : {
                   "upload" : {
                     "type" : "string",
-                    "description" : "A file to upload.",
+                    "description" : "The CPI file to be uploaded.",
                     "format" : "binary",
                     "nullable" : false,
                     "example" : "No example available for this type"
@@ -369,7 +369,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "The request Id calculated for a CPI upload request",
+            "description" : "The Id for the CPI upload request.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -389,7 +389,7 @@
     },
     "/cpi/getprotocolversion" : {
       "get" : {
-        "tags" : [ "CPI Upload API" ],
+        "tags" : [ "CPI API" ],
         "description" : "",
         "operationId" : "get_cpi_getprotocolversion",
         "parameters" : [ ],
@@ -418,17 +418,17 @@
     },
     "/cpi/status/{id}" : {
       "get" : {
-        "tags" : [ "CPI Upload API" ],
-        "description" : "Check upload status for given requestId",
+        "tags" : [ "CPI API" ],
+        "description" : "The status endpoint uses the GET method to return status information for the CPI upload with the given request ID.",
         "operationId" : "get_cpi_status__id_",
         "parameters" : [ {
           "name" : "id",
           "in" : "path",
-          "description" : "The requestId",
+          "description" : "The ID returned from the CPI upload request.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The requestId",
+            "description" : "The ID returned from the CPI upload request.",
             "nullable" : false,
             "example" : "string"
           }
@@ -2406,12 +2406,12 @@
     "/virtualnode" : {
       "get" : {
         "tags" : [ "Virtual Node API" ],
-        "description" : "List all virtual nodes in the cluster.",
+        "description" : "The virtual node endpoint uses the GET method to list all virtual nodes in the cluster.",
         "operationId" : "get_virtualnode",
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "List details of the all virtual nodes in the cluster.",
+            "description" : "List of virtual node details.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2430,7 +2430,7 @@
       },
       "post" : {
         "tags" : [ "Virtual Node API" ],
-        "description" : "Creates a new virtual node.",
+        "description" : "The virtual node endpoint uses the POST method to create a new virtual node.",
         "operationId" : "post_virtualnode",
         "parameters" : [ ],
         "requestBody" : {
@@ -2699,6 +2699,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -2838,6 +2839,7 @@
       },
       "GenerateCsrWrapperRequest" : {
         "required" : [ "x500Name" ],
+        "type" : "object",
         "properties" : {
           "contextMap" : {
             "type" : "object",
@@ -3118,6 +3120,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -3161,6 +3164,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -3238,6 +3242,7 @@
             "example" : "2022-06-24T10:15:30Z"
           },
           "registrationStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "PENDING_MEMBER_VERIFICATION",
             "enum" : [ "NEW", "PENDING_MEMBER_VERIFICATION", "PENDING_APPROVAL_FLOW", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "APPROVED" ]
