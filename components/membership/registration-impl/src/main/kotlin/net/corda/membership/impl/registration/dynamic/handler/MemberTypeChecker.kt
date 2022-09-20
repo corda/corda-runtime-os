@@ -16,12 +16,17 @@ internal class MemberTypeChecker(
         getMgmMemberInfo(identity) != null
 
     fun getMgmMemberInfo(identity: CordaHoldingIdentity): MemberInfo? {
+        println("QQQ In getMgmMemberInfo for ${identity.x500Name}")
         val mgmMemberName = identity.x500Name
+
         val memberInfo = membershipGroupReaderProvider
             .getGroupReader(identity)
             .lookup(mgmMemberName)
+        println("QQQ  memberInfo -> $memberInfo")
         return if (memberInfo?.isMgm == true) {
-            memberInfo
+            memberInfo.also {
+                println("QQQ I am MGM!")
+            }
         } else {
             null
         }
