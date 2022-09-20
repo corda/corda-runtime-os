@@ -17,6 +17,7 @@ import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.base.util.contextLogger
 
 
 class SimulatorDelegateBase  (
@@ -26,12 +27,17 @@ class SimulatorDelegateBase  (
     private val injector: FlowServicesInjector = DefaultServicesInjector(configuration)
 ) : SimulatedCordaNetwork {
 
+    companion object {
+        val log = contextLogger()
+    }
+
     private val flowFactory: FlowFactory = BaseFlowFactory()
 
     override fun createVirtualNode(
         holdingIdentity: HoldingIdentity,
         vararg flowClasses: Class<out Flow>
     ): SimulatedVirtualNode {
+        log.info("Creating virtual node for \"${holdingIdentity.member}\", flow classes: ${flowClasses.map{it.name}}")
         require(flowClasses.isNotEmpty()) { "No flow classes provided" }
         flowClasses.forEach {
             flowChecker.check(it)
@@ -68,11 +74,13 @@ class SimulatorDelegateBase  (
         protocol: String,
         responderFlow: ResponderFlow
     ): SimulatedVirtualNode {
+        log.info("Creating virtual node for \"${responder.member}\", flow instance provided for protocol $protocol")
         fiber.registerResponderInstance(responder.member, protocol, responderFlow)
         return SimulatedVirtualNodeBase(responder, fiber, injector, flowFactory, BaseSimKeyStore())
     }
 
     override fun close() {
+        log.info("Closing Simulator")
         fiber.close()
     }
 }

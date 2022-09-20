@@ -16,7 +16,7 @@ import java.time.Instant
 
 class MemberInfoExtension {
     companion object {
-        val logger = contextLogger()
+        private val logger = contextLogger()
 
         /** Key name for ledger keys property. */
         const val LEDGER_KEYS = "corda.ledger.keys"

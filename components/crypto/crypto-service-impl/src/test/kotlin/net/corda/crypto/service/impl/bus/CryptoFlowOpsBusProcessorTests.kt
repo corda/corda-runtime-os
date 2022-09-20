@@ -307,7 +307,7 @@ class CryptoFlowOpsBusProcessorTests {
                         value = transformer.createSign(
                             UUID.randomUUID().toString(),
                             tenantId,
-                            publicKey,
+                            publicKey.encoded,
                             SignatureSpec.EDDSA_ED25519,
                             data,
                             operationContext,

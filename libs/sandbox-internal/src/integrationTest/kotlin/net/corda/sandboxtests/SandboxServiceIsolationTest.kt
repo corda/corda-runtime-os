@@ -45,7 +45,7 @@ class SandboxServiceIsolationTest {
     ) {
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
-            sandboxFactory = setup.fetchService(timeout = 1000)
+            sandboxFactory = setup.fetchService(timeout = 30000)
         }
     }
 
