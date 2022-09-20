@@ -7,7 +7,9 @@ import net.corda.lifecycle.Lifecycle
  * `Lifecycle` at the end.
  */
 fun <T : Lifecycle?, R> T.usingLifecycle(block: (T) -> R): R {
-    return block.invoke(this).also {
+    return try {
+        block.invoke(this)
+    } finally {
         this?.stop()
     }
 }
