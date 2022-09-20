@@ -19,12 +19,6 @@ kafka:
   sasl:
     enabled: true
 
-db:
-  cluster:
-    host: prereqs-postgresql
-    existingSecret:
-      prereqs-postgresql
-
 resources:
   requests:
     memory: 620Mi

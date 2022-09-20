@@ -12,15 +12,15 @@ description 'Combined Worker'
 
 osgiRun {
     frameworkProperties.putAll(
-        'org.osgi.framework.security': 'osgi'
+            'org.osgi.framework.security': 'osgi'
     )
 }
 
 quasar {
     excludeLocations = [ 'PERSISTENCE/*', 'VERIFICATION/*' ]
     excludePackages.addAll([
-        'org.eclipse.jetty**',
-        'net.corda.membership**'
+            'org.eclipse.jetty**',
+            'net.corda.membership**'
     ])
 }
 

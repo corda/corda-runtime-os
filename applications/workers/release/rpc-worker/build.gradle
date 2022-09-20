@@ -84,6 +84,13 @@ tasks.register('e2eTest', Test) {
     outputs.upToDateWhen { false }
 }
 
+def setE2eClusterConfig = { Task testTask, String envVarName, String propName ->
+    def prop = System.getenv(envVarName) ?: project.getProperties().get(propName)
+    if(prop != null) {
+        testTask.jvmArgs "-D${envVarName}=${prop}"
+    }
+}
+
 tasks.named('e2eTest') {
     if(System.getenv("JDK_HOSTS_FILE") != null) {
         jvmArgs "-Djdk.net.hosts.file=${System.getenv("JDK_HOSTS_FILE")}"
@@ -91,40 +98,18 @@ tasks.named('e2eTest') {
     if(System.getenv("JAVA_SECURITY_AUTH_LOGIN_CONFIG") != null) {
         jvmArgs "-Djava.security.auth.login.config=${System.getenv("JAVA_SECURITY_AUTH_LOGIN_CONFIG")}"
     }
-    if(System.getenv("E2E_CLUSTER_A_RPC_HOST") == null) {
-        systemProperty "E2E_CLUSTER_A_RPC_HOST", project.getProperties().getOrDefault("e2eClusterARpcHost","localhost")
-    }
-    if(System.getenv("E2E_CLUSTER_A_RPC_PORT") == null) {
-        systemProperty "E2E_CLUSTER_A_RPC_PORT", project.getProperties().getOrDefault("e2eClusterARpcPort","8888")
-    }
-    if(System.getenv("E2E_CLUSTER_B_RPC_HOST") == null) {
-        systemProperty "E2E_CLUSTER_B_RPC_HOST", project.getProperties().getOrDefault("e2eClusterBRpcHost","localhost")
-    }
-    if(System.getenv("E2E_CLUSTER_B_RPC_PORT") == null) {
-        systemProperty "E2E_CLUSTER_B_RPC_PORT", project.getProperties().getOrDefault("e2eClusterBRpcPort","8888")
-    }
-    if(System.getenv("E2E_CLUSTER_C_RPC_HOST") == null) {
-        systemProperty "E2E_CLUSTER_C_RPC_HOST", project.getProperties().getOrDefault("e2eClusterCRpcHost","localhost")
-    }
-    if(System.getenv("E2E_CLUSTER_C_RPC_PORT") == null) {
-        systemProperty "E2E_CLUSTER_C_RPC_PORT", project.getProperties().getOrDefault("e2eClusterCRpcPort","8888")
-    }
-    if(System.getenv("E2E_CLUSTER_A_P2P_HOST") == null) {
-        systemProperty "E2E_CLUSTER_A_P2P_HOST", project.getProperties().getOrDefault("e2eClusterAP2pHost","localhost")
-    }
-    if(System.getenv("E2E_CLUSTER_A_P2P_PORT") == null) {
-        systemProperty "E2E_CLUSTER_A_P2P_PORT", project.getProperties().getOrDefault("e2eClusterAP2pPort","8080")
-    }
-    if(System.getenv("E2E_CLUSTER_B_P2P_HOST") == null) {
-        systemProperty "E2E_CLUSTER_B_P2P_HOST", project.getProperties().getOrDefault("e2eClusterBP2pHost","localhost")
-    }
-    if(System.getenv("E2E_CLUSTER_C_P2P_PORT") == null) {
-        systemProperty "E2E_CLUSTER_C_P2P_PORT", project.getProperties().getOrDefault("e2eClusterBP2pPort","8080")
-    }
-    if(System.getenv("E2E_CLUSTER_C_P2P_HOST") == null) {
-        systemProperty "E2E_CLUSTER_C_P2P_HOST", project.getProperties().getOrDefault("e2eClusterCP2pHost","localhost")
-    }
-    if(System.getenv("E2E_CLUSTER_C_P2P_PORT") == null) {
-        systemProperty "E2E_CLUSTER_C_P2P_PORT", project.getProperties().getOrDefault("e2eClusterCP2pPort","8080")
-    }
+
+    setE2eClusterConfig(it, "E2E_CLUSTER_A_RPC_HOST", "e2eClusterARpcHost")
+    setE2eClusterConfig(it, "E2E_CLUSTER_A_RPC_PORT", "e2eClusterARpcPort")
+    setE2eClusterConfig(it, "E2E_CLUSTER_B_RPC_HOST", "e2eClusterBRpcHost")
+    setE2eClusterConfig(it, "E2E_CLUSTER_B_RPC_PORT", "e2eClusterBRpcPort")
+    setE2eClusterConfig(it, "E2E_CLUSTER_C_RPC_HOST", "e2eClusterCRpcHost")
+    setE2eClusterConfig(it, "E2E_CLUSTER_C_RPC_PORT", "e2eClusterCRpcPort")
+
+    setE2eClusterConfig(it, "E2E_CLUSTER_A_P2P_HOST", "e2eClusterAP2pHost")
+    setE2eClusterConfig(it, "E2E_CLUSTER_A_P2P_PORT", "e2eClusterAP2pPort")
+    setE2eClusterConfig(it, "E2E_CLUSTER_B_P2P_HOST", "e2eClusterBP2pHost")
+    setE2eClusterConfig(it, "E2E_CLUSTER_B_P2P_PORT", "e2eClusterBP2pPort")
+    setE2eClusterConfig(it, "E2E_CLUSTER_C_P2P_HOST", "e2eClusterCP2pHost")
+    setE2eClusterConfig(it, "E2E_CLUSTER_C_P2P_PORT", "e2eClusterCP2pPort")
 }
