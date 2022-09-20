@@ -29,7 +29,7 @@ interface RoleEndpoint : RpcOps {
      */
     @HttpRpcGET(description = "This method returns an array with information about all roles in the permission system.",
     responseDescription = """Set of roles with each role having the following attributes: 
-        id - unique identifier of a role.
+        id: The unique identifier of the role
         version - version of the role.
         updateTimestamp - time when the role was last updated.
         roleName - A name of the role.
