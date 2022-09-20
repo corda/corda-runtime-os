@@ -31,12 +31,24 @@ interface FlowRpcOps : RpcOps {
     @HttpRpcPOST(
         path = "{holdingIdentityShortHash}",
         title = "Start Flow",
-        description = "Instructs Corda to start a new instance of the specified flow",
-        responseDescription = "The initial status of the flow, if the flow already exists the status of the existing" +
-                " flow will be returned."
+        description = "This method starts a new instance for the specified flow for the specified holding identity.",
+        responseDescription = """
+            The initial status of the flow instance. If the flow already exists, then the status of the existing flow will be returned.
+            
+            The flow status response will contain the following:
+            * `holdingIdentityShortHash` The short form hash of the Holding Identity
+            * `clientRequestId` The unique ID supplied by the client when the flow was created.
+            * `flowId` The internal unique ID for the flow.
+            * `flowStatus` The current state of the executing flow.
+            * `flowResult` The result returned from a completed flow, only set when the flow status is 'COMPLETED' otherwise
+            * null
+            * `flowError` The details of the error that caused a flow to fail, only set when the flow status is 'FAILED'
+            * otherwise null
+            * `timestamp` The timestamp of when the status was last updated (in UTC)
+            """
     )
     fun startFlow(
-        @HttpRpcPathParameter(description = "Short hash of the holding identity")
+        @HttpRpcPathParameter(description = "Short hash of the holding identity. Obtained during node registration.")
         holdingIdentityShortHash: String,
         @HttpRpcRequestBodyParameter(description = "Information required to start a flow for this holdingId", required = true)
         startFlow: StartFlowParameters
@@ -49,7 +61,7 @@ interface FlowRpcOps : RpcOps {
         responseDescription = "The status of the flow."
     )
     fun getFlowStatus(
-        @HttpRpcPathParameter(description = "Short hash of the holding identity")
+        @HttpRpcPathParameter(description = "Short hash of the holding identity. Obtained during node registration.")
         holdingIdentityShortHash: String,
         @HttpRpcPathParameter(description = "Client provided flow identifier")
         clientRequestId: String
@@ -63,7 +75,7 @@ interface FlowRpcOps : RpcOps {
         responseDescription = "The status of the flow."
     )
     fun getMultipleFlowStatus(
-        @HttpRpcPathParameter(description = "Short hash of the holding identity")
+        @HttpRpcPathParameter(description = "Short hash of the holding identity. Obtained during node registration.")
         holdingIdentityShortHash: String
     ): FlowStatusResponses
 
@@ -75,7 +87,7 @@ interface FlowRpcOps : RpcOps {
     )
     fun registerFlowStatusUpdatesFeed(
         channel: DuplexChannel,
-        @HttpRpcPathParameter(description = "Short hash of the holding identity")
+        @HttpRpcPathParameter(description = "Short hash of the holding identity. Obtained during node registration.")
         holdingIdentityShortHash: String,
         @HttpRpcPathParameter(description = "Client provided flow identifier")
         clientRequestId: String
