@@ -490,11 +490,11 @@
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "Short hash of the holding identity. Obtained during node registration.",
+          "description" : "The short hash of the holding identity; obtained during node registration",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Short hash of the holding identity. Obtained during node registration.",
+            "description" : "The short hash of the holding identity; obtained during node registration",
             "nullable" : false,
             "example" : "string"
           }
@@ -525,11 +525,11 @@
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "Short hash of the holding identity. Obtained during node registration.",
+          "description" : "The short hash of the holding identity; obtained during node registration",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Short hash of the holding identity. Obtained during node registration.",
+            "description" : "The short hash of the holding identity; obtained during node registration",
             "nullable" : false,
             "example" : "string"
           }
@@ -547,7 +547,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "\n            The initial status of the flow instance; if the flow already exists, then the status of the existing flow will be returned\n            \n            holdingIdentityShortHash: The short form hash of the holding identity\n            clientRequestId: The unique ID supplied by the client when the flow was created\n            flowId: The internal unique ID for the flow\n            flowStatus: The current state of the executing flow\n            flowResult: The result returned from a completed flow; only set when the flow status is 'COMPLETED', otherwise null\n            flowError: The details of the error that caused a flow to fail; only set when the flow status is 'FAILED', otherwise null\n            timestamp: The timestamp of when the status was last updated (in UTC)\n            ",
+            "description" : "\n            The initial status of the flow instance; if the flow already exists, then the status of the existing flow will be returned.\n            \n            holdingIdentityShortHash: The short form hash of the holding identity\n            clientRequestId: The unique ID supplied by the client when the flow was created.\n            flowId: The internal unique ID for the flow.\n            flowStatus: The current state of the executing flow.\n            flowResult: The result returned from a completed flow, only set when the flow status is 'COMPLETED' otherwise null\n            flowError: The details of the error that caused a flow to fail, only set when the flow status is 'FAILED' otherwise null\n            timestamp: The timestamp of when the status was last updated (in UTC)\n            ",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -577,7 +577,7 @@
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Short hash of the holding identity. Obtained during node registration.",
+            "description" : "The short hash of the holding identity; obtained during node registration",
             "nullable" : false,
             "example" : "string"
           }
