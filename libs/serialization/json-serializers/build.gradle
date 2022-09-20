@@ -17,3 +17,13 @@ dependencies {
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
+
+tasks.register('javadocJar', Jar) {
+    description = 'Create JavaDoc Jar from dokka docs'
+    group = 'documentation'
+
+    dependsOn(dokkaHtml)
+    archiveBaseName = jar.archiveBaseName
+    archiveClassifier.set("javadoc")
+    from(dokkaHtml.outputDirectory)
+}

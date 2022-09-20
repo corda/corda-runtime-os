@@ -31,3 +31,13 @@ dependencies {
 
     integrationTestImplementation project(":libs:db:db-core")
 }
+
+tasks.register('javadocJar', Jar) {
+    description = 'Create JavaDoc Jar from dokka docs'
+    group = 'documentation'
+
+    dependsOn(dokkaHtml)
+    archiveBaseName = jar.archiveBaseName
+    archiveClassifier.set("javadoc")
+    from(dokkaHtml.outputDirectory)
+}
