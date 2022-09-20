@@ -31,7 +31,7 @@ interface RoleEndpoint : RpcOps {
     responseDescription = """Set of roles with each role having the following attributes: 
         id: The unique identifier of the role
         version: The version number of the role
-        updateTimestamp - time when the role was last updated.
+        updateTimestamp: The date and time when the role was last updated
         roleName - A name of the role.
         groupVisibility - optional group visibility of the role.
         permissions - list of permission associations the role has.
