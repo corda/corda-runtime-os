@@ -30,7 +30,7 @@ interface UserEndpoint : RpcOps {
      * Create a user in the RBAC permission system.
      */
     @HttpRpcPOST(description = "This method creates a new user.",
-        responseDescription = """Newly created user with the following attributes:
+        responseDescription = """A newly created user with the following attributes:
             id: Unique server generated identifier for the user
             version: The version of the user; version 0 is assigned to a newly created user
             updateTimestamp: The date and time when the user was last updated
@@ -89,7 +89,7 @@ interface UserEndpoint : RpcOps {
      */
     @HttpRpcPUT(path = "{loginName}/role/{roleId}",
         description = "This method assigns a specified role to a specified user.",
-        responseDescription = """Newly created user with the following attributes:
+        responseDescription = """A newly created user with the following attributes:
             id: Unique server generated identifier for the user
             version: The version of the user; version 0 is assigned to a newly created user
             updateTimestamp: The date and time when the user was last updated
@@ -116,7 +116,7 @@ interface UserEndpoint : RpcOps {
      */
     @HttpRpcDELETE(path = "{loginName}/role/{roleId}",
         description = "This method removes the specified role from the specified user.",
-        responseDescription = """Newly created user with the following attributes:
+        responseDescription = """A newly created user with the following attributes:
             id: Unique server generated identifier for the user
             version: The version of the user; version 0 is assigned to a newly created user
             updateTimestamp: The date and time when the user was last updated
