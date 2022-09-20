@@ -8,7 +8,6 @@ import net.corda.libs.cpi.datamodel.CpiCpkEntity
 import net.corda.libs.cpi.datamodel.CpiCpkKey
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogAuditEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.CpkFileEntity
 import net.corda.libs.cpi.datamodel.CpkKey
@@ -26,6 +25,7 @@ import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
 import net.corda.orm.utils.transaction
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.cipher.suite.schemes.all
 import net.corda.v5.crypto.SecureHash
 import java.nio.file.Files
 import javax.persistence.EntityManager
@@ -121,15 +121,31 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         }
     }
 
+    /**
+     * Update the changelogs in the db for force upload
+     *
+     * @property cpkDbChangeLogEntities: [List]<[CpkDbChangeLogEntity]> a list of changelogs extracted from the force
+     *  uploaded cpi.
+     * @property em: [EntityManager] the entity manager from the call site. We reuse this for several operations as part
+     *  of CPI upload
+     * @property cpi: [Cpi] is the Cpi that has just been forceUploaded
+     *
+     * @return [Boolean] indicating whether we actually updated any changelogs
+     */
     private fun updateChangeLogs(
         cpkDbChangeLogEntities: List<CpkDbChangeLogEntity>,
         em: EntityManager,
         cpi: Cpi
-    ) {
+    ): Boolean {
         // The incoming changelogs will not be marked deleted
         cpkDbChangeLogEntities.forEach { require(!it.isDeleted) }
         // We first mark each existing changelog for this CPI as deleted.
         val allChangelogs = findDbChangeLogForCpi(em, cpi.metadata.cpiId)
+        println(cpkDbChangeLogEntities.map { it.fileChecksum })
+        println(allChangelogs.map { it.fileChecksum })
+        println(allChangelogs.size)
+        val changelogsDifferent = cpkDbChangeLogEntities.map { it.fileChecksum }.sorted() !=
+            allChangelogs.map { it.fileChecksum }.sorted()
         allChangelogs.forEach { rec ->
             rec.isDeleted = true
             em.merge(rec)
@@ -141,6 +157,8 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
             if (inDb != null) it.entityVersion = inDb.entityVersion
             em.merge(it)
         }
+
+        return changelogsDifferent
     }
 
     private fun createAuditEntries(
@@ -150,9 +168,9 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         // Find the changelogs we just made
         val allChangelogs = findDbChangeLogForCpi(em, cpi.metadata.cpiId)
         allChangelogs.forEach {
-            em.persist(
-                it.toAudit()
-            )
+            val audit = it.toAudit()
+            audit.entityVersion += 1
+            em.persist(audit)
         }
     }
 
@@ -195,13 +213,17 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
             createOrUpdateCpkFileEntities(em, cpi.cpks)
 
             log.info("Updating Changelogs")
-            updateChangeLogs(cpkDbChangeLogEntities, em, cpi)
+            val changeLogsUpdated = updateChangeLogs(cpkDbChangeLogEntities, em, cpi)
 
             log.info("Flush changelog updates")
             em.flush()
 
-            log.info("Create changelog audit entries")
-            createAuditEntries(em, cpi)
+            if (changeLogsUpdated) {
+                // We only want to create new changelog audit entries when there's some difference between the new and
+                //  the old ones
+                log.info("Update changelog audit entries")
+                createAuditEntries(em, cpi)
+            }
 
             return cpiMetadataEntity
         }
@@ -348,11 +370,12 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
                         .setParameter(QUERY_PARAM_ID, cpkKey)
                         .executeUpdate()
 
-                    if (updatedEntities < 1)
+                    if (updatedEntities < 1) {
                         throw OptimisticLockException(
                             "Updating ${CpkFileEntity::class.java.simpleName} with id $cpkKey failed due to " +
                                 "optimistic lock version mismatch. Expected entityVersion ${existingCpkFile.entityVersion}."
                         )
+                    }
                 }
             } else {
                 // the cpk doesn't exist so we'll persist a new file
@@ -363,12 +386,13 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         }
     }
 
-    private fun checkForMatchingEntity(entitiesFound: List<CpiMetadataEntity>, cpiName: String, cpiVersion: String, requestId:String) {
-        if (entitiesFound.singleOrNull { it.name == cpiName && it.version == cpiVersion } == null)
+    private fun checkForMatchingEntity(entitiesFound: List<CpiMetadataEntity>, cpiName: String, cpiVersion: String, requestId: String) {
+        if (entitiesFound.singleOrNull { it.name == cpiName && it.version == cpiVersion } == null) {
             throw ValidationException("No instance of same CPI with previous version found", requestId)
+        }
     }
 
-    override fun canUpsertCpi(cpiName: String, groupId: String, forceUpload: Boolean, cpiVersion: String?, requestId:String): Boolean {
+    override fun canUpsertCpi(cpiName: String, groupId: String, forceUpload: Boolean, cpiVersion: String?, requestId: String): Boolean {
         val entitiesFound = entityManagerFactory.createEntityManager().transaction {
             it.createQuery(
                 "FROM ${CpiMetadataEntity::class.simpleName} c WHERE c.groupId = :groupId",
