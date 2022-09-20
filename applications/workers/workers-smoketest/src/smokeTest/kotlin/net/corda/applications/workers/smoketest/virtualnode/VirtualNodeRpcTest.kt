@@ -413,7 +413,7 @@ class VirtualNodeRpcTest {
     }
 
     private fun runReturnAStringFlow(expectedResult: String) {
-        val className = " net.cordapp.testing.smoketests.virtualnode.ReturnAStringFlow"
+        val className = "net.cordapp.testing.smoketests.virtualnode.ReturnAStringFlow"
 
         val requestId = startRpcFlow(aliceHoldingId, emptyMap(), className)
 
