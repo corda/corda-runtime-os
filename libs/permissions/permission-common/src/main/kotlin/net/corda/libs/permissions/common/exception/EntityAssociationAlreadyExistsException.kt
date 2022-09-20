@@ -1,7 +1,5 @@
 package net.corda.libs.permissions.common.exception
 
-import net.corda.httprpc.ResponseCode
-import net.corda.httprpc.exception.HttpApiException
+import net.corda.v5.base.exceptions.CordaRuntimeException
 
-
-class EntityAssociationAlreadyExistsException(message: String) : HttpApiException(ResponseCode.CONFLICT, message)
+class EntityAssociationAlreadyExistsException(message: String) : CordaRuntimeException(message)
