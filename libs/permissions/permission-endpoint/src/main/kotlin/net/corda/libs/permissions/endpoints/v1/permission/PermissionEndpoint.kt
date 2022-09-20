@@ -33,7 +33,7 @@ interface PermissionEndpoint : RpcOps {
         groupVisibility: An optional group visibility identifier of the permission
         virtualNode: An optional identifier of the virtual node to which the physical node permission applies
         version: The version number of the permission; a value of 0 is assigned to a newly-created permission
-        updateTimestamp - Server-side timestamp when permission was created.
+        updateTimestamp: The server-side timestamp showing when the permission was created
     """)
     fun createPermission(
         @HttpRpcRequestBodyParameter(
