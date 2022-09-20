@@ -19,7 +19,7 @@
     "description" : "Certificates management endpoints."
   }, {
     "name" : "Configuration API",
-    "description" : "Cluster configuration management endpoints."
+    "description" : "The Configuration API consists of a number of endpoints used to manage the configuration of Corda clusters."
   }, {
     "name" : "Flow Info API",
     "description" : "The Flow Info API consists of a number of endpoints used to find out which flows can be invoked using the Flow Management API for a given identity."
@@ -217,7 +217,7 @@
     "/config" : {
       "put" : {
         "tags" : [ "Configuration API" ],
-        "description" : "Updates a section of the cluster configuration.",
+        "description" : "This method updates a section of the cluster configuration.",
         "operationId" : "put_config",
         "parameters" : [ ],
         "requestBody" : {
@@ -283,7 +283,7 @@
     "/config/{section}" : {
       "get" : {
         "tags" : [ "Configuration API" ],
-        "description" : "Get Configuration. Returns the 'active' configuration for the given section, in both the 'raw' format and with defaults applied.",
+        "description" : "This method returns the 'active' configuration for the given section, in both the 'raw' format and with defaults applied.",
         "operationId" : "get_config__section_",
         "parameters" : [ {
           "name" : "section",
@@ -299,7 +299,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "The Configuration for the given section.",
+            "description" : "The configuration for the given section.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -3432,7 +3432,7 @@
             "example" : 0
           }
         },
-        "description" : "Details of the updated configuration"
+        "description" : "Details of the updated configuration. Includes: \n- config: Updated configuration in JSON or HOCON format.\n- schemaVersion: Schema version of the configuration.\n- section: Section of the configuration to be updated.\n- version: Version number used for optimistic locking.\n"
       },
       "UpdateConfigResponse" : {
         "required" : [ "config", "schemaVersion", "section", "version" ],
