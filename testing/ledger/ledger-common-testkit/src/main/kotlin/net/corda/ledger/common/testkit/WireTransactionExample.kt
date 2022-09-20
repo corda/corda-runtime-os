@@ -1,6 +1,6 @@
 package net.corda.ledger.common.testkit
 
-import net.corda.ledger.common.impl.transaction.TransactionMetaData
+import net.corda.ledger.common.internal.transaction.TransactionMetaData
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
 import net.corda.ledger.common.testkit.PrivacySaltImplExample.Companion.getPrivacySaltImpl

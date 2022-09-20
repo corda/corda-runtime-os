@@ -18,7 +18,7 @@ dependencies {
 
     implementation project(":libs:serialization:serialization-internal")
     implementation project(":libs:crypto:crypto-core")
-    implementation project(":libs:ledger:ledger-common-impl")
+    implementation project(":libs:ledger:ledger-common-internal")
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 

@@ -19,7 +19,8 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-cipher-suite"
     implementation project(":libs:crypto:crypto-core")
-    implementation project(":libs:ledger:ledger-common-impl")
+    implementation project(":libs:ledger:ledger-common-impl") // delete
+    implementation project(":libs:ledger:ledger-common-internal")
     implementation project(':components:flow:flow-service')
     implementation project(':libs:serialization:serialization-checkpoint-api')
     implementation project(":libs:virtual-node:sandbox-group-context")

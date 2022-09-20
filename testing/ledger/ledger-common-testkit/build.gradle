@@ -14,7 +14,8 @@ dependencies {
     implementation "net.corda:corda-ledger-common"
     implementation "net.corda:corda-cipher-suite"
 
-    implementation project(":libs:ledger:ledger-common-impl")
+    implementation project(":libs:ledger:ledger-common-impl")   // delete
+    implementation project(":libs:ledger:ledger-common-internal")
 
     implementation project(":libs:application:application-impl")
 }
