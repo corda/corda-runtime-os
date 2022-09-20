@@ -1861,7 +1861,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "\n        id - Server-side generated ID of the new permission.\n        permissionType - Defines whether this is an ALLOW or DENY type of permission. \n        permissionString - Machine-parseable string representing an individual permission. \n            It can be any arbitrary string as long as the authorization code can make use of it in the context of user permission matching.\n        groupVisibility - Optional group visibility identifier of the Permission.\n        virtualNode - Optional identifier of the virtual node within which the physical node permission applies to.\n        version - Version of the Permission. Value of 0 is assigned to a newly created permission.\n        updateTimestamp - Server-side timestamp when permission was created.\n    ",
+            "description" : "\n        id: The server-side generated ID of the new permission\n        permissionType: Defines whether this is an ALLOW or DENY type of permission\n        permissionString: A machine-parseable string representing an individual permission; \n            it can be any arbitrary string as long as the authorization code can make use of it in the context of user \n            permission matching\n        groupVisibility: An optional group visibility identifier of the permission\n        virtualNode: An optional identifier of the virtual node to which the physical node permission applies\n        version: The version number of the permission; a value of 0 is assigned to a newly-created permission\n        updateTimestamp: The server-side timestamp showing when the permission was created\n    ",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1927,7 +1927,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "\n            id - Server-side generated ID of the new permission.\n            permissionType - Defines whether this is an ALLOW or DENY type of permission. \n            permissionString - Machine-parseable string representing an individual permission. \n                It can be any arbitrary string as long as the authorization code can make use of it in the context of user permission matching.\n            groupVisibility - Optional group visibility identifier of the Permission.\n            virtualNode - Optional identifier of the virtual node within which the physical node permission applies to.\n            version - Version of the Permission.\n            updateTimestamp - Server-side timestamp when permission was last modified.",
+            "description" : "\n        id: The server-side generated ID of the new permission\n        permissionType: Defines whether this is an ALLOW or DENY type of permission\n        permissionString: A machine-parseable string representing an individual permission; \n            it can be any arbitrary string as long as the authorization code can make use of it in the context of user \n            permission matching\n        groupVisibility: An optional group visibility identifier of the permission\n        virtualNode: An optional identifier of the virtual node to which the physical node permission applies\n        version: The version number of the permission; a value of 0 is assigned to a newly-created permission\n        updateTimestamp: The server-side timestamp showing when the permission was created",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2699,6 +2699,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -2709,7 +2710,7 @@
             "example" : "string"
           }
         },
-        "description" : "Details of the permission to be created. \n            permissionType - Defines whether this is an ALLOW or DENY type of permission. \n            permissionString - Machine-parseable string representing an individual permission. \n                It can be any arbitrary string as long as the authorization code can make use of it in the context of user permission matching.\n            groupVisibility - Optional group visibility identifier of the Permission.\n            virtualNode - Optional identifier of the virtual node within which the physical node permission applies to."
+        "description" : "Details of the permission to be created. \n            permissionType: Defines whether this is an ALLOW or DENY type of permission\n            permissionString: A machine-parseable string representing an individual permission; \n                it can be any arbitrary string as long as the authorization code can make use of it in the context of user \n                permission matching\n            groupVisibility: An optional group visibility identifier of the permission\n            virtualNode: An optional identifier of the virtual node to which the physical node permission applies"
       },
       "CreateRoleType" : {
         "required" : [ "roleName" ],
@@ -2838,6 +2839,7 @@
       },
       "GenerateCsrWrapperRequest" : {
         "required" : [ "certificateRole", "x500Name" ],
+        "type" : "object",
         "properties" : {
           "certificateRole" : {
             "type" : "string",
@@ -3124,6 +3126,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -3167,6 +3170,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -3244,6 +3248,7 @@
             "example" : "2022-06-24T10:15:30Z"
           },
           "registrationStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "PENDING_MEMBER_VERIFICATION",
             "enum" : [ "NEW", "PENDING_MEMBER_VERIFICATION", "PENDING_APPROVAL_FLOW", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "APPROVED" ]

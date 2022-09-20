@@ -29,7 +29,8 @@ interface PermissionEndpoint : RpcOps {
         id: The server-side generated ID of the new permission
         permissionType: Defines whether this is an ALLOW or DENY type of permission
         permissionString: A machine-parseable string representing an individual permission; 
-            it can be any arbitrary string as long as the authorization code can make use of it in the context of user permission matching
+            it can be any arbitrary string as long as the authorization code can make use of it in the context of user 
+            permission matching
         groupVisibility: An optional group visibility identifier of the permission
         virtualNode: An optional identifier of the virtual node to which the physical node permission applies
         version: The version number of the permission; a value of 0 is assigned to a newly-created permission
@@ -38,12 +39,12 @@ interface PermissionEndpoint : RpcOps {
     fun createPermission(
         @HttpRpcRequestBodyParameter(
             description = """Details of the permission to be created. 
-            permissionType - Defines whether this is an ALLOW or DENY type of permission. 
-            permissionString - Machine-parseable string representing an individual permission. 
-                It can be any arbitrary string as long as the authorization code can make use of it in the context of 
-                user permission matching.
-            groupVisibility - Optional group visibility identifier of the Permission.
-            virtualNode - Optional identifier of the virtual node within which the physical node permission applies to.""")
+            permissionType: Defines whether this is an ALLOW or DENY type of permission
+            permissionString: A machine-parseable string representing an individual permission; 
+                it can be any arbitrary string as long as the authorization code can make use of it in the context of user 
+                permission matching
+            groupVisibility: An optional group visibility identifier of the permission
+            virtualNode: An optional identifier of the virtual node to which the physical node permission applies""")
         createPermissionType: CreatePermissionType
     ): ResponseEntity<PermissionResponseType>
 
@@ -52,15 +53,15 @@ interface PermissionEndpoint : RpcOps {
      */
     @HttpRpcGET(path = "{id}", description = "This method returns the permission associated with the specified ID.",
         responseDescription = """
-            id - Server-side generated ID of the new permission.
-            permissionType - Defines whether this is an ALLOW or DENY type of permission. 
-            permissionString - Machine-parseable string representing an individual permission. 
-                It can be any arbitrary string as long as the authorization code can make use of it in the context of 
-                user permission matching.
-            groupVisibility - Optional group visibility identifier of the Permission.
-            virtualNode - Optional identifier of the virtual node within which the physical node permission applies to.
-            version - Version of the Permission.
-            updateTimestamp - Server-side timestamp when permission was last modified.""")
+        id: The server-side generated ID of the new permission
+        permissionType: Defines whether this is an ALLOW or DENY type of permission
+        permissionString: A machine-parseable string representing an individual permission; 
+            it can be any arbitrary string as long as the authorization code can make use of it in the context of user 
+            permission matching
+        groupVisibility: An optional group visibility identifier of the permission
+        virtualNode: An optional identifier of the virtual node to which the physical node permission applies
+        version: The version number of the permission; a value of 0 is assigned to a newly-created permission
+        updateTimestamp: The server-side timestamp showing when the permission was created""")
     fun getPermission(
         @HttpRpcPathParameter(description = "ID of the permission to be returned.")
         id: String
