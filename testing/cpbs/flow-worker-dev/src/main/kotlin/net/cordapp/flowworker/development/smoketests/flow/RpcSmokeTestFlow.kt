@@ -298,9 +298,9 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         val publicKey = member.ledgerKeys[0]
         val bytesToSign = byteArrayOf(1, 2, 3, 4, 5)
         log.info("Crypto - Signing bytes $bytesToSign with public key '$publicKey'")
-        val signedBytes = signingService.sign(bytesToSign, publicKey, SignatureSpec.RSA_SHA256)
+        val signedBytes = signingService.sign(bytesToSign, publicKey, SignatureSpec.ECDSA_SHA256)
         log.info("Crypto - Signature $signedBytes received")
-        digitalSignatureVerificationService.verify(publicKey, SignatureSpec.RSA_SHA256, signedBytes.bytes, bytesToSign)
+        digitalSignatureVerificationService.verify(publicKey, SignatureSpec.ECDSA_SHA256, signedBytes.bytes, bytesToSign)
         log.info("Crypto - Verified $signedBytes as the signature of $bytesToSign")
         return true.toString()
     }
@@ -313,12 +313,12 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         val publicKey = member.ledgerKeys[0]
         val bytesToSign = byteArrayOf(1, 2, 3, 4, 5)
         log.info("Crypto - Signing bytes $bytesToSign with public key '$publicKey'")
-        val signedBytes = signingService.sign(bytesToSign, publicKey, SignatureSpec.RSA_SHA256)
+        val signedBytes = signingService.sign(bytesToSign, publicKey, SignatureSpec.ECDSA_SHA256)
         log.info("Crypto - Signature $signedBytes received")
         return try {
             digitalSignatureVerificationService.verify(
                 publicKey,
-                SignatureSpec.ECDSA_SHA256,
+                SignatureSpec.RSA_SHA256,
                 signedBytes.bytes,
                 bytesToSign
             )

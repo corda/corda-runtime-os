@@ -11,7 +11,6 @@ import net.corda.applications.workers.smoketest.X500_CHARLIE
 import net.corda.applications.workers.smoketest.X500_DAVID
 import net.corda.applications.workers.smoketest.awaitMultipleRpcFlowFinished
 import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
-import net.corda.applications.workers.smoketest.createKeyFor
 import net.corda.applications.workers.smoketest.getFlowClasses
 import net.corda.applications.workers.smoketest.getHoldingIdShortHash
 import net.corda.applications.workers.smoketest.getOrCreateVirtualNodeFor
@@ -470,12 +469,9 @@ class FlowTests {
 
     @Test
     fun `Crypto - Sign and verify bytes`() {
-
-        val publicKey = createKeyFor(bobHoldingId, UUID.randomUUID().toString(), "LEDGER", "CORDA.RSA")
-
         val requestBody = RpcSmokeTestInput().apply {
             command = "crypto_sign_and_verify"
-            data = mapOf("publicKey" to publicKey, "memberX500" to X500_BOB)
+            data = mapOf("memberX500" to X500_BOB)
         }
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
@@ -492,12 +488,9 @@ class FlowTests {
 
     @Test
     fun `Crypto - Verify invalid signature`() {
-
-        val publicKey = createKeyFor(bobHoldingId, UUID.randomUUID().toString(), "LEDGER", "CORDA.RSA")
-
         val requestBody = RpcSmokeTestInput().apply {
             command = "crypto_verify_invalid_signature"
-            data = mapOf("publicKey" to publicKey, "memberX500" to X500_BOB)
+            data = mapOf("memberX500" to X500_BOB)
         }
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
