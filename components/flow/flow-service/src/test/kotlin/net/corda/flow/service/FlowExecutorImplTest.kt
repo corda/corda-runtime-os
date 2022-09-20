@@ -1,10 +1,12 @@
 package net.corda.flow.service
 
+import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.flow.scheduler.FlowWakeUpScheduler
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -16,6 +18,7 @@ import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.subscription.StateAndEventSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
+import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -38,9 +41,9 @@ class FlowExecutorImplTest {
     }
 
     private val config = mutableMapOf(
-        FLOW_CONFIG to mock<SmartConfig>()
+        FLOW_CONFIG to SmartConfigImpl.empty()
     )
-    private val messagingConfig = mock<SmartConfig>()
+    private val messagingConfig = getMinimalMessagingConfig()
     private val subscriptionRegistrationHandle = mock<RegistrationHandle>()
     private val flowExecutorCoordinator = mock<LifecycleCoordinator>()
     private val subscription = mock<StateAndEventSubscription<String, Checkpoint, FlowEvent>>()
@@ -174,5 +177,9 @@ class FlowExecutorImplTest {
             flowWakeUpScheduler,
             toMessagingConfig
         )
+    }
+
+    private fun getMinimalMessagingConfig() : SmartConfig {
+        return SmartConfigImpl.empty().withValue(PROCESSOR_TIMEOUT, ConfigValueFactory.fromAnyRef(5000))
     }
 }

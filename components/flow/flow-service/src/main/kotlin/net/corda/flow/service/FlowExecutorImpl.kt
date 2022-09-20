@@ -1,5 +1,6 @@
 package net.corda.flow.service
 
+import com.typesafe.config.ConfigValueFactory
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
@@ -67,7 +68,7 @@ class FlowExecutorImpl constructor(
         try {
             val messagingConfig = toMessagingConfig(config)
             val flowConfig = config.getConfig(FLOW_CONFIG)
-                .withValue(PROCESSOR_TIMEOUT, messagingConfig.getValue(PROCESSOR_TIMEOUT))
+                .withValue(PROCESSOR_TIMEOUT, ConfigValueFactory.fromAnyRef(messagingConfig.getLong(PROCESSOR_TIMEOUT)))
 
             // close the lifecycle registration first to prevent down being signaled
             subscriptionRegistrationHandle?.close()
