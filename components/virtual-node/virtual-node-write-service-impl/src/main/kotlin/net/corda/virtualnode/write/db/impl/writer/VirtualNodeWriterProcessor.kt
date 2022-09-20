@@ -4,8 +4,6 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.data.virtualnode.VirtualNodeCreateResponse
-import net.corda.data.virtualnode.VirtualNodeDBResetRequest
-import net.corda.data.virtualnode.VirtualNodeDBResetResponse
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
@@ -25,9 +23,9 @@ import net.corda.libs.cpi.datamodel.findDbChangeLogForCpi
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
+import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.Root.MGM_DEFAULT_GROUP_ID
-import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -40,7 +38,6 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.VirtualNodeState
 import net.corda.virtualnode.toAvro
@@ -101,11 +98,10 @@ internal class VirtualNodeWriterProcessor(
                 return
             }
         }.also {
-            logger.debug {
-                "[Create ${create.x500Name}] validation took $it ms, elapsed " +
-                    "${currentTimeMillis() - startMillis} ms"
-            }
+            logger.debug {"[Create ${create.x500Name}] validation took $it ms, elapsed " +
+                    "${currentTimeMillis() - startMillis} ms"}
         }
+
 
         try {
             val cpiMetadata: CpiMetadataLite?
@@ -119,10 +115,8 @@ internal class VirtualNodeWriterProcessor(
                     return
                 }
             }.also {
-                logger.debug {
-                    "[Create ${create.x500Name}] get metadata took $it ms, elapsed " +
-                        "${currentTimeMillis() - startMillis} ms"
-                }
+                logger.debug {"[Create ${create.x500Name}] get metadata took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
             }
 
             // Generate group ID for MGM
@@ -136,45 +130,37 @@ internal class VirtualNodeWriterProcessor(
                         respFuture,
                         VirtualNodeAlreadyExistsException(
                             "Virtual node for CPI with file checksum ${create.cpiFileChecksum} and x500Name " +
-                                "${create.x500Name} already exists."
+                                    "${create.x500Name} already exists."
                         )
                     )
                     return
                 }
                 checkUniqueId(holdingId)
             }.also {
-                logger.debug {
-                    "[Create ${create.x500Name}] validate holding ID took $it ms, elapsed " +
-                        "${currentTimeMillis() - startMillis} ms"
-                }
+                logger.debug {"[Create ${create.x500Name}] validate holding ID took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
             }
 
-            val vNodeDbs: Map<VirtualNodeDbType, VirtualNodeDb>
+            val vNodeDbs:  Map<VirtualNodeDbType, VirtualNodeDb>
             measureTimeMillis {
                 vNodeDbs = vnodeDbFactory.createVNodeDbs(holdingId.shortHash, create)
             }.also {
-                logger.debug {
-                    "[Create ${create.x500Name}] creating vnode DBs took $it ms, elapsed " +
-                        "${currentTimeMillis() - startMillis} ms"
-                }
+                logger.debug {"[Create ${create.x500Name}] creating vnode DBs took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
             }
 
             measureTimeMillis {
                 createSchemasAndUsers(holdingId, vNodeDbs.values)
             }.also {
-                logger.debug {
-                    "[Create ${create.x500Name}] creating vnode DB Schemas and users took $it ms, elapsed " +
-                        "${currentTimeMillis() - startMillis} ms"
-                }
+                logger.debug {"[Create ${create.x500Name}] creating vnode DB Schemas and users took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
             }
 
             measureTimeMillis {
                 runDbMigrations(holdingId, vNodeDbs.values)
             }.also {
-                logger.debug {
-                    "[Create ${create.x500Name}] DB migrations took $it ms, elapsed " +
-                        "${currentTimeMillis() - startMillis} ms"
-                }
+                logger.debug {"[Create ${create.x500Name}] DB migrations took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
             }
 
             val vaultDb = vNodeDbs[VAULT]
@@ -185,10 +171,8 @@ internal class VirtualNodeWriterProcessor(
                 measureTimeMillis {
                     runCpiMigrations(cpiMetadata, vaultDb)
                 }.also {
-                    logger.debug {
-                        "[Create ${create.x500Name}] CPI DB migrations took $it ms, elapsed " +
-                            "${currentTimeMillis() - startMillis} ms"
-                    }
+                    logger.debug {"[Create ${create.x500Name}] CPI DB migrations took $it ms, elapsed " +
+                            "${currentTimeMillis() - startMillis} ms"}
                 }
             }
 
@@ -197,37 +181,29 @@ internal class VirtualNodeWriterProcessor(
                 dbConnections =
                     persistHoldingIdAndVirtualNode(holdingId, vNodeDbs, cpiMetadata.id, create.updateActor)
             }.also {
-                logger.debug {
-                    "[Create ${create.x500Name}] persisting VNode to DB took $it ms, elapsed " +
-                        "${currentTimeMillis() - startMillis} ms"
-                }
+                logger.debug {"[Create ${create.x500Name}] persisting VNode to DB took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
             }
 
             measureTimeMillis {
                 publishVNodeInfo(holdingId, cpiMetadata, dbConnections)
             }.also {
-                logger.debug {
-                    "[Create ${create.x500Name}] persisting VNode Info to Kafka took $it ms, elapsed " +
-                        "${currentTimeMillis() - startMillis} ms"
-                }
+                logger.debug {"[Create ${create.x500Name}] persisting VNode Info to Kafka took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
             }
 
             measureTimeMillis {
                 publishMgmInfo(holdingId, cpiMetadata.groupPolicy)
             }.also {
-                logger.debug {
-                    "[Create ${create.x500Name}] persisting Mgm Info to Kafka took $it ms, elapsed " +
-                        "${currentTimeMillis() - startMillis} ms"
-                }
+                logger.debug {"[Create ${create.x500Name}] persisting Mgm Info to Kafka took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
             }
 
             measureTimeMillis {
                 sendSuccessfulResponse(respFuture, instant, holdingId, cpiMetadata, dbConnections)
             }.also {
-                logger.debug {
-                    "[Create ${create.x500Name}] send response to RPC gateway took $it ms, elapsed " +
-                        "${currentTimeMillis() - startMillis} ms"
-                }
+                logger.debug {"[Create ${create.x500Name}] send response to RPC gateway took $it ms, elapsed " +
+                        "${currentTimeMillis() - startMillis} ms"}
             }
         } catch (e: Exception) {
             handleException(respFuture, e)
@@ -325,63 +301,6 @@ internal class VirtualNodeWriterProcessor(
         }
     }
 
-//    private fun resetVirtualNodeVaults(
-//        timestamp: Instant,
-//        request: VirtualNodeDBResetRequest,
-//        respFuture: CompletableFuture<VirtualNodeManagementResponse>
-//    ) {
-//        val startMillis = currentTimeMillis()
-//        val cpis = emptyList<String>()
-//
-//        return dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().use { em ->
-//            val vnodeIds = request.holdingIdentityShortHashes.map { vnodeId ->
-//                val vnode = virtualNodeEntityRepository.getVirtualNode(em, vnodeId)
-//                val cpiForVnode = virtualNodeEntityRepository.getCPIMetadataByNameAndVersion()
-//            }
-//        }
-//
-//        cpis.map{
-//            val cpiMetadata: CpiMetadataLite?
-//            measureTimeMillis {
-//                cpiMetadata = virtualNodeEntityRepository.getCpiMetadataByChecksum("create.cpiFileChecksum")
-//                if (cpiMetadata == null) {
-//                    handleException(
-//                        respFuture,
-//                        CpiNotFoundException("CPI with file checksum ${"create.cpiFileChecksum"} was not found.")
-//                    )
-//                    return
-//                }
-//            }.also {
-//                logger.debug {
-//                    "[Create ${"create.x500Name"}] get metadata took $it ms, elapsed " +
-//                        "${currentTimeMillis() - startMillis} ms"
-//                }
-//            }
-//
-//            rollbackCpiMigrations(
-//                CpiMetadataLite(
-//                    CpiIdentifier(
-//                        "",
-//                        "",
-//                        null
-//                    ),
-//                    "",
-//                    "",
-//                    ""
-//                ),
-//            )
-//        }
-//
-//        respFuture.complete(
-//            VirtualNodeManagementResponse(
-//                timestamp,
-//                VirtualNodeDBResetResponse(
-//                    emptyList<String>()
-//                )
-//            )
-//        )
-//    }
-
     /**
      * For each [request], the processor attempts to commit a new virtual node to the cluster database. If successful,
      * the created virtual node is then published by the [vnodePublisher] to the `VIRTUAL_NODE_INFO_TOPIC` topic.
@@ -395,7 +314,6 @@ internal class VirtualNodeWriterProcessor(
         when (val typedRequest = request.request) {
             is VirtualNodeCreateRequest -> createVirtualNode(request.timestamp, typedRequest, respFuture)
             is VirtualNodeStateChangeRequest -> changeVirtualNodeState(request.timestamp, typedRequest, respFuture)
-//            is VirtualNodeDBResetRequest -> resetVirtualNodeVaults(request.timestamp, typedRequest, respFuture)
             else -> throw VirtualNodeWriteServiceException("Unknown management request of type: ${typedRequest::class.java.name}")
         }
     }
@@ -505,7 +423,7 @@ internal class VirtualNodeWriterProcessor(
 
     private fun runDbMigrations(holdingIdentity: HoldingIdentity, vNodeDbs: Collection<VirtualNodeDb>) {
         try {
-            vNodeDbs.forEach { db -> db.runDbMigration() }
+            vNodeDbs.forEach { it.runDbMigration() }
         } catch (e: Exception) {
             throw VirtualNodeWriteServiceException(
                 "Error running virtual node DB migration for holding identity $holdingIdentity",
@@ -514,9 +432,9 @@ internal class VirtualNodeWriterProcessor(
         }
     }
 
-    private fun runCpiMigrations(cpiMetadata: CpiMetadataLite, vaultDb: VirtualNodeDb) {
+    private fun runCpiMigrations(cpiMetadata: CpiMetadataLite, vaultDb: VirtualNodeDb) =
         // we could potentially do one transaction per CPK; it seems more useful to blow up the
-        // whole migration if any CPK fails though, so that they can be iterative developed and repeated
+        // who migration if any CPK fails though, so that they can be iterative developed and repeated
         dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().transaction {
             val changelogs = getChangelogs(it, cpiMetadata.id)
             changelogs.map { cl -> cl.id.cpkName }.distinct().sorted().forEach { cpkName ->
@@ -535,7 +453,6 @@ internal class VirtualNodeWriterProcessor(
                 logger.info("Completed ${cpkChangelogs.size} migrations for $cpkName")
             }
         }
-    }
 
     private fun createVirtualNodeRecord(
         holdingIdentity: HoldingIdentity,

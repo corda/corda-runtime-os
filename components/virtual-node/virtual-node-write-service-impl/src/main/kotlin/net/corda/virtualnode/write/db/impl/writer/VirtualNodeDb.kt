@@ -2,7 +2,6 @@ package net.corda.virtualnode.write.db.impl.writer
 
 import net.corda.db.admin.DbChange
 import net.corda.db.admin.LiquibaseSchemaMigrator
-import net.corda.db.admin.LiquibaseXmlConstants.DB_CHANGE_LOG_ROOT_ELEMENT
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.connection.manager.DBConfigurationException
@@ -15,7 +14,6 @@ import net.corda.db.core.DbPrivilege.DML
 import net.corda.db.schema.DbSchema
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.ShortHash
-import javax.persistence.EntityManager
 
 /**
  * Encapsulates access to a single database, either of type VAULT or CONFIG, at muliple different provilege levels
@@ -27,13 +25,9 @@ import javax.persistence.EntityManager
  */
 @Suppress("LongParameterList")
 class VirtualNodeDb(
-    private val dbType: VirtualNodeDbType,
-    val isClusterDb: Boolean,
-    private val holdingIdentityShortHash: ShortHash,
-    val dbConnections: Map<DbPrivilege, DbConnection?>,
-    private val dbAdmin: DbAdmin,
-    private val dbConnectionManager: DbConnectionManager,
-    private val schemaMigrator: LiquibaseSchemaMigrator
+    private val dbType: VirtualNodeDbType, val isClusterDb: Boolean, private val holdingIdentityShortHash: ShortHash,
+    val dbConnections: Map<DbPrivilege, DbConnection?>, private val dbAdmin: DbAdmin,
+    private val dbConnectionManager: DbConnectionManager, private val schemaMigrator: LiquibaseSchemaMigrator
 ) {
 
     companion object {
@@ -49,10 +43,10 @@ class VirtualNodeDb(
             // Order is important because DB schema should be deleted first if DDL user already exists
             for (privilege in listOf(DDL, DML)) {
                 dbConnections[privilege]!!.let { connection ->
-                    val user = connection.getUser()
-                        ?: throw DBConfigurationException("DB user not known for connection ${connection.description}")
-                    val password = connection.getPassword()
-                        ?: throw DBConfigurationException("DB password not known for connection ${connection.description}")
+                    val user = connection.getUser() ?:
+                        throw DBConfigurationException("DB user not known for connection ${connection.description}")
+                    val password = connection.getPassword() ?:
+                        throw DBConfigurationException("DB password not known for connection ${connection.description}")
                     val dbSchema = dbType.getSchemaName(holdingIdentityShortHash)
                     // This covers scenario when previous virtual node on-boarding request failed after user was created
                     // Since connections are persisted at later point, user's password is lost, so user is re-created
@@ -73,21 +67,6 @@ class VirtualNodeDb(
         }
     }
 
-    private val changeLogResourceFiles get() =
-        setOf(DbSchema::class.java).mapTo(LinkedHashSet()) { klass ->
-            ClassloaderChangeLog.ChangeLogResourceFiles(klass.packageName, dbType.dbChangeFiles, klass.classLoader)
-        }
-
-    // This is the resource path for the loaded system migrations.
-    // This allows us to differentiate between the system migrations, and the CPI ones, even when the CPI is
-    //  no longer around
-    private val systemMigrationsPackage get() =
-        changeLogResourceFiles.map { resourceFile ->
-            resourceFile.masterFiles.single { potentialMaster ->
-                potentialMaster.endsWith("-master.xml")
-            }
-        }.single().substringBeforeLast("/")
-
     /**
      * Runs DB migration
      */
@@ -95,15 +74,18 @@ class VirtualNodeDb(
         val dbConnection = dbConnections[DDL]
             ?: throw VirtualNodeDbException("No DDL database connection when due to apply system migrations")
         dbConnectionManager.getDataSource(dbConnection.config).use { dataSource ->
-            log.info("systemMigrationsPackage is -> $systemMigrationsPackage")
+            val dbChangeFiles = dbType.dbChangeFiles
+            val changeLogResourceFiles = setOf(DbSchema::class.java).mapTo(LinkedHashSet()) { klass ->
+                ClassloaderChangeLog.ChangeLogResourceFiles(klass.packageName, dbChangeFiles, klass.classLoader)
+            }
             val dbChange = ClassloaderChangeLog(changeLogResourceFiles)
 
             dataSource.connection.use { connection ->
                 if (isClusterDb) {
                     val dbSchema = dbType.getSchemaName(holdingIdentityShortHash)
-                    schemaMigrator.updateDb(connection, dbChange, dbSchema, dbType == VirtualNodeDbType.VAULT)
+                    schemaMigrator.updateDb(connection, dbChange, dbSchema)
                 } else {
-                    schemaMigrator.updateDb(connection, dbChange, dbType == VirtualNodeDbType.VAULT)
+                    schemaMigrator.updateDb(connection, dbChange)
                 }
             }
         }
@@ -118,20 +100,5 @@ class VirtualNodeDb(
             }
         }
     }
-    // Get number of migrations for vnode, subtract number of system migrations, roll back that amount of migrations
-    fun rollbackCpiMigrations(tag: String? = null) {
-        val dbConnection = dbConnections[DDL]
-            ?: throw VirtualNodeDbException("No DDL database connection when due to apply CPI migrations")
-        dbConnectionManager.getDataSource(dbConnection.config).use { dataSource ->
-            dataSource.connection.use { connection ->
-                LiquibaseSchemaMigratorImpl().rollbackDb(connection, VirtualNodeDbChangeLog(emptyList()), tag)
-            }
-        }
-    }
-}
 
-fun EntityManager.getNumChanges(systemChangelogs: String): Long {
-    return createQuery("SELECT count(c) FROM $DB_CHANGE_LOG_ROOT_ELEMENT c WHERE c.filename LIKE :systemChangeLogs")
-        .setParameter("systemChangeLogs", "%$systemChangelogs")
-        .singleResult as Long
 }

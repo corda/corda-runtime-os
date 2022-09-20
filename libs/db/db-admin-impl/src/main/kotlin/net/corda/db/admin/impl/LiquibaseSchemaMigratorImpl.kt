@@ -1,13 +1,10 @@
 package net.corda.db.admin.impl
 
 import liquibase.Contexts
-import liquibase.LabelExpression
 import liquibase.Liquibase
-import liquibase.changelog.DatabaseChangeLog
 import liquibase.database.Database
 import liquibase.database.DatabaseFactory
 import liquibase.database.jvm.JdbcConnection
-import liquibase.resource.ClassLoaderResourceAccessor
 import liquibase.resource.ResourceAccessor
 import net.corda.db.admin.DbChange
 import net.corda.db.admin.LiquibaseSchemaMigrator
@@ -38,20 +35,12 @@ class LiquibaseSchemaMigratorImpl(
         private val log = contextLogger()
     }
 
-    override fun updateDb(datasource: Connection, dbChange: DbChange, tagAsLast: Boolean) {
-        updateDb(datasource, dbChange, DEFAULT_DB_SCHEMA, tagAsLast)
+    override fun updateDb(datasource: Connection, dbChange: DbChange) {
+        updateDb(datasource, dbChange, DEFAULT_DB_SCHEMA)
     }
 
-    override fun updateDb(datasource: Connection, dbChange: DbChange, controlTablesSchema: String, tagAsLast: Boolean) {
-        processUpdate(datasource, dbChange, sql = null, controlTablesSchema, tagAsLast)
-    }
-
-    override fun rollbackDb(datasource: Connection, dbChange: DbChange, tag: String?) {
-        rollbackDb(datasource, DEFAULT_DB_SCHEMA, dbChange, tag)
-    }
-
-    override fun rollbackDb(datasource: Connection, controlTablesSchema: String, dbChange: DbChange, tag: String?) {
-        processRollback(datasource, controlTablesSchema, dbChange, tag)
+    override fun updateDb(datasource: Connection, dbChange: DbChange, controlTablesSchema: String) {
+        process(datasource, dbChange, sql = null, controlTablesSchema)
     }
 
     /**
@@ -62,25 +51,24 @@ class LiquibaseSchemaMigratorImpl(
      * @param dbChange
      * @param sql output
      */
-    override fun createUpdateSql(datasource: Connection, dbChange: DbChange, sql: Writer, tagAsLast: Boolean) {
-        createUpdateSql(datasource, dbChange, DEFAULT_DB_SCHEMA, sql, tagAsLast)
+    override fun createUpdateSql(datasource: Connection, dbChange: DbChange, sql: Writer) {
+        createUpdateSql(datasource, dbChange, DEFAULT_DB_SCHEMA, sql)
     }
 
-    override fun createUpdateSql(datasource: Connection, dbChange: DbChange, controlTablesSchema: String, sql: Writer, tagAsLast: Boolean) {
-        processUpdate(datasource, dbChange, sql, controlTablesSchema, tagAsLast)
+    override fun createUpdateSql(datasource: Connection, dbChange: DbChange, controlTablesSchema: String, sql: Writer) {
+        process(datasource, dbChange, sql, controlTablesSchema)
     }
 
-    private fun processUpdate(
+    private fun process(
         datasource: Connection,
         dbChange: DbChange,
         sql: Writer? = null,
-        liquibaseSchemaName: String,
-        tagAsLast: Boolean
+        liquibaseSchemaName: String
     ) {
         val database = databaseFactory(datasource)
 
         // only set the schema if it's not specified as the default
-        if (liquibaseSchemaName != DEFAULT_DB_SCHEMA) {
+        if(liquibaseSchemaName != DEFAULT_DB_SCHEMA) {
             log.info("Setting liquibaseSchemaName to $liquibaseSchemaName")
             database.liquibaseSchemaName = liquibaseSchemaName
         }
@@ -98,37 +86,6 @@ class LiquibaseSchemaMigratorImpl(
             lb.update(Contexts())
         else
             lb.update(Contexts(), sql)
-        if (tagAsLast) {
-            lb.tag(database.connection.catalog)
-        }
         log.info("${database.connection.catalog} DB schema update complete")
-    }
-
-    private fun processRollback(
-        datasource: Connection,
-        liquibaseSchemaName: String,
-        dbChange: DbChange,
-        tag: String?
-    ) {
-        val database = databaseFactory(datasource)
-        val tagToUse = tag ?: database.connection.catalog
-
-        // only set the schema if it's not specified as the default
-        if (liquibaseSchemaName != DEFAULT_DB_SCHEMA) {
-            log.info("Setting liquibaseSchemaName to $liquibaseSchemaName")
-            database.liquibaseSchemaName = liquibaseSchemaName
-        }
-
-        // use UUID as we want to ensure this is unique and doesn't clash with a user defined changelog file.
-        val masterChangeLogFileName = "master-changelog-${UUID.randomUUID()}.xml"
-        val lb = liquibaseFactory(
-            masterChangeLogFileName,
-            StreamResourceAccessor(masterChangeLogFileName, dbChange),
-            database
-        )
-
-        log.info("Rolling back ${database.databaseProductName} ${database.databaseProductVersion} DB Schema to $tagToUse for ${database.connection.catalog}")
-        lb.rollback(tagToUse, Contexts(), LabelExpression("dev-rollback"))
-        log.info("${database.connection.catalog} DB schema rollback to $tagToUse complete")
     }
 }
