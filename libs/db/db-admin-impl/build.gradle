@@ -3,8 +3,9 @@ plugins {
     id 'corda.common-publishing'
 }
 
-// temporary measure for DP2, required as a trasnitive dependecy by simulator modules 
-// This code marks this module as to be published externally. To be revisted prior to beta program.
+// Temporary measure for DP2, required as a transitive dependecy by simulator modules 
+// This code marks this module as to be published externally. 
+// TODO To be revisited prior to beta program.
 ext {
     releasable = true
 }
