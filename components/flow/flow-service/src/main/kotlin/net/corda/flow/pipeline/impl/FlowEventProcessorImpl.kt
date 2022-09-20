@@ -12,7 +12,7 @@ import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_FLOW_EXECUTION_DURATION
+import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
 import net.corda.v5.base.util.contextLogger
 
 class FlowEventProcessorImpl(
@@ -57,7 +57,7 @@ class FlowEventProcessorImpl(
 
         //flow result timeout must be lower than the processor timeout as the processor thread will be killed by the subscription consumer
         // thread after this period and so this timeout would never be reached and given a chance to return otherwise.
-        val flowTimeout = (config.getLong(PROCESSING_MAX_FLOW_EXECUTION_DURATION) * 0.75).toLong()
+        val flowTimeout = (config.getLong(PROCESSOR_TIMEOUT) * 0.75).toLong()
         return try {
             flowEventContextConverter.convert(
                 pipeline
