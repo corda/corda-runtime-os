@@ -25,5 +25,5 @@ dependencies {
 }
 
 tasks.named('jar', Jar) {
-    archiveBaseName = "simulator-api"
+    archiveBaseName = "corda-simulator-api"
 }

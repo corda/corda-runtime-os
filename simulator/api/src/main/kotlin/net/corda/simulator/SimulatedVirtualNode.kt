@@ -2,11 +2,24 @@ package net.corda.simulator
 
 import net.corda.simulator.crypto.HsmCategory
 import net.corda.v5.application.persistence.PersistenceService
+import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.types.MemberX500Name
 import java.security.PublicKey
 
+/**
+ * A simulated virtual node in which flows or instances of flows can be run.
+ */
+@DoNotImplement
 interface SimulatedVirtualNode {
+
+    /**
+     * The holding identity for which this node was created.
+     */
     val holdingIdentity: HoldingIdentity
+
+    /**
+     * The member for which this node was created.
+     */
     val member : MemberX500Name
 
     /**
@@ -20,12 +33,21 @@ interface SimulatedVirtualNode {
     fun callFlow(input: RequestData): String
 
     /**
-     * Retrieves the persistence service associated with this node's member
+     * @return the persistence service associated with this node
      */
     fun getPersistenceService(): PersistenceService
 
     /**
-     * Generates a key for this node with the given alias, HSM category and scheme.
+     * Generates a key for this node which can then be accessed using the
+     * [net.corda.v5.application.membership.MemberLookup] service and used with the
+     * [net.corda.v5.application.crypto.SigningService] and
+     * [net.corda.v5.application.crypto.DigitalSignatureVerificationService]. Note that Simulator does not actually
+     * perform encryption, simulating it instead, and no private keys are held.
+     *
+     * @param alias an alias for the key
+     * @param hsmCategory the HSM category for the key
+     * @param scheme the scheme for the key - not used, except in verification; an ECDSA key will be returned
+     * @return an ECDSA public key
      */
     fun generateKey(alias: String, hsmCategory: HsmCategory, scheme: String) : PublicKey
 }
