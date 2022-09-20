@@ -1953,7 +1953,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Set of roles with each role having the following attributes: \n        id - unique identifier of a role.\n        version - version of the role.\n        updateTimestamp - time when the role was last updated.\n        roleName - A name of the role.\n        groupVisibility - optional group visibility of the role.\n        permissions - list of permission associations the role has.\n    ",
+            "description" : "Set of roles with each role having the following attributes: \n        id: The unique identifier of the role\n        version: The version number of the role\n        updateTimestamp: The date and time when the role was last updated\n        roleName: The name of the role\n        groupVisibility: An optional group visibility of the role\n        permissions: The list of permissions associated with the role\n    ",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1993,7 +1993,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Newly created role with attributes:\n        id - unique identifier of a role.\n        version - version of the role.\n        updateTimestamp - time when the role was last updated.\n        roleName - A name of the new role.\n        groupVisibility - optional group visibility of the role.\n        permissions - list of permission associations the role has.",
+            "description" : "Newly created role with attributes:\n        id: The unique identifier of the role\n        version: The version number of the role\n        updateTimestamp: The date and time when the role was last updated\n        roleName: The name of the role\n        groupVisibility: An optional group visibility of the role\n        permissions: The list of permissions associated with the role",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2059,7 +2059,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Role with attributes:\n        id - unique identifier of a role.\n        version - version of the role.\n        updateTimestamp - time when the role was last updated.\n        roleName - A name of the role.\n        groupVisibility - optional group visibility of the role.\n        permissions - list of permission associations the role has.",
+            "description" : "Role with attributes:\n        id: The unique identifier of the role\n        version: The version number of the role\n        updateTimestamp: The date and time when the role was last updated\n        roleName: The name of the role\n        groupVisibility: An optional group visibility of the role\n        permissions: The list of permissions associated with the role",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2107,7 +2107,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Role with attributes:\n            id - unique identifier of a role.\n            version - version of the role.\n            updateTimestamp - time when the role was last updated.\n            roleName - A name of the role.\n            groupVisibility - optional group visibility of the role.\n            permissions - list of permission associations the role has.",
+            "description" : "Role with attributes:\n            id: The unique identifier of the role\n            version: The version number of the role\n            updateTimestamp: The date and time when the role was last updated\n            roleName: The name of the role\n            groupVisibility: An optional group visibility of the role\n            permissions: The list of permissions associated with the role",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2153,7 +2153,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Role with attributes:\n            id - unique identifier of a role.\n            version - version of the role.\n            updateTimestamp - time when the role was last updated.\n            roleName - A name of the role.\n            groupVisibility - optional group visibility of the role.\n            permissions - list of permission associations the role has.",
+            "description" : "Role with attributes:\n            id: The unique identifier of the role\n            version: The version number of the role\n            updateTimestamp: The date and time when the role was last updated\n            roleName: The name of the role\n            groupVisibility: An optional group visibility of the role\n            permissions: The list of permissions associated with the role",
             "content" : {
               "application/json" : {
                 "schema" : {

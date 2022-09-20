@@ -33,7 +33,7 @@ interface RoleEndpoint : RpcOps {
         version: The version number of the role
         updateTimestamp: The date and time when the role was last updated
         roleName: The name of the role
-        groupVisibility - optional group visibility of the role.
+        groupVisibility: An optional group visibility of the role
         permissions: The list of permissions associated with the role
     """)
     fun getRoles(): Set<RoleResponseType>
@@ -43,12 +43,12 @@ interface RoleEndpoint : RpcOps {
      */
     @HttpRpcPOST(description = "The method creates a new role in the RBAC permission system.",
     responseDescription = """Newly created role with attributes:
-        id - unique identifier of a role.
-        version - version of the role.
-        updateTimestamp - time when the role was last updated.
-        roleName - A name of the new role.
-        groupVisibility - optional group visibility of the role.
-        permissions - list of permission associations the role has.""")
+        id: The unique identifier of the role
+        version: The version number of the role
+        updateTimestamp: The date and time when the role was last updated
+        roleName: The name of the role
+        groupVisibility: An optional group visibility of the role
+        permissions: The list of permissions associated with the role""")
     fun createRole(
         @HttpRpcRequestBodyParameter(
             description =
@@ -64,12 +64,12 @@ interface RoleEndpoint : RpcOps {
      */
     @HttpRpcGET(path = "{id}", description = "This method gets the details of a role specified by its ID.",
     responseDescription = """Role with attributes:
-        id - unique identifier of a role.
-        version - version of the role.
-        updateTimestamp - time when the role was last updated.
-        roleName - A name of the role.
-        groupVisibility - optional group visibility of the role.
-        permissions - list of permission associations the role has."""
+        id: The unique identifier of the role
+        version: The version number of the role
+        updateTimestamp: The date and time when the role was last updated
+        roleName: The name of the role
+        groupVisibility: An optional group visibility of the role
+        permissions: The list of permissions associated with the role"""
     )
     fun getRole(
         @HttpRpcPathParameter(description = "ID of the role to be returned.")
@@ -82,12 +82,12 @@ interface RoleEndpoint : RpcOps {
     @HttpRpcPUT(path = "{roleId}/permission/{permissionId}",
         description = "This method adds the specified permission to the specified role.",
         responseDescription = """Role with attributes:
-            id - unique identifier of a role.
-            version - version of the role.
-            updateTimestamp - time when the role was last updated.
-            roleName - A name of the role.
-            groupVisibility - optional group visibility of the role.
-            permissions - list of permission associations the role has.""")
+            id: The unique identifier of the role
+            version: The version number of the role
+            updateTimestamp: The date and time when the role was last updated
+            roleName: The name of the role
+            groupVisibility: An optional group visibility of the role
+            permissions: The list of permissions associated with the role""")
     fun addPermission(
         @HttpRpcPathParameter(description = "Identifier for an existing role")
         roleId: String,
@@ -101,12 +101,12 @@ interface RoleEndpoint : RpcOps {
     @HttpRpcDELETE(path = "{roleId}/permission/{permissionId}",
         description = "This method removes the specified permission from the specified role.",
         responseDescription = """Role with attributes:
-            id - unique identifier of a role.
-            version - version of the role.
-            updateTimestamp - time when the role was last updated.
-            roleName - A name of the role.
-            groupVisibility - optional group visibility of the role.
-            permissions - list of permission associations the role has.""")
+            id: The unique identifier of the role
+            version: The version number of the role
+            updateTimestamp: The date and time when the role was last updated
+            roleName: The name of the role
+            groupVisibility: An optional group visibility of the role
+            permissions: The list of permissions associated with the role""")
     fun removePermission(
         @HttpRpcPathParameter(description = "Identifier for an existing role")
         roleId: String,
