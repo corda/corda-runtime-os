@@ -573,7 +573,7 @@
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "Short hash of the holding identity. Obtained during node registration.",
+          "description" : "The short hash of the holding identity; obtained during node registration",
           "required" : true,
           "schema" : {
             "type" : "string",
