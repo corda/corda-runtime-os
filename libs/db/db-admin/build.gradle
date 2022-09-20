@@ -4,7 +4,7 @@ plugins {
 }
 
 // temporary measure for DP2, required as a trasnitive dependecy by simulator modules 
-// to be revisted prior to beta program
+// This code marks this module as to be published externally. To be revisted prior to beta program.
 ext {
     releasable = true
 }
