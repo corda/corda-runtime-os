@@ -1,6 +1,7 @@
 
 plugins {
     id 'corda.common-publishing'
+    id 'org.jetbrains.dokka'
 }
 
 ext {
@@ -21,9 +22,19 @@ dependencies {
 
     testRuntimeOnly "org.slf4j:slf4j-simple:$slf4jVersion"
 
-
+    dokkaHtmlPlugin "org.jetbrains.dokka:kotlin-as-java-plugin:$kotlinVersion"
 }
 
 tasks.named('jar', Jar) {
-    archiveBaseName = "simulator-api"
+    archiveBaseName = "corda-simulator-api"
+}
+
+tasks.register('javadocJar', Jar) {
+    description = 'Create JavaDoc Jar from dokka docs'
+    group = 'documentation'
+
+    dependsOn(dokkaHtml)
+    archiveBaseName = jar.archiveBaseName
+    archiveClassifier.set("javadoc")
+    from(dokkaHtml.outputDirectory)
 }

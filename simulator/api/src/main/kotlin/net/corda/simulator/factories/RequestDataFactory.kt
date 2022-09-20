@@ -2,11 +2,17 @@ package net.corda.simulator.factories
 
 import net.corda.simulator.RequestData
 import net.corda.v5.application.flows.Flow
+import net.corda.v5.base.annotations.DoNotImplement
 
+/**
+ * Used for constructing [RequestData]. This interface should not be
+ * used directly; instead use the [RequestData.create] methods on [RequestData].
+ */
+@DoNotImplement
 interface RequestDataFactory {
 
     /**
-     * Constructs an RPCRequest from strongly-typed fields.
+     * Constructs [RequestData] from strongly-typed fields.
      *
      * @clientRequestId the id which uniquely identifies a request
      * @flowClass the flow class to run
@@ -15,7 +21,7 @@ interface RequestDataFactory {
     fun create(clientRequestId: String, flowClass: String, requestBody: String): RequestData
 
     /**
-     * Constructs an RPCRequest from strongly-typed fields.
+     * Constructs [RequestData] from strongly-typed fields.
      *
      * @clientRequestId the id which uniquely identifies a request
      * @flowClass the flow class to run
@@ -25,7 +31,8 @@ interface RequestDataFactory {
     fun create(clientRequestId: String, flowClass: Class<out Flow>, requestBody: Any): RequestData
 
     /**
-     * Constructs an RPC request from a single JSON-formatted string.
+     * Constructs [RequestData] from a single JSON-formatted string.
+     * @return [RequestData]
      */
     fun create(jsonString: String) : RequestData
 }
