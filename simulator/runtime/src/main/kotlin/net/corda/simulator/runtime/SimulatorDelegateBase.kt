@@ -3,6 +3,7 @@ package net.corda.simulator.runtime
 import net.corda.simulator.HoldingIdentity
 import net.corda.simulator.SimulatedCordaNetwork
 import net.corda.simulator.SimulatedVirtualNode
+import net.corda.simulator.SimulatorConfiguration
 import net.corda.simulator.runtime.flows.BaseFlowFactory
 import net.corda.simulator.runtime.flows.DefaultServicesInjector
 import net.corda.simulator.runtime.flows.FlowFactory
@@ -18,10 +19,11 @@ import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.types.MemberX500Name
 
 
-class SimulatedCordaNetworkBase  (
+class SimulatorDelegateBase  (
+    private val configuration: SimulatorConfiguration,
     private val flowChecker: FlowChecker = CordaFlowChecker(),
     private val fiber: SimFiber = SimFiberBase(),
-    private val injector: FlowServicesInjector = DefaultServicesInjector()
+    private val injector: FlowServicesInjector = DefaultServicesInjector(configuration)
 ) : SimulatedCordaNetwork {
 
     private val flowFactory: FlowFactory = BaseFlowFactory()

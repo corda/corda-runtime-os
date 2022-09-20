@@ -16,7 +16,6 @@ import kotlin.concurrent.read
 import kotlin.concurrent.thread
 import kotlin.concurrent.write
 import net.corda.data.identity.HoldingIdentity
-import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -24,6 +23,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.p2p.app.AuthenticatedMessageHeader
+import net.corda.p2p.app.simulator.AppSimulator.Companion.APP_SIMULATOR_SUBSYSTEM
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.MessagingConfig.Bus.KAFKA_PRODUCER_CLIENT_ID
 import net.corda.utilities.time.Clock
@@ -32,14 +32,11 @@ import net.corda.v5.base.util.contextLogger
 @Suppress("LongParameterList")
 class Sender(private val publisherFactory: PublisherFactory,
              private val configMerger: ConfigMerger,
+             private val commonConfig: CommonConfig,
              private val dbParams: DBParams?,
              private val loadGenParams: LoadGenerationParams,
-             private val sendTopic: String,
-             private val bootConfig: SmartConfig,
-             private val clients: Int,
-             private val instanceId: String,
              private val clock: Clock
-             ): Closeable {
+    ): Closeable {
 
     companion object {
         private val logger = contextLogger()
@@ -57,7 +54,7 @@ class Sender(private val publisherFactory: PublisherFactory,
         val senderId = UUID.randomUUID().toString()
         logger.info("Using sender ID: $senderId")
 
-        val threads = (1..clients).map { client ->
+        val threads = (1..commonConfig.clients).map { client ->
             thread(isDaemon = true) {
                 val dbConnection = if(dbParams != null) {
                     DbConnection(dbParams,
@@ -67,7 +64,8 @@ class Sender(private val publisherFactory: PublisherFactory,
                     null
                 }
                 var messagesSent = 0
-                val configWithInstanceId = bootConfig
+                val instanceId = commonConfig.parameters.instanceId
+                val configWithInstanceId = commonConfig.bootConfig
                     .withValue(KAFKA_PRODUCER_CLIENT_ID, ConfigValueFactory.fromAnyRef("app-simulator-sender-$instanceId-$client"))
                     .withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef("$instanceId-$client".hashCode()))
                 val messagingConfig = configMerger.getMessagingConfig(configWithInstanceId)
@@ -80,7 +78,7 @@ class Sender(private val publisherFactory: PublisherFactory,
                             createMessage(it, senderId, loadGenParams.peer, loadGenParams.ourIdentity, loadGenParams.messageSizeBytes)
                         }
                         val records = messageWithIds.map { (messageId, message) ->
-                            Record(sendTopic, messageId, message)
+                            Record(commonConfig.parameters.sendTopic, messageId, message)
                         }
                         stopLock.read {
                             if(!stop) {
@@ -165,7 +163,7 @@ class Sender(private val publisherFactory: PublisherFactory,
             ttl,
             messageId,
             messageId,
-            "app-simulator"
+            APP_SIMULATOR_SUBSYSTEM
         )
         val randomData = ByteArray(messageSize).apply {
             random.nextBytes(this)
