@@ -52,7 +52,7 @@
     "description" : "The RBAC Permission API consists of a number of endpoints enabling permissions management in the RBAC (role-based access control) permission system. You can get details of specified permissions and create new permissions."
   }, {
     "name" : "RBAC Role API",
-    "description" : "Role Management endpoints for RBAC sub-system."
+    "description" : "The RBAC Role API consists of a number of endpoints enabling role management in the RBAC (role-based access control) permission system. You can get all roles in the system, create new roles and add and delete permissions from roles."
   }, {
     "name" : "RBAC User API",
     "description" : "Role Based Access Control User Management endpoints."
@@ -1948,12 +1948,12 @@
     "/role" : {
       "get" : {
         "tags" : [ "RBAC Role API" ],
-        "description" : "Get all the roles",
+        "description" : "This method returns an array with information about all roles in the permission system.",
         "operationId" : "get_role",
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Set of roles with each role having the following attributes: \n        id: The unique identifier of the role\n        version: The version number of the role\n        updateTimestamp: The date and time when the role was last updated\n        roleName: The name of the role\n        groupVisibility: An optional group visibility of the role\n        permissions: The list of permissions associated with the role\n    ",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1977,7 +1977,7 @@
       },
       "post" : {
         "tags" : [ "RBAC Role API" ],
-        "description" : "Create a Role",
+        "description" : "The method creates a new role in the RBAC permission system.",
         "operationId" : "post_role",
         "parameters" : [ ],
         "requestBody" : {
@@ -1993,7 +1993,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Newly created role with attributes:\n        id: The unique identifier of the role\n        version: The version number of the role\n        updateTimestamp: The date and time when the role was last updated\n        roleName: The name of the role\n        groupVisibility: An optional group visibility of the role\n        permissions: The list of permissions associated with the role",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2043,7 +2043,7 @@
     "/role/{id}" : {
       "get" : {
         "tags" : [ "RBAC Role API" ],
-        "description" : "Get a Role by its ID",
+        "description" : "This method gets the details of a role specified by its ID.",
         "operationId" : "get_role__id_",
         "parameters" : [ {
           "name" : "id",
@@ -2059,7 +2059,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Role with attributes:\n        id: The unique identifier of the role\n        version: The version number of the role\n        updateTimestamp: The date and time when the role was last updated\n        roleName: The name of the role\n        groupVisibility: An optional group visibility of the role\n        permissions: The list of permissions associated with the role",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2080,7 +2080,7 @@
     "/role/{roleid}/permission/{permissionid}" : {
       "put" : {
         "tags" : [ "RBAC Role API" ],
-        "description" : "Add a permission to a role",
+        "description" : "This method adds the specified permission to the specified role.",
         "operationId" : "put_role__roleid__permission__permissionid_",
         "parameters" : [ {
           "name" : "roleid",
@@ -2107,7 +2107,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Role with attributes:\n            id: The unique identifier of the role\n            version: The version number of the role\n            updateTimestamp: The date and time when the role was last updated\n            roleName: The name of the role\n            groupVisibility: An optional group visibility of the role\n            permissions: The list of permissions associated with the role",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2126,7 +2126,7 @@
       },
       "delete" : {
         "tags" : [ "RBAC Role API" ],
-        "description" : "Removes a permission from a role",
+        "description" : "This method removes the specified permission from the specified role.",
         "operationId" : "delete_role__roleid__permission__permissionid_",
         "parameters" : [ {
           "name" : "roleid",
@@ -2153,7 +2153,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Role with attributes:\n            id: The unique identifier of the role\n            version: The version number of the role\n            updateTimestamp: The date and time when the role was last updated\n            roleName: The name of the role\n            groupVisibility: An optional group visibility of the role\n            permissions: The list of permissions associated with the role",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2727,7 +2727,7 @@
             "example" : "string"
           }
         },
-        "description" : "Details of the role to be created"
+        "description" : "Details of the role to be created: \n                roleName - name of the role.\n                groupVisibility - optional group visibility of the role.\n            "
       },
       "CreateUserType" : {
         "required" : [ "enabled", "fullName", "loginName" ],
