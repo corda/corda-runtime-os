@@ -1,12 +1,9 @@
 package net.corda.flow.application.services
 
 import net.corda.data.flow.state.checkpoint.FlowStackItem
-import net.corda.flow.fiber.FlowContinuationErrorException
-import net.corda.flow.fiber.FlowContinuationErrorInUserCodeException
 import net.corda.flow.fiber.FlowFiberExecutionContext
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
-import net.corda.flow.fiber.userCodeExceptionWrapper
 import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.SubFlow
@@ -62,9 +59,7 @@ class FlowEngineImpl @Activate constructor(
 
         try {
             log.debug { "Calling sub-flow('$subFlowClassName')..." }
-            val result = userCodeExceptionWrapper {
-                subFlow.call()
-            }
+            val result = subFlow.call()
             log.debug { "Sub-flow('$subFlowClassName') call completed ..." }
             /*
              * TODOs:
@@ -75,21 +70,17 @@ class FlowEngineImpl @Activate constructor(
 
             finishSubFlow()
 
-            log.debug { "Sub-flow('${subFlow.javaClass.name}') resumed ." }
+            log.debug { "Sub-flow('${subFlow.javaClass.name}') resumed." }
             return result
-        } catch (e: FlowContinuationErrorInUserCodeException) {
-            // This was an exception thrown during the processing of the sub-flow pipeline, due to something the user
-            // code initiated, the user should see the point of origin of this exception in the log
-            log.error("Sub-flow failed, reason:", e.originatingCause)
-            throw failSubFlow(e.originatingCause)
-        } catch (e: FlowContinuationErrorException) {
-            // Logging the callstack here would be misleading as it would point the log entry to the internal rethrow
-            // in Corda rather than the code in the flow that failed
-            log.warn("Sub-flow was discontinued, reason: ${e.cause?.javaClass?.canonicalName} thrown, ${e.cause?.message}")
-            throw failSubFlow(e)
         } catch (t: Throwable) {
-            log.error("Sub-flow failed due to thrown throwable", t)
-            throw failSubFlow(t)
+            // Stack trace is filled in on demand. Without prodding that process, calls to suspend the flow will
+            // serialize and deserialize and not reproduce the stack trace correctly.
+            t.stackTrace
+            // We cannot conclude that throwing an exception out of a sub-flow is an error. User code is free to do this
+            // as long as it catches it in the flow which initiated it. The only thing Corda needs to do here is mark
+            // the sub-flow as failed and rethrow.
+            failSubFlow(t)
+            throw t
         } finally {
             popCurrentFlowStackItem()
         }
@@ -97,12 +88,14 @@ class FlowEngineImpl @Activate constructor(
 
     @Suspendable
     private fun finishSubFlow() {
-        flowFiberService.getExecutingFiber().suspend(FlowIORequest.SubFlowFinished(peekCurrentFlowStackItem().sessionIds.toList()))
+        flowFiberService.getExecutingFiber()
+            .suspend(FlowIORequest.SubFlowFinished(peekCurrentFlowStackItem().sessionIds.toList()))
     }
 
     @Suspendable
     private fun failSubFlow(t: Throwable): Throwable {
-        flowFiberService.getExecutingFiber().suspend(FlowIORequest.SubFlowFailed(t, peekCurrentFlowStackItem().sessionIds.toList()))
+        flowFiberService.getExecutingFiber()
+            .suspend(FlowIORequest.SubFlowFailed(t, peekCurrentFlowStackItem().sessionIds.toList()))
         return t
     }
 

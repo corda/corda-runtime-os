@@ -94,7 +94,7 @@ class FlowFiberImpl(
         } catch (t: Throwable) {
             // Every other Throwable, including base CordaRuntimeException out of flow user code gets a callstack
             // logged, it is considered an error to allow these to propagate outside the flow.
-            log.error("Flow failed ${t}", t)
+            log.error("Flow failed", t)
             FlowIORequest.FlowFailed(t)
         }
 
