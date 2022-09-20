@@ -19,7 +19,7 @@
     "description" : "Certificates management endpoints."
   }, {
     "name" : "Configuration API",
-    "description" : "Cluster configuration management endpoints."
+    "description" : "The Configuration API consists of a number of endpoints used to manage the configuration of Corda clusters."
   }, {
     "name" : "Flow Info API",
     "description" : "The Flow Info API consists of a number of endpoints used to find out which flows can be invoked using the Flow Management API for a given identity."
@@ -49,10 +49,10 @@
     "description" : "Network Management endpoints."
   }, {
     "name" : "RBAC Permission API",
-    "description" : "Role Based Access Control Permissions Management endpoints."
+    "description" : "The RBAC Permission API consists of a number of endpoints enabling permissions management in the RBAC (role-based access control) permission system. You can get details of specified permissions and create new permissions."
   }, {
     "name" : "RBAC Role API",
-    "description" : "Role Management endpoints for RBAC sub-system."
+    "description" : "The RBAC Role API consists of a number of endpoints enabling role management in the RBAC (role-based access control) permission system. You can get all roles in the system, create new roles and add and delete permissions from roles."
   }, {
     "name" : "RBAC User API",
     "description" : "The RBAC User API consists of a number of endpoints enabling user management in the RBAC (role-based access control) permission system. You can get details of specified users, create new users, assign roles to users and remove roles from users."
@@ -217,7 +217,7 @@
     "/config" : {
       "put" : {
         "tags" : [ "Configuration API" ],
-        "description" : "Updates a section of the cluster configuration.",
+        "description" : "This method updates a section of the cluster configuration.",
         "operationId" : "put_config",
         "parameters" : [ ],
         "requestBody" : {
@@ -283,7 +283,7 @@
     "/config/{section}" : {
       "get" : {
         "tags" : [ "Configuration API" ],
-        "description" : "Get Configuration. Returns the 'active' configuration for the given section, in both the 'raw' format and with defaults applied.",
+        "description" : "This method returns the 'active' configuration for the given section, in both the 'raw' format and with defaults applied.",
         "operationId" : "get_config__section_",
         "parameters" : [ {
           "name" : "section",
@@ -299,7 +299,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "The Configuration for the given section.",
+            "description" : "The configuration for the given section.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1845,7 +1845,7 @@
     "/permission" : {
       "post" : {
         "tags" : [ "RBAC Permission API" ],
-        "description" : "Create a Permission",
+        "description" : "This method creates a new permission.",
         "operationId" : "post_permission",
         "parameters" : [ ],
         "requestBody" : {
@@ -1861,7 +1861,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "\n        id: The server-side generated ID of the new permission\n        permissionType: Defines whether this is an ALLOW or DENY type of permission\n        permissionString: A machine-parseable string representing an individual permission; \n            it can be any arbitrary string as long as the authorization code can make use of it in the context of user \n            permission matching\n        groupVisibility: An optional group visibility identifier of the permission\n        virtualNode: An optional identifier of the virtual node to which the physical node permission applies\n        version: The version number of the permission; a value of 0 is assigned to a newly-created permission\n        updateTimestamp: The server-side timestamp showing when the permission was created\n    ",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1911,7 +1911,7 @@
     "/permission/{id}" : {
       "get" : {
         "tags" : [ "RBAC Permission API" ],
-        "description" : "Get a Permission by its ID",
+        "description" : "This method returns the permission associated with the specified ID.",
         "operationId" : "get_permission__id_",
         "parameters" : [ {
           "name" : "id",
@@ -1927,7 +1927,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "\n        id: The server-side generated ID of the new permission\n        permissionType: Defines whether this is an ALLOW or DENY type of permission\n        permissionString: A machine-parseable string representing an individual permission; \n            it can be any arbitrary string as long as the authorization code can make use of it in the context of user \n            permission matching\n        groupVisibility: An optional group visibility identifier of the permission\n        virtualNode: An optional identifier of the virtual node to which the physical node permission applies\n        version: The version number of the permission; a value of 0 is assigned to a newly-created permission\n        updateTimestamp: The server-side timestamp showing when the permission was created",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1948,12 +1948,12 @@
     "/role" : {
       "get" : {
         "tags" : [ "RBAC Role API" ],
-        "description" : "Get all the roles",
+        "description" : "This method returns an array with information about all roles in the permission system.",
         "operationId" : "get_role",
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Set of roles with each role having the following attributes: \n        id: The unique identifier of the role\n        version: The version number of the role\n        updateTimestamp: The date and time when the role was last updated\n        roleName: The name of the role\n        groupVisibility: An optional group visibility of the role\n        permissions: The list of permissions associated with the role\n    ",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1977,7 +1977,7 @@
       },
       "post" : {
         "tags" : [ "RBAC Role API" ],
-        "description" : "Create a Role",
+        "description" : "The method creates a new role in the RBAC permission system.",
         "operationId" : "post_role",
         "parameters" : [ ],
         "requestBody" : {
@@ -1993,7 +1993,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Newly created role with attributes:\n        id: The unique identifier of the role\n        version: The version number of the role\n        updateTimestamp: The date and time when the role was last updated\n        roleName: The name of the role\n        groupVisibility: An optional group visibility of the role\n        permissions: The list of permissions associated with the role",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2043,7 +2043,7 @@
     "/role/{id}" : {
       "get" : {
         "tags" : [ "RBAC Role API" ],
-        "description" : "Get a Role by its ID",
+        "description" : "This method gets the details of a role specified by its ID.",
         "operationId" : "get_role__id_",
         "parameters" : [ {
           "name" : "id",
@@ -2059,7 +2059,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Role with attributes:\n        id: The unique identifier of the role\n        version: The version number of the role\n        updateTimestamp: The date and time when the role was last updated\n        roleName: The name of the role\n        groupVisibility: An optional group visibility of the role\n        permissions: The list of permissions associated with the role",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2080,7 +2080,7 @@
     "/role/{roleid}/permission/{permissionid}" : {
       "put" : {
         "tags" : [ "RBAC Role API" ],
-        "description" : "Add a permission to a role",
+        "description" : "This method adds the specified permission to the specified role.",
         "operationId" : "put_role__roleid__permission__permissionid_",
         "parameters" : [ {
           "name" : "roleid",
@@ -2107,7 +2107,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Role with attributes:\n            id: The unique identifier of the role\n            version: The version number of the role\n            updateTimestamp: The date and time when the role was last updated\n            roleName: The name of the role\n            groupVisibility: An optional group visibility of the role\n            permissions: The list of permissions associated with the role",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2126,7 +2126,7 @@
       },
       "delete" : {
         "tags" : [ "RBAC Role API" ],
-        "description" : "Removes a permission from a role",
+        "description" : "This method removes the specified permission from the specified role.",
         "operationId" : "delete_role__roleid__permission__permissionid_",
         "parameters" : [ {
           "name" : "roleid",
@@ -2153,7 +2153,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Role with attributes:\n            id: The unique identifier of the role\n            version: The version number of the role\n            updateTimestamp: The date and time when the role was last updated\n            roleName: The name of the role\n            groupVisibility: An optional group visibility of the role\n            permissions: The list of permissions associated with the role",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2710,7 +2710,7 @@
             "example" : "string"
           }
         },
-        "description" : "Details of the permission to be created"
+        "description" : "Details of the permission to be created. \n            permissionType: Defines whether this is an ALLOW or DENY type of permission\n            permissionString: A machine-parseable string representing an individual permission; \n                it can be any arbitrary string as long as the authorization code can make use of it in the context of user \n                permission matching\n            groupVisibility: An optional group visibility identifier of the permission\n            virtualNode: An optional identifier of the virtual node to which the physical node permission applies"
       },
       "CreateRoleType" : {
         "required" : [ "roleName" ],
@@ -2727,7 +2727,7 @@
             "example" : "string"
           }
         },
-        "description" : "Details of the role to be created"
+        "description" : "Details of the role to be created: \n                roleName - name of the role.\n                groupVisibility - optional group visibility of the role.\n            "
       },
       "CreateUserType" : {
         "required" : [ "enabled", "fullName", "loginName" ],
@@ -3432,7 +3432,7 @@
             "example" : 0
           }
         },
-        "description" : "Details of the updated configuration"
+        "description" : "Details of the updated configuration. Includes: \n- config: The updated configuration in JSON or HOCON format.\n- schemaVersion: The schema version of the configuration.\n- section: The section of the configuration to be updated.\n- version: The version number used for optimistic locking.\n"
       },
       "UpdateConfigResponse" : {
         "required" : [ "config", "schemaVersion", "section", "version" ],
