@@ -49,7 +49,7 @@
     "description" : "Network Management endpoints."
   }, {
     "name" : "RBAC Permission API",
-    "description" : "Role Based Access Control Permissions Management endpoints."
+    "description" : "The RBAC Permission API consists of a number of endpoints enabling permissions management in the RBAC (role-based access control) permission system. You can get details of specified permissions and create new permissions."
   }, {
     "name" : "RBAC Role API",
     "description" : "Role Management endpoints for RBAC sub-system."
@@ -1845,7 +1845,7 @@
     "/permission" : {
       "post" : {
         "tags" : [ "RBAC Permission API" ],
-        "description" : "Create a Permission",
+        "description" : "This method creates a new permission.",
         "operationId" : "post_permission",
         "parameters" : [ ],
         "requestBody" : {
@@ -1861,7 +1861,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "\n        id: The server-side generated ID of the new permission\n        permissionType: Defines whether this is an ALLOW or DENY type of permission\n        permissionString: A machine-parseable string representing an individual permission; \n            it can be any arbitrary string as long as the authorization code can make use of it in the context of user \n            permission matching\n        groupVisibility: An optional group visibility identifier of the permission\n        virtualNode: An optional identifier of the virtual node to which the physical node permission applies\n        version: The version number of the permission; a value of 0 is assigned to a newly-created permission\n        updateTimestamp: The server-side timestamp showing when the permission was created\n    ",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1911,7 +1911,7 @@
     "/permission/{id}" : {
       "get" : {
         "tags" : [ "RBAC Permission API" ],
-        "description" : "Get a Permission by its ID",
+        "description" : "This method returns the permission associated with the specified ID.",
         "operationId" : "get_permission__id_",
         "parameters" : [ {
           "name" : "id",
@@ -1927,7 +1927,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "\n        id: The server-side generated ID of the new permission\n        permissionType: Defines whether this is an ALLOW or DENY type of permission\n        permissionString: A machine-parseable string representing an individual permission; \n            it can be any arbitrary string as long as the authorization code can make use of it in the context of user \n            permission matching\n        groupVisibility: An optional group visibility identifier of the permission\n        virtualNode: An optional identifier of the virtual node to which the physical node permission applies\n        version: The version number of the permission; a value of 0 is assigned to a newly-created permission\n        updateTimestamp: The server-side timestamp showing when the permission was created",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2710,7 +2710,7 @@
             "example" : "string"
           }
         },
-        "description" : "Details of the permission to be created"
+        "description" : "Details of the permission to be created. \n            permissionType: Defines whether this is an ALLOW or DENY type of permission\n            permissionString: A machine-parseable string representing an individual permission; \n                it can be any arbitrary string as long as the authorization code can make use of it in the context of user \n                permission matching\n            groupVisibility: An optional group visibility identifier of the permission\n            virtualNode: An optional identifier of the virtual node to which the physical node permission applies"
       },
       "CreateRoleType" : {
         "required" : [ "roleName" ],
