@@ -103,7 +103,7 @@ interface UserEndpoint : RpcOps {
             parentGroup: An optional identifier of the user group for the new user to be included;
                     value of null means that the user will belong to the root group
             properties: An optional set of key/value properties associated with a user account
-            roleAssociations: A set of roles associated with user account""")
+            roleAssociations: A set of roles associated with the user account""")
     fun addRole(
         @HttpRpcPathParameter(description = "The login name of the user")
         loginName: String,
