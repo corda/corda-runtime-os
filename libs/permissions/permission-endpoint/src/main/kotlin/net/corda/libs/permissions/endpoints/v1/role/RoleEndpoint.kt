@@ -34,7 +34,7 @@ interface RoleEndpoint : RpcOps {
         updateTimestamp: The date and time when the role was last updated
         roleName: The name of the role
         groupVisibility - optional group visibility of the role.
-        permissions - list of permission associations the role has.
+        permissions: The list of permissions associated with the role
     """)
     fun getRoles(): Set<RoleResponseType>
 
