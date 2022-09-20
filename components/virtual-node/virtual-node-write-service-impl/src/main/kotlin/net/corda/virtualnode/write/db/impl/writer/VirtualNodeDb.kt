@@ -124,7 +124,7 @@ class VirtualNodeDb(
             ?: throw VirtualNodeDbException("No DDL database connection when due to apply CPI migrations")
         dbConnectionManager.getDataSource(dbConnection.config).use { dataSource ->
             dataSource.connection.use { connection ->
-                LiquibaseSchemaMigratorImpl().rollbackDb(connection, tag)
+                LiquibaseSchemaMigratorImpl().rollbackDb(connection, VirtualNodeDbChangeLog(emptyList()), tag)
             }
         }
     }

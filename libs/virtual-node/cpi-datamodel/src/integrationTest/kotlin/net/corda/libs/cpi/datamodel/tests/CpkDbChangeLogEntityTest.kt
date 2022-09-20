@@ -5,9 +5,11 @@ import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.libs.cpi.datamodel.CpiEntities
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogAuditEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
 import net.corda.libs.cpi.datamodel.findDbChangeLogForCpi
+import net.corda.libs.cpi.datamodel.toAudit
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
@@ -87,6 +89,52 @@ class CpkDbChangeLogEntityTest {
             )
 
             assertThat(changeLog1.content).isEqualTo(loadedDbLogEntity.content)
+        }
+    }
+
+    @Test
+    fun `can persist changelogs with audit`() {
+        val (cpi, cpks) = TestObject.createCpiWithCpks()
+        val cpk = cpks.first()
+        val changeLog1 = CpkDbChangeLogEntity(
+            CpkDbChangeLogKey(cpk.metadata.id.cpkName, cpk.metadata.id.cpkVersion,
+                cpk.metadata.id.cpkSignerSummaryHash, "master"),
+            "master-checksum",
+            "master-content"
+        )
+        val changeLog2 = CpkDbChangeLogEntity(
+            CpkDbChangeLogKey(cpk.metadata.id.cpkName, cpk.metadata.id.cpkVersion,
+                cpk.metadata.id.cpkSignerSummaryHash, "other"),
+            "other-checksum",
+            "other-content"
+        )
+
+        val changeLog1Audit = changeLog1.toAudit()
+        val changeLog2Audit = changeLog2.toAudit()
+
+        transaction {
+            persist(cpi)
+            persist(changeLog1)
+            persist(changeLog1Audit)
+            persist(changeLog2)
+            persist(changeLog2Audit)
+            flush()
+        }
+
+        transaction {
+            val loadedDbLogEntity = find(
+                CpkDbChangeLogEntity::class.java,
+                CpkDbChangeLogKey(cpk.metadata.id.cpkName, cpk.metadata.id.cpkVersion,
+                    cpk.metadata.id.cpkSignerSummaryHash, "master")
+            )
+            val loadedDbLogAuditEntity = find(
+                CpkDbChangeLogAuditEntity::class.java,
+                CpkDbChangeLogKey(cpk.metadata.id.cpkName, cpk.metadata.id.cpkVersion,
+                    cpk.metadata.id.cpkSignerSummaryHash, "master")
+            )
+
+            assertThat(changeLog1.content).isEqualTo(loadedDbLogEntity.content)
+            assertThat(changeLog1.content).isEqualTo(loadedDbLogAuditEntity.content)
         }
     }
 

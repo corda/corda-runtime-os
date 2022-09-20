@@ -190,14 +190,6 @@ internal class VirtualNodeWriterProcessor(
                             "${currentTimeMillis() - startMillis} ms"
                     }
                 }
-                measureTimeMillis {
-                    rollbackCpiMigrations(vaultDb)
-                }.also {
-                    logger.debug {
-                        "[Create ${create.x500Name}] CPI DB migrations took $it ms, elapsed " +
-                            "${currentTimeMillis() - startMillis} ms"
-                    }
-                }
             }
 
             val dbConnections: VirtualNodeDbConnections
@@ -542,23 +534,6 @@ internal class VirtualNodeWriterProcessor(
                 }
                 logger.info("Completed ${cpkChangelogs.size} migrations for $cpkName")
             }
-        }
-    }
-
-    private fun rollbackCpiMigrations(vaultDb: VirtualNodeDb, numChanges: Long = 1) {
-        // we could potentially do one transaction per CPK; it seems more useful to blow up the
-        // whole migration if any CPK fails though, so that they can be iterative developed and repeated
-        dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().transaction {
-            try {
-                vaultDb.rollbackCpiMigrations()
-            } catch (e: Exception) {
-                logger.error("Virtual node liquibase DB rollback failure with error $e")
-                throw VirtualNodeWriteServiceException(
-                    "Error running virtual node DB migration for CPI liquibase migrations",
-                    e
-                )
-            }
-            logger.info("Completed $numChanges rollback")
         }
     }
 

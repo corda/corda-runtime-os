@@ -8,6 +8,7 @@ import net.corda.libs.cpi.datamodel.CpiCpkEntity
 import net.corda.libs.cpi.datamodel.CpiCpkKey
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogAuditEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.CpkFileEntity
 import net.corda.libs.cpi.datamodel.CpkKey
@@ -19,6 +20,7 @@ import net.corda.libs.cpi.datamodel.QUERY_PARAM_FILE_CHECKSUM
 import net.corda.libs.cpi.datamodel.QUERY_PARAM_ID
 import net.corda.libs.cpi.datamodel.QUERY_PARAM_INCREMENTED_ENTITY_VERSION
 import net.corda.libs.cpi.datamodel.findDbChangeLogForCpi
+import net.corda.libs.cpi.datamodel.toAudit
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
@@ -106,7 +108,14 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
             createOrUpdateCpkFileEntities(em, cpi.cpks)
 
+            log.info("Updating Changelogs")
             updateChangeLogs(cpkDbChangeLogEntities, em, cpi)
+
+            log.info("Flush changelog updates")
+            em.flush()
+
+            log.info("Create changelog audit entries")
+            createAuditEntries(em, cpi)
 
             return@persistMetadataAndCpks managedCpiMetadataEntity
         }
@@ -131,6 +140,19 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
             val inDb = em.find(CpkDbChangeLogEntity::class.java, it.id)
             if (inDb != null) it.entityVersion = inDb.entityVersion
             em.merge(it)
+        }
+    }
+
+    private fun createAuditEntries(
+        em: EntityManager,
+        cpi: Cpi
+    ) {
+        // Find the changelogs we just made
+        val allChangelogs = findDbChangeLogForCpi(em, cpi.metadata.cpiId)
+        allChangelogs.forEach {
+            em.persist(
+                it.toAudit()
+            )
         }
     }
 
@@ -172,7 +194,14 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
             createOrUpdateCpkFileEntities(em, cpi.cpks)
 
+            log.info("Updating Changelogs")
             updateChangeLogs(cpkDbChangeLogEntities, em, cpi)
+
+            log.info("Flush changelog updates")
+            em.flush()
+
+            log.info("Create changelog audit entries")
+            createAuditEntries(em, cpi)
 
             return cpiMetadataEntity
         }

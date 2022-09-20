@@ -46,12 +46,12 @@ class LiquibaseSchemaMigratorImpl(
         processUpdate(datasource, dbChange, sql = null, controlTablesSchema, tagAsLast)
     }
 
-    override fun rollbackDb(datasource: Connection, tag: String?) {
-        rollbackDb(datasource, DEFAULT_DB_SCHEMA, tag)
+    override fun rollbackDb(datasource: Connection, dbChange: DbChange, tag: String?) {
+        rollbackDb(datasource, DEFAULT_DB_SCHEMA, dbChange, tag)
     }
 
-    override fun rollbackDb(datasource: Connection, controlTablesSchema: String, tag: String?) {
-        processRollback(datasource, controlTablesSchema, tag)
+    override fun rollbackDb(datasource: Connection, controlTablesSchema: String, dbChange: DbChange, tag: String?) {
+        processRollback(datasource, controlTablesSchema, dbChange, tag)
     }
 
     /**
@@ -107,6 +107,7 @@ class LiquibaseSchemaMigratorImpl(
     private fun processRollback(
         datasource: Connection,
         liquibaseSchemaName: String,
+        dbChange: DbChange,
         tag: String?
     ) {
         val database = databaseFactory(datasource)
@@ -118,9 +119,11 @@ class LiquibaseSchemaMigratorImpl(
             database.liquibaseSchemaName = liquibaseSchemaName
         }
 
-        val lb = Liquibase(
-            DatabaseChangeLog(),
-            ClassLoaderResourceAccessor(),
+        // use UUID as we want to ensure this is unique and doesn't clash with a user defined changelog file.
+        val masterChangeLogFileName = "master-changelog-${UUID.randomUUID()}.xml"
+        val lb = liquibaseFactory(
+            masterChangeLogFileName,
+            StreamResourceAccessor(masterChangeLogFileName, dbChange),
             database
         )
 
