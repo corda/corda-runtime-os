@@ -21,11 +21,15 @@ import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.base.util.contextLogger
 
 /**
  * Injector for default services for Simulator.
  */
 class DefaultServicesInjector(private val configuration: SimulatorConfiguration) : FlowServicesInjector {
+    private companion object {
+        val log = contextLogger()
+    }
 
     /**
      * Injects sensible default services into the provided flow. Currently injects:<br>
@@ -48,43 +52,57 @@ class DefaultServicesInjector(private val configuration: SimulatorConfiguration)
         flowFactory: FlowFactory,
         keyStore: SimKeyStore
     ) {
-
+        log.info("Injecting services into ${flow.javaClass} for \"$member\"")
         flow.injectIfRequired(JsonMarshallingService::class.java) { createJsonMarshallingService() }
         flow.injectIfRequired(FlowEngine::class.java) { createFlowEngine(configuration, member, fiber) }
         flow.injectIfRequired(FlowMessaging::class.java) {
             createFlowMessaging(configuration, flow, member, fiber, flowFactory)
         }
-        flow.injectIfRequired(PersistenceService::class.java) { getOrCreatePersistenceService(member, fiber) }
         flow.injectIfRequired(MemberLookup::class.java) { getOrCreateMemberLookup(member, fiber) }
         flow.injectIfRequired(SigningService::class.java) {
-            getOrCreateSigningService(createJsonMarshallingService(), keyStore)
+            getOrCreateSigningService(SimpleJsonMarshallingService(), keyStore)
         }
-        flow.injectIfRequired(DigitalSignatureVerificationService::class.java) {
-            SimWithJsonSignatureVerificationService()
-        }
+        flow.injectIfRequired(DigitalSignatureVerificationService::class.java) { createVerificationService() }
+        flow.injectIfRequired(PersistenceService::class.java) { getOrCreatePersistenceService(member, fiber) }
+    }
+
+    private fun createVerificationService(): DigitalSignatureVerificationService {
+        log.info("Injecting ${DigitalSignatureVerificationService::class.java.simpleName}")
+        return SimWithJsonSignatureVerificationService()
     }
 
     private fun getOrCreateSigningService(
         jsonMarshallingService: JsonMarshallingService,
         keyStore: SimKeyStore
     ): SigningService {
+        log.info("Injecting ${SigningService::class.java.simpleName}")
         return SimWithJsonSigningService(jsonMarshallingService, keyStore)
     }
 
     private fun getOrCreateMemberLookup(member: MemberX500Name, fiber: SimFiber): MemberLookup {
+        log.info("Injecting ${MemberLookup::class.java.simpleName}")
         return fiber.createMemberLookup(member)
     }
 
     private fun getOrCreatePersistenceService(member: MemberX500Name, fiber: SimFiber): PersistenceService  {
+        log.info("Injecting ${PersistenceService::class.java.simpleName}")
         return fiber.getOrCreatePersistenceService(member)
     }
 
-    private fun createJsonMarshallingService() : JsonMarshallingService = SimpleJsonMarshallingService()
+    private fun createJsonMarshallingService() : JsonMarshallingService {
+        log.info("Injecting ${JsonMarshallingService::class.java.simpleName}")
+        return SimpleJsonMarshallingService()
+    }
+
     private fun createFlowEngine(
         configuration: SimulatorConfiguration,
         member: MemberX500Name,
         fiber: SimFiber
-    ): FlowEngine = InjectingFlowEngine(configuration, member, fiber)
+    ): FlowEngine {
+        log.info("Injecting ${FlowEngine::class.java.simpleName}")
+        return InjectingFlowEngine(configuration, member, fiber)
+    }
+
     private fun createFlowMessaging(
         configuration: SimulatorConfiguration,
         flow: Flow,
@@ -92,6 +110,9 @@ class DefaultServicesInjector(private val configuration: SimulatorConfiguration)
         fiber: SimFiber,
         flowFactory: FlowFactory
     ): FlowMessaging {
+
+        log.info("Injecting ${FlowMessaging::class.java.simpleName}")
+
         val flowClass = flow.javaClass
         val protocol = flowClass.getAnnotation(InitiatingFlow::class.java)?.protocol
             ?: flowClass.getAnnotation(InitiatedBy::class.java)?.protocol

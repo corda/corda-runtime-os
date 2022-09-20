@@ -19,3 +19,6 @@ CODEOWNERS         @corda/blt @corda/corda5-team-leads
 /libs/http-rpc/                               @corda/http-rpc
 /libs/permissions/                            @corda/http-rpc
 /processors/rpc-processor/                    @corda/http-rpc
+
+# Corda Helm chart for cluster management team
+/charts/corda/                                @corda/cluster-management

@@ -3,12 +3,14 @@
   "$id": "https://corda.r3.com/schema/valid/test-reference.json",
   "title": "Test reference schema object",
   "type": "object",
+  "default": {},
   "properties": {
     "foo": {
       "type": "array",
       "items": {
         "type": "number"
-      }
+      },
+      "default": [1, 2, 3]
     },
     "bar": {
       "type": "boolean",

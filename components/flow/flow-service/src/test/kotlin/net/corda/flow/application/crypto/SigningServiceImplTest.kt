@@ -1,12 +1,14 @@
 package net.corda.flow.application.crypto
 
+import java.security.PublicKey
 import net.corda.flow.application.crypto.external.events.CreateSignatureExternalEventFactory
+import net.corda.flow.application.crypto.external.events.SignParameters
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.any
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -15,13 +17,18 @@ class SigningServiceImplTest {
 
     private val keyEncodingService = mock<KeyEncodingService>()
     private val externalEventExecutor = mock<ExternalEventExecutor>()
+    private val captor = argumentCaptor<SignParameters>()
     private val signingService = SigningServiceImpl(externalEventExecutor, keyEncodingService)
 
     @Test
     fun `sign returns the signature returned from the flow resuming`() {
         val signature = DigitalSignature.WithKey(mock(), byteArrayOf(1), emptyMap())
-        whenever(externalEventExecutor.execute(eq(CreateSignatureExternalEventFactory::class.java), any()))
+        val publicKey = mock<PublicKey>()
+        val encodedPublicKeyBytes = byteArrayOf(2)
+        whenever(keyEncodingService.encodeAsByteArray(publicKey)).thenReturn(encodedPublicKeyBytes)
+        whenever(externalEventExecutor.execute(eq(CreateSignatureExternalEventFactory::class.java), captor.capture()))
             .thenReturn(signature)
-        assertEquals(signature, signingService.sign(byteArrayOf(1), mock(), mock()))
+        assertEquals(signature, signingService.sign(byteArrayOf(1), publicKey, mock()))
+        assertEquals(encodedPublicKeyBytes, captor.firstValue.encodedPublicKeyBytes)
     }
 }
