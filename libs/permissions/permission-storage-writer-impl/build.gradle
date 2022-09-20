@@ -22,6 +22,7 @@ dependencies {
     implementation project(':libs:permissions:permission-storage-writer')
     implementation project(':libs:permissions:permission-common')
     implementation project(":libs:utilities")
+    implementation project(":libs:http-rpc:http-rpc")
 
     implementation "javax.persistence:javax.persistence-api"
 

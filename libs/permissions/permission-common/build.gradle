@@ -8,6 +8,7 @@ description 'Common Permission Module'
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation project(':libs:http-rpc:http-rpc')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-base'
