@@ -30,7 +30,7 @@ interface PermissionEndpoint : RpcOps {
         permissionType: Defines whether this is an ALLOW or DENY type of permission
         permissionString: A machine-parseable string representing an individual permission; 
             it can be any arbitrary string as long as the authorization code can make use of it in the context of user permission matching
-        groupVisibility - Optional group visibility identifier of the Permission.
+        groupVisibility: An optional group visibility identifier of the permission
         virtualNode - Optional identifier of the virtual node within which the physical node permission applies to.
         version - Version of the Permission. Value of 0 is assigned to a newly created permission.
         updateTimestamp - Server-side timestamp when permission was created.
