@@ -28,7 +28,7 @@ import net.corda.schema.Schemas
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MessagingConfig
-import net.corda.test.flow.externalevents.TestExternalEventResponseMonitor
+import net.corda.test.flow.external.events.TestExternalEventResponseMonitor
 import net.corda.test.util.eventually
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.AutoTickTestClock

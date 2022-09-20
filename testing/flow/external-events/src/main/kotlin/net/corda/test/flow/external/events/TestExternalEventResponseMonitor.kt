@@ -1,4 +1,4 @@
-package net.corda.test.flow.externalevents
+package net.corda.test.flow.external.events
 
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventResponse
@@ -58,9 +58,7 @@ class TestExternalEventResponseMonitor(
                 ) = processEvent(newRecord.value)
 
                 private fun processEvent(event: FlowEvent?) {
-                    if (event != null && event.payload is ExternalEventResponse) {
-                        val eeResponse = event.payload as ExternalEventResponse
-
+                    (event?.payload as? ExternalEventResponse)?.let { eeResponse ->
                         responses[eeResponse.requestId]?.complete(eeResponse)
                     }
                 }
