@@ -48,10 +48,7 @@ class ProcessMemberVerificationRequestHandlerTest {
     private val response = argumentCaptor<VerificationResponse>()
     private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory>()
     private val membershipPersistenceClient = mock<MembershipPersistenceClient>()
-    private val memberTypeChecker = mock<MemberTypeChecker> {
-        on { isMgm(mgm) } doReturn true
-        on { isMgm(member) } doReturn false
-    }
+    private val memberTypeChecker = mock<MemberTypeChecker>()
     private val p2pMessage = mock<Record<String, AppMessage>>()
     private val p2pRecordsFactory = mock<P2pRecordsFactory> {
         on {
@@ -100,30 +97,6 @@ class ProcessMemberVerificationRequestHandlerTest {
     @Test
     fun `handler invalidate if the member type is not a member`() {
         whenever(memberTypeChecker.isMgm(member)).doReturn(true)
-        processMemberVerificationRequestHandler.invoke(
-            null,
-            Record(
-                "dummyTopic",
-                member.toString(),
-                RegistrationCommand(
-                    ProcessMemberVerificationRequest(member, mgm, verificationRequest)
-                )
-            )
-        )
-        assertThat(response.firstValue.payload.items)
-            .anySatisfy {
-                assertThat(it.key).isEqualTo(VerificationResponseKeys.VERIFIED)
-                assertThat(it.value).isEqualTo("false")
-            }
-            .anySatisfy {
-                assertThat(it.key).isEqualTo(VerificationResponseKeys.FAILURE_REASONS)
-                assertThat(it.value).isNotBlank()
-            }
-    }
-
-    @Test
-    fun `handler invalidate if the mgm type is not an mgm`() {
-        whenever(memberTypeChecker.isMgm(mgm)).doReturn(false)
         processMemberVerificationRequestHandler.invoke(
             null,
             Record(

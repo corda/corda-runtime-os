@@ -41,10 +41,6 @@ internal class ProcessMemberVerificationRequestHandler(
         if (memberTypeChecker.isMgm(member)) {
             reasons += "${member.x500Name} is an MGM and can not register"
         }
-        if (!memberTypeChecker.isMgm(mgm)) {
-            reasons += "${mgm.x500Name} is not an MGM and can not be used in member registration"
-            println("QQQPPP Hi, ${mgm.x500Name} is not an MGM?! Why?")
-        }
         val payload = reasons.map { KeyValuePair(FAILURE_REASONS, it) } + if (reasons.isEmpty()) {
             KeyValuePair(VERIFIED, true.toString())
         } else {
