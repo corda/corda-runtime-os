@@ -137,7 +137,7 @@ internal class SessionManagerImpl(
     )
     private val outboundSessionPool = OutboundSessionPool(heartbeatManager::calculateWeightForSession)
 
-    private val fiveDays = 5.days
+    private val fiveDays = 5.days.inWholeDays
 
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,

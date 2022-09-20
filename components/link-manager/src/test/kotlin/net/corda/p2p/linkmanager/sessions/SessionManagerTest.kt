@@ -1666,7 +1666,7 @@ class SessionManagerTest {
 
 
     @Test
-    fun `DRAFT when a responder handshake message is received, heartbeats are sent, this continues if the heartbeat manager gets a new config`() {
+    fun `DRAFT`() {
         val messages = Collections.synchronizedList(mutableListOf<AuthenticatedDataMessage>())
 
         fun callback(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
