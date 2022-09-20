@@ -18,6 +18,7 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
+import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.ledger.consensual.ConsensualState
@@ -38,6 +39,7 @@ internal class ConsensualTransactionBuilderImplTest{
         private lateinit var externalEventExecutor: ExternalEventExecutor
         private lateinit var testPublicKey: PublicKey
         private lateinit var testConsensualState: ConsensualState
+        private lateinit var keyEncodingService: KeyEncodingService
 
         private val testMemberX500Name = MemberX500Name("R3", "London", "GB")
 
@@ -59,7 +61,8 @@ internal class ConsensualTransactionBuilderImplTest{
 
             val flowFiberService = FlowFiberServiceImpl()
             externalEventExecutor = ExternalEventExecutorImpl(flowFiberService)
-            signingService = SigningServiceImpl(externalEventExecutor)
+            keyEncodingService = CipherSchemeMetadataImpl()
+            signingService = SigningServiceImpl(externalEventExecutor, keyEncodingService)
 
             val kpg = KeyPairGenerator.getInstance("RSA")
             kpg.initialize(512) // Shortest possible to not slow down tests.

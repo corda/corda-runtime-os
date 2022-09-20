@@ -16,6 +16,7 @@ import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
+import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.ledger.consensual.ConsensualState
@@ -47,6 +48,7 @@ class ConsensualLedgerServiceImplTest {
         private lateinit var schemeMetadata: CipherSchemeMetadata
         private lateinit var flowFiberService: FlowFiberService
         private lateinit var externalEventExecutor: ExternalEventExecutor
+        private lateinit var keyEncodingService: KeyEncodingService
 
         private lateinit var testPublicKey: PublicKey
         private lateinit var testConsensualState: ConsensualState
@@ -67,7 +69,8 @@ class ConsensualLedgerServiceImplTest {
 
             flowFiberService = TestFlowFiberServiceWithSerializationProxy(schemeMetadata)
             externalEventExecutor = ExternalEventExecutorImpl(flowFiberService)
-            signingService = SigningServiceImpl(externalEventExecutor)
+            keyEncodingService = CipherSchemeMetadataImpl()
+            signingService = SigningServiceImpl(externalEventExecutor, keyEncodingService)
 
             val kpg = KeyPairGenerator.getInstance("RSA")
             kpg.initialize(512) // Shortest possible to not slow down tests.
