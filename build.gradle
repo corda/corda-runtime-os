@@ -323,6 +323,17 @@ subprojects {
         }
     }
 
+    pluginManager.withPlugin('io.gitlab.arturbosch.detekt'){
+        dependencies {
+        detekt "io.gitlab.arturbosch.detekt:detekt-cli:$detektPluginVersion"
+            constraints {
+                detekt("org.yaml:snakeyaml:$snakeyamlVersion") {
+                    because "required until detekt plugin updates it's internal version of snakeYaml, not fixed as of detekt version 1.21"
+                }
+            }
+        }
+    }
+
     tasks.named("detekt").configure {
         if(file("$projectDir/detekt-baseline.xml").exists()){
             baseline = file("$projectDir/detekt-baseline.xml")
