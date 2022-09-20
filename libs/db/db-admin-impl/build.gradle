@@ -13,7 +13,7 @@ dependencies {
     compileOnly "org.osgi:org.osgi.service.component.annotations"
     implementation "org.liquibase:liquibase-core:$liquibaseVersion"
 
-    implementation project(":libs:db:db-admin")
+    api project(":libs:db:db-admin")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

@@ -12,7 +12,7 @@ import net.corda.flow.application.persistence.external.events.RemoveParameters
 import net.corda.flow.application.persistence.query.PagedQueryFactory
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.v5.application.persistence.PagedQuery
-import net.corda.v5.application.persistence.ParameterisedQuery
+import net.corda.v5.application.persistence.ParameterizedQuery
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
@@ -145,7 +145,7 @@ class PersistenceServiceImpl @Activate constructor(
     override fun <T : Any> query(
         queryName: String,
         entityClass: Class<T>
-    ): ParameterisedQuery<T> {
+    ): ParameterizedQuery<T> {
         requireBoxedType(entityClass)
         return pagedQueryFactory.createNamedParameterizedQuery(queryName, entityClass)
     }

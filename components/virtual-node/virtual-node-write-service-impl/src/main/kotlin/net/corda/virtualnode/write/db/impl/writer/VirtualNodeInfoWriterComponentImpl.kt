@@ -19,6 +19,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
@@ -124,11 +125,17 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
 
     private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent) {
         if (event.status == LifecycleStatus.UP) {
+            configSubscription?.close()
             configSubscription = configurationReadService.registerComponentForUpdates(
                 coordinator,
                 setOf(ConfigKeys.MESSAGING_CONFIG)
             )
         } else {
+            log.info(
+                "Received a ${RegistrationStatusChangeEvent::class.java.simpleName} with status ${event.status}. " +
+                        "Switching to ${event.status}"
+            )
+            coordinator.updateStatus(event.status)
             configSubscription?.close()
         }
     }
@@ -138,12 +145,13 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
      * require as defined in [onNewConfiguration]
      */
     private fun onConfigChangedEventReceived(coordinator: LifecycleCoordinator, event: ConfigChangedEvent) {
-        coordinator.updateStatus(LifecycleStatus.DOWN)
-        recreatePublisher(event)
+        log.debug { "Creating resources" }
+        createPublisher(event)
+        log.info("Switching to UP")
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 
-    private fun recreatePublisher(event: ConfigChangedEvent) {
+    private fun createPublisher(event: ConfigChangedEvent) {
         publisher?.close()
         publisher = publisherFactory.createPublisher(
             PublisherConfig(CLIENT_ID),

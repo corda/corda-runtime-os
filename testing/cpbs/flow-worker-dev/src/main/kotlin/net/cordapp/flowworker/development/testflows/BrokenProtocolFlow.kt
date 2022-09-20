@@ -23,7 +23,7 @@ class BrokenProtocolFlow : RPCStartableFlow {
         val session = messaging.initiateFlow(
             MemberX500Name(
                 commonName = "Alice",
-                organisation = "Alice Corp",
+                organization = "Alice Corp",
                 locality = "LDN",
                 country = "GB"
             )

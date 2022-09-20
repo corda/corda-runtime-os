@@ -12,8 +12,8 @@
     "basicAuth" : [ ]
   } ],
   "tags" : [ {
-    "name" : "CPI Upload API",
-    "description" : "CPI Upload management endpoints."
+    "name" : "CPI API",
+    "description" : "The CPI API consists of a number of endpoints used to manage Corda Package Installer (CPI) files in the Corda cluster."
   }, {
     "name" : "Certificates API",
     "description" : "Certificates management endpoints."
@@ -22,7 +22,7 @@
     "description" : "Cluster configuration management endpoints."
   }, {
     "name" : "Flow Info API",
-    "description" : "Startable flow classes endpoints."
+    "description" : "The Flow Info API consists of a number of endpoints used to find out which flows can be invoked using the Flow Management API for a given identity."
   }, {
     "name" : "Flow Management API",
     "description" : "Flow management endpoints."
@@ -31,7 +31,7 @@
     "description" : "Hardware Security Modules interaction endpoints."
   }, {
     "name" : "Hello RPC API",
-    "description" : "Test endpoint to test interaction via HTTP RPC API"
+    "description" : "The endpoint used to test interactions via HTTP RPC API. It verifies that a call to HTTP-RPC can be made, and that the identity of the user making the call can be recognized.RBAC permissions are checked and the call is successfully processed by the HTTP-RPC worker."
   }, {
     "name" : "Keys Management API",
     "description" : "Endpoints for public/private keys management."
@@ -58,10 +58,10 @@
     "description" : "Role Based Access Control User Management endpoints."
   }, {
     "name" : "Virtual Node API",
-    "description" : "Virtual node management endpoints."
+    "description" : "The Virtual Nodes API consists of a number of endpoints to manage virtual nodes."
   }, {
     "name" : "Virtual Node Maintenance API",
-    "description" : "Virtual node maintenance endpoints."
+    "description" : "The Virtual Node Maintenance API consists of a series of endpoints used for virtual node management.Warning: Using these endpoints could be highly disruptive, so great care should be taken when using them."
   } ],
   "paths" : {
     "/certificates/getprotocolversion" : {
@@ -319,13 +319,13 @@
     },
     "/cpi" : {
       "get" : {
-        "tags" : [ "CPI Upload API" ],
-        "description" : "List all CPIs uploaded to the cluster.",
+        "tags" : [ "CPI API" ],
+        "description" : "The GET method returns a list of all CPIs uploaded to the cluster.",
         "operationId" : "get_cpi",
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "List details of the all CPIs uploaded to the cluster.",
+            "description" : "Details of all of the CPIs uploaded to the cluster.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -343,8 +343,8 @@
         }
       },
       "post" : {
-        "tags" : [ "CPI Upload API" ],
-        "description" : "CPI management endpoints.",
+        "tags" : [ "CPI API" ],
+        "description" : "The upload endpoint uses the POST method to upload a Corda Package Installer (CPI) file to the Corda cluster.",
         "operationId" : "post_cpi",
         "parameters" : [ ],
         "requestBody" : {
@@ -356,7 +356,7 @@
                 "properties" : {
                   "upload" : {
                     "type" : "string",
-                    "description" : "A file to upload.",
+                    "description" : "The CPI file to be uploaded.",
                     "format" : "binary",
                     "nullable" : false,
                     "example" : "No example available for this type"
@@ -369,7 +369,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "The request Id calculated for a CPI upload request",
+            "description" : "The Id for the CPI upload request.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -389,7 +389,7 @@
     },
     "/cpi/getprotocolversion" : {
       "get" : {
-        "tags" : [ "CPI Upload API" ],
+        "tags" : [ "CPI API" ],
         "description" : "",
         "operationId" : "get_cpi_getprotocolversion",
         "parameters" : [ ],
@@ -418,17 +418,17 @@
     },
     "/cpi/status/{id}" : {
       "get" : {
-        "tags" : [ "CPI Upload API" ],
-        "description" : "Check upload status for given requestId",
+        "tags" : [ "CPI API" ],
+        "description" : "The status endpoint uses the GET method to return status information for the CPI upload with the given request ID.",
         "operationId" : "get_cpi_status__id_",
         "parameters" : [ {
           "name" : "id",
           "in" : "path",
-          "description" : "The requestId",
+          "description" : "The ID returned from the CPI upload request.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The requestId",
+            "description" : "The ID returned from the CPI upload request.",
             "nullable" : false,
             "example" : "string"
           }
@@ -645,16 +645,16 @@
     "/flowclass/{holdingidentityshorthash}" : {
       "get" : {
         "tags" : [ "Flow Info API" ],
-        "description" : "Get all the flows that are startable for this holding identity.",
+        "description" : "This method gets all flows that can be used by the specified holding identity.",
         "operationId" : "get_flowclass__holdingidentityshorthash_",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "Short hash of the holding identity",
+          "description" : "Short hash of the holding identity. Obtained during node registration.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Short hash of the holding identity",
+            "description" : "Short hash of the holding identity. Obtained during node registration.",
             "nullable" : false,
             "example" : "string"
           }
@@ -682,15 +682,16 @@
     "/hello" : {
       "post" : {
         "tags" : [ "Hello RPC API" ],
-        "description" : "",
+        "description" : "Produces a greeting phrase for the addressee.",
         "operationId" : "post_hello",
         "parameters" : [ {
           "name" : "addressee",
           "in" : "query",
-          "description" : "",
+          "description" : "An arbitrary name can be used for the greeting.",
           "required" : true,
           "schema" : {
             "type" : "string",
+            "description" : "An arbitrary name can be used for the greeting.",
             "nullable" : false,
             "example" : "string"
           }
@@ -1283,7 +1284,7 @@
     "/maintenance/virtualnode/forcecpiupload" : {
       "post" : {
         "tags" : [ "Virtual Node Maintenance API" ],
-        "description" : "Uploads a CPI",
+        "description" : "Force uploads a CPI file. Even if CPI with the same metadata has already been uploaded, this endpoint will overwrite the previously stored CPI record. This operation also purges any sandboxes running an overwritten version of a CPI. This action can take some time to process, therefore it is performed asynchronously.",
         "operationId" : "post_maintenance_virtualnode_forcecpiupload",
         "parameters" : [ ],
         "requestBody" : {
@@ -1308,7 +1309,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "The request Id calculated for a CPI upload request",
+            "description" : "The response ID which can be used to track the progress of the force CPI upload operation.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1358,7 +1359,7 @@
     "/maintenance/virtualnode/{virtualnodeshortid}/state/{newstate}" : {
       "put" : {
         "tags" : [ "Virtual Node Maintenance API" ],
-        "description" : "Updates the state of a new virtual node.",
+        "description" : "Updates the state of a new virtual node to one of the pre-defined values.",
         "operationId" : "put_maintenance_virtualnode__virtualnodeshortid__state__newstate_",
         "parameters" : [ {
           "name" : "virtualnodeshortid",
@@ -1374,18 +1375,18 @@
         }, {
           "name" : "newstate",
           "in" : "path",
-          "description" : "State to transition virtual node instance into",
+          "description" : "State to transition virtual node instance into. Possible values are: IN_MAINTENANCE and ACTIVE.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "State to transition virtual node instance into",
+            "description" : "State to transition virtual node instance into. Possible values are: IN_MAINTENANCE and ACTIVE.",
             "nullable" : false,
             "example" : "string"
           }
         } ],
         "responses" : {
           "200" : {
-            "description" : "The details of the updated virtual node.",
+            "description" : "Complete information about updated virtual node which will also contain the updated state.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1462,22 +1463,22 @@
         }, {
           "name" : "o",
           "in" : "query",
-          "description" : "Organisation (O) attribute of the X.500 name to filter members by",
+          "description" : "Organization (O) attribute of the X.500 name to filter members by",
           "required" : false,
           "schema" : {
             "type" : "string",
-            "description" : "Organisation (O) attribute of the X.500 name to filter members by",
+            "description" : "Organization (O) attribute of the X.500 name to filter members by",
             "nullable" : true,
             "example" : "string"
           }
         }, {
           "name" : "ou",
           "in" : "query",
-          "description" : "Organisation Unit (OU) attribute of the X.500 name to filter members by",
+          "description" : "Organization Unit (OU) attribute of the X.500 name to filter members by",
           "required" : false,
           "schema" : {
             "type" : "string",
-            "description" : "Organisation Unit (OU) attribute of the X.500 name to filter members by",
+            "description" : "Organization Unit (OU) attribute of the X.500 name to filter members by",
             "nullable" : true,
             "example" : "string"
           }
@@ -2405,12 +2406,12 @@
     "/virtualnode" : {
       "get" : {
         "tags" : [ "Virtual Node API" ],
-        "description" : "List all virtual nodes in the cluster.",
+        "description" : "The virtual node endpoint uses the GET method to list all virtual nodes in the cluster.",
         "operationId" : "get_virtualnode",
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "List details of the all virtual nodes in the cluster.",
+            "description" : "List of virtual node details.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2429,7 +2430,7 @@
       },
       "post" : {
         "tags" : [ "Virtual Node API" ],
-        "description" : "Creates a new virtual node.",
+        "description" : "The virtual node endpoint uses the POST method to create a new virtual node.",
         "operationId" : "post_virtualnode",
         "parameters" : [ ],
         "requestBody" : {
@@ -2698,6 +2699,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -2837,6 +2839,7 @@
       },
       "GenerateCsrWrapperRequest" : {
         "required" : [ "x500Name" ],
+        "type" : "object",
         "properties" : {
           "contextMap" : {
             "type" : "object",
@@ -3117,6 +3120,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -3160,6 +3164,7 @@
             "example" : "string"
           },
           "permissionType" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -3237,6 +3242,7 @@
             "example" : "2022-06-24T10:15:30Z"
           },
           "registrationStatus" : {
+            "type" : "object",
             "nullable" : false,
             "example" : "PENDING_MEMBER_VERIFICATION",
             "enum" : [ "NEW", "PENDING_MEMBER_VERIFICATION", "PENDING_APPROVAL_FLOW", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "APPROVED" ]

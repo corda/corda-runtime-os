@@ -13,9 +13,10 @@ import java.util.UUID
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
+import javax.persistence.NamedQuery
+import javax.persistence.Table
 
 class DBPersistenceServiceTest {
-
 
     private val member = MemberX500Name.parse("CN=IRunCorDapps, OU=Application, O=R3, L=London, C=GB")
 
@@ -62,8 +63,9 @@ class DBPersistenceServiceTest {
 
         // When we try to save something in it
         // Then it should throw an error
-        assertThrows<IllegalStateException>{
-            persistence.persist(GreetingEntity(UUID.randomUUID(),"Hello!"))}
+        assertThrows<CordaPersistenceException>{
+            persistence.persist(GreetingEntity(UUID.randomUUID(),"Hello!"))
+        }
     }
 
     @Test
@@ -131,47 +133,73 @@ class DBPersistenceServiceTest {
     }
 
     @Test
-    fun `should provide remove methods`() {
+    fun `should provide findAll and remove methods`() {
         val persistence = DbPersistenceService(member)
 
-
         // Given persisted greetings
-        val greetings = listOf("Hello!", "Guten Tag!", "Bonjour!", "こんにちは").map {
-            GreetingEntity(UUID.randomUUID(), it)
+        val greetings = (1..12).map {
+            GreetingEntity(UUID.randomUUID(), "Hello$it")
         }
 
         persistence.persist(greetings)
 
         // When we remove three of them
-        persistence.remove(greetings[0])
-        persistence.remove(listOf(greetings[1], greetings[2]))
+        persistence.remove(greetings[9])
+        persistence.remove(listOf(greetings[10], greetings[11]))
 
         // Then they should be removed successfully
-        assertThat(persistence.findAll(GreetingEntity::class.java).execute(), `is`(listOf(greetings[3])))
+        val retrieved1 = persistence.findAll(GreetingEntity::class.java)
+            .setLimit(5)
+            .execute()
+
+        val retrieved2 = persistence.findAll(GreetingEntity::class.java)
+            .setOffset(5)
+            .setLimit(4)
+            .execute()
+
+        // Then they should all be present
+        assertThat(retrieved1.plus(retrieved2).sortedBy { it.greeting }, `is`(greetings.subList(0, 9)))
 
         persistence.close()
     }
 
     @Test
-    fun `should throw the same exception as Corda so that it can be caught in flows`() {
+    fun `should support named queries`() {
         val persistence = DbPersistenceService(member)
-        assertThrows<CordaPersistenceException> { persistence.persist(BadEntity()) }
-        assertThrows<CordaPersistenceException> { persistence.findAll(BadEntity::class.java) }
-        assertThrows<CordaPersistenceException> { persistence.find(BadEntity::class.java, UUID.randomUUID()) }
-        assertThrows<CordaPersistenceException> { persistence.merge(BadEntity()) }
-        assertThrows<CordaPersistenceException> { persistence.remove(listOf(BadEntity())) }
+
+        // Given persisted greetings
+        val greetings = (1..9).map {
+            GreetingEntity(UUID.randomUUID(), "Hello$it")
+        }
+
+        persistence.persist(greetings)
+
+        // When we find them via a named query
+        val retrieved1 = persistence.query("Greetings.findAll", GreetingEntity::class.java)
+            .setLimit(5)
+            .execute()
+
+        val retrieved2 = persistence.query("Greetings.findAll", GreetingEntity::class.java)
+            .setOffset(5)
+            .setLimit(4)
+            .execute()
+
+        // Then they should all be present
+        assertThat(retrieved1.plus(retrieved2).sortedBy { it.greeting }, `is`(greetings))
 
         persistence.close()
     }
 }
 
+@NamedQuery(name="Greetings.findAll", query="SELECT g FROM GreetingEntity g")
+
 @CordaSerializable
 @Entity
+@Table(name="greetingentity")
 data class GreetingEntity (
     @Id
-    @Column
+    @Column(name="id")
     val id: UUID,
-    @Column
+    @Column(name="greeting")
     val greeting: String
 )
-data class BadEntity(val id: UUID = UUID.randomUUID())

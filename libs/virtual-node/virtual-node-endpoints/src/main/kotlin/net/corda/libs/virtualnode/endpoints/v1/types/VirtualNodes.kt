@@ -1,9 +1,14 @@
 package net.corda.libs.virtualnode.endpoints.v1.types
 
 /**
- * The data object received via HTTP in response to a request to get virtual nodes in the cluster.
+ * This class is serialized and returned as JSON in the REST API.
  *
- * @param virtualNodes List of virtual nodes.
+ * These field names are what the end-users see.
+ */
+/**
+ * List of virtual nodes
+ *
+ * @param virtualNodes List of [VirtualNodeInfo].
  */
 data class VirtualNodes(
     val virtualNodes: List<VirtualNodeInfo>
