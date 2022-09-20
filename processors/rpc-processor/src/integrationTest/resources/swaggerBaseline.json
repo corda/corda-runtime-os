@@ -55,7 +55,7 @@
     "description" : "Role Management endpoints for RBAC sub-system."
   }, {
     "name" : "RBAC User API",
-    "description" : "Role Based Access Control User Management endpoints."
+    "description" : "The RBAC User API consists of a number of endpoints enabling user management in the RBAC (role-based access control) permission system. You can get details of specified users, create new users, assign roles to users and remove roles from users."
   }, {
     "name" : "Virtual Node API",
     "description" : "The Virtual Nodes API consists of a number of endpoints to manage virtual nodes."
@@ -2174,23 +2174,23 @@
     "/user" : {
       "get" : {
         "tags" : [ "RBAC User API" ],
-        "description" : "Get a User by Login Name",
+        "description" : "This method returns a user based on the specified login name.",
         "operationId" : "get_user",
         "parameters" : [ {
           "name" : "loginname",
           "in" : "query",
-          "description" : "Login Name of the user to be returned.",
+          "description" : "The login name of the user to be returned",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Login Name of the user to be returned.",
+            "description" : "The login name of the user to be returned",
             "nullable" : false,
             "example" : "string"
           }
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Newly created user with the following attributes:\n            id: Unique server generated identifier for the user\n            version: The version of the user; version 0 is assigned to a newly created user\n            updateTimestamp: The date and time when the user was last updated\n            fullName: The full name for the new user\n            loginName: The login name for the new user\n            enabled: If true, the user account is enabled; false, the account is disabled\n            ssoAuth: If true, the user account is enabled for SSO authentication; \n                false, the account is enabled for password authentication\n            passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;\n                    value of null means that the password does not expire\n            parentGroup: An optional identifier of the user group for the new user to be included;\n                    value of null means that the user will belong to the root group\n            properties: An optional set of key/value properties associated with a user account\n            roleAssociations: A set of roles associated with user account",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2209,7 +2209,7 @@
       },
       "post" : {
         "tags" : [ "RBAC User API" ],
-        "description" : "Create a User",
+        "description" : "This method creates a new user.",
         "operationId" : "post_user",
         "parameters" : [ ],
         "requestBody" : {
@@ -2225,7 +2225,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Newly created user with the following attributes:\n            id: Unique server generated identifier for the user\n            version: The version of the user; version 0 is assigned to a newly created user\n            updateTimestamp: The date and time when the user was last updated\n            fullName: The full name for the new user\n            loginName: The login name for the new user\n            enabled: If true, the user account is enabled; false, the account is disabled\n            ssoAuth: If true, the user account is enabled for SSO authentication; \n                false, the account is enabled for password authentication\n            passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;\n                    value of null means that the password does not expire\n            parentGroup: An optional identifier of the user group for the new user to be included;\n                    value of null means that the user will belong to the root group\n            properties: An optional set of key/value properties associated with a user account\n            roleAssociations: A set of roles associated with user account",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2275,23 +2275,23 @@
     "/user/{loginname}/permissionsummary" : {
       "get" : {
         "tags" : [ "RBAC User API" ],
-        "description" : "Get a summary of a User's permissions",
+        "description" : "This method returns a summary of the user's permissions.",
         "operationId" : "get_user__loginname__permissionsummary",
         "parameters" : [ {
           "name" : "loginname",
           "in" : "path",
-          "description" : "Login Name of the user.",
+          "description" : "The login name of the user",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Login Name of the user.",
+            "description" : "The login name of the user",
             "nullable" : false,
             "example" : "string"
           }
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "\n            enabled: True if the user account is enabled; false otherwise\n            lastUpdateTimestamp: The date and time when the user was last updated\n            loginName: The login name of the user\n            permissions: An array of one or more permissions associated with the user\n        ",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2312,34 +2312,34 @@
     "/user/{loginname}/role/{roleid}" : {
       "put" : {
         "tags" : [ "RBAC User API" ],
-        "description" : "Assign a Role to a User",
+        "description" : "This method assigns a specified role to a specified user.",
         "operationId" : "put_user__loginname__role__roleid_",
         "parameters" : [ {
           "name" : "loginname",
           "in" : "path",
-          "description" : "User login name to be changed",
+          "description" : "The login name of the user",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "User login name to be changed",
+            "description" : "The login name of the user",
             "nullable" : false,
             "example" : "string"
           }
         }, {
           "name" : "roleid",
           "in" : "path",
-          "description" : "Id of the role to associate with this user",
+          "description" : "The ID of the role to assign to the user",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Id of the role to associate with this user",
+            "description" : "The ID of the role to assign to the user",
             "nullable" : false,
             "example" : "string"
           }
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Newly created user with the following attributes:\n            id: Unique server generated identifier for the user\n            version: The version of the user; version 0 is assigned to a newly created user\n            updateTimestamp: The date and time when the user was last updated\n            fullName: The full name for the new user\n            loginName: The login name for the new user\n            enabled: If true, the user account is enabled; false, the account is disabled\n            ssoAuth: If true, the user account is enabled for SSO authentication; \n                false, the account is enabled for password authentication\n            passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;\n                    value of null means that the password does not expire\n            parentGroup: An optional identifier of the user group for the new user to be included;\n                    value of null means that the user will belong to the root group\n            properties: An optional set of key/value properties associated with a user account\n            roleAssociations: A set of roles associated with user account",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2358,34 +2358,34 @@
       },
       "delete" : {
         "tags" : [ "RBAC User API" ],
-        "description" : "Un-assign a role from a user",
+        "description" : "This method removes the specified role from the specified user.",
         "operationId" : "delete_user__loginname__role__roleid_",
         "parameters" : [ {
           "name" : "loginname",
           "in" : "path",
-          "description" : "User login name to be changed",
+          "description" : "The login name of the user",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "User login name to be changed",
+            "description" : "The login name of the user",
             "nullable" : false,
             "example" : "string"
           }
         }, {
           "name" : "roleid",
           "in" : "path",
-          "description" : "Id of the role to un-assign from this user",
+          "description" : "The ID of the role to remove from the user",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Id of the role to un-assign from this user",
+            "description" : "The ID of the role to remove from the user",
             "nullable" : false,
             "example" : "string"
           }
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Newly created user with the following attributes:\n            id: Unique server generated identifier for the user\n            version: The version of the user; version 0 is assigned to a newly created user\n            updateTimestamp: The date and time when the user was last updated\n            fullName: The full name for the new user\n            loginName: The login name for the new user\n            enabled: If true, the user account is enabled; false, the account is disabled\n            ssoAuth: If true, the user account is enabled for SSO authentication; \n                false, the account is enabled for password authentication\n            passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;\n                    value of null means that the password does not expire\n            parentGroup: An optional identifier of the user group for the new user to be included;\n                    value of null means that the user will belong to the root group\n            properties: An optional set of key/value properties associated with a user account\n            roleAssociations: A set of roles associated with user account",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2765,7 +2765,7 @@
             "example" : "2022-06-24T10:15:30Z"
           }
         },
-        "description" : "Details of the user to be created"
+        "description" : "Details of the user to be created with the following parameters:\n                enabled: If true, the user account is enabled; false, the account is disabled\n                fullName: The full name for the new user\n                initialPassword: The initial password for the new user; \n                    the value can be null for Single Sign On (SSO) users\n                loginName: The login name for the new user\n                parentGroup: An optional identifier of the user group for the new user to be included;\n                    value of null means that the user will belong to the root group\n                passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;\n                    value of null means that the password does not expire"
       },
       "FlowStateErrorResponse" : {
         "required" : [ "message", "type" ],
