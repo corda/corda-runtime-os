@@ -75,7 +75,7 @@ class BatchedUniquenessCheckerImpl(
         coordinatorFactory: LifecycleCoordinatorFactory,
         @Reference(service = ConfigurationReadService::class)
         configurationReadService: ConfigurationReadService,
-        @Reference
+        @Reference(service = SubscriptionFactory::class)
         subscriptionFactory: SubscriptionFactory,
         @Reference(service = ExternalEventResponseFactory::class)
         externalEventResponseFactory: ExternalEventResponseFactory,

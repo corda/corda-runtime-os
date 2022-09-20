@@ -71,7 +71,7 @@ class UniquenessCheckerClientServiceImpl @Activate constructor(
         @Suppress("ForbiddenComment")
         // TODO: CORE-4730 to pass through the Vnode holding id plus a sensible event context
         val request = UniquenessCheckRequestAvro(
-            HoldingIdentity(),
+            HoldingIdentity("DUMMY_X500_NAME", "DUMMY_GROUP_ID"),
             ExternalEventContext(
                 UUID.randomUUID().toString(),
                 "DUMMY_FLOW_ID",

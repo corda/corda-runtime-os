@@ -57,11 +57,12 @@ import java.util.*
 
 /**
  * Tests the integration of the uniqueness checker component with the message bus. This duplicates
- * a small subset of the tests in [UniquenessCheckerImplTests][net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests]
- * but uses a different implementation of [processRequests] in order to send and receive using the
- * message bus instead of invoking the uniqueness checker directly. The tests also do not use a new
- * uniqueness checker instance on each test, reflecting a more realistic test setup where the same
- * instance will be used to process multiple batches of requests in sequence.
+ * a small subset of the tests in [UniquenessCheckerImplTests]
+ * [net.corda.uniqueness.checker.impl.UniquenessCheckerImplTests] but uses a different
+ * implementation of [processRequests] in order to send and receive using the message bus instead
+ * of invoking the uniqueness checker directly. The tests also do not use a new uniqueness checker
+ * instance on each test, reflecting a more realistic test setup where the same instance will be
+ * used to process multiple batches of requests in sequence.
  *
  * These tests are not exhaustive, and are the minimum tests needed to verify each type of response
  * that can be returned to verify that payloads can be sent and received correctly. Tests also avoid
@@ -252,7 +253,7 @@ class MessageBusIntegrationTests {
                         )
                     )
                 )
-            )[0]
+            ).single()
         }
 
         configurationReadService.start()
