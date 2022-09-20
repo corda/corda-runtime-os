@@ -17,10 +17,11 @@ import java.util.*
 
 fun createCheckpointSerializer(
     serializers: Map<Class<*>, CheckpointInternalCustomSerializer<*>> = emptyMap(),
-    singletonInstances: List<SingletonSerializeAsToken> = emptyList()
+    singletonInstances: List<SingletonSerializeAsToken> = emptyList(),
+    extraClasses: Set<Class<*>> = emptySet()
 ): KryoCheckpointSerializer {
     val singletonSerializer = SingletonSerializeAsTokenSerializer(singletonInstances.associateBy { it.tokenName })
-    val sandboxGroup = mockSandboxGroup(serializers.keys + singletonInstances.map { it::class.java })
+    val sandboxGroup = mockSandboxGroup(serializers.keys + singletonInstances.map { it::class.java } + extraClasses)
     val kryo = Kryo()
     kryo.addDefaultSerializer(SingletonSerializeAsToken::class.java, singletonSerializer)
     val checkpointSerializer =

@@ -5,7 +5,6 @@ import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.TransactionMetaData
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
-import net.corda.ledger.common.impl.transaction.serializer.PrivacySaltImplKryoSerializer
 import net.corda.ledger.common.impl.transaction.serializer.WireTransactionKryoSerializer
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
@@ -112,7 +111,6 @@ class WireTransactionSerializationTest {
                 digestService as SingletonSerializeAsToken,
                 merkleTreeFactory as SingletonSerializeAsToken
             ))
-            .addSerializer(PrivacySaltImpl::class.java, PrivacySaltImplKryoSerializer())
             .addSerializer(WireTransaction::class.java, WireTransactionKryoSerializer(merkleTreeFactory, digestService))
             .build()
 

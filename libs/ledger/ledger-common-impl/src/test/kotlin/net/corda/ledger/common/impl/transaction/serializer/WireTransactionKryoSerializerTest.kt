@@ -56,9 +56,10 @@ class WireTransactionKryoSerializerTest {
 
         val serializer = createCheckpointSerializer(
             mapOf(
-                WireTransaction::class.java to wireTransactionKryoSerializer,
-                PrivacySaltImpl::class.java to PrivacySaltImplKryoSerializer()
-            )
+                WireTransaction::class.java to wireTransactionKryoSerializer
+            ),
+            emptyList(),
+            setOf(PrivacySaltImpl::class.java)
         )
 
         val bytes = serializer.serialize(wireTransaction)
