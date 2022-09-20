@@ -497,7 +497,7 @@ class FlowTests {
 
         val requestBody = RpcSmokeTestInput().apply {
             command = "crypto_verify_invalid_signature"
-            data = mapOf("publicKey" to publicKey)
+            data = mapOf("publicKey" to publicKey, "memberX500" to X500_BOB)
         }
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
