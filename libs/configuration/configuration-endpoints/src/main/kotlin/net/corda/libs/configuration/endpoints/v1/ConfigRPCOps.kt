@@ -33,10 +33,10 @@ interface ConfigRPCOps : RpcOps {
     )
     fun updateConfig(
         @HttpRpcRequestBodyParameter(description = "Details of the updated configuration. Includes: \n" +
-                "- config: Updated configuration in JSON or HOCON format.\n" +
-                "- schemaVersion: Schema version of the configuration.\n" +
-                "- section: Section of the configuration to be updated.\n" +
-                "- version: Version number used for optimistic locking.\n")
+                "- config: The updated configuration in JSON or HOCON format.\n" +
+                "- schemaVersion: The schema version of the configuration.\n" +
+                "- section: The section of the configuration to be updated.\n" +
+                "- version: The version number used for optimistic locking.\n")
         request: UpdateConfigParameters
     ): UpdateConfigResponse
 
