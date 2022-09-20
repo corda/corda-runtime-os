@@ -3,8 +3,8 @@ package net.corda.v5.application.messaging
 import net.corda.v5.application.flows.FlowContextProperties
 
 /**
- * Builder of context properties. Instances of this interface can optionally be passed to [FlowMessaging] when sessions
- * are initiated if there are requirements to modify context properties which are sent to the initiated flow.
+ * Builder of context properties. If required, instances of this interface can be passed to FlowMessaging when sessions
+ * are initiated to modify context properties which are sent to the initiated flow.
  */
 fun interface FlowContextPropertiesBuilder {
     /**

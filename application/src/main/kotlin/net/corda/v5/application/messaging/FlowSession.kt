@@ -15,7 +15,7 @@ import net.corda.v5.base.types.MemberX500Name
  * It is used to send and receive messages between the flows as well as to query information about the counter-flow.
  * Sessions have their own local flow context which can be accessed via the [contextProperties] property. Note that the
  * parent context is snapshotted at the point the [contextProperties] is first accessed, after which no other changes to
- * the parent context will be reflected in them, see [contextProperties] for more information.
+ * the parent context will be reflected in them. See [contextProperties] for more information.
  *
  * There are two ways of obtaining such a session:
  *
@@ -54,12 +54,11 @@ interface FlowSession {
 
     /**
      * Serializes and queues the given [payload] object for sending to the [counterparty]. Suspends until a response is
-     * received, which must be of the given [receiveType]. Remember that when receiving data from other parties the data
-     * should not be trusted until it's been thoroughly verified for consistency and that all expectations are
-     * satisfied, as a malicious peer may send you subtly corrupted data in order to exploit your code.
+     * received, which must be of the given [receiveType].
      *
-     * Note that this function is not just a simple send+receive pair: it is more efficient and more correct to use this
-     * when you expect to do a message swap than do use [send] and then [receive] in turn.
+     * Note that this function is not just a simple send and receive pair. It is more efficient and more correct to use
+     * sendAndReceive when you expect to do a message swap rather than use FlowSession.send and then
+     * FlowSession.receive.
      *
      * @param R The data type received from the counterparty.
      * @param receiveType The data type received from the counterparty.
@@ -74,11 +73,7 @@ interface FlowSession {
 
 
     /**
-     * Suspends until [counterparty] sends us a message of type [receiveType].
-     *
-     * Remember that when receiving data from other parties the data should not be trusted until it's been thoroughly
-     * verified for consistency and that all expectations are satisfied, as a malicious peer may send you subtly
-     * corrupted data in order to exploit your code.
+     * Suspends until a message of type [R] is received from the [counterparty].
      *
      * @param R The data type received from the counterparty.
      * @param receiveType The data type received from the counterparty.
@@ -127,10 +122,6 @@ interface FlowSession {
  * Serializes and queues the given [payload] object for sending to the counterparty. Suspends until a response is
  * received, which must be of the given [R] type.
  *
- * Remember that when receiving data from other parties the data should not be trusted until it's been thoroughly
- * verified for consistency and that all expectations are satisfied, as a malicious peer may send you subtly corrupted
- * data in order to exploit your code.
- *
  * Note that this function is not just a simple send+receive pair: it is more efficient and more correct to use this
  * when you expect to do a message swap than do use [FlowSession.send] and then [FlowSession.receive] in turn.
  *
@@ -145,7 +136,7 @@ inline fun <reified R : Any> FlowSession.sendAndReceive(payload: Any): R {
 }
 
 /**
- * Suspends until the counterparty sends us a message of type [R].
+ * Suspends until a message of type [R] is received from the counterparty.
  *
  * Remember that when receiving data from other parties the data should not be trusted until it's been thoroughly
  * verified for consistency and that all expectations are satisfied, as a malicious peer may send you subtly corrupted
