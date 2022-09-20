@@ -72,6 +72,10 @@ internal class StartRegistrationHandler(
 
         val (outputCommand, outputStates) = try {
             logger.info("Persisting the received registration request.")
+            validateRegistrationRequest(!memberTypeChecker.isMgm(pendingMemberHoldingId)) {
+                "Registration request is registering a MGM holding identity."
+            }
+
             membershipPersistenceClient.persistRegistrationRequest(mgmHoldingId, registrationRequest).also {
                 require(it as? MembershipPersistenceResult.Failure == null) {
                     "Failed to persist the received registration request. Reason: " +
@@ -80,9 +84,6 @@ internal class StartRegistrationHandler(
             }
 
             val mgmMemberInfo = getMGMMemberInfo(mgmHoldingId)
-            validateRegistrationRequest(!memberTypeChecker.isMgm(pendingMemberHoldingId)) {
-                "Registration request is registering a MGM holding identity."
-            }
             logger.info("Registering $pendingMemberHoldingId with MGM for holding identity: $mgmHoldingId")
             val pendingMemberInfo = buildPendingMemberInfo(registrationRequest)
             // Parse the registration request and verify contents
