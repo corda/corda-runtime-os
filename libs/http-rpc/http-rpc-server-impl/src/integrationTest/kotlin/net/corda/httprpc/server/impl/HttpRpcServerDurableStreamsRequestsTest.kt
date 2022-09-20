@@ -41,7 +41,7 @@ class HttpRpcServerDurableStreamsRequestsTest {
         @JvmStatic
         fun cleanUpAfterClass() {
             if (HttpRpcServerTestBase.isServerInitialized()) {
-                HttpRpcServerTestBase.server.stop()
+                HttpRpcServerTestBase.server.close()
             }
         }
     }

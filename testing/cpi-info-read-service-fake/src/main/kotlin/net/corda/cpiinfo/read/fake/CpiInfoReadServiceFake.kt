@@ -16,6 +16,7 @@ import net.corda.reconciliation.VersionedRecord
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
 import java.util.stream.Stream
@@ -119,7 +120,8 @@ class CpiInfoReadServiceFake internal constructor(
         coordinator.stop()
     }
 
-    override fun close() {
+    @Deactivate
+    fun close() {
         coordinator.close()
     }
 
