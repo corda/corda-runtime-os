@@ -568,7 +568,7 @@
     "/flow/{holdingidentityshorthash}/{clientrequestid}" : {
       "get" : {
         "tags" : [ "Flow Management API" ],
-        "description" : "Gets the current status for a given flow.",
+        "description" : "This method gets the current status of the specified flow instance.",
         "operationId" : "get_flow__holdingidentityshorthash___clientrequestid_",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
@@ -595,7 +595,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "The status of the flow.",
+            "description" : "\n            The status of the flow instance.\n            \n            holdingIdentityShortHash: The short form hash of the Holding Identity\n            clientRequestId: The unique ID supplied by the client when the flow was created.\n            flowId: The internal unique ID for the flow.\n            flowStatus: The current state of the executing flow.\n            flowResult: The result returned from a completed flow, only set when the flow status is 'COMPLETED' otherwise null\n            flowError: The details of the error that caused a flow to fail, only set when the flow status is 'FAILED' otherwise null\n            timestamp: The timestamp of when the status was last updated (in UTC)\n            ",
             "content" : {
               "application/json" : {
                 "schema" : {
