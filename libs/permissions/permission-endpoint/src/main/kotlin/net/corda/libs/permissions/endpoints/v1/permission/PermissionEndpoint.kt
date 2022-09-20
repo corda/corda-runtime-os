@@ -32,7 +32,7 @@ interface PermissionEndpoint : RpcOps {
             it can be any arbitrary string as long as the authorization code can make use of it in the context of user permission matching
         groupVisibility: An optional group visibility identifier of the permission
         virtualNode: An optional identifier of the virtual node to which the physical node permission applies
-        version - Version of the Permission. Value of 0 is assigned to a newly created permission.
+        version: The version number of the permission; a value of 0 is assigned to a newly-created permission
         updateTimestamp - Server-side timestamp when permission was created.
     """)
     fun createPermission(
