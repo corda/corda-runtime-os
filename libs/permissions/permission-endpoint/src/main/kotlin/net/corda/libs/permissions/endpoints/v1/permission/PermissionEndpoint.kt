@@ -26,7 +26,7 @@ interface PermissionEndpoint : RpcOps {
      * Create a permission entity in the RBAC permission system.
      */
     @HttpRpcPOST(description = "This method creates a new permission.", responseDescription = """
-        id - Server-side generated ID of the new permission.
+        id: The server-side generated ID of the new permission
         permissionType - Defines whether this is an ALLOW or DENY type of permission. 
         permissionString - Machine-parseable string representing an individual permission. 
             It can be any arbitrary string as long as the authorization code can make use of it in the context of user permission matching.
