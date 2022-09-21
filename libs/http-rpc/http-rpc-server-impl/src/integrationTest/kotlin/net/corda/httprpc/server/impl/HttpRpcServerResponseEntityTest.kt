@@ -1,6 +1,5 @@
 package net.corda.httprpc.server.impl
 
-import kotlin.test.assertEquals
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.test.CustomNonSerializableString
 import net.corda.httprpc.test.CustomUnsafeString
@@ -18,6 +17,7 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import kotlin.test.assertEquals
 
 class HttpRpcServerResponseEntityTest : HttpRpcServerTestBase() {
     companion object {
@@ -49,7 +49,7 @@ class HttpRpcServerResponseEntityTest : HttpRpcServerTestBase() {
         @JvmStatic
         fun cleanUpAfterClass() {
             if (isServerInitialized()) {
-                server.stop()
+                server.close()
             }
         }
     }

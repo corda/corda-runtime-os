@@ -76,6 +76,9 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
     override fun stop() {
     }
 
+    override fun close() {
+    }
+
     class FakeSandboxGroupContext(
         override val virtualNodeContext: VirtualNodeContext,
         override val sandboxGroup: SandboxGroup,

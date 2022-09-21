@@ -69,9 +69,6 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
 
-    override val isRunning: Boolean
-        get() = !stopped
-
     override val subscriptionName: LifecycleCoordinatorName
         get() = lifecycleCoordinator.name
 
@@ -99,16 +96,10 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
         }
     }
 
-    override fun stop() {
-        if (!stopped) {
-            stopConsumeLoop()
-            lifecycleCoordinator.stop()
-        }
-    }
-
     override fun close() {
         if (!stopped) {
             stopConsumeLoop()
+            lifecycleCoordinator.stop()
             lifecycleCoordinator.close()
         }
     }
@@ -155,7 +146,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                     else -> {
                         log.error("$errorMsg. Fatal error occurred. Closing subscription.", ex)
                         lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, errorMsg)
-                        stop()
+                        this.close()
                     }
                 }
             }

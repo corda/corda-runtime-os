@@ -5,6 +5,8 @@ plugins {
 description 'Uniqueness checker testing library utilities'
 
 dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
     api "net.corda:corda-crypto"
 
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
@@ -12,7 +14,6 @@ dependencies {
     implementation "net.corda:corda-avro-schema"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
-    implementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     implementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     implementation "org.assertj:assertj-core:$assertjVersion"
 

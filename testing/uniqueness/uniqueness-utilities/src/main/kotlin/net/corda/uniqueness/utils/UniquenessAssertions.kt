@@ -4,10 +4,10 @@ package net.corda.uniqueness.utils
 import net.corda.data.uniqueness.*
 import net.corda.test.util.time.AutoTickTestClock
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.assertAll
 import java.time.Instant
-import kotlin.test.assertEquals
 
 /**
  * Uniqueness check related assertions for use in tests

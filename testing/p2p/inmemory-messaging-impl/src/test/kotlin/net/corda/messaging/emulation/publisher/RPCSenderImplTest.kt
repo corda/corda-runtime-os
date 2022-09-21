@@ -24,36 +24,6 @@ class RPCSenderImplTest {
     }
     private val clientIdCounter = AtomicInteger()
 
-
-    @Test
-    fun `Start sets running to true`() {
-        val rpcSender = RPCSenderImpl(
-            getConfig(),
-            rpcTopicService,
-            lifecycleCoordinatorFactory,
-            clientIdCounter.getAndIncrement().toString()
-        )
-
-        Assertions.assertThat(rpcSender.isRunning).isFalse
-        rpcSender.start()
-        Assertions.assertThat(rpcSender.isRunning).isTrue
-    }
-
-    @Test
-    fun `Stop sets running to true`() {
-        val rpcSender = RPCSenderImpl(
-            getConfig(),
-            rpcTopicService,
-            lifecycleCoordinatorFactory,
-            clientIdCounter.getAndIncrement().toString()
-        )
-
-        rpcSender.start()
-        Assertions.assertThat(rpcSender.isRunning).isTrue
-        rpcSender.stop()
-        Assertions.assertThat(rpcSender.isRunning).isFalse
-    }
-
     @Test
     fun `Send while sender is not running should throw`() {
         val request = "r1"

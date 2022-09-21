@@ -84,7 +84,7 @@ class ConfigurationReadServiceImpl @Activate constructor(
     }
 
     @Deactivate
-    override fun close() {
+    fun close() {
         lifecycleCoordinator.close()
     }
 }
