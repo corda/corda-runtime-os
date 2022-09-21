@@ -159,7 +159,7 @@ class ContextPropagationMainSubFlow : SubFlow<MainSubFlowOutput> {
         }
 
         // Initiated flow will send its context back via a message
-        val initiatedFlowOutput = session.receive<InitiatedFlowOutput>().unwrap { it }
+        val initiatedFlowOutput = session.receive<InitiatedFlowOutput>()
 
         // Check user 2 is preserved here, even though it is overwritten in the initiated sub flow
         val user2 = flowEngine.flowContextProperties.get("user2") ?: ERROR_VALUE

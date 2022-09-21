@@ -7,25 +7,29 @@ import net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier
  *
  * These field names are what the end-users see.
  */
+/**
+ * Virtual Node Info
+ *
+ * @param holdingIdentity The holding identity of this virtual node.
+ * @param cpiIdentifier The CPI that this virtual node uses.
+ * @param vaultDdlConnectionId Vault DB DDL connection ID.
+ * @param vaultDmlConnectionId Vault DB DML connection ID.
+ * @param cryptoDdlConnectionId Crypto DB DDL connection ID.
+ * @param cryptoDmlConnectionId Crypto DB DML connection ID.
+ * @param uniquenessDdlConnectionId Uniqueness DB DDL connection ID.
+ * @param uniquenessDmlConnectionId Uniqueness DB DML connection ID.
+ * @param hsmConnectionId HSM connection ID.
+ * @param state The state of the virtual node.
+ */
 data class VirtualNodeInfo(
-    /** The holding identity of this virtual node */
     val holdingIdentity: HoldingIdentity,
-    /** The CPI that this virtual node uses */
     val cpiIdentifier: CpiIdentifier,
-    /** Vault DDL DB connection ID */
     val vaultDdlConnectionId: String? = null,
-    /** Vault DML DB connection ID */
     val vaultDmlConnectionId: String,
-    /** Crypto DDL DB connection ID */
     val cryptoDdlConnectionId: String? = null,
-    /** Crypto DML DB connection ID */
     val cryptoDmlConnectionId: String,
-    /** Uniqueness DDL DB connection ID */
     val uniquenessDdlConnectionId: String? = null,
-    /** Uniqueness DML DB connection ID */
     val uniquenessDmlConnectionId: String,
-    /** HSM connection ID */
     val hsmConnectionId: String? = null,
-    /** The virtual node state */
     val state: String,
 )

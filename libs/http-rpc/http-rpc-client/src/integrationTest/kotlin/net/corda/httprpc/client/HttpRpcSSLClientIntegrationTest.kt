@@ -40,7 +40,8 @@ internal class HttpRpcSSLClientIntegrationTest : HttpRpcIntegrationTestBase() {
                 context,
                 sslConfig,
                 null,
-                HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE
+                HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
+                20000L
             )
             server = HttpRpcServerImpl(
                 listOf(TestHealthCheckAPIImpl(), CustomSerializationAPIImpl()),
@@ -55,7 +56,7 @@ internal class HttpRpcSSLClientIntegrationTest : HttpRpcIntegrationTestBase() {
         @JvmStatic
         fun cleanUpAfterClass() {
             if (isServerInitialized()) {
-                server.stop()
+                server.close()
             }
             sslService.stop()
         }

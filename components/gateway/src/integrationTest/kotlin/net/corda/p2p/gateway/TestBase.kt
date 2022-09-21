@@ -52,6 +52,7 @@ import kotlin.random.Random.Default.nextInt
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.libs.configuration.merger.impl.ConfigMergerImpl
 import net.corda.messagebus.db.configuration.DbBusConfigMergerImpl
+import net.corda.p2p.gateway.messaging.http.HttpServer
 import net.corda.schema.Schemas.P2P.Companion.CRYPTO_KEYS_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
@@ -198,6 +199,13 @@ open class TestBase {
     }
 
     fun Lifecycle.startAndWaitForStarted() {
+        this.start()
+        eventually(duration = 20.seconds) {
+            assertThat(this.isRunning).isTrue
+        }
+    }
+
+    fun HttpServer.startAndWaitForStarted() {
         this.start()
         eventually(duration = 20.seconds) {
             assertThat(this.isRunning).isTrue

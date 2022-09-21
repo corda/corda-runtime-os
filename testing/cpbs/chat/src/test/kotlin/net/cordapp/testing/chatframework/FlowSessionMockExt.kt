@@ -1,7 +1,6 @@
 package net.cordapp.testing.chatframework
 
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.UntrustworthyData
 import net.corda.v5.base.types.MemberX500Name
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -18,7 +17,7 @@ fun FlowSession.withCounterpartyName(name: String): FlowSession {
  * Sets up a mock FlowSession so that calls to receive() will return the specified payload.
  */
 inline fun <reified T : Any> FlowSession.willReceive(payload: T): FlowSession {
-    whenever(this.receive(T::class.java)).thenReturn(UntrustworthyData(payload))
+    whenever(this.receive(T::class.java)).thenReturn(payload)
     return this
 }
 

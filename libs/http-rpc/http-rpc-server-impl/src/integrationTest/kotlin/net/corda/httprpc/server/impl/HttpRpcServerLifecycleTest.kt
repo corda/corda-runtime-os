@@ -7,6 +7,7 @@ import net.corda.httprpc.test.utils.WebRequest
 import net.corda.httprpc.test.utils.findFreePort
 import net.corda.httprpc.test.utils.multipartDir
 import net.corda.httprpc.tools.HttpVerb.GET
+import net.corda.test.util.lifecycle.usingLifecycle
 import net.corda.utilities.NetworkHostAndPort
 import org.apache.http.HttpStatus
 import org.junit.jupiter.api.AfterAll
@@ -28,7 +29,8 @@ class HttpRpcServerLifecycleTest : HttpRpcServerTestBase() {
                 context,
                 null,
                 null,
-                HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE
+                HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
+                20000L
             )
             server = HttpRpcServerImpl(
                 listOf(lifecycleRPCOpsImpl),
@@ -46,7 +48,7 @@ class HttpRpcServerLifecycleTest : HttpRpcServerTestBase() {
         @JvmStatic
         fun cleanUpAfterClass() {
             if (isServerInitialized()) {
-                server.stop()
+                server.close()
             }
         }
     }
@@ -56,6 +58,7 @@ class HttpRpcServerLifecycleTest : HttpRpcServerTestBase() {
 
         // Should report unavailable when RPC implementation is not started
         with(client.call(GET, WebRequest<Any>("lifecycle/hello/world?id=1"), userName, password)) {
+            println("### $responseStatus")
             assertEquals(HttpStatus.SC_SERVICE_UNAVAILABLE, responseStatus)
         }
 
@@ -63,11 +66,12 @@ class HttpRpcServerLifecycleTest : HttpRpcServerTestBase() {
         lifecycleRPCOpsImpl.start()
 
         // Assert functions normally
-        lifecycleRPCOpsImpl.use {
+        lifecycleRPCOpsImpl.usingLifecycle {
             with(client.call(GET, WebRequest<Any>("lifecycle/hello/world?id=1"), userName, password)) {
                 assertEquals(HttpStatus.SC_OK, responseStatus)
                 assertEquals("Hello 1 : world", body)
             }
+            lifecycleRPCOpsImpl.stop()
         }
 
         // Assert back to unavailable after stop/close

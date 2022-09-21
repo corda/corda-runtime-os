@@ -8,7 +8,6 @@ ext {
 }
 
 dependencies {
-    implementation project(":libs:serialization:json-serializers")
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation "net.corda:corda-application:$cordaApiVersion"
     implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
@@ -16,6 +15,10 @@ dependencies {
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
     implementation project(':simulator:api')
+
+    // NOTE: references to modules internal to corda-runtime-os to be reviewed
+    implementation project(":libs:serialization:json-serializers")
+    implementation project(":libs:db:db-admin-impl")
 
     implementation "org.hibernate:hibernate-core:$hibernateVersion"
     implementation "org.hsqldb:hsqldb:$hsqldbVersion"

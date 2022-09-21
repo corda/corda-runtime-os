@@ -1,7 +1,7 @@
 package net.corda.uniqueness.backingstore.jpa.datamodel
 
-import net.corda.uniqueness.common.UniquenessConstants.TRANSACTION_ID_ALGO_LENGTH
-import net.corda.uniqueness.common.UniquenessConstants.TRANSACTION_ID_LENGTH
+import net.corda.uniqueness.datamodel.common.UniquenessConstants.TRANSACTION_ID_ALGO_LENGTH
+import net.corda.uniqueness.datamodel.common.UniquenessConstants.TRANSACTION_ID_LENGTH
 import java.io.Serializable
 import java.time.Instant
 import javax.persistence.Column

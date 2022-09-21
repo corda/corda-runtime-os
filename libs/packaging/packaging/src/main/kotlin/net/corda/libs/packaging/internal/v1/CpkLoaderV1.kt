@@ -20,7 +20,6 @@ import net.corda.libs.packaging.core.exception.PackagingException
 import net.corda.libs.packaging.internal.CpkImpl
 import net.corda.libs.packaging.internal.CpkLoader
 import net.corda.libs.packaging.internal.FormatVersionReader
-import net.corda.v5.base.util.loggerFor
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import java.io.IOException
@@ -43,8 +42,6 @@ import java.util.jar.Manifest
 import java.util.zip.ZipEntry
 
 internal object CpkLoaderV1 : CpkLoader {
-    private val logger = loggerFor<CpkLoaderV1>()
-
     internal const val CPK_TYPE = "Corda-CPK-Type"
 
     @Suppress("LongParameterList")

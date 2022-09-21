@@ -22,7 +22,7 @@ class HttpRpcServerCaseSensitiveUrlTest: HttpRpcServerTestBase() {
         @JvmStatic
         @Suppress("Unused")
         fun setUpBeforeClass() {
-            val httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost", findFreePort()), context, null, null, HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE)
+            val httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost", findFreePort()), context, null, null, HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE, 20000L)
             server = HttpRpcServerImpl(
                 listOf(TestHealthCheckAPIImpl()),
                 ::securityManager,
@@ -37,7 +37,7 @@ class HttpRpcServerCaseSensitiveUrlTest: HttpRpcServerTestBase() {
         @JvmStatic
         @Suppress("Unused")
         fun cleanUpAfterClass() {
-            server.stop()
+            server.close()
         }
     }
 

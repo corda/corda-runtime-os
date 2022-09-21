@@ -2,8 +2,8 @@ package net.corda.flow.application.serialization
 
 import java.io.NotSerializableException
 import net.corda.flow.fiber.FlowFiberService
+import net.corda.utilities.reflection.castIfPossible
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.base.util.castIfPossible
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.serialization.SerializedBytes
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -18,7 +18,8 @@ import org.osgi.service.component.annotations.ServiceScope
         SerializationServiceInternal::class,
         SingletonSerializeAsToken::class
     ],
-    scope = ServiceScope.PROTOTYPE
+    scope = ServiceScope.PROTOTYPE,
+    property = [ "corda.system=true" ]
 )
 class SerializationServiceImpl @Activate constructor(
     @Reference(service = FlowFiberService::class)

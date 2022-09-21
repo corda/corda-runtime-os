@@ -15,6 +15,7 @@ import java.util.UUID
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.Id
+import javax.persistence.Table
 
 @InitiatedBy("truancy-record")
 class TruancyResponderFlow : ResponderFlow {
@@ -36,7 +37,7 @@ class TruancyResponderFlow : ResponderFlow {
     override fun call(session: FlowSession) {
         log.info("Received request; persisting records")
 
-        val record = session.receive(TruancyRecord::class.java).unwrap {it}
+        val record = session.receive(TruancyRecord::class.java)
 
         verificationService.verify(record.signature.by, SignatureSpec.ECDSA_SHA256, record.signature.bytes,
             jsonMarshallingService.format(record.absentees).toByteArray())
@@ -50,10 +51,11 @@ class TruancyResponderFlow : ResponderFlow {
 
 @CordaSerializable
 @Entity
+@Table(name = "truancy_entity")
 data class TruancyEntity(
     @Id
-    @Column
+    @Column(name = "id")
     val id: UUID = UUID.randomUUID(),
-    @Column
+    @Column(name = "student_name")
     val name: String
 )

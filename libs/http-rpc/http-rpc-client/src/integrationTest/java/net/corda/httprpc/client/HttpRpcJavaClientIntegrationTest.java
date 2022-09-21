@@ -28,7 +28,8 @@ public class HttpRpcJavaClientIntegrationTest extends HttpRpcIntegrationTestBase
             HttpRpcIntegrationTestBase.Companion.getContext(),
             null,
             null,
-            HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE
+            HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
+            20000L
         );
         HttpRpcIntegrationTestBase.Companion.setServer(
                 new HttpRpcServerImpl(
@@ -44,7 +45,7 @@ public class HttpRpcJavaClientIntegrationTest extends HttpRpcIntegrationTestBase
 
     @AfterAll
     static void cleanUpAfterClass() {
-        HttpRpcIntegrationTestBase.Companion.getServer().stop();
+        HttpRpcIntegrationTestBase.Companion.getServer().close();
     }
 
     @Test

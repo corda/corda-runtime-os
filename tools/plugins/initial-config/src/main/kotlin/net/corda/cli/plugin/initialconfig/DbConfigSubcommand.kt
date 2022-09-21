@@ -33,6 +33,12 @@ class DbConfigSubcommand : Runnable {
     var jdbcUrl: String? = null
 
     @Option(
+        names = ["--jdbcPoolMaxSize"],
+        description = ["The maximum size for the JDBC connection pool. Defaults to 10"]
+    )
+    var jdbcPoolMaxSize: Int = 10
+
+    @Option(
         names = ["-u", "--user"],
         required = true,
         description = ["User name for the database connection. Required."]
@@ -88,7 +94,7 @@ class DbConfigSubcommand : Runnable {
             updateTimestamp = Instant.now(),
             updateActor = "Setup Script",
             description = description,
-            config = createDbConfig(jdbcUrl!!, username!!, password!!, secretsService)
+            config = createDbConfig(jdbcUrl!!, username!!, password!!, jdbcPoolMaxSize, secretsService)
         ).also { it.version = 0 }
 
 
@@ -106,12 +112,20 @@ class DbConfigSubcommand : Runnable {
     }
 }
 
-fun createDbConfig(jdbcUrl: String, username: String, password: String, secretsService: SecretsCreateService): String {
+fun createDbConfig(
+    jdbcUrl: String,
+    username: String,
+    password: String,
+    jdbcPoolMaxSize: Int,
+    secretsService: SecretsCreateService
+): String {
     return "{\"database\":{" +
             "\"jdbc\":" +
             "{\"url\":\"$jdbcUrl\"}," +
             "\"pass\":${createSecureConfig(secretsService, password)}," +
-            "\"user\":\"$username\"}}"
+            "\"user\":\"$username\"," +
+            "\"pool\":" +
+            "{\"max_size\":$jdbcPoolMaxSize}}}"
 }
 
 fun createSecureConfig(secretsService: SecretsCreateService, value: String): String {

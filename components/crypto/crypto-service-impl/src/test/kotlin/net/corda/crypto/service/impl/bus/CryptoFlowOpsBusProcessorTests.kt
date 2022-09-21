@@ -6,7 +6,7 @@ import java.time.Instant
 import java.util.*
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.crypto.client.CryptoOpsProxyClient
-import net.corda.crypto.config.impl.createDefaultCryptoConfig
+import net.corda.crypto.config.impl.createTestCryptoConfig
 import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_TTL_KEY
@@ -56,7 +56,7 @@ class CryptoFlowOpsBusProcessorTests {
     companion object {
         private val configEvent = ConfigChangedEvent(
             setOf(ConfigKeys.CRYPTO_CONFIG),
-            mapOf(ConfigKeys.CRYPTO_CONFIG to createDefaultCryptoConfig(KeyCredentials("pass", "salt")))
+            mapOf(ConfigKeys.CRYPTO_CONFIG to createTestCryptoConfig(KeyCredentials("pass", "salt")))
         )
     }
 
@@ -162,7 +162,7 @@ class CryptoFlowOpsBusProcessorTests {
         var passedList = listOf<ByteBuffer>()
         val notMyKey = mockPublicKey()
         val recordKey = UUID.randomUUID().toString()
-        val flowExternalEventContext = ExternalEventContext("request id", recordKey)
+        val flowExternalEventContext = ExternalEventContext("request id", recordKey, KeyValuePairList(emptyList()))
 
         whenever(
             externalEventResponseFactory.success(
@@ -280,7 +280,7 @@ class CryptoFlowOpsBusProcessorTests {
         }.whenever(cryptoOpsClient).signProxy(any(), any(), any(), any(), any())
 
         val recordKey = UUID.randomUUID().toString()
-        val flowExternalEventContext = ExternalEventContext("request id", recordKey)
+        val flowExternalEventContext = ExternalEventContext("request id", recordKey, KeyValuePairList(emptyList()))
 
         whenever(
             externalEventResponseFactory.success(
@@ -307,7 +307,7 @@ class CryptoFlowOpsBusProcessorTests {
                         value = transformer.createSign(
                             UUID.randomUUID().toString(),
                             tenantId,
-                            publicKey,
+                            publicKey.encoded,
                             SignatureSpec.EDDSA_ED25519,
                             data,
                             operationContext,
@@ -351,7 +351,7 @@ class CryptoFlowOpsBusProcessorTests {
         var passedList = listOf<ByteBuffer>()
         val notMyKey = mockPublicKey()
         val recordKey = UUID.randomUUID().toString()
-        val flowExternalEventContext = ExternalEventContext("request id", recordKey)
+        val flowExternalEventContext = ExternalEventContext("request id", recordKey, KeyValuePairList(emptyList()))
 
         whenever(
             externalEventResponseFactory.success(
@@ -463,8 +463,8 @@ class CryptoFlowOpsBusProcessorTests {
         val notMyKey = mockPublicKey()
         val recordKey0 = UUID.randomUUID().toString()
         val recordKey1 = UUID.randomUUID().toString()
-        val flowExternalEventContext0 = ExternalEventContext("request id", recordKey0)
-        val flowExternalEventContext1 = ExternalEventContext("request id", recordKey1)
+        val flowExternalEventContext0 = ExternalEventContext("request id", recordKey0, KeyValuePairList(emptyList()))
+        val flowExternalEventContext1 = ExternalEventContext("request id", recordKey1, KeyValuePairList(emptyList()))
 
         whenever(
             externalEventResponseFactory.transientError(
@@ -609,8 +609,8 @@ class CryptoFlowOpsBusProcessorTests {
         val notMyKey = mockPublicKey()
         val recordKey0 = UUID.randomUUID().toString()
         val recordKey1 = UUID.randomUUID().toString()
-        val flowExternalEventContext0 = ExternalEventContext("request id", recordKey0)
-        val flowExternalEventContext1 = ExternalEventContext("request id", recordKey1)
+        val flowExternalEventContext0 = ExternalEventContext("request id", recordKey0, KeyValuePairList(emptyList()))
+        val flowExternalEventContext1 = ExternalEventContext("request id", recordKey1, KeyValuePairList(emptyList()))
         val failingTenantId = UUID.randomUUID().toString()
 
         whenever(

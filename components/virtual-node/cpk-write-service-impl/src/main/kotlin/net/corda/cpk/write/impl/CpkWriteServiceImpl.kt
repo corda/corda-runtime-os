@@ -1,7 +1,5 @@
 package net.corda.cpk.write.impl
 
-import java.io.ByteArrayInputStream
-import java.time.Duration
 import net.corda.chunking.ChunkWriterFactory
 import net.corda.chunking.toAvro
 import net.corda.configuration.read.ConfigChangedEvent
@@ -51,6 +49,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import java.io.ByteArrayInputStream
+import java.time.Duration
 
 // TODO at some later point consider deleting CPKs blobs in the database by nulling their blob values and pass the null value to Kafka
 @Suppress("TooManyFunctions")

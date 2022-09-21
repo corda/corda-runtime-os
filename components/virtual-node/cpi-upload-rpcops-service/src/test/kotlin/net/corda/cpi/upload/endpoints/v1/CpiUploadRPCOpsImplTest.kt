@@ -21,7 +21,6 @@ import java.io.ByteArrayInputStream
 import java.util.UUID
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.exception.InvalidInputDataException
-import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.assertThrows
 
 class CpiUploadRPCOpsImplTest {

@@ -36,6 +36,7 @@ import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_CONTEXT_DESCRIPTION
 import net.corda.schema.configuration.ConfigKeys.RPC_CONTEXT_TITLE
 import net.corda.schema.configuration.ConfigKeys.RPC_MAX_CONTENT_LENGTH
+import net.corda.schema.configuration.ConfigKeys.RPC_WEBSOCKET_CONNECTION_IDLE_TIMEOUT_MS
 import net.corda.utilities.NetworkHostAndPort
 import net.corda.utilities.PathProvider
 import net.corda.utilities.TempPathProvider
@@ -184,7 +185,7 @@ internal class HttpRpcGatewayEventHandler(
 
     private fun createAndStartHttpRpcServer(config: SmartConfig) {
         log.info("Stopping any running HTTP RPC Server and endpoints.")
-        server?.stop()
+        server?.close()
         sslCertReadService?.stop()
 
         val keyStoreInfo = sslCertReadServiceFactory.create().let {
@@ -203,7 +204,8 @@ internal class HttpRpcGatewayEventHandler(
             ),
             ssl = HttpRpcSSLSettings(keyStoreInfo.path, keyStoreInfo.password),
             sso = config.retrieveSsoOptions(),
-            maxContentLength = config.retrieveMaxContentLength()
+            maxContentLength = config.retrieveMaxContentLength(),
+            webSocketIdleTimeoutMs = config.getInt(RPC_WEBSOCKET_CONNECTION_IDLE_TIMEOUT_MS).toLong()
         )
 
         val multiPartDir = tempPathProvider.getOrCreate(config, MULTI_PART_DIR)

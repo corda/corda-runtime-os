@@ -21,7 +21,8 @@ class HttpRpcServerWebsocketTest : AbstractWebsocketTest() {
             context,
             null,
             null,
-            HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE
+            HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
+            20000L
         )
 
         @BeforeAll
@@ -43,7 +44,7 @@ class HttpRpcServerWebsocketTest : AbstractWebsocketTest() {
         @JvmStatic
         fun cleanUpAfterClass() {
             if (isServerInitialized()) {
-                server.stop()
+                server.close()
             }
         }
     }
