@@ -106,7 +106,8 @@ class WireTransactionAMQPSerializationTest {
     ): ObjectAndEnvelope<T> = deserializeAndReturnEnvelope(bytes, T::class.java, serializationContext)
 
     @Test
-    fun `successfully deserialise when composed bundle class is installed`() {
+    @Suppress("FunctionName")
+    fun `successfully serialize and deserialize a wireTransaction`() {
         // Create sandbox group
         val sandboxGroup = sandboxFactory.loadSandboxGroup()
         try {
