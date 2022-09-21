@@ -37,7 +37,7 @@ interface HoldingIdentity {
         }
 
         /**
-         * Creates a holding identity using the provided member
+         * Creates a holding identity using the provided member.
          *
          * @param member the member for which to create a holding identity
          * @return a [HoldingIdentity]
