@@ -19,9 +19,10 @@ dependencies {
 
 def S3_BUCKET_URI_PROPERTY = 'maven.repo.s3'
 
+def otherPluginsTasks = subprojects.collect { it.tasks.findAll {it.getName() == 'cliPluginTask'} }.flatten()
+
 tasks.register('copyCliFiles') {
-    dependsOn subprojects.collect { it.tasks.named("cliPluginTask").get() }
-    doLast {
+        dependsOn otherPluginsTasks
         copy {
             duplicatesStrategy = DuplicatesStrategy.EXCLUDE
             from configurations.named('cliHostDist')
@@ -29,14 +30,13 @@ tasks.register('copyCliFiles') {
             rename ('.*.jar', 'corda-cli.jar')
         }
         copy {
-            from subprojects.collect { it.tasks.named('cliPluginTask') }
+            from otherPluginsTasks
             into "$buildDir/cli/plugins"
         }
         copy {
             from "$projectDir/installScripts"
             into "$buildDir/cli"
         }
-    }
 }
 
 tasks.register("cliInstallArchive", Zip) {
@@ -79,7 +79,7 @@ tasks.named('jar').configure {
 }
 
 tasks.register('publishOSGiImage', DeployableContainerBuilder) {
-    def sourceTasks = subprojects.collect { it.tasks.named("cliPluginTask").get() }
+
     def cordaCliIncluded = gradle.includedBuilds.collect { it.name == "corda-cli-plugin-host" }.contains(true)
     def cordaApiIncluded = gradle.includedBuilds.collect { it.name == "corda-api" }.contains(true)
 
@@ -89,7 +89,7 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
         dependsOn gradle.includedBuild("corda-cli-plugin-host").task(':app:publishOSGiImage')
     }
 
-    it.sourceFiles.setFrom(sourceTasks)
+    it.sourceFiles.setFrom(otherPluginsTasks)
     it.subDir = "plugins/"
     it.setEntry = false
     if (project.hasProperty('jibRemotePublish')) {
