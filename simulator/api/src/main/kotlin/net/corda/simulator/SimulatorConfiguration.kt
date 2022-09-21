@@ -10,7 +10,7 @@ import java.time.Duration
 interface SimulatorConfiguration {
 
     /**
-     * The interval at which to check for responder flow health.
+     * The interval at which to check responder flow health.
      */
     val pollInterval: Duration
 

@@ -14,17 +14,17 @@ import java.util.ServiceLoader
 interface RequestData {
 
     /**
-     * The client request which would be used by Corda to identify a particular request for a flow call
+     * The client request which would be used by Corda to identify a particular request for a flow call.
      */
     val clientRequestId: String
 
     /**
-     * The name of the flow class to be run
+     * The name of the flow class to be run.
      */
     val flowClassName: String
 
     /**
-     * A Json string containing the request body to be passed to the flow
+     * A JSON string containing the request body to be passed to the flow.
      */
     val requestBody: String
     fun toRPCRequestData(): RPCRequestData
@@ -34,14 +34,14 @@ interface RequestData {
             throw ServiceConfigurationException(RequestDataFactory::class.java)
 
         /**
-         * Creates a [RequestData] using the given strongly-typed parameters
+         * Creates a [RequestData] using the given strongly-typed parameters.
          *
-         * @param requestId the client request which would be used by Corda to identify a particular request
-         * for a flow call
-         * @param flowClass the flow class to be constructed and called
-         * @param request data which will be serialized using a
-         * [net.corda.v5.application.marshalling.JsonMarshallingService] and passed to the flow
-         * @return a [RequestData] with properties that match the provided parameters
+         * @param requestId The client request which would be used by Corda to identify a particular request
+         * for a flow call.
+         * @param flowClass The flow class to be constructed and called.
+         * @param request Data which will be serialized using a
+         * [net.corda.v5.application.marshalling.JsonMarshallingService] and passed to the flow.
+         * @return A [RequestData] with properties that match the provided parameters.
          */
         fun create(requestId: String, flowClass: Class<out Flow>, request: Any): RequestData
             = factory.create(requestId, flowClass, request)
@@ -50,11 +50,11 @@ interface RequestData {
          * Creates a [RequestData] using the given parameters. The strings used in this method are the same that
          * would be passed to Swagger UI if using it.
          *
-         * @param requestId the client request which would be used by Corda to identify a particular request
-         * for a flow call
-         * @param flowClass the name of the flow class to be constructed and called
-         * @param request data to be passed to the flow
-         * @return a [RequestData] with the provided parameters as properties
+         * @param requestId The client request which would be used by Corda to identify a particular request
+         * for a flow call.
+         * @param flowClass The name of the flow class to be constructed and called.
+         * @param request Data to be passed to the flow.
+         * @return A [RequestData] with the provided parameters as properties.
          */
         fun create(requestId: String, flowClass: String, request: String) : RequestData
             = factory.create(requestId, flowClass, request)
@@ -63,7 +63,7 @@ interface RequestData {
          * Creates a [RequestData] using the provided input. The input used in this method is the same that would
          * be provided to `curl` if using it.
          *
-         * @param jsonInput a Json-formatted string containing a client-provided `requestId`, the `flowClass` to
+         * @param jsonInput A JSON-formatted string containing a client-provided `requestId`, the `flowClass` to
          * be constructed and called and the `requestBody` to be passed into the flow.
          */
         fun create(jsonInput : String) = factory.create(jsonInput)

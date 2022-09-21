@@ -33,7 +33,7 @@ interface SimulatedVirtualNode {
     fun callFlow(input: RequestData): String
 
     /**
-     * @return the persistence service associated with this node
+     * @return The persistence service associated with this node.
      */
     fun getPersistenceService(): PersistenceService
 
@@ -44,9 +44,9 @@ interface SimulatedVirtualNode {
      * [net.corda.v5.application.crypto.DigitalSignatureVerificationService]. Note that Simulator does not actually
      * perform encryption, simulating it instead, and no private keys are held.
      *
-     * @param alias an alias for the key
-     * @param hsmCategory the HSM category for the key
-     * @param scheme the scheme for the key - not used, except in verification; an ECDSA key will be returned
+     * @param alias An alias for the key.
+     * @param hsmCategory The HSM category for the key.
+     * @param scheme The scheme for the key. This is only used in verification. An ECDSA key will be returned.
      * @return an ECDSA public key
      */
     fun generateKey(alias: String, hsmCategory: HsmCategory, scheme: String) : PublicKey
