@@ -4,7 +4,7 @@ import net.corda.v5.base.types.MemberX500Name;
 import net.corda.v5.cipher.suite.DigestService;
 import net.corda.v5.crypto.SecureHash;
 import net.corda.v5.ledger.common.transaction.Party;
-import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction;
+import net.corda.v5.ledger.utxo.transaction.*;
 import org.mockito.Mockito;
 
 import java.io.InputStream;
@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 import java.security.PublicKey;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -31,7 +32,13 @@ public class AbstractMockTestHarness {
     protected final Contract contract = Mockito.mock(Contract.class);
     protected final VerifiableCommand command = Mockito.mock(VerifiableCommand.class);
     protected final CommandAndSignatories<VerifiableCommand> commandAndSignatories = Mockito.mock(CommandAndSignatories.class);
+
+    protected final UtxoTransactionBuilder utxoTransactionBuilder = Mockito.mock(UtxoTransactionBuilder.class);
+    protected final UtxoWireTransaction utxoWireTransaction = Mockito.mock(UtxoWireTransaction.class);
+    protected final UtxoSignedTransaction utxoSignedTransaction = Mockito.mock(UtxoSignedTransaction.class);
     protected final UtxoLedgerTransaction utxoLedgerTransaction = Mockito.mock(UtxoLedgerTransaction.class);
+    protected final UtxoLedgerService utxoLedgerService = Mockito.mock(UtxoLedgerService.class);
+
     protected final CpkConstraint constraint = Mockito.mock(CpkConstraint.class);
     protected final CpkConstraintContext constraintContext = Mockito.mock(CpkConstraintContext.class);
     protected final DigestService digestService = Mockito.mock(DigestService.class);
@@ -87,6 +94,11 @@ public class AbstractMockTestHarness {
         initializeContract();
         initializeCommand();
         initializeCommandAndSignatories();
+        initializeUtxoTransactionBuider();
+        initializeUtxoWireTransaction();
+        initializeUtxoSignedTransaction();
+        initializeUtxoLedgerTransaction();
+        initializeUtxoLedgerService();
         initializeConstraint();
         initializeAttachment();
         initializeTimeWindow();
@@ -158,6 +170,46 @@ public class AbstractMockTestHarness {
     private void initializeCommandAndSignatories() {
         Mockito.when(commandAndSignatories.getCommand()).thenReturn(command);
         Mockito.when(commandAndSignatories.getSignatories()).thenReturn(keys);
+    }
+
+    private void initializeUtxoTransactionBuider() {
+        final List<SecureHash> attachments = new ArrayList<>();
+        final List<CommandAndSignatories<?>> commands = new ArrayList<>();
+
+        Mockito.when(utxoTransactionBuilder.getNotary()).thenReturn(notaryParty);
+        Mockito.when(utxoTransactionBuilder.getTimeWindow()).thenReturn(timeWindow);
+        Mockito.when(utxoTransactionBuilder.getAttachments()).thenReturn(attachments);
+        Mockito.when(utxoTransactionBuilder.getCommands()).thenReturn(List.of(commandAndSignatories));
+        Mockito.when(utxoTransactionBuilder.getInputStateAndRefs()).thenReturn(List.of(contractStateAndRef));
+        Mockito.when(utxoTransactionBuilder.getReferenceInputStateAndRefs()).thenReturn(List.of(contractStateAndRef));
+        Mockito.when(utxoTransactionBuilder.getOutputTransactionStates()).thenReturn(List.of(contractTransactionState));
+        Mockito.when(utxoTransactionBuilder.getRequiredSignatories()).thenCallRealMethod();
+
+        Mockito.when(utxoTransactionBuilder.addAttachment(hash)).then(invocation -> {
+            attachments.add(hash);
+            return utxoTransactionBuilder;
+        });
+
+        Mockito.when(utxoTransactionBuilder.addCommandAndSignatories(commandAndSignatories)).then(invocation -> {
+            commands.add(commandAndSignatories);
+            return utxoTransactionBuilder;
+        });
+    }
+
+    private void initializeUtxoWireTransaction() {
+
+    }
+
+    private void initializeUtxoSignedTransaction() {
+
+    }
+
+    private void initializeUtxoLedgerService() {
+
+    }
+
+    private void initializeUtxoLedgerTransaction() {
+
     }
 
     private void initializeConstraint() {

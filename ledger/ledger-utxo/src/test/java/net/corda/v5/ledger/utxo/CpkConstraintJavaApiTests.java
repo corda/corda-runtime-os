@@ -8,6 +8,6 @@ public final class CpkConstraintJavaApiTests extends AbstractMockTestHarness {
     @Test
     public void isSatisfiedByShouldBeCallable() {
         boolean value = constraint.isSatisfiedBy(digestService, constraintContext);
-        Assertions.assertEquals(true, value);
+        Assertions.assertTrue(value);
     }
 }
