@@ -180,7 +180,19 @@ pipeline {
                     }
                 }
 
-                sh "./gradlew cleanE2eTest smokeTest e2eTest ${GRADLE_PERFORMANCE_TUNING}"
+                sh "./gradlew cleanE2eTest smokeTest e2eTest ${GRADLE_PERFORMANCE_TUNING} \
+                -P e2eClusterARpcHost=localhost \
+                -P e2eClusterARpcPort=8887 \
+                -P e2eClusterBRpcHost=localhost \
+                -P e2eClusterBRpcPort=8888 \
+                -P e2eClusterCRpcHost=localhost \
+                -P e2eClusterCRpcPort=8889 \
+                -P e2eClusterAP2pHost=corda-alice-p2p-gateway-worker \
+                -P e2eClusterAP2pPort=8080 \
+                -P e2eClusterBP2pHost=corda-bob-p2p-gateway-worker \
+                -P e2eClusterBP2pPort=8080 \
+                -P e2eClusterCP2pHost=corda-caroline-p2p-gateway-worker \
+                -P e2eClusterCP2pPort=8080"
             }
             post {
                 always {
