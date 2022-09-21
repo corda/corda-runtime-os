@@ -110,9 +110,6 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
             log.info("Updating Changelogs")
             updateChangeLogs(cpkDbChangeLogEntities, em, cpi)
 
-            log.info("Create changelog audit entries")
-            createAuditEntries(em, cpi)
-
             return@persistMetadataAndCpks managedCpiMetadataEntity
         }
     }
@@ -132,12 +129,12 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         cpkDbChangeLogEntities: List<CpkDbChangeLogEntity>,
         em: EntityManager,
         cpi: Cpi
-    ): Boolean {
+    ) {
         // The incoming changelogs will not be marked deleted
         cpkDbChangeLogEntities.forEach { require(!it.isDeleted) }
         val allChangelogs = findDbChangeLogForCpi(em, cpi.metadata.cpiId)
         // Check have the changelogs actually changed
-        val changelogsDifferent = cpkDbChangeLogEntities.map { it.fileChecksum }.sorted() !=
+        val changelogsDiffered = cpkDbChangeLogEntities.map { it.fileChecksum }.sorted() !=
             allChangelogs.map { it.fileChecksum }.sorted()
         // We first mark each existing changelog for this CPI as deleted.
         allChangelogs.forEach { rec ->
@@ -152,18 +149,12 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
             em.merge(it)
         }
 
-        return changelogsDifferent
-    }
-
-    private fun createAuditEntries(
-        em: EntityManager,
-        cpi: Cpi
-    ) {
-        // Find the changelogs we just made
-        val allChangelogs = findDbChangeLogForCpi(em, cpi.metadata.cpiId)
-        allChangelogs.forEach {
-            val audit = it.toAudit()
-            em.persist(audit)
+        if (changelogsDiffered) {
+            cpkDbChangeLogEntities.forEach {
+                val inDb = em.find(CpkDbChangeLogEntity::class.java, it.id)
+                val audit = inDb.toAudit()
+                em.persist(audit)
+            }
         }
     }
 
@@ -206,14 +197,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
             createOrUpdateCpkFileEntities(em, cpi.cpks)
 
             log.info("Updating Changelogs")
-            val changeLogsUpdated = updateChangeLogs(cpkDbChangeLogEntities, em, cpi)
-
-            if (changeLogsUpdated) {
-                // We only want to create new changelog audit entries when there's some difference between the new and
-                //  the old ones
-                log.info("Update changelog audit entries")
-                createAuditEntries(em, cpi)
-            }
+            updateChangeLogs(cpkDbChangeLogEntities, em, cpi)
 
             return cpiMetadataEntity
         }
