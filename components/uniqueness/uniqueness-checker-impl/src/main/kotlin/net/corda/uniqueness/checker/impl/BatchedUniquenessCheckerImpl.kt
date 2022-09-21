@@ -125,11 +125,6 @@ class BatchedUniquenessCheckerImpl(
         lifecycleCoordinator.stop()
     }
 
-    override fun close() {
-        log.info("Uniqueness checker closing.")
-        lifecycleCoordinator.close()
-    }
-
     @Synchronized
     override fun processRequests(
         requests: List<UniquenessCheckRequestAvro>
