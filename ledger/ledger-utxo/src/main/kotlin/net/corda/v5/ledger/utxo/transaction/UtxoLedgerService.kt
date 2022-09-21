@@ -23,21 +23,38 @@ interface UtxoLedgerService {
     fun getTransactionBuilder(notary: Party): UtxoTransactionBuilder
 
     /**
-     * Resolves a [List] of [StateRef] to a [List] of [StateAndRef] of the specified [ContractState] type.
+     * Resolves the specified [StateRef] instances into [StateAndRef] instances of the specified [ContractState] type.
      *
      * @param T The underlying [ContractState] type.
      * @param stateRefs The [StateRef] instances to resolve.
      * @return Returns a [List] of [StateAndRef] of the specified [ContractState] type.
      */
     @Suspendable
-    fun <T : ContractState> resolve(stateRefs: List<StateRef>): List<StateAndRef<T>>
+    fun <T : ContractState> resolve(stateRefs: Iterable<StateRef>): List<StateAndRef<T>>
 
     /**
-     * Verifies a [List] of [StateAndRef] of the specified [ContractState] type.
+     * Resolves the specified [StateRef] instances into [StateAndRef] instances of the specified [ContractState] type.
      *
      * @param T The underlying [ContractState] type.
+     * @param stateRefs The [StateRef] instances to resolve.
+     * @return Returns a [List] of [StateAndRef] of the specified [ContractState] type.
+     */
+    @Suspendable
+    fun <T : ContractState> resolve(vararg stateRefs: StateRef): List<StateAndRef<T>>
+
+    /**
+     * Verifies the specified [StateAndRef] instances.
+     *
      * @param stateAndRefs The [StateAndRef] instances to verify.
      */
     @Suspendable
-    fun <T : ContractState> verify(stateAndRefs: List<StateAndRef<T>>)
+    fun <T : ContractState> verify(stateAndRefs: Iterable<StateAndRef<T>>)
+
+    /**
+     * Verifies the specified [StateAndRef] instances.
+     *
+     * @param stateAndRefs The [StateAndRef] instances to verify.
+     */
+    @Suspendable
+    fun <T : ContractState> verify(vararg stateAndRefs: StateAndRef<T>)
 }

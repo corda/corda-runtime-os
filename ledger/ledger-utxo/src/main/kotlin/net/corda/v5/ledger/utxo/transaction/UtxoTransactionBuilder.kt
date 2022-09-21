@@ -4,12 +4,10 @@ import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.Party
-import net.corda.v5.ledger.common.transaction.PrivacySalt
 import net.corda.v5.ledger.utxo.*
 import java.security.PublicKey
 import java.time.Duration
 import java.time.Instant
-import java.util.*
 
 /**
  * Defines a builder for UTXO transactions.
@@ -44,14 +42,6 @@ interface UtxoTransactionBuilder {
      * @return Returns a new [UtxoTransactionBuilder] with an added [Attachment].
      */
     fun addAttachment(attachmentId: SecureHash): UtxoTransactionBuilder
-
-    /**
-     * Adds a command and associated signatories to the current [UtxoTransactionBuilder].
-     *
-     * @param commandAndSignatories The command and associated signatories to add to the current [UtxoTransactionBuilder].
-     * @return Returns a [UtxoTransactionBuilder] including the additional command and associated signatories.
-     */
-    fun addCommandAndSignatories(commandAndSignatories: CommandAndSignatories<*>): UtxoTransactionBuilder
 
     /**
      * Adds a command and associated signatories to the current [UtxoTransactionBuilder].
@@ -142,26 +132,97 @@ interface UtxoTransactionBuilder {
      * @param encumbrance The index of an associated, encumbered state, or null if no encumbrance applies to the associated transaction state.
      * @return Returns a [UtxoTransactionBuilder] including the additional output state.
      */
-    fun addOutputState(
-        contractState: ContractState,
-        contractId: String,
-        notary: Party,
-        encumbrance: Int?
-    ): UtxoTransactionBuilder
+    fun addOutputState(contractState: ContractState, contractId: String, notary: Party, encumbrance: Int?): UtxoTransactionBuilder
 
+    /**
+     * Sets the transaction time window to be valid from the specified [Instant], tending towards positive infinity.
+     *
+     * @param from The [Instant] from which the transaction time window is valid.
+     * @return Returns a [UtxoTransactionBuilder] including the specified time window.
+     */
     fun setTimeWindowFrom(from: Instant): UtxoTransactionBuilder
+
+    /**
+     * Sets the transaction time window to be valid until the specified [Instant], tending towards negative infinity.
+     *
+     * @param until The [Instant] until which the transaction time window is valid.
+     * @return Returns a [UtxoTransactionBuilder] including the specified time window.
+     */
     fun setTimeWindowUntil(until: Instant): UtxoTransactionBuilder
+
+    /**
+     * Sets the transaction time window to be valid between the specified [Instant] values.
+     *
+     * @param from The [Instant] from which the transaction time window is valid.
+     * @param until The [Instant] until which the transaction time window is valid.
+     * @return Returns a [UtxoTransactionBuilder] including the specified time window.
+     */
     fun setTimeWindowBetween(from: Instant, until: Instant): UtxoTransactionBuilder
+
+    /**
+     * Sets the transaction time window to be valid at the specified [Instant] with the specified tolerance.
+     *
+     * @param midpoint The [Instant] representing the midpoint of the time window.
+     * @param tolerance The [Duration] representing the tolerance of the time window, which is applied before and after the midpoint.
+     * @return Returns a [UtxoTransactionBuilder] including the specified time window.
+     */
     fun setTimeWindowBetween(midpoint: Instant, tolerance: Duration): UtxoTransactionBuilder
 
+    /**
+     * Signs the transaction with any required signatories that belong to the current node.
+     *
+     * @return Returns a [UtxoSignedTransaction] with signatures for any required signatories that belong to the current node.
+     */
     fun sign(): UtxoSignedTransaction
-    fun sign(signatory: PublicKey): UtxoSignedTransaction
+
+    /**
+     * Signs the transaction with the specified signatory keys.
+     *
+     * @param signatories The signatories expected to sign the current transaction.
+     * @return Returns a [UtxoSignedTransaction] with signatures for the specified signatory keys.
+     */
     fun sign(signatories: Iterable<PublicKey>): UtxoSignedTransaction
 
+    /**
+     * Signs the transaction with the specified signatory keys.
+     *
+     * @param signatories The signatories expected to sign the current transaction.
+     * @return Returns a [UtxoSignedTransaction] with signatures for the specified signatory keys.
+     */
+    fun sign(vararg signatories: PublicKey): UtxoSignedTransaction
+
+    /**
+     * Verifies the current transaction.
+     */
     fun verify()
+
+    /**
+     * Verifies and signs the transaction with any required signatories that belong to the current node.
+     *
+     * @return Returns a [UtxoSignedTransaction] with signatures for any required signatories that belong to the current node.
+     */
     fun verifyAndSign(): UtxoSignedTransaction
-    fun verifyAndSign(signatory: PublicKey): UtxoSignedTransaction
+
+    /**
+     * Verifies and signs the transaction with the specified signatory keys.
+     *
+     * @param signatories The signatories expected to sign the current transaction.
+     * @return Returns a [UtxoSignedTransaction] with signatures for the specified signatory keys.
+     */
     fun verifyAndSign(signatories: Iterable<PublicKey>): UtxoSignedTransaction
 
+    /**
+     * Verifies and signs the transaction with the specified signatory keys.
+     *
+     * @param signatories The signatories expected to sign the current transaction.
+     * @return Returns a [UtxoSignedTransaction] with signatures for the specified signatory keys.
+     */
+    fun verifyAndSign(vararg signatories: PublicKey): UtxoSignedTransaction
+
+    /**
+     * Builds the current transaction into a [UtxoWireTransaction].
+     *
+     * @return Returns a [UtxoWireTransaction] from the current [UtxoTransactionBuilder].
+     */
     fun toWireTransaction(): UtxoWireTransaction
 }

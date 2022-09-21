@@ -21,20 +21,20 @@ interface UtxoSignedTransaction {
     val signatures: Set<DigitalSignatureAndMetadata>
 
     /**
-     * Adds the specified signature to the current [UtxoSignedTransaction].
-     *
-     * @param signature The signature and metadata to add to the current [UtxoSignedTransaction].
-     * @return Returns a new [UtxoSignedTransaction] containing the applied signature.
-     */
-    fun addSignature(signature: DigitalSignatureAndMetadata): UtxoSignedTransaction
-
-    /**
      * Adds the specified signatures to the current [UtxoSignedTransaction].
      *
      * @param signatures The signatures and metadata to add to the current [UtxoSignedTransaction].
      * @return Returns a new [UtxoSignedTransaction] containing the applied signatures.
      */
     fun addSignatures(signatures: Iterable<DigitalSignatureAndMetadata>): UtxoSignedTransaction
+
+    /**
+     * Adds the specified signature to the current [UtxoSignedTransaction].
+     *
+     * @param signatures The signatures and metadata to add to the current [UtxoSignedTransaction].
+     * @return Returns a new [UtxoSignedTransaction] containing the applied signature.
+     */
+    fun addSignatures(vararg signatures: DigitalSignatureAndMetadata): UtxoSignedTransaction
 
     /**
      * Gets the missing signatories from the current [UtxoSignedTransaction].

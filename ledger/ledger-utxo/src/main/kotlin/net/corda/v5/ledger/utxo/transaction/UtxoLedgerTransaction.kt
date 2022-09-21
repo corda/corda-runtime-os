@@ -221,10 +221,7 @@ interface UtxoLedgerTransaction {
      * @param selector The selector that will be common to all grouped [StateAndRef] inputs and outputs.
      * @return Returns groups of ledger transaction [StateAndRef] inputs and outputs that match the specified [ContractState] type, grouped by the specified selector key.
      */
-    fun <T : ContractState, K : Any> getGroupedStates(
-        type: Class<T>,
-        selector: (StateAndRef<T>) -> K
-    ): List<InputOutputGroup<T, K>>
+    fun <T : ContractState, K : Any> getGroupedStates(type: Class<T>, selector: (StateAndRef<T>) -> K): List<InputOutputGroup<T, K>>
 
     // endregion
 }

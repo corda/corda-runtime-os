@@ -1,7 +1,11 @@
 package net.corda.v5.ledger.utxo;
 
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata;
+import net.corda.v5.application.crypto.DigitalSignatureMetadata;
+import net.corda.v5.application.serialization.SerializationService;
 import net.corda.v5.base.types.MemberX500Name;
 import net.corda.v5.cipher.suite.DigestService;
+import net.corda.v5.crypto.DigitalSignature;
 import net.corda.v5.crypto.SecureHash;
 import net.corda.v5.ledger.common.transaction.Party;
 import net.corda.v5.ledger.utxo.transaction.*;
@@ -13,15 +17,15 @@ import java.math.BigDecimal;
 import java.security.PublicKey;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.jar.JarInputStream;
 
 public class AbstractMockTestHarness {
 
     // Mocked APIs
+    protected final DigestService digestService = Mockito.mock(DigestService.class);
+    protected final SerializationService serializationService = Mockito.mock(SerializationService.class);
+
     protected final PublicKey aliceKey = Mockito.mock(PublicKey.class);
     protected final PublicKey bobKey = Mockito.mock(PublicKey.class);
     protected final PublicKey notaryKey = Mockito.mock(PublicKey.class);
@@ -41,7 +45,6 @@ public class AbstractMockTestHarness {
 
     protected final CpkConstraint constraint = Mockito.mock(CpkConstraint.class);
     protected final CpkConstraintContext constraintContext = Mockito.mock(CpkConstraintContext.class);
-    protected final DigestService digestService = Mockito.mock(DigestService.class);
     protected final Attachment attachment = Mockito.mock(Attachment.class);
     protected final InputStream inputStream = Mockito.mock(InputStream.class);
     protected final OutputStream outputStream = Mockito.mock(OutputStream.class);
@@ -83,6 +86,9 @@ public class AbstractMockTestHarness {
     protected final Instant midpoint = Instant.EPOCH;
     protected final Duration duration = Duration.between(minInstant, maxInstant);
     protected final String contractId = "com.example.contract.id";
+    protected final DigitalSignature.WithKey signature = new DigitalSignature.WithKey(aliceKey, new byte[]{0}, Map.of());
+    protected final DigitalSignatureMetadata metadata = new DigitalSignatureMetadata(minInstant, Map.of());
+    protected final DigitalSignatureAndMetadata signatureAndMetadata = new DigitalSignatureAndMetadata(signature, metadata);
 
     protected AbstractMockTestHarness() {
         initializeParties();
@@ -174,15 +180,18 @@ public class AbstractMockTestHarness {
 
     private void initializeUtxoTransactionBuider() {
         final List<SecureHash> attachments = new ArrayList<>();
-        final List<CommandAndSignatories<?>> commands = new ArrayList<>();
+        final List<CommandAndSignatories<?>> commandsAndSignatories = new ArrayList<>();
+        final List<StateAndRef<?>> inputStateAndRefs = new ArrayList<>();
+        final List<StateAndRef<?>> referenceInputStateAndRefs = new ArrayList<>();
+        final List<TransactionState<?>> outputStateAndRefs = new ArrayList<>();
 
         Mockito.when(utxoTransactionBuilder.getNotary()).thenReturn(notaryParty);
         Mockito.when(utxoTransactionBuilder.getTimeWindow()).thenReturn(timeWindow);
         Mockito.when(utxoTransactionBuilder.getAttachments()).thenReturn(attachments);
-        Mockito.when(utxoTransactionBuilder.getCommands()).thenReturn(List.of(commandAndSignatories));
-        Mockito.when(utxoTransactionBuilder.getInputStateAndRefs()).thenReturn(List.of(contractStateAndRef));
-        Mockito.when(utxoTransactionBuilder.getReferenceInputStateAndRefs()).thenReturn(List.of(contractStateAndRef));
-        Mockito.when(utxoTransactionBuilder.getOutputTransactionStates()).thenReturn(List.of(contractTransactionState));
+        Mockito.when(utxoTransactionBuilder.getCommands()).thenReturn(commandsAndSignatories);
+        Mockito.when(utxoTransactionBuilder.getInputStateAndRefs()).thenReturn(inputStateAndRefs);
+        Mockito.when(utxoTransactionBuilder.getReferenceInputStateAndRefs()).thenReturn(referenceInputStateAndRefs);
+        Mockito.when(utxoTransactionBuilder.getOutputTransactionStates()).thenReturn(outputStateAndRefs);
         Mockito.when(utxoTransactionBuilder.getRequiredSignatories()).thenCallRealMethod();
 
         Mockito.when(utxoTransactionBuilder.addAttachment(hash)).then(invocation -> {
@@ -190,22 +199,100 @@ public class AbstractMockTestHarness {
             return utxoTransactionBuilder;
         });
 
-        Mockito.when(utxoTransactionBuilder.addCommandAndSignatories(commandAndSignatories)).then(invocation -> {
-            commands.add(commandAndSignatories);
+        Mockito.when(utxoTransactionBuilder.addCommandAndSignatories(command, keys)).then(invocation -> {
+            commandsAndSignatories.add(commandAndSignatories);
             return utxoTransactionBuilder;
         });
+
+        Mockito.when(utxoTransactionBuilder.addCommandAndSignatories(command, aliceKey, bobKey)).thenCallRealMethod();
+
+        Mockito.when(utxoTransactionBuilder.addInputState(contractStateAndRef)).then(invocation -> {
+            inputStateAndRefs.add(contractStateAndRef);
+            return utxoTransactionBuilder;
+        });
+
+        Mockito.when(utxoTransactionBuilder.addReferenceInputState(contractStateAndRef)).then(invocation -> {
+            referenceInputStateAndRefs.add(contractStateAndRef);
+            return utxoTransactionBuilder;
+        });
+
+        Mockito.when(utxoTransactionBuilder.addOutputState(contractTransactionState)).then(invocation -> {
+            outputStateAndRefs.add(contractTransactionState);
+            return utxoTransactionBuilder;
+        });
+
+        Mockito.when(utxoTransactionBuilder.addOutputState(contractState)).then(invocation -> {
+            outputStateAndRefs.add(contractTransactionState);
+            return utxoTransactionBuilder;
+        });
+
+        Mockito.when(utxoTransactionBuilder.addOutputState(contractState, notaryParty)).then(invocation -> {
+            outputStateAndRefs.add(contractTransactionState);
+            return utxoTransactionBuilder;
+        });
+
+        Mockito.when(utxoTransactionBuilder.addOutputState(contractState, contractId)).then(invocation -> {
+            outputStateAndRefs.add(contractTransactionState);
+            return utxoTransactionBuilder;
+        });
+
+        Mockito.when(utxoTransactionBuilder.addOutputState(contractState, contractId, notaryParty)).then(invocation -> {
+            outputStateAndRefs.add(contractTransactionState);
+            return utxoTransactionBuilder;
+        });
+
+        Mockito.when(utxoTransactionBuilder.addOutputState(contractState, contractId, notaryParty, 0)).then(invocation -> {
+            outputStateAndRefs.add(contractTransactionState);
+            return utxoTransactionBuilder;
+        });
+
+        Mockito.when(utxoTransactionBuilder.setTimeWindowFrom(minInstant)).thenReturn(utxoTransactionBuilder);
+        Mockito.when(utxoTransactionBuilder.setTimeWindowUntil(maxInstant)).thenReturn(utxoTransactionBuilder);
+        Mockito.when(utxoTransactionBuilder.setTimeWindowBetween(minInstant, maxInstant)).thenReturn(utxoTransactionBuilder);
+        Mockito.when(utxoTransactionBuilder.setTimeWindowBetween(midpoint, duration)).thenReturn(utxoTransactionBuilder);
+
+        Mockito.when(utxoTransactionBuilder.sign()).thenReturn(utxoSignedTransaction);
+        Mockito.when(utxoTransactionBuilder.sign(keys)).thenReturn(utxoSignedTransaction);
+        Mockito.when(utxoTransactionBuilder.sign(aliceKey)).thenReturn(utxoSignedTransaction);
+
+        Mockito.doNothing().when(utxoTransactionBuilder).verify();
+        Mockito.when(utxoTransactionBuilder.verifyAndSign()).thenReturn(utxoSignedTransaction);
+        Mockito.when(utxoTransactionBuilder.verifyAndSign(keys)).thenReturn(utxoSignedTransaction);
+        Mockito.when(utxoTransactionBuilder.verifyAndSign(aliceKey)).thenReturn(utxoSignedTransaction);
+
+        Mockito.when(utxoTransactionBuilder.toWireTransaction()).thenReturn(utxoWireTransaction);
     }
 
     private void initializeUtxoWireTransaction() {
-
+        // TODO : Mocks will be implemented when UtxoWireTransaction has been defined.
     }
 
     private void initializeUtxoSignedTransaction() {
+        final Set<DigitalSignatureAndMetadata> signatures = new HashSet<>();
 
+        Mockito.when(utxoSignedTransaction.getId()).thenReturn(hash);
+        Mockito.when(utxoSignedTransaction.getSignatures()).thenReturn(signatures);
+
+        Mockito.when(utxoSignedTransaction.addSignatures(signatureAndMetadata)).then(invocation -> {
+            signatures.add(signatureAndMetadata);
+            return utxoSignedTransaction;
+        });
+
+        Mockito.when(utxoSignedTransaction.addSignatures(Set.of(signatureAndMetadata))).then(invocation -> {
+            signatures.add(signatureAndMetadata);
+            return utxoSignedTransaction;
+        });
+
+        Mockito.when(utxoSignedTransaction.getMissingSignatories(serializationService)).thenReturn(keys);
+        Mockito.when(utxoSignedTransaction.toLedgerTransaction(serializationService)).thenReturn(utxoLedgerTransaction);
     }
 
     private void initializeUtxoLedgerService() {
-
+        Mockito.when(utxoLedgerService.getTransactionBuilder(notaryParty)).thenReturn(utxoTransactionBuilder);
+        Mockito.when(utxoLedgerService.resolve(Set.of(stateRef))).thenReturn(List.of(contractStateAndRef));
+        Mockito.when(utxoLedgerService.resolve(stateRef)).thenReturn(List.of(contractStateAndRef));
+        Mockito.doNothing().when(utxoLedgerService).verify(Set.of(contractStateAndRef));
+        Mockito.doNothing().when(utxoLedgerService).verify(contractStateAndRef);
     }
 
     private void initializeUtxoLedgerTransaction() {
