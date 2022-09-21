@@ -57,13 +57,13 @@ public class AbstractMockTestHarness {
 
     protected final StateAndRef<ContractState> contractStateAndRef = createStateAndRef(Mockito.mock(ContractState.class));
     protected final StateAndRef<IdentifiableState> identifiableStateAndRef = createStateAndRef(Mockito.mock(IdentifiableState.class));
-    protected final StateAndRef<FungibleState<BigDecimal>> fungibleStateStateAndRef = createStateAndRef(Mockito.mock(FungibleState.class));
+    protected final StateAndRef<FungibleState> fungibleStateAndRef = createStateAndRef(Mockito.mock(FungibleState.class));
     protected final StateAndRef<IssuableState> issuableStateAndRef = createStateAndRef(Mockito.mock(IssuableState.class));
     protected final StateAndRef<BearableState> bearableStateAndRef = createStateAndRef(Mockito.mock(BearableState.class));
 
     protected final TransactionState<ContractState> contractTransactionState = contractStateAndRef.getState();
     protected final TransactionState<IdentifiableState> identifiableTransactionState = identifiableStateAndRef.getState();
-    protected final TransactionState<FungibleState<BigDecimal>> fungibleTransactionState = fungibleStateStateAndRef.getState();
+    protected final TransactionState<FungibleState> fungibleTransactionState = fungibleStateAndRef.getState();
     protected final TransactionState<IssuableState> issuableTransactionState = issuableStateAndRef.getState();
     protected final TransactionState<BearableState> bearableTransactionState = bearableStateAndRef.getState();
 
@@ -72,6 +72,33 @@ public class AbstractMockTestHarness {
     protected final FungibleState<BigDecimal> fungibleState = fungibleTransactionState.getContractState();
     protected final IssuableState issuableState = issuableTransactionState.getContractState();
     protected final BearableState bearableState = bearableTransactionState.getContractState();
+
+    // Mocked Collections
+    protected final List<CommandAndSignatories<?>> commands = List.of(commandAndSignatories);
+
+    protected final List<StateAndRef<?>> contractStateAndRefs = List.of(
+            contractStateAndRef,
+            fungibleStateAndRef,
+            identifiableStateAndRef,
+            issuableStateAndRef,
+            bearableStateAndRef
+    );
+
+    protected final List<TransactionState<?>> contractTransactionStates = List.of(
+            contractTransactionState,
+            fungibleTransactionState,
+            identifiableTransactionState,
+            issuableTransactionState,
+            bearableTransactionState
+    );
+
+    protected final List<ContractState> contractStates = List.of(
+            contractState,
+            fungibleState,
+            identifiableState,
+            issuableState,
+            bearableState
+    );
 
     // Mocked Data
     protected final Set<PublicKey> keys = Set.of(aliceKey, bobKey);
@@ -296,7 +323,100 @@ public class AbstractMockTestHarness {
     }
 
     private void initializeUtxoLedgerTransaction() {
+        Mockito.when(utxoLedgerTransaction.getTimeWindow()).thenReturn(timeWindow);
+        Mockito.when(utxoLedgerTransaction.getAttachments()).thenReturn(List.of(attachment));
+        Mockito.when(utxoLedgerTransaction.getCommands()).thenReturn(commands);
 
+        Mockito.when(utxoLedgerTransaction.getInputStateAndRefs()).thenReturn(contractStateAndRefs);
+        Mockito.when(utxoLedgerTransaction.getInputTransactionStates()).thenCallRealMethod();
+        Mockito.when(utxoLedgerTransaction.getInputContractStates()).thenCallRealMethod();
+
+        Mockito.when(utxoLedgerTransaction.getReferenceInputStateAndRefs()).thenReturn(contractStateAndRefs);
+        Mockito.when(utxoLedgerTransaction.getReferenceInputTransactionStates()).thenCallRealMethod();
+        Mockito.when(utxoLedgerTransaction.getReferenceInputContractStates()).thenCallRealMethod();
+
+        Mockito.when(utxoLedgerTransaction.getOutputStateAndRefs()).thenReturn(contractStateAndRefs);
+        Mockito.when(utxoLedgerTransaction.getOutputTransactionStates()).thenCallRealMethod();
+        Mockito.when(utxoLedgerTransaction.getOutputContractStates()).thenCallRealMethod();
+
+        Mockito.when(utxoLedgerTransaction.getAttachment(hash)).thenReturn(attachment);
+
+        Mockito.when(utxoLedgerTransaction.getCommandAndSignatories(VerifiableCommand.class)).thenReturn(commandAndSignatories);
+        Mockito.when(utxoLedgerTransaction.getCommandsAndSignatories(VerifiableCommand.class)).thenReturn(List.of(commandAndSignatories));
+
+        Mockito.when(utxoLedgerTransaction.getInputState(ContractState.class)).thenThrow(IllegalArgumentException.class);
+        Mockito.when(utxoLedgerTransaction.getInputState(FungibleState.class)).thenReturn(fungibleState);
+        Mockito.when(utxoLedgerTransaction.getInputState(IdentifiableState.class)).thenReturn(identifiableState);
+        Mockito.when(utxoLedgerTransaction.getInputState(IssuableState.class)).thenReturn(issuableState);
+        Mockito.when(utxoLedgerTransaction.getInputState(BearableState.class)).thenReturn(bearableState);
+
+        Mockito.when(utxoLedgerTransaction.getInputStateAndRef(ContractState.class)).thenThrow(IllegalArgumentException.class);
+        Mockito.when(utxoLedgerTransaction.getInputStateAndRef(FungibleState.class)).thenReturn(fungibleStateAndRef);
+        Mockito.when(utxoLedgerTransaction.getInputStateAndRef(IdentifiableState.class)).thenReturn(identifiableStateAndRef);
+        Mockito.when(utxoLedgerTransaction.getInputStateAndRef(IssuableState.class)).thenReturn(issuableStateAndRef);
+        Mockito.when(utxoLedgerTransaction.getInputStateAndRef(BearableState.class)).thenReturn(bearableStateAndRef);
+
+        Mockito.when(utxoLedgerTransaction.getInputStates(ContractState.class)).thenReturn((List) contractStates);
+        Mockito.when(utxoLedgerTransaction.getInputStates(FungibleState.class)).thenReturn(List.of(fungibleState));
+        Mockito.when(utxoLedgerTransaction.getInputStates(IdentifiableState.class)).thenReturn(List.of(identifiableState));
+        Mockito.when(utxoLedgerTransaction.getInputStates(IssuableState.class)).thenReturn(List.of(issuableState));
+        Mockito.when(utxoLedgerTransaction.getInputStates(BearableState.class)).thenReturn(List.of(bearableState));
+
+        Mockito.when(utxoLedgerTransaction.getInputStateAndRefs(ContractState.class)).thenReturn((List) contractStateAndRefs);
+        Mockito.when(utxoLedgerTransaction.getInputStateAndRefs(FungibleState.class)).thenReturn(List.of(fungibleStateAndRef));
+        Mockito.when(utxoLedgerTransaction.getInputStateAndRefs(IdentifiableState.class)).thenReturn(List.of(identifiableStateAndRef));
+        Mockito.when(utxoLedgerTransaction.getInputStateAndRefs(IssuableState.class)).thenReturn(List.of(issuableStateAndRef));
+        Mockito.when(utxoLedgerTransaction.getInputStateAndRefs(BearableState.class)).thenReturn(List.of(bearableStateAndRef));
+
+        Mockito.when(utxoLedgerTransaction.getReferenceInputState(ContractState.class)).thenThrow(IllegalArgumentException.class);
+        Mockito.when(utxoLedgerTransaction.getReferenceInputState(FungibleState.class)).thenReturn(fungibleState);
+        Mockito.when(utxoLedgerTransaction.getReferenceInputState(IdentifiableState.class)).thenReturn(identifiableState);
+        Mockito.when(utxoLedgerTransaction.getReferenceInputState(IssuableState.class)).thenReturn(issuableState);
+        Mockito.when(utxoLedgerTransaction.getReferenceInputState(BearableState.class)).thenReturn(bearableState);
+
+        Mockito.when(utxoLedgerTransaction.getReferenceInputStateAndRef(ContractState.class)).thenThrow(IllegalArgumentException.class);
+        Mockito.when(utxoLedgerTransaction.getReferenceInputStateAndRef(FungibleState.class)).thenReturn(fungibleStateAndRef);
+        Mockito.when(utxoLedgerTransaction.getReferenceInputStateAndRef(IdentifiableState.class)).thenReturn(identifiableStateAndRef);
+        Mockito.when(utxoLedgerTransaction.getReferenceInputStateAndRef(IssuableState.class)).thenReturn(issuableStateAndRef);
+        Mockito.when(utxoLedgerTransaction.getReferenceInputStateAndRef(BearableState.class)).thenReturn(bearableStateAndRef);
+
+        Mockito.when(utxoLedgerTransaction.getReferenceInputStates(ContractState.class)).thenReturn((List) contractStates);
+        Mockito.when(utxoLedgerTransaction.getReferenceInputStates(FungibleState.class)).thenReturn(List.of(fungibleState));
+        Mockito.when(utxoLedgerTransaction.getReferenceInputStates(IdentifiableState.class)).thenReturn(List.of(identifiableState));
+        Mockito.when(utxoLedgerTransaction.getReferenceInputStates(IssuableState.class)).thenReturn(List.of(issuableState));
+        Mockito.when(utxoLedgerTransaction.getReferenceInputStates(BearableState.class)).thenReturn(List.of(bearableState));
+
+        Mockito.when(utxoLedgerTransaction.getReferenceInputStateAndRefs(ContractState.class)).thenReturn((List) contractStateAndRefs);
+        Mockito.when(utxoLedgerTransaction.getReferenceInputStateAndRefs(FungibleState.class)).thenReturn(List.of(fungibleStateAndRef));
+        Mockito.when(utxoLedgerTransaction.getReferenceInputStateAndRefs(IdentifiableState.class)).thenReturn(List.of(identifiableStateAndRef));
+        Mockito.when(utxoLedgerTransaction.getReferenceInputStateAndRefs(IssuableState.class)).thenReturn(List.of(issuableStateAndRef));
+        Mockito.when(utxoLedgerTransaction.getReferenceInputStateAndRefs(BearableState.class)).thenReturn(List.of(bearableStateAndRef));
+
+        Mockito.when(utxoLedgerTransaction.getOutputState(ContractState.class)).thenThrow(IllegalArgumentException.class);
+        Mockito.when(utxoLedgerTransaction.getOutputState(FungibleState.class)).thenReturn(fungibleState);
+        Mockito.when(utxoLedgerTransaction.getOutputState(IdentifiableState.class)).thenReturn(identifiableState);
+        Mockito.when(utxoLedgerTransaction.getOutputState(IssuableState.class)).thenReturn(issuableState);
+        Mockito.when(utxoLedgerTransaction.getOutputState(BearableState.class)).thenReturn(bearableState);
+
+        Mockito.when(utxoLedgerTransaction.getOutputStateAndRef(ContractState.class)).thenThrow(IllegalArgumentException.class);
+        Mockito.when(utxoLedgerTransaction.getOutputStateAndRef(FungibleState.class)).thenReturn(fungibleStateAndRef);
+        Mockito.when(utxoLedgerTransaction.getOutputStateAndRef(IdentifiableState.class)).thenReturn(identifiableStateAndRef);
+        Mockito.when(utxoLedgerTransaction.getOutputStateAndRef(IssuableState.class)).thenReturn(issuableStateAndRef);
+        Mockito.when(utxoLedgerTransaction.getOutputStateAndRef(BearableState.class)).thenReturn(bearableStateAndRef);
+
+        Mockito.when(utxoLedgerTransaction.getOutputStates(ContractState.class)).thenReturn((List) contractStates);
+        Mockito.when(utxoLedgerTransaction.getOutputStates(FungibleState.class)).thenReturn(List.of(fungibleState));
+        Mockito.when(utxoLedgerTransaction.getOutputStates(IdentifiableState.class)).thenReturn(List.of(identifiableState));
+        Mockito.when(utxoLedgerTransaction.getOutputStates(IssuableState.class)).thenReturn(List.of(issuableState));
+        Mockito.when(utxoLedgerTransaction.getOutputStates(BearableState.class)).thenReturn(List.of(bearableState));
+
+        Mockito.when(utxoLedgerTransaction.getOutputStateAndRefs(ContractState.class)).thenReturn((List) contractStateAndRefs);
+        Mockito.when(utxoLedgerTransaction.getOutputStateAndRefs(FungibleState.class)).thenReturn(List.of(fungibleStateAndRef));
+        Mockito.when(utxoLedgerTransaction.getOutputStateAndRefs(IdentifiableState.class)).thenReturn(List.of(identifiableStateAndRef));
+        Mockito.when(utxoLedgerTransaction.getOutputStateAndRefs(IssuableState.class)).thenReturn(List.of(issuableStateAndRef));
+        Mockito.when(utxoLedgerTransaction.getOutputStateAndRefs(BearableState.class)).thenReturn(List.of(bearableStateAndRef));
+// TODO : Query re IOGroup Usage on PR.
+//        Mockito.when(utxoLedgerTransaction.getGroupedStates(IdentifiableState.class, it -> it.getState().getContractState().getId())).thenCallRealMethod();
     }
 
     private void initializeConstraint() {
