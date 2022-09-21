@@ -31,19 +31,21 @@ tasks.register('copyCliFiles') {
         }.flatten()
         logger.info("otherPluginsTasksFlattened : $otherPluginsTasksFlattened")
         dependsOn otherPluginsTasks
-        copy {
-            duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-            from configurations.named('cliHostDist')
-            into "$buildDir/cli"
-            rename ('.*.jar', 'corda-cli.jar')
-        }
-        copy {
-            from otherPluginsTasks
-            into "$buildDir/cli/plugins"
-        }
-        copy {
-            from "$projectDir/installScripts"
-            into "$buildDir/cli"
+        doLast {
+            copy {
+                duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+                from configurations.named('cliHostDist')
+                into "$buildDir/cli"
+                rename('.*.jar', 'corda-cli.jar')
+            }
+            copy {
+                from otherPluginsTasks
+                into "$buildDir/cli/plugins"
+            }
+            copy {
+                from "$projectDir/installScripts"
+                into "$buildDir/cli"
+            }
         }
 }
 
