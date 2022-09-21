@@ -28,7 +28,7 @@ interface HoldingIdentity {
          * name elements set to defaults.
          *
          * @param commonName The string to use as the common name.
-         * @return a [HoldingIdentity] whose [MemberX500Name] has the given common name
+         * @return A [HoldingIdentity] whose [MemberX500Name] has the given common name.
          */
         fun create(commonName: String): HoldingIdentity {
             return factory.create(
