@@ -2,9 +2,7 @@ package net.corda.v5.application.crypto
 
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.crypto.SignatureSpec
-import java.security.InvalidKeyException
 import java.security.PublicKey
-import java.security.SignatureException
 
 /**
  * Allows flows to verify digital signatures.
@@ -22,10 +20,9 @@ interface DigitalSignatureVerificationService {
      * @param signatureSpec The signature spec.
      * @param clearData The clear data/message that was signed (usually the Merkle root).
      *
-     * @throws InvalidKeyException If the key is invalid.
-     * @throws SignatureException If verification fails.
      * @throws IllegalArgumentException If the signature scheme is not supported or if any of the clear or signature
      * data is empty.
+     * @throws CryptoSignatureException Thrown if verification of the digital signature fails.
      */
     fun verify(publicKey: PublicKey, signatureSpec: SignatureSpec, signatureData: ByteArray, clearData: ByteArray)
 }
