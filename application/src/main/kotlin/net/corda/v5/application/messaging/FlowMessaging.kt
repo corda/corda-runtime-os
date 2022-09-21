@@ -169,5 +169,5 @@ interface FlowMessaging {
      * @param payloadsPerSession a mapping that contains the payload to be sent to each session.
      */
     @Suspendable
-    fun sendAllMap(payloadsPerSession: Map<FlowSession, *>)
+    fun sendAllMap(payloadsPerSession: Map<FlowSession, Any>)
 }
