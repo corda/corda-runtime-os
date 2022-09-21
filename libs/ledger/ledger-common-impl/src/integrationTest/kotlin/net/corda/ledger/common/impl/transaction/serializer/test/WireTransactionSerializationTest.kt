@@ -8,6 +8,7 @@ import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
 import net.corda.ledger.common.impl.transaction.serializer.WireTransactionKryoSerializer
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
+import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFactory
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
@@ -66,6 +67,8 @@ class WireTransactionSerializationTest {
 
     private lateinit var sandboxManagementService: SandboxManagementService
 
+    private lateinit var wireTransactionKryoSerializer: CheckpointInternalCustomSerializer<WireTransaction>
+
     @BeforeAll
     fun setup(
         @InjectService(timeout = 1000)
@@ -78,6 +81,7 @@ class WireTransactionSerializationTest {
         sandboxSetup.configure(bundleContext, baseDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
             sandboxManagementService = setup.fetchService(timeout = 1500)
+            wireTransactionKryoSerializer = setup.fetchService(1500)
         }
     }
 
@@ -111,7 +115,7 @@ class WireTransactionSerializationTest {
                 digestService as SingletonSerializeAsToken,
                 merkleTreeFactory as SingletonSerializeAsToken
             ))
-            .addSerializer(WireTransaction::class.java, WireTransactionKryoSerializer(merkleTreeFactory, digestService))
+            .addSerializer(WireTransaction::class.java, wireTransactionKryoSerializer)
             .build()
 
         val wireTransaction = getWireTransaction()
