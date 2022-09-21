@@ -25,7 +25,7 @@
     "description" : "The Flow Info API consists of a number of endpoints used to find out which flows can be invoked using the Flow Management API for a given identity."
   }, {
     "name" : "Flow Management API",
-    "description" : "Flow management endpoints."
+    "description" : "The Flow Management API consists of a number of endpoints used to interact with flows."
   }, {
     "name" : "HSM API",
     "description" : "Hardware Security Modules interaction endpoints."
@@ -485,16 +485,16 @@
     "/flow/{holdingidentityshorthash}" : {
       "get" : {
         "tags" : [ "Flow Management API" ],
-        "description" : "Get status of all flows for a holding identity. Returns an empty list if there are no flows running.",
+        "description" : "This method returns an array containing the statuses of all flows running for a specified holding identity. An empty array is returned if there are no flows running.",
         "operationId" : "get_flow__holdingidentityshorthash_",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "Short hash of the holding identity",
+          "description" : "The short hash of the holding identity; obtained during node registration",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Short hash of the holding identity",
+            "description" : "The short hash of the holding identity; obtained during node registration",
             "nullable" : false,
             "example" : "string"
           }
@@ -520,16 +520,16 @@
       },
       "post" : {
         "tags" : [ "Flow Management API" ],
-        "description" : "Instructs Corda to start a new instance of the specified flow",
+        "description" : "This method starts a new instance for the specified flow for the specified holding identity.",
         "operationId" : "post_flow__holdingidentityshorthash_",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "Short hash of the holding identity",
+          "description" : "The short hash of the holding identity; obtained during node registration",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Short hash of the holding identity",
+            "description" : "The short hash of the holding identity; obtained during node registration",
             "nullable" : false,
             "example" : "string"
           }
@@ -547,7 +547,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "The initial status of the flow, if the flow already exists the status of the existing flow will be returned.",
+            "description" : "\n            The initial status of the flow instance; if the flow already exists, then the status of the existing flow will be returned.\n            \n            holdingIdentityShortHash: The short form hash of the holding identity\n            clientRequestId: The unique ID supplied by the client when the flow was created.\n            flowId: The internal unique ID for the flow.\n            flowStatus: The current state of the executing flow.\n            flowResult: The result returned from a completed flow, only set when the flow status is 'COMPLETED' otherwise null\n            flowError: The details of the error that caused a flow to fail, only set when the flow status is 'FAILED' otherwise null\n            timestamp: The timestamp of when the status was last updated (in UTC)\n            ",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -568,16 +568,16 @@
     "/flow/{holdingidentityshorthash}/{clientrequestid}" : {
       "get" : {
         "tags" : [ "Flow Management API" ],
-        "description" : "Gets the current status for a given flow.",
+        "description" : "This method gets the current status of the specified flow instance.",
         "operationId" : "get_flow__holdingidentityshorthash___clientrequestid_",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "Short hash of the holding identity",
+          "description" : "The short hash of the holding identity; obtained during node registration",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Short hash of the holding identity",
+            "description" : "The short hash of the holding identity; obtained during node registration",
             "nullable" : false,
             "example" : "string"
           }
@@ -595,7 +595,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "The status of the flow.",
+            "description" : "\n            The status of the flow instance.\n            \n            holdingIdentityShortHash: The short form hash of the Holding Identity\n            clientRequestId: The unique ID supplied by the client when the flow was created.\n            flowId: The internal unique ID for the flow.\n            flowStatus: The current state of the executing flow.\n            flowResult: The result returned from a completed flow, only set when the flow status is 'COMPLETED' otherwise null\n            flowError: The details of the error that caused a flow to fail, only set when the flow status is 'FAILED' otherwise null\n            timestamp: The timestamp of when the status was last updated (in UTC)\n            ",
             "content" : {
               "application/json" : {
                 "schema" : {
