@@ -345,13 +345,9 @@ open class JPABackingStoreImpl @Activate constructor(
         when (event) {
             is StartEvent -> {
                 dependentComponents.registerAndStartAll(coordinator)
-                // TODO: Review possible missing logic. Refer to FlowRPCOpsServiceImpl.kt.
-//                if(dbConnectionManager.isRunning) coordinator.updateStatus(LifecycleStatus.UP)
             }
             is StopEvent -> {
                 dependentComponents.stopAll()
-                // TODO: Review possible missing logic. Refer to FlowRPCOpsServiceImpl.kt.
-//                if(!dbConnectionManager.isRunning) coordinator.updateStatus(LifecycleStatus.DOWN)
             }
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
@@ -389,7 +385,6 @@ open class JPABackingStoreImpl @Activate constructor(
             JPABackingStoreEntities.classes
         )
 
-//        val schemaMigrator = LiquibaseSchemaMigratorImpl()
         val changeLog = ClassloaderChangeLog(
             linkedSetOf(
                 ClassloaderChangeLog.ChangeLogResourceFiles(

@@ -6,6 +6,7 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.testkit.DbUtils
+import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
@@ -21,10 +22,8 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.toAvro
 import org.junit.jupiter.api.*
-import org.mockito.kotlin.any
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
+import org.mockito.Mockito
+import org.mockito.kotlin.*
 import java.time.Clock
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -43,7 +42,8 @@ class JPABackingStoreImplIntegrationTests {
     private val entityManagerFactory: EntityManagerFactory
     private val dbConfig = DbUtils.getEntityManagerConfiguration("uniqueness_default")
 
-    private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock()
+    private lateinit var lifecycleCoordinator: LifecycleCoordinator
+    private lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 
     class DummyException(message: String) : Exception(message)
 
@@ -58,6 +58,11 @@ class JPABackingStoreImplIntegrationTests {
 
     @BeforeEach
     fun init() {
+        lifecycleCoordinator = mock<LifecycleCoordinator>()
+        lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>().apply {
+            whenever(createCoordinator(any(), any())) doReturn lifecycleCoordinator
+        }
+
         backingStoreImpl = JPABackingStoreImpl(lifecycleCoordinatorFactory,
             JpaEntitiesRegistryImpl(),
             mock<DbConnectionManager>().apply {
@@ -87,6 +92,28 @@ class JPABackingStoreImplIntegrationTests {
 
         return uniquenessCheckInternalStateRefs
     }
+
+    private fun generateExternalRequest(txId: SecureHash): UniquenessCheckRequestAvro {
+        val inputStateRef = "${SecureHashUtils.randomSecureHash()}:0"
+
+        return UniquenessCheckRequestAvro.newBuilder(
+            UniquenessCheckRequestAvro(
+                createTestHoldingIdentity("C=GB, L=London, O=Alice", "Test Group").toAvro(),
+                ExternalEventContext(
+                    UUID.randomUUID().toString(),
+                    UUID.randomUUID().toString(),
+                    KeyValuePairList(emptyList())
+                ),
+                txId.toString(),
+                emptyList(),
+                emptyList(),
+                0,
+                null,
+                LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
+            )
+        ).setInputStates(listOf(inputStateRef)).build()
+    }
+
 
     @Nested
     inner class TransactionTests {
@@ -120,7 +147,7 @@ class JPABackingStoreImplIntegrationTests {
         }
 
         @Test
-        fun `Executing transaction succeeds after trasient failures`() {
+        fun `Executing transaction succeeds after transient failures`() {
             var execCounter = 0
             assertDoesNotThrow {
                 backingStoreImpl.session { session ->
@@ -136,34 +163,41 @@ class JPABackingStoreImplIntegrationTests {
     }
 
     @Nested
+    inner class LifeCycleTests {
+        @Test
+        fun `Starting backing store invokes life cycle start`() {
+            Mockito.verify(lifecycleCoordinator, never()).start()
+            backingStoreImpl.start()
+            Mockito.verify(lifecycleCoordinator).start()
+        }
+
+        @Test
+        fun `Stopping backing store invokes life cycle stop`() {
+            Mockito.verify(lifecycleCoordinator, never()).stop()
+            backingStoreImpl.stop()
+            Mockito.verify(lifecycleCoordinator).stop()
+        }
+
+        @Test
+        fun `Get running life cycle status`() {
+            backingStoreImpl.isRunning
+            Mockito.verify(lifecycleCoordinator).isRunning
+        }
+    }
+
+    @Nested
     inner class PersistingDataTests {
         @Test
         fun `Persisting transaction details succeeds`() {
             val txCnt = 3
-            val txns: LinkedList<Pair<UniquenessCheckRequestInternal, UniquenessCheckResult>> = LinkedList()
+            val txns = LinkedList<Pair<UniquenessCheckRequestInternal, UniquenessCheckResult>>()
             val txIds = LinkedList<SecureHash>()
 
             repeat(txCnt) {
                 val txId = SecureHashUtils.randomSecureHash()
-                val inputStateRef = "${SecureHashUtils.randomSecureHash()}:$it"
+                val externalRequest = generateExternalRequest(txId)
                 txIds.add(txId)
 
-                val externalRequest = UniquenessCheckRequestAvro.newBuilder(
-                    UniquenessCheckRequestAvro(
-                        createTestHoldingIdentity("C=GB, L=London, O=Alice", "Test Group").toAvro(),
-                        ExternalEventContext(
-                            UUID.randomUUID().toString(),
-                            UUID.randomUUID().toString(),
-                            KeyValuePairList(emptyList())
-                        ),
-                        txId.toString(),
-                        emptyList(),
-                        emptyList(),
-                        0,
-                        null,
-                        LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
-                    )
-                ).setInputStates(listOf(inputStateRef)).build()
                 val internalRequest = UniquenessCheckRequestInternal.create(externalRequest)
                 txns.add(Pair(internalRequest, UniquenessCheckResultSuccessImpl(Clock.systemUTC().instant())))
             }
