@@ -81,9 +81,13 @@ internal class ApproveRegistrationHandler(
         val registrationId = state.registrationId
         val messages = try {
             val mgm = memberTypeChecker.getMgmMemberInfo(approvedBy.toCorda())
-                ?: throw CordaRuntimeException("Could not approve $registrationId - member ${approvedBy.x500Name} is an MGM.")
+                ?: throw CordaRuntimeException(
+                    "Could not approve registration request: '$registrationId' - member ${approvedBy.x500Name} is not an MGM."
+                )
             if (memberTypeChecker.isMgm(approvedMember)) {
-                throw CordaRuntimeException("The registration request: '$registrationId' cannot be approved by ${approvedMember.x500Name} as it is not an MGM.")
+                throw CordaRuntimeException(
+                    "The registration request: '$registrationId' cannot be approved by ${approvedMember.x500Name} as it is an MGM."
+                )
             }
 
             val persistState = membershipPersistenceClient.setMemberAndRegistrationRequestAsApproved(
@@ -141,7 +145,7 @@ internal class ApproveRegistrationHandler(
             )
             memberToAllMembers + memberRecord + allMembersToNewMember + persistApproveMessage
         } catch (e: Exception) {
-            logger.warn("Could not approve registration: $registrationId", e)
+            logger.warn("Could not approve registration request: '$registrationId'", e)
             listOf(
                 Record(
                     REGISTRATION_COMMAND_TOPIC,

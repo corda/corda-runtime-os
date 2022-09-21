@@ -52,7 +52,7 @@ internal class ProcessMemberVerificationResponseHandler(
                 val reasons = command.verificationResponse.payload.items
                     .filter { it.key == FAILURE_REASONS }
                     .map { it.value }
-                val message = "Could no verify registration $registrationId - $reasons"
+                val message = "Could no verify registration request: '$registrationId' - $reasons"
                 throw CordaRuntimeException(message)
             }
             if (memberTypeChecker.isMgm(member)) {
@@ -83,7 +83,7 @@ internal class ProcessMemberVerificationResponseHandler(
                 )
             )
         } catch (e: Exception) {
-            logger.warn("Could not process member verification response for $registrationId", e)
+            logger.warn("Could not process member verification response for registration request: '$registrationId'", e)
             listOf(
                 Record(
                     REGISTRATION_COMMAND_TOPIC,

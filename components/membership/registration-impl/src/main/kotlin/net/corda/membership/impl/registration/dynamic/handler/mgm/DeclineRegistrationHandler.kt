@@ -40,12 +40,12 @@ internal class DeclineRegistrationHandler(
         val declinedMember = state.registeringMember
         val registrationId = state.registrationId
         if (memberTypeChecker.isMgm(declinedMember)) {
-            logger.warn("Trying to decline registration $registrationId of ${declinedMember.x500Name} which is an MGM")
+            logger.warn("Trying to decline registration request: '$registrationId' of ${declinedMember.x500Name} which is an MGM")
         }
         if (!memberTypeChecker.isMgm(declinedBy)) {
-            logger.warn("Trying to decline registration $registrationId by ${declinedBy.x500Name} which is not an MGM")
+            logger.warn("Trying to decline registration request: '$registrationId' by ${declinedBy.x500Name} which is not an MGM")
         }
-        logger.info("Declining registration $registrationId for ${declinedMember.x500Name} - ${command.reason}")
+        logger.info("Declining registration request: '$registrationId' for ${declinedMember.x500Name} - ${command.reason}")
         membershipPersistenceClient.setMemberAndRegistrationRequestAsDeclined(
             viewOwningIdentity = declinedBy.toCorda(),
             declinedMember = declinedMember.toCorda(),

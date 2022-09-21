@@ -45,10 +45,12 @@ internal class VerifyMemberHandler(
         val registrationId = state.registrationId
         val messages = try {
             if (!memberTypeChecker.isMgm(mgm)) {
-                throw CordaRuntimeException("Could not verify $registrationId with ${mgm.x500Name} - Not an MGM.")
+                throw CordaRuntimeException("Could not verify registration request: '$registrationId' with ${mgm.x500Name} - Not an MGM.")
             }
             if (memberTypeChecker.isMgm(member)) {
-                throw CordaRuntimeException("Could not verify $registrationId member ${member.x500Name} - Can not be an MGM.")
+                throw CordaRuntimeException(
+                    "Could not verify registration request: '$registrationId' member ${member.x500Name} - Can not be an MGM."
+                )
             }
             membershipPersistenceClient.setRegistrationRequestStatus(
                 mgm.toCorda(),
