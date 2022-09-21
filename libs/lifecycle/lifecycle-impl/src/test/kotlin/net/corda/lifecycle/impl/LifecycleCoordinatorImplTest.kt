@@ -344,6 +344,7 @@ internal class LifecycleCoordinatorImplTest {
                 }
             }
             assertTrue(timerLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            coordinator.close()
         }
         assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
         assertEquals(key, deliveredKey)
@@ -1106,6 +1107,7 @@ internal class LifecycleCoordinatorImplTest {
         coordinator.use {
             it.start()
             assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            it.close()
         }
         assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
         verify(registry).removeCoordinator(coordinator.name)

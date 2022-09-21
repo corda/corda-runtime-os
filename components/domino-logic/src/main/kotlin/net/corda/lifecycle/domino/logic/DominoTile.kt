@@ -8,7 +8,7 @@ import net.corda.lifecycle.LifecycleStatus
 /**
  * This interface can be implemented by classes the encapsulate more elaborate domino logic that can be reused easily.
  */
-abstract class DominoTile: Lifecycle {
+abstract class DominoTile: Lifecycle, AutoCloseable {
     /**
      * The coordinator name that will be used by this domino tile for lifecycle events.
      */

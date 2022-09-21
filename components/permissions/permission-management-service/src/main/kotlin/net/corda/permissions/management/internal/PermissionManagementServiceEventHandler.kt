@@ -5,6 +5,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.permission.PermissionValidator
 import net.corda.libs.permissions.manager.BasicAuthenticationService
 import net.corda.libs.permissions.manager.PermissionManager
@@ -18,7 +19,6 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
@@ -89,9 +89,9 @@ internal class PermissionManagementServiceEventHandler(
                         permissionValidator = permissionValidationService.permissionValidator
                     }
                     LifecycleStatus.DOWN -> {
-                        permissionManager?.close()
+                        permissionManager?.stop()
                         permissionManager = null
-                        basicAuthenticationService?.close()
+                        basicAuthenticationService?.stop()
                         basicAuthenticationService = null
                         permissionValidator = null
                         coordinator.updateStatus(LifecycleStatus.DOWN)
@@ -119,7 +119,7 @@ internal class PermissionManagementServiceEventHandler(
                 configSubscription = null
                 rpcSender?.close()
                 rpcSender = null
-                permissionManager?.close()
+                permissionManager?.stop()
                 permissionManager = null
                 registrationHandle?.close()
                 registrationHandle = null
@@ -134,7 +134,7 @@ internal class PermissionManagementServiceEventHandler(
 
         val permissionValidationCacheRef = permissionValidationCacheService.permissionValidationCacheRef
 
-        permissionManager?.close()
+        permissionManager?.stop()
         log.info("Creating and starting permission manager.")
         permissionManager =
             permissionManagerFactory.createPermissionManager(
@@ -145,7 +145,7 @@ internal class PermissionManagementServiceEventHandler(
             )
                 .also { it.start() }
 
-        basicAuthenticationService?.close()
+        basicAuthenticationService?.stop()
         log.info("Creating and starting basic authentication service using permission system.")
         basicAuthenticationService = permissionManagerFactory.createBasicAuthenticationService(permissionManagementCacheRef)
             .also { it.start() }

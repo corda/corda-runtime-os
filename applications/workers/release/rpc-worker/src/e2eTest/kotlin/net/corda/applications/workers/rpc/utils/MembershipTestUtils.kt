@@ -6,6 +6,7 @@ import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.membership.httprpc.v1.MemberLookupRpcOps
 import net.corda.membership.httprpc.v1.types.response.RpcMemberInfo
 import net.corda.test.util.eventually
+import net.corda.v5.base.util.minutes
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
@@ -145,7 +146,7 @@ fun E2eCluster.assertMemberInMemberList(
     member: E2eClusterMember
 ) {
     eventually(
-        duration = 60.seconds,
+        duration = 2.minutes,
         waitBetween = 3.seconds
     ) {
         assertThat(

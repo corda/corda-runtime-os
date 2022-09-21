@@ -560,7 +560,7 @@ class ConsumerGroupTest {
             on { partitionAssignmentListener } doReturn listener
         }
         val consumption = group.createConsumption(consumer)
-        consumption.close()
+        consumption.stop()
 
         verify(listener).onPartitionsUnassigned(any())
     }

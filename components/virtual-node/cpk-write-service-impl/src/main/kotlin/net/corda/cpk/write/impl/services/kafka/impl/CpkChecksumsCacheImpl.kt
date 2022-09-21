@@ -2,6 +2,7 @@ package net.corda.cpk.write.impl.services.kafka.impl
 
 import net.corda.chunking.toCorda
 import net.corda.cpk.write.impl.services.kafka.CpkChecksumsCache
+import net.corda.cpk.write.impl.services.kafka.impl.CpkChecksumsCacheImpl.CacheSynchronizer
 import net.corda.data.chunking.Chunk
 import net.corda.data.chunking.CpkChunkId
 import net.corda.libs.configuration.SmartConfig
@@ -15,8 +16,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
 import java.nio.ByteBuffer
-import java.util.Collections
-import kotlin.collections.LinkedHashMap
+import java.util.*
 
 /**
  * This cache will get updated everytime a zero chunk is pushed to Kafka and gets picked up by [CacheSynchronizer].
@@ -38,13 +38,10 @@ class CpkChecksumsCacheImpl(
     internal val compactedSubscription =
         subscriptionFactory.createCompactedSubscription(subscriptionConfig, CacheSynchronizer(), nodeConfig)
 
-    override val isRunning: Boolean
-        get() = compactedSubscription.isRunning
-
     override fun start() =
         compactedSubscription.start()
 
-    override fun stop() =
+    override fun close() =
         compactedSubscription.close()
 
     override fun getCachedCpkIds() =

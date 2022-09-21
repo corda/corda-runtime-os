@@ -6,7 +6,17 @@ import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.validation.ConfigurationSchemaFetchException
 import net.corda.libs.configuration.validation.ConfigurationValidationException
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
+import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
+import net.corda.schema.configuration.ConfigKeys.DB_CONFIG
+import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.ConfigKeys.P2P_GATEWAY_CONFIG
+import net.corda.schema.configuration.ConfigKeys.P2P_LINK_MANAGER_CONFIG
+import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
+import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
+import net.corda.schema.configuration.ConfigKeys.SANDBOX_CONFIG
+import net.corda.schema.configuration.ConfigKeys.SECRETS_CONFIG
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.v5.base.versioning.Version
 import org.assertj.core.api.Assertions.assertThat
@@ -14,6 +24,8 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.osgi.framework.FrameworkUtil
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
@@ -66,6 +78,27 @@ class ConfigurationValidationIntegrationTest {
         assertThat(outputConfig.getInt(MessagingConfig.Subscription.POLL_TIMEOUT)).isEqualTo(500)
     }
 
+    // Verifies that a default config can be generated from the schema for each section.
+    @ParameterizedTest(name = "verify that a sensible default is created for config section: {0}")
+    @ValueSource(strings = [
+        MESSAGING_CONFIG,
+        CRYPTO_CONFIG,
+        DB_CONFIG,
+        FLOW_CONFIG,
+        P2P_LINK_MANAGER_CONFIG,
+        P2P_GATEWAY_CONFIG,
+        RPC_CONFIG,
+        SANDBOX_CONFIG,
+        RECONCILIATION_CONFIG,
+        SECRETS_CONFIG,
+        MEMBERSHIP_CONFIG
+    ])
+    fun `verify that a sensible default is created when an empty config is provided`(section: String) {
+        val validator = configurationValidatorFactory.createConfigValidator()
+        val outputConfig = validator.getDefaults(section, VERSION)
+        assertThat(outputConfig).isNotNull
+    }
+
     @Test
     fun `attempt to fetch schema for an invalid key`() {
         val validator = configurationValidatorFactory.createConfigValidator()
@@ -90,7 +123,7 @@ class ConfigurationValidationIntegrationTest {
     private fun loadConfig(resource: String): SmartConfig {
         val url =
             FrameworkUtil.getBundle(this::class.java).getResource(resource)
-            ?: throw IllegalArgumentException("Failed to find $resource")
+                ?: throw IllegalArgumentException("Failed to find $resource")
         return SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.parseURL(url))
     }
 }

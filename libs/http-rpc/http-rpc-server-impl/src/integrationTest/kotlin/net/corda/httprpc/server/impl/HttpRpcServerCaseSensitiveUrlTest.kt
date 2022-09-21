@@ -37,7 +37,7 @@ class HttpRpcServerCaseSensitiveUrlTest: HttpRpcServerTestBase() {
         @JvmStatic
         @Suppress("Unused")
         fun cleanUpAfterClass() {
-            server.stop()
+            server.close()
         }
     }
 

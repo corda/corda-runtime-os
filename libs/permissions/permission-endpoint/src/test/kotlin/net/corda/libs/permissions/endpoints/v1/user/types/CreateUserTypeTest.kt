@@ -40,6 +40,32 @@ class CreateUserTypeTest {
     }
 
     @Test
+    fun testBlankFullName() {
+        Assertions.assertThatThrownBy {
+            CreateUserType(
+                "", "Joe.Bloggs@company.com", true, "secret1234!", Instant.now(),
+                UUID.randomUUID().toString())
+        }.hasMessage("Invalid input data for user creation.").matches {
+            (it as InvalidInputDataException).details == mapOf(
+                "Error #1" to "Full name must not be blank.",
+            )
+        }
+    }
+
+    @Test
+    fun testBlankLoginName() {
+        Assertions.assertThatThrownBy {
+            CreateUserType(
+                "Joe Bloggs", "", true, "secret1234!", Instant.now(),
+                UUID.randomUUID().toString())
+        }.hasMessage("Invalid input data for user creation.").matches {
+            (it as InvalidInputDataException).details == mapOf(
+                "Error #1" to "Login name must not be blank.",
+            )
+        }
+    }
+
+    @Test
     fun testWrongChars() {
         Assertions.assertThatThrownBy {
             CreateUserType("abc{}", "def()", true, "passw+=", null,

@@ -43,7 +43,7 @@ class TestGroupPolicyProviderImpl @Activate constructor(
 
     override fun getGroupPolicy(holdingIdentity: HoldingIdentity) = policy
 
-    override fun registerListener(callback: (HoldingIdentity, GroupPolicy) -> Unit) {
+    override fun registerListener(name: String, callback: (HoldingIdentity, GroupPolicy) -> Unit) {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
             throw UnsupportedOperationException(this)
