@@ -185,7 +185,7 @@ internal class HttpRpcGatewayEventHandler(
 
     private fun createAndStartHttpRpcServer(config: SmartConfig) {
         log.info("Stopping any running HTTP RPC Server and endpoints.")
-        server?.stop()
+        server?.close()
         sslCertReadService?.stop()
 
         val keyStoreInfo = sslCertReadServiceFactory.create().let {

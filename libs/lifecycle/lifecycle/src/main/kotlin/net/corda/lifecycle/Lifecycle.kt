@@ -9,7 +9,7 @@ package net.corda.lifecycle
  *
  * When the component goes out of scope, [close] is automatically called, hence [stop].
  */
-interface Lifecycle : AutoCloseable {
+interface Lifecycle {
 
     /**
      * It is `true` the component is running.
@@ -29,15 +29,4 @@ interface Lifecycle : AutoCloseable {
      * It should be safe to call stop multiple times without side effects.
      */
     fun stop()
-
-    //: AutoCloseable
-
-    /**
-     * Automatically called when this component is out of try-with-resource scope.
-     *
-     * Further, it is not expected that a closed object should be restarted.
-     *
-     * See [AutoCloseable.close]
-     */
-    override fun close() = stop()
 }

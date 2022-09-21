@@ -134,7 +134,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         exception: FlowEventException,
         context: FlowEventContext<*>
     ): StateAndEventProcessor.Response<Checkpoint> = withEscalation {
-        log.warn("A non critical error was reported while processing the event.", exception)
+        log.warn("A non critical error was reported while processing the event: ${exception.message}")
         flowEventContextConverter.convert(context)
     }
 

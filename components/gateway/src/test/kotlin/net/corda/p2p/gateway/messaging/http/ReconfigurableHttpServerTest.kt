@@ -127,7 +127,7 @@ class ReconfigurableHttpServerTest {
         configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
         configHandler.applyNewConfiguration(configuration.copy(hostAddress = "aaa"), configuration, resourcesHolder)
 
-        verify(serverMock.constructed().first()).stop()
+        verify(serverMock.constructed().first()).close()
         verify(serverMock.constructed()[1]).start()
     }
 
@@ -136,7 +136,7 @@ class ReconfigurableHttpServerTest {
         configHandler.applyNewConfiguration(configuration, null, resourcesHolder)
         configHandler.applyNewConfiguration(configuration.copy(hostPort = 13), configuration, resourcesHolder)
 
-        verify(serverMock.constructed().first()).stop()
+        verify(serverMock.constructed().first()).close()
         verify(serverMock.constructed()[1]).start()
     }
 

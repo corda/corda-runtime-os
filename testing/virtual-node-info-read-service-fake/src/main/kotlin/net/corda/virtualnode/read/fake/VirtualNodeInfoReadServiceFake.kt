@@ -18,6 +18,7 @@ import net.corda.virtualnode.read.VirtualNodeInfoListener
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
 import java.io.File
@@ -143,7 +144,8 @@ class VirtualNodeInfoReadServiceFake internal constructor(
         coordinator.stop()
     }
 
-    override fun close() {
+    @Deactivate
+    fun close() {
         coordinator.close()
     }
 

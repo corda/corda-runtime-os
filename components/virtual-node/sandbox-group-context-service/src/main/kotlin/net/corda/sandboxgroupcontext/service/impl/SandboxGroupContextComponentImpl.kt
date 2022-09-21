@@ -23,6 +23,7 @@ import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.v5.crypto.SecureHash
 import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
 import org.osgi.service.component.annotations.Activate
@@ -31,7 +32,6 @@ import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.runtime.ServiceComponentRuntime
 import java.util.Collections.unmodifiableList
-import net.corda.v5.crypto.SecureHash
 
 /**
  * Sandbox group context service component... with lifecycle, since it depends on a CPK service
@@ -136,7 +136,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
     override fun close() {
         coordinator.close()
         sandboxGroupContextService?.close()
-        cpkReadService.close()
+        cpkReadService.stop()
     }
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {

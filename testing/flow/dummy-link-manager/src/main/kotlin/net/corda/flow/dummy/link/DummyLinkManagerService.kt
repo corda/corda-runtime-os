@@ -24,6 +24,7 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 
 @Component(service = [DummyLinkManagerService::class], immediate = true)
@@ -109,7 +110,8 @@ class DummyLinkManagerService @Activate constructor(
         coordinator.stop()
     }
 
-    override fun close() {
+    @Deactivate
+    fun close() {
         coordinator.close()
     }
 }

@@ -22,7 +22,6 @@ import net.corda.kryoserialization.serializers.LinkedHashMapEntrySerializer
 import net.corda.kryoserialization.serializers.LinkedHashMapIteratorSerializer
 import net.corda.kryoserialization.serializers.LinkedListItrSerializer
 import net.corda.kryoserialization.serializers.LoggerSerializer
-import net.corda.kryoserialization.serializers.StackTraceSerializer
 import net.corda.kryoserialization.serializers.ThrowableSerializer
 import net.corda.kryoserialization.serializers.X509CertificateSerializer
 import net.corda.kryoserialization.serializers.NonSerializableSerializer
@@ -50,7 +49,7 @@ class DefaultKryoCustomizer {
             serializers: Map<Class<*>, Serializer<*>>,
             classResolver: CordaClassResolver,
             classSerializer: ClassSerializer,
-            ): Kryo {
+        ): Kryo {
             return kryo.apply {
 
                 classResolver.setKryo(this)
@@ -82,8 +81,6 @@ class DefaultKryoCustomizer {
                 addDefaultSerializer(LazyMappedList::class.java, LazyMappedListSerializer)
                 UnmodifiableCollectionsSerializer.registerSerializers(this)
 
-                // Exceptions. We don't bother sending the stack traces as the client will fill in its own anyway.
-                addDefaultSerializer(Array<StackTraceElement>::class.java, StackTraceSerializer())
                 addDefaultSerializer(BitSet::class.java, BitSetSerializer())
                 addDefaultSerializer(CertPath::class.java, CertPathSerializer)
 
