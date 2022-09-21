@@ -46,7 +46,7 @@ openTelemetry:
   # -- enables the Open Telemetry Java agent for the Corda workers
   enabled: false
   # -- the Open Telemetry endpoint to use e.g https://otel.example.com:4317; telemetry will be logged locally if this is unset
-  endpoint: ""
+  endpoint: null
   # -- the Open Telemetry protocol the endpoint is using; one of `grpc` or `http/protobuf`
   protocol: "grpc"
 
@@ -188,7 +188,7 @@ workers:
     # logging configuration
     logging:
       # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
-      level: ""
+      level: null
     profiling:
       # -- run crypto worker with profiling enabled
       enabled: false
@@ -220,7 +220,7 @@ workers:
     # logging configuration
     logging:
       # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
-      level: ""
+      level: null
     profiling:
       # -- run DB worker with profiling enabled
       enabled: false
@@ -256,7 +256,7 @@ workers:
     # logging configuration
     logging:
       # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
-      level: ""
+      level: null
     profiling:
       # -- run flow worker with profiling enabled
       enabled: false
@@ -290,7 +290,7 @@ workers:
     # logging configuration
     logging:
       # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
-      level: ""
+      level: null
     profiling:
       # -- run membership worker with profiling enabled
       enabled: false
@@ -322,7 +322,7 @@ workers:
     # logging configuration
     logging:
       # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
-      level: ""
+      level: null
     profiling:
       # -- run RPC worker with profiling enabled
       enabled: false
@@ -366,7 +366,7 @@ workers:
     # logging configuration
     logging:
       # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
-      level: ""
+      level: null
     profiling:
       # -- run p2p-link-manager worker with profiling enabled
       enabled: false
@@ -400,7 +400,7 @@ workers:
     # logging configuration
     logging:
       # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
-      level: ""
+      level: null
     profiling:
       # -- run p2p-gateway worker with profiling enabled
       enabled: false
