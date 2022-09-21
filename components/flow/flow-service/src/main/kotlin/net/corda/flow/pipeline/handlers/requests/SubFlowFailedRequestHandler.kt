@@ -10,7 +10,6 @@ import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.flow.state.FlowCheckpoint
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -23,14 +22,12 @@ class SubFlowFailedRequestHandler @Activate constructor(
     @Reference(service = FlowRecordFactory::class)
     private val flowRecordFactory: FlowRecordFactory
 ) : FlowRequestHandler<FlowIORequest.SubFlowFailed> {
-
-    private companion object {
-        val log = contextLogger()
-    }
-
     override val type = FlowIORequest.SubFlowFailed::class.java
 
-    override fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: FlowIORequest.SubFlowFailed): WaitingFor {
+    override fun getUpdatedWaitingFor(
+        context: FlowEventContext<Any>,
+        request: FlowIORequest.SubFlowFailed
+    ): WaitingFor {
         return WaitingFor(Wakeup())
     }
 
@@ -38,11 +35,7 @@ class SubFlowFailedRequestHandler @Activate constructor(
         context: FlowEventContext<Any>,
         request: FlowIORequest.SubFlowFailed
     ): FlowEventContext<Any> {
-
-        log.info("Sub-flow [${context.checkpoint.flowId}] failed", request.throwable)
-
         val checkpoint = context.checkpoint
-
         try {
             flowSessionManager.sendErrorMessages(
                 checkpoint,
@@ -62,8 +55,10 @@ class SubFlowFailedRequestHandler @Activate constructor(
     }
 
     private fun getSessionsToError(checkpoint: FlowCheckpoint, request: FlowIORequest.SubFlowFailed): List<String> {
-        val erroredSessions = flowSessionManager.getSessionsWithStatus(checkpoint, request.sessionIds, SessionStateType.ERROR)
-        val closedSessions = flowSessionManager.getSessionsWithStatus(checkpoint, request.sessionIds, SessionStateType.CLOSED)
+        val erroredSessions =
+            flowSessionManager.getSessionsWithStatus(checkpoint, request.sessionIds, SessionStateType.ERROR)
+        val closedSessions =
+            flowSessionManager.getSessionsWithStatus(checkpoint, request.sessionIds, SessionStateType.CLOSED)
 
         return request.sessionIds - (erroredSessions + closedSessions).map { it.sessionId }
     }
