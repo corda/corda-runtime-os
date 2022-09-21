@@ -16,7 +16,7 @@
     "description" : "The CPI API consists of a number of endpoints used to manage Corda Package Installer (CPI) files in the Corda cluster."
   }, {
     "name" : "Certificates API",
-    "description" : "Certificates management endpoints."
+    "description" : "The Certificates API consists of endpoints used to work with certificates and related operations. The API allows you to import a certificate chain, and generate a certificate signing request (CSR) to be submitted to a certificate authority (CA)."
   }, {
     "name" : "Configuration API",
     "description" : "The Configuration API consists of a number of endpoints used to manage the configuration of Corda clusters."
@@ -28,25 +28,25 @@
     "description" : "The Flow Management API consists of a number of endpoints used to interact with flows."
   }, {
     "name" : "HSM API",
-    "description" : "Hardware Security Modules interaction endpoints."
+    "description" : "The HSM API consists of endpoints used to work with Hardware Security Modules (HSM) for securely storing keys."
   }, {
     "name" : "Hello RPC API",
     "description" : "The endpoint used to test interactions via HTTP RPC API. It verifies that a call to HTTP-RPC can be made, and that the identity of the user making the call can be recognized.RBAC permissions are checked and the call is successfully processed by the HTTP-RPC worker."
   }, {
     "name" : "Keys Management API",
-    "description" : "Endpoints for public/private keys management."
+    "description" : "The Keys Management API consists of endpoints used to manage public and private key pairs. The API allows you to list scheme codes which are supported by the associated HSM integration, retrieve information about key pairs owned by a tenant, generate a key pair for a tenant, and retrieve a tenant's public key in PEM format."
   }, {
     "name" : "MGM API",
-    "description" : "Membership Group Management endpoints."
+    "description" : "The MGM API consists of a number of endpoints used to manage membership groups. A membership group is a logical grouping of a number of Corda Identities to communicate and transact with one another with a specific set of CorDapps. The API allows you to generate the group policy for a membership group, required for new members to join the group."
   }, {
     "name" : "Member Lookup API",
-    "description" : "Network Membership Lookup endpoints."
+    "description" : "The Member Lookup API consists of endpoints used to look up information related to membership groups."
   }, {
     "name" : "Member Registration API",
-    "description" : "Membership Registration endpoints."
+    "description" : "The Member Registration API consists of a number of endpoints which manage holding identities' participation in membership groups. To participate in a membership group, the holding identity is required to make a registration request that needs to be approved by the MGM for that group. This API allows you to start the registration process for a holding identity, and check the status of a previously created registration request."
   }, {
     "name" : "Network API",
-    "description" : "Network Management endpoints."
+    "description" : "The Network API consists of endpoints which manage the setup of holding identities in P2P networks."
   }, {
     "name" : "RBAC Permission API",
     "description" : "The RBAC Permission API consists of a number of endpoints enabling permissions management in the RBAC (role-based access control) permission system. You can get details of specified permissions and create new permissions."
@@ -96,16 +96,16 @@
     "/certificates/{tenantid}" : {
       "put" : {
         "tags" : [ "Certificates API" ],
-        "description" : "Import certificate.",
+        "description" : "Enables you to import a certificate chain for a tenant",
         "operationId" : "put_certificates__tenantid_",
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
-          "description" : "'p2p', 'rpc-api', or holding identity ID.",
+          "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "'p2p', 'rpc-api', or holding identity ID.",
+            "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
             "nullable" : false,
             "example" : "string"
           }
@@ -119,7 +119,7 @@
                 "properties" : {
                   "alias" : {
                     "type" : "string",
-                    "description" : "The certificate alias.",
+                    "description" : "The unique alias under which the certificate chain will be stored",
                     "nullable" : false,
                     "example" : "string"
                   },
@@ -156,27 +156,27 @@
     "/certificates/{tenantid}/{keyid}" : {
       "post" : {
         "tags" : [ "Certificates API" ],
-        "description" : "Generate certificate signing request (CSR).",
+        "description" : "Enables you to generate a certificate signing request (CSR) for a tenant",
         "operationId" : "post_certificates__tenantid___keyid_",
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
-          "description" : "'p2p', 'rpc-api', or holding identity ID.",
+          "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "'p2p', 'rpc-api', or holding identity ID.",
+            "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
             "nullable" : false,
             "example" : "string"
           }
         }, {
           "name" : "keyid",
           "in" : "path",
-          "description" : "The Key ID.",
+          "description" : "Identifier of the public key that will be included in the certificate",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The Key ID.",
+            "description" : "Identifier of the public key that will be included in the certificate",
             "nullable" : false,
             "example" : "string"
           }
@@ -779,27 +779,27 @@
     "/hsm/soft/{tenantid}/{category}" : {
       "post" : {
         "tags" : [ "HSM API" ],
-        "description" : "Assign soft HSM",
+        "description" : "Enables you to assign a soft HSM to the tenant for the specified category",
         "operationId" : "post_hsm_soft__tenantid___category_",
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
-          "description" : "'p2p', 'rpc-api' or holding identity ID.",
+          "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "'p2p', 'rpc-api' or holding identity ID.",
+            "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
             "nullable" : false,
             "example" : "string"
           }
         }, {
           "name" : "category",
           "in" : "path",
-          "description" : "Category of the HSM.  E.g. LEDGER, TLS, etc.",
+          "description" : "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Category of the HSM.  E.g. LEDGER, TLS, etc.",
+            "description" : "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'",
             "nullable" : false,
             "example" : "string"
           }
@@ -827,27 +827,27 @@
     "/hsm/{tenantid}/{category}" : {
       "get" : {
         "tags" : [ "HSM API" ],
-        "description" : "Get list of assigned HSMs.",
+        "description" : "Enables you to retrieve information on the HSM of the specified category assigned to the tenant",
         "operationId" : "get_hsm__tenantid___category_",
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
-          "description" : "'p2p', 'rpc-api' or holding identity ID.",
+          "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "'p2p', 'rpc-api' or holding identity ID.",
+            "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
             "nullable" : false,
             "example" : "string"
           }
         }, {
           "name" : "category",
           "in" : "path",
-          "description" : "Category of the HSM.  E.g. LEDGER, TLS, etc.",
+          "description" : "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Category of the HSM.  E.g. LEDGER, TLS, etc.",
+            "description" : "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'",
             "nullable" : false,
             "example" : "string"
           }
@@ -876,27 +876,27 @@
       },
       "post" : {
         "tags" : [ "HSM API" ],
-        "description" : "Assign HSM.",
+        "description" : "Enables you to assign a hardware-backed HSM to the tenant for the specified category",
         "operationId" : "post_hsm__tenantid___category_",
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
-          "description" : "'p2p', 'rpc-api' or holding identity ID.",
+          "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "'p2p', 'rpc-api' or holding identity ID.",
+            "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
             "nullable" : false,
             "example" : "string"
           }
         }, {
           "name" : "category",
           "in" : "path",
-          "description" : "Category of the HSM.  E.g. LEDGER, TLS, etc.",
+          "description" : "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Category of the HSM.  E.g. LEDGER, TLS, etc.",
+            "description" : "The category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'",
             "nullable" : false,
             "example" : "string"
           }
@@ -953,27 +953,27 @@
     "/keys/{tenantid}" : {
       "get" : {
         "tags" : [ "Keys Management API" ],
-        "description" : "Get list of keys for members.",
+        "description" : "Enables you to retrieve information about a list of key pairs belonging to a tenant",
         "operationId" : "get_keys__tenantid_",
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
-          "description" : "'p2p', 'rpc-api', or holding identity ID.",
+          "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "'p2p', 'rpc-api', or holding identity ID.",
+            "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
             "nullable" : false,
             "example" : "string"
           }
         }, {
           "name" : "skip",
           "in" : "query",
-          "description" : "Index of the first key",
+          "description" : "The response paging information, number of records to skip",
           "required" : false,
           "schema" : {
             "type" : "integer",
-            "description" : "Index of the first key",
+            "description" : "The response paging information, number of records to skip",
             "format" : "int32",
             "nullable" : false,
             "example" : 0
@@ -981,11 +981,11 @@
         }, {
           "name" : "take",
           "in" : "query",
-          "description" : "Page size",
+          "description" : "The response paging information, that is, the number of records to return. The actual number returned may be less than requested.",
           "required" : false,
           "schema" : {
             "type" : "integer",
-            "description" : "Page size",
+            "description" : "The response paging information, that is, the number of records to return. The actual number returned may be less than requested.",
             "format" : "int32",
             "nullable" : false,
             "example" : 0
@@ -993,84 +993,84 @@
         }, {
           "name" : "orderby",
           "in" : "query",
-          "description" : "How to order the results (one of: none, timestamp, category, scheme_code_name, alias, master_key_alias, external_id, id, timestamp_desc, category_desc, scheme_code_name_desc, alias_desc, master_key_alias_desc, external_id_desc or id_desc)",
+          "description" : "Specifies how to order the results. Can be one of 'NONE', 'TIMESTAMP', 'CATEGORY', 'SCHEME_CODE_NAME', 'ALIAS', 'MASTER_KEY_ALIAS', 'EXTERNAL_ID', 'ID', 'TIMESTAMP_DESC', 'CATEGORY_DESC', 'SCHEME_CODE_NAME_DESC', 'ALIAS_DESC', 'MASTER_KEY_ALIAS_DESC', 'EXTERNAL_ID_DESC', 'ID_DESC'.",
           "required" : false,
           "schema" : {
             "type" : "string",
-            "description" : "How to order the results (one of: none, timestamp, category, scheme_code_name, alias, master_key_alias, external_id, id, timestamp_desc, category_desc, scheme_code_name_desc, alias_desc, master_key_alias_desc, external_id_desc or id_desc)",
+            "description" : "Specifies how to order the results. Can be one of 'NONE', 'TIMESTAMP', 'CATEGORY', 'SCHEME_CODE_NAME', 'ALIAS', 'MASTER_KEY_ALIAS', 'EXTERNAL_ID', 'ID', 'TIMESTAMP_DESC', 'CATEGORY_DESC', 'SCHEME_CODE_NAME_DESC', 'ALIAS_DESC', 'MASTER_KEY_ALIAS_DESC', 'EXTERNAL_ID_DESC', 'ID_DESC'.",
             "nullable" : false,
             "example" : "string"
           }
         }, {
           "name" : "category",
           "in" : "query",
-          "description" : "The key category",
+          "description" : "Category of the HSM which handles the key pairs. Can be one of 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY'.",
           "required" : false,
           "schema" : {
             "type" : "string",
-            "description" : "The key category",
+            "description" : "Category of the HSM which handles the key pairs. Can be one of 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY'.",
             "nullable" : true,
             "example" : "string"
           }
         }, {
           "name" : "schemecodename",
           "in" : "query",
-          "description" : "The key schema code name",
+          "description" : "The key pairs' signature scheme name. For example, 'CORDA.RSA', 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA_SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'.",
           "required" : false,
           "schema" : {
             "type" : "string",
-            "description" : "The key schema code name",
+            "description" : "The key pairs' signature scheme name. For example, 'CORDA.RSA', 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA_SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'.",
             "nullable" : true,
             "example" : "string"
           }
         }, {
           "name" : "alias",
           "in" : "query",
-          "description" : "The key alias",
+          "description" : "The alias under which the key pair is stored",
           "required" : false,
           "schema" : {
             "type" : "string",
-            "description" : "The key alias",
+            "description" : "The alias under which the key pair is stored",
             "nullable" : true,
             "example" : "string"
           }
         }, {
           "name" : "masterkeyalias",
           "in" : "query",
-          "description" : "The key master key alias",
+          "description" : "The alias of the wrapping key",
           "required" : false,
           "schema" : {
             "type" : "string",
-            "description" : "The key master key alias",
+            "description" : "The alias of the wrapping key",
             "nullable" : true,
             "example" : "string"
           }
         }, {
           "name" : "createdafter",
           "in" : "query",
-          "description" : "Only keys that had been created after (for example: 2007-12-03T10:15:30.00Z)",
+          "description" : "Only include key pairs which were created on or after the specified time. Must be a valid instant in UTC, such as 2022-12-03T10:15:30.00Z.",
           "required" : false,
           "schema" : {
             "type" : "string",
-            "description" : "Only keys that had been created after (for example: 2007-12-03T10:15:30.00Z)",
+            "description" : "Only include key pairs which were created on or after the specified time. Must be a valid instant in UTC, such as 2022-12-03T10:15:30.00Z.",
             "nullable" : true,
             "example" : "string"
           }
         }, {
           "name" : "createdbefore",
           "in" : "query",
-          "description" : "Only keys that had been created before (for example: 2007-12-03T10:15:30.00Z)",
+          "description" : "Only include key pairs which were created on or before the specified time. Must be a valid instant in UTC, such as 2022-12-03T10:15:30.00Z.",
           "required" : false,
           "schema" : {
             "type" : "string",
-            "description" : "Only keys that had been created before (for example: 2007-12-03T10:15:30.00Z)",
+            "description" : "Only include key pairs which were created on or before the specified time. Must be a valid instant in UTC, such as 2022-12-03T10:15:30.00Z.",
             "nullable" : true,
             "example" : "string"
           }
         }, {
           "name" : "id",
           "in" : "query",
-          "description" : "ID's of the keys (Will ignore any other parameter)",
+          "description" : "Only include key pairs associated with the specified list of key IDs. If specified, other filter parameters will be ignored.",
           "required" : false,
           "schema" : {
             "uniqueItems" : false,
@@ -1084,7 +1084,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "A map from a tenant key ID to its metadata.",
+            "description" : "A map of key IDs to the respective key pair information",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1110,56 +1110,56 @@
     "/keys/{tenantid}/alias/{alias}/category/{hsmcategory}/scheme/{scheme}" : {
       "post" : {
         "tags" : [ "Keys Management API" ],
-        "description" : "Generate key pair.",
+        "description" : "Enables you to generate a new key pair for a tenant",
         "operationId" : "post_keys__tenantid__alias__alias__category__hsmcategory__scheme__scheme_",
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
-          "description" : "'p2p', 'rpc-api', or holding identity ID.",
+          "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "'p2p', 'rpc-api', or holding identity ID.",
+            "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
             "nullable" : false,
             "example" : "string"
           }
         }, {
           "name" : "alias",
           "in" : "path",
-          "description" : "The key alias",
+          "description" : "The alias under which the new key pair will be stored",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The key alias",
+            "description" : "The alias under which the new key pair will be stored",
             "nullable" : false,
             "example" : "string"
           }
         }, {
           "name" : "hsmcategory",
           "in" : "path",
-          "description" : "The HSM Category",
+          "description" : "Category of the HSM which handles the key pairs. Can be one of 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY'.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The HSM Category",
+            "description" : "Category of the HSM which handles the key pairs. Can be one of 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY'.",
             "nullable" : false,
             "example" : "string"
           }
         }, {
           "name" : "scheme",
           "in" : "path",
-          "description" : "The scheme",
+          "description" : "The key's scheme describing which type of the key pair to generate. For example, 'CORDA.RSA', 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA_SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The scheme",
+            "description" : "The key's scheme describing which type of the key pair to generate. For example, 'CORDA.RSA', 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA_SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'.",
             "nullable" : false,
             "example" : "string"
           }
         } ],
         "responses" : {
           "200" : {
-            "description" : "The ID of the newly generated key pair.",
+            "description" : "The ID of the newly generated key pair",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1180,34 +1180,34 @@
     "/keys/{tenantid}/schemes/{hsmcategory}" : {
       "get" : {
         "tags" : [ "Keys Management API" ],
-        "description" : "Get list of schemes for the cluster.",
+        "description" : "Enables you to retrieve a list of supported key schemes for a specified tenant and HSM category",
         "operationId" : "get_keys__tenantid__schemes__hsmcategory_",
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
-          "description" : "'p2p', 'rpc-api', or holding identity ID.",
+          "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "'p2p', 'rpc-api', or holding identity ID.",
+            "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
             "nullable" : false,
             "example" : "string"
           }
         }, {
           "name" : "hsmcategory",
           "in" : "path",
-          "description" : "The HSM Category",
+          "description" : "The category of the HSM. Can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The HSM Category",
+            "description" : "The category of the HSM. Can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'",
             "nullable" : false,
             "example" : "string"
           }
         } ],
         "responses" : {
           "200" : {
-            "description" : "The list of schemes codes which are supported by the associated HSM integration.",
+            "description" : "The list of scheme codes which are supported by the associated HSM integration",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1234,34 +1234,34 @@
     "/keys/{tenantid}/{keyid}" : {
       "get" : {
         "tags" : [ "Keys Management API" ],
-        "description" : "GET key in PEM format.",
+        "description" : "Enables you to retrieve a tenant's public key in PEM format",
         "operationId" : "get_keys__tenantid___keyid_",
         "parameters" : [ {
           "name" : "tenantid",
           "in" : "path",
-          "description" : "'p2p', 'rpc-api', or holding identity ID.",
+          "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "'p2p', 'rpc-api', or holding identity ID.",
+            "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API",
             "nullable" : false,
             "example" : "string"
           }
         }, {
           "name" : "keyid",
           "in" : "path",
-          "description" : "The Key ID. Or an error code if not found.",
+          "description" : "Identifier of the public key to be retrieved",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "The Key ID. Or an error code if not found.",
+            "description" : "Identifier of the public key to be retrieved",
             "nullable" : false,
             "example" : "string"
           }
         } ],
         "responses" : {
           "200" : {
-            "description" : "The public key in PEM format.",
+            "description" : "The public key in PEM format",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1436,16 +1436,16 @@
     "/members/{holdingidentityshorthash}" : {
       "get" : {
         "tags" : [ "Member Lookup API" ],
-        "description" : "Lists the active members in the membership group.",
+        "description" : "Enables you to retrieve a list of all active and pending members in the membership group",
         "operationId" : "get_members__holdingidentityshorthash_",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "ID of the holding identity to be checked.",
+          "description" : "Holding identity ID of the requesting member. The result only contains members that are visible to this member",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "ID of the holding identity to be checked.",
+            "description" : "Holding identity ID of the requesting member. The result only contains members that are visible to this member",
             "nullable" : false,
             "example" : "string"
           }
@@ -1568,16 +1568,16 @@
     "/membership/{holdingidentityshorthash}" : {
       "get" : {
         "tags" : [ "Member Registration API" ],
-        "description" : "Checks the status of the registration request.",
+        "description" : "Enables you to check the statuses of all registration requests for a holding identity",
         "operationId" : "get_membership__holdingidentityshorthash_",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "ID of the holding identity to be checked.",
+          "description" : "The ID of the holding identity whose registration progress is to be checked",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "ID of the holding identity to be checked.",
+            "description" : "The ID of the holding identity whose registration progress is to be checked",
             "nullable" : false,
             "example" : "string"
           }
@@ -1608,16 +1608,16 @@
       },
       "post" : {
         "tags" : [ "Member Registration API" ],
-        "description" : "Start registration process for a virtual node.",
+        "description" : "Enables you to start the registration process for a holding identity",
         "operationId" : "post_membership__holdingidentityshorthash_",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "ID of the holding identity to be checked.",
+          "description" : "The holding identity ID of the requesting virtual node",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "ID of the holding identity to be checked.",
+            "description" : "The holding identity ID of the requesting virtual node",
             "nullable" : false,
             "example" : "string"
           }
@@ -1656,27 +1656,27 @@
     "/membership/{holdingidentityshorthash}/{registrationrequestid}" : {
       "get" : {
         "tags" : [ "Member Registration API" ],
-        "description" : "Checks the status of the registration request.",
+        "description" : "Enables you to check the status of the specified registration request for a holding identity",
         "operationId" : "get_membership__holdingidentityshorthash___registrationrequestid_",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "ID of the holding identity to be checked.",
+          "description" : "The ID of the holding identity whose registration progress is to be checked",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "ID of the holding identity to be checked.",
+            "description" : "The ID of the holding identity whose registration progress is to be checked",
             "nullable" : false,
             "example" : "string"
           }
         }, {
           "name" : "registrationrequestid",
           "in" : "path",
-          "description" : "ID of the request to be checked.",
+          "description" : "The ID of the registration request",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "ID of the request to be checked.",
+            "description" : "The ID of the registration request",
             "nullable" : false,
             "example" : "string"
           }
@@ -1736,16 +1736,16 @@
     "/mgm/{holdingidentityshorthash}/info" : {
       "get" : {
         "tags" : [ "MGM API" ],
-        "description" : "Fetches the requested group policy string",
+        "description" : "Enables you to retrieve the group policy from the MGM required to join the membership group",
         "operationId" : "get_mgm__holdingidentityshorthash__info",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "ID of the holding identity to be checked.",
+          "description" : "The holding identity ID of the MGM of the membership group to be joined",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "ID of the holding identity to be checked.",
+            "description" : "The holding identity ID of the MGM of the membership group to be joined",
             "nullable" : false,
             "example" : "string"
           }
@@ -1804,16 +1804,16 @@
     "/network/setup/{holdingidentityshorthash}" : {
       "put" : {
         "tags" : [ "Network API" ],
-        "description" : "Set up the holding identity on the network.",
+        "description" : "Enables you to configure a holding identity as a network participant by setting properties required for P2P messaging",
         "operationId" : "put_network_setup__holdingidentityshorthash_",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "ID of the holding identity to set up.",
+          "description" : "ID of the holding identity to set up",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "ID of the holding identity to set up.",
+            "description" : "ID of the holding identity to set up",
             "nullable" : false,
             "example" : "string"
           }
@@ -2843,7 +2843,7 @@
         "properties" : {
           "certificateRole" : {
             "type" : "string",
-            "description" : "Certificate role. For example: TLS, SESSION_INIT, ...",
+            "description" : "Can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'",
             "nullable" : false,
             "example" : "string"
           },
@@ -2853,7 +2853,7 @@
               "type" : "string",
               "example" : "string"
             },
-            "description" : "Context Map. For example: `signatureSpec` to signature spec (SHA512withECDSA, SHA384withRSA...)",
+            "description" : "Used to add additional attributes to the CSR; for example, signature spec",
             "nullable" : true,
             "example" : "No example available for this type"
           },
@@ -2868,7 +2868,7 @@
           },
           "x500Name" : {
             "type" : "string",
-            "description" : "The X500 name",
+            "description" : "X.500 name that will be the subject associated with the request",
             "nullable" : false,
             "example" : "string"
           }
@@ -2971,7 +2971,7 @@
             "example" : "string"
           }
         },
-        "description" : "Additional parameters for setting up the hosted identity."
+        "description" : "Request object which contains properties for P2P messaging including the P2P TLS certificate chain alias, the TLS tenant ID (either 'p2p' or holding identity ID), the tenant ID under which the session initiation key is stored, and the session key identifier"
       },
       "HsmAssociationInfo" : {
         "required" : [ "category", "deprecatedAt", "hsmId", "id" ],
@@ -3087,7 +3087,7 @@
             "example" : "No example available for this type"
           }
         },
-        "description" : "Data required to initialise the registration process."
+        "description" : "The request sent during registration which contains the requested registration action (e.g. 'requestJoin') along with a context map containing data required to initiate the registration process."
       },
       "PermissionAssociationResponseType" : {
         "required" : [ "createdTimestamp", "id" ],

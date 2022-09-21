@@ -8,9 +8,16 @@ import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 
+/**
+ * The Certificates API consists of endpoints used to work with certificates and related operations. The API allows you
+ * to import a certificate chain, and generate a certificate signing request (CSR) to be submitted to a certificate
+ * authority (CA).
+ */
 @HttpRpcResource(
     name = "Certificates API",
-    description = "Certificates management endpoints.",
+    description = "The Certificates API consists of endpoints used to work with certificates and related operations. " +
+            "The API allows you to import a certificate chain, and generate a certificate signing request (CSR) to be" +
+            " submitted to a certificate authority (CA).",
     path = "certificates"
 )
 interface CertificatesRpcOps : RpcOps {
@@ -19,26 +26,39 @@ interface CertificatesRpcOps : RpcOps {
     }
 
     /**
-     * PUT endpoint which import certificate chain.
+     * The [importCertificateChain] method enables you to import a certificate chain for a tenant. A certificate chain
+     * can be obtained from a certificate authority by submitting a certificate signing request (see [generateCsr]
+     * method). This method does not return anything if the import is successful.
      *
-     * @param tenantId The tenant ID.
-     * @param alias The certificate alias.
-     * @param certificates - The certificate chain (in PEM format)
+     * Example usage:
+     * ```
+     * certificatesOps.importCertificateChain(tenantId = "58B6030FABDD", alias = "cert58B6030FABDD",
+     * certificates = "-----BEGIN CERTIFICATE-----\n{truncated for readability}\n-----END CERTIFICATE-----")
+     *
+     * certificatesOps.importCertificateChain(tenantId = "rpc-api", alias = "cert58B6030FABDD",
+     * certificates = "-----BEGIN CERTIFICATE-----\n{truncated for readability}\n-----END CERTIFICATE-----")
+     * ```
+     *
+     * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
+     * services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.
+     * @param alias The unique alias under which the certificate chain will be stored.
+     * @param certificates A valid certificate chain in PEM format obtained from a certificate authority.
      */
     @HttpRpcPUT(
         path = "{tenantId}",
-        description = "Import certificate."
+        description = "Enables you to import a certificate chain for a tenant"
     )
     fun importCertificateChain(
-        @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity ID.")
+        @HttpRpcPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
+                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API")
         tenantId: String,
         @HttpRpcRequestBodyParameter(
-            description = "The certificate alias.",
+            description = "The unique alias under which the certificate chain will be stored",
             required = true,
         )
         alias: String,
         @HttpRpcRequestBodyParameter(
-            description = "The certificate chain (in PEM format)",
+            description = "A valid certificate chain in PEM format obtained from a certificate authority",
             required = true,
             name = "certificate"
         )
@@ -46,44 +66,57 @@ interface CertificatesRpcOps : RpcOps {
     )
 
     /**
-     * POST endpoint which Generate a certificate signing request (CSR) for a holding identity.
+     * The [generateCsr] method enables you to generate a certificate signing request (CSR) for a tenant. The resulting
+     * CSR is typically submitted to a certificate authority to acquire a signed certificate. If successful, this method
+     * returns the generated CSR in PEM format.
      *
-     * @param tenantId The tenant ID.
-     * @param keyId The Key ID.
-     * @param x500Name A valid X500 name.
-     * @param certificateRole - The certificate role
-     * @param subjectAlternativeNames - list of subject alternative DNS names
-     * @param contextMap - Any additional attributes to add to the CSR.
+     * Example usage:
+     * ```
+     * certificatesOps.generateCsr(tenantId = "58B6030FABDD", keyId = "3B9A266F96E2", x500Name = "C=GB, L=London, O=MGM",
+     * certificateRole = "TLS", subjectAlternativeNames = ["localhost"], contextMap = {"signatureSpec": "SHA256withECDSA"})
+     *
+     * certificatesOps.generateCsr(tenantId = "p2p", keyId = "3B9A266F96E2", x500Name = "C=GB, L=London, O=MGM",
+     * certificateRole = "TLS", subjectAlternativeNames = ["localhost"], contextMap = {"signatureSpec": "SHA256withECDSA"})
+     * ```
+     *
+     * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
+     * services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.
+     * @param keyId Identifier of the public key that will be included in the certificate.
+     * @param x500Name X.500 name that will be the subject associated with the request.
+     * @param certificateRole Can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'.
+     * @param subjectAlternativeNames Optional. Used to specify additional subject names.
+     * @param contextMap Optional. Used to add additional attributes to the CSR; for example, signature spec.
      *
      * @return The CSR in PEM format.
      */
     @Suppress("LongParameterList")
     @HttpRpcPOST(
         path = "{tenantId}/{keyId}",
-        description = "Generate certificate signing request (CSR)."
+        description = "Enables you to generate a certificate signing request (CSR) for a tenant"
     )
     fun generateCsr(
-        @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity ID.")
+        @HttpRpcPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
+                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API")
         tenantId: String,
-        @HttpRpcPathParameter(description = "The Key ID.")
+        @HttpRpcPathParameter(description = "Identifier of the public key that will be included in the certificate")
         keyId: String,
         @HttpRpcRequestBodyParameter(
-            description = "The X500 name",
+            description = "X.500 name that will be the subject associated with the request",
             required = true,
         )
         x500Name: String,
         @HttpRpcRequestBodyParameter(
-            description = "Certificate role. For example: TLS, SESSION_INIT, ...",
+            description = "Can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'",
             required = true,
         )
         certificateRole: String,
         @HttpRpcRequestBodyParameter(
-            description = "Subject alternative names",
+            description = "Used to specify additional subject names",
             required = false,
         )
         subjectAlternativeNames: List<String>?,
         @HttpRpcRequestBodyParameter(
-            description = "Context Map. For example: `$SIGNATURE_SPEC` to signature spec (SHA512withECDSA, SHA384withRSA...)",
+            description = "Used to add additional attributes to the CSR; for example, signature spec",
             required = false,
         )
         contextMap: Map<String, String?>?,
