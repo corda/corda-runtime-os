@@ -6,7 +6,7 @@ plugins {
 description 'Kryo serialization test utilities'
 
 dependencies {
-    implementation "org.osgi:osgi.core"
+    compileOnly "org.osgi:osgi.core"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation "com.esotericsoftware:kryo:$kryoVersion"
