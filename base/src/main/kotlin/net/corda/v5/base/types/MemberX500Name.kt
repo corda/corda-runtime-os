@@ -10,7 +10,9 @@ import javax.naming.ldap.Rdn
 import javax.security.auth.x500.X500Principal
 
 /**
- * X.500 distinguished name data type customised to how Corda membership uses names. This restricts the attributes to those Corda
+ * X.500 distinguished name data type customised to how Corda membership uses names.
+ *
+ * This restricts the attributes to those Corda
  * supports, and requires that organisation, locality and country attributes are specified. See also RFC 4519 for
  * the underlying attribute type definitions.
  *
@@ -174,6 +176,7 @@ class MemberX500Name(
          *
          * @param principal The X500 principal used for building [MemberX500Name].
          *
+         * @param principal X500Principal to build X500 name from.
          * @throws [IllegalArgumentException] if required attributes are missing, constrains are not satisfied.
          *
          * @return [MemberX500Name] based on [principal].
@@ -182,8 +185,9 @@ class MemberX500Name(
         fun build(principal: X500Principal): MemberX500Name = parse(toAttributesMap(principal))
 
         /**
-         * Creates an instance of [MemberX500Name] by parsing the string representation of X500 name, like
-         * "CN=Alice, OU=Engineering, O=R3, L=London, C=GB".
+         * Creates an instance of [MemberX500Name] by parsing the string representation of X500 name.
+         *
+         * Expects a string representation like "CN=Alice, OU=Engineering, O=R3, L=London, C=GB".
          * Constrains are the same as for [toAttributesMap] plus some additional constrains:
          * - O, L, C are required attributes.
          *
@@ -198,13 +202,14 @@ class MemberX500Name(
         fun parse(name: String): MemberX500Name = parse(toAttributesMap(name))
 
         /**
-         * Parses the string representation of X500 name and builds the attribute map where the key is the
-         * attributes keys, like CN, O, etc.
-         * Constrains:
-         * - the RDNs cannot be multivalued
-         * - the attributes must have single value
-         * - the only supported attributes are C, ST, L, O, OU, CN
-         * - attributes cannot be duplicated
+         * Parses the string representation of X500 name and builds the attribute map.
+         *
+         * The key is the attributes keys, like CN, O, etc.
+         * Constraints:
+         * - The RDNs cannot be multivalued
+         * - The attributes must have single value
+         * - The only supported attributes are C, ST, L, O, OU, CN
+         * - Attributes cannot be duplicated
          *
          * @param name The string representation to build the attribute map from.
          *
@@ -335,7 +340,7 @@ class MemberX500Name(
 
     /**
      * Returns the [X500Principal] equivalent of this name where the order of RDNs is
-     * C, ST, L, O, OU, CN (the printing order would be reversed)
+     * C, ST, L, O, OU, CN (the printing order would be reversed).
      *
      * @throws IllegalArgumentException If a valid RDN cannot be constructed using the given attributes.
      */
@@ -362,9 +367,13 @@ class MemberX500Name(
     }
 
     /**
-     * Returns the string equivalent of this name where the order of RDNs is CN, OU, O, L, ST, C
+     * Returns the string equivalent of this name where the order of RDNs is CN, OU, O, L, ST, C.
      */
     override fun toString(): String = x500Principal.toString()
+
+    /**
+     * Compares this X500 names to another MemberX500Name.
+     */
     override fun compareTo(other: MemberX500Name): Int {
         return comparator.compare(this, other)
     }
