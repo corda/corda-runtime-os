@@ -1,8 +1,6 @@
 package net.corda.ledger.common.impl.transaction.serializer.test
 
-import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.WireTransaction
-import net.corda.ledger.common.impl.transaction.serializer.WireTransactionKryoSerializer
 import net.corda.ledger.common.testkit.WireTransactionExample.Companion.getWireTransaction
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup

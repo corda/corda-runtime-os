@@ -6,10 +6,11 @@ import net.corda.internal.serialization.amqp.ObjectAndEnvelope
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
+import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.common.testkit.WireTransactionExample.Companion.getWireTransaction
-import net.corda.ledger.common.transaction.serialization.internal.WireTransactionSerializer
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
+import net.corda.serialization.InternalCustomSerializer
 import net.corda.serialization.SerializationContext
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
@@ -74,6 +75,8 @@ class WireTransactionAMQPSerializationTest {
 
     private lateinit var sandboxFactory: SandboxFactory
 
+    private lateinit var wireTransactionSerializer: InternalCustomSerializer<WireTransaction>
+
     @BeforeAll
     fun setUp(
         @InjectService(timeout = 1000)
@@ -87,12 +90,13 @@ class WireTransactionAMQPSerializationTest {
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
             sandboxFactory = setup.fetchService(timeout = 1500)
+            wireTransactionSerializer = setup.fetchService(1500)
         }
     }
 
     private fun testDefaultFactory(sandboxGroup: SandboxGroup): SerializerFactory =
         SerializerFactoryBuilder.build(sandboxGroup, allowEvolution = true).also{
-            it.register(WireTransactionSerializer(merkleTreeFactory, digestService, jsonMarshallingService), it)
+            it.register(wireTransactionSerializer, it)
         }
 
     @Throws(NotSerializableException::class)
@@ -117,7 +121,7 @@ class WireTransactionAMQPSerializationTest {
 
             val serialised = SerializationOutput(factory1).serialize(wireTransaction, testSerializationContext)
 
-            // Perform deserialization and check if the correct class is deserialised
+            // Perform deserialization and check if the correct class is deserialized
             val deserialized =
                 DeserializationInput(factory2).deserializeAndReturnEnvelope(serialised, testSerializationContext)
 
