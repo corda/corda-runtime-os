@@ -27,8 +27,8 @@ interface HoldingIdentity {
          * Creates a holding identity using the provided string as a [MemberX500Name] common name, with other
          * name elements set to defaults.
          *
-         * @param commonName the string to use as the common name
-         * @return a [HoldingIdentity] whose [MemberX500Name] has the given common name
+         * @param commonName The string to use as the common name.
+         * @return A [HoldingIdentity] whose [MemberX500Name] has the given common name.
          */
         fun create(commonName: String): HoldingIdentity {
             return factory.create(
@@ -37,10 +37,10 @@ interface HoldingIdentity {
         }
 
         /**
-         * Creates a holding identity using the provided member
+         * Creates a holding identity using the provided member.
          *
-         * @param member the member for which to create a holding identity
-         * @return a [HoldingIdentity]
+         * @param member The member for which to create a holding identity.
+         * @return A [HoldingIdentity].
          */
         fun create(member: MemberX500Name): HoldingIdentity {
             return factory.create(member)
