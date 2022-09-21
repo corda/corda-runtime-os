@@ -28,6 +28,7 @@ import java.lang.reflect.Type
 import javax.net.ssl.SSLContext
 import kong.unirest.MultipartBody
 import net.corda.httprpc.client.processing.HttpRpcClientFileUpload
+import net.corda.httprpc.exception.ResourceAlreadyExistsException
 
 /**
  * [RemoteClient] implementations are responsible for making remote calls to the server and returning the response,
@@ -107,6 +108,7 @@ internal class RemoteUnirestClient(override val baseAddress: String, private val
                     HttpStatus.FORBIDDEN, HttpStatus.UNAUTHORIZED, HttpStatus.METHOD_NOT_ALLOWED, HttpStatus.PROXY_AUTHENTICATION_REQUIRED
                     -> throw PermissionException(errorResponseJson)
                     HttpStatus.NOT_FOUND -> throw MissingRequestedResourceException(errorResponseJson)
+                    HttpStatus.CONFLICT -> throw ResourceAlreadyExistsException (errorResponseJson)
                     else -> {
                         throw InternalErrorException(errorResponseJson)
                     }
