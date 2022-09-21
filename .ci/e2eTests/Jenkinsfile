@@ -157,12 +157,12 @@ pipeline {
 
                 sh '''\
                     # Forward ports for testing
-                    nohup .ci/e2eTests/utils/kubectl-port-forward-with-reconnect.sh "${NAMESPACE}" "prereqs-kafka-0" "9092" > forward.txt 2>&1 &
-                    nohup .ci/e2eTests/utils/kubectl-port-forward-with-reconnect.sh "${NAMESPACE}" "deployment/corda-rpc-worker" "8888" >> forward.txt 2>&1 &
-                    nohup .ci/e2eTests/utils/kubectl-port-forward-with-reconnect.sh "${NAMESPACE}" "deployment/corda-crypto-worker" "7001:7000" >> forward.txt 2>&1 &
-                    nohup .ci/e2eTests/utils/kubectl-port-forward-with-reconnect.sh "${NAMESPACE}" "deployment/corda-db-worker" "7002:7000" >> forward.txt 2>&1 &
-                    nohup .ci/e2eTests/utils/kubectl-port-forward-with-reconnect.sh "${NAMESPACE}" "deployment/corda-flow-worker" "7003:7000" >> forward.txt 2>&1 &
-                    nohup .ci/e2eTests/utils/kubectl-port-forward-with-reconnect.sh "${NAMESPACE}" "deployment/corda-rpc-worker" "7004:7000" >> forward.txt 2>&1 &
+                    nohup .ci/e2eTests/utils/kubectl-port-forward-with-reconnect.sh "${NAMESPACE}" "prereqs-kafka-0" "9092" "9092" > forward.txt 2>&1 &
+                    nohup .ci/e2eTests/utils/kubectl-port-forward-with-reconnect.sh "${NAMESPACE}" "deployment/corda-rpc-worker" "8888" "8888" >> forward.txt 2>&1 &
+                    nohup .ci/e2eTests/utils/kubectl-port-forward-with-reconnect.sh "${NAMESPACE}" "deployment/corda-crypto-worker" "7001" "7000" >> forward.txt 2>&1 &
+                    nohup .ci/e2eTests/utils/kubectl-port-forward-with-reconnect.sh "${NAMESPACE}" "deployment/corda-db-worker" "7002" "7000" >> forward.txt 2>&1 &
+                    nohup .ci/e2eTests/utils/kubectl-port-forward-with-reconnect.sh "${NAMESPACE}" "deployment/corda-flow-worker" "7003" "7000" >> forward.txt 2>&1 &
+                    nohup .ci/e2eTests/utils/kubectl-port-forward-with-reconnect.sh "${NAMESPACE}" "deployment/corda-rpc-worker" "7004" "7000" >> forward.txt 2>&1 &
                     procno=$! # remember process number started in background
                     trap "kill -9 ${procno}" EXIT
 
