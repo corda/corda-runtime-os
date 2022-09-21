@@ -34,7 +34,7 @@ import net.corda.v5.base.types.MemberX500Name
  *
  *        session.close()
  *
- *        return result.unwrap { it }
+ *        return result
  *    }
  *  }
  * ```
@@ -52,11 +52,11 @@ import net.corda.v5.base.types.MemberX500Name
  *        MemberX500Name counterparty = MemberX500Name.parse("CN=Alice, O=Alice Corp, L=LDN, C=GB");
  *        FlowSession session = flowMessaging.initiateFlow(counterparty);
  *
- *        UntrustworthyData<String> result = session.sendAndReceive(String.class, "hello");
+ *        String result = session.sendAndReceive(String.class, "hello");
  *
  *        session.close();
  *
- *        return result.unwrap(x -> x);
+ *        return result;
  *    }
  *}
  * ```
@@ -66,7 +66,7 @@ interface FlowMessaging {
 
     /**
      * Creates a communication session with a counterparty's [ResponderFlow]. Subsequently, you may send/receive using
-     * this session object. Note that this function does not communicate in itself, the counter-flow will be kicked off
+     * this session object. Note that this function does not communicate in itself. The counter-flow will be kicked off
      * by the first send/receive.
      *
      * Initiated flows are initiated with context based on the context of the initiating flow at the point in time this
@@ -83,7 +83,7 @@ interface FlowMessaging {
 
     /**
      * Creates a communication session with another member. Subsequently you may send/receive using this session object.
-     * Note that this function does not communicate in itself, the counter-flow will be kicked off by the first
+     * Note that this function does not communicate in itself. The counter-flow will be kicked off by the first
      * send/receive.
      *
      * This overload takes a builder of context properties. Any properties set or modified against the context passed to
