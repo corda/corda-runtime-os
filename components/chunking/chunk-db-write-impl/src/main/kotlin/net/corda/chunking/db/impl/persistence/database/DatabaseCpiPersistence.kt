@@ -25,7 +25,6 @@ import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
 import net.corda.orm.utils.transaction
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.schemes.all
 import net.corda.v5.crypto.SecureHash
 import java.nio.file.Files
 import javax.persistence.EntityManager
@@ -139,13 +138,11 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
     ): Boolean {
         // The incoming changelogs will not be marked deleted
         cpkDbChangeLogEntities.forEach { require(!it.isDeleted) }
-        // We first mark each existing changelog for this CPI as deleted.
         val allChangelogs = findDbChangeLogForCpi(em, cpi.metadata.cpiId)
-        println(cpkDbChangeLogEntities.map { it.fileChecksum })
-        println(allChangelogs.map { it.fileChecksum })
-        println(allChangelogs.size)
+        // Check have the changelogs actually changed
         val changelogsDifferent = cpkDbChangeLogEntities.map { it.fileChecksum }.sorted() !=
             allChangelogs.map { it.fileChecksum }.sorted()
+        // We first mark each existing changelog for this CPI as deleted.
         allChangelogs.forEach { rec ->
             rec.isDeleted = true
             em.merge(rec)
@@ -168,8 +165,9 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         // Find the changelogs we just made
         val allChangelogs = findDbChangeLogForCpi(em, cpi.metadata.cpiId)
         allChangelogs.forEach {
-            val audit = it.toAudit()
-            audit.entityVersion += 1
+            // Re-lookup like this as this gets the correct entity version
+            val inDb = em.find(CpkDbChangeLogEntity::class.java, it.id)
+            val audit = inDb.toAudit()
             em.persist(audit)
         }
     }
