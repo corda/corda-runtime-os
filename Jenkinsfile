@@ -2,7 +2,7 @@
 
 cordaPipeline(
     runIntegrationTests: false,
-    publishOSGiImage: true,
+    publishOSGiImage: false, // do not merge back to release/os/5.0
     dailyBuildCron: 'H 03 * * *',
     publishRepoPrefix: 'engineering-tools-maven',
     nexusAppId: 'net.corda-cli-host-0.0.1'
