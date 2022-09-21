@@ -4,7 +4,6 @@ import net.corda.v5.application.flows.FlowEngine;
 import net.corda.v5.application.flows.RPCRequestData;
 import net.corda.v5.application.marshalling.JsonMarshallingService;
 import net.corda.v5.application.messaging.FlowMessaging;
-import net.corda.v5.application.messaging.UntrustworthyData;
 import net.corda.v5.application.persistence.PersistenceService;
 import net.corda.v5.base.types.MemberX500Name;
 import net.cordapp.testing.chatframework.FlowMockHelper;
@@ -65,8 +64,8 @@ public class ChatFlowCollaborationTestsJava {
 
         // When receive is called in the 'to' flow, wait on/return the next message in the queue
         when(messageLink.getToFlowSession().receive(MessageContainer.class)).thenAnswer(
-                (Answer<UntrustworthyData<MessageContainer>>) invocation ->
-                        new UntrustworthyData(messageLink.messageQueue.getOrWaitForNextMessage())
+                (Answer<MessageContainer>) invocation ->
+                        (MessageContainer)messageLink.messageQueue.getOrWaitForNextMessage()
         );
 
         RPCRequestData outGoingFlowRequestData = mock(RPCRequestData.class);

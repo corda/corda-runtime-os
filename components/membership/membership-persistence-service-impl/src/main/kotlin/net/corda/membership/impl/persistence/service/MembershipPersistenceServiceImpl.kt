@@ -147,6 +147,8 @@ class MembershipPersistenceServiceImpl @Activate constructor(
 
     private fun handleConfigChangedEvent(event: ConfigChangedEvent, coordinator: LifecycleCoordinator) {
         logger.info("Handling config changed event.")
+        subHandle?.close()
+        subHandle = null
         rpcSubscription?.close()
         rpcSubscription = subscriptionFactory.createRPCSubscription(
             rpcConfig = RPCConfig(
@@ -167,7 +169,6 @@ class MembershipPersistenceServiceImpl @Activate constructor(
             messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         ).also {
             it.start()
-            subHandle?.close()
             subHandle = coordinator.followStatusChangesByName(setOf(it.subscriptionName))
         }
     }

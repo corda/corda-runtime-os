@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.v5.serialization.annotations.ConstructorForDeserialization
 import net.corda.internal.serialization.amqp.testutils.TestDescriptorBasedSerializerRegistry
 import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.serialize
@@ -9,6 +8,7 @@ import net.corda.internal.serialization.amqp.testutils.testDefaultFactoryNoEvolu
 import net.corda.internal.serialization.model.ConfigurableLocalTypeModel
 import net.corda.internal.serialization.model.LocalPropertyInformation
 import net.corda.internal.serialization.model.LocalTypeInformation
+import net.corda.v5.base.annotations.ConstructorForDeserialization
 import net.corda.v5.base.annotations.CordaSerializable
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Java6Assertions.assertThat

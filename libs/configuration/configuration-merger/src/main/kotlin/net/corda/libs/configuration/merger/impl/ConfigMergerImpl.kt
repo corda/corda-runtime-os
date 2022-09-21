@@ -5,7 +5,6 @@ import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.merger.ConfigMerger
 import net.corda.messagebus.api.configuration.BusConfigMerger
 import net.corda.messagebus.api.configuration.getConfigOrEmpty
-import net.corda.schema.configuration.BootConfig.BOOT_CRYPTO
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -19,13 +18,6 @@ class ConfigMergerImpl @Activate constructor(
 
     override fun getMessagingConfig(bootConfig: SmartConfig, messagingConfig: SmartConfig?): SmartConfig {
         return busConfigMerger.getMessagingConfig(bootConfig, messagingConfig)
-    }
-
-    //TODO - remove this as part of https://r3-cev.atlassian.net/browse/CORE-5086
-    override fun getCryptoConfig(bootConfig: SmartConfig, cryptoConfig: SmartConfig?): SmartConfig {
-        val updatedCryptoConfig = cryptoConfig?: SmartConfigImpl.empty()
-        val bootCryptoConfig = bootConfig.getConfigOrEmpty(BOOT_CRYPTO)
-        return bootCryptoConfig.withFallback(updatedCryptoConfig)
     }
 
     override fun getDbConfig(bootConfig: SmartConfig, dbConfig: SmartConfig?): SmartConfig {

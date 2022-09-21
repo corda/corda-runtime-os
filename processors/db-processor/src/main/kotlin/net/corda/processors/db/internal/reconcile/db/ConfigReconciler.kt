@@ -24,9 +24,9 @@ class ConfigReconciler(
     private var reconciler: Reconciler? = null
 
     override fun close() {
-        dbReconciler?.close()
+        dbReconciler?.stop()
         dbReconciler = null
-        reconciler?.close()
+        reconciler?.stop()
         reconciler = null
     }
 

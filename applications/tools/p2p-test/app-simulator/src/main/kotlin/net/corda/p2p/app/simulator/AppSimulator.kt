@@ -1,9 +1,9 @@
 package net.corda.p2p.app.simulator
 
 import com.typesafe.config.Config
-import com.typesafe.config.ConfigException
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import net.corda.comp.kafka.topic.admin.KafkaTopicAdmin
 import net.corda.data.identity.HoldingIdentity
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
@@ -13,20 +13,27 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
+import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getDbParameter
+import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getEnumOrNull
+import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getIntOrNull
+import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getLoadGenDuration
+import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getLoadGenDurationOrNull
+import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getLoadGenEnumParameter
+import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getLoadGenIntParameter
+import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getLoadGenStrParameter
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
-import net.corda.schema.TestSchema.Companion.APP_RECEIVED_MESSAGES_TOPIC
 import net.corda.schema.configuration.BootConfig
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import picocli.CommandLine
 import java.io.File
 import java.time.Duration
@@ -43,30 +50,29 @@ class AppSimulator @Activate constructor(
     private val subscriptionFactory: SubscriptionFactory,
     @Reference(service = ConfigMerger::class)
     private val configMerger: ConfigMerger,
+    @Reference(service = KafkaTopicAdmin::class)
+    private var topicAdmin: KafkaTopicAdmin,
 ) : Application {
 
     companion object {
         private val logger: Logger = contextLogger()
         private val clock: Clock = UTCClock()
-        val consoleLogger: Logger = LoggerFactory.getLogger("Console")
         const val DB_PARAMS_PREFIX = "dbParams"
         const val LOAD_GEN_PARAMS_PREFIX = "loadGenerationParams"
         const val PARALLEL_CLIENTS_KEY = "parallelClients"
-        val DEFAULT_CONFIG = ConfigFactory.parseMap(
-            mapOf(
-                "$LOAD_GEN_PARAMS_PREFIX.batchSize" to 50,
-                "$LOAD_GEN_PARAMS_PREFIX.interBatchDelay" to Duration.ZERO,
-                "$LOAD_GEN_PARAMS_PREFIX.messageSizeBytes" to 10_000,
-                PARALLEL_CLIENTS_KEY to 1
-            )
-        )
+        const val DEFAULT_PARALLEL_CLIENTS = 1
+        const val DEFAULT_TOTAL_NUMBER_OF_MESSAGES = 1
+        const val DEFAULT_BATCH_SIZE = 50
+        val DEFAULT_INTER_BATCH_DELAY = Duration.ZERO
+        const val DEFAULT_MESSAGE_SIZE_BYTES = 10_000
+        internal const val APP_SIMULATOR_SUBSYSTEM = "app-simulator"
     }
 
     private val resources = mutableListOf<AutoCloseable>()
 
     @Suppress("SpreadOperator")
     override fun startup(args: Array<String>) {
-        consoleLogger.info("Starting application simulator tool")
+        logger.info("Starting application simulator tool")
 
         val parameters = CliParameters()
         CommandLine(parameters).parseArgs(*args)
@@ -74,77 +80,40 @@ class AppSimulator @Activate constructor(
             CommandLine.usage(CliParameters(), System.out)
             shutdownOSGiFramework()
         } else {
-            if (!parameters.simulatorConfig.canRead()) {
-                consoleLogger.error("Can not read configuration file ${parameters.simulatorConfig}.")
-                shutdownOSGiFramework()
-                return
-            }
-
-            val parsedMessagingParams = parameters.messagingParams.mapKeys { (key, _) ->
-                "${BootConfig.BOOT_KAFKA_COMMON}.${key.trim()}"
-            }.toMutableMap()
-            parsedMessagingParams.computeIfAbsent("${BootConfig.BOOT_KAFKA_COMMON}.bootstrap.servers") {
-                System.getenv("KAFKA_SERVERS") ?: "localhost:9092"
-            }
-            val bootConfig = SmartConfigFactory.create(SmartConfigImpl.empty()).create(
-                ConfigFactory.parseMap(parsedMessagingParams)
-                    .withValue(
-                        BootConfig.TOPIC_PREFIX,
-                        ConfigValueFactory.fromAnyRef("")
-                    ).withValue(
-                        MessagingConfig.Bus.BUS_TYPE,
-                        ConfigValueFactory.fromAnyRef("KAFKA")
-                    )
-            )
+            val commonConfig = CommonConfig(parameters)
             try {
-                runSimulator(parameters, bootConfig)
+                runSimulator(commonConfig)
             } catch (e: Throwable) {
-                consoleLogger.error("Could not run: ${e.message}")
+                logErrorAndShutdown("Could not run: ${e.message}")
             }
         }
     }
 
-    private fun runSimulator(parameters: CliParameters, bootConfig: SmartConfig) {
-        val sendTopic = parameters.sendTopic ?: P2P_OUT_TOPIC
-        val receiveTopic = parameters.receiveTopic ?: P2P_IN_TOPIC
-        val simulatorConfig = ConfigFactory.parseFile(parameters.simulatorConfig).withFallback(DEFAULT_CONFIG)
-        val clients = simulatorConfig.getInt(PARALLEL_CLIENTS_KEY)
-
-        val simulatorMode = simulatorConfig.getEnum(SimulationMode::class.java, "simulatorMode")
-        when (simulatorMode) {
+    @Suppress("ComplexMethod")
+    private fun runSimulator(commonConfig: CommonConfig) {
+        when (commonConfig.simulatorMode) {
             SimulationMode.SENDER -> {
-                runSender(simulatorConfig, publisherFactory, sendTopic, bootConfig, clients, parameters.instanceId)
+                runSender(commonConfig)
             }
             SimulationMode.RECEIVER -> {
-                runReceiver(subscriptionFactory, receiveTopic, bootConfig, clients, parameters.instanceId)
+                runReceiver(commonConfig)
             }
             SimulationMode.DB_SINK -> {
-                runSink(simulatorConfig, subscriptionFactory, bootConfig, clients, parameters.instanceId)
+                runSink(commonConfig)
             }
-            else -> throw IllegalStateException("Invalid value for simulator mode: $simulatorMode")
+            else -> throw IllegalStateException("Invalid value for simulator mode: ${commonConfig.simulatorMode}")
         }
     }
 
-    @Suppress("LongParameterList")
-    private fun runSender(
-        simulatorConfig: Config,
-        publisherFactory: PublisherFactory,
-        sendTopic: String,
-        bootConfig: SmartConfig,
-        clients: Int,
-        instanceId: String,
-    ) {
-        val connectionDetails = readDbParams(simulatorConfig)
-        val loadGenerationParams = readLoadGenParams(simulatorConfig)
+    private fun runSender(commonConfig: CommonConfig) {
+        val connectionDetails = DBParams.read(commonConfig)
+        val loadGenerationParams = LoadGenerationParams.read(commonConfig)
         val sender = Sender(
             publisherFactory,
             configMerger,
+            commonConfig,
             connectionDetails,
             loadGenerationParams,
-            sendTopic,
-            bootConfig,
-            clients,
-            instanceId,
             clock
         )
         sender.start()
@@ -157,87 +126,27 @@ class AppSimulator @Activate constructor(
         }
     }
 
-    private fun runReceiver(
-        subscriptionFactory: SubscriptionFactory,
-        receiveTopic: String,
-        bootConfig: SmartConfig,
-        clients: Int,
-        instanceId: String,
-    ) {
+    private fun runReceiver(commonConfig: CommonConfig) {
         val receiver = Receiver(
             subscriptionFactory,
             configMerger,
-            receiveTopic,
-            APP_RECEIVED_MESSAGES_TOPIC,
-            bootConfig,
-            clients,
-            instanceId
+            topicAdmin,
+            commonConfig
         )
         receiver.start()
         resources.add(receiver)
     }
 
-    private fun runSink(
-        simulatorConfig: Config,
-        subscriptionFactory: SubscriptionFactory,
-        bootConfig: SmartConfig,
-        clients: Int,
-        instanceId: String,
-    ) {
-        val connectionDetails = readDbParams(simulatorConfig)
-        if (connectionDetails == null) {
-            consoleLogger.error("dbParams configuration option is mandatory for sink mode.")
-            shutdownOSGiFramework()
-            return
-        }
-        val sink = Sink(subscriptionFactory, configMerger, connectionDetails, bootConfig, clients, instanceId)
+    private fun runSink(commonConfig: CommonConfig) {
+        val connectionDetails = DBParams.read(commonConfig)
+        val sink = Sink(subscriptionFactory, configMerger, commonConfig, connectionDetails)
         sink.start()
         resources.add(sink)
     }
 
-    private fun readDbParams(config: Config): DBParams? {
-        if (!config.hasPath(DB_PARAMS_PREFIX)) {
-            return null
-        }
-
-        return DBParams(
-            config.getString("$DB_PARAMS_PREFIX.username"),
-            config.getString("$DB_PARAMS_PREFIX.password"),
-            config.getString("$DB_PARAMS_PREFIX.host"),
-            config.getString("$DB_PARAMS_PREFIX.db")
-        )
-    }
-
-    private fun readLoadGenParams(config: Config): LoadGenerationParams {
-        val peerX500Name = config.getString("$LOAD_GEN_PARAMS_PREFIX.peerX500Name")
-        val peerGroupId = config.getString("$LOAD_GEN_PARAMS_PREFIX.peerGroupId")
-        val ourX500Name = config.getString("$LOAD_GEN_PARAMS_PREFIX.ourX500Name")
-        val ourGroupId = config.getString("$LOAD_GEN_PARAMS_PREFIX.ourGroupId")
-        val loadGenerationType =
-            config.getEnum(LoadGenerationType::class.java, "$LOAD_GEN_PARAMS_PREFIX.loadGenerationType")
-        val totalNumberOfMessages = when (loadGenerationType) {
-            LoadGenerationType.ONE_OFF -> config.getInt("$LOAD_GEN_PARAMS_PREFIX.totalNumberOfMessages")
-            LoadGenerationType.CONTINUOUS -> null
-            else -> throw IllegalStateException("Invalid value for load generation type: $loadGenerationType")
-        }
-        val batchSize = config.getInt("$LOAD_GEN_PARAMS_PREFIX.batchSize")
-        val interBatchDelay = config.getDuration("$LOAD_GEN_PARAMS_PREFIX.interBatchDelay")
-        val messageSizeBytes = config.getInt("$LOAD_GEN_PARAMS_PREFIX.messageSizeBytes")
-        val expireAfterTime = try {
-            config.getDuration("$LOAD_GEN_PARAMS_PREFIX.expireAfterTime")
-        } catch (e: ConfigException.Missing) {
-            null
-        }
-        return LoadGenerationParams(
-            HoldingIdentity(peerX500Name, peerGroupId),
-            HoldingIdentity(ourX500Name, ourGroupId),
-            loadGenerationType,
-            totalNumberOfMessages,
-            batchSize,
-            interBatchDelay,
-            messageSizeBytes,
-            expireAfterTime
-        )
+    private fun logErrorAndShutdown(error: String) {
+        logger.error(error)
+        shutdownOSGiFramework()
     }
 
     override fun shutdown() {
@@ -258,6 +167,18 @@ class CliParameters {
     var messagingParams = emptyMap<String, String>()
 
     @CommandLine.Option(
+        names = ["-d", "--databaseParams"],
+        description = ["Database parameters for the simulator."]
+    )
+    var databaseParams = emptyMap<String, String>()
+
+    @CommandLine.Option(
+        names = ["-l", "--loadGenerationParams"],
+        description = ["Load generation parameters for the simulator."]
+    )
+    var loadGenerationParams = emptyMap<String, String>()
+
+    @CommandLine.Option(
         names = ["-i", "--instance-id"],
         description = [
             "The instance ID. Defaults to the value of the env." +
@@ -270,25 +191,37 @@ class CliParameters {
         names = ["--simulator-config"],
         description = ["File containing configuration parameters for simulator. Default to \${DEFAULT-VALUE}"]
     )
-    var simulatorConfig: File = File("config.conf")
+    var simulatorConfig: File? = null
+
+    @CommandLine.Option(
+        names = ["--clients"],
+        description = [" Default to \${DEFAULT-VALUE}."]
+    )
+    var clients: Int? = null
+
+    @CommandLine.Option(
+        names = ["--mode"],
+        description = [" Default to \${DEFAULT-VALUE}."]
+    )
+    val simulationMode: SimulationMode? = null
 
     @CommandLine.Option(
         names = ["--send-topic"],
         description = [
             "Topic to send the messages to. " +
-                "Defaults to ${P2P_OUT_TOPIC}, if not specified."
+                "Defaults to \${DEFAULT-VALUE}, if not specified."
         ]
     )
-    var sendTopic: String? = null
+    var sendTopic: String = P2P_OUT_TOPIC
 
     @CommandLine.Option(
         names = ["--receive-topic"],
         description = [
             "Topic to receive messages from. " +
-                "Defaults to ${P2P_IN_TOPIC}, if not specified."
+                "Defaults to  \${DEFAULT-VALUE}, if not specified."
         ]
     )
-    var receiveTopic: String? = null
+    var receiveTopic: String = P2P_IN_TOPIC
 
     @CommandLine.Option(names = ["-h", "--help"], usageHelp = true, description = ["Display help and exit"])
     var helpRequested = false
@@ -305,7 +238,47 @@ enum class SimulationMode {
     DB_SINK
 }
 
-data class DBParams(val username: String, val password: String, val host: String, val db: String)
+class CommonConfig(val parameters: CliParameters) {
+    val bootConfig: SmartConfig
+    val configFromFile: Config
+    val clients: Int
+    val simulatorMode: SimulationMode?
+
+    init {
+        val parsedMessagingParams = parameters.messagingParams.mapKeys { (key, _) ->
+            "${BootConfig.BOOT_KAFKA_COMMON}.${key.trim()}"
+        }.toMutableMap()
+        parsedMessagingParams.computeIfAbsent("${BootConfig.BOOT_KAFKA_COMMON}.bootstrap.servers") {
+            System.getenv("KAFKA_SERVERS") ?: "localhost:9092"
+        }
+        bootConfig = SmartConfigFactory.create(SmartConfigImpl.empty()).create(
+            ConfigFactory.parseMap(parsedMessagingParams)
+                .withValue(
+                    BootConfig.TOPIC_PREFIX,
+                    ConfigValueFactory.fromAnyRef("")
+                ).withValue(
+                    MessagingConfig.Bus.BUS_TYPE,
+                    ConfigValueFactory.fromAnyRef("KAFKA")
+                )
+        )
+        configFromFile = parameters.simulatorConfig?.let { ConfigFactory.parseFile(it) } ?: ConfigFactory.empty()
+        clients = parameters.clients ?: configFromFile.getIntOrNull(AppSimulator.PARALLEL_CLIENTS_KEY)
+            ?: AppSimulator.DEFAULT_PARALLEL_CLIENTS
+        simulatorMode = parameters.simulationMode ?: configFromFile.getEnumOrNull<SimulationMode>("simulatorMode")
+    }
+}
+
+data class DBParams(val username: String, val password: String, val host: String, val db: String) {
+    companion object {
+        fun read(commonConfig: CommonConfig): DBParams {
+            val username = getDbParameter("username", commonConfig.configFromFile, commonConfig.parameters)
+            val password = getDbParameter("password", commonConfig.configFromFile, commonConfig.parameters)
+            val host = getDbParameter("host", commonConfig.configFromFile, commonConfig.parameters)
+            val db = getDbParameter("db", commonConfig.configFromFile, commonConfig.parameters)
+            return DBParams(username, password, host, db)
+        }
+    }
+}
 
 data class LoadGenerationParams(
     val peer: HoldingIdentity,
@@ -321,6 +294,54 @@ data class LoadGenerationParams(
         when (loadGenerationType) {
             LoadGenerationType.ONE_OFF -> require(totalNumberOfMessages != null)
             LoadGenerationType.CONTINUOUS -> require(totalNumberOfMessages == null)
+        }
+    }
+
+    companion object {
+        fun read(commonConfig: CommonConfig): LoadGenerationParams {
+            val peerX500Name = getLoadGenStrParameter("peerX500Name", commonConfig.configFromFile, commonConfig.parameters)
+            MemberX500Name.parse(peerX500Name)
+            val peerGroupId = getLoadGenStrParameter("peerGroupId", commonConfig.configFromFile, commonConfig.parameters)
+            val ourX500Name = getLoadGenStrParameter("ourX500Name", commonConfig.configFromFile, commonConfig.parameters)
+            MemberX500Name.parse(ourX500Name)
+            val ourGroupId = getLoadGenStrParameter("ourGroupId", commonConfig.configFromFile, commonConfig.parameters)
+            val loadGenerationType: LoadGenerationType =
+                getLoadGenEnumParameter("loadGenerationType", commonConfig.configFromFile, commonConfig.parameters)
+            val totalNumberOfMessages = when (loadGenerationType) {
+                LoadGenerationType.ONE_OFF -> getLoadGenIntParameter(
+                    "totalNumberOfMessages",
+                    AppSimulator.DEFAULT_TOTAL_NUMBER_OF_MESSAGES,
+                    commonConfig.configFromFile,
+                    commonConfig.parameters,
+                )
+
+                LoadGenerationType.CONTINUOUS -> null
+            }
+            val batchSize =
+                getLoadGenIntParameter("batchSize", AppSimulator.DEFAULT_BATCH_SIZE, commonConfig.configFromFile, commonConfig.parameters)
+            val interBatchDelay =
+                getLoadGenDuration(
+                    "interBatchDelay",
+                    AppSimulator.DEFAULT_INTER_BATCH_DELAY,
+                    commonConfig.configFromFile,
+                    commonConfig.parameters
+                )
+            val messageSizeBytes =
+                getLoadGenIntParameter(
+                    "messageSizeBytes",
+                    AppSimulator.DEFAULT_MESSAGE_SIZE_BYTES, commonConfig.configFromFile, commonConfig.parameters
+                )
+            val expireAfterTime = getLoadGenDurationOrNull("expireAfterTime", commonConfig.configFromFile, commonConfig.parameters)
+            return LoadGenerationParams(
+                HoldingIdentity(peerX500Name, peerGroupId),
+                HoldingIdentity(ourX500Name, ourGroupId),
+                loadGenerationType,
+                totalNumberOfMessages,
+                batchSize,
+                interBatchDelay,
+                messageSizeBytes,
+                expireAfterTime
+            )
         }
     }
 }

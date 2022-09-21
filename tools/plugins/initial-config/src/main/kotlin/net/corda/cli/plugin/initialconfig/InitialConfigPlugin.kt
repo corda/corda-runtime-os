@@ -16,7 +16,7 @@ class InitialConfigPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
     @Extension
     @Command(
         name = "initial-config",
-        subcommands = [RbacConfigSubcommand::class, DbConfigSubcommand::class],
+        subcommands = [RbacConfigSubcommand::class, DbConfigSubcommand::class, CryptoConfigSubcommand::class],
         description = ["Create SQL files to write the initial config to a new cluster"]
     )
     class PluginEntryPoint : CordaCliPlugin

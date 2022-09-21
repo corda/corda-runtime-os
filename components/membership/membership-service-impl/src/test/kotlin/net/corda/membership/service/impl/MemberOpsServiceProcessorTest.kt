@@ -95,7 +95,12 @@ class MemberOpsServiceProcessorTest {
         on { getByHoldingIdentityShortHash(mgmHoldingIdentity.shortHash) } doReturn VirtualNodeInfo(
             mgmHoldingIdentity,
             CpiIdentifier("test", "test", SecureHash("algorithm", "1234".toByteArray())),
-            null, UUID.randomUUID(), null, UUID.randomUUID(),
+            null,
+            UUID.randomUUID(),
+            null,
+            UUID.randomUUID(),
+            null,
+            UUID.randomUUID(),
             timestamp = now
         )
     }

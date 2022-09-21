@@ -14,6 +14,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import java.util.stream.Stream
@@ -72,7 +73,8 @@ class CpiInfoReadServiceImpl @Activate constructor(
         coordinator.stop()
     }
 
-    override fun close() {
+    @Deactivate
+    fun close() {
         log.debug { "Cpi Info Reader Service component closing" }
         coordinator.close()
         cpiInfoProcessor.close()

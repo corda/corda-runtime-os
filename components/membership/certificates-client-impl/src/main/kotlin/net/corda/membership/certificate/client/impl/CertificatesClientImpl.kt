@@ -28,9 +28,10 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.v5.base.concurrent.getOrThrow
+import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -85,7 +86,7 @@ class CertificatesClientImpl @Activate constructor(
     }
 
     override fun setupLocallyHostedIdentity(
-        holdingIdentityShortHash: String,
+        holdingIdentityShortHash: ShortHash,
         p2pTlsCertificateChainAlias: String,
         p2pTlsTenantId: String?,
         sessionKeyTenantId: String?,
@@ -108,7 +109,7 @@ class CertificatesClientImpl @Activate constructor(
     }
 
     override val isRunning: Boolean
-        get() = sender?.isRunning ?: false
+        get() = sender != null
 
     override fun start() {
         logger.info("Starting component.")

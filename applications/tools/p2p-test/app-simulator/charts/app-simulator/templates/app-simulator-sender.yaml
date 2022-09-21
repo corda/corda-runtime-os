@@ -1,0 +1,82 @@
+{{- if and (.Values.appSimulators.sender.enabled) (eq .Values.appSimulators.sender.loadGenerationType "CONTINUOUS") }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "appSimulator.fullname" . }}-sender
+  labels:
+    app.kubernetes.io/component: sender
+spec:
+  replicas: {{ .Values.appSimulators.sender.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: sender
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: sender
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      {{- include "appSimulator.imagePullSecrets" . | nindent 6 }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 1
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: "app.kubernetes.io/component"
+                      operator: In
+                      values:
+                        - receiver
+                topologyKey: "kubernetes.io/hostname"
+      containers:
+        - name: {{ include "appSimulator.fullname" . }}-sender
+          image: {{ include "appSimulator.image" . }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+          args:
+            - "--mode SENDER"
+            - "--clients {{ .Values.appSimulators.sender.parallelClientsPerReplica }}"
+            - "-lloadGenerationType=CONTINUOUS"
+            - "-lpeerX500Name={{ .Values.appSimulators.sender.peerX500Name }}"
+            - "-lpeerGroupId={{ .Values.appSimulators.sender.peerGroupId }}"
+            - "-lourX500Name={{ .Values.appSimulators.sender.ourX500Name }}"
+            - "-lourGroupId={{ .Values.appSimulators.sender.ourGroupId }}"
+            - "-lbatchSize={{ .Values.appSimulators.sender.batchSize }}"
+            - "-linterBatchDelay={{ .Values.appSimulators.sender.interBatchDelay }}"
+            - "-lmessageSizeBytes={{ .Values.appSimulators.sender.messageSizeBytes }}"
+            {{- if .Values.appSimulators.sender.expireMessages.enabled }}
+            - "--lexpireAfterTime={{ .Values.appSimulators.sender.expireAfterTimeS }}"
+            {{- end }}
+            {{- include "appSimulator.kafkaArgs" . | nindent 12 }}
+            {{- if .Values.appSimulators.sender.sendMessagesToDatabase }}
+            {{- include "appSimulator.databaseArgs" . | nindent 12 }}
+            {{- end }}
+          env:
+            - name: JAVA_TOOL_OPTIONS
+              value: {{- if .Values.appSimulators.sender.debug.enabled }}
+                -agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend={{ if .Values.appSimulators.sender.debug.suspend }}y{{ else }}n{{ end }}
+              {{- end -}}
+              {{- if .Values.kafka.sasl.enabled }}
+                -Djava.security.auth.login.config=/etc/config/jaas.conf
+              {{- end }}
+          volumeMounts:
+          {{- include "appSimulator.volumeMounts" . | nindent 10 }}
+          {{- if .Values.appSimulators.sender.debug.enabled }}
+          ports:
+            - name: debug
+              containerPort: 5005
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+      {{- include "appSimulator.volumes" . | nindent 8 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

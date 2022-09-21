@@ -5,6 +5,7 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
+import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
@@ -25,7 +26,7 @@ class ExternalEventResponseFactoryImplTest {
 
     private companion object {
         val NOW = Instant.now().truncatedTo(ChronoUnit.MILLIS)
-        val EXTERNAL_EVENT_CONTEXT = ExternalEventContext("request id", "flow id")
+        val EXTERNAL_EVENT_CONTEXT = ExternalEventContext("request id", "flow id", KeyValuePairList(emptyList()))
         val EXCEPTION = IllegalArgumentException("I'm broke")
         val EXCEPTION_ENVELOPE = ExceptionEnvelope(EXCEPTION::class.java.name, EXCEPTION.message)
     }

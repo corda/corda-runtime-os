@@ -52,7 +52,7 @@ class PermissionEndpointImpl @Activate constructor(
             createPermission(createPermissionType.convertToDto(principal))
         }
 
-        return ResponseEntity.created(createPermissionResult!!.convertToEndpointType())
+        return ResponseEntity.created(createPermissionResult.convertToEndpointType())
     }
 
     override fun getPermission(id: String): PermissionResponseType {

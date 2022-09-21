@@ -12,7 +12,7 @@ import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
 /** RPC operations for virtual node management. */
 @HttpRpcResource(
     name = "Virtual Node API",
-    description = "Virtual node management endpoints.",
+    description = "The Virtual Nodes API consists of a number of endpoints to manage virtual nodes.",
     path = "virtualnode"
 )
 interface VirtualNodeRPCOps : RpcOps {
@@ -25,7 +25,7 @@ interface VirtualNodeRPCOps : RpcOps {
      */
     @HttpRpcPOST(
         title = "Create virtual node",
-        description = "Creates a new virtual node.",
+        description = "The virtual node endpoint uses the POST method to create a new virtual node.",
         responseDescription = "The details of the created virtual node."
     )
     fun createVirtualNode(
@@ -39,9 +39,9 @@ interface VirtualNodeRPCOps : RpcOps {
      * @throws `HttpApiException` If the request returns an exceptional response.
      */
     @HttpRpcGET(
-        title = "List all virtual nodes in the cluster",
-        description = "List all virtual nodes in the cluster.",
-        responseDescription = "List details of the all virtual nodes in the cluster."
+        title = "Lists all virtual nodes",
+        description = "The virtual node endpoint uses the GET method to list all virtual nodes in the cluster.",
+        responseDescription = "List of virtual node details."
     )
     fun getAllVirtualNodes(): VirtualNodes
 }

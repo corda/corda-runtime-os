@@ -22,7 +22,12 @@ enum class VirtualNodeDbType(private val infix: String, val dbChangeFiles: List<
     /**
      * Virtual node crypto database
      */
-    CRYPTO("crypto", listOf("net/corda/db/schema/vnode-crypto/db.changelog-master.xml"));
+    CRYPTO("crypto", listOf("net/corda/db/schema/vnode-crypto/db.changelog-master.xml")),
+
+    /**
+     * Virtual node uniqueness database
+     */
+    UNIQUENESS("uniq", listOf("net/corda/db/schema/vnode-uniqueness/db.changelog-master.xml"));
 
     /**
      * Returns DB schema name

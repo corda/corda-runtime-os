@@ -6,9 +6,6 @@ import org.osgi.framework.hooks.resolver.ResolverHookFactory
 import org.osgi.framework.wiring.BundleCapability
 import org.osgi.framework.wiring.BundleRequirement
 import org.osgi.framework.wiring.BundleRevision
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
 
 /**
  * This hook modifies the logic for resolving bundles.
@@ -20,7 +17,7 @@ import org.osgi.service.component.annotations.Reference
  */
 internal class IsolatingResolverBundleHook(private val sandboxService: SandboxContextService) : ResolverHook {
     // We do not take any action here, and filter the candidates in `filterMatches` instead. Taking an action here
-    // causes Felix to create a whitelist in `prepareResolverHooks`, which will be missing the system bundle packages.
+    // causes Felix to create an allow list in `prepareResolverHooks`, which will be missing the system bundle packages.
     // This is not the behaviour we want.
     override fun filterResolvable(candidates: MutableCollection<BundleRevision>?) {}
 
@@ -61,10 +58,7 @@ internal class IsolatingResolverBundleHook(private val sandboxService: SandboxCo
 }
 
 /** A [ResolverHookFactory] implementation for creating [IsolatingResolverBundleHook]s. */
-@Component(immediate = true)
-@Suppress("unused")
-internal class IsolatingResolverBundleHookFactory @Activate constructor(
-        @Reference
+internal class IsolatingResolverBundleHookFactory(
         private val sandboxManagerService: SandboxContextService) : ResolverHookFactory {
 
     /** Returns an [IsolatingResolverBundleHook]. */

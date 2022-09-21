@@ -17,11 +17,11 @@ import net.corda.messaging.api.exception.CordaRPCAPISenderException
 import org.slf4j.Logger
 
 @Suppress("ComplexMethod", "ThrowsCount")
-fun <T : Any> withPermissionManager(
+fun <T : Any?> withPermissionManager(
     permissionManager: PermissionManager,
     logger: Logger,
-    block: PermissionManager.() -> T?
-): T? {
+    block: PermissionManager.() -> T
+): T {
     return try {
         block.invoke(permissionManager)
 

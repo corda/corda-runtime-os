@@ -20,7 +20,7 @@ const val CPI_NAME = "flow-worker-dev"
 
 const val USERNAME = "admin"
 const val PASSWORD = "admin"
-const val GROUP_ID = "placeholder"
+const val GROUP_ID = "7c5d6948-e17b-44e7-9d1c-fa4a3f667cad"
 
 val CLUSTER_URI = URI(System.getProperty("rpcHost"))
 

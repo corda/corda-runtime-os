@@ -91,7 +91,7 @@ class GroupPolicyConstants {
 
                 companion object {
                     fun fromString(str: String?): SessionKeyPolicy? = values().firstOrNull {
-                        it.policy == str
+                        it.policy.equals(str, ignoreCase = true)
                     }
                 }
 
@@ -116,7 +116,7 @@ class GroupPolicyConstants {
 
                 companion object {
                     fun fromString(str: String?): SessionPkiMode? = values().firstOrNull {
-                        it.mode == str
+                        it.mode.equals(str, ignoreCase = true)
                     }
                 }
 
@@ -135,7 +135,7 @@ class GroupPolicyConstants {
 
                 companion object {
                     fun fromString(str: String?): TlsPkiMode? = values().firstOrNull {
-                        it.mode == str
+                        it.mode.equals(str, ignoreCase = true)
                     }
                 }
 
@@ -167,11 +167,11 @@ class GroupPolicyConstants {
              */
             enum class ProtocolMode(private val mode: String) {
                 AUTH("Authentication"),
-                AUTH_ENCRYPT("Authentication_Encryption");
+                AUTH_ENCRYPT("Authenticated_Encryption");
 
                 companion object {
                     fun fromString(str: String?): ProtocolMode? = values().firstOrNull {
-                        it.mode == str
+                        it.mode.equals(str, ignoreCase = true)
                     }
                 }
 

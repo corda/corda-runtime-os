@@ -17,6 +17,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.processors.flow.FlowProcessor
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.session.mapper.service.FlowMapperService
+import net.corda.uniqueness.checker.UniquenessChecker
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -45,7 +46,9 @@ class FlowProcessorImpl @Activate constructor(
     @Reference(service = SandboxGroupContextComponent::class)
     private val sandboxGroupContextComponent: SandboxGroupContextComponent,
     @Reference(service = MembershipGroupReaderProvider::class)
-    private val membershipGroupReaderProvider: MembershipGroupReaderProvider
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    @Reference(service = UniquenessChecker::class)
+    private val uniquenessChecker: UniquenessChecker
 ) : FlowProcessor {
 
     private companion object {
@@ -60,7 +63,8 @@ class FlowProcessorImpl @Activate constructor(
         ::virtualNodeInfoReadService,
         ::cpiInfoReadService,
         ::sandboxGroupContextComponent,
-        ::membershipGroupReaderProvider
+        ::membershipGroupReaderProvider,
+        ::uniquenessChecker
     )
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<FlowProcessorImpl>(dependentComponents, ::eventHandler)
 

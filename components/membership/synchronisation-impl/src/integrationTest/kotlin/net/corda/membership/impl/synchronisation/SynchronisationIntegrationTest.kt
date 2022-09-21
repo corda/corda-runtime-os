@@ -1,6 +1,8 @@
 package net.corda.membership.impl.synchronisation
 
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigRenderOptions
+import com.typesafe.config.ConfigValueFactory
 import net.corda.chunking.toAvro
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
@@ -64,17 +66,20 @@ import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.MembershipConfig.MAX_DURATION_BETWEEN_SYNC_REQUESTS_MINUTES
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
 import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
-import net.corda.v5.base.concurrent.getOrThrow
+import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.membership.MemberInfo
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
@@ -136,6 +141,9 @@ class SynchronisationIntegrationTest {
         lateinit var membershipQueryClient: TestMembershipQueryClient
 
         @InjectService(timeout = 5000)
+        lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
+
+        @InjectService(timeout = 5000)
         lateinit var memberInfoFactory: MemberInfoFactory
 
         val merkleTreeGenerator: MerkleTreeGenerator by lazy {
@@ -190,6 +198,12 @@ class SynchronisationIntegrationTest {
         const val cryptoConf = """
             dummy=1
         """
+        private val membershipConfig = ConfigFactory.empty()
+            .withValue(
+                MAX_DURATION_BETWEEN_SYNC_REQUESTS_MINUTES,
+                ConfigValueFactory.fromAnyRef(100L)
+            ).root()
+            .render(ConfigRenderOptions.concise())
         const val MEMBERSHIP_P2P_SUBSYSTEM = "membership"
         const val CATEGORY = "SESSION_INIT"
         const val SCHEME = "CORDA.ECDSA.SECP256R1"
@@ -268,6 +282,7 @@ class SynchronisationIntegrationTest {
             membershipP2PReadService.start()
             cryptoOpsClient.start()
             membershipQueryClient.start()
+            virtualNodeInfoReadService.start()
             configurationReadService.bootstrapConfig(bootConfig)
 
             eventually {
@@ -294,6 +309,15 @@ class SynchronisationIntegrationTest {
                         CONFIG_TOPIC,
                         CRYPTO_CONFIG,
                         Configuration(cryptoConf, cryptoConf, 0, schemaVersion)
+                    )
+                )
+            )
+            publisher.publish(
+                listOf(
+                    Record(
+                        CONFIG_TOPIC,
+                        MEMBERSHIP_CONFIG,
+                        Configuration(membershipConfig, membershipConfig, 0, schemaVersion)
                     )
                 )
             )
@@ -354,7 +378,7 @@ class SynchronisationIntegrationTest {
         )
         val payload = ByteBuffer.wrap(syncRequestSerializer.serialize(syncRequest))
 
-        val requestSender =  publisherFactory.createPublisher(
+        val requestSender = publisherFactory.createPublisher(
             PublisherConfig("membership_sync_request_test_sender"),
             bootConfig
         ).also { it.start() }
@@ -375,31 +399,26 @@ class SynchronisationIntegrationTest {
         )
 
         // Start subscription to gather results of processing synchronisation command
-        val completableResult = CompletableFuture<AppMessage>()
-        val membershipPackageSubscription = subscriptionFactory.createPubSubSubscription(
+        val completableResult = CompletableFuture<MembershipPackage>()
+        val membershipPackage = subscriptionFactory.createPubSubSubscription(
             SubscriptionConfig("membership_sync_request_test_receiver", P2P_OUT_TOPIC),
             getTestProcessor { v ->
-                completableResult.complete(v as AppMessage)
+                val appMessage = v as? AppMessage ?: return@getTestProcessor
+                val authenticatedMessage = appMessage.message as? AuthenticatedMessage ?: return@getTestProcessor
+                val membershipPackage =
+                    membershipPackageDeserializer.deserialize(authenticatedMessage.payload.array()) ?: return@getTestProcessor
+                completableResult.complete(membershipPackage)
             },
             messagingConfig = bootConfig
-        ).also { it.start() }
-
-        val result = assertDoesNotThrow {
+        ).also { it.start() }.use {
             completableResult.getOrThrow(Duration.ofSeconds(5))
         }
-        membershipPackageSubscription.close()
 
         assertSoftly { it ->
-            it.assertThat(result).isNotNull
-            it.assertThat(result)
-                .isNotNull
-                .isInstanceOf(AppMessage::class.java)
-            it.assertThat(result.message).isInstanceOf(AuthenticatedMessage::class.java)
-            val authenticatedMessage = result.message as AuthenticatedMessage
-            with(membershipPackageDeserializer.deserialize(authenticatedMessage.payload.array()) as MembershipPackage) {
-                it.assertThat(this.distributionType).isEqualTo(DistributionType.SYNC)
-                it.assertThat(this.memberships.memberships.size).isEqualTo(2)
-                this.memberships.memberships.forEach {
+            it.assertThat(membershipPackage).isNotNull
+            it.assertThat(membershipPackage.distributionType).isEqualTo(DistributionType.SYNC)
+            it.assertThat(membershipPackage.memberships.memberships).hasSize(2)
+                .allSatisfy {
                     val member = memberInfoFactory.create(
                         keyValueDeserializer.deserialize(it.memberContext.array())!!.toSortedMap(),
                         keyValueDeserializer.deserialize(it.mgmContext.array())!!.toSortedMap()
@@ -408,7 +427,6 @@ class SynchronisationIntegrationTest {
                     assertThat(member.groupId).isEqualTo(groupId)
                     assertThat(member.status).isEqualTo(MEMBER_STATUS_ACTIVE)
                 }
-            }
         }
     }
 
@@ -445,7 +463,7 @@ class SynchronisationIntegrationTest {
             .setDistributionType(DistributionType.STANDARD)
             .setCurrentPage(0)
             .setPageCount(1)
-            .setCpiWhitelist(null)
+            .setCpiAllowList(null)
             .setGroupParameters(null)
             .setMemberships(
                 membership

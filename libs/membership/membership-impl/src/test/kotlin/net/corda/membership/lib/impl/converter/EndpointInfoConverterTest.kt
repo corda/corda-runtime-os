@@ -13,7 +13,7 @@ import kotlin.test.assertFailsWith
 
 class EndpointInfoConverterTest {
     companion object {
-        private val endpoint = EndpointInfoImpl("https://localhost:10000", EndpointInfo.DEFAULT_PROTOCOL_VERSION)
+        private val endpoint = EndpointInfoImpl("https://localhost:10000")
         private val converters = listOf(EndpointInfoConverter())
     }
 

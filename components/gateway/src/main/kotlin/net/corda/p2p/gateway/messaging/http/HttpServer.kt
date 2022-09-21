@@ -9,7 +9,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel
 import io.netty.handler.codec.http.HttpResponseStatus
 import io.netty.handler.codec.http.HttpServerCodec
 import io.netty.handler.timeout.IdleStateHandler
-import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.Resource
 import net.corda.p2p.gateway.messaging.GatewayConfiguration
 import net.corda.v5.base.util.contextLogger
 import java.net.SocketAddress
@@ -33,7 +33,7 @@ class HttpServer(
     private val eventListener: HttpServerListener,
     private val configuration: GatewayConfiguration,
     private val keyStore: KeyStoreWithPassword,
-) : Lifecycle,
+) : Resource,
     HttpServerListener {
 
     companion object {
@@ -103,14 +103,14 @@ class HttpServer(
         }
     }
 
-    override val isRunning: Boolean
+    internal val isRunning: Boolean
         get() {
             lock.withLock {
                 return shutdownSequence.isNotEmpty()
             }
         }
 
-    override fun stop() {
+    override fun close() {
         lock.withLock {
             shutdownSequence.forEach {
                 try {
@@ -126,7 +126,7 @@ class HttpServer(
         }
     }
 
-    override fun start() {
+    fun start() {
         lock.withLock {
             if (shutdownSequence.isEmpty()) {
                 logger.info("Starting HTTP Server")

@@ -12,6 +12,7 @@ dependencies {
     implementation project(':libs:http-rpc:http-rpc')
     implementation project(":libs:http-rpc:http-rpc-tools")
     implementation project(":libs:http-rpc:http-rpc-common")
+    implementation project(":libs:utilities")
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-application"
 

@@ -15,8 +15,8 @@ import org.osgi.service.component.annotations.Component
 @Component(service = [FlowProtocolStoreFactory::class])
 class FlowProtocolStoreFactoryImpl : FlowProtocolStoreFactory {
 
-    companion object {
-        val logger = contextLogger()
+    private companion object {
+        private val logger = contextLogger()
     }
 
     private fun extractDataForFlow(
@@ -32,10 +32,11 @@ class FlowProtocolStoreFactoryImpl : FlowProtocolStoreFactory {
                 val protocols = versions.map { FlowProtocol(protocol, it) }
                 initiatorToProtocol[flowName] = protocols
             }
+
             flowClass.isAnnotationPresent(InitiatedBy::class.java) -> {
                 if (!flowClass.interfaces.contains(ResponderFlow::class.java)) {
                     throw FlowFatalException(
-                        "Found a responder flow that does not implement ResponderFlow"
+                        "Flow ${flowClass.canonicalName} must implement ${ResponderFlow::class.simpleName}"
                     )
                 }
                 val protocol = flowClass.getAnnotation(InitiatedBy::class.java).protocol
