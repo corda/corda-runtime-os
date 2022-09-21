@@ -175,7 +175,7 @@ class ConnectionManagerTest {
             )
 
         connectionManager.close()
-        verify(mockedClient.constructed().first(), timeout(1_000).times(1)).stop()
+        verify(mockedClient.constructed().first(), timeout(1_000).times(1)).close()
     }
 
     @Test

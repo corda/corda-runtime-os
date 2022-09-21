@@ -214,7 +214,7 @@ class CryptoFlowOpsTransformerImplTests {
             buildTransformer().createSign(
                 UUID.randomUUID().toString(),
                 knownTenantId,
-                publicKey,
+                publicKey.encoded,
                 SignatureSpec.EDDSA_ED25519,
                 data,
                 knownOperationContext,
@@ -240,7 +240,7 @@ class CryptoFlowOpsTransformerImplTests {
             buildTransformer().createSign(
                 UUID.randomUUID().toString(),
                 knownTenantId,
-                publicKey,
+                publicKey.encoded,
                 SignatureSpec.EDDSA_ED25519,
                 data,
                 emptyMap(),

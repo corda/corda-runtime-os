@@ -32,7 +32,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.lang.IllegalStateException
 import java.net.InetSocketAddress
 import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.X509ExtendedKeyManager
@@ -188,7 +187,7 @@ class HttpServerTest {
     fun `stop will terminate all the groups`() {
         server.start()
 
-        server.stop()
+        server.close()
 
         verify(groups[0]).shutdownGracefully()
         verify(groups[1]).shutdownGracefully()
@@ -200,7 +199,7 @@ class HttpServerTest {
         whenever(serverChannel.isOpen).doReturn(true)
         whenever(serverChannel.close()).doReturn(mock())
 
-        server.stop()
+        server.close()
 
         verify(serverChannel).close()
     }
@@ -210,7 +209,7 @@ class HttpServerTest {
         server.start()
         whenever(serverChannel.isOpen).doReturn(false)
 
-        server.stop()
+        server.close()
 
         verify(serverChannel, times(0)).close()
     }
@@ -222,7 +221,7 @@ class HttpServerTest {
         whenever(serverChannel.close()).doThrow(RuntimeException(""))
 
         assertDoesNotThrow {
-            server.stop()
+            server.close()
         }
     }
 
@@ -230,7 +229,7 @@ class HttpServerTest {
     fun `stop will remove the address from the list`() {
         server.start()
         server.onOpen(HttpConnectionEvent(channel))
-        server.stop()
+        server.close()
 
         assertThrows<IllegalStateException> {
             server.write(

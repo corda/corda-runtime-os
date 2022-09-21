@@ -1,7 +1,6 @@
 package net.corda.components.rbac
 
 import net.corda.httprpc.security.read.RPCSecurityManager
-import java.lang.IllegalArgumentException
 import net.corda.httprpc.security.read.rbac.RBACSecurityManager
 import net.corda.libs.permission.PermissionValidator
 import net.corda.libs.permissions.manager.BasicAuthenticationService
@@ -78,7 +77,7 @@ class RBACSecurityManagerServiceTest {
         val rpcSecurityManager = mock<RPCSecurityManager>()
         service.innerSecurityManager = rpcSecurityManager
         service.processEvent(RegistrationStatusChangeEvent(permissionServiceRegistration, LifecycleStatus.DOWN), coordinator)
-        verify(rpcSecurityManager).close()
+        verify(rpcSecurityManager).stop()
     }
 
     @Test

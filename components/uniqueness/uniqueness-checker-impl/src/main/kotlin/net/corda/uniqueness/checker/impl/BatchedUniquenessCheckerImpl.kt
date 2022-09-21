@@ -1,17 +1,27 @@
 package net.corda.uniqueness.checker.impl
 
+import net.corda.configuration.read.ConfigChangedEvent
+import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.data.uniqueness.UniquenessCheckResponseAvro
 import net.corda.data.uniqueness.UniquenessCheckResultMalformedRequestAvro
 import net.corda.data.uniqueness.UniquenessCheckResultSuccessAvro
+import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
+import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.messaging.api.subscription.config.SubscriptionConfig
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.schema.Schemas
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.uniqueness.backingstore.BackingStore
 import net.corda.uniqueness.checker.UniquenessChecker
 import net.corda.uniqueness.datamodel.common.toExternalError
@@ -49,8 +59,12 @@ import kotlin.collections.HashMap
  * together in order to provide higher performance under load.
  */
 @Component(service = [UniquenessChecker::class])
+@Suppress("LongParameterList")
 class BatchedUniquenessCheckerImpl(
     coordinatorFactory: LifecycleCoordinatorFactory,
+    private val configurationReadService: ConfigurationReadService,
+    private val subscriptionFactory: SubscriptionFactory,
+    private val externalEventResponseFactory: ExternalEventResponseFactory,
     private val clock: Clock,
     private val backingStore: BackingStore
 ) : UniquenessChecker {
@@ -59,12 +73,29 @@ class BatchedUniquenessCheckerImpl(
     constructor(
         @Reference(service = LifecycleCoordinatorFactory::class)
         coordinatorFactory: LifecycleCoordinatorFactory,
+        @Reference(service = ConfigurationReadService::class)
+        configurationReadService: ConfigurationReadService,
+        @Reference(service = SubscriptionFactory::class)
+        subscriptionFactory: SubscriptionFactory,
+        @Reference(service = ExternalEventResponseFactory::class)
+        externalEventResponseFactory: ExternalEventResponseFactory,
         @Reference(service = BackingStore::class)
-        backingStore: BackingStore
-    ) : this(coordinatorFactory, UTCClock(), backingStore)
+        backingStore: BackingStore,
+    ) : this(
+        coordinatorFactory,
+        configurationReadService,
+        subscriptionFactory,
+        externalEventResponseFactory,
+        UTCClock(),
+        backingStore)
 
     private companion object {
-        private val log: Logger = contextLogger()
+        const val GROUP_NAME = "uniqueness.checker"
+
+        const val CONFIG_HANDLE = "CONFIG_HANDLE"
+        const val SUBSCRIPTION = "SUBSCRIPTION"
+
+        val log: Logger = contextLogger()
     }
 
     private val lifecycleCoordinator: LifecycleCoordinator =
@@ -344,6 +375,7 @@ class BatchedUniquenessCheckerImpl(
         log.info("Uniqueness checker received event $event.")
         when (event) {
             is StartEvent -> {
+                configurationReadService.start()
                 dependentComponents.registerAndStartAll(coordinator)
             }
             is StopEvent -> {
@@ -352,10 +384,41 @@ class BatchedUniquenessCheckerImpl(
             is RegistrationStatusChangeEvent -> {
                 log.info("Uniqueness checker is ${event.status}")
 
+                if (event.status == LifecycleStatus.UP) {
+                    coordinator.createManagedResource(CONFIG_HANDLE) {
+                        configurationReadService.registerComponentForUpdates(
+                            coordinator,
+                            setOf(MESSAGING_CONFIG)
+                        )
+                    }
+                } else {
+                    coordinator.closeManagedResources(setOf(CONFIG_HANDLE))
+                }
+
                 coordinator.updateStatus(event.status)
+            }
+            is ConfigChangedEvent -> {
+                log.info("Received configuration change event, (re)initialising subscription")
+                initialiseSubscription(event.config.getConfig(MESSAGING_CONFIG))
             }
             else -> {
                 log.warn("Unexpected event $event!")
+            }
+        }
+    }
+
+    private fun initialiseSubscription(config: SmartConfig) {
+        lifecycleCoordinator.createManagedResource(SUBSCRIPTION) {
+            subscriptionFactory.createDurableSubscription(
+                SubscriptionConfig(GROUP_NAME, Schemas.UniquenessChecker.UNIQUENESS_CHECK_TOPIC),
+                UniquenessCheckMessageProcessor(
+                    this,
+                    externalEventResponseFactory
+                ),
+                config,
+                null
+            ).also {
+                it.start()
             }
         }
     }

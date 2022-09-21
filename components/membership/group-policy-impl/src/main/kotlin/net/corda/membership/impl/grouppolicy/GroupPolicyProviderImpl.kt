@@ -5,6 +5,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.membership.event.MembershipEvent
 import net.corda.data.membership.event.registration.MgmOnboarded
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -41,7 +42,6 @@ import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.Collections
 import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("LongParameterList")
@@ -62,6 +62,7 @@ class GroupPolicyProviderImpl @Activate constructor(
     @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
 ) : GroupPolicyProvider {
+
 
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
@@ -84,12 +85,16 @@ class GroupPolicyProviderImpl @Activate constructor(
     private var impl: InnerGroupPolicyProvider = InactiveImpl
 
     private var dependencyServiceRegistration: RegistrationHandle? = null
-    private var subRegistration: RegistrationHandle? = null
-    private var subscription: Subscription<String, MembershipEvent>? = null
+
+    private var messagingConfig: SmartConfig? = null
 
     override fun getGroupPolicy(holdingIdentity: HoldingIdentity) = impl.getGroupPolicy(holdingIdentity)
-    override fun registerListener(callback: (HoldingIdentity, GroupPolicy) -> Unit) {
-        listeners.add(callback)
+    override fun registerListener(name: String, callback: (HoldingIdentity, GroupPolicy) -> Unit) {
+        val listener = Listener(name, callback)
+        messagingConfig?.also {
+            listener.start(it)
+        }
+        listeners.put(name, listener)?.stop()
     }
 
     override fun start() = coordinator.start()
@@ -98,12 +103,12 @@ class GroupPolicyProviderImpl @Activate constructor(
 
     override val isRunning get() = coordinator.isRunning
 
-    private val listeners: MutableList<(HoldingIdentity, GroupPolicy) -> Unit> =
-        Collections.synchronizedList(mutableListOf())
+    private val listeners = ConcurrentHashMap<String, Listener>()
 
     /**
      * Handle lifecycle events.
      */
+    @Suppress("ComplexMethod")
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         logger.info("Group policy provider received event $event.")
         when (event) {
@@ -124,47 +129,35 @@ class GroupPolicyProviderImpl @Activate constructor(
                 deactivate("Stopping component.")
                 dependencyServiceRegistration?.close()
                 dependencyServiceRegistration = null
-                subRegistration?.close()
-                subRegistration = null
+                listeners.values.forEach {
+                    it.stop()
+                }
                 configHandle?.close()
                 configHandle = null
-                subscription?.close()
-                subscription = null
             }
             is RegistrationStatusChangeEvent -> {
                 logger.info("Group policy provider handling registration change. Event status: ${event.status}")
                 if (event.status == LifecycleStatus.UP) {
-                    if (event.registration == dependencyServiceRegistration) {
-                        logger.info("Dependency services are UP. Registering to receive configuration.")
-                        configHandle?.close()
-                        configHandle = configurationReadService.registerComponentForUpdates(
-                            coordinator,
-                            setOf(MESSAGING_CONFIG, BOOT_CONFIG)
-                        )
-                    } else if (event.registration == subRegistration) {
-                        activate("Received config, started subscriptions and setting status to UP.")
-                    }
+                    logger.info("Dependency services are UP. Registering to receive configuration.")
+                    configHandle?.close()
+                    configHandle = configurationReadService.registerComponentForUpdates(
+                        coordinator,
+                        setOf(MESSAGING_CONFIG, BOOT_CONFIG)
+                    )
                 } else {
                     deactivate("Setting inactive state due to receiving registration status ${event.status}.")
-                    subRegistration?.close()
-                    subRegistration = null
-                    subscription?.close()
-                    subscription = null
+                    listeners.values.forEach {
+                        it.stop()
+                    }
                 }
             }
             is ConfigChangedEvent -> {
-                subRegistration?.close()
-                subRegistration = null
-                val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
-                subscription?.close()
-                subscription = subscriptionFactory.createDurableSubscription(
-                    SubscriptionConfig(CONSUMER_GROUP, EVENT_TOPIC),
-                    FinishedRegistrationsProcessor(),
-                    messagingConfig,
-                    null
-                ).also {
-                    it.start()
-                    subRegistration = coordinator.followStatusChangesByName(setOf(it.subscriptionName))
+                activate("Received config, started subscriptions and setting status to UP.")
+                messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+                listeners.values.forEach { listener ->
+                    messagingConfig?.also {
+                        listener.start(it)
+                    }
                 }
             }
         }
@@ -247,8 +240,8 @@ class GroupPolicyProviderImpl @Activate constructor(
                     } else if (groupPolicyToStore !is MGMGroupPolicy) {
                         logger.info("Caching group policy for member.")
                         groupPolicies[it] = groupPolicyToStore
-                        synchronized(listeners) {
-                            listeners.forEach { callback -> callback(it, groupPolicies[it]!!) }
+                        listeners.values.forEach { listener ->
+                            listener.callBack(it, groupPolicies[it]!!)
                         }
                         logger.info("Returning new group policy after change in virtual node information.")
                     }
@@ -308,7 +301,10 @@ class GroupPolicyProviderImpl @Activate constructor(
      * Registers callback when MGM has finished its registration and has the final group policy persisted.
      * This will make sure we have the trust stores and other important information in the group policy ready.
      */
-    internal inner class FinishedRegistrationsProcessor : DurableProcessor<String, MembershipEvent> {
+    internal inner class FinishedRegistrationsProcessor(
+        private val callBack: (HoldingIdentity, GroupPolicy) -> Unit
+    )
+        : DurableProcessor<String, MembershipEvent> {
         @Suppress("NestedBlockDepth")
         override fun onNext(events: List<Record<String, MembershipEvent>>): List<Record<*, *>> {
             logger.info("Received event after mgm registration.")
@@ -331,9 +327,7 @@ class GroupPolicyProviderImpl @Activate constructor(
                             }
                             logger.info("Caching group policy for MGM.")
                             groupPolicies[holdingIdentity] = gp
-                            synchronized(listeners) {
-                                listeners.forEach { callback -> callback(holdingIdentity, gp) }
-                            }
+                            callBack(holdingIdentity, gp)
                         }
                         else -> { logger.warn("Unhandled MembershipEvent was received.") }
                     }
@@ -348,5 +342,28 @@ class GroupPolicyProviderImpl @Activate constructor(
 
         override val keyClass = String::class.java
         override val valueClass = MembershipEvent::class.java
+    }
+    private inner class Listener(
+        private val name: String,
+        val callBack: (HoldingIdentity, GroupPolicy) -> Unit,
+    ) {
+        private var subscription: Subscription<String, MembershipEvent>? = null
+
+        fun start(messagingConfig: SmartConfig) {
+            subscription?.close()
+            subscription = subscriptionFactory.createDurableSubscription(
+                SubscriptionConfig("$CONSUMER_GROUP-$name", EVENT_TOPIC),
+                FinishedRegistrationsProcessor(callBack),
+                messagingConfig,
+                null
+            ).also {
+                it.start()
+            }
+        }
+
+        fun stop() {
+            subscription?.close()
+            subscription = null
+        }
     }
 }

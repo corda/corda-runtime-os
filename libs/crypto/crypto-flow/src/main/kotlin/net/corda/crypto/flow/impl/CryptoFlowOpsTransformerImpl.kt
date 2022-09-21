@@ -69,7 +69,7 @@ class CryptoFlowOpsTransformerImpl(
     override fun createSign(
         requestId: String,
         tenantId: String,
-        publicKey: PublicKey,
+        encodedPublicKeyBytes: ByteArray,
         signatureSpec: SignatureSpec,
         data: ByteArray,
         context: Map<String, String>,
@@ -79,7 +79,7 @@ class CryptoFlowOpsTransformerImpl(
             requestId = requestId,
             tenantId = tenantId,
             request = SignFlowCommand(
-                ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(publicKey)),
+                ByteBuffer.wrap(encodedPublicKeyBytes),
                 signatureSpec.toWire(serializer),
                 ByteBuffer.wrap(data),
                 context.toWire()

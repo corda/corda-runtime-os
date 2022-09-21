@@ -26,6 +26,7 @@ import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.write.db.VirtualNodeInfoWriteService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import net.corda.data.identity.HoldingIdentity as HoldingIdentityAvro
@@ -43,7 +44,7 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory
-) : VirtualNodeInfoWriteService, AutoCloseable {
+) : VirtualNodeInfoWriteService {
     companion object {
         val log: Logger = contextLogger()
         internal const val CLIENT_ID = "VIRTUAL_NODE_INFO_WRITER"
@@ -159,7 +160,8 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
         )
     }
 
-    override fun close() {
+    @Deactivate
+    fun close() {
         configSubscription?.close()
         registration?.close()
     }
