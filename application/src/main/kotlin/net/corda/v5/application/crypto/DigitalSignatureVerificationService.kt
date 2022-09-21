@@ -16,8 +16,8 @@ interface DigitalSignatureVerificationService {
      * Always throws an exception if verification fails.
      *
      * @param publicKey The signer's [PublicKey].
-     * @param signatureData The signatureData on a message.
      * @param signatureSpec The signature spec.
+     * @param signatureData The signatureData on a message.
      * @param clearData The clear data/message that was signed (usually the Merkle root).
      *
      * @throws IllegalArgumentException If the signature scheme is not supported or if any of the clear or signature
