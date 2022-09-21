@@ -1,7 +1,9 @@
 package net.corda.uniqueness.backingstore.impl
 
 import net.corda.crypto.testkit.SecureHashUtils
-import net.corda.data.uniqueness.UniquenessCheckRequest
+import net.corda.data.KeyValuePairList
+import net.corda.data.flow.event.external.ExternalEventContext
+import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.testkit.DbUtils
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -9,11 +11,15 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.impl.JpaEntitiesRegistryImpl
+import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.uniqueness.backingstore.jpa.datamodel.JPABackingStoreEntities
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalRequest
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalResult
-import net.corda.uniqueness.common.datamodel.UniquenessCheckInternalStateRef
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateRefImpl
+import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
+import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.crypto.SecureHash
+import net.corda.virtualnode.toAvro
 import org.junit.jupiter.api.*
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
@@ -70,11 +76,11 @@ class JPABackingStoreImplIntegrationTests {
         return secureHashes
     }
 
-    private fun generateInternalStateRefs(secureHashes: LinkedList<SecureHash>): LinkedList<UniquenessCheckInternalStateRef> {
+    private fun generateInternalStateRefs(secureHashes: LinkedList<SecureHash>): LinkedList<UniquenessCheckStateRef> {
         val uniquenessCheckInternalStateRefs = secureHashes.let {
-            val tmpUniquenessCheckInternalStateRefs = LinkedList<UniquenessCheckInternalStateRef>()
+            val tmpUniquenessCheckInternalStateRefs = LinkedList<UniquenessCheckStateRef>()
             it.forEachIndexed { i, hash ->
-                tmpUniquenessCheckInternalStateRefs.add(UniquenessCheckInternalStateRef(hash, i))
+                tmpUniquenessCheckInternalStateRefs.add(UniquenessCheckStateRefImpl(hash, i))
             }
             tmpUniquenessCheckInternalStateRefs
         }
@@ -134,7 +140,7 @@ class JPABackingStoreImplIntegrationTests {
         @Test
         fun `Persisting transaction details succeeds`() {
             val txCnt = 3
-            val txns: LinkedList<Pair<UniquenessCheckInternalRequest, UniquenessCheckInternalResult>> = LinkedList()
+            val txns: LinkedList<Pair<UniquenessCheckRequestInternal, UniquenessCheckResult>> = LinkedList()
             val txIds = LinkedList<SecureHash>()
 
             repeat(txCnt) {
@@ -142,8 +148,14 @@ class JPABackingStoreImplIntegrationTests {
                 val inputStateRef = "${SecureHashUtils.randomSecureHash()}:$it"
                 txIds.add(txId)
 
-                val externalRequest = UniquenessCheckRequest.newBuilder(
-                    UniquenessCheckRequest(
+                val externalRequest = UniquenessCheckRequestAvro.newBuilder(
+                    UniquenessCheckRequestAvro(
+                        createTestHoldingIdentity("C=GB, L=London, O=Alice", "Test Group").toAvro(),
+                        ExternalEventContext(
+                            UUID.randomUUID().toString(),
+                            UUID.randomUUID().toString(),
+                            KeyValuePairList(emptyList())
+                        ),
                         txId.toString(),
                         emptyList(),
                         emptyList(),
@@ -152,8 +164,8 @@ class JPABackingStoreImplIntegrationTests {
                         LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
                     )
                 ).setInputStates(listOf(inputStateRef)).build()
-                val internalRequest = UniquenessCheckInternalRequest.create(externalRequest)
-                txns.add(Pair(internalRequest, UniquenessCheckInternalResult.Success(Clock.systemUTC().instant())))
+                val internalRequest = UniquenessCheckRequestInternal.create(externalRequest)
+                txns.add(Pair(internalRequest, UniquenessCheckResultSuccessImpl(Clock.systemUTC().instant())))
             }
 
             backingStoreImpl.session { session ->
@@ -201,8 +213,8 @@ class JPABackingStoreImplIntegrationTests {
 
             // Consume one of unconsumed states in DB.
             val consumingTxId: SecureHash = secureHashes[0]
-            val consumingStateRef = UniquenessCheckInternalStateRef(consumingTxId, 0)
-            val consumingStateRefs = LinkedList<UniquenessCheckInternalStateRef>()
+            val consumingStateRef = UniquenessCheckStateRefImpl(consumingTxId, 0)
+            val consumingStateRefs = LinkedList<UniquenessCheckStateRef>()
             consumingStateRefs.push(consumingStateRef)
             backingStoreImpl.session { session ->
                 session.executeTransaction { _, txnOps ->
@@ -231,8 +243,8 @@ class JPABackingStoreImplIntegrationTests {
             }
 
             val consumingTxId: SecureHash = SecureHashUtils.randomSecureHash()
-            val consumingStateRef = UniquenessCheckInternalStateRef(consumingTxId, 0)
-            val consumingStateRefs = LinkedList<UniquenessCheckInternalStateRef>()
+            val consumingStateRef = UniquenessCheckStateRefImpl(consumingTxId, 0)
+            val consumingStateRefs = LinkedList<UniquenessCheckStateRef>()
             consumingStateRefs.push(consumingStateRef)
 
             assertThrows<IllegalStateException> {
