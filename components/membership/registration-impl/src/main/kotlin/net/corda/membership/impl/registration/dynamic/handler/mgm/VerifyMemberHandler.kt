@@ -66,7 +66,7 @@ internal class VerifyMemberHandler(
                 )
             )
         } catch (e: Exception) {
-            logger.warn("Could not verify member fro registration $registrationId", e)
+            logger.warn("Member verification failed for registration request: '$registrationId'.", e)
             listOf(
                 Record(
                     Schemas.Membership.REGISTRATION_COMMAND_TOPIC,

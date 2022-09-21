@@ -83,7 +83,7 @@ internal class ApproveRegistrationHandler(
             val mgm = memberTypeChecker.getMgmMemberInfo(approvedBy.toCorda())
                 ?: throw CordaRuntimeException("Could not approve $registrationId - member ${approvedBy.x500Name} is an MGM.")
             if (memberTypeChecker.isMgm(approvedMember)) {
-                throw CordaRuntimeException("Could not approve $registrationId by ${approvedMember.x500Name} it is not an MGM.")
+                throw CordaRuntimeException("The registration request: '$registrationId' cannot be approved by ${approvedMember.x500Name} as it is not an MGM.")
             }
 
             val persistState = membershipPersistenceClient.setMemberAndRegistrationRequestAsApproved(
