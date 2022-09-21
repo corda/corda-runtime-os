@@ -3,8 +3,13 @@
     "$id": "http://corda.net/corda-helm.json",
     "type": "object",
     "default": {},
-    "title": "CORDA HELMCHART SCHEMA",
+    "title": "corda helm chart schema",
     "additionalProperties": false,
+    "required": [
+        "imagePullSecrets",
+        "db",
+        "kafka"
+    ],
     "properties": {
         "fullnameOverride": {
             "type": "string",
@@ -21,7 +26,7 @@
         "image": {
             "type": "object",
             "default": {},
-            "title": "worker and cli image defaults",
+            "title": "worker and CLI image defaults",
             "required": [
                 "registry",
                 "tag"
@@ -33,7 +38,8 @@
                     "title": "worker image registry",
                     "examples": [
                         "corda-os-docker.software.r3.com"
-                    ]
+                    ],
+                    "minLength": 1
                 },
                 "tag": {
                     "type": "string",
@@ -124,7 +130,7 @@
                     "examples": [
                         "json"
                     ],
-                    "enum": ["json"]
+                    "enum": ["json","text"]
 
                 },
                 "level": {
@@ -145,7 +151,7 @@
         "dumpHostPath": {
             "type": "string",
             "default": "",
-            "title": "Path on Kubernetes hosts to mount on Corda workers for collecting dumps",
+            "title": "path on Kubernetes hosts to mount on Corda workers for collecting dumps",
             "examples": [
                 "/logging"
             ]
@@ -169,6 +175,7 @@
                 "endpoint",
                 "protocol"
             ],
+            "additionalProperties": false,
             "properties": {
                 "enabled": {
                     "type": "boolean",
@@ -179,14 +186,14 @@
                         true
                     ]
                 },
-                "additionalProperties": false,
                 "endpoint": {
-                    "type": "string",
-                    "default": "",
-                    "title": "the Open Telemetry endpoint to use e.g https://otel.example.com:4317; telemetry will be logged locally if this is unset",
+                    "type": ["string", "null"],
+                    "default": null,
+                    "title": "the Open Telemetry endpoint to use; telemetry will be logged locally if this is unset",
                     "examples": [
                         "https://otel.example.com:4317"
-                    ]
+                    ],
+                    "format": "uri"
                 },
                 "protocol": {
                     "type": "string",
@@ -199,8 +206,8 @@
                 }
             },
             "examples": [{
-                "enabled": false,
-                "endpoint": "test",
+                "enabled": true,
+                "endpoint": "https://otel.example.com:4317",
                 "protocol": "grpc"
             }]
         },
@@ -231,9 +238,7 @@
                         "type",
                         "port",
                         "user",
-                        "database",
-                        "password",
-                        "existingSecret"
+                        "database"                    
                     ],
                     "properties": {
                         "host": {
@@ -245,14 +250,14 @@
                                 ""
                             ]
                         },
-                        "additionalProperties": false,
                         "type": {
                             "type": "string",
                             "default": "postgresql",
                             "title": "the cluster database type",
                             "examples": [
                                 "postgresql"
-                            ]
+                            ],
+                            "enum": ["postgresql"]
                         },
                         "port": {
                             "type": "integer",
@@ -277,7 +282,8 @@
                             "title": "the name of the cluster database",
                             "examples": [
                                 "cordacluster"
-                            ]
+                            ],
+                            "minLength": 1
                         },
                         "password": {
                             "type": "string",
@@ -296,12 +302,6 @@
                             ]
                         }
                     },
-                    "oneOf": [
-                        {
-                            "required": ["password","existingSecret"
-                        ]
-                        }
-                    ],
                     "examples": [{
                         "host": "prereqs-postgresql",
                         "type": "postgresql",
@@ -326,7 +326,7 @@
                             "default": "",
                             "title": "registry for image containing a db client, used to set up the db",
                             "examples": [
-                                "corda-os-docker.software.r3.com"
+                                "docker.io"
                             ]
                         },
                         "repository": {
@@ -335,7 +335,8 @@
                             "title": "repository for image containing a db client, used to set up the db",
                             "examples": [
                                 "postgres"
-                            ]
+                            ],
+                            "minLength": 1
                         },
                         "tag": {
                             "type": "string",
@@ -343,11 +344,13 @@
                             "title": "tag for image containing a db client, used to set up the db",
                             "examples": [
                                 "14.4"
-                            ]
+                            ],
+                            "minLength": 1
+
                         }
                     },
                     "examples": [{
-                        "registry": "corda-os-docker.software.r3.com",
+                        "registry": "docker.io",
                         "repository": "postgres",
                         "tag": 14.4
                     }]
@@ -355,14 +358,14 @@
             },
             "examples": [{
                 "cluster": {
-                    "host": "prereqs-postgresql.$PREREQS_NAMESPACE",
+                    "host": "prereqs-postgresql",
                     "type": "postgresql",
                     "port": 5432,
                     "user": "user",
                     "database": "cordacluster"
                 },
                 "clientImage": {
-                    "registry": "corda-os-docker.software.r3.com",
+                    "registry": "docker.io",
                     "repository": "postgres",
                     "tag": 14.4
                 }
@@ -386,7 +389,8 @@
                     "title": "comma-separated list of Kafka bootstrap servers",
                     "examples": [
                         "prereqs-kafka:9092"
-                    ]
+                    ],
+                    "minLength": 1                   
                 },
                 "topicPrefix": {
                     "type": "string",
@@ -444,10 +448,11 @@
                                         "key": {
                                             "type": "string",
                                             "default": "ca.crt",
-                                            "title": "if TLS is enabled, the name of an existing Kubernetes secret containing the truststore for client connections to Kafka",
+                                            "title": "if TLS is enabled, the name of the key used in the Kubernetes secret containing the truststore for client connections to Kafka",
                                             "examples": [
                                                 "ca.crt"
-                                            ]
+                                            ],
+                                            "minLength": 1
                                         }
                                     },
                                     "examples": [{
@@ -474,16 +479,28 @@
                                 }
                             }
                         }
-                    }
+                    },
+                    "anyOf": [
+                        {
+                            "properties": {
+                                "enabled": { "const": true }
+                            },
+                            "required": [
+                                "truststore"
+                            ]
+                        },
+                        {
+                        "properties": {
+                            "enabled": { "const": false}
+                        }
+                        }
+                    ] 
                 },
                 "sasl": {
                     "type": "object",
                     "default": {},
                     "title": "sasl configuration for client connection to Kafka",
                     "required": [
-                        "username",
-                        "password",
-                        "mechanism",
                         "enabled"
                     ],
                     "additionalProperties": false,
@@ -494,7 +511,8 @@
                             "title": "sasl username for client connection to Kafka",
                             "examples": [
                                 "user"
-                            ]
+                            ],
+                            "minLength": 1
                         },
                         "password": {
                             "type": "string",
@@ -510,7 +528,8 @@
                             "title": "sasl mechanism for client connection to Kafka",
                             "examples": [
                                 "SCRAM-SHA-256"
-                            ]
+                            ],
+                            "minLength": 1
                         },
                         "enabled": {
                             "type": "boolean",
@@ -522,6 +541,24 @@
                             ]
                         }
                     },
+                    "anyOf": [
+                        {
+                            "properties": {
+                                "enabled": { "const": true }
+                            },
+                            "required": [
+                                "username",
+                                "password",
+                                "mechanism"
+                            ]
+
+                        },
+                        {
+                        "properties": {
+                            "enabled": { "const": false}
+                        }
+                        }
+                    ],
                     "examples": [{
                         "username": "user",
                         "password": "password",
@@ -553,12 +590,6 @@
                         "username"   
                     ],
                     "additionalProperties": false,
-                    "oneOf": [
-                        {
-                            "required": ["password","secretRef"
-                        ]
-                        }
-                    ],
                     "properties": {
                         "username": {
                             "type": "string",
@@ -566,7 +597,8 @@
                             "title": "username for the initial admin user",
                             "examples": [
                                 "admin"
-                            ]
+                            ],
+                            "minLength": 1
                         },
                         "password": {
                             "type": "string",
@@ -601,7 +633,8 @@
                                     "title": "the key name for the secret entry containing the initial admin user's username",
                                     "examples": [
                                         "username"
-                                    ]
+                                    ],
+                                    "minLength": 1
                                 },
                                 "passwordKey": {
                                     "type": "string",
@@ -609,11 +642,12 @@
                                     "title": "the key name for the secret entry containing the initial admin user's password",
                                     "examples": [
                                         "password"
-                                    ]
+                                    ],
+                                    "minLength": 1
                                 }
                             },
                             "examples": [{
-                                "name": "",
+                                "name": "initial-admin-secret",
                                 "usernameKey": "username",
                                 "passwordKey": "password"
                             }]
@@ -625,7 +659,7 @@
                     },
                     {
                         "secretRef": {
-                            "name": "",
+                            "name": "initial-admin-secret",
                             "usernameKey": "username",
                             "passwordKey": "password"
                         }
@@ -660,11 +694,9 @@
                     "default": {},
                     "title": "configuration for Kafka bootstrap",
                     "required": [
-                        "enabled",
-                        "cleanup",
-                        "partitions",
-                        "replicas"
+                        "enabled"
                     ],
+                    "additionalProperties": false,
                     "properties": {
                         "enabled": {
                             "type": "boolean",
@@ -701,6 +733,24 @@
                             ]
                         }
                     },
+                    "anyOf": [
+                        {
+                            "properties": {
+                                "enabled": { "const": true }
+                            },
+                            "required": [
+                                "cleanup",
+                                "partitions",
+                                "replicas"
+                            ]
+
+                        },
+                        {
+                        "properties": {
+                            "enabled": { "const": false}
+                        }
+                        }
+                    ],
                     "examples": [{
                         "enabled": true,
                         "cleanup": false,
@@ -720,7 +770,7 @@
                         "registry": {
                             "type": "string",
                             "default": "",
-                            "title": "cli image registry; defaults to image.registry",
+                            "title": "CLI image registry; defaults to image.registry",
                             "examples": [
                                 ""
                             ]
@@ -728,15 +778,16 @@
                         "repository": {
                             "type": "string",
                             "default": "corda-os-plugins",
-                            "title": "cli image repository",
+                            "title": "CLI image repository",
                             "examples": [
                                 "corda-os-plugins"
-                            ]
+                            ],
+                            "minLength": 1
                         },
                         "tag": {
                             "type": "string",
                             "default": "",
-                            "title": "cli default tag; defaults to image.tag",
+                            "title": "CLI default tag; defaults to image.tag",
                             "examples": [
                                 ""
                             ]
@@ -843,9 +894,7 @@
                             "default": {},
                             "title": "crypto worker image configuration",
                             "required": [
-                                "registry",
-                                "repository",
-                                "tag"
+                                "repository"
                             ],
                             "additionalProperties": false,
                             "properties": {
@@ -863,7 +912,8 @@
                                     "title": "crypto worker image repository",
                                     "examples": [
                                         "corda-os-crypto-worker"
-                                    ]
+                                    ],
+                                    "minLength": 1
                                 },
                                 "tag": {
                                     "type": "string",
@@ -930,12 +980,13 @@
                             "additionalProperties": false,
                             "properties": {
                                 "level": {
-                                    "type": "string",
-                                    "default": "",
-                                    "title": "log level(defaults to logging.level if not specified)",
+                                    "type": ["string", "null"],
+                                    "default": null,
+                                    "title": "log level (defaults to logging.level if not specified)",
                                     "examples": [
-                                        ""
-                                    ]
+                                        "warn"
+                                    ],
+                                    "enum": ["all","trace","debug","info","warn","error","fatal","off", null]
                                 }
                             }
                         },
@@ -1031,9 +1082,7 @@
                             "default": {},
                             "title": "db worker image configuration",
                             "required": [
-                                "registry",
-                                "repository",
-                                "tag"
+                                "repository"
                             ],
                             "additionalProperties": false,
                             "properties": {
@@ -1051,7 +1100,8 @@
                                     "title": "db worker image repository",
                                     "examples": [
                                         "corda-os-db-worker"
-                                    ]
+                                    ],
+                                    "minLength": 1
                                 },
                                 "tag": {
                                     "type": "string",
@@ -1118,12 +1168,13 @@
                             "additionalProperties": false,
                             "properties": {
                                 "level": {
-                                    "type": "string",
-                                    "default": "",
-                                    "title": "log level: one of all, trace, debug, info, warn, error, fatal, or off; defaults to logging.level if not specified",
+                                    "type": ["string", "null"],
+                                    "default": null,
+                                    "title": "log level(defaults to logging.level if not specified)",
                                     "examples": [
                                         "warn"
-                                    ]
+                                    ],
+                                    "enum": ["all","trace","debug","info","warn","error","fatal","off", null]
                                 }
                             },
                             "examples": [{
@@ -1272,9 +1323,7 @@
                             "default": {},
                             "title": "flow worker image configuration",
                             "required": [
-                                "registry",
-                                "repository",
-                                "tag"
+                                "repository"
                             ],
                             "additionalProperties": false,
                             "properties": {
@@ -1292,7 +1341,8 @@
                                     "title": "flow worker image repository",
                                     "examples": [
                                         "corda-os-flow-worker"
-                                    ]
+                                    ],
+                                    "minLength": 1
                                 },
                                 "tag": {
                                     "type": "string",
@@ -1361,12 +1411,13 @@
                             "additionalProperties": false,
                             "properties": {
                                 "level": {
-                                    "type": "string",
-                                    "default": "",
-                                    "title": "log level: one of all, trace, debug, info, warn, error, fatal, or off; defaults to logging.level if not specified",
+                                    "type": ["string", "null"],
+                                    "default": null,
+                                    "title": "log level(defaults to logging.level if not specified)",
                                     "examples": [
                                         "warn"
-                                    ]
+                                    ],
+                                    "enum": ["all","trace","debug","info","warn","error","fatal","off", null]
                                 }
                             },
                             "examples": [{
@@ -1505,9 +1556,7 @@
                             "default": {},
                             "title": "membership worker image configuration",
                             "required": [
-                                "registry",
-                                "repository",
-                                "tag"
+                                "repository"
                             ],
                             "additionalProperties": false,
                             "properties": {
@@ -1525,7 +1574,8 @@
                                     "title": "membership worker image repository",
                                     "examples": [
                                         "corda-os-member-worker"
-                                    ]
+                                    ],
+                            "minLength": 1
                                 },
                                 "tag": {
                                     "type": "string",
@@ -1592,12 +1642,13 @@
                             "additionalProperties": false,
                             "properties": {
                                 "level": {
-                                    "type": "string",
-                                    "default": "",
-                                    "title": "log level: one of all, trace, debug, info, warn, error, fatal, or off; defaults to logging.level if not specified",
+                                    "type": ["string", "null"],
+                                    "default": null,
+                                    "title": "log level(defaults to logging.level if not specified)",
                                     "examples": [
                                         "warn"
-                                    ]
+                                    ],
+                                    "enum": ["all","trace","debug","info","warn","error","fatal","off", null]
                                 }
                             },
                             "examples": [{
@@ -1719,9 +1770,7 @@
                             "default": {},
                             "title": "rpc worker image configuration",
                             "required": [
-                                "registry",
-                                "repository",
-                                "tag"
+                                "repository"
                             ],
                             "properties": {
                                 "registry": {
@@ -1738,7 +1787,8 @@
                                     "title": "rpc worker image repository",
                                     "examples": [
                                         "corda-os-rpc-worker"
-                                    ]
+                                    ],
+                                    "minLength": 1
                                 },
                                 "tag": {
                                     "type": "string",
@@ -1805,12 +1855,13 @@
                             "additionalProperties": false,
                             "properties": {
                                 "level": {
-                                    "type": "string",
-                                    "default": "",
-                                    "title": "log level: one of all, trace, debug, info, warn, error, fatal, or off; defaults to logging.level if not specified",
+                                    "type": ["string", "null"],
+                                    "default": null,
+                                    "title": "log level(defaults to logging.level if not specified)",
                                     "examples": [
                                         "warn"
-                                    ]
+                                    ],
+                                    "enum": ["all","trace","debug","info","warn","error","fatal","off", null]
                                 }
                             },
                             "examples": [{
@@ -2000,9 +2051,7 @@
                             "default": {},
                             "title": "p2p-link-manager worker image configuration",
                             "required": [
-                                "registry",
-                                "repository",
-                                "tag"
+                                "repository"
                             ],
                             "additionalProperties": false,
                             "properties": {
@@ -2020,7 +2069,8 @@
                                     "title": "p2p-link-manager worker image repository",
                                     "examples": [
                                         "corda-os-p2p-link-manager-worker"
-                                    ]
+                                    ],
+                                    "minLength": 1
                                 },
                                 "tag": {
                                     "type": "string",
@@ -2097,12 +2147,13 @@
                             "additionalProperties": false,
                             "properties": {
                                 "level": {
-                                    "type": "string",
-                                    "default": "",
-                                    "title": "log level: one of all, trace, debug, info, warn, error, fatal, or off; defaults to logging.level if not specified",
+                                    "type": ["string", "null"],
+                                    "default": null,
+                                    "title": "log level(defaults to logging.level if not specified)",
                                     "examples": [
                                         "warn"
-                                    ]
+                                    ],
+                                    "enum": ["all","trace","debug","info","warn","error","fatal","off", null]
                                 }
                             },
                             "examples": [{
@@ -2235,9 +2286,7 @@
                             "default": {},
                             "title": "p2p-gateway worker image configuration",
                             "required": [
-                                "registry",
-                                "repository",
-                                "tag"
+                                "repository"
                             ],
                             "additionalProperties": false,
                             "properties": {
@@ -2255,7 +2304,8 @@
                                     "title": "p2p-gateway worker image repository",
                                     "examples": [
                                         "corda-os-p2p-gateway-worker"
-                                    ]
+                                    ],
+                                    "minLength": 1
                                 },
                                 "tag": {
                                     "type": "string",
@@ -2332,12 +2382,13 @@
                             "additionalProperties": false,
                             "properties": {
                                 "level": {
-                                    "type": "string",
-                                    "default": "",
-                                    "title": "log level: one of all, trace, debug, info, warn, error, fatal, or off; defaults to logging.level if not specified",
+                                    "type": ["string", "null"],
+                                    "default": null,
+                                    "title": "log level(defaults to logging.level if not specified)",
                                     "examples": [
                                         "warn"
-                                    ]
+                                    ],
+                                    "enum": ["all","trace","debug","info","warn","error","fatal","off", null]
                                 }
                             },
                             "examples": [{
