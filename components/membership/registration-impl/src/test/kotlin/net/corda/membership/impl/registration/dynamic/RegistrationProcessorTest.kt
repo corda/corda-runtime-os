@@ -187,6 +187,7 @@ class RegistrationProcessorTest {
             membershipGroupReaderProvider,
             cordaAvroSerializationFactory,
             membershipPersistenceClient,
+            mock(),
             membershipQueryClient,
             mock(),
             mock(),

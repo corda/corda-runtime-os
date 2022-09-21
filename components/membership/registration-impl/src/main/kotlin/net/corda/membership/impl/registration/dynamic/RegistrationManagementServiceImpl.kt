@@ -17,6 +17,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -56,6 +57,8 @@ class RegistrationManagementServiceImpl @Activate constructor(
     private val membershipPersistenceClient: MembershipPersistenceClient,
     @Reference(service = MembershipQueryClient::class)
     private val membershipQueryClient: MembershipQueryClient,
+    @Reference(service = GroupPolicyProvider::class)
+    private val groupPolicyProvider: GroupPolicyProvider,
     @Reference(service = CryptoOpsClient::class)
     private val cryptoOpsClient: CryptoOpsClient,
     @Reference(service = CipherSchemeMetadata::class)
@@ -158,6 +161,7 @@ class RegistrationManagementServiceImpl @Activate constructor(
                         membershipGroupReaderProvider,
                         cordaAvroSerializationFactory,
                         membershipPersistenceClient,
+                        groupPolicyProvider,
                         membershipQueryClient,
                         cryptoOpsClient,
                         cipherSchemeMetadata,

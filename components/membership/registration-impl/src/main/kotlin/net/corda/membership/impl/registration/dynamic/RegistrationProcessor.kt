@@ -11,6 +11,7 @@ import net.corda.data.membership.command.registration.mgm.ProcessMemberVerificat
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.state.RegistrationState
+import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
@@ -41,6 +42,7 @@ class RegistrationProcessor(
     membershipGroupReaderProvider: MembershipGroupReaderProvider,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     membershipPersistenceClient: MembershipPersistenceClient,
+    groupPolicyProvider: GroupPolicyProvider,
     membershipQueryClient: MembershipQueryClient,
     cryptoOpsClient: CryptoOpsClient,
     cipherSchemeMetadata: CipherSchemeMetadata,
@@ -55,7 +57,7 @@ class RegistrationProcessor(
         val logger = contextLogger()
     }
 
-    private val memberTypeChecker = MemberTypeChecker(membershipGroupReaderProvider)
+    private val memberTypeChecker = MemberTypeChecker(groupPolicyProvider, membershipGroupReaderProvider)
 
     private val handlers = mapOf<Class<*>, RegistrationHandler<*>>(
         StartRegistration::class.java to StartRegistrationHandler(

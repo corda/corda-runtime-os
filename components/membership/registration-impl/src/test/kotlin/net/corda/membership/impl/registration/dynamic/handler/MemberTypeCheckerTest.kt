@@ -42,7 +42,7 @@ class MemberTypeCheckerTest {
         on { getGroupReader(any()) } doReturn reader
     }
 
-    private val memberTypeChecker = MemberTypeChecker(membershipGroupReaderProvider)
+    private val memberTypeChecker = MemberTypeChecker(mock(), membershipGroupReaderProvider)
 
     @Test
     fun `isMgm return false for unknown member`() {
