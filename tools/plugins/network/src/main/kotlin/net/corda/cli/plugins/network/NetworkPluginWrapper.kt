@@ -1,5 +1,6 @@
 package net.corda.cli.plugins.network
 
+import net.corda.cli.api.CordaCliPlugin
 import net.corda.cli.plugins.common.HttpRpcClientUtils.createHttpRpcClient
 import net.corda.cli.plugins.common.HttpRpcCommand
 import net.corda.membership.httprpc.v1.MemberLookupRpcOps
@@ -31,7 +32,7 @@ class NetworkPluginWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
         mixinStandardHelpOptions = true,
         description = ["Plugin for interacting with a network."]
     )
-    class NetworkPlugin : HttpRpcCommand() {
+    class NetworkPlugin : HttpRpcCommand(), CordaCliPlugin {
 
         @Suppress("LongParameterList")
         @CommandLine.Command(
