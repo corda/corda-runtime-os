@@ -27,7 +27,7 @@ interface HoldingIdentity {
          * Creates a holding identity using the provided string as a [MemberX500Name] common name, with other
          * name elements set to defaults.
          *
-         * @param commonName the string to use as the common name
+         * @param commonName The string to use as the common name.
          * @return a [HoldingIdentity] whose [MemberX500Name] has the given common name
          */
         fun create(commonName: String): HoldingIdentity {
