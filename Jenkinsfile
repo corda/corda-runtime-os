@@ -7,7 +7,8 @@ cordaPipeline(
     createPostgresDb: true,
     publishOSGiImage: false, // dont merge back to release branch 
     publishPreTestImage: true,
-    publishHelmChart: false, // dont merge back to release branch 
+    publishHelmChart: false, // dont merge back to release branch
+    javadocJar: true,
     e2eTestName: 'corda-runtime-os-e2e-tests',
     runE2eTests: true,
     combinedWorkere2eTests: true,
