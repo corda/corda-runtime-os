@@ -13,7 +13,8 @@ import org.mockito.Mockito.`when`
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
-import java.util.*
+import java.util.Arrays
+import java.util.Collections
 
 fun createCheckpointSerializer(
     serializers: Map<Class<*>, CheckpointInternalCustomSerializer<*>> = emptyMap(),

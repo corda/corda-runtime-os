@@ -24,7 +24,6 @@ dependencies {
     testImplementation project(":libs:crypto:cipher-suite-impl")
 
     integrationTestImplementation project(':testing:sandboxes')
-    integrationTestImplementation project(":libs:serialization:serialization-checkpoint-api")
 
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')

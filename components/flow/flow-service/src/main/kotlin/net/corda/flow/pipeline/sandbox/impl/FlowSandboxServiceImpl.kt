@@ -142,7 +142,7 @@ class FlowSandboxServiceImpl @Activate constructor(
             builder.addSingletonSerializableInstances(nonInjectableSingletons)
             builder.addSingletonSerializableInstances(setOf(sandboxGroup))
             for (serializer in checkpointInternalCustomSerializers) {
-                log.info("Registering internal checkpoint serializer {}", serializer.javaClass.name)
+                log.info("Registering internal checkpoint serializer {}", serializer::class.java.name)
                 builder.addSerializer(serializer.type , serializer)
             }
             builder.build()
