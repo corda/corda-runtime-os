@@ -2,7 +2,6 @@ package net.corda.membership.impl.registration.dynamic.handler
 
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
-import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.toCorda
