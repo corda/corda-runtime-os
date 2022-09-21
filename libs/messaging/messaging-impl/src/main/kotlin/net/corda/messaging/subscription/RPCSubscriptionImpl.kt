@@ -168,7 +168,22 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
         producer: CordaProducer
     ) {
         consumerRecords.forEach {
-            val rpcRequest = it.value ?: throw CordaMessageAPIIntermittentException("Should we not have a request?")
+            if (malformedRecordRequest(it)) {
+                log.error("Malformed request cannot be processed, $it")
+                return@forEach
+            }
+
+            val rpcRequest = it.value!!
+            if (invalidRequest(rpcRequest)) {
+                val record = buildRecord(
+                    rpcRequest,
+                    ResponseStatus.FAILED,
+                    ExceptionEnvelope(IllegalArgumentException::javaClass.name, "Invalid RPCRequest").toByteBuffer().array()
+                )
+                producer.sendRecordsToPartitions(listOf(Pair(rpcRequest.replyPartition, record)))
+                return@forEach
+            }
+
             val requestBytes = rpcRequest.payload
             val request = deserializer.deserialize(requestBytes.array())
             val future = CompletableFuture<RESPONSE>()
@@ -212,6 +227,13 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
             }
             responderProcessor.onNext(request!!, future)
         }
+    }
+
+    private fun malformedRecordRequest(record: CordaConsumerRecord<String, RPCRequest>): Boolean {
+        return record.value == null || record.value?.replyTopic.isNullOrEmpty()
+    }
+    private fun invalidRequest(rpcRequest: RPCRequest): Boolean {
+        return rpcRequest.payload == null || rpcRequest.sender.isNullOrEmpty()
     }
 
     private fun buildRecord(
