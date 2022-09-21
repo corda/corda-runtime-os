@@ -36,24 +36,31 @@ import org.junit.jupiter.api.TestMethodOrder
 class FlowTests {
 
     companion object {
-
         var bobHoldingId: String = getHoldingIdShortHash(X500_BOB, GROUP_ID)
-        var charlieHoldingId: String = getHoldingIdShortHash(X500_CHARLIE, GROUP_ID)
         var davidHoldingId: String = getHoldingIdShortHash(X500_DAVID, GROUP_ID)
+        var charlieHoldingId: String = getHoldingIdShortHash(X500_CHARLIE, GROUP_ID)
 
-        const val dependencyInjectionTestFlowName =
-            "net.cordapp.flowworker.development.smoketests.flow.DependencyInjectionTestFlow"
+        val invalidConstructorFlowNames = listOf(
+            "net.cordapp.flowworker.development.smoketests.flow.errors.PrivateConstructorFlow",
+            "net.cordapp.flowworker.development.smoketests.flow.errors.PrivateConstructorJavaFlow",
+            "net.cordapp.flowworker.development.smoketests.flow.errors.NoDefaultConstructorFlow",
+            "net.cordapp.flowworker.development.smoketests.flow.errors.NoDefaultConstructorJavaFlow",
+        )
+
+        val dependencyInjectionFlowNames = listOf(
+            "net.cordapp.flowworker.development.smoketests.flow.DependencyInjectionTestFlow",
+            "net.cordapp.flowworker.development.smoketests.flow.inheritance.DependencyInjectionTestJavaFlow",
+        )
+
         val expectedFlows = listOf(
             "net.cordapp.flowworker.development.smoketests.virtualnode.ReturnAStringFlow",
             "net.cordapp.flowworker.development.smoketests.flow.RpcSmokeTestFlow",
-            "net.cordapp.flowworker.development.smoketests.flow.errors.NoValidConstructorFlow",
             "net.cordapp.flowworker.development.testflows.TestFlow",
             "net.cordapp.flowworker.development.testflows.BrokenProtocolFlow",
             "net.cordapp.flowworker.development.testflows.MessagingFlow",
             "net.cordapp.flowworker.development.testflows.PersistenceFlow",
             "net.cordapp.flowworker.development.testflows.UniquenessCheckTestFlow",
-            dependencyInjectionTestFlowName
-        )
+        ) + invalidConstructorFlowNames + dependencyInjectionFlowNames
 
         /*
          * when debugging if you want to run the tests multiple times comment out the @BeforeAll
@@ -191,15 +198,15 @@ class FlowTests {
     }
 
     @Test
-    fun `Pipeline error results in flow marked as failed`() {
-        val requestID =
-            startRpcFlow(
-                bobHoldingId,
-                mapOf(),
-                "net.cordapp.flowworker.development.smoketests.flow.errors.NoValidConstructorFlow"
-            )
-        val result = awaitRpcFlowFinished(bobHoldingId, requestID)
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
+    fun `error is thrown when flow with invalid constructor is executed`() {
+        invalidConstructorFlowNames.forEach {
+            val requestID = startRpcFlow(bobHoldingId, mapOf(), it)
+            val result = awaitRpcFlowFinished(bobHoldingId, requestID)
+
+            assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_FAILED)
+            assertThat(result.flowError).isNotNull
+            assertThat(result.flowError!!.message).contains(it)
+        }
     }
 
     @Test
@@ -562,13 +569,15 @@ class FlowTests {
     }
 
     @Test
-    fun `Flows can use inheritance`() {
-        val requestId = startRpcFlow(bobHoldingId, mapOf("id" to X500_CHARLIE), dependencyInjectionTestFlowName)
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+    fun `flows can use inheritance and platform dependencies are correctly injected`() {
+        dependencyInjectionFlowNames.forEach {
+            val requestId = startRpcFlow(bobHoldingId, mapOf("id" to X500_CHARLIE), it)
+            val result = awaitRpcFlowFinished(bobHoldingId, requestId)
 
-        assertThat(result.flowError).isNull()
-        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
-        assertThat(result.flowResult).isEqualTo(X500_CHARLIE)
+            assertThat(result.flowError).isNull()
+            assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+            assertThat(result.flowResult).isEqualTo(X500_CHARLIE)
+        }
     }
 
     @Test

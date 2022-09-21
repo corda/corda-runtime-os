@@ -226,13 +226,13 @@ class MemberLookupRpcOpsTest {
     }
 
     @Test
-    fun `lookup filtered by organisation (O) is case-insensitive and returns a list of members and their contexts`() {
+    fun `lookup filtered by organization (O) is case-insensitive and returns a list of members and their contexts`() {
         memberLookupRpcOps.start()
         memberLookupRpcOps.activate("")
-        val result1 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, organisation = "ALICE")
+        val result1 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, organization = "ALICE")
         assertEquals(1, result1.members.size)
         assertEquals(aliceRpcResult, result1)
-        val result2 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, organisation = "alice")
+        val result2 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, organization = "alice")
         assertEquals(1, result2.members.size)
         assertEquals(aliceRpcResult, result2)
         memberLookupRpcOps.deactivate("")
@@ -240,13 +240,13 @@ class MemberLookupRpcOpsTest {
     }
 
     @Test
-    fun `lookup filtered by organisation unit (OU) is case-insensitive and returns a list of members and their contexts`() {
+    fun `lookup filtered by organization unit (OU) is case-insensitive and returns a list of members and their contexts`() {
         memberLookupRpcOps.start()
         memberLookupRpcOps.activate("")
-        val result1 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, organisationUnit = "unit2")
+        val result1 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, organizationUnit = "unit2")
         assertEquals(1, result1.members.size)
         assertEquals(bobRpcResult, result1)
-        val result2 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, organisationUnit = "UNIT2")
+        val result2 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, organizationUnit = "UNIT2")
         assertEquals(1, result2.members.size)
         assertEquals(bobRpcResult, result2)
         memberLookupRpcOps.deactivate("")

@@ -5,7 +5,7 @@ import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.simulator.runtime.utils.sandboxName
 import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.application.persistence.PagedQuery
-import net.corda.v5.application.persistence.ParameterisedQuery
+import net.corda.v5.application.persistence.ParameterizedQuery
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import org.hibernate.Session
@@ -118,16 +118,16 @@ class DbPersistenceService(member : MemberX500Name) : CloseablePersistenceServic
 
         private data class QueryContext(val offset: Int, val limit: Int, val parameters: Map<String, Any>)
 
-        private class ParameterisedQueryBase<T>(
+        private class ParameterizedQueryBase<T>(
             private val emf: EntityManagerFactory,
             private val queryName: String,
             private val entityClass: Class<T>,
-            private val context : QueryContext = QueryContext(
+            private val context: QueryContext = QueryContext(
                 0,
                 Int.MAX_VALUE,
                 mapOf<String, Any>()
             )
-        ) : ParameterisedQuery<T> {
+        ) : ParameterizedQuery<T> {
             override fun execute(): List<T> {
                 return emf.transaction { em ->
                     val query = em.createNamedQuery(queryName, entityClass)
@@ -137,16 +137,16 @@ class DbPersistenceService(member : MemberX500Name) : CloseablePersistenceServic
                 }
             }
 
-            override fun setLimit(limit: Int): ParameterisedQuery<T> {
-                return ParameterisedQueryBase(emf, queryName, entityClass, context.copy(limit = limit))
+            override fun setLimit(limit: Int): ParameterizedQuery<T> {
+                return ParameterizedQueryBase(emf, queryName, entityClass, context.copy(limit = limit))
             }
 
-            override fun setOffset(offset: Int): ParameterisedQuery<T> {
-                return ParameterisedQueryBase(emf, queryName, entityClass, context.copy(offset = offset))
+            override fun setOffset(offset: Int): ParameterizedQuery<T> {
+                return ParameterizedQueryBase(emf, queryName, entityClass, context.copy(offset = offset))
             }
 
-            override fun setParameter(name: String, value: Any): ParameterisedQuery<T> {
-                return ParameterisedQueryBase(
+            override fun setParameter(name: String, value: Any): ParameterizedQuery<T> {
+                return ParameterizedQueryBase(
                     emf,
                     queryName,
                     entityClass,
@@ -154,8 +154,8 @@ class DbPersistenceService(member : MemberX500Name) : CloseablePersistenceServic
                 )
             }
 
-            override fun setParameters(parameters: Map<String, Any>): ParameterisedQuery<T> {
-                return ParameterisedQueryBase(
+            override fun setParameters(parameters: Map<String, Any>): ParameterizedQuery<T> {
+                return ParameterizedQueryBase(
                     emf,
                     queryName,
                     entityClass,
@@ -167,10 +167,10 @@ class DbPersistenceService(member : MemberX500Name) : CloseablePersistenceServic
         }
 
         private class PagedQueryBase<T>(
-                private val emf: EntityManagerFactory,
-                private val entityClass: Class<T>,
-                private val context: QueryContext = QueryContext(0, Int.MAX_VALUE, mapOf())
-            ) : PagedQuery<T> {
+            private val emf: EntityManagerFactory,
+            private val entityClass: Class<T>,
+            private val context: QueryContext = QueryContext(0, Int.MAX_VALUE, mapOf())
+        ) : PagedQuery<T> {
             override fun execute(): List<T> {
                 try {
                     return emf.guard {
@@ -204,7 +204,7 @@ class DbPersistenceService(member : MemberX500Name) : CloseablePersistenceServic
 
     override fun <T : Any> find(entityClass: Class<T>, primaryKeys: List<Any>): List<T> {
         return emf.guard {
-             primaryKeys.map { pk -> it.find(entityClass, pk) }
+            primaryKeys.map { pk -> it.find(entityClass, pk) }
         }
     }
 
@@ -236,13 +236,19 @@ class DbPersistenceService(member : MemberX500Name) : CloseablePersistenceServic
         }
     }
 
-    override fun <T : Any> query(queryName: String, entityClass: Class<T>): ParameterisedQuery<T> {
-        return ParameterisedQueryBase<T>(emf, queryName, entityClass)
+    override fun <T : Any> query(queryName: String, entityClass: Class<T>): ParameterizedQuery<T> {
+        return ParameterizedQueryBase<T>(emf, queryName, entityClass)
     }
 
     override fun remove(entity: Any) {
         emf.transaction {
-            it.remove(if (it.contains(entity)) { entity } else { it.merge(entity) })
+            it.remove(
+                if (it.contains(entity)) {
+                    entity
+                } else {
+                    it.merge(entity)
+                }
+            )
         }
     }
 
@@ -258,4 +264,3 @@ class DbPersistenceService(member : MemberX500Name) : CloseablePersistenceServic
         emf.close()
     }
 }
-

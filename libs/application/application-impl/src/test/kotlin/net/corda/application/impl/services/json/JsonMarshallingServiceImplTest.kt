@@ -45,7 +45,7 @@ class JsonMarshallingServiceImplTest {
             MemberX500Name::class.java
         )
 
-        assertThat(name.organisation).isEqualTo("Alice")
+        assertThat(name.organization).isEqualTo("Alice")
     }
 
     @Test

@@ -705,7 +705,7 @@ class CryptoProcessorTests {
             val event = transformer.createSign(
                 requestId = requestId,
                 tenantId = tenantId,
-                publicKey = publicKey,
+                encodedPublicKeyBytes = publicKey.encoded,
                 signatureSpec = spec,
                 data = data,
                 flowExternalEventContext = ExternalEventContext(requestId, key, KeyValuePairList(emptyList()))
@@ -751,7 +751,7 @@ class CryptoProcessorTests {
             val event = transformer.createSign(
                 requestId = requestId,
                 tenantId = tenantId,
-                publicKey = publicKey,
+                encodedPublicKeyBytes = publicKey.encoded,
                 signatureSpec = spec,
                 data = data,
                 flowExternalEventContext = ExternalEventContext(requestId, key, KeyValuePairList(emptyList()))

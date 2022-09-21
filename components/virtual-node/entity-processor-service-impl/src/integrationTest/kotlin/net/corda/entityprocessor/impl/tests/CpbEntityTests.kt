@@ -43,8 +43,8 @@ class CpbEntityTests {
     ) {
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
-            virtualNode = setup.fetchService(timeout = 10000)
-            cpiInfoReadService = setup.fetchService(timeout = 10000)
+            virtualNode = setup.fetchService(timeout = 30000)
+            cpiInfoReadService = setup.fetchService(timeout = 30000)
         }
     }
 

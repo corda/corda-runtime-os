@@ -30,7 +30,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.schema.Schemas.Membership.Companion.SYNCHRONISATION_TOPIC
+import net.corda.schema.Schemas.Membership.Companion.SYNCHRONIZATION_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
@@ -191,7 +191,7 @@ class SynchronisationProxyImpl @Activate constructor(
                 subRegistration = null
                 subscription?.close()
                 subscription = subscriptionFactory.createDurableSubscription(
-                    SubscriptionConfig(CONSUMER_GROUP, SYNCHRONISATION_TOPIC),
+                    SubscriptionConfig(CONSUMER_GROUP, SYNCHRONIZATION_TOPIC),
                     Processor(),
                     messagingConfig,
                     null

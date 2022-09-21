@@ -22,4 +22,5 @@ dependencies {
     implementation project(':libs:crypto:merkle-impl')
     implementation project(':testing:uniqueness:uniqueness-checker-fake')
     implementation project(':libs:uniqueness:common')
+    implementation project(":libs:virtual-node:virtual-node-info")
 }
