@@ -49,6 +49,7 @@ import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.propertytypes.ServiceRanking
 import org.slf4j.Logger
 import java.time.Instant
 import java.util.*
@@ -60,6 +61,7 @@ import kotlin.collections.HashMap
  */
 @Component(service = [UniquenessChecker::class])
 @Suppress("LongParameterList")
+@ServiceRanking(Int.MAX_VALUE)
 class BatchedUniquenessCheckerImpl(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val configurationReadService: ConfigurationReadService,

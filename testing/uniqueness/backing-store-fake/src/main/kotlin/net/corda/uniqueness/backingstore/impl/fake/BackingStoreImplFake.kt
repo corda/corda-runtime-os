@@ -27,10 +27,8 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.propertytypes.ServiceRanking
 import org.slf4j.Logger
 
-@ServiceRanking(Int.MAX_VALUE)
 @Component(service = [BackingStore::class])
 @Suppress("ForbiddenComment")
 open class BackingStoreImplFake @Activate constructor(

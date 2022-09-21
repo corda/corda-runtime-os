@@ -39,7 +39,6 @@ dependencies {
     runtimeOnly project(':libs:crypto:merkle-impl')
     runtimeOnly project(":components:configuration:configuration-read-service-impl")
     runtimeOnly project(":components:uniqueness:uniqueness-checker-client-service-impl")
-    runtimeOnly project(':testing:uniqueness:uniqueness-checker-fake')
     runtimeOnly project(":components:membership:membership-group-read-impl")
     runtimeOnly project(":components:virtual-node:cpi-info-read-service-impl")
     runtimeOnly project(":components:virtual-node:cpk-read-service-impl")

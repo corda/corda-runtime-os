@@ -8,6 +8,7 @@ description 'Backing store component implementation'
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
 
     api project(':libs:lifecycle:lifecycle')
 

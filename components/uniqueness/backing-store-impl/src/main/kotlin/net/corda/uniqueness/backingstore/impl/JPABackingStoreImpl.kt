@@ -41,6 +41,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.propertytypes.ServiceRanking
 import org.slf4j.Logger
 import javax.persistence.EntityExistsException
 import javax.persistence.EntityManager
@@ -53,6 +54,7 @@ import javax.persistence.RollbackException
 /**
  * JPA backing store implementation, which uses a JPA compliant database to persist data.
  */
+@ServiceRanking(Int.MAX_VALUE)
 @Component(service = [BackingStore::class])
 open class JPABackingStoreImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
