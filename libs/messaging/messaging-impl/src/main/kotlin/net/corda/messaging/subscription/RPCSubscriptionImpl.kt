@@ -168,8 +168,8 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
         producer: CordaProducer
     ) {
         consumerRecords.forEach {
-            if (malformedRecordRequest(it)) {
-                log.error("Malformed request cannot be processed, $it")
+            if (cannotReplyToRequest(it)) {
+                log.error("Malformed request cannot be processed and no response can be returned, $it")
                 return@forEach
             }
 
@@ -229,9 +229,10 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
         }
     }
 
-    private fun malformedRecordRequest(record: CordaConsumerRecord<String, RPCRequest>): Boolean {
+    private fun cannotReplyToRequest(record: CordaConsumerRecord<String, RPCRequest>): Boolean {
         return record.value == null || record.value?.replyTopic.isNullOrEmpty()
     }
+
     private fun invalidRequest(rpcRequest: RPCRequest): Boolean {
         return rpcRequest.payload == null || rpcRequest.sender.isNullOrEmpty()
     }
