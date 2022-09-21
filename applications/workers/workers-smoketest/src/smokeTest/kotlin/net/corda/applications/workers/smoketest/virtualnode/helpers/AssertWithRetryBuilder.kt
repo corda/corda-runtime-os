@@ -88,6 +88,18 @@ fun assertWithRetry(initialize: AssertWithRetryBuilder.() -> Unit): SimpleRespon
 
 /**
  * Same as [assertWithRetry], but exceptions thrown are also ignored during the retry process.
+ *
+ * This method should be preferred over [assertWithRetry] when the actual [AssertWithRetryArgs.command] might
+ * receive ignorable transient exceptions during its execution that have nothing to do with the actual
+ * [AssertWithRetryArgs.condition] that needs to be asserted.
+ *
+ * As an example, it might be used to wrap HTTP calls which could fail due to transient connectivity errors but
+ * eventually succeed:
+ *
+ *      val response = assertWithRetryIgnoringExceptions {
+ *          command { httpRequest(body) }
+ *          condition { it.code == 200 }
+ *      }
  */
 fun assertWithRetryIgnoringExceptions(initialize: AssertWithRetryBuilder.() -> Unit): SimpleResponse {
     val args = AssertWithRetryArgs()

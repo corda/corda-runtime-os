@@ -6,7 +6,7 @@ if [ "$#" -ne 4 ]; then
     exit 1
 fi
 
-while [[ "$(nc -z localhost ${3})" != "0" ]]; do
+while true; do
 	kubectl --namespace "${1}" port-forward "${2}" "${3}:${4}" 2>&1
 	echo "kubectl port-forward connection to ${2}:${4} lost, sleeping 5 seconds before trying again..."
 	sleep 5
