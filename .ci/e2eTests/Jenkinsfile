@@ -180,7 +180,7 @@ pipeline {
                     }
                 }
 
-                sh """\
+                sh '''\
                 ./gradlew cleanE2eTest smokeTest e2eTest ${GRADLE_PERFORMANCE_TUNING} \
                 -P e2eClusterARpcHost=localhost \
                 -P e2eClusterARpcPort=8887 \
@@ -194,7 +194,7 @@ pipeline {
                 -P e2eClusterBP2pPort=8080 \
                 -P e2eClusterCP2pHost=corda-caroline-p2p-gateway-worker \
                 -P e2eClusterCP2pPort=8080
-                """.stripIndent()
+                '''.stripIndent()
             }
             post {
                 always {
