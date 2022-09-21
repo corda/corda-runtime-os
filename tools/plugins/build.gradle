@@ -19,7 +19,11 @@ dependencies {
 
 def S3_BUCKET_URI_PROPERTY = 'maven.repo.s3'
 
-def otherPluginsTasks = subprojects.collect { it.tasks.findAll {it.getName() == 'cliPluginTask'} }.flatten()
+def otherPluginsTasks = subprojects.collect {
+        it.tasks.matching { task -> task.name == 'cliPluginTask'} //named('cliPluginTask').get()
+    }
+
+logger.info("otherPluginsTasks : $otherPluginsTasks")
 
 tasks.register('copyCliFiles') {
         dependsOn otherPluginsTasks
