@@ -15,9 +15,18 @@ internal class MemberTypeChecker(
     fun isMgm(identity: DataHoldingIdentity) = isMgm(identity.toCorda())
 
     fun isMgm(identity: CordaHoldingIdentity): Boolean {
-        println("QQQ in is MGM for $identity")
+        println("QQQ in is MGM for ${identity.x500Name}")
         val mgm = groupPolicyProvider.getGroupPolicy(identity)
-        println("QQQ \t ${mgm?.mgmInfo}")
+            ?.mgmInfo
+        mgm?.entries?.forEach {
+            println("QQQ \t MGM info ${it.key} -> ${it.value}")
+        }
+        if(mgm == null) {
+            println("QQQ \t No MGM info for ${identity.x500Name}")
+            if(getMgmMemberInfo(identity) == null) {
+                Exception("QQQ ${identity.x500Name} is not an MGM, but has no mgm INFO").printStackTrace(System.out)
+            }
+        }
         return getMgmMemberInfo(identity) != null
     }
 
