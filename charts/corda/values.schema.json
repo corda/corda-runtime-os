@@ -683,6 +683,80 @@
                                 true,
                                 false
                             ]
+                        },
+                        "crypto": {
+                            "type": "object",
+                            "default": {},
+                            "title": "crypto configuration",
+                            "required": [
+                                "dbConnectionPool"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                                "dbConnectionPool": {
+                                    "type": "object",
+                                    "default": {},
+                                    "title": "JDBC connection pool configuration for crypto DB",
+                                    "required": [
+                                        "maxSize"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "maxSize": {
+                                            "type": "integer",
+                                            "default": 5,
+                                            "title": "maximum JDBC connection pool size for crypto DB",
+                                            "examples": [
+                                                5
+                                            ]
+                                        }
+                                    },
+                                    "examples": [{
+                                        "maxSize": 5
+                                    }]
+                                }
+                            },
+                            "examples": [{
+                                "dbConnectionPool": {
+                                    "maxSize": 5
+                                }
+                            }]
+                        },
+                        "rbac": {
+                            "type": "object",
+                            "default": {},
+                            "title": "RBAC configuration",
+                            "required": [
+                                "dbConnectionPool"
+                            ],
+                            "properties": {
+                                "dbConnectionPool": {
+                                    "type": "object",
+                                    "default": {},
+                                    "title": "JDBC connection pool configuration for RBAC DB",
+                                    "required": [
+                                        "maxSize"
+                                    ],
+                                    "properties": {
+                                        "maxSize": {
+                                            "type": "integer",
+                                            "default": 0,
+                                            "title": "maximum JDBC connection pool size for RBAC DB",
+                                            "examples": [
+                                                5
+                                            ]
+                                        }
+                                    },
+                                    "examples": [{
+                                        "maxSize": 5
+                                    }]
+                                }
+                            },
+                            "examples": [{
+                                "dbConnectionPool": {
+                                    "maxSize": 5
+                                }
+                            }]
                         }
                     },
                     "examples": [{
@@ -885,7 +959,8 @@
                         "debug",
                         "logging",
                         "profiling",
-                        "resources"
+                        "resources",
+                        "clusterDbConnectionPool"
                     ],
                     "additionalProperties": false,
                     "properties": {
@@ -1064,8 +1139,26 @@
                                     "memory": "2048Mi"
                                 }
                             }]
+                        },
+                    "clusterDbConnectionPool": {
+                        "type": "object",
+                        "default": {},
+                        "title": "crypto worker JDBC connection pool configuration for cluster DB",
+                        "required": [
+                            "maxSize"
+                        ],
+                        "properties": {
+                            "maxSize": {
+                                "type": "integer",
+                                "default": 0,
+                                "title": "crypto worker maximum JDBC connection pool size for cluster DB",
+                                "examples": [
+                                    5
+                                ]
+                            }
                         }
                     }
+                }
                 },
                 "db": {
                     "type": "object",
