@@ -15,9 +15,9 @@ interface JsonMarshallingServiceFactory {
 
         /**
          * Creates a standalone service, which can be used outside of Simulator for
-         * parsing and formatting of arbitrary objects into Json.
+         * parsing and formatting of arbitrary objects into JSON.
          *
-         * @return a [JsonMarshallingService]
+         * @return A [JsonMarshallingService].
          */
         fun create() : JsonMarshallingService {
             return delegate
@@ -25,7 +25,7 @@ interface JsonMarshallingServiceFactory {
     }
 
     /**
-     * @return a [JsonMarshallingService]
+     * @return A [JsonMarshallingService].
      */
     fun create() : JsonMarshallingService
 }

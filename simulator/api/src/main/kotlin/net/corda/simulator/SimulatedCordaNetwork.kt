@@ -17,9 +17,9 @@ interface SimulatedCordaNetwork : Closeable {
      * [Flow] classes that the node can run. See [net.corda.simulator.tools.FlowChecker] for details of exceptions
      * that can be thrown.
      *
-     * @param holdingIdentity the holding identity for which to create the flow
-     * @param flowClasses a list of flow classes to be checked
-     * @return a simulated virtual node in which flows can be run
+     * @param holdingIdentity The holding identity for which to create the flow.
+     * @param flowClasses A list of flow classes to be checked.
+     * @return A simulated virtual node in which flows can be run.
      */
     fun createVirtualNode(
         holdingIdentity: HoldingIdentity,
@@ -30,10 +30,10 @@ interface SimulatedCordaNetwork : Closeable {
      * Creates a simulated virtual node holding a concrete instance of a responder flow. Note that this bypasses all
      * checks for constructor and annotations on the flow.
      *
-     * @param responder the holding identity which will respond with this flow
-     * @param protocol the protocol for which this responder instance should be run
-     * @param responderFlow an instance of a responder flow
-     * @return a simulated virtual node which can run this instance of a responder flow
+     * @param responder The holding identity which will respond with this flow.
+     * @param protocol The protocol for which this responder instance should be run.
+     * @param responderFlow An instance of a responder flow.
+     * @return A simulated virtual node which can run this instance of a responder flow.
      */
     fun createVirtualNode(
         responder: HoldingIdentity,

@@ -14,8 +14,8 @@ interface SimulatorDelegateFactory {
     /**
      * Constructs a new Simulator delegate using the provided configuration or default if none provided.
      *
-     * @param configuration the configuration with which to construct [net.corda.simulator.Simulator]
-     * @return a [net.corda.simulator.Simulator] delegate
+     * @param configuration The configuration with which to construct [net.corda.simulator.Simulator].
+     * @return A [net.corda.simulator.Simulator] delegate.
      */
     fun create(configuration: SimulatorConfiguration): SimulatedCordaNetwork
 }

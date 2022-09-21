@@ -13,7 +13,7 @@ import net.corda.v5.base.types.MemberX500Name
 interface HoldingIdentityFactory {
 
     /**
-     * @param memberX500Name the member for which to create a [HoldingIdentity]
+     * @param memberX500Name The member for which to create a [HoldingIdentity].
      */
     fun create(memberX500Name: MemberX500Name): HoldingIdentity
 }
