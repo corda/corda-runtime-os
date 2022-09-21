@@ -40,7 +40,7 @@ class CreateUserTypeTest {
     }
 
     @Test
-    fun testBlankLoginName() {
+    fun testBlankFullName() {
         Assertions.assertThatThrownBy {
             CreateUserType(
                 "", "Joe.Bloggs@company.com", true, "secret1234!", Instant.now(),
@@ -53,7 +53,7 @@ class CreateUserTypeTest {
     }
 
     @Test
-    fun testBlankFullName() {
+    fun testBlankLoginName() {
         Assertions.assertThatThrownBy {
             CreateUserType(
                 "Joe Bloggs", "", true, "secret1234!", Instant.now(),

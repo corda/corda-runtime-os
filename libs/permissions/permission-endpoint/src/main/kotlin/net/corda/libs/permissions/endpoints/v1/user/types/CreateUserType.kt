@@ -46,11 +46,11 @@ data class CreateUserType(
         fun nextErrKey() : String = "Error #${++errCount}"
 
         if (fullName.length > 255) {
-            errors[nextErrKey()] = "Full name must not be blank."
+            errors[nextErrKey()] = "Full name exceed maximum length of 255."
         }
 
         if (fullName.isBlank()) {
-            errors[nextErrKey()] = "Login name exceed maximum length of 255."
+            errors[nextErrKey()] = "Full name must not be blank."
         }
 
         "a-zA-Z0-9.@\\-#' ".let {
