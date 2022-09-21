@@ -17,7 +17,7 @@ internal class MemberTypeChecker(
     fun isMgm(identity: CordaHoldingIdentity): Boolean {
         println("QQQ in is MGM for $identity")
         val mgm = groupPolicyProvider.getGroupPolicy(identity)
-        println("QQQ \t $mgm")
+        println("QQQ \t ${mgm?.mgmInfo}")
         return getMgmMemberInfo(identity) != null
     }
 
