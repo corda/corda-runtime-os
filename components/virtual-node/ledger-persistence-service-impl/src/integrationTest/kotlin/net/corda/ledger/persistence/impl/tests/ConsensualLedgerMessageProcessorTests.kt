@@ -154,7 +154,7 @@ class ConsensualLedgerMessageProcessorTests {
 
     @Test
     fun `persistTransaction for consensual ledger deserialises the tx and persists`() {
-        // Native SQL is used that is specific to Postgres and won't worj with in-memory DB
+        // Native SQL is used that is specific to Postgres and won't work with in-memory DB
         Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
 
         // create ConsensualSignedTransactionImpl instance (or WireTransaction at first)
