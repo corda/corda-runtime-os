@@ -32,9 +32,7 @@ import org.osgi.service.component.annotations.Reference
 import picocli.CommandLine.Mixin
 import picocli.CommandLine.Option
 
-/**
- * A worker that starts all processors.
- */
+/** A worker that starts all processors. */
 @Suppress("Unused", "LongParameterList")
 @Component(service = [Application::class])
 class CombinedWorker @Activate constructor(
@@ -66,9 +64,7 @@ class CombinedWorker @Activate constructor(
         private val logger = contextLogger()
     }
 
-    /**
-     * Parses the arguments, then initialises and starts the processors.
-     */
+    /** Parses the arguments, then initialises and starts the processors. */
     @Suppress("ComplexMethod")
     override fun startup(args: Array<String>) {
         logger.info("Combined worker starting.")
@@ -146,9 +142,7 @@ class CombinedWorker @Activate constructor(
     }
 }
 
-/**
- * Additional parameters for the combined worker are added here.
- */
+/** Additional parameters for the combined worker are added here. */
 private class CombinedWorkerParams {
     @Mixin
     var defaultParams = DefaultWorkerParams()
