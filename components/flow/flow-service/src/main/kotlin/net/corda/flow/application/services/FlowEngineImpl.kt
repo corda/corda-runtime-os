@@ -70,7 +70,7 @@ class FlowEngineImpl @Activate constructor(
 
             finishSubFlow()
 
-            log.debug { "Sub-flow('${subFlow.javaClass.name}') resumed." }
+            log.info("Sub-flow [$flowId] ('${subFlow.javaClass.name}') completed successfully")
             return result
         } catch (t: Throwable) {
             // Stack trace is filled in on demand. Without prodding that process, calls to suspend the flow will

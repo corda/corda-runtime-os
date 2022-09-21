@@ -12,7 +12,6 @@ import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.flow.state.FlowCheckpoint
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -25,10 +24,6 @@ class SubFlowFinishedRequestHandler @Activate constructor(
     @Reference(service = FlowRecordFactory::class)
     private val flowRecordFactory: FlowRecordFactory
 ) : FlowRequestHandler<FlowIORequest.SubFlowFinished> {
-
-    private companion object {
-        val log = contextLogger()
-    }
 
     override val type = FlowIORequest.SubFlowFinished::class.java
 
@@ -54,8 +49,6 @@ class SubFlowFinishedRequestHandler @Activate constructor(
         request: FlowIORequest.SubFlowFinished
     ): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
-        log.info("Sub-flow [${checkpoint.flowId}] completed successfully")
-
         val hasNoSessionsOrAllClosed = try {
             val sessionsToClose = getSessionsToClose(checkpoint, request)
 
@@ -81,7 +74,8 @@ class SubFlowFinishedRequestHandler @Activate constructor(
     }
 
     private fun getSessionsToClose(checkpoint: FlowCheckpoint, request: FlowIORequest.SubFlowFinished): List<String> {
-        val erroredSessions = flowSessionManager.getSessionsWithStatus(checkpoint, request.sessionIds, SessionStateType.ERROR)
+        val erroredSessions =
+            flowSessionManager.getSessionsWithStatus(checkpoint, request.sessionIds, SessionStateType.ERROR)
 
         return request.sessionIds - erroredSessions.map { it.sessionId }
     }
