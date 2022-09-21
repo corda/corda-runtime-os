@@ -380,14 +380,6 @@ class ComplexDominoTile(
                 logger.debug("Could not close coordinator", e)
             }
         }
-        managedChildren.forEach {
-            @Suppress("TooGenericExceptionCaught")
-            try {
-                it.lifecycle.close()
-            } catch (e: Throwable) {
-                logger.warn("Could not close ${it.name}", e)
-            }
-        }
         onClose?.invoke()
     }
 

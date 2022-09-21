@@ -1,7 +1,7 @@
 package net.corda.messaging.api.publisher
 
-import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.Resource
 import java.util.concurrent.CompletableFuture
 
 
@@ -15,13 +15,15 @@ import java.util.concurrent.CompletableFuture
  * CancellationException if it was cancelled when calling get()/getOrThrow() on future
  *
  */
-interface RPCSender<REQUEST, RESPONSE> : Lifecycle {
+interface RPCSender<REQUEST, RESPONSE> : Resource {
 
     /**
      * The name of the lifecycle coordinator inside the subscription. You can register a different coordinator to listen
      * for status changes from this subscription by calling [followStatusChangesByName] and passing in this value.
      */
     val subscriptionName: LifecycleCoordinatorName
+
+    fun start()
 
     /**
      * Send request via RPC

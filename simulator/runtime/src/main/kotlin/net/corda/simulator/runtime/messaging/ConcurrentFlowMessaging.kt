@@ -7,6 +7,7 @@ import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.thread
 
@@ -33,13 +34,22 @@ class ConcurrentFlowMessaging(
     private val flowFactory: FlowFactory
 ) : FlowMessaging {
 
+    companion object {
+        val log = contextLogger()
+    }
+
     override fun initiateFlow(x500Name: MemberX500Name): FlowSession {
         val protocol = flowContext.protocol
+
+        log.info("Initiating flow for protocol \"$protocol\" from \"${flowContext.member}\" to \"$x500Name\"")
+
         val responderClass = fiber.lookUpResponderClass(x500Name, protocol)
         val responderFlow = if (responderClass == null) {
+            log.info("Matched protocol with responder instance")
             fiber.lookUpResponderInstance(x500Name, protocol)
                 ?: throw NoRegisteredResponderException(x500Name, protocol)
         } else {
+            log.info("Matched protocol with responder class $responderClass")
             flowFactory.createResponderFlow(x500Name, responderClass)
         }
 
@@ -58,6 +68,7 @@ class ConcurrentFlowMessaging(
             fromInitiatorToResponder,
         )
 
+        log.info("Starting responder thread")
         thread {
             try {
                 responderFlow.call(recipientSession)
