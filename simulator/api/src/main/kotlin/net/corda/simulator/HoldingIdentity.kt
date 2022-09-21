@@ -40,7 +40,7 @@ interface HoldingIdentity {
          * Creates a holding identity using the provided member.
          *
          * @param member the member for which to create a holding identity
-         * @return a [HoldingIdentity]
+         * @return A [HoldingIdentity].
          */
         fun create(member: MemberX500Name): HoldingIdentity {
             return factory.create(member)
