@@ -14,25 +14,25 @@ interface RequestDataFactory {
     /**
      * Constructs [RequestData] from strongly-typed fields.
      *
-     * @clientRequestId the id which uniquely identifies a request
-     * @flowClass the flow class to run
-     * @requestBody the data for the request in JSON format
+     * @clientRequestId The id which uniquely identifies a request.
+     * @flowClass The flow class to run.
+     * @requestBody The data for the request in JSON format.
      */
     fun create(clientRequestId: String, flowClass: String, requestBody: String): RequestData
 
     /**
      * Constructs [RequestData] from strongly-typed fields.
      *
-     * @clientRequestId the id which uniquely identifies a request
-     * @flowClass the flow class to run
-     * @requestBody the data for the request; this will be converted to a JSON format string before being
+     * @clientRequestId The id which uniquely identifies a request.
+     * @flowClass The flow class to run.
+     * @requestBody The data for the request; this will be converted to a JSON format string before being
      * converted back again on consumption.
      */
     fun create(clientRequestId: String, flowClass: Class<out Flow>, requestBody: Any): RequestData
 
     /**
      * Constructs [RequestData] from a single JSON-formatted string.
-     * @return [RequestData]
+     * @return [RequestData].
      */
     fun create(jsonString: String) : RequestData
 }

@@ -26,9 +26,9 @@ interface SimulatedVirtualNode {
      * Calls the flow with the given request. Note that this call happens on the calling thread, which will wait until
      * the flow has completed before returning the response.
      *
-     * @input the data to input to the flow
+     * @input The data to input to the flow.
      *
-     * @return the response from the flow
+     * @return The response from the flow.
      */
     fun callFlow(input: RequestData): String
 
@@ -47,7 +47,7 @@ interface SimulatedVirtualNode {
      * @param alias An alias for the key.
      * @param hsmCategory The HSM category for the key.
      * @param scheme The scheme for the key. This is only used in verification. An ECDSA key will be returned.
-     * @return an ECDSA public key
+     * @return An ECDSA public key.
      */
     fun generateKey(alias: String, hsmCategory: HsmCategory, scheme: String) : PublicKey
 }
