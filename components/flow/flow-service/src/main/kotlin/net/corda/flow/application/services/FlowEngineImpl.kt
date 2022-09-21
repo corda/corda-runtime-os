@@ -79,6 +79,7 @@ class FlowEngineImpl @Activate constructor(
             // We cannot conclude that throwing an exception out of a sub-flow is an error. User code is free to do this
             // as long as it catches it in the flow which initiated it. The only thing Corda needs to do here is mark
             // the sub-flow as failed and rethrow.
+            log.debug { "Sub-flow('${subFlow.javaClass.name}') completed with failure: ${t.message}" }
             failSubFlow(t)
             throw t
         } finally {

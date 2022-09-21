@@ -7,7 +7,6 @@ import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.FLOW_FAILED
 import net.corda.flow.pipeline.factory.FlowMessageFactory
 import net.corda.flow.pipeline.factory.FlowRecordFactory
-import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.minutes
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -22,11 +21,6 @@ class FlowFailedRequestHandler @Activate constructor(
     @Reference(service = FlowRecordFactory::class)
     private val flowRecordFactory: FlowRecordFactory
 ) : FlowRequestHandler<FlowIORequest.FlowFailed> {
-
-    private companion object {
-        val log = contextLogger()
-    }
-
     override val type = FlowIORequest.FlowFailed::class.java
 
     override fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: FlowIORequest.FlowFailed): WaitingFor {
@@ -35,9 +29,6 @@ class FlowFailedRequestHandler @Activate constructor(
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.FlowFailed): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
-
-        log.info("Flow [${checkpoint.flowId}] completed with failure")
-
         val status = flowMessageFactory.createFlowFailedStatusMessage(
             checkpoint,
             FLOW_FAILED,
