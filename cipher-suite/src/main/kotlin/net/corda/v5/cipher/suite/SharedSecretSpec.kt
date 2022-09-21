@@ -8,7 +8,7 @@ import java.security.PublicKey
  *
  * @property publicKey The public key of the pair.
  * @property keyScheme The scheme for the key used for the operation.
- * @property otherPublicKey the public of the "other" party which should be used to derive the secret.
+ * @property otherPublicKey The public of the "other" party which should be used to derive the secret.
  */
 interface SharedSecretSpec {
     val publicKey: PublicKey

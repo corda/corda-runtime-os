@@ -29,7 +29,7 @@ private val comparators = mapOf<Class<*>, BiPredicate<Any, Any>>(
 /**
  * Compares two instances of the [SignatureSpec]
  *
- * @return true if the instances are describing the same specification or of both values are null.
+ * @return True if the instances are describing the same specification or of both values are null.
  */
 @Suppress("ComplexMethod")
 fun SignatureSpec?.equal(right: SignatureSpec?): Boolean =

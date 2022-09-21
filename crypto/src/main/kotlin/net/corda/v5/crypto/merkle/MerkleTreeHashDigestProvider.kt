@@ -10,12 +10,11 @@ import net.corda.v5.crypto.SecureHash
  *  - Leaf Hash
  *  - Node Hash calculation methods
  *  - Base Digest Algorithm
+ *
+ *  @property digestAlgorithmName Specifies the digest algorithm.
  */
 
 interface MerkleTreeHashDigestProvider {
-    /**
-     * @property digestAlgorithmName Specifies the digest algorithm.
-     */
     val digestAlgorithmName: DigestAlgorithmName
 
     /**

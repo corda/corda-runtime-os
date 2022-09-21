@@ -47,33 +47,33 @@ interface CipherSchemeMetadata : KeyEncodingService, AlgorithmParameterSpecEncod
     val digests: List<DigestScheme>
 
     /**
-     * Returns an instance of [SecureRandom] which should be used to generate cryptographically secure random value.
+     * An instance of [SecureRandom] which should be used to generate cryptographically secure random value.
      */
     val secureRandom: SecureRandom
 
     /**
-     * Find the corresponding [KeyScheme] based on its [AlgorithmIdentifier]
+     * Finds the corresponding [KeyScheme] based on its [AlgorithmIdentifier]
      *
      * @throws IllegalArgumentException if the scheme is not supported
      */
     fun findKeyScheme(algorithm: AlgorithmIdentifier): KeyScheme
 
     /**
-     * Find the corresponding [KeyScheme] based on the type of the [PublicKey].
+     * Finds the corresponding [KeyScheme] based on the type of the [PublicKey].
      *
      * @throws IllegalArgumentException if the key type is not supported.
      */
     fun findKeyScheme(key: PublicKey): KeyScheme
 
     /**
-     * Find the corresponding [KeyScheme] based on the code name.
+     * Finds the corresponding [KeyScheme] based on the code name.
      *
      * @throws IllegalArgumentException if the scheme is not supported.
      */
     fun findKeyScheme(codeName: String): KeyScheme
 
     /**
-     * Find the corresponding [KeyFactory] based on the [KeyScheme].
+     * Finds the corresponding [KeyFactory] based on the [KeyScheme].
      *
      * @throws IllegalArgumentException if the scheme is not supported.
      */

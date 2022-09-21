@@ -31,7 +31,7 @@ import java.util.function.Function
  * Using these constructs we can express e.g. 1 of N (OR) or N of N (AND) signature requirements. By nesting we can
  * create multi-level requirements such as *"either the CEO or 3 of 5 of his assistants need to sign"*.
  *
- * @property threshold specifies the minimum total weight required (in the simple case – the minimum number of child
+ * @property threshold Specifies the minimum total weight required (in the simple case – the minimum number of child
  * signatures required) to satisfy the subtree rooted at this node.
  */
 class CompositeKey private constructor(val threshold: Int, children: List<NodeAndWeight>) : PublicKey {
@@ -67,7 +67,8 @@ class CompositeKey private constructor(val threshold: Int, children: List<NodeAn
     }
 
     /**
-     * Τhe order of the children may not be the same to what was provided in the builder.
+     * List of children keys with their weight. Τhe order of the children may not be the same as that
+     * provided in the builder.
      */
     val children: List<NodeAndWeight> = children.sortedWith(descWeightComparator)
 
@@ -159,6 +160,12 @@ class CompositeKey private constructor(val threshold: Int, children: List<NodeAn
             require(weight > 0) { "A non-positive weight was detected. Member info: $this" }
         }
 
+        /**
+         * Compares the order of this object with the order of the specified object. Returns zero if this object is equal to
+         * the specified [other] object, a negative number if it's less than [other],
+         * or a positive number if it's greater than [other].
+         * The method compares the [weight] and the binary encoding of the [node].
+         */
         override fun compareTo(other: NodeAndWeight): Int {
             return if (weight == other.weight)
                 node.encoded.sequence().compareTo(other.node.encoded.sequence())
@@ -166,6 +173,10 @@ class CompositeKey private constructor(val threshold: Int, children: List<NodeAn
                 weight.compareTo(other.weight)
         }
 
+        /**
+         * Method providing a primitive representation of this object suitable for encoding.
+         * @return A primitive representation of this object.
+         */
         override fun toASN1Primitive(): ASN1Primitive {
             val vector = ASN1EncodableVector()
             vector.add(DERBitString(node.encoded))
@@ -173,6 +184,9 @@ class CompositeKey private constructor(val threshold: Int, children: List<NodeAn
             return DERSequence(vector)
         }
 
+        /**
+         * Converts a [NodeAndWeight] object to a string representation.
+         */
         override fun toString(): String {
             return "Public key: ${node.toStringShort()}, weight: $weight"
         }
@@ -183,8 +197,14 @@ class CompositeKey private constructor(val threshold: Int, children: List<NodeAn
      */
     fun isFulfilledBy(key: PublicKey) = isFulfilledBy(setOf(key))
 
+    /**
+     * Returns the standard algorithm name for this key, which is always "COMPOSITE".
+     */
     override fun getAlgorithm() = KEY_ALGORITHM
 
+    /**
+     * Returns the key in its "DER" encoding format.
+     */
     override fun getEncoded(): ByteArray {
         val keyVector = ASN1EncodableVector()
         val childrenVector = ASN1EncodableVector()
@@ -196,6 +216,9 @@ class CompositeKey private constructor(val threshold: Int, children: List<NodeAn
         return SubjectPublicKeyInfo(AlgorithmIdentifier(OID_COMPOSITE_KEY_IDENTIFIER), DERSequence(keyVector)).encoded
     }
 
+    /**
+     * Returns the name of the primary encoding format of this key, which is always "DER".
+    */
     override fun getFormat() = ASN1Encoding.DER
 
     // Return true when and if the threshold requirement is met.
@@ -213,7 +236,7 @@ class CompositeKey private constructor(val threshold: Int, children: List<NodeAn
     }
 
     /**
-     * Function checks if the public keys corresponding to the signatures are matched against the leaves of the composite
+     * Checks if the public keys corresponding to the signatures are matched against the leaves of the composite
      * key tree in question, and the total combined weight of all children is calculated for every intermediary node.
      * If all thresholds are satisfied, the composite key requirement is considered to be met.
      */
@@ -231,6 +254,9 @@ class CompositeKey private constructor(val threshold: Int, children: List<NodeAn
     val leafKeys: Set<PublicKey>
         get() = children.flatMap { it.node.keys }.toSet() // Uses PublicKey.keys extension.
 
+    /**
+     * Compares the two given instances of the [CompositeKey] based on the content.
+     */
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is CompositeKey) return false
@@ -240,12 +266,18 @@ class CompositeKey private constructor(val threshold: Int, children: List<NodeAn
         return true
     }
 
+    /**
+     * Returns a hash code value for the object.
+     */
     override fun hashCode(): Int {
         var result = threshold
         result = 31 * result + children.hashCode()
         return result
     }
 
+    /**
+     * Converts a [CompositeKey] object to a string representation.
+     */
     override fun toString() = "(${children.joinToString()})"
 
     /** A helper class for building a [CompositeKey]. */
@@ -258,11 +290,17 @@ class CompositeKey private constructor(val threshold: Int, children: List<NodeAn
             return this
         }
 
+        /**
+         * Adds a child [CompositeKey] node with the weight set to 1.
+         */
         fun addKeys(vararg keys: PublicKey): Builder {
             keys.forEach { addKey(it) }
             return this
         }
 
+        /**
+         * Adds a list of child [CompositeKey] nodes with the weight set to 1.
+         */
         @Suppress("SpreadOperator")
         fun addKeys(keys: List<PublicKey>): Builder = addKeys(*keys.toTypedArray())
 

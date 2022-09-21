@@ -6,13 +6,13 @@ import net.corda.v5.crypto.SignatureSpec
 /**
  * Crypto service which can be used to sign and generate new key pairs.
  *
- * Corda always uses single alias to identify a key pair however some HSMs need separate
- * aliases for public and private keys, in such cases their names have to be derived from the single key pair alias.
+ * Corda always uses a single alias to identify a key pair. However, some HSMs need separate aliases for public
+ * and private keys. In such cases, their names must be derived from the single key pair alias.
  * It could be suffixes or whatever internal naming convention is used.
  *
  * Also, it is not required to keep a public key in the HSM as that will be kept by the upstream Crypto Services.
  *
- * Exception handling.
+ * # Exception handling.
  *
  * As the service instances are decorated with decorators taking care of the timeout, throttling handling,
  * and exception normalisation the exceptions listed for each method below are as expected to be thrown by the decorators.
@@ -21,34 +21,34 @@ import net.corda.v5.crypto.SignatureSpec
  * - [IllegalArgumentException] if the key is not found, the key scheme is not supported, the signature spec
  * is not supported or in general the input parameters are wrong
  * - if the internal state is wrong for an operation then the most appropriate exception would be [IllegalStateException]
- * - any other what is appropriate for the condition.
+ * - any other that is appropriate for the condition.
  *
- * If service encountered throttling situation and the downstream library doesn't handle that then it should throw
+ * If service encountered throttling situation and the downstream library doesn't handle that, it should throw
  * [net.corda.v5.crypto.exceptions.CryptoThrottlingException]
  *
  * The following exceptions are retried - [java.util.concurrent.TimeoutException],
  * [net.corda.v5.crypto.exceptions.CryptoException] (with the isRecoverable flag set to true),
  * some persistence exceptions like [javax.persistence.LockTimeoutException], [javax.persistence.QueryTimeoutException],
  * [javax.persistence.OptimisticLockException], [javax.persistence.PessimisticLockException] and some others.
- * Throw [java.util.concurrent.TimeoutException] only if the service want's that to be handled before
- * the upstream library detects it.
+ * Throw [java.util.concurrent.TimeoutException] only if the service should handle it before the upstream
+ * library detects it.
  *
- * About service extensions.
+ * # About service extensions.
  *
- * The implementation of the [CryptoService] consist of the method which implementation is required and some optional
- * methods, which are called extensions. It's done this way, instead of breaking the functionality into
- * several interfaces because the platform uses decorators to handle some common failure scenarios where using
- * extension interfaces would be awkward. If not stated explicitly in the description then the method is required.
+ * The implementation of the [CryptoService] consists of the method of the implementation required and some optional
+ * methods, which are called extensions. It's done this way, instead of breaking the functionality into several
+ * interfaces, because the platform uses decorators to handle some common failure scenarios where using extension
+ * interfaces would be awkward. If not stated explicitly in the description, the method is required.
  */
 interface CryptoService {
     /**
-     * Returns list of crypto service extensions which are supported by this implementation of [CryptoService],
+     * List of crypto service extensions which are supported by this implementation of [CryptoService],
      * such as REQUIRE_WRAPPING_KEY, DELETE_KEYS.
      */
     val extensions: List<CryptoServiceExtensions>
 
     /**
-     * Key schemes and signature specs for each key which this implementation of [CryptoService] supports.
+     * List of key schemes and signature specs for each key which this implementation of [CryptoService] supports.
      */
     val supportedSchemes: Map<KeyScheme, List<SignatureSpec>>
 
@@ -56,8 +56,8 @@ interface CryptoService {
      * Generates and optionally stores a key pair. The implementation is free to decide how the generated key
      * is stored - either in the corresponding HSM or wrapped and exported. The rule of thumb would be in the [spec]
      * has the [KeyGenerationSpec.alias] defined then it's expected that the key will be stored in the HSM otherwise
-     * wrapped and exported but as mentioned above it's up to the concrete implementation. Such behaviour have to be
-     * defined beforehand and advertised. TIf the key is exported then its key material will be persisted
+     * wrapped and exported but as mentioned above it's up to the concrete implementation. Such behaviour must be
+     * defined beforehand and advertised. If the key is exported, its key material will be persisted
      * on the platform side.
      *
      * @param spec parameters to generate the key pair.
@@ -76,7 +76,7 @@ interface CryptoService {
     ): GeneratedKey
 
     /**
-     * Sign a byte array using the private key identified by the input arguments.
+     * Signs a byte array using the private key identified by the input arguments.
      *
      * @param spec (either [SigningAliasSpec] or [SigningWrappedSpec]) to be used for signing.
      * @param data the data to be signed.

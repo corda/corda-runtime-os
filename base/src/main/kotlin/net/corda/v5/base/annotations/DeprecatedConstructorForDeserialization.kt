@@ -6,6 +6,8 @@ package net.corda.v5.base.annotations
  *
  * Versions will be considered in descending order, currently duplicate versions will result in
  * non-deterministic behaviour when deserializing objects
+ *
+ * @property version Integer defining order that these annotations will be applied.
  */
 @Target(AnnotationTarget.CONSTRUCTOR)
 @Retention(AnnotationRetention.RUNTIME)

@@ -21,7 +21,7 @@ fun PublicKey.publicKeyId(): String =
  * Provides utilities for generating a public key hash by calculating it from a given [PublicKey], or by parsing a given
  * [String] or [ByteArray] input.
  *
- * @property value hexadecimal string representing SHA-256 of the public key
+ * @property value Hexadecimal string representing SHA-256 of the public key.
  */
 class PublicKeyHash private constructor(
     val value: String
@@ -86,8 +86,15 @@ class PublicKeyHash private constructor(
      */
     val id: String by lazy(LazyThreadSafetyMode.PUBLICATION) { value.substring(0, 12) }
 
+    /**
+     * Returns a hash code value for the object.
+     */
     override fun hashCode() = value.hashCode()
 
+    /**
+     * Compares the object with the given instance of the [PublicKeyHash], [ByteArray], or [String] by converting the
+     * object hexadecimal representation.
+     */
     override fun equals(other: Any?): Boolean {
         return when (other) {
             is PublicKeyHash -> value == other.value

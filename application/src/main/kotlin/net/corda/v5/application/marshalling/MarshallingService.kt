@@ -5,7 +5,7 @@ import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.base.annotations.DoNotImplement
 
 /**
- * [MarshallingService] is an abstract interface for marshalling to and from formatting string data.
+ * [MarshallingService] is an abstract interface for marshalling to and from formatted string data.
  * Corda provides specialized implementations of the marshalling services for converting data in different string
  * formats. Only JSON is supported in the current version ([JsonMarshallingService]).
  *
