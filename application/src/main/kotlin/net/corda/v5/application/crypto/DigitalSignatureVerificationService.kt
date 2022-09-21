@@ -22,7 +22,7 @@ interface DigitalSignatureVerificationService {
      *
      * @throws IllegalArgumentException If the signature scheme is not supported or if any of the clear or signature
      * data is empty.
-     * @throws CryptoSignatureException Thrown if verification of the digital signature fails.
+     * @throws CryptoSignatureException If verification of the digital signature fails.
      */
     fun verify(publicKey: PublicKey, signatureSpec: SignatureSpec, signatureData: ByteArray, clearData: ByteArray)
 }
