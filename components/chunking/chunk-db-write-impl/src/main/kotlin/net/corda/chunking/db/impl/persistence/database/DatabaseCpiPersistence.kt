@@ -110,9 +110,6 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
             log.info("Updating Changelogs")
             updateChangeLogs(cpkDbChangeLogEntities, em, cpi)
 
-            log.info("Flush changelog updates")
-            em.flush()
-
             log.info("Create changelog audit entries")
             createAuditEntries(em, cpi)
 
@@ -165,9 +162,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         // Find the changelogs we just made
         val allChangelogs = findDbChangeLogForCpi(em, cpi.metadata.cpiId)
         allChangelogs.forEach {
-            // Re-lookup like this as this gets the correct entity version
-            val inDb = em.find(CpkDbChangeLogEntity::class.java, it.id)
-            val audit = inDb.toAudit()
+            val audit = it.toAudit()
             em.persist(audit)
         }
     }
@@ -212,9 +207,6 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
             log.info("Updating Changelogs")
             val changeLogsUpdated = updateChangeLogs(cpkDbChangeLogEntities, em, cpi)
-
-            log.info("Flush changelog updates")
-            em.flush()
 
             if (changeLogsUpdated) {
                 // We only want to create new changelog audit entries when there's some difference between the new and
