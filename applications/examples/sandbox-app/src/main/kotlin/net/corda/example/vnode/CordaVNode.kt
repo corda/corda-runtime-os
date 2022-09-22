@@ -5,6 +5,13 @@ import co.paralleluniverse.fibers.instrument.QuasarInstrumentor
 import com.sun.management.HotSpotDiagnosticMXBean
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import java.lang.management.ManagementFactory
+import java.time.Instant
+import java.util.UUID
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit.SECONDS
+import java.util.concurrent.TimeoutException
+import java.util.concurrent.atomic.AtomicInteger
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
@@ -21,11 +28,11 @@ import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
-import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_FLOW_EXECUTION_DURATION
 import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_FLOW_SLEEP_DURATION
 import net.corda.schema.configuration.FlowConfig.PROCESSING_MAX_RETRY_ATTEMPTS
 import net.corda.schema.configuration.FlowConfig.SESSION_HEARTBEAT_TIMEOUT_WINDOW
 import net.corda.schema.configuration.FlowConfig.SESSION_MESSAGE_RESEND_WINDOW
+import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.loggerFor
 import net.corda.virtualnode.HoldingIdentity
@@ -39,13 +46,6 @@ import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceCardinality.OPTIONAL
 import org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC
-import java.lang.management.ManagementFactory
-import java.time.Instant
-import java.util.UUID
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit.SECONDS
-import java.util.concurrent.TimeoutException
-import java.util.concurrent.atomic.AtomicInteger
 
 const val VNODE_SERVICE = "vnode"
 const val SHUTDOWN_GRACE = 30L
@@ -86,7 +86,7 @@ class CordaVNode @Activate constructor(
             val config = ConfigFactory.empty()
                 .withValue(PROCESSING_MAX_RETRY_ATTEMPTS, ConfigValueFactory.fromAnyRef(5))
                 .withValue(PROCESSING_MAX_FLOW_SLEEP_DURATION, ConfigValueFactory.fromAnyRef(5000L))
-                .withValue(PROCESSING_MAX_FLOW_EXECUTION_DURATION, ConfigValueFactory.fromAnyRef(60000L))
+                .withValue(PROCESSOR_TIMEOUT, ConfigValueFactory.fromAnyRef(60000L))
                 .withValue(SESSION_MESSAGE_RESEND_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
                 .withValue(SESSION_HEARTBEAT_TIMEOUT_WINDOW, ConfigValueFactory.fromAnyRef(500000L))
             smartConfig = configFactory.create(config)

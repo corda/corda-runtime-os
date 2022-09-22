@@ -1,6 +1,10 @@
 @file:JvmName("SandboxGroupContextServiceUtils")
 package net.corda.sandboxgroupcontext.service.impl
 
+import java.security.AccessControlContext
+import java.security.AccessControlException
+import java.util.Collections.singleton
+import java.util.Hashtable
 import net.corda.cpk.read.CpkReadService
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxCreationService
@@ -13,6 +17,7 @@ import net.corda.sandboxgroupcontext.SandboxGroupContextInitializer
 import net.corda.sandboxgroupcontext.SandboxGroupContextService
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.extensions.DigestAlgorithmFactory
@@ -29,10 +34,6 @@ import org.osgi.framework.ServicePermission.GET
 import org.osgi.framework.ServiceRegistration
 import org.osgi.service.component.runtime.ServiceComponentRuntime
 import org.osgi.service.component.runtime.dto.ComponentDescriptionDTO
-import java.security.AccessControlContext
-import java.security.AccessControlException
-import java.util.Collections.singleton
-import java.util.Hashtable
 
 private typealias ServiceDefinition = Pair<ServiceObjects<out Any>, List<Class<*>>>
 
@@ -149,12 +150,13 @@ class SandboxGroupContextServiceImpl(
                 @Suppress("unchecked_cast")
                 (serviceRef.getProperty(OBJECTCLASS) as? Array<String> ?: emptyArray())
                     .filterNot(serviceMarkerTypeName::equals)
-                    .filter(accessControlContext::checkServicePermission)
+                    .filter { checkServicePermission(accessControlContext, it) }
                     .mapNotNullTo(ArrayList(), bundles::loadCommonService)
                     .takeIf(List<*>::isNotEmpty)
                     ?.let { injectables ->
                         // Every service object must implement the service
                         // marker type and at least one other type too.
+                        logger.debug { "Fetching common service: $serviceRef holding id ${vnc.holdingIdentity}" }
                         injectables += vnc.serviceMarkerType
                         bundleContext.getServiceObjects(serviceRef)?.let { serviceObj ->
                             serviceObj to injectables
@@ -180,6 +182,7 @@ class SandboxGroupContextServiceImpl(
                     ?.let { injectables ->
                         // Every service object must implement the service
                         // marker type and at least one other type too.
+                        logger.debug { "Fetching system service: $serviceRef holding id ${vnc.holdingIdentity}" }
                         injectables += vnc.serviceMarkerType
                         bundleContext.getServiceObjects(serviceRef)?.let { serviceObj ->
                             serviceObj to injectables
@@ -330,21 +333,22 @@ class SandboxGroupContextServiceImpl(
             runIgnoringExceptions { (serviceFactory as ServiceObjects<Any>).ungetService(serviceObj) }
         }
     }
-}
 
-/**
- * Check whether this [AccessControlContext] is allowed to GET service [serviceType].
- */
-private fun AccessControlContext.checkServicePermission(serviceType: String): Boolean {
-    val sm = System.getSecurityManager()
-    if (sm != null) {
-        try {
-            sm.checkPermission(ServicePermission(serviceType, GET), this)
-        } catch (ace: AccessControlException) {
-            return false
+    /**
+     * Check whether this [accessControlContext] is allowed to GET service [serviceType].
+     */
+    private fun checkServicePermission(accessControlContext: AccessControlContext, serviceType: String): Boolean {
+        val sm = System.getSecurityManager()
+        if (sm != null) {
+            try {
+                sm.checkPermission(ServicePermission(serviceType, GET), accessControlContext)
+            } catch (ace: AccessControlException) {
+                logger.error("This service failed GET permission check: $serviceType")
+                return false
+            }
         }
+        return true
     }
-    return true
 }
 
 /**
