@@ -1,10 +1,9 @@
 package net.corda.libs.permissions.storage.reader
 
-import net.corda.lifecycle.Lifecycle
-
-import net.corda.data.permissions.User as AvroUser
-import net.corda.data.permissions.Role as AvroRole
+import net.corda.lifecycle.Resource
 import net.corda.data.permissions.Permission as AvroPermission
+import net.corda.data.permissions.Role as AvroRole
+import net.corda.data.permissions.User as AvroUser
 
 /**
  * The [PermissionStorageReader] reads permission data from storage and pushes them into a compacted topic in the message bus.
@@ -13,7 +12,9 @@ import net.corda.data.permissions.Permission as AvroPermission
  *
  * By calling the publish methods, other services can manually request publication of changed data.
  */
-interface PermissionStorageReader : Lifecycle {
+interface PermissionStorageReader : Resource {
+
+    fun start()
 
     /**
      * Broadcasts a new user onto the messaging bus.

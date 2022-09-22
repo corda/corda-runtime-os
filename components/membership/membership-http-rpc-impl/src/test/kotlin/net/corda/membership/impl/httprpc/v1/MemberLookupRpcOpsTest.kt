@@ -29,7 +29,6 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -71,7 +70,7 @@ class MemberLookupRpcOpsTest {
     private val keys = listOf(knownKey, knownKey)
 
     private val endpoints = listOf(
-        EndpointInfoImpl("https://corda5.r3.com:10000", EndpointInfo.DEFAULT_PROTOCOL_VERSION),
+        EndpointInfoImpl("https://corda5.r3.com:10000"),
         EndpointInfoImpl("https://corda5.r3.com:10001", 10)
     )
 
@@ -167,7 +166,12 @@ class MemberLookupRpcOpsTest {
         on { getByHoldingIdentityShortHash(ShortHash.of(HOLDING_IDENTITY_STRING)) } doReturn VirtualNodeInfo(
             holdingIdentity,
             CpiIdentifier("test", "test", SecureHash("algorithm", "1234".toByteArray())),
-            null, UUID.randomUUID(), null, UUID.randomUUID(),
+            null,
+            UUID.randomUUID(),
+            null,
+            UUID.randomUUID(),
+            null,
+            UUID.randomUUID(),
             timestamp = Instant.now()
         )
     }
@@ -222,13 +226,13 @@ class MemberLookupRpcOpsTest {
     }
 
     @Test
-    fun `lookup filtered by organisation (O) is case-insensitive and returns a list of members and their contexts`() {
+    fun `lookup filtered by organization (O) is case-insensitive and returns a list of members and their contexts`() {
         memberLookupRpcOps.start()
         memberLookupRpcOps.activate("")
-        val result1 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, organisation = "ALICE")
+        val result1 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, organization = "ALICE")
         assertEquals(1, result1.members.size)
         assertEquals(aliceRpcResult, result1)
-        val result2 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, organisation = "alice")
+        val result2 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, organization = "alice")
         assertEquals(1, result2.members.size)
         assertEquals(aliceRpcResult, result2)
         memberLookupRpcOps.deactivate("")
@@ -236,13 +240,13 @@ class MemberLookupRpcOpsTest {
     }
 
     @Test
-    fun `lookup filtered by organisation unit (OU) is case-insensitive and returns a list of members and their contexts`() {
+    fun `lookup filtered by organization unit (OU) is case-insensitive and returns a list of members and their contexts`() {
         memberLookupRpcOps.start()
         memberLookupRpcOps.activate("")
-        val result1 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, organisationUnit = "unit2")
+        val result1 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, organizationUnit = "unit2")
         assertEquals(1, result1.members.size)
         assertEquals(bobRpcResult, result1)
-        val result2 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, organisationUnit = "UNIT2")
+        val result2 = memberLookupRpcOps.lookup(HOLDING_IDENTITY_STRING, organizationUnit = "UNIT2")
         assertEquals(1, result2.members.size)
         assertEquals(bobRpcResult, result2)
         memberLookupRpcOps.deactivate("")

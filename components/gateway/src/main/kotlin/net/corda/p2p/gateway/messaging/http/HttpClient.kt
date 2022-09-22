@@ -11,14 +11,14 @@ import io.netty.channel.socket.SocketChannel
 import io.netty.channel.socket.nio.NioSocketChannel
 import io.netty.handler.codec.http.HttpClientCodec
 import io.netty.util.concurrent.ScheduledFuture
-import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.Resource
 import net.corda.p2p.gateway.messaging.ConnectionConfiguration
 import net.corda.p2p.gateway.messaging.SslConfiguration
 import org.bouncycastle.asn1.x500.X500Name
 import org.slf4j.LoggerFactory
 import java.net.URI
 import java.security.KeyStore
-import java.util.LinkedList
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
@@ -29,7 +29,7 @@ import kotlin.concurrent.withLock
  * The [HttpClient] sends serialised application messages via POST requests to a given URI. It automatically initiates
  * HTTP(s) connection when [start] is invoked. Until connection is established, messages are queued in-memory.
  * If the connection is terminated for some reason (e.g. closed by the other side), the client initiates a new connection automatically.
- * The only exception to that is when the client is stopped (via [stop]) explicitly.
+ * The only exception to that is when the client is stopped (via [close]) explicitly.
  *
  * [HttpClient] allows to send multiple HTTP requests without waiting for a response.
  * Responses are matched with requests according to the order, as they arrive.
@@ -52,7 +52,7 @@ class HttpClient(
     private val nettyGroup: EventLoopGroup,
     private val connectionConfiguration: ConnectionConfiguration,
     private val listener: HttpConnectionListener? = null,
-) : Lifecycle, HttpClientListener {
+) : Resource, HttpClientListener {
 
     companion object {
         private val logger = LoggerFactory.getLogger(HttpClient::class.java)
@@ -79,7 +79,7 @@ class HttpClient(
     @Volatile
     private var clientChannel: Channel? = null
 
-    override val isRunning: Boolean
+    private val isRunning: Boolean
         get() = (writeProcessor != null)
 
     @Volatile
@@ -100,7 +100,7 @@ class HttpClient(
         }
     }
 
-    override fun start() {
+    fun start() {
         lock.withLock {
             if (isRunning) {
                 logger.info("HTTP client to ${destinationInfo.uri} already started")
@@ -112,7 +112,7 @@ class HttpClient(
         }
     }
 
-    override fun stop() {
+    override fun close() {
         lock.withLock {
             logger.info("Stopping HTTP client to ${destinationInfo.uri}")
             retryFuture?.cancel(true)

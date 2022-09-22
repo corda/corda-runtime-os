@@ -6,7 +6,6 @@ import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.sendAndReceive
-import net.corda.v5.application.messaging.unwrap
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 
@@ -24,12 +23,12 @@ class BrokenProtocolFlow : RPCStartableFlow {
         val session = messaging.initiateFlow(
             MemberX500Name(
                 commonName = "Alice",
-                organisation = "Alice Corp",
+                organization = "Alice Corp",
                 locality = "LDN",
                 country = "GB"
             )
         )
-        session.sendAndReceive<MyClass>(MyClass("Serialize me please", 1)).unwrap { it }
+        session.sendAndReceive<MyClass>(MyClass("Serialize me please", 1))
         return ""
     }
 }

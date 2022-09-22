@@ -2,12 +2,12 @@ package net.corda.messaging.emulation.subscription.eventlog
 
 import com.typesafe.config.ConfigValueFactory
 import net.corda.libs.configuration.SmartConfigImpl
-import net.corda.lifecycle.Lifecycle
 import net.corda.messaging.api.processor.EventLogProcessor
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.EventLogRecord
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.api.subscription.listener.PartitionAssignmentListener
@@ -43,7 +43,7 @@ class EventLogSubscriptionMultipleConsumersIntegrationTest {
     private val published = ConcurrentHashMap.newKeySet<Record<String, String>>()
     private val consumed =
         ConcurrentHashMap<String, MutableMap<Record<String, String>, EventLogRecord<String, String>>>()
-    private val subscriptions = ConcurrentHashMap.newKeySet<Lifecycle>()
+    private val subscriptions = ConcurrentHashMap.newKeySet<Subscription<String, String>>()
     private val publishedLatch = CountDownLatch(numberOfPublisher)
     private val consumerLatch = CountDownLatch(
         numberOfPublisher * sizeOfBatch * numberOfBatchesRecordsToPublish * numberOfConsumerGroups
@@ -159,7 +159,7 @@ class EventLogSubscriptionMultipleConsumersIntegrationTest {
         assertThat(consumerLatch.await(10, TimeUnit.SECONDS)).isTrue
 
         subscriptions.forEach {
-            it.stop()
+            it.close()
         }
 
         consumed.forEach { (groupName, events) ->

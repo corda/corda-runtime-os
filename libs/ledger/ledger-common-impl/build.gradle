@@ -9,7 +9,13 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
-    implementation "net.corda:corda-membership"
     implementation "net.corda:corda-ledger-common"
+
+    implementation project(":libs:crypto:crypto-core")
+
+    testImplementation project(":libs:crypto:merkle-impl")
+
 }

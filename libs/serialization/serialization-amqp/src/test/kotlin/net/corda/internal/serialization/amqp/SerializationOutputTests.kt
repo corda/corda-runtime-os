@@ -1,25 +1,40 @@
 package net.corda.internal.serialization.amqp
 
+import java.io.IOException
+import java.io.InputStream
+import java.io.NotSerializableException
+import java.math.BigDecimal
+import java.time.DayOfWeek
+import java.time.Month
+import java.util.Currency
+import java.util.Date
+import java.util.EnumMap
+import java.util.NavigableMap
+import java.util.Objects
+import java.util.Random
+import java.util.SortedSet
+import java.util.TreeMap
+import java.util.TreeSet
+import java.util.UUID
 import net.corda.internal.serialization.CordaSerializationEncoding
-import net.corda.internal.serialization.SnappyEncodingWhitelist
+import net.corda.internal.serialization.SnappyEncodingAllowList
 import net.corda.internal.serialization.amqp.custom.BigDecimalSerializer
 import net.corda.internal.serialization.amqp.custom.CurrencySerializer
 import net.corda.internal.serialization.amqp.custom.InputStreamSerializer
 import net.corda.internal.serialization.amqp.custom.StackTraceElementSerializer
 import net.corda.internal.serialization.amqp.custom.ThrowableSerializer
+import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.internal.serialization.amqp.testutils.serialize
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactoryNoEvolution
-import net.corda.internal.serialization.amqp.testutils.testSerializationContext
 import net.corda.internal.serialization.encodingNotPermittedFormat
 import net.corda.internal.serialization.registerCustomSerializers
-import net.corda.serialization.EncodingWhitelist
+import net.corda.serialization.EncodingAllowList
 import net.corda.serialization.SerializationContext
-import net.corda.v5.application.flows.exceptions.FlowException
+import net.corda.v5.base.annotations.ConstructorForDeserialization
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.OpaqueBytes
-import net.corda.v5.serialization.annotations.ConstructorForDeserialization
 import org.apache.qpid.proton.amqp.Decimal128
 import org.apache.qpid.proton.amqp.Decimal32
 import org.apache.qpid.proton.amqp.Decimal64
@@ -45,22 +60,6 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.whenever
-import java.io.IOException
-import java.io.InputStream
-import java.io.NotSerializableException
-import java.math.BigDecimal
-import java.time.DayOfWeek
-import java.time.Month
-import java.util.Currency
-import java.util.Date
-import java.util.EnumMap
-import java.util.NavigableMap
-import java.util.Objects
-import java.util.Random
-import java.util.SortedSet
-import java.util.TreeMap
-import java.util.TreeSet
-import java.util.UUID
 
 object AckWrapper {
     @CordaSerializable
@@ -226,15 +225,17 @@ class SerializationOutputTests {
         }
     }
 
-    private val encodingWhitelist = SnappyEncodingWhitelist
+    private val encodingAllowList = SnappyEncodingAllowList
 
     @SuppressWarnings("LongParameterList")
-    private inline fun <reified T : Any> serdes(obj: T,
-                                                factory: SerializerFactory = testDefaultFactoryNoEvolution(),
-                                                freshDeserializationFactory: SerializerFactory = testDefaultFactoryNoEvolution(),
-                                                expectedEqual: Boolean = true,
-                                                expectDeserializedEqual: Boolean = true,
-                                                withSerializationContext: SerializationContext = testSerializationContext): T {
+    private inline fun <reified T : Any> serdes(
+        obj: T,
+        factory: SerializerFactory = testDefaultFactoryNoEvolution(),
+        freshDeserializationFactory: SerializerFactory = testDefaultFactoryNoEvolution(),
+        expectedEqual: Boolean = true,
+        expectDeserializedEqual: Boolean = true,
+        withSerializationContext: SerializationContext = testSerializationContext
+    ): T {
         val ser = SerializationOutput(factory)
         val bytes = ser.serialize(obj, withSerializationContext)
 
@@ -252,14 +253,14 @@ class SerializationOutputTests {
             this.register(TransformTypes.DESCRIPTOR, TransformTypes)
         }
         EncoderImpl(decoder)
-        DeserializationInput.withDataBytes(bytes, encodingWhitelist) {
+        DeserializationInput.withDataBytes(bytes, encodingAllowList) {
             decoder.byteBuffer = it
             // Check that a vanilla AMQP decoder can deserialize without schema.
             val result = decoder.readObject() as Envelope
             assertNotNull(result)
         }
         val des = DeserializationInput(freshDeserializationFactory)
-        val desObj = des.deserialize(bytes, withSerializationContext.withEncodingWhitelist(encodingWhitelist))
+        val desObj = des.deserialize(bytes, withSerializationContext.withEncodingAllowList(encodingAllowList))
         assertTrue(deepEquals(obj, desObj) == expectedEqual)
 
         // Now repeat with a re-used factory
@@ -267,7 +268,7 @@ class SerializationOutputTests {
         val des2 = DeserializationInput(factory)
         val desObj2 = des2.deserialize(
             ser2.serialize(obj, context = withSerializationContext),
-            withSerializationContext.withEncodingWhitelist(encodingWhitelist)
+            withSerializationContext.withEncodingAllowList(encodingAllowList)
         )
         assertTrue(deepEquals(obj, desObj2) == expectedEqual)
         assertTrue(deepEquals(desObj, desObj2) == expectDeserializedEqual)
@@ -388,7 +389,7 @@ class SerializationOutputTests {
     }
 
     @Test
-    fun `test annotation whitelisting`() {
+    fun `test annotation allow listing`() {
         val obj = AnnotatedWoo(5)
         serdes(obj, SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup()))
     }
@@ -504,13 +505,19 @@ class SerializationOutputTests {
 
         // Double check
         copy[valueIndex] = 0x03
-        assertThat(des.deserialize(OpaqueBytes(copy),
-        NonZeroByte::class.java, testSerializationContext.withEncodingWhitelist(encodingWhitelist)).value).isEqualTo(3)
+        assertThat(des.deserialize(
+            OpaqueBytes(copy),
+            NonZeroByte::class.java, testSerializationContext.withEncodingAllowList(encodingAllowList)
+        ).value).isEqualTo(3)
 
         // Now use the forbidden value
         copy[valueIndex] = 0x00
         assertThatExceptionOfType(NotSerializableException::class.java).isThrownBy {
-            des.deserialize(OpaqueBytes(copy), NonZeroByte::class.java, testSerializationContext.withEncodingWhitelist(encodingWhitelist))
+            des.deserialize(
+                OpaqueBytes(copy),
+                NonZeroByte::class.java,
+                testSerializationContext.withEncodingAllowList(encodingAllowList)
+            )
         }.withStackTraceContaining("Zero not allowed")
     }
 
@@ -606,7 +613,7 @@ class SerializationOutputTests {
         factory2.register(ThrowableSerializer(factory2), factory2)
         factory2.register(StackTraceElementSerializer(), factory2)
 
-        val obj = FlowException("message").fillInStackTrace()
+        val obj = CordaRuntimeException("message").fillInStackTrace()
         serdes(obj, factory, factory2)
     }
 
@@ -854,21 +861,24 @@ class SerializationOutputTests {
         val compressed = SerializationOutput(factory).serialize(data, CordaSerializationEncoding.SNAPPY)
         assertEquals(.5, compressed.size.toDouble() / data.size, .03)
 
-        val encodingWhitelist = mock(EncodingWhitelist::class.java)
-        doReturn(true).whenever(encodingWhitelist).acceptEncoding(CordaSerializationEncoding.SNAPPY)
+        val encodingAllowList = mock(EncodingAllowList::class.java)
+        doReturn(true).whenever(encodingAllowList).acceptEncoding(CordaSerializationEncoding.SNAPPY)
         assertArrayEquals(data, DeserializationInput(factory).deserialize(
-            compressed, testSerializationContext.withEncodingWhitelist(encodingWhitelist)
+            compressed, testSerializationContext.withEncodingAllowList(encodingAllowList)
         ))
     }
 
     @Test
     fun `a particular encoding can be banned for deserialization`() {
         val factory = testDefaultFactory()
-        val encodingWhitelist = mock(EncodingWhitelist::class.java)
-        doReturn(false).whenever(encodingWhitelist).acceptEncoding(CordaSerializationEncoding.SNAPPY)
+        val encodingAllowList = mock(EncodingAllowList::class.java)
+        doReturn(false).whenever(encodingAllowList).acceptEncoding(CordaSerializationEncoding.SNAPPY)
         val compressed = SerializationOutput(factory).serialize("whatever", CordaSerializationEncoding.SNAPPY)
         val input = DeserializationInput(factory)
-        catchThrowable { input.deserialize(compressed, testSerializationContext.withEncodingWhitelist(encodingWhitelist)) }.run {
+        catchThrowable { input.deserialize(
+            compressed,
+            testSerializationContext.withEncodingAllowList(encodingAllowList)
+        ) }.run {
             assertSame(NotSerializableException::class.java, javaClass)
             assertEquals(encodingNotPermittedFormat.format(CordaSerializationEncoding.SNAPPY), message)
         }

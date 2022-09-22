@@ -4,6 +4,7 @@ import net.corda.httprpc.exception.ServiceUnavailableException
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.client.MGMOpsClient
+import net.corda.virtualnode.ShortHash
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -18,7 +19,7 @@ import kotlin.test.assertFailsWith
 
 class MGMRpcOpsTest {
     companion object {
-        private const val HOLDING_IDENTITY_ID = "DUMMY_ID"
+        private const val HOLDING_IDENTITY_ID = "00111213141500"
     }
 
     private var coordinatorIsRunning = false
@@ -56,11 +57,11 @@ class MGMRpcOpsTest {
         mgmRpcOps.start()
         mgmRpcOps.activate("")
         mgmRpcOps.generateGroupPolicy(HOLDING_IDENTITY_ID)
-        verify(mgmOpsClient).generateGroupPolicy(eq((HOLDING_IDENTITY_ID)))
+        verify(mgmOpsClient)
+            .generateGroupPolicy(eq((ShortHash.of(HOLDING_IDENTITY_ID))))
         mgmRpcOps.deactivate("")
         mgmRpcOps.stop()
     }
-
 
     @Test
     fun `operation fails when svc is not running`() {

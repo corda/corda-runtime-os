@@ -24,7 +24,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
-@Suppress("CanBePrimaryConstructorProperty", "Unused")
+@Suppress("Unused")
 @Component(service = [FlowEventExceptionProcessor::class])
 class FlowEventExceptionProcessorImpl @Activate constructor(
     @Reference(service = FlowMessageFactory::class)
@@ -67,7 +67,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             if (flowCheckpoint.currentRetryCount >= maxRetryAttempts) {
                 return@withEscalation process(
                     FlowFatalException(
-                        "Max retry attempts '${maxRetryAttempts}' has been reached.",
+                        "Execution failed with \"${exception.message}\" after $maxRetryAttempts retry attempts.",
                         exception
                     ), context
                 )
@@ -134,7 +134,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
         exception: FlowEventException,
         context: FlowEventContext<*>
     ): StateAndEventProcessor.Response<Checkpoint> = withEscalation {
-        log.warn("A non critical error was reported while processing the event.", exception)
+        log.warn("A non critical error was reported while processing the event: ${exception.message}")
         flowEventContextConverter.convert(context)
     }
 

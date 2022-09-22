@@ -3,8 +3,7 @@ package net.corda.flow.state.impl
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.state.checkpoint.FlowState
-import net.corda.data.flow.state.crypto.CryptoState
-import net.corda.data.flow.state.persistence.PersistenceState
+import net.corda.data.flow.state.external.ExternalEventState
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.virtualnode.HoldingIdentity
@@ -37,7 +36,7 @@ class FlowStateManager(private val initialState: FlowState) {
     val sessions: List<SessionState>
         get() = sessionMap.values.toList()
 
-    var flowContext = FlowContextImpl(stack)
+    var flowContext = FlowStackBasedContext(stack)
 
     fun updateSuspendedFiber(fiber: ByteBuffer) {
         state.fiber = fiber
@@ -52,16 +51,10 @@ class FlowStateManager(private val initialState: FlowState) {
         sessionMap[sessionState.sessionId] = sessionState
     }
 
-    var persistenceState: PersistenceState?
-        get() = state.persistenceState
+    var externalEventState: ExternalEventState?
+        get() = state.externalEventState
         set(value) {
-            state.persistenceState = value
-        }
-
-    var cryptoState: CryptoState?
-        get() = state.cryptoState
-        set(value) {
-            state.cryptoState = value
+            state.externalEventState = value
         }
 
     var waitingFor: WaitingFor?
@@ -80,7 +73,7 @@ class FlowStateManager(private val initialState: FlowState) {
         state = FlowState.newBuilder(initialState).build()
         sessionMap = validateAndCreateSessionMap(state.sessions)
         stack = FlowStackImpl(initialState.flowStackItems)
-        flowContext = FlowContextImpl(stack)
+        flowContext = FlowStackBasedContext(stack)
     }
 
     fun toAvro(): FlowState {

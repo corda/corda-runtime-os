@@ -10,7 +10,7 @@ package net.corda.lifecycle
  * The coordinator guarantees that posted events are processed in the order they are processed, and that events will not
  * be processed concurrently.
  */
-interface LifecycleCoordinator : Lifecycle {
+interface LifecycleCoordinator : Lifecycle, AutoCloseable {
 
     /**
      * The name of this coordinator.
@@ -144,7 +144,7 @@ interface LifecycleCoordinator : Lifecycle {
      * @param name a unique identifier for the resource
      * @param generator the lambda for creating the resource
      */
-    fun <T: AutoCloseable> createManagedResource(name: String, generator: () -> T)
+    fun <T: Resource> createManagedResource(name: String, generator: () -> T)
 
     /**
      * Retrieve (by [name]) a managed resource from this coordinator.  The resource will have been
@@ -156,7 +156,7 @@ interface LifecycleCoordinator : Lifecycle {
      *
      * @return the resource associated by [name] or null if not available
      */
-    fun <T: AutoCloseable> getManagedResource(name: String) : T?
+    fun <T: Resource> getManagedResource(name: String) : T?
 
     /**
      * Closes _only_ the given resources.  If no resources are provided (i.e. [resources] is null)

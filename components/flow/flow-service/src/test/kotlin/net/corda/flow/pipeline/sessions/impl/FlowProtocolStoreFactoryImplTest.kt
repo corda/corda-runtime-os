@@ -26,6 +26,7 @@ class FlowProtocolStoreFactoryImplTest {
         private const val INITIATED_FLOW = "initiated-flow"
         private const val RPC_FLOW = "rpc-flow"
         private const val BAD_RESPONDER = "bad-responder"
+        private const val INVALID_RESPONDER = "invalid-responder"
 
         private const val PROTOCOL = "protocol"
     }
@@ -54,9 +55,31 @@ class FlowProtocolStoreFactoryImplTest {
             )
         )
         val sandboxGroup = makeMockSandboxGroup()
-        assertThrows<FlowFatalException> {
+        val thrownException = assertThrows<FlowFatalException> {
             FlowProtocolStoreFactoryImpl().create(sandboxGroup, cpiMetadata)
         }
+        assertEquals(
+            "Cannot declare multiple responders for the same protocol in the same CPI",
+            thrownException.message
+        )
+    }
+
+    @Test
+    fun `error is returned when flow annotated with @InitiatedBy does not implement ResponderFlow`() {
+        val cpiMetadata = makeMockCPIMetadata(
+            listOf(
+                CpkFlowClassNameLists(listOf(INITIATING_FLOW, INVALID_RESPONDER), listOf(), listOf(INVALID_RESPONDER)),
+                CpkFlowClassNameLists(listOf(RPC_FLOW, INITIATED_FLOW), listOf(RPC_FLOW), listOf(INITIATED_FLOW))
+            )
+        )
+        val sandboxGroup = makeMockSandboxGroup()
+        val thrownException = assertThrows<FlowFatalException> {
+            FlowProtocolStoreFactoryImpl().create(sandboxGroup, cpiMetadata)
+        }
+        assertEquals(
+            "Flow ${InvalidResponderFlow::class.java.canonicalName} must implement ${ResponderFlow::class.java.simpleName}",
+            thrownException.message
+        )
     }
 
     private fun makeMockCPIMetadata(flows: List<CpkFlowClassNameLists>): CpiMetadata {
@@ -93,6 +116,10 @@ class FlowProtocolStoreFactoryImplTest {
         whenever(sandboxGroup.loadClassFromMainBundles(BAD_RESPONDER, Flow::class.java)).thenReturn(
             BadResponderFlow::class.java
         )
+        whenever(sandboxGroup.loadClassFromMainBundles(INVALID_RESPONDER, Flow::class.java)).thenReturn(
+            InvalidResponderFlow::class.java
+        )
+
         return sandboxGroup
     }
 
@@ -120,6 +147,9 @@ class FlowProtocolStoreFactoryImplTest {
         override fun call(session: FlowSession) {
         }
     }
+
+    @InitiatedBy(protocol = PROTOCOL)
+    private class InvalidResponderFlow : Flow
 
     private data class CpkFlowClassNameLists(
         val flows: List<String>,

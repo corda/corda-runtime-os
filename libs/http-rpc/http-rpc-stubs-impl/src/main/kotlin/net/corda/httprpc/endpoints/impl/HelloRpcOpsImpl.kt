@@ -4,18 +4,23 @@ import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcPOST
+import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Component
 
-@HttpRpcResource(name = "Hello RPC Ops", description = "Hello RPC Ops endpoints", path = "hello")
+@HttpRpcResource(name = "Hello RPC API", description = "The endpoint used to test interactions via HTTP RPC API. " +
+        "It verifies that a call to HTTP-RPC can be made, and that the identity of the user making the call can be recognized." +
+        "RBAC permissions are checked and the call is successfully processed by the HTTP-RPC worker.",
+    path = "hello")
 interface HelloRpcOps : RpcOps {
 
-    @HttpRpcPOST(path = "greet")
-    fun greet(addressee: String): String
+    @HttpRpcPOST(description = "Produces a greeting phrase for the addressee.")
+    fun greet(@HttpRpcQueryParameter(description = "An arbitrary name can be used for the greeting.") addressee: String): String
 }
 
 @Component(service = [PluggableRPCOps::class])
+@Suppress("unused")
 class HelloRpcOpsImpl : HelloRpcOps, PluggableRPCOps<HelloRpcOps>, RpcOps {
 
     private companion object {

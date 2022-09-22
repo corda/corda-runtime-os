@@ -133,7 +133,7 @@ class EnumDefaultSchemaTransform(val old: String, val new: String) : Transform()
     }
 
     @Suppress("UNUSED")
-    constructor (annotation: CordaSerializationTransformEnumDefault) : this(annotation.old, annotation.new)
+    constructor (annotation: CordaSerializationTransformEnumDefault) : this(annotation.oldName, annotation.newName)
 
     override fun getDescribed(): Any = listOf(name, old, new)
     override fun params() = "old=${old.esc()} new=${new.esc()}"

@@ -37,12 +37,18 @@ import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
+import net.corda.data.flow.event.external.ExternalEventContext
 import kotlin.random.Random
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class CryptoFlowOpsTransformerImplTests {
+
+    private companion object {
+        val flowExternalEventContext = ExternalEventContext("requestId", "flow id", KeyValuePairList(emptyList()))
+    }
+
     private lateinit var knownComponentName: String
     private lateinit var knownResponseTopic: String
     private lateinit var knownTenantId: String
@@ -115,7 +121,7 @@ class CryptoFlowOpsTransformerImplTests {
             Instant.now(),
             knownTenantId,
             KeyValuePairList(
-                if(error != null) {
+                if (error != null) {
                     listOf(
                         KeyValuePair(REQUEST_OP_KEY, requestType.simpleName),
                         KeyValuePair(RESPONSE_ERROR_KEY, error),
@@ -170,7 +176,11 @@ class CryptoFlowOpsTransformerImplTests {
         )
         val notMyKey = mockPublicKey()
         val result = act {
-            buildTransformer().createFilterMyKeys(knownTenantId, listOf(myPublicKeys[0], myPublicKeys[1], notMyKey))
+            buildTransformer().createFilterMyKeys(
+                knownTenantId,
+                listOf(myPublicKeys[0], myPublicKeys[1], notMyKey),
+                flowExternalEventContext
+            )
         }
         assertNotNull(result.value)
         assertEquals(knownTenantId, result.value.context.tenantId)
@@ -186,7 +196,7 @@ class CryptoFlowOpsTransformerImplTests {
     @Test
     fun `Should create empty query to filter my keys`() {
         val result = act {
-            buildTransformer().createFilterMyKeys(knownTenantId, listOf())
+            buildTransformer().createFilterMyKeys(knownTenantId, listOf(), flowExternalEventContext)
         }
         assertNotNull(result.value)
         assertEquals(knownTenantId, result.value.context.tenantId)
@@ -204,10 +214,11 @@ class CryptoFlowOpsTransformerImplTests {
             buildTransformer().createSign(
                 UUID.randomUUID().toString(),
                 knownTenantId,
-                publicKey,
+                publicKey.encoded,
                 SignatureSpec.EDDSA_ED25519,
                 data,
-                knownOperationContext
+                knownOperationContext,
+                flowExternalEventContext
             )
         }
         assertNotNull(result.value)
@@ -226,7 +237,15 @@ class CryptoFlowOpsTransformerImplTests {
         val publicKey = mockPublicKey()
         val data = "Hello World!".toByteArray()
         val result = act {
-            buildTransformer().createSign(UUID.randomUUID().toString(),knownTenantId, publicKey, SignatureSpec.EDDSA_ED25519, data)
+            buildTransformer().createSign(
+                UUID.randomUUID().toString(),
+                knownTenantId,
+                publicKey.encoded,
+                SignatureSpec.EDDSA_ED25519,
+                data,
+                emptyMap(),
+                flowExternalEventContext
+            )
         }
         assertNotNull(result.value)
         assertEquals(knownTenantId, result.value.context.tenantId)
@@ -444,9 +463,11 @@ class CryptoFlowOpsTransformerImplTests {
             CryptoSignatureWithKey(
                 ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(publicKey)),
                 ByteBuffer.wrap(signature),
-                KeyValuePairList(listOf(
-                    KeyValuePair("key1", "value1")
-                ))
+                KeyValuePairList(
+                    listOf(
+                        KeyValuePair("key1", "value1")
+                    )
+                )
             ),
             SignFlowCommand::class.java
         )

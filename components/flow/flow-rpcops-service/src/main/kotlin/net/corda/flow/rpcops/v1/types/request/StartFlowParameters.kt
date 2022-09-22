@@ -1,5 +1,7 @@
 package net.corda.flow.rpcops.v1.types.request
 
+import net.corda.httprpc.JsonObject
+
 /**
  * Request sent to start a flow
  *
@@ -10,5 +12,5 @@ package net.corda.flow.rpcops.v1.types.request
 data class StartFlowParameters(
     val clientRequestId: String,
     val flowClassName: String,
-    val requestData: String
+    val requestData: JsonObject
 )

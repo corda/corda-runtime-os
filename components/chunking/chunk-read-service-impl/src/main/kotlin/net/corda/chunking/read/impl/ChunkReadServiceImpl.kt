@@ -7,6 +7,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -18,13 +19,13 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 
@@ -87,7 +88,7 @@ class ChunkReadServiceImpl @Activate constructor(
     private fun onStopEvent(coordinator: LifecycleCoordinator) {
         log.debug("onStopEvent")
 
-        chunkDbWriter?.stop()
+        chunkDbWriter?.close()
         chunkDbWriter = null
 
         coordinator.updateStatus(LifecycleStatus.DOWN)
@@ -123,7 +124,8 @@ class ChunkReadServiceImpl @Activate constructor(
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 
-    override fun close() {
+    @Deactivate
+    fun close() {
         configSubscription?.close()
         registration?.close()
         chunkDbWriter?.close()

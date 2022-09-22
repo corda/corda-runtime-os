@@ -16,7 +16,7 @@ class ValidateUniqueCpiAndGroupIdTest {
     fun `succeeds with unique groupId`() {
         val requiredName = "aaa"
         val requiredVersion = "1.0"
-        val hash = SecureHash.create("DUMMY:1234567890")
+        val hash = SecureHash.parse("DUMMY:1234567890")
         val mockCpiId = mock<CpiIdentifier> {
             on { name }.doReturn(requiredName)
             on { version }.doReturn(requiredVersion)
@@ -38,7 +38,7 @@ class ValidateUniqueCpiAndGroupIdTest {
     fun `fails with existing groupId`() {
         val requiredName = "aaa"
         val requiredVersion = "1.0"
-        val hash = SecureHash.create("DUMMY:1234567890")
+        val hash = SecureHash.parse("DUMMY:1234567890")
 
         val groupId = "ABC"
         val mockCpiId = mock<CpiIdentifier> {

@@ -21,7 +21,6 @@ import java.io.ByteArrayInputStream
 import java.util.UUID
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.exception.InvalidInputDataException
-import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.assertThrows
 
 class CpiUploadRPCOpsImplTest {
@@ -61,7 +60,7 @@ class CpiUploadRPCOpsImplTest {
         val cpiBytes = "dummyCPI".toByteArray()
         val cpiContent = ByteArrayInputStream(cpiBytes)
         val cpiUploadRequestId = ChunkWriter.Request(UUID.randomUUID().toString(),
-            SecureHash.create("FOO:123456789012"))
+            SecureHash.parse("FOO:123456789012"))
 
         whenever(cpiUploadManager.uploadCpi(any(), eq(cpiContent), eq(null))).thenReturn(cpiUploadRequestId)
 

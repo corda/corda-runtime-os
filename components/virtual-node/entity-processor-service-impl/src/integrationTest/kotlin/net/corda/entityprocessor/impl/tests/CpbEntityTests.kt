@@ -43,8 +43,8 @@ class CpbEntityTests {
     ) {
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
-            virtualNode = setup.fetchService(timeout = 10000)
-            cpiInfoReadService = setup.fetchService(timeout = 10000)
+            virtualNode = setup.fetchService(timeout = 30000)
+            cpiInfoReadService = setup.fetchService(timeout = 30000)
         }
     }
 
@@ -58,7 +58,7 @@ class CpbEntityTests {
 
         // does contain packages from cpks
         assertThat(entities).containsAll(
-            listOf("net.corda.testing.bundles.dogs.Dog", "net.corda.testing.bundles.cats.Cat", "net.corda.testing.bundles.cats.Owner")
+            listOf("net.cordapp.testing.bundles.dogs.Dog", "net.cordapp.testing.bundles.cats.Cat", "net.cordapp.testing.bundles.cats.Owner")
         )
     }
 }

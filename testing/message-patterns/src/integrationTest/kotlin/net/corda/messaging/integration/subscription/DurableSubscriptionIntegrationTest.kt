@@ -1,9 +1,9 @@
 package net.corda.messaging.integration.subscription
 
 import com.typesafe.config.ConfigValueFactory
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
+import net.corda.data.demo.DemoRecord
 import net.corda.db.messagebus.testkit.DBSetup
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.messaging.topic.utils.TopicUtils
 import net.corda.libs.messaging.topic.utils.factory.TopicUtilsFactory
 import net.corda.lifecycle.LifecycleCoordinator
@@ -15,6 +15,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.messaging.integration.IntegrationTestProperties.Companion.TEST_CONFIG
@@ -45,6 +46,8 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class, DBSetup::class)
 class DurableSubscriptionIntegrationTest {
@@ -120,8 +123,8 @@ class DurableSubscriptionIntegrationTest {
         durableSub2.start()
 
         assertTrue(latch.await(60, TimeUnit.SECONDS))
-        durableSub1.stop()
-        durableSub2.stop()
+        durableSub1.close()
+        durableSub2.close()
     }
 
     @Test
@@ -166,7 +169,7 @@ class DurableSubscriptionIntegrationTest {
         }
 
         assertTrue(latch.await(1, TimeUnit.MINUTES))
-        durableSub.stop()
+        durableSub.close()
 
         eventually(duration = 5.seconds, waitBetween = 10.millis, waitBefore = 0.millis) {
             assertEquals(LifecycleStatus.DOWN, coordinator.status)
@@ -208,8 +211,8 @@ class DurableSubscriptionIntegrationTest {
         assertTrue(latch.await(10, TimeUnit.SECONDS))
         assertTrue(dlqLatch.await(10, TimeUnit.SECONDS))
 
-        dlqDurableSub.stop()
-        durableSub.stop()
+        dlqDurableSub.close()
+        durableSub.close()
     }
 
     @Test
@@ -222,37 +225,39 @@ class DurableSubscriptionIntegrationTest {
         futures[0].get()
 
         val latch = CountDownLatch(30)
-        val durableSub1 = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$DURABLE_TOPIC4-group", DURABLE_TOPIC4),
-            TestDurableProcessor(latch),
-            TEST_CONFIG,
-            null
-        )
-
         val secondSubConfig = TEST_CONFIG.withValue(
             INSTANCE_ID,
             ConfigValueFactory.fromAnyRef(2)
         )
-        val durableSub2 = subscriptionFactory.createDurableSubscription(
-            SubscriptionConfig("$DURABLE_TOPIC4-group", DURABLE_TOPIC4),
-            TestDurableProcessor(latch),
-            secondSubConfig,
-            null
-        )
+
+        fun createSub(processor: TestDurableProcessor, config: SmartConfig): Subscription<String, DemoRecord> {
+            return subscriptionFactory.createDurableSubscription(
+                SubscriptionConfig("$DURABLE_TOPIC4-group", DURABLE_TOPIC4),
+                processor,
+                config,
+                null
+            )
+        }
+
+        val durableSub1 = createSub(TestDurableProcessor(latch), TEST_CONFIG)
+        val durableSub2 = createSub(TestDurableProcessor(latch), secondSubConfig)
 
         durableSub1.start()
         durableSub2.start()
 
-        durableSub1.stop()
-        durableSub2.stop()
+        durableSub1.close()
+        durableSub2.close()
 
         publisher.publish(getDemoRecords(DURABLE_TOPIC4, 10, 2)).forEach { it.get() }
 
-        durableSub1.start()
-        durableSub2.start()
+        val durableSub1part2 = createSub(TestDurableProcessor(latch), TEST_CONFIG)
+        val durableSub2part2 = createSub(TestDurableProcessor(latch), secondSubConfig)
+
+        durableSub1part2.start()
+        durableSub2part2.start()
         assertTrue(latch.await(60, TimeUnit.SECONDS))
-        durableSub1.stop()
-        durableSub2.stop()
+        durableSub1part2.close()
+        durableSub2part2.close()
         publisher.close()
     }
 }

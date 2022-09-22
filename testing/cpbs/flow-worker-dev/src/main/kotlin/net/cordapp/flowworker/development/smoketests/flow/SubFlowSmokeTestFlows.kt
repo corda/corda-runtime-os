@@ -10,7 +10,6 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.receive
 import net.corda.v5.application.messaging.sendAndReceive
-import net.corda.v5.application.messaging.unwrap
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
@@ -62,7 +61,7 @@ class InlineSubFlowSmokeTestFlow(
             session.send(InitiatedSmokeTestMessage("Initiate"))
         }
         val initiatedSmokeTestMessage =
-            session.sendAndReceive<InitiatedSmokeTestMessage>(InitiatedSmokeTestMessage(message)).unwrap { it }
+            session.sendAndReceive<InitiatedSmokeTestMessage>(InitiatedSmokeTestMessage(message))
         log.info("SubFlow - Received response from session '$session'.")
         return initiatedSmokeTestMessage
     }
@@ -79,7 +78,7 @@ class InitiatingSubFlowResponderSmokeTestFlow : ResponderFlow {
     override fun call(session: FlowSession) {
         session.receive<InitiatedSmokeTestMessage>()
         log.info("SubFlow - Initiated.")
-        val received = session.receive<InitiatedSmokeTestMessage>().unwrap { it }
+        val received = session.receive<InitiatedSmokeTestMessage>()
         log.info("SubFlow - Received message from session '$session'.")
         session.send(InitiatedSmokeTestMessage("echo:${received.message}"))
         log.info("SubFlow - Sent message to session '$session'.")

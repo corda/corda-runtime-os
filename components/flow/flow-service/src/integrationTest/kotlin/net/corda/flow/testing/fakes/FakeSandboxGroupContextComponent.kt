@@ -76,6 +76,9 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
     override fun stop() {
     }
 
+    override fun close() {
+    }
+
     class FakeSandboxGroupContext(
         override val virtualNodeContext: VirtualNodeContext,
         override val sandboxGroup: SandboxGroup,
@@ -157,6 +160,10 @@ class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
         }
 
         override fun getClass(className: String, serialisedClassTag: String): Class<*> {
+            TODO("Not yet implemented")
+        }
+
+        override fun loadClassFromPublicBundles(className: String): Class<*>? {
             TODO("Not yet implemented")
         }
     }

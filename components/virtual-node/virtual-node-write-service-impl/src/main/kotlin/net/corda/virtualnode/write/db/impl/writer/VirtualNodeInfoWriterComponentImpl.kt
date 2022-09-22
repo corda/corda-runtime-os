@@ -19,12 +19,14 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.write.db.VirtualNodeInfoWriteService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import net.corda.data.identity.HoldingIdentity as HoldingIdentityAvro
@@ -42,7 +44,7 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
     private val configurationReadService: ConfigurationReadService,
     @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory
-) : VirtualNodeInfoWriteService, AutoCloseable {
+) : VirtualNodeInfoWriteService {
     companion object {
         val log: Logger = contextLogger()
         internal const val CLIENT_ID = "VIRTUAL_NODE_INFO_WRITER"
@@ -124,11 +126,17 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
 
     private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent) {
         if (event.status == LifecycleStatus.UP) {
+            configSubscription?.close()
             configSubscription = configurationReadService.registerComponentForUpdates(
                 coordinator,
                 setOf(ConfigKeys.MESSAGING_CONFIG)
             )
         } else {
+            log.info(
+                "Received a ${RegistrationStatusChangeEvent::class.java.simpleName} with status ${event.status}. " +
+                        "Switching to ${event.status}"
+            )
+            coordinator.updateStatus(event.status)
             configSubscription?.close()
         }
     }
@@ -138,12 +146,13 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
      * require as defined in [onNewConfiguration]
      */
     private fun onConfigChangedEventReceived(coordinator: LifecycleCoordinator, event: ConfigChangedEvent) {
-        coordinator.updateStatus(LifecycleStatus.DOWN)
-        recreatePublisher(event)
+        log.debug { "Creating resources" }
+        createPublisher(event)
+        log.info("Switching to UP")
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 
-    private fun recreatePublisher(event: ConfigChangedEvent) {
+    private fun createPublisher(event: ConfigChangedEvent) {
         publisher?.close()
         publisher = publisherFactory.createPublisher(
             PublisherConfig(CLIENT_ID),
@@ -151,7 +160,8 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
         )
     }
 
-    override fun close() {
+    @Deactivate
+    fun close() {
         configSubscription?.close()
         registration?.close()
     }

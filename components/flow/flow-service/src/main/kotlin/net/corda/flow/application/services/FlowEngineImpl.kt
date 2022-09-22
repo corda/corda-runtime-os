@@ -20,7 +20,6 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.security.AccessController
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
-import java.time.Duration
 import java.util.UUID
 
 @Component(service = [FlowEngine::class, SingletonSerializeAsToken::class], scope = PROTOTYPE)
@@ -41,11 +40,6 @@ class FlowEngineImpl @Activate constructor(
 
     override val flowContextProperties: FlowContextProperties
         get() = flowFiberService.getExecutingFiber().getExecutionContext().flowCheckpoint.flowContext
-
-    @Suspendable
-    override fun sleep(duration: Duration) {
-        TODO("Not yet implemented")
-    }
 
     @Suspendable
     override fun <R> subFlow(subFlow: SubFlow<R>): R {
@@ -76,40 +70,47 @@ class FlowEngineImpl @Activate constructor(
 
             finishSubFlow()
 
-            log.debug { "Sub-flow('${subFlow.javaClass.name}') resumed ." }
+            log.info("Sub-flow [$flowId] ('${subFlow.javaClass.name}') completed successfully")
             return result
         } catch (t: Throwable) {
+            // Stack trace is filled in on demand. Without prodding that process, calls to suspend the flow will
+            // serialize and deserialize and not reproduce the stack trace correctly.
+            t.stackTrace
+            // We cannot conclude that throwing an exception out of a sub-flow is an error. User code is free to do this
+            // as long as it catches it in the flow which initiated it. The only thing Corda needs to do here is mark
+            // the sub-flow as failed and rethrow.
+            log.debug { "Sub-flow('${subFlow.javaClass.name}') completed with failure: ${t.message}" }
             failSubFlow(t)
             throw t
+        } finally {
+            popCurrentFlowStackItem()
         }
     }
 
     @Suspendable
     private fun finishSubFlow() {
-        try {
-            flowFiberService.getExecutingFiber().suspend(FlowIORequest.SubFlowFinished(peekCurrentFlowStackItem()))
-        } finally {
-            popCurrentFlowStackItem()
-        }
+        flowFiberService.getExecutingFiber()
+            .suspend(FlowIORequest.SubFlowFinished(peekCurrentFlowStackItem().sessionIds.toList()))
     }
 
     @Suspendable
     private fun failSubFlow(t: Throwable) {
-        try {
-            flowFiberService.getExecutingFiber().suspend(FlowIORequest.SubFlowFailed(t, peekCurrentFlowStackItem()))
-        } finally {
-            popCurrentFlowStackItem()
-        }
+        flowFiberService.getExecutingFiber()
+            .suspend(FlowIORequest.SubFlowFailed(t, peekCurrentFlowStackItem().sessionIds.toList()))
     }
 
     private fun peekCurrentFlowStackItem(): FlowStackItem {
         return getFiberExecutionContext().flowStackService.peek()
-            ?: throw CordaRuntimeException("Flow [${flowFiberService.getExecutingFiber().flowId}] does not have a flow stack item")
+            ?: throw CordaRuntimeException(
+                "Flow [${flowFiberService.getExecutingFiber().flowId}] does not have a flow stack item"
+            )
     }
 
     private fun popCurrentFlowStackItem(): FlowStackItem {
         return getFiberExecutionContext().flowStackService.pop()
-            ?: throw CordaRuntimeException("Flow [${flowFiberService.getExecutingFiber().flowId}] does not have a flow stack item")
+            ?: throw CordaRuntimeException(
+                "Flow [${flowFiberService.getExecutingFiber().flowId}] does not have a flow stack item"
+            )
     }
 
     private fun getFiberExecutionContext(): FlowFiberExecutionContext {

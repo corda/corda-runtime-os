@@ -105,7 +105,7 @@ class MemberOpsServiceProcessor(
             respFuture.complete(result)
         } catch (e: Throwable) {
             val message =
-                "Failed to handle ${request.request::class.java} for request ID ${request.requestContext.requestId}"
+                "${e.message}\nFailed to handle ${request.request::class.java} for request ID ${request.requestContext.requestId}"
             logger.error(message, e)
             respFuture.completeExceptionally(MembershipRegistrationException(message, e))
         }
@@ -257,14 +257,17 @@ class MemberOpsServiceProcessor(
                 PROTOCOL_PARAMETERS to mapOf(
                     SESSION_KEY_POLICY to sessionKeyPolicy
                 ),
-                P2P_PARAMETERS to mapOf(
-                    SESSION_TRUST_ROOTS to sessionTrustroots,
+                P2P_PARAMETERS to mutableMapOf(
                     TLS_TRUST_ROOTS to tlsTrustroots,
                     SESSION_PKI to sessionPkiMode,
                     TLS_PKI to tlsPkiMode,
                     TLS_VERSION to tlsVersion,
                     PROTOCOL_MODE to p2pMode
-                ),
+                ).apply {
+                    sessionTrustroots?.let {
+                        put(SESSION_TRUST_ROOTS, it)
+                    }
+                },
                 MGM_INFO to mgm.memberProvidedContext.entries.associate { it.key to it.value },
                 CIPHER_SUITE to emptyMap<String, String>()
             )

@@ -3,7 +3,7 @@ package net.corda.sandboxgroupcontext.service.impl
 import net.corda.crypto.core.DigestAlgorithmFactoryProvider
 import net.corda.sandbox.SandboxContextService
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX_FILTER
-import net.corda.v5.cipher.suite.DigestAlgorithmFactory
+import net.corda.v5.crypto.extensions.DigestAlgorithmFactory
 import org.osgi.framework.Bundle
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component

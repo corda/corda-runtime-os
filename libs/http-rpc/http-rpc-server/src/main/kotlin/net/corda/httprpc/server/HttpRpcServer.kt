@@ -1,5 +1,7 @@
 package net.corda.httprpc.server
 
-import net.corda.lifecycle.Lifecycle
+import net.corda.lifecycle.Resource
 
-interface HttpRpcServer : Lifecycle
+interface HttpRpcServer : Resource {
+    fun start()
+}

@@ -17,6 +17,7 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.framework.Bundle
+import org.osgi.framework.Bundle.RESOLVED
 import org.osgi.framework.BundleContext
 import org.osgi.framework.BundleException
 import org.osgi.framework.Constants.FRAGMENT_HOST
@@ -56,6 +57,9 @@ internal class SandboxServiceImpl @Activate constructor(
     // The public sandboxes that have been created.
     private val publicSandboxes = mutableSetOf<Sandbox>()
 
+    // The symbolic names of our public "platform" bundles.
+    private val publicSymbolicNames = mutableSetOf<String>()
+
     // Bundles that failed to uninstall when a sandbox group was unloaded.
     private val zombieBundles = mutableSetOf<Bundle>()
 
@@ -64,15 +68,18 @@ internal class SandboxServiceImpl @Activate constructor(
     override fun createPublicSandbox(publicBundles: Iterable<Bundle>, privateBundles: Iterable<Bundle>) {
         if (publicSandboxes.isNotEmpty()) {
             val publicSandbox = publicSandboxes.first()
-            check(publicBundles.toSet() == publicSandbox.publicBundles.toSet()
-                    && privateBundles.toSet() == publicSandbox.privateBundles.toSet()) {
+            check(publicBundles.toSet() == publicSandbox.publicBundles
+                    && privateBundles.toSet() == publicSandbox.privateBundles) {
                 "Public sandbox was already created with different bundles"
             }
             logger.warn("Public sandbox was already created")
         }
         val publicSandbox = SandboxImpl(UUID.randomUUID(), publicBundles.toSet(), privateBundles.toSet())
-        (publicBundles + privateBundles).forEach { bundle ->
+        publicSandbox.allBundles.forEach { bundle ->
             bundleIdToSandbox[bundle.bundleId] = publicSandbox
+        }
+        publicSandbox.publicBundles.forEach { bundle ->
+            publicSymbolicNames.add(bundle.symbolicName)
         }
         publicSandboxes.add(publicSandbox)
     }
@@ -179,7 +186,7 @@ internal class SandboxServiceImpl @Activate constructor(
             val mainBundle = installBundle(
                 "${cpk.metadata.cpkId.name}-${cpk.metadata.cpkId.version}/${cpk.metadata.mainBundle}",
                 // TODO - only pass in metadata and inject in service to get binary
-                cpk.getResourceAsStream(cpk.metadata.mainBundle),
+                cpk.getMainBundle(),
                 sandboxId,
                 securityDomain
             )
@@ -218,8 +225,21 @@ internal class SandboxServiceImpl @Activate constructor(
         }
 
         // Ensure that all of these bundles are resolved before we start them.
-        sandboxRequiresThat(bundleUtils.resolveBundles(bundles)) {
-            "Failed to resolve bundles: ${bundles.joinToString()}"
+        if (!bundleUtils.resolveBundles(bundles)) {
+            val allFailed = bundles.filter { it.state < RESOLVED }
+            val ex = SandboxException("Failed to resolve bundles: ${allFailed.joinToString()}")
+            for (failed in allFailed) {
+                try {
+                    // We expect this to throw a BundleException.
+                    failed.start()
+
+                    // We don't expect to reach here, but just in case...
+                    failed.stop()
+                } catch (e: BundleException) {
+                    ex.addSuppressed(e)
+                }
+            }
+            throw ex
         }
 
         // We only start the bundles once all the CPKs' bundles have been installed and sandboxed, since there are
@@ -300,6 +320,9 @@ internal class SandboxServiceImpl @Activate constructor(
 
         sandboxForbidsThat(bundle.symbolicName == null) {
             "Bundle at $bundleSource does not have a symbolic name, which would prevent serialisation."
+        }
+        sandboxForbidsThat(bundle.symbolicName in publicSymbolicNames) {
+            "Bundle ${bundle.symbolicName} shadows a Corda platform bundle."
         }
         return bundle
     }

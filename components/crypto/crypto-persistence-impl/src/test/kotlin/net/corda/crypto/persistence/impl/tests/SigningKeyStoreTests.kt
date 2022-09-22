@@ -1,7 +1,7 @@
 package net.corda.crypto.persistence.impl.tests
 
 import net.corda.crypto.component.test.utils.TestConfigurationReadService
-import net.corda.crypto.config.impl.createDefaultCryptoConfig
+import net.corda.crypto.config.impl.createTestCryptoConfig
 import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.persistence.impl.SigningKeyStoreImpl
@@ -35,7 +35,7 @@ class SigningKeyStoreTests {
         configurationReadService = TestConfigurationReadService(
             coordinatorFactory,
             configUpdates = listOf(
-                CRYPTO_CONFIG to createDefaultCryptoConfig(KeyCredentials("pass", "salt"))
+                CRYPTO_CONFIG to createTestCryptoConfig(KeyCredentials("pass", "salt"))
             )
         ).also {
             it.start()

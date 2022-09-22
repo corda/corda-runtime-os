@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "corda.workerName" . }}
+  name: {{ include "corda.workerName" . | quote }}
   labels:
     {{- include "corda.workerLabels" . | nindent 4 }}
   {{- if .Values.workers.rpc.service.annotations }}
@@ -28,7 +28,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "corda.workerName" . }}
+  name: {{ include "corda.workerName" . | quote }}
   labels:
     {{- include "corda.workerLabels" . | nindent 4 }}
 spec:
@@ -41,10 +41,7 @@ spec:
       labels:
         {{- include "corda.workerSelectorLabels" . | nindent 8 }}
     spec:
-      securityContext:
-        runAsUser: 1000
-        runAsGroup: 1000
-        fsGroup: 1000
+      {{- include "corda.workerSecurityContext" . | nindent 6 }}
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
       affinity:
         podAntiAffinity:
@@ -59,7 +56,7 @@ spec:
                   - rpc-worker
               topologyKey: "kubernetes.io/hostname"
       containers:
-      - name: {{ include "corda.workerName" . }}
+      - name: {{ include "corda.workerName" . | quote }}
         image: {{ include "corda.workerImage" . }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
         securityContext:
@@ -80,6 +77,10 @@ spec:
         {{- end }}
           - name: health
             containerPort: 7000
+        {{- if .Values.workers.rpc.profiling.enabled }}
+          - name: profiling
+            containerPort: 10045
+        {{- end }}
         {{- if not .Values.workers.rpc.debug.enabled }}
         readinessProbe:
           httpGet:

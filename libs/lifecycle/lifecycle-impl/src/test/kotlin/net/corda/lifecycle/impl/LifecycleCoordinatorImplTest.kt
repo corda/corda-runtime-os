@@ -344,6 +344,7 @@ internal class LifecycleCoordinatorImplTest {
                 }
             }
             assertTrue(timerLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            coordinator.close()
         }
         assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
         assertEquals(key, deliveredKey)
@@ -1106,6 +1107,7 @@ internal class LifecycleCoordinatorImplTest {
         coordinator.use {
             it.start()
             assertTrue(startLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
+            it.close()
         }
         assertTrue(stopLatch.await(TIMEOUT, TimeUnit.MILLISECONDS))
         verify(registry).removeCoordinator(coordinator.name)
@@ -1244,6 +1246,14 @@ internal class LifecycleCoordinatorImplTest {
         val registration = coordinator1.followStatusChanges(setOf(coordinator2, coordinator3))
 
         registration.close()
+        coordinator1.close()
+    }
+
+    @Test
+    fun `closing a coordinator twice doesnt error`() {
+        val coordinator1 = createTestCoordinator { _, _ -> }
+
+        coordinator1.close()
         coordinator1.close()
     }
 

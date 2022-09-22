@@ -32,7 +32,7 @@ fun virtualNodeEntitiesToVersionedRecords(virtualNodes: Stream<VirtualNodeEntity
             override val key = holdingIdentity
             override val value by lazy {
                 val signerSummaryHash = if (entity.cpiSignerSummaryHash.isNotBlank()) {
-                    SecureHash.create(entity.cpiSignerSummaryHash)
+                    SecureHash.parse(entity.cpiSignerSummaryHash)
                 } else {
                     null
                 }
@@ -45,8 +45,10 @@ fun virtualNodeEntitiesToVersionedRecords(virtualNodes: Stream<VirtualNodeEntity
                     ),
                     vaultDmlConnectionId = entity.holdingIdentity.vaultDMLConnectionId!!,
                     cryptoDmlConnectionId = entity.holdingIdentity.cryptoDMLConnectionId!!,
+                    uniquenessDmlConnectionId = entity.holdingIdentity.uniquenessDMLConnectionId!!,
                     vaultDdlConnectionId = entity.holdingIdentity.vaultDDLConnectionId,
                     cryptoDdlConnectionId = entity.holdingIdentity.cryptoDDLConnectionId,
+                    uniquenessDdlConnectionId = entity.holdingIdentity.uniquenessDDLConnectionId,
                     version = entity.entityVersion,
                     timestamp = entity.insertTimestamp.getOrNow(),
                     state = VirtualNodeState.valueOf(entity.virtualNodeState),

@@ -4,6 +4,10 @@ plugins {
     id 'corda.docker-app'
 }
 
+ext {
+    releasable = true
+}
+
 description 'Combined Worker'
 
 osgiRun {
@@ -93,4 +97,20 @@ def download = tasks.register("download", Copy) {
 
 tasks.named('jar', Jar) {
     dependsOn(download)
+}
+
+// Allow us to publish to S3 bucket for DP2 - to be extracted to plugin
+if (project.hasProperty('maven.repo.s3') && project.hasProperty('releasable')) {
+    publishing {
+        repositories {
+            maven {
+                url = project.findProperty('maven.repo.s3')
+                credentials(AwsCredentials) {
+                    accessKey "${System.getenv('AWS_ACCESS_KEY_ID')}"
+                    secretKey "${System.getenv('AWS_SECRET_ACCESS_KEY')}"
+                    sessionToken "${System.getenv('AWS_SESSION_TOKEN')}"
+                }
+            }
+        }
+    }
 }

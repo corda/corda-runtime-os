@@ -74,7 +74,7 @@ class DBCpkStorageTest {
         whenever(em.transaction).thenReturn(mock())
         whenever(emFactory.createEntityManager()).thenReturn(em)
 
-        val checksum = SecureHash.create("SHA-256:1234567890")
+        val checksum = SecureHash.parse("SHA-256:1234567890")
         val cpkChecksumToData = dbCpkStorage.getCpkDataByCpkId(checksum)
 
         assertThat(cpkChecksumToData.checksum).isEqualTo(checksum)

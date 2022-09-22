@@ -8,6 +8,7 @@ import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.CompactedSubscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.test.MemberInfoEntry
@@ -42,7 +43,10 @@ class StubMembershipGroupReaderTest {
     private val dominoTile = mockConstruction(ComplexDominoTile::class.java) { mock, _ ->
         whenever(mock.isRunning).doReturn(true)
     }
-    private val subscriptionDominoTile = mockConstruction(SubscriptionDominoTile::class.java)
+    private val subscriptionDominoTile = mockConstruction(SubscriptionDominoTile::class.java) { _, context ->
+        @Suppress("UNCHECKED_CAST")
+        (context.arguments()[1] as (() -> CompactedSubscription<String, MemberInfoEntry>)).invoke()
+    }
     private val aliceObserver = HoldingIdentity("CN=Observer, O=Corp, L=LDN, C=GB", "GROUP-1")
     private val alice = MemberInfoEntry(
         HoldingIdentity(

@@ -15,7 +15,6 @@ import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
 import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -29,10 +28,6 @@ class FlowRunnerImpl @Activate constructor(
     @Reference(service = FlowFiberExecutionContextFactory::class)
     private val flowFiberExecutionContextFactory: FlowFiberExecutionContextFactory
 ) : FlowRunner {
-    private companion object {
-        val log = contextLogger()
-    }
-
     override fun runFlow(
         context: FlowEventContext<Any>,
         flowContinuation: FlowContinuation
@@ -69,12 +64,24 @@ class FlowRunnerImpl @Activate constructor(
         sessionInitEvent: SessionInit
     ): FiberFuture {
         val flowStartContext = context.checkpoint.flowStartContext
+
+        val localContext = remoteToLocalContextMapper(
+            remoteUserContextProperties = sessionInitEvent.contextUserProperties,
+            remotePlatformContextProperties = sessionInitEvent.contextPlatformProperties
+        )
+
         return startFlow(
             context,
-            createFlow = { sgc -> flowFactory.createInitiatedFlow(flowStartContext, sgc) },
+            createFlow = { sgc ->
+                flowFactory.createInitiatedFlow(
+                    flowStartContext,
+                    sgc,
+                    localContext.counterpartySessionProperties
+                )
+            },
             updateFlowStackItem = { fsi -> fsi.sessionIds.add(flowStartContext.statusKey.id) },
-            contextUserProperties = sessionInitEvent.contextUserProperties,
-            contextPlatformProperties = sessionInitEvent.contextPlatformProperties
+            contextUserProperties = localContext.userProperties,
+            contextPlatformProperties = localContext.platformProperties
         )
     }
 

@@ -17,10 +17,10 @@ interface SerializationContext {
     val encoding: SerializationEncoding?
 
     /**
-     * A whitelist that determines (mostly for security purposes)
+     * An allow list that determines (mostly for security purposes)
      * whether a particular encoding may be used when deserializing.
      */
-    val encodingWhitelist: EncodingWhitelist
+    val encodingAllowList: EncodingAllowList
 
     /**
      * A map of any addition properties specific to the particular use case.
@@ -103,9 +103,9 @@ interface SerializationContext {
     fun withEncoding(encoding: SerializationEncoding?): SerializationContext
 
     /**
-     * A shallow copy of this context but with the given encoding whitelist.
+     * A shallow copy of this context but with the given encoding AllowList.
      */
-    fun withEncodingWhitelist(encodingWhitelist: EncodingWhitelist): SerializationContext
+    fun withEncodingAllowList(encodingAllowList: EncodingAllowList): SerializationContext
 
     /**
      * The use case that we are serializing for, since it influences the implementations chosen.

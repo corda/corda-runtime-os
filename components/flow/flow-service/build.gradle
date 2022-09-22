@@ -20,8 +20,7 @@ dependencies {
 
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:crypto:crypto-flow")
-    implementation project(":libs:flows:crypto-manager")
-    implementation project(':libs:flows:persistence-manager')
+    implementation project(':libs:flows:flow-api')
     implementation project(':libs:flows:session-manager')
     implementation project(":libs:flows:utils")
     implementation project(":libs:lifecycle:lifecycle")
@@ -30,6 +29,7 @@ dependencies {
     implementation project(":libs:serialization:serialization-checkpoint-api")
     implementation project(":libs:serialization:serialization-amqp")
     implementation project(":libs:serialization:serialization-internal")
+    implementation project(":libs:utilities")
     implementation project(":libs:virtual-node:sandbox-group-context")
     implementation project(':libs:virtual-node:virtual-node-info')
 
@@ -37,6 +37,7 @@ dependencies {
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
     implementation "net.corda:corda-application"
+    implementation "net.corda:corda-ledger-utxo"
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-base"
     implementation "net.corda:corda-config-schema"

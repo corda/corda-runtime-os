@@ -6,8 +6,8 @@ import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.TypeNotation
+import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
-import net.corda.internal.serialization.amqp.testutils.testSerializationContext
 import net.corda.serialization.BaseDirectSerializer
 import net.corda.serialization.InternalDirectSerializer
 import org.assertj.core.api.Assertions.assertThat

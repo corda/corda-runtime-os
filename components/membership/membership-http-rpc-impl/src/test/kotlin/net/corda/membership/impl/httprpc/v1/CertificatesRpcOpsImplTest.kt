@@ -16,6 +16,7 @@ import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
+import net.corda.v5.crypto.SignatureSpec.Companion.ECDSA_SHA256
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.DEROctetString
 import org.bouncycastle.asn1.x500.X500Name
@@ -101,7 +102,6 @@ class CertificatesRpcOpsImplTest {
         private val holdingIdentityShortHash = "id"
         private val keyId = "keyId"
         private val x500Name = "CN=Alice"
-        private val role = "TLS"
         private val publicKeyBytes = "123".toByteArray()
         private val key = mock<CryptoSigningKey> {
             on { publicKey } doReturn ByteBuffer.wrap(publicKeyBytes)
@@ -126,7 +126,7 @@ class CertificatesRpcOpsImplTest {
                 cryptoOpsClient.sign(
                     eq(holdingIdentityShortHash),
                     eq(publicKey),
-                    argThat<SignatureSpec> { this.signatureName == "SHA512withECDSA" },
+                    argThat<SignatureSpec> { this.signatureName == ECDSA_SHA256.signatureName },
                     any(),
                     eq(emptyMap())
                 )
@@ -149,7 +149,6 @@ class CertificatesRpcOpsImplTest {
                     holdingIdentityShortHash,
                     keyId,
                     x500Name,
-                    role,
                     null,
                     null,
                 )
@@ -162,7 +161,6 @@ class CertificatesRpcOpsImplTest {
                 holdingIdentityShortHash,
                 keyId,
                 x500Name,
-                role,
                 null,
                 null,
             )
@@ -170,7 +168,7 @@ class CertificatesRpcOpsImplTest {
             verify(cryptoOpsClient).sign(
                 eq(holdingIdentityShortHash),
                 eq(publicKey),
-                argThat<SignatureSpec> { this.signatureName == "SHA512withECDSA" },
+                argThat<SignatureSpec> { this.signatureName == ECDSA_SHA256.signatureName },
                 any(),
                 eq(emptyMap())
             )
@@ -182,7 +180,6 @@ class CertificatesRpcOpsImplTest {
                 holdingIdentityShortHash,
                 keyId,
                 x500Name,
-                role,
                 null,
                 null,
             )
@@ -196,7 +193,6 @@ class CertificatesRpcOpsImplTest {
                 holdingIdentityShortHash,
                 keyId,
                 x500Name,
-                role,
                 listOf("www.alice.net", "alice.net"),
                 null,
             )
@@ -227,7 +223,6 @@ class CertificatesRpcOpsImplTest {
                 holdingIdentityShortHash,
                 keyId,
                 x500Name,
-                role,
                 null,
                 null,
             )
@@ -245,7 +240,6 @@ class CertificatesRpcOpsImplTest {
                 holdingIdentityShortHash,
                 keyId,
                 x500Name,
-                role,
                 null,
                 emptyMap(),
             )
@@ -263,7 +257,6 @@ class CertificatesRpcOpsImplTest {
                     holdingIdentityShortHash,
                     keyId,
                     x500Name,
-                    role,
                     null,
                     mapOf(SIGNATURE_SPEC to "Nop")
                 )
@@ -279,7 +272,6 @@ class CertificatesRpcOpsImplTest {
                     holdingIdentityShortHash,
                     keyId,
                     x500Name,
-                    role,
                     null,
                     null,
                 )

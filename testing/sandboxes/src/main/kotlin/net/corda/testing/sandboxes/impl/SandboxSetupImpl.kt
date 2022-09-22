@@ -51,6 +51,7 @@ class SandboxSetupImpl @Activate constructor(
             "net.corda.base",
             "net.corda.cipher-suite",
             "net.corda.crypto",
+            "net.corda.crypto-extensions",
             "net.corda.kotlin-stdlib-jdk7.osgi-bundle",
             "net.corda.kotlin-stdlib-jdk8.osgi-bundle",
             "net.corda.ledger-consensual",
@@ -130,11 +131,11 @@ class SandboxSetupImpl @Activate constructor(
      * this reference when we've finished with it to allow the
      * service to be destroyed.
      */
-    override fun <T> getService(serviceType: Class<T>, timeout: Long): T {
+    override fun <T> getService(serviceType: Class<T>, filter: String?, timeout: Long): T {
         val bundleContext = componentContext.bundleContext
         var remainingMillis = timeout.coerceAtLeast(0)
         while (true) {
-            bundleContext.getServiceReference(serviceType)?.let { ref ->
+            bundleContext.getServiceReferences(serviceType, filter).maxOrNull()?.let { ref ->
                 val service = bundleContext.getService(ref)
                 if (service != null) {
                     cleanups.add(AutoCloseable { bundleContext.ungetService(ref) })
@@ -148,6 +149,7 @@ class SandboxSetupImpl @Activate constructor(
             Thread.sleep(waitMillis)
             remainingMillis -= waitMillis
         }
-        throw TimeoutException("Service $serviceType did not arrive in $timeout milliseconds")
+        val serviceDescription = serviceType.name + (filter?.let { f -> ", filter=$f" } ?: "")
+        throw TimeoutException("Service $serviceDescription did not arrive in $timeout milliseconds")
     }
 }

@@ -44,6 +44,7 @@ class SubFlowFailedRequestHandlerTest {
     private val sessionState1 = SessionState().apply { this.sessionId = SESSION_ID_1 }
     private val sessionState2 = SessionState().apply { this.sessionId = SESSION_ID_2 }
     private val sessionState3 = SessionState().apply { this.sessionId = SESSION_ID_3 }
+    private val sessionStates = listOf(sessionState1, sessionState2, sessionState3)
 
     private val flowError = Exception()
     private val flowStackItem = FlowStackItem.newBuilder()
@@ -53,7 +54,7 @@ class SubFlowFailedRequestHandlerTest {
         .setContextPlatformProperties(mutableKeyValuePairList())
         .setContextUserProperties(mutableKeyValuePairList())
         .build()
-    private val ioRequest = FlowIORequest.SubFlowFailed(flowError, flowStackItem)
+    private val ioRequest = FlowIORequest.SubFlowFailed(flowError, flowStackItem.sessionIds)
     private val record = Record("", "", FlowEvent())
     private val testContext = RequestHandlerTestContext(Any())
     private val handler = SubFlowFailedRequestHandler(testContext.flowSessionManager, testContext.flowRecordFactory)
@@ -169,17 +170,17 @@ class SubFlowFailedRequestHandlerTest {
         whenever(
             testContext.flowSessionManager.getSessionsWithStatus(
                 testContext.flowCheckpoint,
-                emptyList(),
+                sessions,
                 SessionStateType.ERROR
             )
-        ).thenReturn(emptyList())
+        ).thenReturn(sessionStates)
         whenever(
             testContext.flowSessionManager.getSessionsWithStatus(
                 testContext.flowCheckpoint,
-                emptyList(),
+                sessions,
                 SessionStateType.CLOSED
             )
-        ).thenReturn(emptyList())
+        ).thenReturn(sessionStates)
         whenever(
             testContext.flowSessionManager.sendErrorMessages(
                 eq(testContext.flowCheckpoint),
@@ -189,7 +190,6 @@ class SubFlowFailedRequestHandlerTest {
             )
         ).thenReturn(emptyList())
 
-        flowStackItem.sessionIds = emptyList()
         val outputContext = handler.postProcess(testContext.flowEventContext, ioRequest)
         assertThat(outputContext.outputRecords).containsOnly(record)
         verify(testContext.flowCheckpoint, never()).putSessionState(any())

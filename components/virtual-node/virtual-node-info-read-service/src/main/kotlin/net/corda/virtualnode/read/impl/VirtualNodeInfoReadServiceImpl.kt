@@ -17,6 +17,7 @@ import net.corda.virtualnode.read.VirtualNodeInfoListener
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import java.util.stream.Stream
@@ -79,7 +80,8 @@ class VirtualNodeInfoReadServiceImpl @Activate constructor(
         coordinator.stop()
     }
 
-    override fun close() {
+    @Deactivate
+    fun close() {
         log.debug { "Virtual Node Info Service component closing" }
         coordinator.close()
         virtualNodeInfoProcessor.close()

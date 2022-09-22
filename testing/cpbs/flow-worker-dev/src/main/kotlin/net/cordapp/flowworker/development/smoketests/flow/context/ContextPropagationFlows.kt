@@ -11,7 +11,6 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.receive
-import net.corda.v5.application.messaging.unwrap
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
 
@@ -19,7 +18,8 @@ import net.corda.v5.base.annotations.Suspendable
 data class FlowOutput(
     val platform: String,
     val user1: String,
-    val user2: String
+    val user2: String,
+    val user3: String
 )
 
 @CordaSerializable
@@ -68,6 +68,7 @@ fun launchContextPropagationFlows(
     flowEngine.flowContextProperties.set("user1", "user1-set")
     val user1 = flowEngine.flowContextProperties.get("user1") ?: ERROR_VALUE
     val user2 = flowEngine.flowContextProperties.get("user2") ?: NULL_VALUE
+    val user3 = flowEngine.flowContextProperties.get("user3") ?: NULL_VALUE
 
     // Sub flow will send its context back
     val mainSubFlowOutput = flowEngine.subFlow(ContextPropagationMainSubFlow())
@@ -75,14 +76,16 @@ fun launchContextPropagationFlows(
     val rpcFlowOutput = FlowOutput(
         platform = account,
         user1 = user1,
-        user2 = user2
+        user2 = user2,
+        user3 = user3
     )
 
     // Refetch the original properties again to ensure nothing in the Flow execution path has corrupted them
     val rpcFlowOutputReFetchAtComplete = FlowOutput(
         platform = flowEngine.flowContextProperties.get(CORDA_ACCOUNT) ?: ERROR_VALUE,
         user1 = flowEngine.flowContextProperties.get("user1") ?: ERROR_VALUE,
-        user2 = flowEngine.flowContextProperties.get("user2") ?: NULL_VALUE
+        user2 = flowEngine.flowContextProperties.get("user2") ?: NULL_VALUE,
+        user3 = flowEngine.flowContextProperties.get("user3") ?: NULL_VALUE
     )
 
     /* This is the expected output
@@ -91,27 +94,32 @@ fun launchContextPropagationFlows(
       "rpcFlow": {
         "platform": "account-zero",
         "user1": "user1-set",
-        "user2": "null"
+        "user2": "null",
+        "user3": "null"
       },
       "rpcSubFlow": {
         "platform": "account-zero",
         "user1": "user1-set",
-        "user2": "user2-set"
+        "user2": "user2-set",
+        "user3": "null"
       },
       "initiatedFlow": {
         "platform": "account-zero",
         "user1": "user1-set",
-        "user2": "user2-set"
+        "user2": "user2-set",
+        "user3": "user3-set"
       },
       "initiatedSubFlow": {
         "platform": "account-zero",
         "user1": "user1-set",
-        "user2": "user2-set-ContextPropagationInitiatedFlow"
+        "user2": "user2-set-ContextPropagationInitiatedFlow",
+        "user3": "user3-set"
       },
       "rpcFlowAtComplete": {
         "platform": "account-zero",
         "user1": "user1-set",
-        "user2": "null"
+        "user2": "null",
+        "user3": "null"
       }
     }
     */
@@ -145,20 +153,28 @@ class ContextPropagationMainSubFlow : SubFlow<MainSubFlowOutput> {
 
         val user1 = flowEngine.flowContextProperties.get("user1") ?: ERROR_VALUE
 
-        val session = flowMessaging.initiateFlow(flowEngine.virtualNodeName)
+        val session = flowMessaging.initiateFlow(flowEngine.virtualNodeName) { flowContextProperties ->
+            // user session specific context property
+            flowContextProperties["user3"] = "user3-set"
+        }
+
         // Initiated flow will send its context back via a message
-        val initiatedFlowOutput = session.receive<InitiatedFlowOutput>().unwrap { it }
+        val initiatedFlowOutput = session.receive<InitiatedFlowOutput>()
 
         // Check user 2 is preserved here, even though it is overwritten in the initiated sub flow
         val user2 = flowEngine.flowContextProperties.get("user2") ?: ERROR_VALUE
         // This should never make it out of this flow
         flowEngine.flowContextProperties.set("user2", "user2-set-ContextPropagationMainSubFlow")
 
+        // user3 is session specific
+        val user3 = flowEngine.flowContextProperties.get("user3") ?: NULL_VALUE
+
         return MainSubFlowOutput(
             thisFlow = FlowOutput(
                 platform = account,
                 user1 = user1,
-                user2 = user2
+                user2 = user2,
+                user3 = user3
             ),
             initiatedFlow = initiatedFlowOutput
         )
@@ -175,8 +191,9 @@ class ContextPropagationInitiatedFlow : ResponderFlow {
     override fun call(session: FlowSession) {
         val account = flowEngine.flowContextProperties.get(CORDA_ACCOUNT) ?: ERROR_VALUE
         val user1 = flowEngine.flowContextProperties.get("user1") ?: ERROR_VALUE
-        // Get the user2 on flow entry
+        // Get user2 and user3 on flow entry
         val user2 = flowEngine.flowContextProperties.get("user2") ?: NULL_VALUE
+        val user3 = flowEngine.flowContextProperties.get("user3") ?: NULL_VALUE
 
         // This should never make it out of this flow, but should make it into the sub flow
         flowEngine.flowContextProperties.set("user2", "user2-set-ContextPropagationInitiatedFlow")
@@ -188,7 +205,8 @@ class ContextPropagationInitiatedFlow : ResponderFlow {
                 thisFlow = FlowOutput(
                     platform = account,
                     user1 = user1,
-                    user2 = user2
+                    user2 = user2,
+                    user3 = user3
                 ),
                 initiatedSubFlow = subFlowOutput
             )
@@ -206,16 +224,19 @@ class ContextPropagationInitiatedSubFlow : SubFlow<FlowOutput> {
         val account = flowEngine.flowContextProperties.get(CORDA_ACCOUNT) ?: ERROR_VALUE
 
         val user1 = flowEngine.flowContextProperties.get("user1") ?: ERROR_VALUE
-        // Get the user2 on flow entry
-        val user2 = flowEngine.flowContextProperties.get("user2") ?: ERROR_VALUE
+        // Get user2 and user3 on flow entry
+        val user2 = flowEngine.flowContextProperties.get("user2") ?: NULL_VALUE
+        val user3 = flowEngine.flowContextProperties.get("user3") ?: NULL_VALUE
 
-        // This should never make it out of this flow
+        // These should never make it out of this flow
         flowEngine.flowContextProperties.set("user2", "user2-set-ContextPropagationInitiatedSubFlow")
+        flowEngine.flowContextProperties.set("user3", "user3-set-ContextPropagationInitiatedSubFlow")
 
         return FlowOutput(
             platform = account,
             user1 = user1,
-            user2 = user2
+            user2 = user2,
+            user3 = user3
         )
     }
 }
