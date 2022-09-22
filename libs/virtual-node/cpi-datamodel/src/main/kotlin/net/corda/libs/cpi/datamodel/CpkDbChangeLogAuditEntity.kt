@@ -57,11 +57,10 @@ fun findDbChangeLogAuditForCpi(
             "${CpiCpkEntity::class.simpleName} AS cpi " +
             "ON changelog.id.cpkName = cpi.metadata.id.cpkName AND " +
             "   changelog.id.cpkVersion = cpi.id.cpkVersion AND " +
-            "   changelog.id.cpkSignerSummaryHash = cpi.id.cpkSignerSummaryHash "+
+            "   changelog.cpkSignerSummaryHash = cpi.id.cpkSignerSummaryHash "+
             "WHERE cpi.id.cpiName = :name AND "+
             "      cpi.id.cpiVersion = :version AND "+
-            "      cpi.id.cpiSignerSummaryHash = :signerSummaryHash AND "+
-            "      changelog.isDeleted = FALSE",
+            "      cpi.id.cpiSignerSummaryHash = :signerSummaryHash",
     // TODO - what order should we return?
     CpkDbChangeLogAuditEntity::class.java
 )
