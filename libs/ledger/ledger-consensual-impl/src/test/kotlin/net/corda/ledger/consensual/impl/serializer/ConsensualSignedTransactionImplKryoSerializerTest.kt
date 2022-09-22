@@ -70,7 +70,7 @@ class ConsensualSignedTransactionImplKryoSerializerTest {
             emptyList(),
             setOf(
                 PrivacySaltImpl::class.java,
-                DigitalSignatureAndMetadata::class.java, // @todo: Custom serializer for some of these?
+                DigitalSignatureAndMetadata::class.java,
                 signedTransaction.signatures[0].by::class.java,
                 emptyMap<String, String>()::class.java,
                 DigitalSignature.WithKey::class.java
