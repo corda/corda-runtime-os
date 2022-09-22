@@ -40,6 +40,7 @@ java -jar -Dco.paralleluniverse.fibers.verifyInstrumentation=true \
   --instanceId=0 -mbus.busType=DATABASE  \
   -spassphrase=password -ssalt=salt \
   -ddatabase.user=user -ddatabase.pass=password \
+  -ddatabase.jdbc.directory=applications/workers/release/combined-worker/drivers \
   -ddatabase.jdbc.url=jdbc:postgresql://localhost:5432/cordacluster
 ```
 
@@ -50,6 +51,7 @@ java -jar -Dco.paralleluniverse.fibers.verifyInstrumentation=true \
   --instanceId=0 -mbus.busType=KAFKA -mbootstrap.servers=localhost:9092 \
   -spassphrase=password -ssalt=salt \
   -ddatabase.user=user -ddatabase.pass=password \
+  -ddatabase.jdbc.directory=applications/workers/release/combined-worker/drivers \
   -ddatabase.jdbc.url=jdbc:postgresql://localhost:5432/cordacluster
 ```
 

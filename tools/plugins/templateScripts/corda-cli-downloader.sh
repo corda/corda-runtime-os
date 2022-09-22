@@ -40,9 +40,7 @@ fi
 
 # unzip the archive
 cd "$tempDir" || exit
-unzip corda-cli-dist.zip
-
-cd corda-cli-dist
+unzip corda-cli-*.zip
 
 usr=$(id -u)
 grp=$(id -g)
