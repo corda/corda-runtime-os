@@ -39,8 +39,6 @@ fun <T : Any?> withPermissionManager(
             EntityNotFoundException::class.java.name -> throw ResourceNotFoundException(e.message!!)
             EntityAssociationDoesNotExistException::class.java.name -> throw InvalidInputDataException(e.message!!)
             EntityAssociationAlreadyExistsException::class.java.name -> throw ResourceAlreadyExistsException(e.message!!)
-            EntityAlreadyExistsException::class.java.name -> throw InvalidInputDataException(e.message!!)
-            EntityAssociationAlreadyExistsException::class.java.name -> throw InvalidInputDataException(e.message!!)
             EntityAlreadyExistsException::class.java.name -> throw ResourceAlreadyExistsException(e.message!!)
             else -> throw InternalServerException(
                 details = buildExceptionCauseDetails(e.exceptionType, e.message ?: "Remote permission management error occurred.")
