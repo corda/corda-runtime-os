@@ -11,6 +11,7 @@ import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.sendAndReceive
 import net.corda.v5.application.persistence.PersistenceService
@@ -55,7 +56,8 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         "crypto_sign_and_verify" to this::signAndVerify,
         "crypto_verify_invalid_signature" to this::verifyInvalidSignature,
         "context_propagation" to { contextPropagation() },
-        "serialization" to this::serialization
+        "serialization" to this::serialization,
+        "lookup_member_by_x500_name" to this::lookupMember,
     )
 
     @CordaInject
@@ -78,6 +80,9 @@ class RpcSmokeTestFlow : RPCStartableFlow {
 
     @CordaInject
     lateinit var signingService: SigningService
+
+    @CordaInject
+    lateinit var memberLookupService: MemberLookup
 
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
@@ -317,6 +322,15 @@ class RpcSmokeTestFlow : RPCStartableFlow {
             log.info("Crypto - Failed to verify $signedBytes as the signature of $bytesToSign when using wrong signature spec")
             true
         }.toString()
+    }
+
+    @Suspendable
+    private fun lookupMember(input: RpcSmokeTestInput): String {
+        val memberX500Name = input.getValue("id")
+        val memberInfo = memberLookupService.lookup(MemberX500Name.parse(memberX500Name))
+        checkNotNull(memberInfo) { IllegalStateException("Failed to find MemberInfo for $memberX500Name") }
+
+        return memberInfo.name.toString()
     }
 
     private fun RpcSmokeTestInput.getValue(key: String): String {

@@ -108,8 +108,8 @@ class SessionEventHandler @Activate constructor(
                     "The event will be discarded. ${SessionEvent::class.simpleName}: $sessionEvent"
         )
         throw FlowEventException(
-            "Received a ${context.inputEventPayload.payload::class.simpleName} for flow [${context.inputEvent.flowId}] that " +
-                    "does not exist"
+            "SessionEventHandler received a ${context.inputEventPayload.payload::class.simpleName} for flow" +
+                    " [${context.inputEvent.flowId}] that does not exist"
         )
     }
 }

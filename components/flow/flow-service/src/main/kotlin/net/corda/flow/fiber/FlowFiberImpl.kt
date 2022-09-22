@@ -8,6 +8,7 @@ import net.corda.flow.fiber.FlowFiberImpl.SerializableFiberWriter
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import org.slf4j.Logger
 import org.slf4j.MDC
 import java.io.Serializable
@@ -57,8 +58,16 @@ class FlowFiberImpl(
         // of critical error handling for free, only undefined behaviour.
         try {
             runFlow()
+        } catch (e: FlowContinuationErrorException) {
+            // This exception happened because the flow fiber discovered it had failed for some already handled reason
+            // outside user code. For example an IO request handler detected some error, but the fiber was being
+            // suspended by Corda for the last time to mark it was finished already. Logging the callstack here would be
+            // misleading as it would point the log entry to the internal rethrow in Corda. In this case nothing has
+            // gone wrong, so we shouldn't log that it has.
+            log.warn("Flow was discontinued, reason: ${e.cause?.javaClass?.canonicalName} thrown, ${e.cause?.message}")
+            failTopLevelSubFlow(e.cause!!)
         } catch (t: Throwable) {
-            log.error("FlowFiber failed due to internal Throwable being thrown", t)
+            log.error("FlowFiber failed due to Throwable being thrown", t)
             failTopLevelSubFlow(t)
         }
 
@@ -77,7 +86,14 @@ class FlowFiberImpl(
         val outcomeOfFlow = try {
             log.info("Flow starting.")
             FlowIORequest.FlowFinished(flowLogic.invoke())
+        } catch (e: FlowContinuationErrorException) {
+            // This was an exception thrown during the processing of the flow pipeline due to something the user code
+            // initiated. The user should see the details and point of origin of the 'cause' exception in the log.
+            log.error("Flow failed", e.cause)
+            FlowIORequest.FlowFailed(e.cause!!) // cause is not nullable in a FlowContinuationErrorException
         } catch (t: Throwable) {
+            // Every other Throwable, including base CordaRuntimeException out of flow user code gets a callstack
+            // logged, it is considered an error to allow these to propagate outside the flow.
             log.error("Flow failed", t)
             FlowIORequest.FlowFailed(t)
         }
@@ -117,13 +133,14 @@ class FlowFiberImpl(
         @Suppress("unchecked_cast")
         return when (val outcome = suspensionOutcome!!) {
             is FlowContinuation.Run -> outcome.value as SUSPENDRETURN
-            is FlowContinuation.Error -> throw outcome.exception.fillInStackTrace()
+            is FlowContinuation.Error -> throw FlowContinuationErrorException(outcome.exception)
             else -> throw IllegalStateException("Tried to return when suspension outcome says to continue")
         }
     }
 
     @Suspendable
     private fun <T : FlowIORequest<*>> finishTopLevelSubFlow(outcomeOfFlow: T) {
+        log.debug { "Flow [$flowId] completed successfully" }
         // We close the sessions here, which delegates to the subFlow finished request handler, rather than combining the logic into the
         // flow finish request handler. This is due to the flow finish code removing the flow's checkpoint, which is needed by the close
         // logic to determine whether all sessions have successfully acknowledged receipt of the close messages.
@@ -136,6 +153,7 @@ class FlowFiberImpl(
 
     @Suspendable
     private fun failTopLevelSubFlow(throwable: Throwable) {
+        log.info("Flow [$flowId] completed with failure")
         // We close the sessions here, which delegates to the subFlow failed request handler, rather than combining the logic into the
         // flow finish request handler. This is due to the flow finish code removing the flow's checkpoint, which is needed by the close
         // logic to determine whether all sessions have successfully acknowledged receipt of the close messages.
