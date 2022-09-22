@@ -2,7 +2,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "corda.fullname" . }}
+  name: {{ include "corda.fullname" . }}-create-topics
   labels:
     {{- include "corda.labels" . | nindent 4 }}
   annotations:

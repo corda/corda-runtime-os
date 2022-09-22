@@ -4,7 +4,7 @@
 import groovy.transform.Field
 
 @Field
-String k8Namespace = "run-${UUID.randomUUID().toString()}"
+String k8sNamespace = "run-${UUID.randomUUID().toString()}"
 
 /*
  * Jenkins agent label to build on
@@ -80,7 +80,7 @@ pipeline {
         CORDA_GRADLE_SCAN_KEY = credentials('gradle-build-scans-key')
         GRADLE_USER_HOME = "/host_tmp/gradle"
         CORDA_REVISION = "${env.GIT_COMMIT}"
-        NAMESPACE = "$k8Namespace"
+        NAMESPACE = "$k8sNamespace"
         CLUSTER_NAME = "eks-e2e.e2e.awsdev.r3.com"
         HELM_CONFIG_HOME = "/tmp/helm"
         HELM_REPOSITORY_CACHE = "/host_tmp/helm/repository"
