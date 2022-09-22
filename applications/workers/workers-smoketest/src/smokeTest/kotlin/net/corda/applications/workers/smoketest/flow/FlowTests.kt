@@ -74,9 +74,6 @@ class FlowTests {
         @BeforeAll
         @JvmStatic
         internal fun beforeAll() {
-            // Make sure test flows are deployed
-            forceUploadCordaPackage(TEST_CPI_NAME, TEST_CPB_LOCATION, GROUP_ID)
-
             // Make sure Virtual Nodes are created
             val bobActualHoldingId = getOrCreateVirtualNodeFor(X500_BOB)
             val charlieActualHoldingId = getOrCreateVirtualNodeFor(X500_CHARLIE)

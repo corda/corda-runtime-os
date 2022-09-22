@@ -2,6 +2,7 @@ plugins {
     id 'corda.common-publishing'
     id 'corda.quasar-app'
     id 'corda.docker-app'
+    id 'corda.javadoc-generation'
 }
 
 ext {
@@ -99,9 +100,9 @@ tasks.named('jar', Jar) {
     dependsOn(download)
 }
 
-// Allow us to publish to S3 bucket for DP2 - to be extracted to plugin
-if (project.hasProperty('maven.repo.s3') && project.hasProperty('releasable')) {
-    publishing {
+publishing {
+    // Allow us to publish to S3 bucket for DP2 - to be extracted to plugin
+    if (project.hasProperty('maven.repo.s3') && project.hasProperty('releasable')) {
         repositories {
             maven {
                 url = project.findProperty('maven.repo.s3')
@@ -111,6 +112,14 @@ if (project.hasProperty('maven.repo.s3') && project.hasProperty('releasable')) {
                     sessionToken "${System.getenv('AWS_SESSION_TOKEN')}"
                 }
             }
+        }
+    }
+
+    publications {
+        maven(MavenPublication) {
+            artifactId 'corda-combined-worker'
+            groupId project.group
+            artifact javadocJar
         }
     }
 }
