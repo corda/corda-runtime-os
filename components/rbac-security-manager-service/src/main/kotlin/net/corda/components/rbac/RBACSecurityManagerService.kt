@@ -76,7 +76,7 @@ class RBACSecurityManagerService @Activate constructor(
                 log.info("Received registration status update ${event.status}.")
                 when (event.status) {
                     LifecycleStatus.UP -> {
-                        innerSecurityManager?.close()
+                        innerSecurityManager?.stop()
                         innerSecurityManager = RBACSecurityManager(
                             permissionManagementService.permissionValidator,
                             permissionManagementService.basicAuthenticationService
@@ -101,7 +101,7 @@ class RBACSecurityManagerService @Activate constructor(
     }
 
     private fun downTransition() {
-        innerSecurityManager?.close()
+        innerSecurityManager?.stop()
         innerSecurityManager = null
     }
 
