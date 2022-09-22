@@ -30,9 +30,4 @@ class SigningServiceImpl @Activate constructor(
             SignParameters(bytes, keyEncodingService.encodeAsByteArray(publicKey), signatureSpec)
         )
     }
-
-    @Suspendable
-    override fun decodePublicKey(encodedKey: String): PublicKey {
-        return keyEncodingService.decodePublicKey(encodedKey)
-    }
 }

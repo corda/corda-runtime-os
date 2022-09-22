@@ -5,15 +5,11 @@ import net.corda.applications.workers.smoketest.GROUP_ID
 import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_FAILED
 import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_SUCCESS
 import net.corda.applications.workers.smoketest.RpcSmokeTestInput
-import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
-import net.corda.applications.workers.smoketest.TEST_CPI_NAME
 import net.corda.applications.workers.smoketest.X500_BOB
 import net.corda.applications.workers.smoketest.X500_CHARLIE
 import net.corda.applications.workers.smoketest.X500_DAVID
 import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
 import net.corda.applications.workers.smoketest.configWithDefaultsNode
-import net.corda.applications.workers.smoketest.createKeyFor
-import net.corda.applications.workers.smoketest.forceUploadCordaPackage
 import net.corda.applications.workers.smoketest.getConfig
 import net.corda.applications.workers.smoketest.getFlowClasses
 import net.corda.applications.workers.smoketest.getHoldingIdShortHash
@@ -482,12 +478,9 @@ class FlowTests {
 
     @Test
     fun `Crypto - Sign and verify bytes`() {
-
-        val publicKey = createKeyFor(bobHoldingId, UUID.randomUUID().toString(), "LEDGER", "CORDA.RSA")
-
         val requestBody = RpcSmokeTestInput().apply {
             command = "crypto_sign_and_verify"
-            data = mapOf("publicKey" to publicKey)
+            data = mapOf("memberX500" to X500_BOB)
         }
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
@@ -504,12 +497,9 @@ class FlowTests {
 
     @Test
     fun `Crypto - Verify invalid signature`() {
-
-        val publicKey = createKeyFor(bobHoldingId, UUID.randomUUID().toString(), "LEDGER", "CORDA.RSA")
-
         val requestBody = RpcSmokeTestInput().apply {
             command = "crypto_verify_invalid_signature"
-            data = mapOf("publicKey" to publicKey)
+            data = mapOf("memberX500" to X500_BOB)
         }
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
@@ -648,7 +638,7 @@ class FlowTests {
                     bobHoldingId,
                     RpcSmokeTestInput().apply {
                         command = "crypto_sign_and_verify"
-                        data = mapOf("publicKey" to createKeyFor(bobHoldingId, UUID.randomUUID().toString(), "LEDGER", "CORDA.RSA"))
+                        data = mapOf("memberX500" to X500_BOB)
                     }
                 ),
 
