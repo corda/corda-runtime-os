@@ -1,10 +1,7 @@
 package net.corda.libs.permissions.endpoints.common
 
+import net.corda.httprpc.exception.*
 import java.util.concurrent.TimeoutException
-import net.corda.httprpc.exception.InternalServerException
-import net.corda.httprpc.exception.InvalidInputDataException
-import net.corda.httprpc.exception.ResourceNotFoundException
-import net.corda.httprpc.exception.UnexpectedErrorException
 import net.corda.libs.permissions.common.exception.EntityAlreadyExistsException
 import net.corda.libs.permissions.common.exception.EntityAssociationAlreadyExistsException
 import net.corda.libs.permissions.common.exception.EntityAssociationDoesNotExistException
@@ -37,7 +34,7 @@ fun <T : Any?> withPermissionManager(
             EntityNotFoundException::class.java.name -> throw ResourceNotFoundException(e.message!!)
             EntityAssociationDoesNotExistException::class.java.name -> throw InvalidInputDataException(e.message!!)
             EntityAssociationAlreadyExistsException::class.java.name -> throw InvalidInputDataException(e.message!!)
-            EntityAlreadyExistsException::class.java.name -> throw InvalidInputDataException(e.message!!)
+            EntityAlreadyExistsException::class.java.name -> throw ResourceAlreadyExistsException(e.message!!)
             else -> throw InternalServerException(
                 details = buildExceptionCauseDetails(e.exceptionType, e.message ?: "Remote permission management error occurred.")
             )
