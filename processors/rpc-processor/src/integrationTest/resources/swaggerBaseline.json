@@ -72,7 +72,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -85,10 +85,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -96,7 +96,7 @@
     "/certificates/{tenantid}" : {
       "put" : {
         "tags" : [ "Certificates API" ],
-        "description" : "Enables you to import a certificate chain for a tenant",
+        "description" : "This method imports a certificate chain for a specified tenant.",
         "operationId" : "put_certificates__tenantid_",
         "parameters" : [ {
           "name" : "tenantid",
@@ -142,13 +142,13 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success."
+            "description" : "Success"
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -156,7 +156,7 @@
     "/certificates/{tenantid}/{keyid}" : {
       "post" : {
         "tags" : [ "Certificates API" ],
-        "description" : "Enables you to generate a certificate signing request (CSR) for a tenant",
+        "description" : "This method enables you to generate a certificate signing request (CSR) for a tenant.",
         "operationId" : "post_certificates__tenantid___keyid_",
         "parameters" : [ {
           "name" : "tenantid",
@@ -194,7 +194,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Success",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -206,10 +206,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -233,7 +233,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "The updated cluster configuration for the specified section.",
+            "description" : "\n            The updated cluster configuration for the specified section:\n            - `section`: the section of the configuration to be updated.\n            - `config`: the updated configuration in JSON or HOCON format.\n            - `schemaVersion`: the schema version of the configuration.\n            - `version`: the version number used for optimistic locking. The request fails if this version does not \n                match the version stored in the database for the corresponding section or -1 if this is a new section \n                for which no configuration has yet been stored.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -243,10 +243,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -259,7 +259,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -272,10 +272,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -299,7 +299,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "The configuration for the given section.",
+            "description" : "The configuration for the given section",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -309,10 +309,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -335,16 +335,16 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       },
       "post" : {
         "tags" : [ "CPI API" ],
-        "description" : "The upload endpoint uses the POST method to upload a Corda Package Installer (CPI) file to the Corda cluster.",
+        "description" : "This method uses the POST method to upload a Corda Package Installer (CPI) file to the Corda cluster.",
         "operationId" : "post_cpi",
         "parameters" : [ ],
         "requestBody" : {
@@ -369,7 +369,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "The Id for the CPI upload request.",
+            "description" : "The ID for the CPI upload request",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -379,10 +379,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -395,7 +395,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -408,10 +408,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -435,7 +435,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Success",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -445,10 +445,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -461,7 +461,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -474,10 +474,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -511,10 +511,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       },
@@ -557,10 +557,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -605,10 +605,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -621,7 +621,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -634,10 +634,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -671,10 +671,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -698,7 +698,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Success",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -710,10 +710,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -726,7 +726,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -739,10 +739,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -755,7 +755,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -768,10 +768,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -806,7 +806,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Success",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -816,10 +816,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -854,7 +854,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Success",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -867,10 +867,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       },
@@ -903,7 +903,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Success",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -913,10 +913,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -929,7 +929,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -942,10 +942,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1099,10 +1099,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1169,10 +1169,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1223,10 +1223,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1273,10 +1273,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1319,10 +1319,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1335,7 +1335,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1348,10 +1348,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1396,10 +1396,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1412,7 +1412,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1425,10 +1425,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1518,7 +1518,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Success",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1528,10 +1528,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1544,7 +1544,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1557,10 +1557,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1584,7 +1584,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Success",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1599,10 +1599,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       },
@@ -1635,7 +1635,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Success",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1645,10 +1645,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1683,7 +1683,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Success",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1696,10 +1696,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1712,7 +1712,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1725,10 +1725,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1752,7 +1752,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Success",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1764,10 +1764,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1780,7 +1780,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1793,10 +1793,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1831,13 +1831,13 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success."
+            "description" : "Success"
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1871,10 +1871,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1887,7 +1887,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1900,10 +1900,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1937,10 +1937,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1968,10 +1968,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       },
@@ -2003,10 +2003,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -2019,7 +2019,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2032,10 +2032,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -2069,10 +2069,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -2117,10 +2117,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       },
@@ -2163,10 +2163,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -2200,10 +2200,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       },
@@ -2235,10 +2235,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -2251,7 +2251,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2264,10 +2264,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -2301,10 +2301,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -2349,10 +2349,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       },
@@ -2395,10 +2395,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -2421,10 +2421,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       },
@@ -2456,10 +2456,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -2472,7 +2472,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2485,10 +2485,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -2868,7 +2868,7 @@
           },
           "x500Name" : {
             "type" : "string",
-            "description" : "X.500 name that will be the subject associated with the request",
+            "description" : "The X.500 name that will be the subject associated with the request",
             "nullable" : false,
             "example" : "string"
           }
@@ -3432,7 +3432,7 @@
             "example" : 0
           }
         },
-        "description" : "Details of the updated configuration. Includes: \n- config: The updated configuration in JSON or HOCON format.\n- schemaVersion: The schema version of the configuration.\n- section: The section of the configuration to be updated.\n- version: The version number used for optimistic locking.\n"
+        "description" : "\n            Details of the updated configuration. Includes:\n            - `section`: the section of the configuration to be updated.\n            - `config`: the updated configuration in JSON or HOCON format.\n            - `schemaVersion`: the schema version of the configuration.\n            - `version`: the version number used for optimistic locking. The request fails if this version does not \n                match the version stored in the database for the corresponding section or -1 if this is a new section \n                for which no configuration has yet been stored."
       },
       "UpdateConfigResponse" : {
         "required" : [ "config", "schemaVersion", "section", "version" ],
