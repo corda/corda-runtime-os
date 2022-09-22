@@ -47,7 +47,7 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         "persistence_merge_bulk" to this::persistenceMergeDogs,
         "persistence_find" to this::persistenceFindDog,
         "persistence_find_bulk" to this::persistenceFindDogs,
-        "persistence_findall" to  { persistenceFindAllDogs() },
+        "persistence_findall" to { persistenceFindAllDogs() },
         "persistence_query" to { persistenceQueryDogs() },
         "throw_platform_error" to this::throwPlatformError,
         "subflow_passed_in_initiated_session" to { createSessionsInInitiatingFlowAndPassToInlineFlow(it, true) },
@@ -185,7 +185,7 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         log.info("Creating session for '${x500}'...")
         val session = flowMessaging.initiateFlow(MemberX500Name.parse(x500))
         log.info("Sending first time to session for '${x500}'...")
-        session.send(InitiatedSmokeTestMessage("test 1"))
+        session.sendAndReceive<InitiatedSmokeTestMessage>(InitiatedSmokeTestMessage("test 1"))
         log.info("Closing session for '${session}'...")
         session.close()
         log.info("Try and send on a closed session to generate an error '${session}'...")

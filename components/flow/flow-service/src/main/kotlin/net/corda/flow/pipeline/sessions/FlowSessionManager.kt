@@ -160,14 +160,20 @@ interface FlowSessionManager {
     fun doAllSessionsHaveStatus(checkpoint: FlowCheckpoint, sessionIds: List<String>, status: SessionStateType): Boolean
 
     /**
-     * Checks the sessions to ensure they are in valid state for sending data to a peer
+     * Passed as an argument to [validateSessionStates].
+     */
+    enum class Operation { SENDING, RECEIVING }
+
+    /**
+     * Checks the sessions to ensure they are in valid state for sending or receiving data to a peer.
      *
      * @param checkpoint The flow's [FlowCheckpoint].
      * @param sessionIds The session ids to check the status of.
+     * @param operation Which operation applies to the sessions to validate. Different criteria apply in each case.
      *
      * @throws FlowSessionStateException If any of the sessions don't exist, or they are not in the CONFIRMED state
      */
-    fun validateSessionStates(checkpoint: FlowCheckpoint, sessionIds: Set<String>)
+    fun validateSessionStates(checkpoint: FlowCheckpoint, sessionIds: Set<String>, operation: Operation)
 
     /**
      * Get the states whose next ordered message is a SessionClose.

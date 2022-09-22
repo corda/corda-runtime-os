@@ -175,12 +175,7 @@ class FlowTests {
             .isEqualTo("${X500_BOB}=echo:m1; ${X500_CHARLIE}=echo:m2")
     }
 
-    /**
-     * This test is failing unexpectedly, a bug has been raised to investigate
-     * https://r3-cev.atlassian.net/browse/CORE-5372
-     */
     @Test
-    @Disabled
     fun `Platform Error - user code receives platform errors`() {
         val requestBody = RpcSmokeTestInput().apply {
             command = "throw_platform_error"
@@ -194,7 +189,7 @@ class FlowTests {
         val flowResult = result.getRpcFlowResult()
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(flowResult.command).isEqualTo("throw_platform_error")
-        assertThat(flowResult.result).isEqualTo("type")
+        assertThat(flowResult.result).startsWith("Type='PLATFORM_ERROR'")
     }
 
     @Test

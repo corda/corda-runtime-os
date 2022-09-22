@@ -169,13 +169,22 @@ class FlowSessionManagerImpl @Activate constructor(
         return getSessionsWithStatus(checkpoint, sessionIds, status).size == sessionIds.size
     }
 
-    override fun validateSessionStates(checkpoint: FlowCheckpoint, sessionIds: Set<String>) {
+    override fun validateSessionStates(
+        checkpoint: FlowCheckpoint,
+        sessionIds: Set<String>,
+        operation: FlowSessionManager.Operation
+    ) {
+        val validStatuses = when (operation) {
+            FlowSessionManager.Operation.SENDING -> setOf(SessionStateType.CONFIRMED)
+            FlowSessionManager.Operation.RECEIVING -> setOf(SessionStateType.CONFIRMED, SessionStateType.CLOSING)
+        }
+
         val sessions = sessionIds.associateWith { checkpoint.getSessionState(it) }
         val missingSessionStates = sessions.filter { it.value == null }.map { it.key }.toList()
         val invalidSessions = sessions
             .map { it.value }
             .filterNotNull()
-            .filterNot { it.status == SessionStateType.CONFIRMED }
+            .filterNot { validStatuses.contains(it.status) }
             .toList()
 
         if (missingSessionStates.isEmpty() && invalidSessions.isEmpty()) {
