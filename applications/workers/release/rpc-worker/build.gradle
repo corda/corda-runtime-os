@@ -99,17 +99,22 @@ tasks.named('e2eTest') {
         jvmArgs "-Djava.security.auth.login.config=${System.getenv("JAVA_SECURITY_AUTH_LOGIN_CONFIG")}"
     }
 
-    setE2eClusterConfig(it, "E2E_CLUSTER_A_RPC_HOST", "e2eClusterARpcHost")
-    setE2eClusterConfig(it, "E2E_CLUSTER_A_RPC_PORT", "e2eClusterARpcPort")
-    setE2eClusterConfig(it, "E2E_CLUSTER_B_RPC_HOST", "e2eClusterBRpcHost")
-    setE2eClusterConfig(it, "E2E_CLUSTER_B_RPC_PORT", "e2eClusterBRpcPort")
-    setE2eClusterConfig(it, "E2E_CLUSTER_C_RPC_HOST", "e2eClusterCRpcHost")
-    setE2eClusterConfig(it, "E2E_CLUSTER_C_RPC_PORT", "e2eClusterCRpcPort")
-
-    setE2eClusterConfig(it, "E2E_CLUSTER_A_P2P_HOST", "e2eClusterAP2pHost")
-    setE2eClusterConfig(it, "E2E_CLUSTER_A_P2P_PORT", "e2eClusterAP2pPort")
-    setE2eClusterConfig(it, "E2E_CLUSTER_B_P2P_HOST", "e2eClusterBP2pHost")
-    setE2eClusterConfig(it, "E2E_CLUSTER_B_P2P_PORT", "e2eClusterBP2pPort")
-    setE2eClusterConfig(it, "E2E_CLUSTER_C_P2P_HOST", "e2eClusterCP2pHost")
-    setE2eClusterConfig(it, "E2E_CLUSTER_C_P2P_PORT", "e2eClusterCP2pPort")
+    ["A", "B", "C"].each {cluster ->
+        if(System.getenv("E2E_CLUSTER_{$cluster}_RPC_HOST") == null) {
+            environment "E2E_CLUSTER_{$cluster}_RPC_HOST",
+                    project.getProperties().getOrDefault("e2eCluster${cluster}RpcHost","localhost")
+        }
+        if(System.getenv("E2E_CLUSTER_${cluster}_RPC_PORT") == null) {
+            environment "E2E_CLUSTER_${cluster}_RPC_PORT",
+                    project.getProperties().getOrDefault("e2eCluster${cluster}RpcPort","8888")
+        }
+        if(System.getenv("E2E_CLUSTER_${cluster}_P2P_HOST") == null) {
+            environment "E2E_CLUSTER_{$cluster}_P2P_HOST",
+                    project.getProperties().getOrDefault("e2eCluster${cluster}P2pHost","localhost")
+        }
+        if(System.getenv("E2E_CLUSTER_${cluster}_P2P_PORT") == null) {
+            environment "E2E_CLUSTER_${cluster}_P2P_PORT",
+                    project.getProperties().getOrDefault("e2eCluster${cluster}P2pPort","8080")
+        }
+    }
 }
