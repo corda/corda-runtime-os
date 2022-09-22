@@ -24,13 +24,11 @@ data class CpkMetadataEntity(
     @Column(name = "metadata", nullable = false)
     var serializedMetadata: String,
     @Column(name = "is_deleted", nullable = false)
-    var isDeleted: Boolean = false
-) : Serializable {
+    var isDeleted: Boolean = false,
     @Version
     @Column(name = "entity_version", nullable = false)
     var entityVersion: Int = 0
-}
-
+)
 /**
  * Composite primary key for a Cpk.
  */

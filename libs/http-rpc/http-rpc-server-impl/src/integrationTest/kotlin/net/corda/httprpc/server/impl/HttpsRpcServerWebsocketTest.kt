@@ -7,7 +7,7 @@ import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.test.utils.findFreePort
 import net.corda.httprpc.test.utils.multipartDir
-import net.corda.v5.base.util.NetworkHostAndPort
+import net.corda.utilities.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
 import org.eclipse.jetty.client.HttpClient
 import org.eclipse.jetty.util.ssl.SslContextFactory
@@ -39,7 +39,8 @@ class HttpsRpcServerWebsocketTest : AbstractWebsocketTest() {
                 context,
                 sslConfig,
                 null,
-                HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE
+                HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
+                20000L
             )
 
             server = HttpRpcServerImpl(
@@ -61,7 +62,7 @@ class HttpsRpcServerWebsocketTest : AbstractWebsocketTest() {
         @JvmStatic
         fun cleanUpAfterClass() {
             if (isServerInitialized()) {
-                server.stop()
+                server.close()
             }
         }
     }

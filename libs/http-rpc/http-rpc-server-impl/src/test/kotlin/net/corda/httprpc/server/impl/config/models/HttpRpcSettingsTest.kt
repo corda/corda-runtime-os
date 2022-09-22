@@ -5,7 +5,7 @@ import net.corda.httprpc.server.config.models.HttpRpcContext
 import net.corda.httprpc.server.config.models.HttpRpcSSLSettings
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.server.config.models.SsoSettings
-import net.corda.v5.base.util.NetworkHostAndPort
+import net.corda.utilities.NetworkHostAndPort
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Test
 import java.nio.file.Path
@@ -31,7 +31,9 @@ class HttpRpcSettingsTest {
                     tenantId,
                     trustedIssuers = listOf(issuer)
                 )
-            ), HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE
+            ),
+            HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
+            20000L
         )
             .toString()
 

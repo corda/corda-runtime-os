@@ -72,6 +72,7 @@ class MembershipPersistenceRPCProcessorTest {
         timestamp = clock.instant(),
         vaultDmlConnectionId = vaultDmlConnectionId,
         cryptoDmlConnectionId = UUID(0, 0),
+        uniquenessDmlConnectionId = UUID(0, 0)
     )
 
     private val registrationRequest = RegistrationRequestEntity(

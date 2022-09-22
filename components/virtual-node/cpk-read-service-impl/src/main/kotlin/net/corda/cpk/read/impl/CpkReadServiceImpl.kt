@@ -35,6 +35,7 @@ import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 
@@ -132,7 +133,8 @@ class CpkReadServiceImpl (
         closeResources()
     }
 
-    override fun close() {
+    @Deactivate
+    fun close() {
         closeResources()
     }
 

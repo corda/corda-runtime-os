@@ -36,12 +36,12 @@ internal class WebSocketRouteAdaptor(
     private val routeInfo: RouteInfo,
     private val securityManager: HttpRpcSecurityManager,
     private val credentialResolver: DefaultCredentialResolver,
-    private val webSocketCloserService: WebSocketCloserService
+    private val webSocketCloserService: WebSocketCloserService,
+    private val webSocketIdleTimeoutMs: Long
 ) : WsMessageHandler, WsCloseHandler, WsConnectHandler, WsErrorHandler, AutoCloseable {
 
     private companion object {
         val log = contextLogger()
-        const val WEBSOCKET_IDLE_TIMEOUT = 20000L
     }
 
     private val channelsBySessionId = ConcurrentHashMap<SessionId, DuplexChannel>()
@@ -59,7 +59,7 @@ internal class WebSocketRouteAdaptor(
             ServerDuplexChannel(ctx, webSocketCloserService, ctx.sessionId).let { newChannel ->
                 channelsBySessionId[ctx.sessionId] = newChannel
 
-                ctx.session.idleTimeout = WEBSOCKET_IDLE_TIMEOUT
+                ctx.session.idleTimeout = webSocketIdleTimeoutMs
                 val clientWsRequestContext = ClientWsRequestContext(ctx)
 
                 try {

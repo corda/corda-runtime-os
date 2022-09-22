@@ -11,7 +11,7 @@ import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
 import net.corda.httprpc.test.utils.WebRequest
 import net.corda.httprpc.test.utils.findFreePort
 import net.corda.httprpc.test.utils.multipartDir
-import net.corda.v5.base.util.NetworkHostAndPort
+import net.corda.utilities.NetworkHostAndPort
 import org.apache.http.HttpStatus
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
@@ -25,7 +25,7 @@ class HttpRpcServerDurableStreamsRequestsTest {
         @BeforeAll
         @JvmStatic
         fun setUpBeforeClass() {
-            val httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost",  findFreePort()), HttpRpcServerTestBase.context, null, null, HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE)
+            val httpRpcSettings = HttpRpcSettings(NetworkHostAndPort("localhost",  findFreePort()), HttpRpcServerTestBase.context, null, null, HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE, 20000L)
             HttpRpcServerTestBase.server = HttpRpcServerImpl(
                 listOf(NumberSequencesRPCOpsImpl(), CalendarRPCOpsImpl(), TestHealthCheckAPIImpl(), CustomSerializationAPIImpl()),
                 { FakeSecurityManager() } ,
@@ -41,7 +41,7 @@ class HttpRpcServerDurableStreamsRequestsTest {
         @JvmStatic
         fun cleanUpAfterClass() {
             if (HttpRpcServerTestBase.isServerInitialized()) {
-                HttpRpcServerTestBase.server.stop()
+                HttpRpcServerTestBase.server.close()
             }
         }
     }

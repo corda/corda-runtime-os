@@ -1,6 +1,6 @@
 package net.corda.membership.lib
 
-import net.corda.v5.base.util.NetworkHostAndPort
+import net.corda.utilities.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.parse
 import net.corda.v5.base.util.parseList
@@ -16,7 +16,7 @@ import java.time.Instant
 
 class MemberInfoExtension {
     companion object {
-        val logger = contextLogger()
+        private val logger = contextLogger()
 
         /** Key name for ledger keys property. */
         const val LEDGER_KEYS = "corda.ledger.keys"

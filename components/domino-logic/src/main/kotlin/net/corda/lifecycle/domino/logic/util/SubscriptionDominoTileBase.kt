@@ -25,7 +25,6 @@ import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -73,8 +72,6 @@ abstract class SubscriptionDominoTileBase(
 
     private val currentState = AtomicReference(Created)
 
-    private val isOpen = AtomicBoolean(true)
-
     private val internalState: DominoTileState
         get() = currentState.get()
     override val isRunning: Boolean
@@ -100,11 +97,6 @@ abstract class SubscriptionDominoTileBase(
         managedChildren.forEach { it.lifecycle.stop() }
     }
 
-    override fun close() {
-        stop()
-        isOpen.set(false)
-    }
-
     private fun updateState(newState: DominoTileState) {
         val oldState = currentState.getAndSet(newState)
         if (newState != oldState) {
@@ -120,6 +112,8 @@ abstract class SubscriptionDominoTileBase(
     }
 
     private fun createAndStartSubscription() {
+        subscriptionRegistration.get()?.close()
+        subscriptionRegistration.set(null)
         coordinator.createManagedResource(SUBSCRIPTION, subscriptionGenerator)
         val subscriptionName = coordinator.getManagedResource<SubscriptionBase>(SUBSCRIPTION)?.subscriptionName
             ?: throw CordaRuntimeException("Subscription could not be extracted from the lifecycle coordinator.")
@@ -129,14 +123,6 @@ abstract class SubscriptionDominoTileBase(
 
     private inner class EventHandler : LifecycleEventHandler {
         override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-            if (!isOpen.get()) {
-                return
-            }
-
-            handleEvent(event)
-        }
-
-        private fun handleEvent(event: LifecycleEvent) {
             when(event) {
                 is StartEvent -> {
                     startTile()
@@ -164,11 +150,17 @@ abstract class SubscriptionDominoTileBase(
                                 }
                                 LifecycleStatus.DOWN -> {
                                     logger.info("One of the dependencies went down, stopping subscription.")
+                                    subscriptionRegistration.get()?.close()
+                                    subscriptionRegistration.set(null)
+                                    updateState(StoppedDueToChildStopped)
                                     coordinator.getManagedResource<Resource>(SUBSCRIPTION)?.close()
                                 }
                                 LifecycleStatus.ERROR -> {
                                     logger.info("One of the dependencies had an error, stopping subscription.")
+                                    subscriptionRegistration.get()?.close()
+                                    subscriptionRegistration.set(null)
                                     coordinator.getManagedResource<Resource>(SUBSCRIPTION)?.close()
+                                    updateState(StoppedDueToError)
                                 }
                             }
                         }

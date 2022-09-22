@@ -4,6 +4,8 @@ import java.security.KeyPairGenerator
 import java.security.PublicKey
 import java.security.SecureRandom
 import java.time.Instant
+import kotlin.math.abs
+import kotlin.test.assertIs
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeFactoryImpl
@@ -18,6 +20,8 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
+import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.Party
@@ -26,8 +30,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import kotlin.math.abs
-import kotlin.test.assertIs
 
 // TODO(deduplicate boilerplate with ConsensualTransactionBuilderImplTest)
 internal class ConsensualLedgerTransactionImplTest{
@@ -40,6 +42,7 @@ internal class ConsensualLedgerTransactionImplTest{
         private lateinit var externalEventExecutor: ExternalEventExecutor
         private lateinit var testPublicKey: PublicKey
         private lateinit var testConsensualState: ConsensualState
+        private lateinit var keyEncodingService: KeyEncodingService
 
         private val testMemberX500Name = MemberX500Name("R3", "London", "GB")
 
@@ -69,7 +72,8 @@ internal class ConsensualLedgerTransactionImplTest{
 
             val flowFiberService = FlowFiberServiceImpl()
             externalEventExecutor = ExternalEventExecutorImpl(flowFiberService)
-            signingService = SigningServiceImpl(externalEventExecutor, schemeMetadata)
+            keyEncodingService = CipherSchemeMetadataImpl()
+            signingService = SigningServiceImpl(externalEventExecutor, keyEncodingService)
 
             val kpg = KeyPairGenerator.getInstance("RSA")
             kpg.initialize(512) // Shortest possible to not slow down tests.
@@ -91,5 +95,7 @@ internal class ConsensualLedgerTransactionImplTest{
         assertEquals(1, ledgerTransaction.states.size)
         assertEquals(testConsensualState, ledgerTransaction.states.first())
         assertIs<TestConsensualState>(ledgerTransaction.states.first())
+
+        assertIs<SecureHash>(ledgerTransaction.id)
     }
 }

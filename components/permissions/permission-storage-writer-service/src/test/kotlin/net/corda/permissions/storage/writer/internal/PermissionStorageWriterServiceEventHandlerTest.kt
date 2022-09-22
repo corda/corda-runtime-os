@@ -18,9 +18,9 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
 import net.corda.schema.configuration.BootConfig.BOOT_DB_PARAMS
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
-import net.corda.schema.configuration.ConfigKeys.DB_PASS
-import net.corda.schema.configuration.ConfigKeys.DB_USER
-import net.corda.schema.configuration.ConfigKeys.JDBC_URL
+import net.corda.schema.configuration.DatabaseConfig.DB_PASS
+import net.corda.schema.configuration.DatabaseConfig.DB_USER
+import net.corda.schema.configuration.DatabaseConfig.JDBC_URL
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull

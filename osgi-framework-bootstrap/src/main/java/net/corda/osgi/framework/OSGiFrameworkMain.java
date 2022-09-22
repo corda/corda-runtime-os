@@ -63,6 +63,11 @@ final class OSGiFrameworkMain {
     private static final long NO_TIMEOUT = 0L;
 
     /**
+     * Default directory with JDBC drivers
+     */
+    private static final String DEFAULT_JDBC_DRIVER_DIRECTORY = "/opt/jdbc-driver";
+
+    /**
      * Location of the list of bundles to install in the {@link OSGiFrameworkWrap} instance.
      * The location is relative to run time class path:
      * <ul>
@@ -194,16 +199,17 @@ final class OSGiFrameworkMain {
      */
     private static Path getDbDriverDirectory(String[] args) {
         final List<String> jdbcValues = Arrays.stream(args)
-            .filter(a -> a.contains("database.jdbc.directory"))
+            .filter(a -> a.contains("database.jdbc.directory="))
             .collect(toUnmodifiableList());
-        if (jdbcValues.isEmpty()) {
-            return null;
+
+        if (!jdbcValues.isEmpty()) {
+            final String jdbcValue = jdbcValues.get(0);
+            if (jdbcValue.indexOf('=') != -1) {
+                final String path = jdbcValue.split("=", 2)[1];
+                return Paths.get(path);
+            }
         }
-        final String jdbcValue = jdbcValues.get(0);
-        if (jdbcValue.indexOf('=') == -1) {
-            return null;
-        }
-        final String path = jdbcValue.split("=", 2)[1];
-        return Paths.get(path);
+
+        return Paths.get(DEFAULT_JDBC_DRIVER_DIRECTORY);
     }
 }

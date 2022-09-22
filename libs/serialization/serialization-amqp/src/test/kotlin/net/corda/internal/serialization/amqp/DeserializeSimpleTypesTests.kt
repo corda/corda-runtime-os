@@ -610,7 +610,7 @@ No custom serializers registered.
     }
 
     @Test
-    fun notWhitelistedError() {
+    fun notOnAllowListError() {
         val factory = testDefaultFactory()
         assertFailsWithMessage(
                 "Class \"class ${PropertyWithoutCordaSerializable::class.java.name}\" " +
@@ -620,7 +620,7 @@ No custom serializers registered.
     }
 
     @Test
-    fun propertyClassNotWhitelistedError() {
+    fun propertyClassNotOnAllowListError() {
         val factory = testDefaultFactory()
         assertFailsWithMessage(
                 "Class \"class ${PropertyWithoutCordaSerializable::class.java.name}\" " +
@@ -632,7 +632,7 @@ No custom serializers registered.
     // See CORDA-2782
     @Test
 @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
-    fun comparableNotWhitelistedOk() {
+    fun comparableNotOnAllowList() {
         @CordaSerializable
         class Ok(val value: String) : java.lang.Comparable<Ok> {
             override fun compareTo(o: Ok?): Int = value.compareTo(o?.value ?: "")

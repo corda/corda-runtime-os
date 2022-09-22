@@ -23,7 +23,7 @@ interface LocalTypeLookup {
 
     /**
      * Indicates whether a type should be excluded from lists of interfaces associated with inspected types, i.e.
-     * because it is not whitelisted.
+     * because it is not on the allow list.
      */
     fun isExcluded(type: Type): Boolean
 
@@ -118,7 +118,7 @@ interface LocalTypeModelConfiguration {
 
     /**
      * [Type]s which are excluded are silently omitted from the superclass/interface hierarchy of other types'
-     * [LocalTypeInformation], usually because they are not included in a whitelist.
+     * [LocalTypeInformation], usually because they are not included in an allow list.
      */
     fun isExcluded(type: Type): Boolean
 

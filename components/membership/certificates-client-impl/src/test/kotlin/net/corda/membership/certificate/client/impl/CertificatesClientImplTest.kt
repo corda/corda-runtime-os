@@ -27,6 +27,7 @@ import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.p2p.HostedIdentityEntry
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -64,6 +65,7 @@ class CertificatesClientImplTest {
         @Suppress("UNCHECKED_CAST")
         retrieveCertificates = settings.arguments()[4] as? ((String, String) -> String?)
     }
+    private val shortHash = ShortHash.of("AF77BF2471F3")
 
     private val client = CertificatesClientImpl(
         coordinatorFactory,
@@ -143,7 +145,7 @@ class CertificatesClientImplTest {
             handler.firstValue.processEvent(event, coordinator)
 
             client.setupLocallyHostedIdentity(
-                "holdingIdentityShortHash",
+                shortHash,
                 "Alias",
                 "tlsTenantId",
                 "sessionKeyTenantId",
@@ -153,7 +155,7 @@ class CertificatesClientImplTest {
             verify(
                 mockHostedIdentityEntryFactory.constructed().first()
             ).createIdentityRecord(
-                "holdingIdentityShortHash",
+                shortHash,
                 "Alias",
                 "tlsTenantId",
                 "sessionKeyTenantId",
@@ -187,7 +189,7 @@ class CertificatesClientImplTest {
         fun `publishToLocallyHostedIdentities throws exception if publisher is null`() {
             assertThrows<IllegalStateException> {
                 client.setupLocallyHostedIdentity(
-                    "holdingIdentityShortHash",
+                    shortHash,
                     "Alias",
                     "tlsTenantId",
                     "sessionKeyTenantId",
@@ -207,7 +209,7 @@ class CertificatesClientImplTest {
 
             assertThrows<CordaRuntimeException> {
                 client.setupLocallyHostedIdentity(
-                    "holdingIdentityShortHash",
+                    shortHash,
                     "Alias",
                     "tlsTenantId",
                     "sessionKeyTenantId",
@@ -230,7 +232,7 @@ class CertificatesClientImplTest {
             handler.firstValue.processEvent(event, coordinator)
 
             client.setupLocallyHostedIdentity(
-                "holdingIdentityShortHash",
+                shortHash,
                 "Alias",
                 "tlsTenantId",
                 "sessionKeyTenantId",
@@ -245,7 +247,6 @@ class CertificatesClientImplTest {
     inner class PlumbingTests {
         @Test
         fun `isRunning return true if sender is running`() {
-            whenever(sender.isRunning).doReturn(true)
             val event = ConfigChangedEvent(
                 emptySet(),
                 mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
@@ -253,18 +254,6 @@ class CertificatesClientImplTest {
             handler.firstValue.processEvent(event, coordinator)
 
             assertThat(client.isRunning).isTrue
-        }
-
-        @Test
-        fun `isRunning return false if sender is not`() {
-            whenever(sender.isRunning).doReturn(false)
-            val event = ConfigChangedEvent(
-                emptySet(),
-                mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
-            )
-            handler.firstValue.processEvent(event, coordinator)
-
-            assertThat(client.isRunning).isFalse
         }
 
         @Test

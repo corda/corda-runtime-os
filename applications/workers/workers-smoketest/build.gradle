@@ -52,9 +52,12 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.4.2"
 
+    // Avoid having the schema names and keys scattered across projects
+    smokeTestImplementation "net.corda:corda-config-schema:$cordaApiVersion"
+
     // But building a cpb for use in a test is ok.
-    cpis project(path: ':testing:cpbs:flow-worker-dev', configuration: 'cordaCPB')
-    cpiForFlowCacheTest project(path: ':testing:cpbs:flow-worker-dev-for-cache-testing', configuration: 'cordaCPB')
+    cpis project(path: ':testing:cpbs:test-cordapp', configuration: 'cordaCPB')
+    cpiForFlowCacheTest project(path: ':testing:cpbs:test-cordapp-for-cache-testing', configuration: 'cordaCPB')
 
     smokeTestImplementation "com.konghq:unirest-java:$unirestVersion"
     smokeTestImplementation "com.konghq:unirest-objectmapper-jackson:$unirestVersion"
@@ -77,15 +80,15 @@ dependencies {
 def smokeTestResources = tasks.named('processSmokeTestResources', ProcessResources) {
     from(configurations.cpis) {
         into 'META-INF'
-        rename "(.+)-\\d+.+-package.cpb", "\$1.cpb"
+        rename "(.+)(-(?:\\d+\\.*)+.-.+-package)(\\.cpb)\$", "\$1\$3"
     }
 
-    // Put the flow-worker-dev-for-cache-testing cpb into a different folder
+    // Put the test-cordapp-for-cache-testing cpb into a different folder
     def cpiForFlowCacheTest = configurations.cpiForFlowCacheTest
     def cacheTestingDir = "META-INF" + File.separator + "cache-invalidation-testing"
     from(cpiForFlowCacheTest) {
         into cacheTestingDir
-        rename "(.+)-\\d+.+-package.cpb", "flow-worker-dev.cpb"
+        rename "(.+)(-(?:\\d+\\.*)+.-.+-package)(\\.cpb)\$", "test-cordapp.cpb"
     }
 }
 

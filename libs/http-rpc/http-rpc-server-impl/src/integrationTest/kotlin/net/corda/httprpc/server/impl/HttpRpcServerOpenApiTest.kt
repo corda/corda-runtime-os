@@ -17,7 +17,7 @@ import net.corda.httprpc.test.CalendarRPCOpsImpl
 import net.corda.httprpc.test.TestEntityRpcOpsImpl
 import net.corda.httprpc.test.TestHealthCheckAPIImpl
 import net.corda.httprpc.tools.HttpVerb.GET
-import net.corda.v5.base.util.NetworkHostAndPort
+import net.corda.utilities.NetworkHostAndPort
 import org.apache.http.HttpStatus
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
@@ -45,7 +45,8 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
             context,
             null,
             null,
-            HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE
+            HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
+            20000L
         )
 
         @BeforeAll
@@ -72,7 +73,7 @@ class HttpRpcServerOpenApiTest : HttpRpcServerTestBase() {
         @JvmStatic
         fun cleanUpAfterClass() {
             if (isServerInitialized()) {
-                server.stop()
+                server.close()
             }
         }
     }

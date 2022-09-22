@@ -3,23 +3,6 @@ package net.corda.p2p.gateway
 import com.typesafe.config.ConfigValueFactory
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.handler.codec.http.HttpResponseStatus
-import java.net.ConnectException
-import java.net.InetSocketAddress
-import java.net.Socket
-import java.net.URI
-import java.nio.ByteBuffer
-import java.security.KeyStore
-import java.security.cert.X509Certificate
-import java.time.Duration
-import java.time.Instant
-import java.util.*
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicReference
-import kotlin.concurrent.thread
 import net.corda.crypto.test.certificates.generation.CertificateAuthority
 import net.corda.crypto.test.certificates.generation.CertificateAuthorityFactory
 import net.corda.crypto.test.certificates.generation.PrivateKeyWithCertificate
@@ -74,7 +57,8 @@ import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.test.util.eventually
-import net.corda.v5.base.concurrent.getOrThrow
+import net.corda.test.util.lifecycle.usingLifecycle
+import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
@@ -89,14 +73,30 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.fail
 import org.mockito.kotlin.mock
+import java.net.ConnectException
 import java.net.HttpURLConnection.HTTP_BAD_REQUEST
-import java.net.http.HttpRequest.BodyPublisher
-import java.net.http.HttpClient as JavaHttpClient
-import java.net.http.HttpRequest as JavaHttpRequest
+import java.net.InetSocketAddress
+import java.net.Socket
+import java.net.URI
 import java.net.http.HttpResponse.BodyHandlers
+import java.nio.ByteBuffer
+import java.security.KeyStore
+import java.security.cert.X509Certificate
+import java.time.Duration
+import java.time.Instant
+import java.util.*
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
+import kotlin.concurrent.thread
+import java.net.http.HttpClient as JavaHttpClient
+import java.net.http.HttpRequest as JavaHttpRequest
 
 class GatewayIntegrationTest : TestBase() {
     companion object {
@@ -202,7 +202,7 @@ class GatewayIntegrationTest : TestBase() {
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 SigningMode.STUB,
                 mock()
-            ).use {
+            ).usingLifecycle {
                 publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
                 it.startAndWaitForStarted()
                 val httpClient = JavaHttpClient.newBuilder()
@@ -242,7 +242,7 @@ class GatewayIntegrationTest : TestBase() {
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 SigningMode.STUB,
                 mock()
-            ).use {
+            ).usingLifecycle {
                 publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
                 it.startAndWaitForStarted()
                 val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore)
@@ -339,7 +339,7 @@ class GatewayIntegrationTest : TestBase() {
                     messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                     SigningMode.STUB,
                     mock()
-                ).use { gateway ->
+                ).usingLifecycle { gateway ->
                     gateway.start()
 
                     (1..configurationCount).map {
@@ -416,7 +416,7 @@ class GatewayIntegrationTest : TestBase() {
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 SigningMode.STUB,
                 mock()
-            ).use {
+            ).usingLifecycle {
                 it.startAndWaitForStarted()
                 (1..clientNumber).map { index ->
                     val serverInfo = DestinationInfo(serverAddress, aliceSNI[1], null, truststoreKeyStore)
@@ -432,7 +432,7 @@ class GatewayIntegrationTest : TestBase() {
                     assertThat(httpResponse.payload).isNotNull
                     val gatewayResponse = GatewayResponse.fromByteBuffer(ByteBuffer.wrap(httpResponse.payload))
                     assertThat(gatewayResponse.id).isEqualTo(gatewayMessage.id)
-                    client.stop()
+                    client.close()
                 }
             }
 
@@ -497,8 +497,8 @@ class GatewayIntegrationTest : TestBase() {
                 it.startAndWaitForStarted()
             }
 
-            var startTime: Long
-            var endTime: Long
+            var startTime: Long = 0
+            var endTime: Long = 0
             val gatewayAddress = Pair("localhost", getOpenPort())
             Gateway(
                 createConfigurationServiceFor(
@@ -514,7 +514,7 @@ class GatewayIntegrationTest : TestBase() {
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 SigningMode.STUB,
                 mock()
-            ).use {
+            ).usingLifecycle {
                 publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
                 startTime = Instant.now().toEpochMilli()
                 it.startAndWaitForStarted()
@@ -684,7 +684,7 @@ class GatewayIntegrationTest : TestBase() {
             receivedLatch.await()
             gateways.map {
                 thread {
-                    it.close()
+                    it.stop()
                 }
             }.forEach {
                 it.join()
@@ -713,7 +713,7 @@ class GatewayIntegrationTest : TestBase() {
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 SigningMode.STUB,
                 mock()
-            ).use { gateway ->
+            ).usingLifecycle { gateway ->
                 val port = getOpenPort()
                 logger.info("Publishing good config")
                 configPublisher.publishConfig(
@@ -843,7 +843,7 @@ class GatewayIntegrationTest : TestBase() {
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 SigningMode.STUB,
                 mock()
-            ).use { gateway ->
+            ).usingLifecycle { gateway ->
                 gateway.startAndWaitForStarted()
                 val firstCertificatesAuthority = CertificateAuthorityFactory
                     .createMemoryAuthority(RSA_TEMPLATE.toFactoryDefinitions())

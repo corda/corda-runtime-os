@@ -1,6 +1,5 @@
 package net.corda.httprpc.server.impl
 
-import kotlin.test.assertEquals
 import net.corda.httprpc.server.config.models.HttpRpcSettings
 import net.corda.httprpc.test.CustomNonSerializableString
 import net.corda.httprpc.test.CustomUnsafeString
@@ -12,12 +11,13 @@ import net.corda.httprpc.test.utils.multipartDir
 import net.corda.httprpc.tools.HttpVerb.DELETE
 import net.corda.httprpc.tools.HttpVerb.POST
 import net.corda.httprpc.tools.HttpVerb.PUT
-import net.corda.v5.base.util.NetworkHostAndPort
+import net.corda.utilities.NetworkHostAndPort
 import org.apache.http.HttpStatus
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import kotlin.test.assertEquals
 
 class HttpRpcServerResponseEntityTest : HttpRpcServerTestBase() {
     companion object {
@@ -29,7 +29,8 @@ class HttpRpcServerResponseEntityTest : HttpRpcServerTestBase() {
                 context,
                 null,
                 null,
-                HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE
+                HttpRpcSettings.MAX_CONTENT_LENGTH_DEFAULT_VALUE,
+                20000L
             )
             server = HttpRpcServerImpl(
                 listOf(
@@ -48,7 +49,7 @@ class HttpRpcServerResponseEntityTest : HttpRpcServerTestBase() {
         @JvmStatic
         fun cleanUpAfterClass() {
             if (isServerInitialized()) {
-                server.stop()
+                server.close()
             }
         }
     }

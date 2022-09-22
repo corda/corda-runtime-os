@@ -34,7 +34,7 @@ import net.corda.v5.base.util.debug
 import org.slf4j.Logger
 import java.nio.ByteBuffer
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.thread
@@ -69,9 +69,6 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
     private val lock = ReentrantLock()
     private var consumeLoopThread: Thread? = null
 
-    override val isRunning: Boolean
-        get() = !stopped
-
     override val subscriptionName: LifecycleCoordinatorName
         get() = lifecycleCoordinator.name
 
@@ -99,16 +96,10 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
         }
     }
 
-    override fun stop() {
-        if (!stopped) {
-            stopConsumeLoop()
-            lifecycleCoordinator.stop()
-        }
-    }
-
     override fun close() {
         if (!stopped) {
             stopConsumeLoop()
+            lifecycleCoordinator.stop()
             lifecycleCoordinator.close()
         }
     }
@@ -155,7 +146,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                     else -> {
                         log.error("$errorMsg. Fatal error occurred. Closing subscription.", ex)
                         lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, errorMsg)
-                        stop()
+                        this.close()
                     }
                 }
             }
@@ -258,8 +249,9 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
         }
 
         if (partitions.isEmpty()) {
-            future.completeExceptionally(CordaRPCAPISenderException("No partitions for topic ${config.topic}. Couldn't send"))
-            log.error("No partitions for topic ${config.topic}. Couldn't send")
+            val error = "No partitions for topic ${getRPCResponseTopic(config.topic)}. Couldn't send."
+            future.completeExceptionally(CordaRPCAPISenderException(error))
+            log.error(error)
         } else {
             val partition = partitions[0].partition
             val request = RPCRequest(

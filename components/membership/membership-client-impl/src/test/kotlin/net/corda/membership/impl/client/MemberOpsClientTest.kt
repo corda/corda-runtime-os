@@ -40,6 +40,7 @@ import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.virtualnode.ShortHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -62,7 +63,7 @@ import kotlin.test.assertTrue
 
 class MemberOpsClientTest {
     companion object {
-        private const val HOLDING_IDENTITY_ID = "nodeId"
+        private const val HOLDING_IDENTITY_ID = "00AABB00AABB"
         private val clock = TestClock(Instant.ofEpochSecond(100))
     }
 
@@ -132,7 +133,7 @@ class MemberOpsClientTest {
     }
 
     private val request = MemberRegistrationRequestDto(
-        HOLDING_IDENTITY_ID,
+        ShortHash.of(HOLDING_IDENTITY_ID),
         RegistrationActionDto.REQUEST_JOIN,
         mapOf("property" to "test"),
     )
@@ -177,7 +178,8 @@ class MemberOpsClientTest {
 
         val requestSent = rpcRequest.firstValue.request as RegistrationRpcRequest
 
-        assertThat(requestSent.holdingIdentityId).isEqualTo(request.holdingIdentityShortHash)
+        assertThat(requestSent.holdingIdentityId)
+            .isEqualTo(request.holdingIdentityShortHash.toString())
         assertThat(requestSent.registrationAction.name).isEqualTo(request.action.name)
         assertThat(requestSent.context.toMap()).isEqualTo(request.context)
     }
@@ -208,7 +210,7 @@ class MemberOpsClientTest {
 
         val requestSent = rpcRequest.firstValue.request as RegistrationStatusRpcRequest
 
-        assertEquals(request.holdingIdentityShortHash, requestSent.holdingIdentityId)
+        assertEquals(request.holdingIdentityShortHash.toString(), requestSent.holdingIdentityId)
     }
 
     @Test
@@ -661,7 +663,7 @@ class MemberOpsClientTest {
             .isNotNull
             .isEqualTo(
                 RegistrationStatusSpecificRpcRequest(
-                    request.holdingIdentityShortHash, "registration id"
+                    request.holdingIdentityShortHash.toString(), "registration id"
                 )
             )
     }

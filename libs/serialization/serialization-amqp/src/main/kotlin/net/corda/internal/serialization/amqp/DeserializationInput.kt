@@ -2,11 +2,11 @@ package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.ByteBufferInputStream
 import net.corda.internal.serialization.CordaSerializationEncoding
-import net.corda.internal.serialization.NullEncodingWhitelist
+import net.corda.internal.serialization.NullEncodingAllowList
 import net.corda.internal.serialization.SectionId
 import net.corda.internal.serialization.encodingNotPermittedFormat
 import net.corda.internal.serialization.model.TypeIdentifier
-import net.corda.serialization.EncodingWhitelist
+import net.corda.serialization.EncodingAllowList
 import net.corda.serialization.SerializationContext
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.types.ByteSequence
@@ -44,7 +44,7 @@ class DeserializationInput constructor(
         @Throws(AMQPNoTypeNotSerializableException::class)
         fun <T> withDataBytes(
             byteSequence: ByteSequence,
-            encodingWhitelist: EncodingWhitelist,
+            encodingAllowList: EncodingAllowList,
             task: (ByteBuffer) -> T
         ): T {
             // Check that the lead bytes match expected header
@@ -56,7 +56,7 @@ class DeserializationInput constructor(
                     when (SectionId.reader.readFrom(stream)) {
                         SectionId.ENCODING -> {
                             val encoding = CordaSerializationEncoding.reader.readFrom(stream)
-                            encodingWhitelist.acceptEncoding(encoding) ||
+                            encodingAllowList.acceptEncoding(encoding) ||
                                 throw AMQPNoTypeNotSerializableException(encodingNotPermittedFormat.format(encoding))
                             stream = encoding.decompress(stream)
                         }
@@ -69,8 +69,8 @@ class DeserializationInput constructor(
         }
 
         @Throws(AMQPNoTypeNotSerializableException::class)
-        fun getEnvelope(byteSequence: ByteSequence, encodingWhitelist: EncodingWhitelist = NullEncodingWhitelist): Envelope {
-            return withDataBytes(byteSequence, encodingWhitelist) { dataBytes ->
+        fun getEnvelope(byteSequence: ByteSequence, encodingAllowList: EncodingAllowList = NullEncodingAllowList): Envelope {
+            return withDataBytes(byteSequence, encodingAllowList) { dataBytes ->
                 val data = Data.Factory.create()
                 val expectedSize = dataBytes.remaining()
                 if (data.decode(dataBytes) != expectedSize.toLong()) {
@@ -86,7 +86,7 @@ class DeserializationInput constructor(
 
     @VisibleForTesting
     @Throws(AMQPNoTypeNotSerializableException::class)
-    fun getEnvelope(byteSequence: ByteSequence, context: SerializationContext) = getEnvelope(byteSequence, context.encodingWhitelist)
+    fun getEnvelope(byteSequence: ByteSequence, context: SerializationContext) = getEnvelope(byteSequence, context.encodingAllowList)
 
     @Throws(
         AMQPNotSerializableException::class,
@@ -123,7 +123,7 @@ class DeserializationInput constructor(
     @Throws(NotSerializableException::class)
     fun <T : Any> deserialize(bytes: ByteSequence, clazz: Class<T>, context: SerializationContext): T =
         des {
-            val envelope = getEnvelope(bytes, context.encodingWhitelist)
+            val envelope = getEnvelope(bytes, context.encodingAllowList)
 
             logger.trace { "deserialize blob scheme=\"${envelope.schema}\"" }
 
@@ -136,7 +136,7 @@ class DeserializationInput constructor(
         clazz: Class<T>,
         context: SerializationContext
     ): ObjectAndEnvelope<T> = des {
-        val envelope = getEnvelope(bytes, context.encodingWhitelist)
+        val envelope = getEnvelope(bytes, context.encodingAllowList)
         // Now pick out the obj and schema from the envelope.
         ObjectAndEnvelope(doReadObject(envelope, clazz, context), envelope)
     }

@@ -15,6 +15,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.configs
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
@@ -56,6 +57,7 @@ class RegistrationServiceLifecycleHandlerTest {
     private val memberInfoFactory: MemberInfoFactory = mock()
 
     private val hsmRegistrationClient: HSMRegistrationClient = mock()
+    private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory = mock()
 
     private val staticMemberRegistrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
@@ -68,6 +70,7 @@ class RegistrationServiceLifecycleHandlerTest {
         memberInfoFactory,
         mock(),
         mock(),
+        membershipSchemaValidatorFactory
     )
 
     private val registrationServiceLifecycleHandler = RegistrationServiceLifecycleHandler(

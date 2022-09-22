@@ -8,10 +8,11 @@ import com.networknt.schema.JsonSchemaFactory
 import com.networknt.schema.SchemaValidatorsConfig
 import com.networknt.schema.SpecVersion
 import com.networknt.schema.ValidationMessage
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigRenderOptions
-import java.io.InputStream
 import net.corda.libs.configuration.SmartConfig
+import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.validation.ConfigurationSchemaFetchException
 import net.corda.libs.configuration.validation.ConfigurationValidationException
 import net.corda.libs.configuration.validation.ConfigurationValidator
@@ -19,6 +20,7 @@ import net.corda.schema.configuration.provider.SchemaProvider
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.versioning.Version
+import java.io.InputStream
 
 internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProvider) : ConfigurationValidator {
 
@@ -47,6 +49,27 @@ internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProv
         validateConfigAndGetJSONNode(key, config, schemaInput, null, applyDefaults)
     }
 
+    override fun getDefaults(key: String, version: Version) : Config {
+        val schemaInput = try {
+            schemaProvider.getSchema(key, version)
+        } catch (e: Exception) {
+            val message = "Could not retrieve the schema for key $key at schema version $version: ${e.message}"
+            logger.error(message, e)
+            throw ConfigurationSchemaFetchException(message, e)
+        }
+        val configAsJSONNode = objectMapper.createObjectNode()
+        val errors = try {
+            val schema = getSchema(schemaInput, applyDefaults = true)
+            schema.walk(configAsJSONNode, true).validationMessages
+        } catch (e: Exception) {
+            val message = "Could not retrieve schema defaults for key $key at schema version $version: ${e.message}"
+            logger.error(message, e)
+            throw ConfigurationSchemaFetchException(message, e)
+        }
+        handleErrors(errors, key, version, SmartConfigImpl.empty())
+        return ConfigFactory.parseString(configAsJSONNode.toString())
+    }
+
     private fun validateConfigAndGetJSONNode(
         key: String,
         config: SmartConfig,
@@ -54,7 +77,7 @@ internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProv
         version: Version?,
         applyDefaults: Boolean
     ): JsonNode {
-        logger.debug { "Configuration to validate: ${config.toSafeConfig().root().render(ConfigRenderOptions.concise())}" }
+        logger.info("Configuration to validate: ${config.toSafeConfig().root().render(ConfigRenderOptions.concise())}")
         //jsonNode is updated in place by walker when [applyDefaults] is true
         val configAsJSONNode = config.toJsonNode()
         val secretsNode = configSecretHelper.hideSecrets(configAsJSONNode)
@@ -62,7 +85,7 @@ internal class ConfigurationValidatorImpl(private val schemaProvider: SchemaProv
             // Note that the JSON schema library does lazy schema loading, so schema retrieval issues may not manifest
             // until the validation stage.
             val schema = getSchema(schemaInput, applyDefaults)
-            logger.debug { "Schema to validate against: $schema" }
+            logger.info("Schema to validate against: $schema")
             schema.walk(configAsJSONNode, true).validationMessages
         } catch (e: Exception) {
             val message = "Could not retrieve the schema for key $key at schema version $version: ${e.message}"

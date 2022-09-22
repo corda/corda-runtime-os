@@ -2,8 +2,8 @@ package net.corda.virtualnode.write.db.impl.writer
 
 import net.corda.db.core.DbPrivilege
 import net.corda.libs.configuration.SmartConfig
-import net.corda.schema.configuration.ConfigKeys.DB_PASS
-import net.corda.schema.configuration.ConfigKeys.DB_USER
+import net.corda.schema.configuration.DatabaseConfig.DB_PASS
+import net.corda.schema.configuration.DatabaseConfig.DB_USER
 
 /**
  * Virtual node DB connection data.

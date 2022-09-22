@@ -31,7 +31,7 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
     }
 
     /** Reads CPI metadata from the database. */
-    internal fun getCPIMetadataByChecksum(cpiFileChecksum: String): CpiMetadataLite? {
+    internal fun getCpiMetadataByChecksum(cpiFileChecksum: String): CpiMetadataLite? {
         if (cpiFileChecksum.isBlank()) {
             log.warn("CPI file checksum cannot be empty")
             return null
@@ -115,7 +115,9 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
                 connections.vaultDdlConnectionId,
                 connections.vaultDmlConnectionId,
                 connections.cryptoDdlConnectionId,
-                connections.cryptoDmlConnectionId
+                connections.cryptoDmlConnectionId,
+                connections.uniquenessDdlConnectionId,
+                connections.uniquenessDmlConnectionId
             )
         } ?: HoldingIdentityEntity(
             holdingIdentity.shortHash.value,
@@ -126,6 +128,8 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
             connections.vaultDmlConnectionId,
             connections.cryptoDdlConnectionId,
             connections.cryptoDmlConnectionId,
+            connections.uniquenessDdlConnectionId,
+            connections.uniquenessDmlConnectionId,
             null
         )
         entityManager.persist(entity)
@@ -196,6 +200,8 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
         connections?.vaultDmlConnectionId,
         connections?.cryptoDdlConnectionId,
         connections?.cryptoDmlConnectionId,
+        connections?.uniquenessDdlConnectionId,
+        connections?.uniquenessDmlConnectionId,
         null
     )
 }

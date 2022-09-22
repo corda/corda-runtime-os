@@ -13,6 +13,8 @@ import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgres
 import net.corda.membership.httprpc.v1.types.response.RegistrationRequestStatus
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.v5.base.util.contextLogger
+import net.corda.virtualnode.ShortHash
+import net.corda.virtualnode.read.rpc.extensions.ofOrThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -131,7 +133,9 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
         }
 
         override fun checkRegistrationProgress(holdingIdentityShortHash: String): List<RegistrationRequestStatus> {
-            return memberOpsClient.checkRegistrationProgress(holdingIdentityShortHash).map { it.fromDto() }
+            return memberOpsClient.checkRegistrationProgress(
+                ShortHash.ofOrThrow(holdingIdentityShortHash)
+            ).map { it.fromDto() }
         }
 
         override fun checkSpecificRegistrationProgress(
@@ -139,7 +143,7 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
             registrationRequestId: String,
         ): RegistrationRequestStatus? {
             return memberOpsClient.checkSpecificRegistrationProgress(
-                holdingIdentityShortHash,
+                ShortHash.ofOrThrow(holdingIdentityShortHash),
                 registrationRequestId
             )?.fromDto()
         }

@@ -19,6 +19,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import net.corda.test.util.time.TestClock
+import net.corda.virtualnode.ShortHash
 import org.assertj.core.api.Assertions.assertThat
 import org.mockito.kotlin.whenever
 import java.time.Instant
@@ -26,7 +27,8 @@ import kotlin.test.assertFailsWith
 
 class MemberRegistrationRpcOpsTest {
     companion object {
-        private const val HOLDING_IDENTITY_ID = "DUMMY_ID"
+        private const val HOLDING_IDENTITY_ID = "1234567890ab"
+        private val holdingIdShortHash = ShortHash.of(HOLDING_IDENTITY_ID)
         private const val ACTION = "requestJoin"
         private val clock = TestClock(Instant.ofEpochSecond(100))
     }
@@ -115,7 +117,7 @@ class MemberRegistrationRpcOpsTest {
                 MemberInfoSubmittedDto(mapOf("key $it" to "value"))
             )
         }
-        whenever(memberOpsClient.checkRegistrationProgress(HOLDING_IDENTITY_ID)).doReturn(data)
+        whenever(memberOpsClient.checkRegistrationProgress(holdingIdShortHash)).doReturn(data)
         memberRegistrationRpcOps.start()
         memberRegistrationRpcOps.activate("")
 
@@ -135,7 +137,7 @@ class MemberRegistrationRpcOpsTest {
             MemberInfoSubmittedDto(mapOf("key" to "value"))
         )
 
-        whenever(memberOpsClient.checkSpecificRegistrationProgress(HOLDING_IDENTITY_ID, "id")).doReturn(data)
+        whenever(memberOpsClient.checkSpecificRegistrationProgress(holdingIdShortHash, "id")).doReturn(data)
         memberRegistrationRpcOps.start()
         memberRegistrationRpcOps.activate("")
 
@@ -146,7 +148,7 @@ class MemberRegistrationRpcOpsTest {
     }
     @Test
     fun `checkSpecificRegistrationProgress returns null when no data is returned`() {
-        whenever(memberOpsClient.checkSpecificRegistrationProgress(HOLDING_IDENTITY_ID, "id")).doReturn(null)
+        whenever(memberOpsClient.checkSpecificRegistrationProgress(holdingIdShortHash, "id")).doReturn(null)
         memberRegistrationRpcOps.start()
         memberRegistrationRpcOps.activate("")
 
