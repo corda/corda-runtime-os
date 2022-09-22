@@ -16,7 +16,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
-class WireTransactionSerializerTest {
+class WireTransactionAMQPSerializerTest {
     companion object {
         private lateinit var digestService: DigestService
         private lateinit var merkleTreeFactory: MerkleTreeFactory

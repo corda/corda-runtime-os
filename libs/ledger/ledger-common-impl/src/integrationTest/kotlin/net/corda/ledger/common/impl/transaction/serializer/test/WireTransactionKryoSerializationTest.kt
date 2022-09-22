@@ -49,7 +49,7 @@ class SandboxManagementService @Activate constructor(
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
-class WireTransactionSerializationTest {
+class WireTransactionKryoSerializationTest {
     @RegisterExtension
     private val lifecycle = AllTestsLifecycle()
 
