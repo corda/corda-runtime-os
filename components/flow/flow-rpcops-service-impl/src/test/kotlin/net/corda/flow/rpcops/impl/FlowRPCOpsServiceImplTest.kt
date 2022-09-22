@@ -1,6 +1,5 @@
 package net.corda.flow.rpcops.impl
 
-import java.util.stream.Stream
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.flow.rpcops.FlowRPCOpsService
@@ -33,6 +32,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.util.stream.Stream
 
 class LifecycleTestContext {
     val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory>()
@@ -184,6 +184,6 @@ class FlowRPCOpsServiceImplTest {
     @Test
     fun `Test stop event closes flow status cache service`() {
         eventHandler.processEvent(StopEvent(), lifecycleCoordinator)
-        verify(flowStatusCacheService).close()
+        verify(flowStatusCacheService).stop()
     }
 }

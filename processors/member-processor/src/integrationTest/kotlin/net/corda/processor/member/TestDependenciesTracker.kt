@@ -21,7 +21,7 @@ class TestDependenciesTracker(
     coordinatorFactory: LifecycleCoordinatorFactory,
     private val lifecycleRegistry: LifecycleRegistry,
     private val dependencies: Set<LifecycleCoordinatorName>
-) : Lifecycle, AutoCloseable {
+) : Lifecycle {
     companion object {
         private val logger = contextLogger()
     }
@@ -42,9 +42,6 @@ class TestDependenciesTracker(
     override fun stop() {
         logger.info("Stopping...")
         coordinator.stop()
-    }
-
-    override fun close() {
         registrationHandle?.close()
         coordinator.close()
     }

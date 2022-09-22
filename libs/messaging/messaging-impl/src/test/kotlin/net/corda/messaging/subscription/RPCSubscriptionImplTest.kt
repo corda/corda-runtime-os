@@ -21,6 +21,7 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.constants.SubscriptionType
 import net.corda.messaging.createResolvedSubscriptionConfig
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -33,6 +34,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -183,6 +185,153 @@ class RPCSubscriptionImplTest {
         assertEquals(capturedValue[0].second.value?.responseStatus, ResponseStatus.CANCELLED)
     }
 
+    @Test
+    fun `rpc subscription receives bad request and correctly continues`() {
+        val badRecord = CordaConsumerRecord(
+            TOPIC_PREFIX + config.topic, 0, 0, "0",
+            RPCRequest(
+                "sender",
+                "0",
+                Instant.now(),
+                "$TOPIC_PREFIX${config.topic}.resp",
+                0,
+                null // This is bad
+            ),
+            0
+        )
+        val goodRecord = CordaConsumerRecord(
+            TOPIC_PREFIX + config.topic, 0, 2, "0",
+            RPCRequest(
+                "sender",
+                "1",
+                Instant.now(),
+                "$TOPIC_PREFIX${config.topic}.resp",
+                0,
+                dummyRequest.toByteBuffer()
+            ),
+            1
+        )
+        var firstTime = true
+        val (kafkaConsumer, consumerBuilder) = setupStandardMocks()
+        doAnswer {
+            if (firstTime) {
+                firstTime = false
+                listOf(badRecord, goodRecord)
+            } else {
+                listOf(goodRecord)
+            }
+        }.whenever(kafkaConsumer).poll(config.pollTimeout)
+
+        val processor = TestProcessor(ResponseStatus.OK)
+        val subscription = RPCSubscriptionImpl(
+            config,
+            consumerBuilder,
+            cordaProducerBuilder,
+            processor,
+            serializer,
+            deserializer,
+            lifecycleCoordinatorFactory,
+            threadFactory,
+        )
+
+        subscription.start()
+        block.firstValue.invoke()
+
+        verify(kafkaConsumer, times(1)).subscribe(config.topic)
+        assertThat(processor.incomingRecords.size).isEqualTo(1)
+        verify(kafkaProducer, times(2)).sendRecordsToPartitions(captor.capture())
+
+        val failResponse = captor.firstValue
+        assertThat(failResponse[0].second.value?.responseStatus).isEqualTo(ResponseStatus.FAILED)
+
+        val capturedValue = captor.secondValue
+        assertEquals(capturedValue[0].second.value?.responseStatus, ResponseStatus.OK)
+    }
+
+    @Test
+    fun `rpc subscription errors on malformed request`() {
+        val (kafkaConsumer, consumerBuilder) = setupStandardMocks()
+        var first = true
+        doAnswer {
+            if (first) {
+                first = false
+                listOf(
+                    CordaConsumerRecord(
+                        TOPIC_PREFIX + config.topic, 0, 0, "0",
+                        null, // Missing RPCRequest
+                        0
+                    )
+                )
+            } else {
+                throw CordaRuntimeException("End the test")
+            }
+        }.whenever(kafkaConsumer).poll(config.pollTimeout)
+
+        val processor = TestProcessor(ResponseStatus.OK)
+        val subscription = RPCSubscriptionImpl(
+            config,
+            consumerBuilder,
+            cordaProducerBuilder,
+            processor,
+            serializer,
+            deserializer,
+            lifecycleCoordinatorFactory,
+            threadFactory,
+        )
+
+        subscription.start()
+        block.firstValue.invoke()
+
+        assertThat(processor.incomingRecords.size).isEqualTo(0)
+        verify(kafkaProducer, never()).sendRecordsToPartitions(any())
+    }
+
+    @Test
+    fun `rpc subscription errors on missing reply topic`() {
+        val (kafkaConsumer, consumerBuilder) = setupStandardMocks()
+        var first = true
+        doAnswer {
+            if (first) {
+                first = false
+                listOf(
+                    CordaConsumerRecord(
+                        TOPIC_PREFIX + config.topic, 0, 0, "0",
+                        RPCRequest(
+                            "sender",
+                            "0",
+                            Instant.now(),
+                            "", // Missing reply topic
+                            0,
+                            dummyRequest.toByteBuffer()
+                        ),
+                        0
+                    )
+                )
+            } else {
+                throw CordaRuntimeException("End the test")
+            }
+        }.whenever(kafkaConsumer).poll(config.pollTimeout)
+
+        val processor = TestProcessor(ResponseStatus.OK)
+        val subscription = RPCSubscriptionImpl(
+            config,
+            consumerBuilder,
+            cordaProducerBuilder,
+            processor,
+            serializer,
+            deserializer,
+            lifecycleCoordinatorFactory,
+            threadFactory,
+        )
+
+        subscription.start()
+        block.firstValue.invoke()
+
+        assertThat(processor.incomingRecords.size).isEqualTo(0)
+        verify(kafkaProducer, never()).sendRecordsToPartitions(any())
+    }
+
+
     private fun setupStandardMocks(): Pair<CordaConsumer<String, RPCRequest>, CordaConsumerBuilder> {
         val kafkaConsumer: CordaConsumer<String, RPCRequest> = mock()
         val cordaConsumerBuilder: CordaConsumerBuilder = mock()
@@ -216,9 +365,11 @@ class RPCSubscriptionImplTest {
                             HoldingIdentity("identity", "group")
                         )
                     }
+
                     ResponseStatus.FAILED -> {
                         respFuture.completeExceptionally(CordaMessageAPIFatalException("Abandon ship"))
                     }
+
                     else -> {
                         respFuture.cancel(true)
                     }

@@ -1,22 +1,31 @@
 package net.corda.applications.workers.smoketest.flow
 
-import java.util.UUID
 import net.corda.applications.workers.smoketest.FlowStatus
 import net.corda.applications.workers.smoketest.GROUP_ID
 import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_FAILED
 import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_SUCCESS
 import net.corda.applications.workers.smoketest.RpcSmokeTestInput
+import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
+import net.corda.applications.workers.smoketest.TEST_CPI_NAME
 import net.corda.applications.workers.smoketest.X500_BOB
 import net.corda.applications.workers.smoketest.X500_CHARLIE
 import net.corda.applications.workers.smoketest.X500_DAVID
-import net.corda.applications.workers.smoketest.awaitMultipleRpcFlowFinished
 import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
+import net.corda.applications.workers.smoketest.configWithDefaultsNode
+import net.corda.applications.workers.smoketest.createKeyFor
+import net.corda.applications.workers.smoketest.forceUploadCordaPackage
+import net.corda.applications.workers.smoketest.getConfig
 import net.corda.applications.workers.smoketest.getFlowClasses
 import net.corda.applications.workers.smoketest.getHoldingIdShortHash
 import net.corda.applications.workers.smoketest.getOrCreateVirtualNodeFor
 import net.corda.applications.workers.smoketest.getRpcFlowResult
 import net.corda.applications.workers.smoketest.registerMember
 import net.corda.applications.workers.smoketest.startRpcFlow
+import net.corda.applications.workers.smoketest.toJsonString
+import net.corda.applications.workers.smoketest.updateConfig
+import net.corda.applications.workers.smoketest.waitForConfigurationChange
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
@@ -27,6 +36,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.TestMethodOrder
+import java.util.UUID
 
 @Suppress("Unused")
 @Order(20)
@@ -40,34 +50,31 @@ class FlowTests {
         var charlieHoldingId: String = getHoldingIdShortHash(X500_CHARLIE, GROUP_ID)
 
         val invalidConstructorFlowNames = listOf(
-            "net.cordapp.flowworker.development.smoketests.flow.errors.PrivateConstructorFlow",
-            "net.cordapp.flowworker.development.smoketests.flow.errors.PrivateConstructorJavaFlow",
-            "net.cordapp.flowworker.development.smoketests.flow.errors.NoDefaultConstructorFlow",
-            "net.cordapp.flowworker.development.smoketests.flow.errors.NoDefaultConstructorJavaFlow",
+            "net.cordapp.testing.smoketests.flow.errors.PrivateConstructorFlow",
+            "net.cordapp.testing.smoketests.flow.errors.PrivateConstructorJavaFlow",
+            "net.cordapp.testing.smoketests.flow.errors.NoDefaultConstructorFlow",
+            "net.cordapp.testing.smoketests.flow.errors.NoDefaultConstructorJavaFlow",
         )
 
         val dependencyInjectionFlowNames = listOf(
-            "net.cordapp.flowworker.development.smoketests.flow.DependencyInjectionTestFlow",
-            "net.cordapp.flowworker.development.smoketests.flow.inheritance.DependencyInjectionTestJavaFlow",
+            "net.cordapp.testing.smoketests.flow.DependencyInjectionTestFlow",
+            "net.cordapp.testing.smoketests.flow.inheritance.DependencyInjectionTestJavaFlow",
         )
 
         val expectedFlows = listOf(
-            "net.cordapp.flowworker.development.smoketests.virtualnode.ReturnAStringFlow",
-            "net.cordapp.flowworker.development.smoketests.flow.RpcSmokeTestFlow",
-            "net.cordapp.flowworker.development.testflows.TestFlow",
-            "net.cordapp.flowworker.development.testflows.BrokenProtocolFlow",
-            "net.cordapp.flowworker.development.testflows.MessagingFlow",
-            "net.cordapp.flowworker.development.testflows.PersistenceFlow",
-            "net.cordapp.flowworker.development.testflows.UniquenessCheckTestFlow",
+            "net.cordapp.testing.smoketests.virtualnode.ReturnAStringFlow",
+            "net.cordapp.testing.smoketests.flow.RpcSmokeTestFlow",
+            "net.cordapp.testing.testflows.TestFlow",
+            "net.cordapp.testing.testflows.BrokenProtocolFlow",
+            "net.cordapp.testing.testflows.MessagingFlow",
+            "net.cordapp.testing.testflows.PersistenceFlow",
+            "net.cordapp.testing.testflows.UniquenessCheckTestFlow",
         ) + invalidConstructorFlowNames + dependencyInjectionFlowNames
 
-        /*
-         * when debugging if you want to run the tests multiple times comment out the @BeforeAll
-         * attribute to disable the vnode creation after the first run.
-         */
         @BeforeAll
         @JvmStatic
         internal fun beforeAll() {
+            // Make sure Virtual Nodes are created
             val bobActualHoldingId = getOrCreateVirtualNodeFor(X500_BOB)
             val charlieActualHoldingId = getOrCreateVirtualNodeFor(X500_CHARLIE)
             val davidActualHoldingId = getOrCreateVirtualNodeFor(X500_DAVID)
@@ -108,10 +115,16 @@ class FlowTests {
             data = mapOf("echo_value" to "hello")
         }
 
-        startRpcFlow(davidHoldingId, requestBody)
-        startRpcFlow(davidHoldingId, requestBody)
+        val flowIds = mutableListOf(
+            startRpcFlow(davidHoldingId, requestBody),
+            startRpcFlow(davidHoldingId, requestBody)
+        )
 
-        awaitMultipleRpcFlowFinished(davidHoldingId, 2)
+        flowIds.forEach {
+            val flowResult = awaitRpcFlowFinished(davidHoldingId, it)
+            assertThat(flowResult.flowError).isNull()
+            assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        }
     }
 
     @Test
@@ -597,9 +610,60 @@ class FlowTests {
             startRpcFlow(
                 bobHoldingId,
                 mapOf(),
-                "net.cordapp.flowworker.development.testflows.UniquenessCheckTestFlow"
+                "net.cordapp.testing.testflows.UniquenessCheckTestFlow"
             )
         val result = awaitRpcFlowFinished(bobHoldingId, requestID)
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+    }
+
+    @Test
+    fun `cluster configuration changes are picked up and workers continue to operate normally`() {
+        val currentConfigValue = getConfig(MESSAGING_CONFIG).configWithDefaultsNode()[MAX_ALLOWED_MSG_SIZE].asInt()
+        val newConfigurationValue = (currentConfigValue * 1.5).toInt()
+
+        // Update cluster configuration (ConfigProcessor should kick off on all workers at this point)
+        updateConfig(mapOf(MAX_ALLOWED_MSG_SIZE to newConfigurationValue).toJsonString(), MESSAGING_CONFIG)
+
+        // Wait for the rpc-worker to reload the configuration and come back up
+        waitForConfigurationChange(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, newConfigurationValue.toString())
+
+        try {
+            // Execute some flows which require functionality from different workers and make sure they succeed
+            val flowIds = mutableListOf(
+                startRpcFlow(
+                    bobHoldingId,
+                    RpcSmokeTestInput().apply {
+                        command = "persistence_persist"
+                        data = mapOf("id" to UUID.randomUUID().toString())
+                    }
+                ),
+
+                startRpcFlow(
+                    bobHoldingId,
+                    RpcSmokeTestInput().apply {
+                        command = "crypto_sign_and_verify"
+                        data = mapOf("publicKey" to createKeyFor(bobHoldingId, UUID.randomUUID().toString(), "LEDGER", "CORDA.RSA"))
+                    }
+                ),
+
+                startRpcFlow(
+                    bobHoldingId,
+                    RpcSmokeTestInput().apply {
+                        command = "lookup_member_by_x500_name"
+                        data = mapOf("id" to X500_CHARLIE)
+                    }
+                )
+            )
+
+            flowIds.forEach {
+                val flowResult = awaitRpcFlowFinished(bobHoldingId, it)
+                assertThat(flowResult.flowError).isNull()
+                assertThat(flowResult.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+            }
+        } finally {
+            // Be a good neighbour and rollback the configuration change back to what it was
+            updateConfig(mapOf(MAX_ALLOWED_MSG_SIZE to currentConfigValue).toJsonString(), MESSAGING_CONFIG)
+            waitForConfigurationChange(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, currentConfigValue.toString())
+        }
     }
 }

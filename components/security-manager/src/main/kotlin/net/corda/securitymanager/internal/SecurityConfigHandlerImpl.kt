@@ -64,7 +64,7 @@ class SecurityConfigHandlerImpl @Activate constructor(
     }
 
     @Deactivate
-    override fun close() {
+    fun close() {
         configReadServiceHandle.close()
         coordinator.close()
     }

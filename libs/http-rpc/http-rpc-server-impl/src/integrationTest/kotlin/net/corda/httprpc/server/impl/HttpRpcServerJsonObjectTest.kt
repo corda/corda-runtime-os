@@ -1,7 +1,13 @@
 package net.corda.httprpc.server.impl
 
 import net.corda.httprpc.server.config.models.HttpRpcSettings
-import net.corda.httprpc.test.*
+import net.corda.httprpc.test.CustomNonSerializableString
+import net.corda.httprpc.test.CustomUnsafeString
+import net.corda.httprpc.test.ObjectsInJsonEndpointImpl
+import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
+import net.corda.httprpc.test.utils.WebRequest
+import net.corda.httprpc.test.utils.findFreePort
+import net.corda.httprpc.test.utils.multipartDir
 import net.corda.httprpc.tools.HttpVerb.POST
 import net.corda.utilities.NetworkHostAndPort
 import org.apache.http.HttpStatus
@@ -10,10 +16,6 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
-import net.corda.httprpc.test.utils.TestHttpClientUnirestImpl
-import net.corda.httprpc.test.utils.WebRequest
-import net.corda.httprpc.test.utils.findFreePort
-import net.corda.httprpc.test.utils.multipartDir
 
 class HttpRpcServerJsonObjectTest : HttpRpcServerTestBase() {
     companion object {
@@ -44,7 +46,7 @@ class HttpRpcServerJsonObjectTest : HttpRpcServerTestBase() {
         @JvmStatic
         fun cleanUpAfterClass() {
             if (isServerInitialized()) {
-                server.stop()
+                server.close()
             }
         }
     }
