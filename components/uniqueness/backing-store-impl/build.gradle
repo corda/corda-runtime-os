@@ -24,8 +24,8 @@ dependencies {
     implementation project(':libs:db:db-admin-impl')
     implementation project(":libs:uniqueness:jpa-backing-store-datamodel")
     implementation project(":libs:uniqueness:common")
+    implementation project(':libs:virtual-node:virtual-node-info')
 
-    // TODO: clean up - are all required?
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation project(":testing:crypto-testkit")
@@ -44,7 +44,6 @@ dependencies {
     integrationTestImplementation project(':libs:lifecycle:lifecycle')
     integrationTestImplementation project(':libs:uniqueness:jpa-backing-store-datamodel')
     integrationTestImplementation project(':testing:db-testkit')
-    integrationTestImplementation project(':libs:virtual-node:virtual-node-info')
 
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     integrationTestRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
@@ -52,5 +51,4 @@ dependencies {
     // For JSON serialization to DB
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:$jacksonVersion"
-
 }

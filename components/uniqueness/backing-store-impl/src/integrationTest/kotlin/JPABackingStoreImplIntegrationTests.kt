@@ -162,6 +162,7 @@ class JPABackingStoreImplIntegrationTests {
         }
     }
 
+    // TODO/FIXME: This tests may be redundant - remove after review
     @Nested
     inner class LifeCycleTests {
         @Test
@@ -281,6 +282,7 @@ class JPABackingStoreImplIntegrationTests {
             val consumingStateRefs = LinkedList<UniquenessCheckStateRef>()
             consumingStateRefs.push(consumingStateRef)
 
+            // TODO/FIXME: using exception hierarchy we may want to throw a specific exception for debugging and readability
             assertThrows<IllegalStateException> {
                 backingStoreImpl.session { session ->
                     session.executeTransaction { _, txnOps ->
