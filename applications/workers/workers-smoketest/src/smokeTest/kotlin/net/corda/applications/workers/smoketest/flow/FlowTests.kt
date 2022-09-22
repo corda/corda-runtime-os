@@ -642,7 +642,7 @@ class FlowTests {
                     bobHoldingId,
                     RpcSmokeTestInput().apply {
                         command = "crypto_sign_and_verify"
-                        data = mapOf("publicKey" to createKeyFor(bobHoldingId, UUID.randomUUID().toString(), "LEDGER", "CORDA.RSA"))
+                        data = mapOf("memberX500" to X500_BOB)
                     }
                 ),
 
