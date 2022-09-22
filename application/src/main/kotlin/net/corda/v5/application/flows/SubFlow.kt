@@ -5,26 +5,27 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 
 /**
- * A [SubFlow] is a type of [Flow] that should be started within another [Flow] in using with [FlowEngine.subFlow].
- *
- * [SubFlow]s can be used to:
+ * A [SubFlow] can be used to:
  *
  * - Extract code from a [Flow] into smaller [SubFlow]s that can be reused.
  * - Initiate new counterparty [Flow]s when combined with [InitiatingFlow].
+ *
+ * [SubFlow]s are executed by calling [FlowEngine.subFlow] and passing a [SubFlow] instance into the method.
  *
  * Arguments can be passed into a [SubFlow] instance via its constructor or setter methods as there are no special
  * requirements around constructing a [SubFlow] instance.
  *
  * A [SubFlow] not annotated with [InitiatingFlow] cannot start new sessions of its own, but can have sessions created
  * by the [Flow] calling [FlowEngine.subFlow] passed into it (generally via a constructor) which it can interact with.
- * The lifecycles of these sessions are not bound to the [SubFlow] are are not tidied up upon leaving [SubFlow.call].
+ * The lifecycles of these sessions are not bound to the [SubFlow] instance and are not tidied up upon leaving
+ * [SubFlow.call].
  *
- * > Note, that [SubFlow]s not annotated with [InitiatingFlow] are typically referred to as _inline_ [SubFlow]s.
+ * Note, that [SubFlow]s not annotated with [InitiatingFlow] are typically referred to as inline [SubFlow]s.
  *
  * Annotating a [SubFlow] with [InitiatingFlow] allows it to initiate new sessions through [FlowMessaging] causing the
  * counterparty [Flow] with the matching protocol to be started. The lifecycles of these sessions are then bound to
  * the [SubFlow] and are tidied up upon leaving [SubFlow.call]. Sessions can still be passed into the [SubFlow] and
- * interacted with, but the lifecycles of these sessions are not bound to the [SubFlow].
+ * interacted with, but the lifecycles of these sessions are not bound to the [SubFlow] instance.
  *
  * Example usage of a [SubFlow] not annotated with [InitiatingFlow]:
  *
@@ -74,8 +75,8 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
  *     override fun call(): String {
  *         val newSession: FlowSession = flowMessaging.initiateFlow(x500Name)
  *
- *         val newSessionResult: String = newSession.sendAndReceive<String>("hello").unwrap { it }
- *         val existingSessionResult: String = existingSession.receive<String>().unwrap { it }
+ *         val newSessionResult: String = newSession.sendAndReceive<String>("hello")
+ *         val existingSessionResult: String = existingSession.receive<String>()
  *
  *         return newSessionResult + existingSessionResult
  *     }
@@ -103,8 +104,8 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
  *     public String call() {
  *         FlowSession newSession = flowMessaging.initiateFlow(x500Name);
  *
- *         String newSessionResult = newSession.sendAndReceive(String.class, "hello").unwrap(it -> it);
- *         String existingSessionResult = existingSession.receive(String.class).unwrap(it -> it);
+ *         String newSessionResult = newSession.sendAndReceive(String.class, "hello");
+ *         String existingSessionResult = existingSession.receive(String.class);
  *
  *         return newSessionResult + existingSessionResult;
  *     }

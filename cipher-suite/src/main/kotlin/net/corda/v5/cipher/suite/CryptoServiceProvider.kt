@@ -16,11 +16,13 @@ interface CryptoServiceProvider<T : Any> {
     val configType: Class<T>
 
     /**
+     * Creates a new instance of the [CryptoService] implementation.
+     *
      * @param config crypto service configuration
      * @param secrets provides access to decrypting the configuration secrets
      *
-     * The secrets have to be declared as Map<String, Any> in the corresponding POJO, the JSON will look like
-     * in the example bellow for the property called 'passphrase'
+     * The secrets have to be declared as Map in the corresponding POJO, the JSON will look like
+     * the example below for the property called 'passphrase'
      *
      * POJO (Kotlin):
      *```

@@ -13,10 +13,10 @@ import java.security.PublicKey
 import java.util.*
 
 /**
- * [SigningService] is responsible for storing and using private keys to sign things. An implementation of this may,
- * for example, call out to a hardware security module that enforces various auditing and frequency-of-use requirements.
+ * Responsible for storing and using private keys to sign things. An implementation of this may, for example, call out
+ * to a hardware security module that enforces various auditing and frequency-of-use requirements.
  *
- * The platform will provide an instance of [SigningService] to flows via property injection.
+ * Corda provides an instance of [DigitalSignatureVerificationService] to flows via property injection.
  */
 @DoNotImplement
 interface SigningService {

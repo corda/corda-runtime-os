@@ -3,7 +3,7 @@ package net.corda.v5.cipher.suite
 import java.security.PublicKey
 
 /**
- * Holding class for the returned by the [CryptoService] wrapped key pair.
+ * Holding class for the generated wrapped key pair returned by the [CryptoService].
  *
  * @property publicKey The public key of the pair.
  * @property keyMaterial The encoded and encrypted private key.

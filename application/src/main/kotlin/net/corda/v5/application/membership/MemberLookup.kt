@@ -15,7 +15,7 @@ import java.security.PublicKey
 interface MemberLookup {
 
     /**
-     * Returns the [MemberInfo] for the calling Flow.
+     * Returns the [MemberInfo] for the calling flow.
      */
     @Suspendable
     fun myInfo(): MemberInfo

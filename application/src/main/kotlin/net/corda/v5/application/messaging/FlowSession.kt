@@ -57,8 +57,8 @@ interface FlowSession {
      * received, which must be of the given [receiveType].
      *
      * Note that this function is not just a simple send and receive pair. It is more efficient and more correct to use
-     * sendAndReceive when you expect to do a message swap rather than use FlowSession.send and then
-     * FlowSession.receive.
+     * sendAndReceive when you expect to do a message swap rather than use [FlowSession.send] and then
+     * [FlowSession.receive].
      *
      * @param R The data type received from the counterparty.
      * @param receiveType The data type received from the counterparty.

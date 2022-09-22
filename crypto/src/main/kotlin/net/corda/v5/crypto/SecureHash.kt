@@ -10,11 +10,19 @@ import java.nio.ByteBuffer
  * Container for a cryptographically secure hash value.
  * Provides utilities for generating a cryptographic hash using different algorithms (currently only SHA-256 supported).
  *
- * @property algorithm Hashing algorithm
+ * @param algorithm Hashing algorithm which was used to generate the hash.
+ * @param bytes Hash value.
+ *
  * @property bytes Hash value
  */
 @CordaSerializable
-class SecureHash(val algorithm: String, bytes: ByteArray) : OpaqueBytes(bytes) {
+class SecureHash(
+    /**
+     * Hashing algorithm which was used to generate the hash.
+     */
+    val algorithm: String,
+    bytes: ByteArray
+) : OpaqueBytes(bytes) {
 
     companion object {
         const val DELIMITER = ':'
@@ -52,6 +60,9 @@ class SecureHash(val algorithm: String, bytes: ByteArray) : OpaqueBytes(bytes) {
      */
     fun prefixChars(prefixLen: Int = 6) = toHexString().substring(0, prefixLen)
 
+    /**
+     * Compares the two given instances of the [SecureHash] based on the content.
+     */
     override fun equals(other: Any?): Boolean {
         return when {
             this === other -> true
@@ -60,8 +71,15 @@ class SecureHash(val algorithm: String, bytes: ByteArray) : OpaqueBytes(bytes) {
         }
     }
 
+    /**
+     * Returns a hash code value for the object.
+     */
     override fun hashCode() = ByteBuffer.wrap(bytes).int
 
+    /**
+     * Converts a [SecureHash] object to a string representation containing the [algorithm] and hexadecimal
+     * representation of the [bytes] separated by the colon character.
+     */
     override fun toString(): String {
         return "$algorithm$DELIMITER${toHexString()}"
     }

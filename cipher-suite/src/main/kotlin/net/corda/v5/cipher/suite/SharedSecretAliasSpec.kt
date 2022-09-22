@@ -10,7 +10,7 @@ import java.security.PublicKey
  * @property publicKey The public key of the pair.
  * @property hsmAlias The key pair alias assigned by the implementation when the key was generated.
  * @property keyScheme The scheme for the key used for the operation.
- * @property otherPublicKey the public of the "other" party which should be used to derive the secret.
+ * @property otherPublicKey The public of the "other" party which should be used to derive the secret.
  */
 class SharedSecretAliasSpec(
     val hsmAlias: String,

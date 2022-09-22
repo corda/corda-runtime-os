@@ -1,5 +1,6 @@
 package net.corda.v5.application.crypto
 
+import java.security.PublicKey
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.crypto.DigitalSignature
 
@@ -8,11 +9,14 @@ import net.corda.v5.crypto.DigitalSignature
  *
  * @property signature The signature that was applied.
  * @property metadata Attached [DigitalSignatureMetadata] for this signature.
+ * @property by The [PublicKey] that created the signature.
+ *
+ * @constructor Creates a [DigitalSignatureAndMetadata].
  */
 @CordaSerializable
 data class DigitalSignatureAndMetadata(
     val signature: DigitalSignature.WithKey,
     val metadata: DigitalSignatureMetadata
 ) {
-    val by = signature.by
+    val by: PublicKey = signature.by
 }

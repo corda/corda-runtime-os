@@ -3,9 +3,9 @@ package net.corda.v5.serialization;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Allows CorDapps to provide custom serializers for third party libraries where those libraries cannot
- * be recompiled with the -parameters flag rendering their classes natively serializable by Corda. In this case
- * a proxy serializer can be written that extends this type whose purpose is to move between those an
+ * Allows CorDapps to provide custom serializers for third-party libraries that cannot
+ * be recompiled with the -parameters flag rendering their classes natively serializable by Corda. In this case,
+ * a proxy serializer can be written that extends this type whose purpose is to move between those
  * unserializable types and an intermediate representation.
  *
  * NOTE: The proxy object should be specified as a separate class. However, this can be defined within the
@@ -13,18 +13,18 @@ import org.jetbrains.annotations.NotNull;
  */
 public interface SerializationCustomSerializer<OBJ, PROXY> {
     /**
-     * Should facilitate the conversion of the third party object into the serializable
-     * local class specified by {@code PROXY}
-     * @param obj original object for serialization
+     * Facilitates the conversion of the third party object into the serializable
+     * local class specified by {@code PROXY}.
+     * @param obj Original object for serialization.
      * @return proxy object to be written to AMQP.
      */
     @NotNull
     PROXY toProxy(@NotNull OBJ obj);
 
     /**
-     * Should facilitate the conversion of the proxy object into a new instance of the
-     * unserializable type
-     * @param proxy object from AMQP
+     * Facilitates the conversion of the proxy object into a new instance of the
+     * unserializable type.
+     * @param proxy Object from AMQP.
      * @return original object recreated from {@code proxy}
      */
     @NotNull
