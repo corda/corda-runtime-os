@@ -53,6 +53,10 @@ dependencies {
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
     runtimeOnly project(":libs:serialization:serialization-kryo")
     runtimeOnly project(":components:flow:flow-service")
+
+    // FIXME Removing this will break OSGi, need to figure out why
+    runtimeOnly project(':testing:uniqueness:uniqueness-checker-fake')
+
 }
 
 description 'Flow Worker Processor'
