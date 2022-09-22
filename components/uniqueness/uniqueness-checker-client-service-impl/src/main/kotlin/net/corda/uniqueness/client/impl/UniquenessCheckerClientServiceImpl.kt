@@ -27,9 +27,12 @@ import java.time.Instant
 import java.util.*
 
 /**
- * TODO Add more specific KDocs once CORE-4730 is finished
+ * Implementation of the Uniqueness Checker Client Service which will invoke the batched uniqueness checker
+ * through the message bus. This communication uses the external events API. Once the uniqueness checker has
+ * finished the validation of the given batch it will return the response to the client service.
  */
-@Component(service = [ LedgerUniquenessCheckerClientService::class, SingletonSerializeAsToken::class ], scope = ServiceScope.PROTOTYPE)
+@Component(service = [ LedgerUniquenessCheckerClientService::class, SingletonSerializeAsToken::class ],
+    scope = ServiceScope.PROTOTYPE)
 class UniquenessCheckerClientServiceImpl @Activate constructor(
     @Reference(service = ExternalEventExecutor::class)
     private val externalEventExecutor: ExternalEventExecutor,

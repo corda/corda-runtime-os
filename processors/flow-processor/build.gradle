@@ -23,7 +23,6 @@ dependencies {
     implementation project(":components:flow:flow-service")
     implementation project(":components:flow:flow-p2p-filter-service")
     implementation project(":components:membership:membership-group-read")
-    implementation project(":components:uniqueness:uniqueness-checker")
     implementation project(":components:virtual-node:cpi-info-read-service")
     implementation project(":components:virtual-node:cpk-read-service")
     implementation project(":components:virtual-node:sandbox-group-context-service")
@@ -53,10 +52,6 @@ dependencies {
     runtimeOnly project(":libs:schema-registry:schema-registry-impl")
     runtimeOnly project(":libs:serialization:serialization-kryo")
     runtimeOnly project(":components:flow:flow-service")
-
-    // FIXME Removing this will break OSGi, need to figure out why
-    runtimeOnly project(':testing:uniqueness:uniqueness-checker-fake')
-
 }
 
 description 'Flow Worker Processor'
