@@ -10,7 +10,7 @@ import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl
-import net.corda.ledger.consensual.testkit.ConsensualSignedTransactionImplExample.Companion.getConsensualSignedTransactionImpl
+import net.corda.ledger.consensual.testkit.getConsensualSignedTransactionImpl
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.InternalCustomSerializer
@@ -170,10 +170,11 @@ class ConsensualSignedTransactionImplAMQPSerializationTest {
                 DeserializationInput(factory2).deserializeAndReturnEnvelope(serialised, testSerializationContext)
 
             assertThat(deserialized.obj.javaClass.name).isEqualTo(
-                "net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl")
+                "net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl"
+            )
 
             assertThat(deserialized.obj).isEqualTo(signedTransaction)
-            Assertions.assertDoesNotThrow{
+            Assertions.assertDoesNotThrow {
                 deserialized.obj.id
             }
             assertThat(deserialized.obj.id).isEqualTo(signedTransaction.id)

@@ -12,7 +12,7 @@ import net.corda.ledger.common.impl.transaction.serializer.WireTransactionKryoSe
 import net.corda.ledger.common.transaction.serialization.internal.WireTransactionSerializer
 import net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.ledger.consensual.impl.transaction.serializer.ConsensualSignedTransactionImplKryoSerializer
-import net.corda.ledger.consensual.testkit.ConsensualSignedTransactionImplExample.Companion.getConsensualSignedTransactionImpl
+import net.corda.ledger.consensual.testkit.getConsensualSignedTransactionImpl
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService

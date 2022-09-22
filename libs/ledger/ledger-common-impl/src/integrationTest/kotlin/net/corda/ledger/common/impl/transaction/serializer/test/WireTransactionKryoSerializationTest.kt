@@ -1,7 +1,7 @@
 package net.corda.ledger.common.impl.transaction.serializer.test
 
 import net.corda.ledger.common.impl.transaction.WireTransaction
-import net.corda.ledger.common.testkit.WireTransactionExample.Companion.getWireTransaction
+import net.corda.ledger.common.testkit.getWireTransaction
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
@@ -98,7 +98,7 @@ class WireTransactionKryoSerializationTest {
         val deserialized = kryoSerializer.deserialize(bytes, WireTransaction::class.java)
 
         assertThat(deserialized).isEqualTo(wireTransaction)
-        Assertions.assertDoesNotThrow{
+        Assertions.assertDoesNotThrow {
             deserialized.id
         }
         Assertions.assertEquals(wireTransaction.id, deserialized.id)

@@ -3,7 +3,7 @@ package net.corda.ledger.consensual.impl.test
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl
-import net.corda.ledger.consensual.testkit.ConsensualSignedTransactionImplExample
+import net.corda.ledger.consensual.testkit.getConsensualSignedTransactionImpl
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.InternalCustomSerializer
@@ -111,7 +111,7 @@ class WireTransactionKryoSerializationTest {
     fun `correct serialization of a consensual Signed Transaction`() {
         val serializationService = TestSerializationService.getTestSerializationService({
             it.register(partySerializer, it)
-        } , schemeMetadata)
+        }, schemeMetadata)
 
         val builder =
             checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(sandboxManagementService.group1)
@@ -120,7 +120,7 @@ class WireTransactionKryoSerializationTest {
             .addSerializer(ConsensualSignedTransactionImpl::class.java, consensualSignedTransactionImplSeralizer)
             .build()
 
-        val signedTransaction = ConsensualSignedTransactionImplExample.getConsensualSignedTransactionImpl(
+        val signedTransaction = getConsensualSignedTransactionImpl(
             digestService,
             merkleTreeFactory,
             serializationService,
@@ -130,7 +130,7 @@ class WireTransactionKryoSerializationTest {
         val deserialized = kryoSerializer.deserialize(bytes, ConsensualSignedTransactionImpl::class.java)
 
         assertThat(deserialized).isEqualTo(signedTransaction)
-        Assertions.assertDoesNotThrow{
+        Assertions.assertDoesNotThrow {
             deserialized.id
         }
         Assertions.assertEquals(signedTransaction.id, deserialized.id)

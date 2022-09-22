@@ -6,7 +6,7 @@ import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeFactoryImpl
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.transaction.serialization.internal.WireTransactionSerializer
-import net.corda.ledger.consensual.testkit.ConsensualSignedTransactionImplExample.Companion.getConsensualSignedTransactionImpl
+import net.corda.ledger.consensual.testkit.getConsensualSignedTransactionImpl
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
@@ -54,7 +54,7 @@ class ConsensualSignedTransactionImplSerializerAMQPTest {
         println(bytes)
         val deserialized = serializationService.deserialize(bytes)
         assertEquals(signedTransaction, deserialized)
-        Assertions.assertDoesNotThrow{
+        Assertions.assertDoesNotThrow {
             deserialized.id
         }
         assertEquals(signedTransaction.id, deserialized.id)

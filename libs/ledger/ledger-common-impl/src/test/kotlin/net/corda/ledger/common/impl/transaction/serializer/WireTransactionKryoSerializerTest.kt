@@ -7,7 +7,7 @@ import net.corda.crypto.merkle.impl.MerkleTreeFactoryImpl
 import net.corda.kryoserialization.testkit.createCheckpointSerializer
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.WireTransaction
-import net.corda.ledger.common.testkit.WireTransactionExample.Companion.getWireTransaction
+import net.corda.ledger.common.testkit.getWireTransaction
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
