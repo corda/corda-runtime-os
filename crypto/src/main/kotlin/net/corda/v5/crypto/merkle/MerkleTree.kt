@@ -7,21 +7,15 @@ import net.corda.v5.crypto.SecureHash
  * structured dataset.
  * From [MerkleTree]s, we can create [MerkleProof]s which let us prove that some particular data is part of the whole
  * tree without revealing the remaining data.
+ *
+ * @property leaves The input data elements. Usually something deterministically serialized.
+ * @property digestProvider The [MerkleTreeHashDigestProvider] used to construct the tree's node and leaf hashes.
+ * @property root The root element of the tree which is essentially the fingerprint of the whole tree/data set.
+ *
  */
 interface MerkleTree {
-    /**
-(     * @property leaves The input data elements. Usually something deterministically serialized.
-     */
     val leaves: List<ByteArray>
-
-    /**
-     * @property digestProvider [MerkleTreeHashDigestProvider] used to construct the tree's node and leaf hashes.
-     */
     val digestProvider: MerkleTreeHashDigestProvider
-
-    /**
-     * @property root The root element of the tree which is essentially the fingerprint of the whole tree/data set.
-     */
     val root: SecureHash
 
     /**

@@ -12,7 +12,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
  * the specific Crypto Library exceptions only to convey additional context about the conditions which lead to
  * the exception.
  *
- * @property isRecoverable the flag specifying whenever the operation throwing the exception could be retried
+ * @property isRecoverable The flag specifying whenever the operation throwing the exception could be retried
  * without any intervention by application-level functionality.
  */
 @CordaSerializable
@@ -24,18 +24,44 @@ open class CryptoException : CordaRuntimeException {
      */
     val isRecoverable: Boolean
 
+    /**
+     * Constructs a new exception with the specified detail message. The [isRecoverable] is set to false.
+     *
+     * @param message The detailed message.
+     */
     constructor(message: String) : super(message) {
         this.isRecoverable = false
     }
 
+    /**
+     * Constructs a new exception with the specified detail message and when it's recoverable.
+     *
+     * @param message The detailed message.
+     * @param isRecoverable The flag specifying whenever the operation throwing the exception could be retried
+     * without any intervention by application-level functionality.
+     */
     constructor(message: String, isRecoverable: Boolean) : super(message) {
         this.isRecoverable = isRecoverable
     }
 
+    /**
+     * Constructs a new exception with the specified detail message and cause. The [isRecoverable] is set to false.
+     *
+     * @param message The detailed message.
+     * @param cause The cause.
+     */
     constructor(message: String, cause: Throwable?) : super(message, cause) {
         this.isRecoverable = false
     }
 
+    /**
+     * Constructs a new exception with the specified detail message, cause, and when it's recoverable.
+     *
+     * @param message The detailed message.
+     * @param isRecoverable The flag specifying whenever the operation throwing the exception could be retried
+     * without any intervention by application-level functionality.
+     * @param cause The cause.
+     */
     constructor(message: String, isRecoverable: Boolean, cause: Throwable?) : super(message, cause) {
         this.isRecoverable = isRecoverable
     }

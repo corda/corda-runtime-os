@@ -2,14 +2,13 @@ package net.corda.v5.application.crypto
 
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.crypto.SignatureSpec
-import java.security.InvalidKeyException
+import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import java.security.PublicKey
-import java.security.SignatureException
 
 /**
- * [DigitalSignatureVerificationService] allows flows to verify digital signatures.
+ * Allows flows to verify digital signatures.
  *
- * The platform will provide an instance of [DigitalSignatureVerificationService] to flows via property injection.
+ * Corda provides an instance of [DigitalSignatureVerificationService] to flows via property injection.
  */
 @DoNotImplement
 interface DigitalSignatureVerificationService {
@@ -18,12 +17,11 @@ interface DigitalSignatureVerificationService {
      * Always throws an exception if verification fails.
      *
      * @param publicKey The signer's [PublicKey].
-     * @param signatureData The signatureData on a message.
      * @param signatureSpec The signature spec.
+     * @param signatureData The signatureData on a message.
      * @param clearData The clear data/message that was signed (usually the Merkle root).
      *
-     * @throws InvalidKeyException If the key is invalid.
-     * @throws SignatureException If verification fails.
+     * @throws CryptoSignatureException If verification of the digital signature fails.
      * @throws IllegalArgumentException If the signature scheme is not supported or if any of the clear or signature
      * data is empty.
      */

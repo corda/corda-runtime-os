@@ -7,11 +7,23 @@ package net.corda.v5.base.versioning
  * @param minor The minor part of the version
  */
 data class Version(val major: Int, val minor: Int) {
+
+    /**
+     * Prints the version as a string in the form of <major>.<minor>.
+     */
     override fun toString(): String {
         return "$major.$minor"
     }
 
     companion object {
+
+        /**
+         * Parses a version object from a string.
+         *
+         * @param versionString A string containing the version to be parsed.
+         * @throws IllegalArgumentException An IllegalArgumentException is thrown if the string is not a well-formed
+         * version string.
+         */
         @JvmStatic
         fun fromString(versionString: String): Version {
             val regex = Regex("(\\d+)\\.(\\d+)")

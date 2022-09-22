@@ -5,10 +5,15 @@ import net.corda.v5.base.annotations.CordaSerializable
 /**
  * The digest algorithm name. This class is to be used in Corda hashing API.
  *
- * @property name The name of the digest algorithm to be used for the instance.
+ * @param name The name of the digest algorithm to be used for the instance.
  */
 @CordaSerializable
-class DigestAlgorithmName(val name: String) {
+class DigestAlgorithmName(
+    /**
+     * The name of the digest algorithm to be used for the instance.
+     */
+    val name: String
+) {
     init {
         require(name.isNotBlank()) { "Hash algorithm name unavailable or not specified" }
     }
@@ -45,10 +50,19 @@ class DigestAlgorithmName(val name: String) {
         val DEFAULT_ALGORITHM_NAME: DigestAlgorithmName = SHA2_256
     }
 
+    /**
+     * Converts a [DigestAlgorithmName] object to a string representation.
+     */
     override fun toString(): String = name
 
+    /**
+     * Returns a hash code value for the object.
+     */
     override fun hashCode(): Int = name.uppercase().hashCode()
 
+    /**
+     * Returns a Boolean to indicate if the two specified instances of the [DigestAlgorithmName] are the same based on their content.
+     */
     override fun equals(other: Any?): Boolean {
         if(other == null) return false
         if(this === other) return true

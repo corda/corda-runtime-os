@@ -161,6 +161,15 @@ class Schemas {
     }
 
     /**
+     * Uniqueness checker schema
+     */
+    class UniquenessChecker {
+        companion object {
+            const val UNIQUENESS_CHECK_TOPIC = "uniqueness.check"
+        }
+    }
+
+    /**
      * Virtual Node schema
      */
     class VirtualNode {

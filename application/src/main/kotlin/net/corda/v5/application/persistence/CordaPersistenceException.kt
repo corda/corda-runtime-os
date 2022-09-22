@@ -3,11 +3,19 @@ package net.corda.v5.application.persistence
 import net.corda.v5.base.exceptions.CordaRuntimeException
 
 /**
- * Exception that encapsulates errors during Persistence.
+ * Exception that encapsulates errors during persistence.
  *
- * @param message the exception message
- * @param cause optional throwable that was caught
+ * @param message The exception message.
+ * @param cause Optional throwable that was caught.
+ *
+ * @constructor Creates a [CordaPersistenceException] with a [cause].
  */
 class CordaPersistenceException(message: String, cause: Throwable?) : CordaRuntimeException(message, cause) {
-    constructor(msg: String) : this(msg, null)
+
+    /**
+     * Creates a [CordaPersistenceException] without a [cause].
+     *
+     * @param message The exception message.
+     */
+    constructor(message: String) : this(message, null)
 }
