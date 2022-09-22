@@ -25,6 +25,7 @@ plugins {
     id 'corda.root-publish'
     id 'jacoco'
     id 'com.github.ben-manes.versions' // discover possible dependency version upgrades
+    id 'org.jetbrains.dokka' apply false
 }
 
 tasks.named("wrapper") {
