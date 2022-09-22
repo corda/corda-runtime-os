@@ -122,6 +122,7 @@ publishing {
             pom {
                 name = 'corda-combined-worker'
                 description = 'corda-combined-worker'
+                url = 'https://github.com/corda/corda-runtime-os'
 
                 scm {
                     url = 'https://github.com/corda/corda-runtime-os'
