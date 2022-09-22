@@ -182,6 +182,7 @@ open class JPABackingStoreImpl @Activate constructor(
             states.forEach { state ->
                 val txId = state.txHash
                 val stateIndex = state.stateIndex
+
                 val existing = entityManager.createNamedQuery(
                     "UniquenessStateDetailEntity.select",
                     UniquenessStateDetailEntity::class.java

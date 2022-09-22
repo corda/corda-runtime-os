@@ -1,19 +1,31 @@
 package net.corda.uniqueness.backingstore.impl
 
 
+import net.corda.crypto.testkit.SecureHashUtils
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
 import net.corda.lifecycle.*
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
+import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessRejectedTransactionEntity
+import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessStateDetailEntity
+import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTransactionDetailEntity
+import net.corda.uniqueness.datamodel.common.toCharacterRepresentation
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateRefImpl
+import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
+import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.*
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mockito
 import org.mockito.kotlin.*
 import java.sql.Connection
+import java.time.LocalDate
+import java.time.ZoneOffset
+import java.util.*
 import javax.persistence.*
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -29,6 +41,13 @@ class JPABackingStoreImplTests {
     private lateinit var entityManagerFactory: EntityManagerFactory
     private lateinit var dummyDataSource: CloseableDataSource
     private lateinit var jpaEntitiesRegistry: JpaEntitiesRegistry
+
+    private lateinit var txnDetails: LinkedList<UniquenessTransactionDetailEntity>
+    private lateinit var txnDetailQuery: TypedQuery<UniquenessTransactionDetailEntity>
+    private lateinit var stateEntities: List<UniquenessStateDetailEntity>
+    private lateinit var stateDetailQuery: TypedQuery<UniquenessStateDetailEntity>
+    private lateinit var txnErrors: LinkedList<UniquenessRejectedTransactionEntity>
+    private lateinit var txnErrorQuery: TypedQuery<UniquenessRejectedTransactionEntity>
 
     // NOTE: While expecting refactoring around createDefaultUniquenessDb(), it's mocked for testing
     //  convenience. Since it's a final class, MockMaker's been added under resources with content "mock-maker-inline".
@@ -48,8 +67,47 @@ class JPABackingStoreImplTests {
         entityTransaction = mock<EntityTransaction>().apply {
             whenever(isActive) doReturn true
         }
+
+        stateEntities = mock<List<UniquenessStateDetailEntity>>()
+        stateDetailQuery = mock<TypedQuery<UniquenessStateDetailEntity>>().apply {
+            whenever(setParameter(eq("txAlgo"), any())) doReturn this
+            whenever(setParameter(eq("txId"), any())) doReturn this
+            whenever(setParameter(eq("stateIndex"), any())) doReturn this
+            whenever(resultList) doReturn stateEntities
+        }
+
+        txnDetails = mock<LinkedList<UniquenessTransactionDetailEntity>>()
+        txnDetailQuery = mock<TypedQuery<UniquenessTransactionDetailEntity>>().apply {
+            whenever(setParameter(eq("txAlgo"), any())) doReturn this
+            whenever(setParameter(eq("txId"), any())) doReturn this
+            whenever(resultList) doReturn txnDetails
+        }
+
+        txnErrors = mock<LinkedList<UniquenessRejectedTransactionEntity>>()
+        txnErrorQuery = mock<TypedQuery<UniquenessRejectedTransactionEntity>>().apply {
+            whenever(setParameter(eq("txAlgo"), any())) doReturn this
+            whenever(setParameter(eq("txId"), any())) doReturn this
+            whenever(resultList) doReturn txnErrors
+        }
+
         entityManager = mock<EntityManager>().apply {
             whenever(transaction) doReturn entityTransaction
+            whenever(
+                createNamedQuery("UniquenessStateDetailEntity.select", UniquenessStateDetailEntity::class.java)
+            ) doReturn stateDetailQuery
+            whenever(
+                createNamedQuery(
+                    "UniquenessTransactionDetailEntity.select",
+                    UniquenessTransactionDetailEntity::class.java
+                )
+            ) doReturn txnDetailQuery
+            whenever(
+                createNamedQuery(
+                    "UniquenessRejectedTransactionEntity.select",
+                    UniquenessRejectedTransactionEntity::class.java
+                )
+            ) doReturn txnErrorQuery
+
         }
         entityManagerFactory = mock<EntityManagerFactory>().apply {
             whenever(createEntityManager()) doReturn entityManager
@@ -224,8 +282,6 @@ class JPABackingStoreImplTests {
                 }
             }
 
-            // FIXME: this fails because the logic executes MAX_RETRIES + 1 times.
-            //  This should be refactored to get the value from the configuration which doesn't exist yet.
             Mockito.verify(entityTransaction, times(maxRetriesCnt)).begin()
             Mockito.verify(entityTransaction, never()).commit()
         }
@@ -252,21 +308,142 @@ class JPABackingStoreImplTests {
         }
 
         @Test
-        fun `Get state details`() {
-            throw NotImplementedError()
-//            backingStoreImpl.session { session -> session.getStateDetails() }
+        fun `Getting state details invokes correct query`() {
+            val hashCnt = 3
+            val secureHashes = generateSecureHashes(hashCnt)
+            val stateRefs = generateUniquenessCheckStateRef(secureHashes)
+
+            backingStoreImpl.session { session ->
+                session.getStateDetails(stateRefs)
+                Mockito.verify(entityManager, times(hashCnt))
+                    .createNamedQuery(
+                        eq("UniquenessStateDetailEntity.select"),
+                        eq(UniquenessStateDetailEntity::class.java)
+                    )
+            }
         }
 
         @Test
-        fun `Get transaction details`() {
-            throw NotImplementedError()
-//            backingStoreImpl.session { session -> session.getTransactionDetails() }
+        fun `Getting transaction details invokes correct query for a successful result`() {
+            val txIds = LinkedList<SecureHash>()
+            txIds.add(SecureHashUtils.randomSecureHash())
+
+            val expiryDateTime = LocalDate.parse("2099-12-12").atStartOfDay().toInstant(ZoneOffset.UTC)
+            val commitDateTime = LocalDate.now().atStartOfDay().toInstant(ZoneOffset.UTC)
+            txnDetails.apply {
+                whenever(firstOrNull()) doReturn UniquenessTransactionDetailEntity(
+                    "SHA-256",
+                    "0xA1".toByteArray(),
+                    expiryDateTime,
+                    commitDateTime,
+                    'A'
+                )
+            }
+            backingStoreImpl.session { session ->
+                val result = session.getTransactionDetails(txIds)
+                assertEquals(1, result.size)
+                assertEquals(txIds[0], result[txIds[0]]!!.txId)
+                assertEquals('A', result[txIds[0]]!!.result.toCharacterRepresentation())
+                Mockito.verify(entityManager)
+                    .createNamedQuery(
+                        eq("UniquenessTransactionDetailEntity.select"),
+                        eq(UniquenessTransactionDetailEntity::class.java)
+                    )
+            }
+        }
+
+        @Test
+        fun `Getting transaction details invokes correct query for a failed result`() {
+            val txIds = LinkedList<SecureHash>()
+            txIds.add(SecureHashUtils.randomSecureHash())
+
+            val expiryDateTime = LocalDate.parse("2099-12-12").atStartOfDay().toInstant(ZoneOffset.UTC)
+            val commitDateTime = LocalDate.now().atStartOfDay().toInstant(ZoneOffset.UTC)
+            txnDetails.apply {
+                whenever(firstOrNull()) doReturn UniquenessTransactionDetailEntity(
+                    "SHA-256",
+                    "0xA1".toByteArray(),
+                    expiryDateTime,
+                    commitDateTime,
+                    'R'
+                )
+            }
+
+            assertThrows<IllegalStateException> {
+                backingStoreImpl.session { session ->
+                    session.getTransactionDetails(txIds)
+                }
+            }
+
+            txnErrors.apply {
+                whenever(firstOrNull()) doReturn UniquenessRejectedTransactionEntity(
+                    "SHA-256",
+                    "0xA1".toByteArray(),
+                    "{\"type\": \"generalErrorImpl\", \"errorText\": \"test error\"}".toByteArray()
+                )
+            }
+            backingStoreImpl.session { session ->
+                val result = session.getTransactionDetails(txIds)
+                assertEquals(1, result.size)
+                assertEquals(txIds[0], result[txIds[0]]!!.txId)
+                assertEquals('R', result[txIds[0]]!!.result.toCharacterRepresentation())
+                Mockito.verify(entityManager)
+                    .createNamedQuery(
+                        eq("UniquenessTransactionDetailEntity.select"),
+                        eq(UniquenessTransactionDetailEntity::class.java)
+                    )
+
+                Mockito.verify(entityManager)
+                    .createNamedQuery(
+                        eq("UniquenessRejectedTransactionEntity.select"),
+                        eq(UniquenessRejectedTransactionEntity::class.java)
+                    )
+            }
+        }
+
+        @Test
+        fun `Getting transaction details invokes correct query for an invalid result`() {
+            val txIds = LinkedList<SecureHash>()
+            txIds.add(SecureHashUtils.randomSecureHash())
+
+            txnDetails.apply {
+                whenever(firstOrNull()) doReturn UniquenessTransactionDetailEntity(
+                    "SHA-256",
+                    "0xA1".toByteArray(),
+                    LocalDate.parse("2099-12-12").atStartOfDay().toInstant(ZoneOffset.UTC),
+                    LocalDate.now().atStartOfDay().toInstant(ZoneOffset.UTC),
+                    'T' // Invalid result
+                )
+            }
+            assertThrows<IllegalStateException> {
+                backingStoreImpl.session { session ->
+                    session.getTransactionDetails(txIds)
+                }
+            }
         }
 
         @Test
         fun `Get transaction errors`() {
-            throw NotImplementedError()
-//            backingStoreImpl.session { session -> session.getTransactionDetails() }
         }
+    }
+
+    private fun generateSecureHashes(cnt: Int): LinkedList<SecureHash> {
+        val secureHashes = LinkedList<SecureHash>()
+        repeat(cnt) {
+            secureHashes.push(SecureHashUtils.randomSecureHash())
+        }
+        return secureHashes
+    }
+
+    private fun generateUniquenessCheckStateRef(hashes: LinkedList<SecureHash>): LinkedList<UniquenessCheckStateRef> {
+        val uniquenessCheckInternalStateRefs = hashes.let {
+            val tmpUniquenessCheckInternalStateRefs = LinkedList<UniquenessCheckStateRef>()
+            it.forEachIndexed { i, hash ->
+                tmpUniquenessCheckInternalStateRefs.add(UniquenessCheckStateRefImpl(hash, i))
+            }
+            tmpUniquenessCheckInternalStateRefs
+        }
+
+        return uniquenessCheckInternalStateRefs
     }
 }

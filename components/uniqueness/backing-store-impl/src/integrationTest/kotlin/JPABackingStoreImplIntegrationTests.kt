@@ -81,8 +81,8 @@ class JPABackingStoreImplIntegrationTests {
         return secureHashes
     }
 
-    private fun generateInternalStateRefs(secureHashes: LinkedList<SecureHash>): LinkedList<UniquenessCheckStateRef> {
-        val uniquenessCheckInternalStateRefs = secureHashes.let {
+    private fun generateUniquenessCheckStateRef(hashes: LinkedList<SecureHash>): LinkedList<UniquenessCheckStateRef> {
+        val uniquenessCheckInternalStateRefs = hashes.let {
             val tmpUniquenessCheckInternalStateRefs = LinkedList<UniquenessCheckStateRef>()
             it.forEachIndexed { i, hash ->
                 tmpUniquenessCheckInternalStateRefs.add(UniquenessCheckStateRefImpl(hash, i))
@@ -219,7 +219,7 @@ class JPABackingStoreImplIntegrationTests {
         fun `Persisting unconsumed states succeeds`() {
             val hashCnt = 5
             val secureHashes = generateSecureHashes(hashCnt)
-            val stateRefs = generateInternalStateRefs(secureHashes)
+            val stateRefs = generateUniquenessCheckStateRef(secureHashes)
 
             backingStoreImpl.session { session ->
                 session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
@@ -238,7 +238,7 @@ class JPABackingStoreImplIntegrationTests {
         fun `Consuming an unconsumed state succeeds`() {
             val hashCnt = 2
             val secureHashes = generateSecureHashes(hashCnt)
-            val stateRefs = generateInternalStateRefs(secureHashes)
+            val stateRefs = generateUniquenessCheckStateRef(secureHashes)
 
             // Generate unconsumed states in DB.
             backingStoreImpl.session { session ->
@@ -269,7 +269,7 @@ class JPABackingStoreImplIntegrationTests {
         fun `Attempt to consume an unknown state fails with an exception`() {
             val hashCnt = 2
             val secureHashes = generateSecureHashes(hashCnt)
-            val stateRefs = generateInternalStateRefs(secureHashes)
+            val stateRefs = generateUniquenessCheckStateRef(secureHashes)
 
             // Generate unconsumed states in DB.
             backingStoreImpl.session { session ->
