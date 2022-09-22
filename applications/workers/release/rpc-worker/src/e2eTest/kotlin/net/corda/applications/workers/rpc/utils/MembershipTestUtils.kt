@@ -6,6 +6,7 @@ import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.membership.httprpc.v1.MemberLookupRpcOps
 import net.corda.membership.httprpc.v1.types.response.RpcMemberInfo
 import net.corda.test.util.eventually
+import net.corda.v5.base.util.minutes
 import net.corda.v5.base.util.seconds
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
@@ -16,7 +17,7 @@ const val SIGNATURE_SPEC = "SHA256withECDSA"
 fun createMGMGroupPolicyJson(
     fileFormatVersion: Int = 1,
     registrationProtocol: String = "net.corda.membership.impl.registration.dynamic.mgm.MGMRegistrationService",
-    syncProtocol: String = "net.corda.membership.impl.sync.dynamic.MemberSyncService"
+    syncProtocol: String = "net.corda.membership.impl.synchronisation.MgmSynchronisationServiceImpl"
 ): ByteArray {
     val groupPolicy = mapOf(
         "fileFormatVersion" to fileFormatVersion,
@@ -61,7 +62,7 @@ fun createStaticMemberGroupPolicyJson(
             "sessionPki" to "NoPKI",
             "tlsPki" to "Standard",
             "tlsVersion" to "1.3",
-            "protocolMode" to "Authentication_Encryption"
+            "protocolMode" to "Authenticated_Encryption"
         ),
         "cipherSuite" to emptyMap<String, String>()
     )
@@ -84,7 +85,7 @@ fun createMgmRegistrationContext(
             to "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
     "corda.group.protocol.synchronisation"
             to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
-    "corda.group.protocol.p2p.mode" to "AUTHENTICATION_ENCRYPTION",
+    "corda.group.protocol.p2p.mode" to "Authenticated_Encryption",
     "corda.group.key.session.policy" to "Distinct",
     "corda.group.pki.session" to "NoPKI",
     "corda.group.pki.tls" to "Standard",
@@ -145,7 +146,7 @@ fun E2eCluster.assertMemberInMemberList(
     member: E2eClusterMember
 ) {
     eventually(
-        duration = 60.seconds,
+        duration = 2.minutes,
         waitBetween = 3.seconds
     ) {
         assertThat(

@@ -49,6 +49,10 @@ data class CreateUserType(
             errors[nextErrKey()] = "Full name exceed maximum length of 255."
         }
 
+        if (fullName.isBlank()) {
+            errors[nextErrKey()] = "Full name must not be blank."
+        }
+
         "a-zA-Z0-9.@\\-#' ".let {
             val regEx = Regex("[$it]*")
             if (!regEx.matches(fullName)) {
@@ -58,6 +62,10 @@ data class CreateUserType(
 
         if (loginName.length > 255) {
             errors[nextErrKey()] = "Login name exceed maximum length of 255."
+        }
+
+        if (loginName.isBlank()) {
+            errors[nextErrKey()] = "Login name must not be blank."
         }
 
         "a-zA-Z0-9.@\\-#".let {

@@ -93,7 +93,7 @@ class ChatIncomingFlow : ResponderFlow {
         log.info("Chat incoming flow starting in {$thisVirtualNodeName}...")
 
         val sender = session.counterparty.toString()
-        val message = session.receive<MessageContainer>().unwrap { it.message }
+        val message = session.receive<MessageContainer>().message
 
         storeIncomingMessage(persistenceService, sender, message)
 

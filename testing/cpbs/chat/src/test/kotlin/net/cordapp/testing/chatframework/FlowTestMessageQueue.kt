@@ -1,7 +1,6 @@
 package net.cordapp.testing.chatframework
 
 import net.corda.v5.application.messaging.FlowSession
-import net.corda.v5.application.messaging.UntrustworthyData
 import org.junit.jupiter.api.fail
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
@@ -67,6 +66,6 @@ class FlowTestMessageQueue(val from: FlowSession, val to: FlowSession) {
 inline fun <reified T : Any> FlowTestMessageQueue.addExpectedMessageType() {
     whenever(this.to.receive(T::class.java))
         .thenAnswer {
-            UntrustworthyData(this.getOrWaitForNextMessage() as T)
+            this.getOrWaitForNextMessage() as T
         }
 }

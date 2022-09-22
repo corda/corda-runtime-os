@@ -16,6 +16,7 @@ import net.corda.data.membership.command.synchronisation.member.ProcessMembershi
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.MembershipSyncRequest
 import net.corda.data.membership.p2p.SignedMemberships
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -27,6 +28,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.lifecycle.TimerEvent
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
@@ -43,16 +45,20 @@ import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.MembershipConfig
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.base.util.minutes
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
@@ -91,12 +97,16 @@ class MemberSynchronisationServiceImplTest {
     private val configHandle: Resource = mock()
     private val testConfig =
         SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.parseString("instanceId=1"))
+    private val membershipConfig = mock<SmartConfig> {
+        on { getLong(MembershipConfig.MAX_DURATION_BETWEEN_SYNC_REQUESTS_MINUTES) } doReturn 10
+    }
     private val dependentComponents = setOf(
         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+        LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
     )
 
     private var coordinatorIsRunning = false
-    private var coordinatorStatus: KArgumentCaptor<LifecycleStatus> = argumentCaptor()
+    private var coordinatorStatus = argumentCaptor<LifecycleStatus>()
     private val coordinator: LifecycleCoordinator = mock {
         on { followStatusChangesByName(eq(dependentComponents)) } doReturn componentHandle
         on { isRunning } doAnswer { coordinatorIsRunning }
@@ -200,6 +210,9 @@ class MemberSynchronisationServiceImplTest {
     private val groupReaderProvider = mock<MembershipGroupReaderProvider> {
         on { getGroupReader(member) } doReturn groupReader
     }
+    private val locallyHostedMembersReader = mock<LocallyHostedMembersReader> {
+        on { readAllLocalMembers() } doReturn emptyList()
+    }
     private val clock = TestClock(Instant.ofEpochSecond(100))
     private val synchronisationService = MemberSynchronisationServiceImpl(
         publisherFactory,
@@ -208,6 +221,7 @@ class MemberSynchronisationServiceImplTest {
         serializationFactory,
         memberInfoFactory,
         groupReaderProvider,
+        locallyHostedMembersReader,
         p2pRecordsFactory,
         merkleTreeGenerator,
         clock,
@@ -237,10 +251,11 @@ class MemberSynchronisationServiceImplTest {
     private fun postConfigChangedEvent() {
         lifecycleHandlerCaptor.firstValue.processEvent(
             ConfigChangedEvent(
-                setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG),
+                setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG, ConfigKeys.MEMBERSHIP_CONFIG),
                 mapOf(
                     ConfigKeys.BOOT_CONFIG to testConfig,
-                    ConfigKeys.MESSAGING_CONFIG to testConfig
+                    ConfigKeys.MESSAGING_CONFIG to testConfig,
+                    ConfigKeys.MEMBERSHIP_CONFIG to membershipConfig,
                 )
             ),
             coordinator
@@ -329,7 +344,7 @@ class MemberSynchronisationServiceImplTest {
     }
 
     @Test
-    fun `processMembershipUpdates create the correct synch request when hashes are misaligned`() {
+    fun `processMembershipUpdates create the correct sync request when hashes are misaligned`() {
         postConfigChangedEvent()
         synchronisationService.start()
         val capturedPublishedList = argumentCaptor<List<Record<String, *>>>()
@@ -343,6 +358,34 @@ class MemberSynchronisationServiceImplTest {
             it.assertThat(request.membersHash).isEqualTo(hash)
             it.assertThat(request.bloomFilter).isNull()
             it.assertThat(request.distributionMetaData.syncRequested).isEqualTo(clock.instant())
+        }
+    }
+
+    @Test
+    fun `startup schedual sync for all the virtual nodes`() {
+        val mgm = HoldingIdentity(participantName, GROUP_NAME)
+        val records = argumentCaptor<List<Record<*, *>>>()
+        whenever(mockPublisher.publish(records.capture())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
+        val captureFactory = argumentCaptor<(String) -> TimerEvent>()
+        doNothing().whenever(coordinator).setTimer(any(), any(), captureFactory.capture())
+        whenever(locallyHostedMembersReader.readAllLocalMembers()).doReturn(
+            listOf(
+                LocallyHostedMembersReader.LocallyHostedMember(
+                    member, mgm
+                )
+            )
+        )
+
+        postConfigChangedEvent()
+        postStartEvent()
+        synchronisationService.start()
+
+        val event = captureFactory.firstValue.invoke("")
+        lifecycleHandlerCaptor.firstValue.processEvent(event, coordinator)
+
+        assertThat(records.allValues).anySatisfy {
+            assertThat(it).hasSize(1)
+                .containsExactly(synchronisationRequest)
         }
     }
 
@@ -433,7 +476,7 @@ class MemberSynchronisationServiceImplTest {
             configArgs.capture()
         )
         assertThat(configArgs.firstValue)
-            .isEqualTo(setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG))
+            .isEqualTo(setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG, ConfigKeys.MEMBERSHIP_CONFIG))
 
         postRegistrationStatusChangeEvent(LifecycleStatus.UP)
         verify(configHandle).close()
@@ -485,5 +528,77 @@ class MemberSynchronisationServiceImplTest {
 
         postStopEvent()
         verify(mockPublisher, times(3)).close()
+    }
+
+    @Nested
+    inner class ScheduleSyncTests {
+        @Test
+        fun `processMembershipUpdates schedule a new request`() {
+            val timerDuration = argumentCaptor<Long>()
+            doNothing().whenever(coordinator).setTimer(any(), timerDuration.capture(), any())
+            postConfigChangedEvent()
+            synchronisationService.start()
+
+            synchronisationService.processMembershipUpdates(updates)
+
+            assertThat(timerDuration.firstValue)
+                .isLessThanOrEqualTo(10.minutes.toMillis())
+                .isGreaterThanOrEqualTo(9.minutes.toMillis())
+        }
+
+        @Test
+        fun `second processMembershipUpdates will cancel the current schedual`() {
+            postConfigChangedEvent()
+            synchronisationService.start()
+            val captureKey = argumentCaptor<String>()
+            doNothing().whenever(coordinator).setTimer(captureKey.capture(), any(), any())
+
+            synchronisationService.processMembershipUpdates(updates)
+            synchronisationService.processMembershipUpdates(updates)
+
+            assertThat(captureKey.allValues).hasSize(2).containsExactly(
+                "SendSyncRequest-${member.fullHash}",
+                "SendSyncRequest-${member.fullHash}",
+            )
+        }
+
+        @Test
+        fun `timer create sync request`() {
+            postConfigChangedEvent()
+            synchronisationService.start()
+            val records = argumentCaptor<List<Record<*, *>>>()
+            whenever(mockPublisher.publish(records.capture())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
+            val captureFactory = argumentCaptor<(String) -> TimerEvent>()
+            doNothing().whenever(coordinator).setTimer(any(), any(), captureFactory.capture())
+            synchronisationService.processMembershipUpdates(updates)
+            val event = captureFactory.firstValue.invoke("")
+
+            lifecycleHandlerCaptor.firstValue.processEvent(event, coordinator)
+
+            assertThat(records.allValues).anySatisfy {
+                assertThat(it).hasSize(1)
+                    .containsExactly(synchronisationRequest)
+            }
+        }
+
+        @Test
+        fun `timer after deactivation will not create sync request`() {
+            postConfigChangedEvent()
+            synchronisationService.start()
+            val records = argumentCaptor<List<Record<*, *>>>()
+            whenever(mockPublisher.publish(records.capture())).doReturn(listOf(CompletableFuture.completedFuture(Unit)))
+            val captureFactory = argumentCaptor<(String) -> TimerEvent>()
+            doNothing().whenever(coordinator).setTimer(any(), any(), captureFactory.capture())
+            synchronisationService.processMembershipUpdates(updates)
+            val event = captureFactory.firstValue.invoke("")
+            lifecycleHandlerCaptor.firstValue.processEvent(StopEvent(), coordinator)
+
+            lifecycleHandlerCaptor.firstValue.processEvent(event, coordinator)
+
+            assertThat(records.allValues).noneSatisfy {
+                assertThat(it).hasSize(1)
+                    .containsExactly(synchronisationRequest)
+            }
+        }
     }
 }

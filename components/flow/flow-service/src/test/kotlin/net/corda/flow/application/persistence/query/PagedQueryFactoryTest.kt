@@ -5,7 +5,7 @@ import net.corda.flow.application.persistence.external.events.AbstractPersistenc
 import net.corda.flow.application.persistence.external.events.FindAllParameters
 import net.corda.flow.application.persistence.external.events.NamedQueryParameters
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.flow.fiber.FlowFiberSerializationService
+import net.corda.v5.application.serialization.SerializationService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
@@ -19,9 +19,9 @@ class PagedQueryFactoryTest {
     private class TestObject
 
     private val externalEventExecutor = mock<ExternalEventExecutor>()
-    private val flowFiberSerializationService = mock<FlowFiberSerializationService>()
+    private val serializationService = mock<SerializationService>()
 
-    private val pagedQueryFactory = PagedQueryFactory(externalEventExecutor, flowFiberSerializationService)
+    private val pagedQueryFactory = PagedQueryFactory(externalEventExecutor, serializationService)
 
     @Test
     fun `creates a named query with default values for limit, offset and parameters`() {

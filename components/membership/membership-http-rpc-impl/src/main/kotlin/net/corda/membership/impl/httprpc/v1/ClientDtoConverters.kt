@@ -11,12 +11,14 @@ import net.corda.membership.httprpc.v1.types.response.MemberInfoSubmitted
 import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgress
 import net.corda.membership.httprpc.v1.types.response.RegistrationRequestStatus
 import net.corda.membership.httprpc.v1.types.response.RegistrationStatus
+import net.corda.virtualnode.ShortHash
+import net.corda.virtualnode.read.rpc.extensions.ofOrThrow
 
 /**
  * Convert [MemberRegistrationRequest] from the HTTP API to the internal DTO [MemberRegistrationRequestDto].
  */
 fun MemberRegistrationRequest.toDto(holdingIdentityShortHash: String) = MemberRegistrationRequestDto(
-    holdingIdentityShortHash,
+    ShortHash.ofOrThrow(holdingIdentityShortHash),
     RegistrationActionDto.REQUEST_JOIN.getFromValue(action),
     context
 )

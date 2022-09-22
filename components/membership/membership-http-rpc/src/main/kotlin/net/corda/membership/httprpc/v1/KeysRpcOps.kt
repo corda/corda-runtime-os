@@ -7,6 +7,7 @@ import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.membership.httprpc.v1.types.response.KeyMetaData
+import net.corda.membership.httprpc.v1.types.response.KeyPairIdentifier
 
 @HttpRpcResource(
     name = "Keys Management API",
@@ -148,7 +149,7 @@ interface KeysRpcOps : RpcOps {
             description = "The scheme"
         )
         scheme: String
-    ): String
+    ): KeyPairIdentifier
 
     /**
      * GET endpoint which returns a PEM string from a key.

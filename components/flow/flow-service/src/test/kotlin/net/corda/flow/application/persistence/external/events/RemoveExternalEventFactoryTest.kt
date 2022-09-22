@@ -1,5 +1,6 @@
 package net.corda.flow.application.persistence.external.events
 
+import net.corda.data.KeyValuePairList
 import java.nio.ByteBuffer
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.persistence.DeleteEntities
@@ -19,14 +20,14 @@ class RemoveExternalEventFactoryTest {
     @Test
     fun `creates a record containing an EntityRequest with a DeleteEntities payload`() {
         val checkpoint = mock<FlowCheckpoint>()
-        val externalEventContext = ExternalEventContext("request id", "flow id")
+        val externalEventContext = ExternalEventContext("request id", "flow id", KeyValuePairList(emptyList()))
 
         whenever(checkpoint.holdingIdentity).thenReturn(ALICE_X500_HOLDING_IDENTITY.toCorda())
 
         val externalEventRecord = RemoveExternalEventFactory().createExternalEvent(
             checkpoint,
             externalEventContext,
-            RemoveParameters(ByteBuffer.wrap(byteArrayOf(1)))
+            RemoveParameters(listOf(ByteBuffer.wrap(byteArrayOf(1))))
         )
         assertEquals(Schemas.VirtualNode.ENTITY_PROCESSOR, externalEventRecord.topic)
         assertNull(externalEventRecord.key)

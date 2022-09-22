@@ -1,5 +1,7 @@
 package net.corda.applications.flowworker.setup.tasks
 
+import java.time.Instant
+import java.util.UUID
 import net.corda.applications.flowworker.setup.Task
 import net.corda.applications.flowworker.setup.TaskContext
 import net.corda.data.flow.FlowInitiatorType
@@ -11,8 +13,6 @@ import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
-import java.time.Instant
-import java.util.UUID
 
 class StartFlow(private val context: TaskContext) : Task {
 
@@ -21,9 +21,9 @@ class StartFlow(private val context: TaskContext) : Task {
         val namedFlows = mapOf(
             "default" to getStartRPCEventRecord(
                 clientId = UUID.randomUUID().toString(),
-                flowName = "net.cordapp.flowworker.development.testflows.MessagingFlow",
+                flowName = "net.cordapp.testing.testflows.MessagingFlow",
                 x500Name = context.startArgs.x500NName,
-                groupId = "flow-worker-dev",
+                groupId = "test-cordapp",
                 jsonArgs = "{ \"who\":\"${context.startArgs.x500NName}\"}"
             ),
 
@@ -47,9 +47,9 @@ class StartFlow(private val context: TaskContext) : Task {
     fun getSmokeTestStartRecord(args: String): Record<*, *> {
         return getStartRPCEventRecord(
             clientId = UUID.randomUUID().toString(),
-            flowName = "net.cordapp.flowworker.development.flows.RpcSmokeTestFlow",
+            flowName = "net.cordapp.testing.flows.RpcSmokeTestFlow",
             x500Name = context.startArgs.x500NName,
-            groupId = "flow-worker-dev",
+            groupId = "test-cordapp",
             jsonArgs = args
         )
     }
@@ -69,7 +69,7 @@ class StartFlow(private val context: TaskContext) : Task {
             FlowInitiatorType.RPC,
             clientId,
             identity,
-            "flow-worker-dev",
+            "test-cordapp",
             identity,
             flowName,
             jsonArgs,

@@ -79,7 +79,6 @@ include 'applications:workers:release:p2p-link-manager-worker'
 include 'applications:workers:release:rpc-worker'
 include 'applications:workers:worker-common'
 include 'applications:workers:workers-smoketest'
-include 'components:configuration:configuration-rpcops-service'
 include 'components:configuration:configuration-rpcops-service-impl'
 include 'components:configuration:configuration-read-service'
 include 'components:configuration:configuration-read-service-impl'
@@ -154,7 +153,9 @@ include 'components:security-manager'
 include 'components:uniqueness:backing-store'
 include 'components:uniqueness:backing-store-impl'
 include 'components:uniqueness:uniqueness-checker'
+include 'components:uniqueness:uniqueness-checker-client-service-impl'
 include 'components:uniqueness:uniqueness-checker-impl'
+include 'components:uniqueness:uniqueness-checker-impl-osgi-tests'
 include 'components:virtual-node:cpi-info-read-service'
 include 'components:virtual-node:cpi-info-read-service-impl'
 include 'components:virtual-node:cpi-info-write-service'
@@ -169,14 +170,12 @@ include 'components:virtual-node:entity-processor-service'
 include 'components:virtual-node:entity-processor-service-impl'
 include 'components:virtual-node:sandbox-group-context-service'
 include 'components:virtual-node:virtual-node-info-read-service'
-include 'components:virtual-node:virtual-node-rpcops-common'
+include 'components:virtual-node:virtual-node-info-read-service-rpc-extensions'
+include 'components:virtual-node:virtual-node-management-sender'
 include 'components:virtual-node:virtual-node-rpcops-service-impl'
 include 'components:virtual-node:virtual-node-rpcops-maintenance-impl'
 include 'components:virtual-node:virtual-node-write-service'
 include 'components:virtual-node:virtual-node-write-service-impl'
-include 'cordapp-test-utils:api'
-include 'cordapp-test-utils:example-app'
-include 'cordapp-test-utils:test-utils'
 include 'libs:application:application-db-setup'
 include 'libs:application:application-impl'
 include 'libs:cache:cache-caffeine'
@@ -231,6 +230,7 @@ include 'libs:layered-property-map'
 include 'libs:layered-property-map:layered-property-map-test-converter'
 include 'libs:ledger:notary'
 include 'libs:ledger:ledger-common-impl'
+include 'libs:ledger:ledger-common-serialization'
 include 'libs:ledger:ledger-consensual-impl'
 include 'libs:lifecycle:lifecycle'
 include 'libs:lifecycle:lifecycle-impl'
@@ -241,6 +241,7 @@ include 'libs:membership:ledger-identity'
 include 'libs:membership:membership-common'
 include 'libs:membership:membership-datamodel'
 include 'libs:membership:membership-impl'
+include 'libs:membership:schema-validation'
 include 'libs:messaging:db-message-bus-datamodel'
 include 'libs:messaging:db-message-bus-impl'
 include 'libs:messaging:db-topic-admin-impl'
@@ -288,6 +289,7 @@ include 'libs:sandbox-internal:sandbox-shadow-cpk'
 include 'libs:schema-registry:schema-registry'
 include 'libs:schema-registry:schema-registry-impl'
 include 'libs:serialization:serialization-checkpoint-api'
+include 'libs:serialization:json-serializers'
 include 'libs:serialization:kryo-serializers'
 include 'libs:serialization:serialization-amqp'
 include 'libs:serialization:serialization-amqp:cpk-swap-original'
@@ -328,6 +330,9 @@ include 'processors:link-manager-processor'
 include 'processors:member-processor'
 include 'processors:rpc-processor'
 include 'processors:uniqueness-processor'
+include 'simulator:api'
+include 'simulator:example-app'
+include 'simulator:runtime'
 include 'testing:apps:test-app'
 include 'testing:db-testkit'
 include 'testing:db-message-bus-testkit'
@@ -342,8 +347,8 @@ include 'testing:cpbs:crypto-custom-digest-two-consumer'
 include 'testing:cpbs:connect4'
 include 'testing:cpbs:consensual-ledger'
 include 'testing:cpbs:extendable-cpb'
-include 'testing:cpbs:flow-worker-dev'
-include 'testing:cpbs:flow-worker-dev-for-cache-testing'
+include 'testing:cpbs:test-cordapp'
+include 'testing:cpbs:test-cordapp-for-cache-testing'
 include 'testing:cpbs:mandelbrot'
 include 'testing:cpbs:mgm'
 include 'testing:cpbs:sandbox-scr-cpk'
@@ -355,8 +360,9 @@ include 'testing:cpbs:split-packages:split-packages-two'
 include 'testing:cpbs:split-packages:split-packages-two:library-two'
 include 'testing:cpbs:tic-tac-toe'
 include 'testing:crypto-testkit'
-include 'testing:flow:flow-utilities'
 include 'testing:flow:dummy-link-manager'
+include 'testing:flow:external-events'
+include 'testing:flow:flow-utilities'
 include 'testing:layered-property-map-testkit'
 include 'testing:message-patterns'
 include 'testing:p2p:inmemory-messaging-impl'
@@ -395,17 +401,24 @@ if (compositeBuild.toBoolean() && file(cordaApiLocation).exists()) {
             substitute module('net.corda:corda-avro-schema') using project(':data:avro-schema')
             substitute module('net.corda:corda-config-schema') using project(':data:config-schema')
             substitute module('net.corda:corda-db-schema') using project(':data:db-schema')
+            substitute module('net.corda:corda-membership-schema') using project(':data:membership-schema')
             substitute module('net.corda:corda-topic-schema') using project(':data:topic-schema')
-            substitute module('net.corda:corda-ledger-obsolete') using project(':ledger-obsolete')
             substitute module('net.corda:corda-ledger-common') using project(':ledger:ledger-common')
             substitute module('net.corda:corda-ledger-consensual') using project(':ledger:ledger-consensual')
+            substitute module('net.corda:corda-ledger-utxo') using project(':ledger:ledger-utxo')
             substitute module('net.corda:corda-membership') using project(':membership')
             substitute module('net.corda:corda-serialization') using project(':serialization')
         }
     }
 }
 if (compositeBuild.toBoolean() && file(cordaCliHostLocation).exists()) {
-    includeBuild(cordaCliHostLocation)
+    includeBuild(cordaCliHostLocation){
+        dependencySubstitution {
+            substitute module("net.corda.cli.host:corda-cli") with project(":app")
+            substitute module("net.corda.cli.host:api") with project(":api")
+            substitute module("net.corda.cli.host:plugins") with project(":plugins")
+        }
+    }
 }
 
 gradleEnterprise {

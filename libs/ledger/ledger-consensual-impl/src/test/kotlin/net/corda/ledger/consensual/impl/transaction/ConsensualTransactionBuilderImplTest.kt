@@ -17,6 +17,7 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.Party
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import kotlin.test.assertIs
 
 internal class ConsensualTransactionBuilderImplTest{
     companion object {
@@ -72,9 +74,10 @@ internal class ConsensualTransactionBuilderImplTest{
 
     @Test
     fun `can build a simple Transaction`() {
-        ConsensualTransactionBuilderImpl(merkleTreeFactory, digestService, secureRandom, serializer, signingService)
+        val tx = ConsensualTransactionBuilderImpl(merkleTreeFactory, digestService, secureRandom, serializer, signingService)
             .withStates(testConsensualState)
             .signInitial(testPublicKey)
+        assertIs<SecureHash>(tx.id)
     }
 
     @Test

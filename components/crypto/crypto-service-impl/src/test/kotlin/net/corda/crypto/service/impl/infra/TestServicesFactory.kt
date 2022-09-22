@@ -5,8 +5,10 @@ import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.cipher.suite.impl.SignatureVerificationServiceImpl
 import net.corda.crypto.component.test.utils.TestConfigurationReadService
-import net.corda.crypto.config.impl.createDefaultCryptoConfig
+import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
+import net.corda.crypto.config.impl.createTestCryptoConfig
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.service.CryptoServiceFactory
@@ -53,7 +55,7 @@ class TestServicesFactory {
     val emptyConfig: SmartConfig =
         SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.empty())
 
-    val cryptoConfig: SmartConfig = createDefaultCryptoConfig(
+    val cryptoConfig: SmartConfig = createTestCryptoConfig(
         KeyCredentials("salt", "passphrase")
     ).withFallback(
         ConfigFactory.parseString(
@@ -112,6 +114,10 @@ class TestServicesFactory {
 }                
 """.trimIndent()
         )
+    )
+
+    val bootstrapConfig = cryptoConfig.factory.create(
+        ConfigFactory.parseMap(createCryptoBootstrapParamsMap(SOFT_HSM_ID))
     )
 
     val schemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
@@ -222,6 +228,7 @@ class TestServicesFactory {
             }
         ).also {
             it.start()
+            it.bootstrapConfig(bootstrapConfig)
             eventually {
                 assertEquals(LifecycleStatus.UP, it.lifecycleCoordinator.status)
             }

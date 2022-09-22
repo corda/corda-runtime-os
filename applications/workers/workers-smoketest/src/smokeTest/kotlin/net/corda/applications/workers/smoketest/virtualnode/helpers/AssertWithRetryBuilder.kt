@@ -85,3 +85,65 @@ fun assertWithRetry(initialize: AssertWithRetryBuilder.() -> Unit): SimpleRespon
         return response
     }
 }
+
+/**
+ * Same as [assertWithRetry], but exceptions thrown are also ignored during the retry process.
+ *
+ * This method should be preferred over [assertWithRetry] when the actual [AssertWithRetryArgs.command] might
+ * receive ignorable transient exceptions during its execution that have nothing to do with the actual
+ * [AssertWithRetryArgs.condition] that needs to be asserted.
+ *
+ * As an example, it might be used to wrap HTTP calls which could fail due to transient connectivity errors but
+ * eventually succeed:
+ *
+ *      val response = assertWithRetryIgnoringExceptions {
+ *          command { httpRequest(body) }
+ *          condition { it.code == 200 }
+ *      }
+ */
+fun assertWithRetryIgnoringExceptions(initialize: AssertWithRetryBuilder.() -> Unit): SimpleResponse {
+    val args = AssertWithRetryArgs()
+
+    AssertWithRetryBuilder(args).apply(initialize).run {
+        var retry = 0
+        var result: Any?
+        var timeTried: Long
+
+        do {
+            Thread.sleep(args.interval.toMillis())
+
+            result = try {
+                args.command!!.invoke()
+            } catch (exception: Exception) {
+                exception
+            }
+
+            if (result is SimpleResponse) {
+                if (null != args.immediateFailCondition && args.immediateFailCondition!!.invoke(result)) {
+                    fail("Failed without retry with status code = ${result.code} and body =\n${result.body}")
+                }
+
+                if (args.condition!!.invoke(result)) break
+            }
+
+            retry++
+            timeTried = args.interval.toMillis() * retry
+            println("Failed after $retry retry ($timeTried ms): $result")
+        } while (timeTried < args.timeout.toMillis())
+
+        when (result) {
+            is SimpleResponse -> {
+                assertThat(args.condition!!.invoke(result))
+                    .withFailMessage(
+                        "${args.failMessage}Retried ${result.url} and " +
+                                "failed with status code = ${result.code} and body =\n${result.body}"
+                    )
+                    .isTrue
+
+                return result
+            }
+
+            else -> fail("${args.failMessage} Retried $retry times and failed with $result")
+        }
+    }
+}

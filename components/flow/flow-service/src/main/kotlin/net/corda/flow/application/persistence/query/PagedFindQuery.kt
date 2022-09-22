@@ -5,15 +5,15 @@ import net.corda.flow.application.persistence.external.events.FindAllExternalEve
 import net.corda.flow.application.persistence.external.events.FindAllParameters
 import net.corda.flow.application.persistence.wrapWithPersistenceException
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.flow.fiber.FlowFiberSerializationService
 import net.corda.v5.application.persistence.PagedQuery
+import net.corda.v5.application.serialization.SerializationService
 
 /**
  * Object used to execute paged find queries against a database.
  */
 class PagedFindQuery<R : Any>(
     private val externalEventExecutor: ExternalEventExecutor,
-    private val flowFiberSerializationService: FlowFiberSerializationService,
+    private val serializationService: SerializationService,
     private val entityClass: Class<R>,
     private var limit: Int,
     private var offset: Int,
@@ -38,7 +38,7 @@ class PagedFindQuery<R : Any>(
                 FindAllExternalEventFactory::class.java,
                 FindAllParameters(entityClass, offset, limit)
             )
-        }.map { flowFiberSerializationService.deserialize(it.array(), entityClass) }
+        }.map { serializationService.deserialize(it.array(), entityClass) }
 
         return deserialized
     }

@@ -69,7 +69,7 @@ To publish the configuration required by the `LinkManager` which is used by the 
   },
   "groupsToAdd": [
     {
-      "groupId": "flow-worker-dev",
+      "groupId": "test-cordapp",
       "data": {
         "networkType": "CORDA_5",
         "protocolModes": ["AUTHENTICATION_ONLY", "AUTHENTICATED_ENCRYPTION"],
@@ -79,16 +79,16 @@ To publish the configuration required by the `LinkManager` which is used by the 
   ],
   "membersToAdd": [
     {
-      "x500name": "CN=Alice, O=Alice Corp, L=LDN, C=GB",
-      "groupId": "flow-worker-dev",
+      "x500Name": "CN=Alice, O=Alice Corp, L=LDN, C=GB",
+      "groupId": "test-cordapp",
       "data": {
         "address": "http://alice.com:8085",
         "publicSessionKey": "-----BEGIN PUBLIC KEY-----\nMIGeMA0GCSqGSIb3DQEBAQUAA4GMADCBiAKBgGh9cScVJJ4jHzLfla5cVYTjz4VN\n/cIdjgyxL/56HKfeF2mCdbHAUtkaoua7H1AjtsbE1paB20mqjjzjb32zPRfDU5OE\nHniSJnGdJ0ZkcWSgbwcWudDyC7fowO9YyPdAlGaZKRrAL2O4OdfRHBWUk0NNZ0pk\n416Nyo8m8gGiienhAgMBAAE=\n-----END PUBLIC KEY-----"
       }
     },
     {
-      "x500name": "CN=Bob, O=Bob Corp, L=LDN, C=GB",
-      "groupId": "flow-worker-dev",
+      "x500Name": "CN=Bob, O=Bob Corp, L=LDN, C=GB",
+      "groupId": "test-cordapp",
       "data": {
         "address": "http://alice.com:8085",
         "publicSessionKey": "-----BEGIN PUBLIC KEY-----\nMIGeMA0GCSqGSIb3DQEBAQUAA4GMADCBiAKBgGh9cScVJJ4jHzLfla5cVYTjz4VN\n/cIdjgyxL/56HKfeF2mCdbHAUtkaoua7H1AjtsbE1paB20mqjjzjb32zPRfDU5OE\nHniSJnGdJ0ZkcWSgbwcWudDyC7fowO9YyPdAlGaZKRrAL2O4OdfRHBWUk0NNZ0pk\n416Nyo8m8gGiienhAgMBAAE=\n-----END PUBLIC KEY-----"
@@ -97,8 +97,8 @@ To publish the configuration required by the `LinkManager` which is used by the 
   ],
   "identitiesToAdd": [
     {
-      "x500name": "CN=Alice, O=Alice Corp, L=LDN, C=GB",
-      "groupId": "flow-worker-dev",
+      "x500Name": "CN=Alice, O=Alice Corp, L=LDN, C=GB",
+      "groupId": "test-cordapp",
       "data": {
         "tlsTenantId": "cluster",
         "sessionKeyTenantId": "alice",
@@ -107,8 +107,8 @@ To publish the configuration required by the `LinkManager` which is used by the 
       }
     },
     {
-      "x500name": "CN=Bob, O=Bob Corp, L=LDN, C=GB",
-      "groupId": "flow-worker-dev",
+      "x500Name": "CN=Bob, O=Bob Corp, L=LDN, C=GB",
+      "groupId": "test-cordapp",
       "data": {
         "tlsTenantId": "cluster",
         "sessionKeyTenantId": "alice",

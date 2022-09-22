@@ -35,13 +35,14 @@ class ForwardingMembershipGroupReaderTest {
         private const val KEY_ALGORITHM = "EC"
         private const val BOB_ENDPOINT = "0.0.0.0"
         private val PUBLIC_KEY_HASH = "---- 32 Byte Public Key Hash----".toByteArray()
+        private const val PROTOCOL_VERSION = 1
     }
     private val bobSessionKey = mock<PublicKey> {
         on { algorithm } doReturn KEY_ALGORITHM
     }
     private val bobEndpointInfo = mock<EndpointInfo> {
         on { url } doReturn BOB_ENDPOINT
-        on { protocolVersion } doReturn EndpointInfo.DEFAULT_PROTOCOL_VERSION
+        on { protocolVersion } doReturn PROTOCOL_VERSION
     }
     private val bobMemberContext = mock<MemberContext> {
         on { parseList<EndpointInfo>("corda.endpoints") } doReturn listOf(bobEndpointInfo)
@@ -127,7 +128,7 @@ class ForwardingMembershipGroupReaderTest {
         whenever(aliceGroupReader.lookup(BOB_X500_NAME)).thenReturn(bobMemberInfo)
         val bobEndpointInfo = mock<EndpointInfo> {
             on { url } doReturn BOB_ENDPOINT
-            on { protocolVersion } doReturn EndpointInfo.DEFAULT_PROTOCOL_VERSION + 1
+            on { protocolVersion } doReturn PROTOCOL_VERSION + 1
         }
         val bobMemberContext = mock<MemberContext> {
             on { parseList<EndpointInfo>("corda.endpoints") } doReturn listOf(bobEndpointInfo)
@@ -142,7 +143,7 @@ class ForwardingMembershipGroupReaderTest {
         whenever(aliceGroupReader.lookupBySessionKey(PublicKeyHash.Companion.parse(PUBLIC_KEY_HASH))).thenReturn(bobMemberInfo)
         val bobEndpointInfo = mock<EndpointInfo> {
             on { url } doReturn BOB_ENDPOINT
-            on { protocolVersion } doReturn EndpointInfo.DEFAULT_PROTOCOL_VERSION + 1
+            on { protocolVersion } doReturn PROTOCOL_VERSION + 1
         }
         val bobMemberContext = mock<MemberContext> {
             on { parseList<EndpointInfo>("corda.endpoints") } doReturn listOf(bobEndpointInfo)

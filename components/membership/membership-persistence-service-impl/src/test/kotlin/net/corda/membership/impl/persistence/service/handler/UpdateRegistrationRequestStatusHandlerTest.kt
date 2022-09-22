@@ -26,6 +26,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -51,6 +52,7 @@ class UpdateRegistrationRequestStatusHandlerTest {
         CpiIdentifier("TEST_CPI", "1.0", null),
         vaultDmlConnectionId = vaultDmlConnectionId,
         cryptoDmlConnectionId = UUID(0, 0),
+        uniquenessDmlConnectionId = UUID(0, 0),
         timestamp = clock.instant()
     )
 
@@ -128,7 +130,7 @@ class UpdateRegistrationRequestStatusHandlerTest {
     }
 
     @Test
-    fun `invoke updates fails to downgrade status`() {
+    fun `invoke updates ignores to downgrade status`() {
         val registrationId = "regId"
         val registrationRequestEntity = mock<RegistrationRequestEntity> {
             on { status } doReturn "APPROVED"
@@ -138,8 +140,8 @@ class UpdateRegistrationRequestStatusHandlerTest {
         val statusUpdate = UpdateRegistrationRequestStatus(registrationId, RegistrationStatus.PENDING_AUTO_APPROVAL)
         clock.setTime(Instant.ofEpochMilli(500))
 
-        assertThrows<MembershipPersistenceException> {
-            updateRegistrationRequestStatusHandler.invoke(context, statusUpdate)
-        }
+        updateRegistrationRequestStatusHandler.invoke(context, statusUpdate)
+
+        verify(entityManager, never()).merge(registrationRequestEntity)
     }
 }

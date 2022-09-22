@@ -95,8 +95,8 @@ class DefaultRemoteSerializerFactory(
 
             // Return the specific serializer the caller asked for.
             serializers[typeDescriptor] ?: throw MissingSerializerException(
-                message = "Could not find type matching descriptor $typeDescriptor.",
-                typeDescriptor = typeDescriptor
+                "Could not find type matching descriptor $typeDescriptor.",
+                typeDescriptor
             )
         }
 

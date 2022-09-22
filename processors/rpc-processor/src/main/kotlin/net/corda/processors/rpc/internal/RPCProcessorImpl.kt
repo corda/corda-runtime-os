@@ -2,7 +2,6 @@ package net.corda.processors.rpc.internal
 
 import net.corda.components.rpc.HttpRpcGateway
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.configuration.rpcops.ConfigRPCOpsService
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.client.CryptoOpsClient
@@ -41,8 +40,6 @@ class RPCProcessorImpl @Activate constructor(
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = ConfigurationReadService::class)
     private val configReadService: ConfigurationReadService,
-    @Reference(service = ConfigRPCOpsService::class)
-    private val configRPCOpsService: ConfigRPCOpsService,
     @Reference(service = HttpRpcGateway::class)
     private val httpRpcGateway: HttpRpcGateway,
     @Reference(service = PublisherFactory::class)
@@ -85,7 +82,6 @@ class RPCProcessorImpl @Activate constructor(
         ::configReadService,
         ::httpRpcGateway,
         ::flowRPCOpsService,
-        ::configRPCOpsService,
         ::cpiUploadRPCOpsService,
         ::cpiInfoReadService,
         ::memberOpsClient,

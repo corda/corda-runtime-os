@@ -1,7 +1,7 @@
 package net.corda.flow.application.persistence.external.events
 
 import java.nio.ByteBuffer
-import net.corda.data.persistence.FindEntity
+import net.corda.data.persistence.FindEntities
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import org.osgi.service.component.annotations.Component
 
@@ -9,8 +9,8 @@ import org.osgi.service.component.annotations.Component
 class FindExternalEventFactory : AbstractPersistenceExternalEventFactory<FindParameters>() {
 
     override fun createRequest(parameters: FindParameters): Any {
-        return FindEntity(parameters.entityClass.canonicalName, parameters.serializedPrimaryKey)
+        return FindEntities(parameters.entityClass.canonicalName, parameters.serializedPrimaryKeys)
     }
 }
 
-data class FindParameters(val entityClass: Class<*>, val serializedPrimaryKey: ByteBuffer)
+data class FindParameters(val entityClass: Class<*>, val serializedPrimaryKeys: List<ByteBuffer>)

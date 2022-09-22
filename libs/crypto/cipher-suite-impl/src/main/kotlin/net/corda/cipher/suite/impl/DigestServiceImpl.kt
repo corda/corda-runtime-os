@@ -21,7 +21,7 @@ import java.security.NoSuchAlgorithmException
 import java.security.Provider
 import java.util.concurrent.ConcurrentHashMap
 
-@Component(service = [ DigestService::class, SingletonSerializeAsToken::class ], scope = PROTOTYPE)
+@Component(service = [ DigestService::class, SingletonSerializeAsToken::class ], scope = PROTOTYPE, property=["corda.system=true"])
 class DigestServiceImpl @Activate constructor(
     @Reference(service = CipherSchemeMetadata::class)
     private val schemeMetadata: CipherSchemeMetadata,

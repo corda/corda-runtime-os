@@ -1,8 +1,6 @@
 package net.corda.libs.permissions.storage.reader.impl
 
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
-import net.corda.data.permissions.summary.UserPermissionSummary as AvroUserPermissionSummary
-import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.libs.permissions.storage.common.converter.toAvroGroup
 import net.corda.libs.permissions.storage.common.converter.toAvroPermission
 import net.corda.libs.permissions.storage.common.converter.toAvroRole
@@ -12,6 +10,7 @@ import net.corda.libs.permissions.storage.reader.repository.PermissionRepository
 import net.corda.libs.permissions.storage.reader.repository.UserLogin
 import net.corda.libs.permissions.storage.reader.summary.InternalUserPermissionSummary
 import net.corda.libs.permissions.storage.reader.summary.PermissionSummaryReconciler
+import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
 import net.corda.permissions.model.Group
@@ -23,7 +22,7 @@ import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_ENTITY_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_GROUP_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_ROLE_TOPIC
 import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_USER_TOPIC
-import net.corda.v5.base.concurrent.getOrThrow
+import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import java.util.concurrent.atomic.AtomicReference
@@ -31,6 +30,7 @@ import net.corda.data.permissions.Group as AvroGroup
 import net.corda.data.permissions.Permission as AvroPermission
 import net.corda.data.permissions.Role as AvroRole
 import net.corda.data.permissions.User as AvroUser
+import net.corda.data.permissions.summary.UserPermissionSummary as AvroUserPermissionSummary
 
 @Suppress("TooManyFunctions")
 class PermissionStorageReaderImpl(
@@ -45,8 +45,6 @@ class PermissionStorageReaderImpl(
         val log = contextLogger()
     }
 
-    override val isRunning: Boolean get() = !stopped
-
     private var stopped = false
 
     private val permissionManagementCache: PermissionManagementCache
@@ -59,7 +57,7 @@ class PermissionStorageReaderImpl(
         publishOnStartup()
     }
 
-    override fun stop() {
+    override fun close() {
         stopped = true
     }
 

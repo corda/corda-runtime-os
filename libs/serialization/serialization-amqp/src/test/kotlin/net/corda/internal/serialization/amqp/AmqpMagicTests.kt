@@ -3,7 +3,7 @@ package net.corda.internal.serialization.amqp
 import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.internal.serialization.amqp.testutils.serialize
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactoryNoEvolution
-import net.corda.v5.base.types.ByteSequence
+import net.corda.v5.base.types.OpaqueBytesSubSequence
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import java.io.NotSerializableException
@@ -29,7 +29,7 @@ class AmqpMagicTests {
         // Check that NotSerializableException is thrown when trying to deserialize
         val exception = Assertions.assertThrows(NotSerializableException::class.java) {
             DeserializationInput(factory).deserialize(
-                ByteSequence.of(editedBytes),
+                OpaqueBytesSubSequence(editedBytes, 0, editedBytes.size),
                 String::class.java,
                 testSerializationContext
             )

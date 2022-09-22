@@ -4,6 +4,7 @@ import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
 import io.netty.channel.nio.NioEventLoopGroup
 import net.corda.cache.caffeine.CacheFactoryImpl
+import net.corda.lifecycle.Resource
 import net.corda.p2p.gateway.messaging.http.DestinationInfo
 import net.corda.p2p.gateway.messaging.http.HttpClient
 import java.util.concurrent.TimeUnit
@@ -21,7 +22,7 @@ class ConnectionManager(
     private val sslConfiguration: SslConfiguration,
     private val connectionConfiguration: ConnectionConfiguration,
     nioEventLoopGroupFactory: (Int) -> NioEventLoopGroup = { NioEventLoopGroup(it) }
-) : AutoCloseable {
+) : Resource {
 
     companion object {
         private const val NUM_CLIENT_WRITE_THREADS = 2
@@ -32,7 +33,7 @@ class ConnectionManager(
         Caffeine.newBuilder()
             .maximumSize(connectionConfiguration.maxClientConnections)
             .expireAfterAccess(connectionConfiguration.connectionIdleTimeout)
-            .removalListener { _, value, _ -> value?.stop() })
+            .removalListener { _, value, _ -> value?.close() })
     private var writeGroup = nioEventLoopGroupFactory(NUM_CLIENT_WRITE_THREADS)
     private var nettyGroup = nioEventLoopGroupFactory(NUM_CLIENT_NETTY_THREADS)
 
