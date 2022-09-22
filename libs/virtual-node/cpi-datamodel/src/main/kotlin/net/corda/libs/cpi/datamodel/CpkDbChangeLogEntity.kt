@@ -43,9 +43,10 @@ class CpkDbChangeLogEntity(
 
 fun CpkDbChangeLogEntity.toAudit(): CpkDbChangeLogAuditEntity =
     CpkDbChangeLogAuditEntity(
-        id,
-        fileChecksum,
-        content
+        id.toAudit(fileChecksum, entityVersion),
+        id.cpkSignerSummaryHash,
+        content,
+        isDeleted
     )
 
 /**
@@ -63,6 +64,17 @@ data class CpkDbChangeLogKey(
     val filePath: String,
 ) : Serializable
 
+fun CpkDbChangeLogKey.toAudit(fileChecksum: String, entityVersion: Int): CpkDbChangeLogAuditKey {
+    this.apply {
+        return CpkDbChangeLogAuditKey(
+            cpkName,
+            cpkVersion,
+            fileChecksum,
+            entityVersion,
+            filePath
+        )
+    }
+}
 
 /*
  * Find all the db changelogs for a CPI

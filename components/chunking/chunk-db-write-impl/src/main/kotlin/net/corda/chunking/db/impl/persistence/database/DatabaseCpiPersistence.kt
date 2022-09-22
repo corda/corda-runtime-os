@@ -150,6 +150,8 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         }
 
         if (changelogsDiffered) {
+            // Ensure DB has new entity version
+            em.flush()
             cpkDbChangeLogEntities.forEach {
                 val inDb = em.find(CpkDbChangeLogEntity::class.java, it.id)
                 val audit = inDb.toAudit()
