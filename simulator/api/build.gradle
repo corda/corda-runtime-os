@@ -35,6 +35,7 @@ publishing {
             pom {
                 name = 'corda-simulator-api'
                 description = 'corda-simulator-api'
+                url = 'https://github.com/corda/corda-runtime-os'
 
                 scm {
                     url = 'https://github.com/corda/corda-runtime-os'
