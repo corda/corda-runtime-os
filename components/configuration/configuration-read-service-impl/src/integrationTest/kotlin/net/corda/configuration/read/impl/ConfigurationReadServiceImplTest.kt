@@ -1,8 +1,6 @@
 package net.corda.configuration.read.impl
 
 import com.typesafe.config.ConfigFactory
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -32,6 +30,8 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
@@ -106,7 +106,7 @@ class ConfigurationReadServiceImplTest {
         // Cleanup
         reg.close()
         publisher.close()
-        configurationReadService.close()
+        configurationReadService.stop()
     }
 
     @Test
@@ -169,6 +169,6 @@ class ConfigurationReadServiceImplTest {
         reg.close()
         reg1.close()
         publisher.close()
-        configurationReadService.close()
+        configurationReadService.stop()
     }
 }

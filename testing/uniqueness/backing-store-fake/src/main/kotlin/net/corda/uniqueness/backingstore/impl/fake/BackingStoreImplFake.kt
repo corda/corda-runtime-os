@@ -25,6 +25,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
 import org.slf4j.Logger
@@ -73,7 +74,8 @@ open class BackingStoreImplFake @Activate constructor(
     }
 
     @Synchronized
-    override fun close() {
+    @Deactivate
+    fun close() {
         sessionStateData.clear()
         sessionTxnData.clear()
         stop()

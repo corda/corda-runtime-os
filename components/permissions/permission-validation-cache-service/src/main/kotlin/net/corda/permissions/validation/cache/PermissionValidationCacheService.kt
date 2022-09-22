@@ -29,8 +29,8 @@ import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicReference
 
 @Component(service = [PermissionValidationCacheService::class])
 class PermissionValidationCacheService @Activate constructor(
@@ -115,7 +115,7 @@ class PermissionValidationCacheService @Activate constructor(
                 configRegistration?.close()
                 configRegistration = null
                 downTransition()
-                permissionValidationCacheRef.get()?.close()
+                permissionValidationCacheRef.get()?.stop()
                 permissionValidationCacheRef.set(null)
             }
         }
@@ -145,7 +145,7 @@ class PermissionValidationCacheService @Activate constructor(
         permissionSummarySubscription =
             createPermissionSummarySubscription(permissionSummaryData, config).also { it.start() }
 
-        permissionValidationCacheRef.get()?.close()
+        permissionValidationCacheRef.get()?.stop()
         permissionValidationCacheRef.set(permissionValidationCacheFactory.createPermissionValidationCache(
             permissionSummaryData
         )

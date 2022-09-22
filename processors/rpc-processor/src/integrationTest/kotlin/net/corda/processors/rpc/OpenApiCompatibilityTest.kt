@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import java.io.File
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -83,9 +84,16 @@ class OpenApiCompatibilityTest {
 
         val diffReport = existingSwaggerJson.second.diff(baselineSwagger)
 
+        val tmpBaselineFile = kotlin.io.path.createTempFile(
+            prefix = "open-api-baseline", suffix = ".json")
+        File(tmpBaselineFile.toUri()).printWriter().use {
+            it.println(existingSwaggerJson.second.toJson())
+        }
+
         assertThat(diffReport).withFailMessage(
             "Produced Open API content:\n" + existingSwaggerJson.first +
-                    "\nis different to the baseline. Differences noted: ${diffReport.joinToString(" ## ")}"
+                    "\nis different to the baseline. Differences noted: ${diffReport.joinToString(" ## ")}\n\n" +
+                    "New baseline written to: $tmpBaselineFile"
         ).isEmpty()
     }
 
@@ -140,4 +148,8 @@ class OpenApiCompatibilityTest {
             body to Json.mapper().readValue(body, OpenAPI::class.java)
         }
     }
+}
+
+private fun OpenAPI.toJson(): String {
+    return Json.pretty(this)
 }

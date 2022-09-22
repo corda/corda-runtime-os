@@ -15,8 +15,8 @@ import org.osgi.service.component.annotations.Component
 @Component(service = [FlowProtocolStoreFactory::class])
 class FlowProtocolStoreFactoryImpl : FlowProtocolStoreFactory {
 
-    companion object {
-        val logger = contextLogger()
+    private companion object {
+        private val logger = contextLogger()
     }
 
     private fun extractDataForFlow(

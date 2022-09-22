@@ -90,7 +90,7 @@ class SessionEventExecutorTest {
     }
 
     @Test
-    fun `Session event with null state`() {
+    fun `Session event received with null state`() {
         val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionData())
         val appMessageFactoryCaptor = AppMessageFactoryCaptor(AppMessage())
         val result = SessionEventExecutor(
@@ -124,6 +124,27 @@ class SessionEventExecutorTest {
             .isEqualTo("Tried to process session event for expired session with sessionId $sessionId")
 
         assertThat(appMessageFactoryCaptor.sessionEventSerializer).isEqualTo(sessionEventSerializer)
+    }
+
+    @Test
+    fun `Session error event received with null state`() {
+        val payload = buildSessionEvent(MessageDirection.INBOUND, sessionId, 1, SessionError())
+        val appMessageFactoryCaptor = AppMessageFactoryCaptor(AppMessage())
+        val result = SessionEventExecutor(
+            sessionId,
+            payload,
+            null,
+            Instant.now(),
+            sessionEventSerializer,
+            appMessageFactoryCaptor::generateAppMessage,
+            flowConfig
+        ).execute()
+
+        val state = result.flowMapperState
+        val outboundEvents = result.outputEvents
+
+        assertThat(state).isNull()
+        assertThat(outboundEvents.size).isEqualTo(0)
     }
 
     class AppMessageFactoryCaptor(val appMessage: AppMessage) {

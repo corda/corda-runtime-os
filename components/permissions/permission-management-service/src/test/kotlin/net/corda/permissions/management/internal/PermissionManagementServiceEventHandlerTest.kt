@@ -5,9 +5,9 @@ import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.permissions.management.cache.PermissionManagementCache
-import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.permissions.manager.factory.PermissionManagerFactory
+import net.corda.libs.permissions.validation.cache.PermissionValidationCache
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -25,7 +25,6 @@ import net.corda.schema.configuration.ConfigKeys
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
-
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
@@ -135,7 +134,7 @@ internal class PermissionManagementServiceEventHandlerTest {
 
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.DOWN), coordinator)
 
-        verify(permissionManager).close()
+        verify(permissionManager).stop()
         verify(coordinator).updateStatus(LifecycleStatus.DOWN)
     }
 
@@ -158,7 +157,7 @@ internal class PermissionManagementServiceEventHandlerTest {
 
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.DOWN), coordinator)
 
-        verify(permissionManager).close()
+        verify(permissionManager).stop()
         verify(coordinator).updateStatus(LifecycleStatus.DOWN)
 
         assertNull(handler.permissionManager)
@@ -185,7 +184,7 @@ internal class PermissionManagementServiceEventHandlerTest {
         assertNull(handler.rpcSender)
 
         verify(rpcSender).close()
-        verify(permissionManager).close()
+        verify(permissionManager).stop()
         verify(registrationHandle).close()
         verify(coordinator).updateStatus(LifecycleStatus.DOWN)
     }

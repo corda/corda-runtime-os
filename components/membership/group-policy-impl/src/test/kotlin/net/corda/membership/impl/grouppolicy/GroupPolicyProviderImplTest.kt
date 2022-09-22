@@ -5,6 +5,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.membership.event.MembershipEvent
+import net.corda.data.membership.event.registration.MemberRegistrationApproved
 import net.corda.data.membership.event.registration.MgmOnboarded
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.libs.configuration.SmartConfigFactory
@@ -28,11 +29,9 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.grouppolicy.MGMGroupPolicy
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
-import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
-import net.corda.p2p.app.AppMessage
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.types.LayeredPropertyMap
@@ -53,6 +52,7 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Captor
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -164,11 +164,9 @@ class GroupPolicyProviderImplTest {
         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
     )
     private val dependencyServiceRegistration: RegistrationHandle = mock()
-    private val subRegistration: RegistrationHandle = mock()
     private val configHandle: Resource = mock()
     private val subscription: Subscription<String, MembershipEvent> = mock()
     private val coordinator: LifecycleCoordinator = mock {
-        on { followStatusChangesByName(any()) } doReturn subRegistration
         on {
             followStatusChangesByName(
                 eq(dependencies)
@@ -241,7 +239,7 @@ class GroupPolicyProviderImplTest {
     }
 
     fun startComponentAndDependencies() {
-        postRegistrationStatusChangeEvent(subRegistration)
+        postConfigChangedEvent()
     }
 
     fun assertExpectedGroupPolicy(
@@ -256,8 +254,8 @@ class GroupPolicyProviderImplTest {
 
     @Test
     fun `Correct group policy is returned when CPI metadata contains group policy string and service has started`() {
-        postConfigChangedEvent()
         startComponentAndDependencies()
+        postConfigChangedEvent()
         assertExpectedGroupPolicy(
             groupPolicyProvider.getGroupPolicy(holdingIdentity1),
             groupId1,
@@ -355,14 +353,13 @@ class GroupPolicyProviderImplTest {
         postStopEvent()
 
         verify(dependencyServiceRegistration, never()).close()
-        verify(subRegistration, never()).close()
         verify(configHandle, never()).close()
         verify(subscription, never()).close()
         verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
     }
 
     @Test
-    fun `stop event sets status to down and closes handles and subscription when they have been created`() {
+    fun `stop event sets status to down and closes handles when they have been created`() {
         postStartEvent()
         postRegistrationStatusChangeEvent(dependencyServiceRegistration)
         postConfigChangedEvent()
@@ -370,7 +367,6 @@ class GroupPolicyProviderImplTest {
 
         verify(dependencyServiceRegistration).close()
         verify(configHandle).close()
-        verify(subscription).close()
         verify(coordinator).updateStatus(
             eq(LifecycleStatus.DOWN), any()
         )
@@ -404,65 +400,22 @@ class GroupPolicyProviderImplTest {
     @Test
     fun `registration status change to DOWN set the component status to down`() {
         postStartEvent()
-        postRegistrationStatusChangeEvent(dependencyServiceRegistration, LifecycleStatus.DOWN)
-
-        verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
-        verify(subscription, never()).close()
-    }
-
-    @Test
-    fun `registration status change to DOWN set the component status to down and closes the subscription if already created`() {
-        postStartEvent()
         postConfigChangedEvent()
         postRegistrationStatusChangeEvent(dependencyServiceRegistration, LifecycleStatus.DOWN)
 
         verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
-        verify(subscription).close()
-    }
-
-    @Test
-    fun `config changed event creates subscription`() {
-        postConfigChangedEvent()
-
-        verify(subscription, never()).close()
-        verify(subscriptionFactory).createDurableSubscription(
-            any(),
-            any<DurableProcessor<String, AppMessage>>(),
-            any(),
-            eq(null)
-        )
-        verify(subscription).start()
-        verify(coordinator).followStatusChangesByName(any())
     }
 
     @Test
     fun `component starts after subscription is UP`() {
         postConfigChangedEvent()
-        postRegistrationStatusChangeEvent(subRegistration)
 
         verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
     }
 
     @Test
-    fun `config changed event closes original subscription before creating a new one`() {
-        postConfigChangedEvent()
-        postConfigChangedEvent()
-
-        verify(subscription).close()
-        verify(subscriptionFactory, times(2)).createDurableSubscription(
-            any(),
-            any<DurableProcessor<String, AppMessage>>(),
-            any(),
-            eq(null)
-        )
-        verify(subscription, times(2)).start()
-        verify(coordinator, times(2)).followStatusChangesByName(any())
-    }
-
-    @Test
     fun `Cached group policy is updated when a holding identity updates their CPI`() {
         postConfigChangedEvent()
-        assertNull(virtualNodeListener)
         startComponentAndDependencies()
         assertNotNull(virtualNodeListener)
         val original = groupPolicyProvider.getGroupPolicy(holdingIdentity1)
@@ -528,7 +481,6 @@ class GroupPolicyProviderImplTest {
 
     @Test
     fun `Component goes down and up when followed components go down and up again`() {
-        postConfigChangedEvent()
         startComponentAndDependencies()
         verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
         assertNotNull(lifecycleEventHandler)
@@ -536,7 +488,6 @@ class GroupPolicyProviderImplTest {
         postRegistrationStatusChangeEvent(dependencyServiceRegistration, LifecycleStatus.DOWN)
         postConfigChangedEvent()
         postRegistrationStatusChangeEvent(dependencyServiceRegistration)
-        postRegistrationStatusChangeEvent(subRegistration)
 
         assertExpectedGroupPolicy(
             groupPolicyProvider.getGroupPolicy(holdingIdentity1),
@@ -598,7 +549,7 @@ class GroupPolicyProviderImplTest {
         postConfigChangedEvent()
         startComponentAndDependencies()
 
-        groupPolicyProvider.FinishedRegistrationsProcessor()
+        groupPolicyProvider.FinishedRegistrationsProcessor() {_, _ -> }
             .onNext(listOf(Record("", "", MembershipEvent(MgmOnboarded(holdingIdentity5.toAvro())))))
         verify(groupPolicyParser, times(1)).parse(eq(holdingIdentity5), any(), any())
 
@@ -613,7 +564,7 @@ class GroupPolicyProviderImplTest {
 
         whenever(groupPolicyParser.parse(eq(holdingIdentity5), any(), any())).thenReturn(null)
 
-        groupPolicyProvider.FinishedRegistrationsProcessor()
+        groupPolicyProvider.FinishedRegistrationsProcessor()  {_, _ -> }
             .onNext(listOf(Record("", "", MembershipEvent(MgmOnboarded(holdingIdentity5.toAvro())))))
         verify(groupPolicyParser, times(1)).parse(eq(holdingIdentity5), any(), any())
 
@@ -627,7 +578,7 @@ class GroupPolicyProviderImplTest {
         postConfigChangedEvent()
         startComponentAndDependencies()
 
-        groupPolicyProvider.FinishedRegistrationsProcessor()
+        groupPolicyProvider.FinishedRegistrationsProcessor()  {_, _ -> }
             .onNext(listOf(Record("", "", MembershipEvent(MgmOnboarded(holdingIdentity5.toAvro())))))
         verify(groupPolicyParser, times(1)).parse(eq(holdingIdentity5), any(), any())
 
@@ -637,7 +588,7 @@ class GroupPolicyProviderImplTest {
 
         // on new event we will fail parsing
         whenever(groupPolicyParser.parse(eq(holdingIdentity5), any(), any())).thenReturn(null)
-        groupPolicyProvider.FinishedRegistrationsProcessor()
+        groupPolicyProvider.FinishedRegistrationsProcessor()  {_, _ -> }
             .onNext(listOf(Record("", "", MembershipEvent(MgmOnboarded(holdingIdentity5.toAvro())))))
         verify(groupPolicyParser, times(2)).parse(eq(holdingIdentity5), any(), any())
 
@@ -653,11 +604,11 @@ class GroupPolicyProviderImplTest {
 
         whenever(groupPolicyParser.parse(eq(holdingIdentity5), any(), any())).thenReturn(null)
 
-        groupPolicyProvider.FinishedRegistrationsProcessor()
+        groupPolicyProvider.FinishedRegistrationsProcessor()  {_, _ -> }
             .onNext(listOf(Record("", "", MembershipEvent(MgmOnboarded(holdingIdentity5.toAvro())))))
         verify(groupPolicyParser, times(1)).parse(eq(holdingIdentity5), any(), any())
 
-        groupPolicyProvider.FinishedRegistrationsProcessor()
+        groupPolicyProvider.FinishedRegistrationsProcessor()  {_, _ -> }
             .onNext(listOf(Record("", "", MembershipEvent(MgmOnboarded(holdingIdentity5.toAvro())))))
         verify(groupPolicyParser, times(2)).parse(eq(holdingIdentity5), any(), any())
     }
@@ -681,8 +632,8 @@ class GroupPolicyProviderImplTest {
 
     @Test
     fun `Persisted group policy properties are return if no error occurs when querying`() {
-        postConfigChangedEvent()
         startComponentAndDependencies()
+        postConfigChangedEvent()
         val argCap = argumentCaptor<() -> LayeredPropertyMap?>()
 
         whenever(membershipQueryClient.queryGroupPolicy(any()))
@@ -690,5 +641,197 @@ class GroupPolicyProviderImplTest {
         groupPolicyProvider.getGroupPolicy(holdingIdentity1)
         verify(groupPolicyParser).parse(any(), any(), argCap.capture())
         assertThat(argCap.firstValue.invoke()).isEqualTo(properties)
+    }
+
+    @Test
+    fun `registerListener will not start a subscription if the process is not running`() {
+        groupPolicyProvider.registerListener("test") { _, _ ->
+        }
+
+        verify(subscription, never()).start()
+    }
+
+    @Test
+    fun `registerListener will start the subscription if is running`() {
+        startComponentAndDependencies()
+        postConfigChangedEvent()
+        groupPolicyProvider.registerListener("test") { _, _ ->
+        }
+
+        verify(subscription).start()
+    }
+
+    @Test
+    fun `registerListener will start the subscription when running`() {
+        groupPolicyProvider.registerListener("test") { _, _ ->
+        }
+
+        postConfigChangedEvent()
+
+        verify(subscription).start()
+    }
+
+    @Test
+    fun `registerListener will stop previous subscription with the same name`() {
+        postConfigChangedEvent()
+        groupPolicyProvider.registerListener("test1") { _, _ ->
+        }
+        groupPolicyProvider.registerListener("test1") { _, _ ->
+        }
+        groupPolicyProvider.registerListener("test2") { _, _ ->
+        }
+
+        verify(subscription, times(3)).start()
+        verify(subscription, times(1)).close()
+    }
+
+    @Test
+    fun `StopEvent will close all the subscriptions`() {
+        postConfigChangedEvent()
+        groupPolicyProvider.registerListener("test1") { _, _ ->
+        }
+        groupPolicyProvider.registerListener("test2") { _, _ ->
+        }
+        groupPolicyProvider.registerListener("test3") { _, _ ->
+        }
+
+        postStopEvent()
+
+        verify(subscription, times(3)).close()
+    }
+
+    @Test
+    fun `dependent DOWN will close all the subscriptions`() {
+        postConfigChangedEvent()
+        groupPolicyProvider.registerListener("test1") { _, _ ->
+        }
+        groupPolicyProvider.registerListener("test2") { _, _ ->
+        }
+        groupPolicyProvider.registerListener("test3") { _, _ ->
+        }
+
+        postRegistrationStatusChangeEvent(dependencyServiceRegistration, LifecycleStatus.DOWN)
+
+        verify(subscription, times(3)).close()
+    }
+
+    @Test
+    fun `second config change will take the subscription down and up`() {
+        groupPolicyProvider.registerListener("test") { _, _ ->
+        }
+
+        postConfigChangedEvent()
+        postConfigChangedEvent()
+
+        verify(subscription, times(1)).close()
+        verify(subscription, times(2)).start()
+    }
+
+    @Test
+    fun `registerListener will call the call back when new virtual node is created`() {
+        var holdingIdentity: HoldingIdentity? = null
+        var groupPolicy: GroupPolicy? = null
+        groupPolicyProvider.registerListener("test") { id, gp ->
+            holdingIdentity = id
+            groupPolicy = gp
+        }
+        postConfigChangedEvent()
+        startComponentAndDependencies()
+
+        virtualNodeListener?.onUpdate(
+            setOf(holdingIdentity1),
+            mapOf(
+                holdingIdentity1 to VirtualNodeInfo(
+                    holdingIdentity1,
+                    cpiIdentifier2,
+                    null,
+                    UUID(0, 0),
+                    null,
+                    UUID(0, 0),
+                    null,
+                    UUID(0, 0),
+                    timestamp = Instant.ofEpochSecond(100)
+                )
+            )
+        )
+
+        assertThat(holdingIdentity).isEqualTo(holdingIdentity1)
+        assertThat(groupPolicy).isEqualTo(parsedGroupPolicy2)
+    }
+
+    @Test
+    fun `registerListener will not call the call back when new MGM virtual node is created`() {
+        var called = 0
+        groupPolicyProvider.registerListener("test") { _, _ ->
+            called++
+        }
+        postConfigChangedEvent()
+        startComponentAndDependencies()
+
+        virtualNodeListener?.onUpdate(
+            setOf(holdingIdentity5),
+            mapOf(
+                holdingIdentity5 to VirtualNodeInfo(
+                    holdingIdentity5,
+                    cpiIdentifier5,
+                    null,
+                    UUID(0, 0),
+                    null,
+                    UUID(0, 0),
+                    null,
+                    UUID(0, 0),
+                    timestamp = Instant.ofEpochSecond(100)
+                )
+            )
+        )
+
+        assertThat(called).isZero
+    }
+
+    @Test
+    fun `registerListener will call the call back when new MGM is created`() {
+        val processor = argumentCaptor<FinishedRegistrationsProcessor>()
+        whenever(subscriptionFactory.createDurableSubscription(any(), processor.capture(), any(), anyOrNull())).doReturn(subscription)
+        var holdingIdentity: HoldingIdentity? = null
+        var groupPolicy: GroupPolicy? = null
+        groupPolicyProvider.registerListener("test") { id, gp ->
+            holdingIdentity = id
+            groupPolicy = gp
+        }
+        postConfigChangedEvent()
+        startComponentAndDependencies()
+
+        processor.firstValue.onNext(listOf(Record("", "", MembershipEvent(MgmOnboarded(holdingIdentity5.toAvro())))))
+
+        assertThat(holdingIdentity).isEqualTo(holdingIdentity5)
+        assertThat(groupPolicy).isEqualTo(parsedMgmGroupPolicy)
+    }
+
+    @Test
+    fun `registerListener will not call the call back for other events`() {
+        val processor = argumentCaptor<FinishedRegistrationsProcessor>()
+        whenever(subscriptionFactory.createDurableSubscription(any(), processor.capture(), any(), anyOrNull())).doReturn(subscription)
+        var called = 0
+        groupPolicyProvider.registerListener("test") { _, _ ->
+            called++
+        }
+        postConfigChangedEvent()
+        startComponentAndDependencies()
+
+        processor.firstValue.onNext(
+            listOf(
+                Record(
+                    "",
+                    "",
+                    MembershipEvent(
+                        MemberRegistrationApproved(
+                            holdingIdentity2.toAvro()
+                        )
+                    )
+                )
+            )
+        )
+
+        assertThat(called).isZero
     }
 }

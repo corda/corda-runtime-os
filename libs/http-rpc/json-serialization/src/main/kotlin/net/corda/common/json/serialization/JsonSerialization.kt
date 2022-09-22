@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import net.corda.common.json.serializers.standardTypesModule
-import net.corda.v5.base.annotations.CordaInternal
 import java.util.TimeZone
 
 private val jsonMapper = JsonMapper.builder().enable(MapperFeature.BLOCK_UNSAFE_POLYMORPHIC_BASE_TYPES).build()
@@ -15,7 +14,6 @@ private val jsonMapper = JsonMapper.builder().enable(MapperFeature.BLOCK_UNSAFE_
 /**
  * General purpose Jackson Mapper which has sensible security default applied to it.
  */
-@CordaInternal
 fun jacksonObjectMapper(): JsonMapper = jsonMapper.apply {
     registerModule(KotlinModule.Builder().build())
     registerModule(JavaTimeModule())

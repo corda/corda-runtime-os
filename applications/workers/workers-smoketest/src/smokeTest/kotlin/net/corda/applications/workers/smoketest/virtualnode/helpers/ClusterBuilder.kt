@@ -129,6 +129,29 @@ class ClusterBuilder {
         """{ "clientRequestId" : "$clientRequestId", "flowClassName" : "$flowClassName", "requestData" : 
             |"$requestData" }""".trimMargin()
 
+    /** Get cluster configuration for the specified section */
+    fun getConfig(section: String) = get("/api/v1/config/$section")
+
+    /** Update the cluster configuration for the specified section and versions */
+    fun putConfig(config: String,
+                  section: String,
+                  configVersion: String,
+                  schemaMajorVersion: String,
+                  schemaMinorVersion: String) : SimpleResponse {
+        val payload = """
+            {
+                "config": "$config",
+                "schemaVersion": {
+                  "major": "$schemaMajorVersion",
+                  "minor": "$schemaMinorVersion"
+                },
+                "section": "$section",
+                "version": "$configVersion"
+            }
+            """.trimIndent()
+
+        return put("/api/v1/config", payload)
+    }
 }
 
 fun <T> cluster(initialize: ClusterBuilder.() -> T):T = ClusterBuilder().let(initialize)

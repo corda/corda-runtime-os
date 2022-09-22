@@ -41,7 +41,7 @@ class HttpRpcClientAadIntegrationTest : HttpRpcIntegrationTestBase() {
 
     @AfterEach
     fun tearDown() {
-        server.stop()
+        server.close()
     }
 
     @Test

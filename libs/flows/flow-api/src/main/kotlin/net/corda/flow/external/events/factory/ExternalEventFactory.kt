@@ -32,6 +32,10 @@ interface ExternalEventFactory<PARAMETERS : Any, RESPONSE: Any, RESUME> {
      *
      * External processors receive the [ExternalEventRecord.payload] contained in [ExternalEventRecord].
      *
+     * Exceptions must not be thrown from this method, otherwise the flow will fail without a chance to handle the
+     * error. The data passed into this method should be verified beforehand, so that once passed in, it is guaranteed
+     * to succeed.
+     *
      * @param checkpoint The [FlowCheckpoint] which can be modified if required.
      * @param flowExternalEventContext The [ExternalEventContext] that should be embedded into the event sent to the
      * external processor.
@@ -49,6 +53,9 @@ interface ExternalEventFactory<PARAMETERS : Any, RESPONSE: Any, RESUME> {
      * [resumeWith] is called to create a [RESUME] to resume the flow with.
      *
      * This is called after receiving a response from an external processor and before the calling flow resumes.
+     *
+     * Exceptions must not be thrown from this method, otherwise the flow will fail without a chance to handle the
+     * error. Instead, validate the response in the flow after it has resumed and throw an exception if needed.
      *
      * @param checkpoint The [FlowCheckpoint] which can be modified if required.
      * @param response The [RESPONSE] received from an external processor.
