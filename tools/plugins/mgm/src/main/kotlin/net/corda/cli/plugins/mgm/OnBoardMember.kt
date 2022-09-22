@@ -121,7 +121,7 @@ class OnBoardMember : Runnable, BaseOnboard() {
         val cpiRoot = File(cpisRoot, hash)
         val cpiFile = File(cpiRoot, "${cpbFile.name}.cpi")
         val baseNetworkName = if (networkName == null) {
-            "combine-worker"
+            "combined-worker"
         } else {
             networkName
         }

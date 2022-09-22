@@ -111,13 +111,16 @@ To run the network either use the `setupNetwork` command or run a combine worker
 This is a sub-command under the `onboard` sub-command to on board a new MGM member (and create a new group).
 
 To onboard on a Kubernetes network use the network name as parameter. By default, it will try to on board on a combined worker.
-Use the `--save-group-policy-as` to indicate where to save the MGM group policy file (that can be used to create CPIs - [see here](../package/README.md))
+By default, the command will save the group policy file into `~/.corda/gp/groupPolicy.json` (and will overwrite any existing group policy file there).
+Use the `--save-group-policy-as` to indicate another location to save the MGM group policy file (that can be used to create CPIs - [see here](../package/README.md))
 
-An example of on-boarding an MGM can be:
+Examples of on-boarding an MGM can be:
 ```shell
 ./corda-cli.sh mgm onboard mgm demo-network-one  --x500-name='O=MGM, L=London, C=GB'
+
+./corda-cli.sh mgm onboard mgm --save-group-policy-as /tmp/groupPolicy.json
 ```
-Use the `--help` to view all the other options.
+Use the `--help` to view all the other options and defaults.
 
 See [here](https://github.com/corda/corda-runtime-os/wiki/MGM-Onboarding) for details on how to do it manually.
 
@@ -130,12 +133,13 @@ To decide which CPI to use, there are three options:
 * If you have the CPI file (for example, from the [package command](../package/README.md)), you can use it with the `--cpi-file` option.
 * If you have a CPB and a group policy file (from the `onboard mgm` command), you can use the `--cpb-file` and `--group-policy-file` option. This will create an unsigned CPI and save it in your home directory.
 
-An example of on-boarding a member can be:
+Few examples of on-boarding a member can be:
 ```shell
 ./corda-cli.sh mgm onboard member demo-network-two --x500-name='O=Alice, L=London, C=GB' --cpb-file ~/corda-runtime-os/testing/cpbs/chat/build/libs/*.cpb
-./corda-cli.sh mgm onboard member demo-network-one --x500-name='O=Bob, L=London, C=GB' --cpb-file ~/corda-runtime-os/testing/cpbs/chat/build/libs/*.cpb
+./corda-cli.sh mgm onboard member demo-network-one --cpi-file /tmp/calculator.cpi
+./corda-cli.sh mgm onboard member --cpi-hash 200E86176EF2
 ```
-Use the `--help` to view all the other options.
+Use the `--help` to view all the other options and defaults.
 
 See [here](https://github.com/corda/corda-runtime-os/wiki/Member-Onboarding-(Dynamic-Networks)) for details on how to do it manually.
 

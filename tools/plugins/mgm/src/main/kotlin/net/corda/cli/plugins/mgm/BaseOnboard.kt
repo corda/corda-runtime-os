@@ -24,7 +24,7 @@ abstract class BaseOnboard : Runnable {
     }
 
     @Parameters(
-        description = ["The name of the k8s network (leave empty for combine worker on local host)"],
+        description = ["The name of the k8s network (leave empty for combined worker on local host)"],
         paramLabel = "NAME",
         arity = "0..1",
     )
@@ -184,18 +184,18 @@ abstract class BaseOnboard : Runnable {
             .bodyOrThrow()
             .`object`.get("id").toString()
 
-        val generateCstResponse = Unirest.post("/certificates/p2p/$tlsKeyId/")
+        val generateCsrResponse = Unirest.post("/certificates/p2p/$tlsKeyId/")
             .body(
                 mapOf(
                     "x500Name" to x500Name,
                     "subjectAlternativeNames" to listOf(p2pHost)
                 )
             ).asString()
-        val csr = generateCstResponse.bodyOrThrow().reader().use { reader ->
+        val csr = generateCsrResponse.bodyOrThrow().reader().use { reader ->
             PEMParser(reader).use { parser ->
                 parser.readObject()
             }
-        } as? PKCS10CertificationRequest ?: throw OnboardException("CSR is not a valid CSR: ${generateCstResponse.body}")
+        } as? PKCS10CertificationRequest ?: throw OnboardException("CSR is not a valid CSR: ${generateCsrResponse.body}")
         ca.signCsr(csr).toPem().byteInputStream().use { certificate ->
             Unirest.put("/certificates/p2p")
                 .field("certificate", certificate, "certificate.pem")
