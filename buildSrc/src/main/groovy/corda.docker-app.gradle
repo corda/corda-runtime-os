@@ -65,7 +65,7 @@ tasks.register('publishBuildkitImage' , BuildkitBuild) {
         systemPrefix = '-c'
     }
 
-    String[] baseCommand = ["build" , "--addr tcp://localhost:3476" , "--frontend=dockerfile.v0" , "--local context=/" , "--local dockerfile=${project.rootDir.toString() + "/docker"}"]
+    String[] baseCommand = ["buildctl", "--addr tcp://localhost:3476", "build", "--frontend=dockerfile.v0" , "--local context=/" , "--local dockerfile=${project.rootDir.toString() + "/docker"}"]
     String[] opts = ["--opt build-arg:BASE_IMAGE=${baseImageName}" , "--opt build-arg:BUILD_PATH=${containerizationDir}" , "--opt build-arg:JAR_LOCATION=${containerLocation}" , "--opt build-arg:JDBC_PATH=${driverDir}" , "--opt build-arg:JDBC_DRIVER_LOCATION=${driverLocation}" , "--opt build-arg:IMAGE_ENTRYPOINT=\"exec java ${javaArgs.join(" ")} -jar  ${containerLocation}${containerName}.jar\" "]
     String[] commandTail = ["--output type=image,name=docker-js-temp.software.r3.com/corda-os-${finalName},push=true" , "--export-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-${containerName}-cache" , "--import-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-${containerName}-cache" ]
     
