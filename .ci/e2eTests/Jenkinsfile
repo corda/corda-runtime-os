@@ -170,7 +170,7 @@ pipeline {
                     def workers = ['crypto-worker', 'rpc-worker', 'flow-worker','db-worker']
                     def clusters = ['alice','bob','caroline']
 
-                    portForwarding("prereqs-kafka-0", 9092)
+                    portForwarding("prereqs-kafka-0", 9092,9092)
 
                     clusters.eachWithIndex {c, index  ->
                        portForwarding("deployment/corda-$c-rpc-worker", 8887 + index, 8888)
