@@ -86,14 +86,11 @@ class WireTransactionKryoSerializationTest {
     }
 
     @Test
+    @Suppress("FunctionName")
     fun `correct serialization of a wire Transaction`() {
         val builder =
             checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(sandboxManagementService.group1)
         val serializer = builder
-            .addSingletonSerializableInstances(setOf(
-                digestService as SingletonSerializeAsToken,
-                merkleTreeFactory as SingletonSerializeAsToken
-            ))
             .addSerializer(WireTransaction::class.java, wireTransactionKryoSerializer)
             .build()
 
