@@ -12,7 +12,6 @@ import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
-import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
@@ -90,13 +89,13 @@ class WireTransactionKryoSerializationTest {
     fun `correct serialization of a wire Transaction`() {
         val builder =
             checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(sandboxManagementService.group1)
-        val serializer = builder
+        val kryoSerializer = builder
             .addSerializer(WireTransaction::class.java, wireTransactionKryoSerializer)
             .build()
 
         val wireTransaction = getWireTransaction(digestService, merkleTreeFactory, jsonMarshallingService)
-        val bytes = serializer.serialize(wireTransaction)
-        val deserialized = serializer.deserialize(bytes, WireTransaction::class.java)
+        val bytes = kryoSerializer.serialize(wireTransaction)
+        val deserialized = kryoSerializer.deserialize(bytes, WireTransaction::class.java)
 
         assertThat(deserialized).isEqualTo(wireTransaction)
         Assertions.assertDoesNotThrow{

@@ -17,7 +17,6 @@ import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.ledger.consensual.Party
-import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
@@ -37,7 +36,6 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.file.Path
-import java.security.PublicKey
 
 @Component(service = [ SandboxManagementService::class ])
 class SandboxManagementService @Activate constructor(
@@ -117,7 +115,7 @@ class WireTransactionKryoSerializationTest {
 
         val builder =
             checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(sandboxManagementService.group1)
-        val serializer = builder
+        val kryoSerializer = builder
             .addSerializer(WireTransaction::class.java, wireTransactionKryoSerializer)
             .addSerializer(ConsensualSignedTransactionImpl::class.java, consensualSignedTransactionImplSeralizer)
             .build()
@@ -128,8 +126,8 @@ class WireTransactionKryoSerializationTest {
             serializationService,
             jsonMarshallingService
         )
-        val bytes = serializer.serialize(signedTransaction)
-        val deserialized = serializer.deserialize(bytes, ConsensualSignedTransactionImpl::class.java)
+        val bytes = kryoSerializer.serialize(signedTransaction)
+        val deserialized = kryoSerializer.deserialize(bytes, ConsensualSignedTransactionImpl::class.java)
 
         assertThat(deserialized).isEqualTo(signedTransaction)
         Assertions.assertDoesNotThrow{
