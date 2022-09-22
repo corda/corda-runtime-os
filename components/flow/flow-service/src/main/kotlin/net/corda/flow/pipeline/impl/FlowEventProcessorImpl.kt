@@ -55,7 +55,7 @@ class FlowEventProcessorImpl(
             return flowEventExceptionProcessor.process(t)
         }
 
-        //flow result timeout must be lower than the processor timeout as the processor thread will be killed by the subscription consumer
+        // flow result timeout must be lower than the processor timeout as the processor thread will be killed by the subscription consumer
         // thread after this period and so this timeout would never be reached and given a chance to return otherwise.
         val flowTimeout = (config.getLong(PROCESSOR_TIMEOUT) * 0.75).toLong()
         return try {
