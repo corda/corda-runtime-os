@@ -29,8 +29,7 @@ class CpbEntityTests {
     @RegisterExtension
     private val lifecycle = EachTestLifecycle()
 
-    private lateinit var virtualNode:
-            VirtualNodeService
+    private lateinit var virtualNode: VirtualNodeService
     private lateinit var cpiInfoReadService: CpiInfoReadService
 
     @BeforeAll
