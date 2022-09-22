@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.membership.command.synchronisation.SynchronisationCommand
 import net.corda.data.membership.command.synchronisation.SynchronisationMetaData
 import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
 import net.corda.data.membership.command.synchronisation.mgm.ProcessSyncRequest
@@ -45,9 +46,9 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.Pr
 import net.corda.membership.lib.impl.grouppolicy.v1.MemberGroupPolicyImpl
 import net.corda.membership.synchronisation.MemberSynchronisationService
 import net.corda.membership.synchronisation.MgmSynchronisationService
-import net.corda.membership.synchronisation.SynchronisationException
 import net.corda.membership.synchronisation.SynchronisationService
 import net.corda.messaging.api.processor.DurableProcessor
+import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.configuration.ConfigKeys
@@ -56,6 +57,7 @@ import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.apache.commons.text.StringEscapeUtils
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.KArgumentCaptor
@@ -75,6 +77,7 @@ import kotlin.test.assertFailsWith
 class SynchronisationProxyImplTest {
     private companion object {
         const val DUMMY_GROUP_ID = "dummy_group"
+        private val logs = mutableListOf<String>()
     }
 
     private val memberSyncProtocol1 = MemberSyncProtocol1()
@@ -146,7 +149,15 @@ class SynchronisationProxyImplTest {
         on { synchronisationMetaData } doReturn synchronisationMetadata
         on { syncRequest } doReturn syncRequest
     }
+    private val processMembershipUpdatesRecord = listOf(
+        Record("sync_topic", "test_key", SynchronisationCommand(updates))
+    )
+    private val processSyncRequestRecord = listOf(
+        Record("sync_topic", "test_key", SynchronisationCommand(request))
+    )
+
     private lateinit var synchronisationProxy: SynchronisationProxyImpl
+    private lateinit var processor: SynchronisationProxyImpl.Processor
 
     private fun createHoldingIdentity() = createTestHoldingIdentity("O=Alice, L=London, C=GB", DUMMY_GROUP_ID)
 
@@ -196,8 +207,14 @@ class SynchronisationProxyImplTest {
             groupPolicyProvider,
             memberSyncProtocols + mgmSyncProtocols + syncProtocols
         )
+        processor = synchronisationProxy.Processor()
         memberSyncProtocols.forEach { it.started = 0 }
         mgmSyncProtocols.forEach { it.started = 0 }
+    }
+
+    @AfterEach
+    fun tearDown() {
+        logs.clear()
     }
 
     private fun postStartEvent() {
@@ -240,28 +257,34 @@ class SynchronisationProxyImplTest {
         synchronisationProxy.start()
         val identity1 = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(MemberSyncProtocol1::class.java.name), identity1)
-        val ex1 = assertFailsWith<SynchronisationException> {
-            synchronisationProxy.processMembershipUpdates(updates)
-        }
-        assertThat(ex1.message).isEqualTo("MemberSyncProtocol1 called")
+        processor.onNext(processMembershipUpdatesRecord)
+        assertThat(logs.last()).isEqualTo("MemberSyncProtocol1 called")
 
         val identity2 = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(MemberSyncProtocol2::class.java.name), identity2)
-        val ex2 = assertFailsWith<SynchronisationException> {
-            synchronisationProxy.processMembershipUpdates(updates)
-        }
-        assertThat(ex2.message).isEqualTo("MemberSyncProtocol2 called")
+        processor.onNext(processMembershipUpdatesRecord)
+        assertThat(logs.last()).isEqualTo("MemberSyncProtocol2 called")
 
         val identity3 = createHoldingIdentity()
         mockGroupPolicy(createGroupPolicy(MgmSyncProtocol1::class.java.name), identity3)
-        val ex3 = assertFailsWith<SynchronisationException> {
-            synchronisationProxy.processSyncRequest(request)
-        }
-        assertThat(ex3.message).isEqualTo("MgmSyncProtocol1 called")
+        processor.onNext(processSyncRequestRecord)
+        assertThat(logs.last()).isEqualTo("MgmSyncProtocol1 called")
     }
 
     @Test
-    fun `Proxy does nothing when wrong sync interface is used for given command`() {
+    fun `Proxy does nothing when exception occurs during processing sync command`() {
+        postConfigChangedEvent()
+        postRegistrationStatusChangeEvent(LifecycleStatus.UP)
+        synchronisationProxy.start()
+        val identity = createHoldingIdentity()
+        // this will result in an exception but that exception will be caught by the processor
+        mockGroupPolicy(createGroupPolicy(MgmSyncProtocol1::class.java.name), identity)
+        processor.onNext(processMembershipUpdatesRecord)
+        assertThat(logs).isEmpty()
+    }
+
+    @Test
+    fun `Proxy throws exception when wrong sync interface is used for given command`() {
         postConfigChangedEvent()
         postRegistrationStatusChangeEvent(LifecycleStatus.UP)
         synchronisationProxy.start()
@@ -419,20 +442,23 @@ class SynchronisationProxyImplTest {
     }
 
     class MemberSyncProtocol1 : AbstractMemberSyncProtocol() {
-        override fun processMembershipUpdates(updates: ProcessMembershipUpdates) =
-            throw SynchronisationException("MemberSyncProtocol1 called")
+        override fun processMembershipUpdates(updates: ProcessMembershipUpdates) {
+            logs.add("MemberSyncProtocol1 called")
+        }
     }
 
     class MemberSyncProtocol2 : AbstractMemberSyncProtocol() {
-        override fun processMembershipUpdates(updates: ProcessMembershipUpdates) =
-            throw SynchronisationException("MemberSyncProtocol2 called")
+        override fun processMembershipUpdates(updates: ProcessMembershipUpdates) {
+            logs.add("MemberSyncProtocol2 called")
+        }
     }
 
     abstract class AbstractMemberSyncProtocol : MemberSynchronisationService {
         var started = 0
 
-        override fun processMembershipUpdates(updates: ProcessMembershipUpdates) =
-            throw SynchronisationException("AbstractMemberSyncProtocol called")
+        override fun processMembershipUpdates(updates: ProcessMembershipUpdates) {
+            logs.add("AbstractMemberSyncProtocol called")
+        }
 
         override val isRunning = true
         override fun start() { started += 1 }
@@ -440,15 +466,17 @@ class SynchronisationProxyImplTest {
     }
 
     class MgmSyncProtocol1 : AbstractMgmSyncProtocol() {
-        override fun processSyncRequest(request: ProcessSyncRequest) =
-            throw SynchronisationException("MgmSyncProtocol1 called")
+        override fun processSyncRequest(request: ProcessSyncRequest) {
+            logs.add("MgmSyncProtocol1 called")
+        }
     }
 
     abstract class AbstractMgmSyncProtocol : MgmSynchronisationService {
         var started = 0
 
-        override fun processSyncRequest(request: ProcessSyncRequest) =
-            throw SynchronisationException("AbstractMgmSyncProtocol called")
+        override fun processSyncRequest(request: ProcessSyncRequest) {
+            logs.add("AbstractMgmSyncProtocol called")
+        }
 
         override val isRunning = true
         override fun start() { started += 1 }
