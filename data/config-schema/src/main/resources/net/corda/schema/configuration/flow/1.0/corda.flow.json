@@ -31,13 +31,6 @@
           "minimum": 1000,
           "maximum": 2147483647,
           "default": 60000
-        },
-        "maxFlowExecutionDuration": {
-          "description": "The maximum amount of time in milliseconds a Flow can execute between suspends before it is considered faulty and a candidate for forced failure",
-          "type": "integer",
-          "minimum": 5000,
-          "maximum": 2147483647,
-          "default": 60000
         }
       }
     },

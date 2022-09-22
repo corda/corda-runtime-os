@@ -9,5 +9,4 @@ object FlowConfig {
     const val PROCESSING_MAX_RETRY_ATTEMPTS = "processing.maxRetryAttempts"
     const val PROCESSING_MAX_RETRY_DELAY = "processing.maxRetryDelay"
     const val PROCESSING_MAX_FLOW_SLEEP_DURATION = "processing.maxFlowSleepDuration"
-    const val PROCESSING_MAX_FLOW_EXECUTION_DURATION = "processing.maxFlowExecutionDuration"
 }
