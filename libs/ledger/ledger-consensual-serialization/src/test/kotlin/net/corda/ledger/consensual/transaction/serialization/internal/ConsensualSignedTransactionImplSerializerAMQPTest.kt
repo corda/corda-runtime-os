@@ -51,7 +51,6 @@ class ConsensualSignedTransactionImplSerializerAMQPTest {
         )
 
         val bytes = serializationService.serialize(signedTransaction)
-        println(bytes)
         val deserialized = serializationService.deserialize(bytes)
         assertEquals(signedTransaction, deserialized)
         Assertions.assertDoesNotThrow {
