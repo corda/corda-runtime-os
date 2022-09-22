@@ -5,8 +5,6 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.flow.pipeline.sandbox.factory.SandboxDependencyInjectorFactory
-import net.corda.flow.pipeline.sandbox.impl.FlowSandboxServiceImpl.Companion.CHECKPOINT_INTERNAL_CUSTOM_SERIALIZERS
-import net.corda.flow.pipeline.sandbox.impl.FlowSandboxServiceImpl.Companion.INTERNAL_CUSTOM_SERIALIZERS
 import net.corda.flow.pipeline.sessions.FlowProtocolStoreFactory
 import net.corda.internal.serialization.AMQP_P2P_CONTEXT
 import net.corda.internal.serialization.SerializationServiceImpl
@@ -43,13 +41,13 @@ import org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC
     service = [FlowSandboxService::class],
     reference = [
         Reference(
-            name = INTERNAL_CUSTOM_SERIALIZERS,
+            name = FlowSandboxServiceImpl.INTERNAL_CUSTOM_SERIALIZERS,
             service = InternalCustomSerializer::class,
             cardinality = MULTIPLE,
             policy = DYNAMIC
         ),
         Reference(
-            name = CHECKPOINT_INTERNAL_CUSTOM_SERIALIZERS,
+            name = FlowSandboxServiceImpl.CHECKPOINT_INTERNAL_CUSTOM_SERIALIZERS,
             service = CheckpointInternalCustomSerializer::class,
             cardinality = MULTIPLE,
             policy = DYNAMIC
