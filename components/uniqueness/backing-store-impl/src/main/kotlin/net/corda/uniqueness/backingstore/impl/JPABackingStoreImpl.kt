@@ -99,19 +99,13 @@ open class JPABackingStoreImpl @Activate constructor(
     }
 
     override fun start() {
-        log.info("Uniqueness checker starting.")
+        log.info("Backing store starting.")
         lifecycleCoordinator.start()
     }
 
     override fun stop() {
-        log.info("Uniqueness checker stopping.")
+        log.info("Backing store stopping.")
         lifecycleCoordinator.stop()
-    }
-
-    @Deactivate
-    fun close() {
-        entityManagerFactory.close()
-        stop()
     }
 
     protected open inner class SessionImpl(
