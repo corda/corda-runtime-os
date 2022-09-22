@@ -52,11 +52,11 @@ internal class ProcessMemberVerificationResponseHandler(
                 val reasons = command.verificationResponse.payload.items
                     .filter { it.key == FAILURE_REASONS }
                     .map { it.value }
-                val message = "Could no verify registration request: '$registrationId' - $reasons"
+                val message = "Could not verify registration request: '$registrationId' - $reasons"
                 throw CordaRuntimeException(message)
             }
             if (memberTypeChecker.isMgm(member)) {
-                throw CordaRuntimeException("Member ${member.x500Name} is an MGM and can not be register.")
+                throw CordaRuntimeException("Member ${member.x500Name} is an MGM and can not register.")
             }
             if (!memberTypeChecker.isMgm(mgm)) {
                 throw CordaRuntimeException("Member ${mgm.x500Name} is not an MGM and can not register.")

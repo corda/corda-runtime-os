@@ -73,7 +73,7 @@ internal class StartRegistrationHandler(
         val (outputCommand, outputStates) = try {
             logger.info("Persisting the received registration request.")
             validateRegistrationRequest(!memberTypeChecker.isMgm(pendingMemberHoldingId)) {
-                "Registration request is registering a MGM holding identity."
+                "Registration request is registering an MGM holding identity."
             }
 
             membershipPersistenceClient.persistRegistrationRequest(mgmHoldingId, registrationRequest).also {
