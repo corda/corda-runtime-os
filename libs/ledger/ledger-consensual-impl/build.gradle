@@ -50,7 +50,6 @@ dependencies {
     integrationTestRuntimeOnly project(':components:membership:membership-group-read-impl')
     integrationTestRuntimeOnly project(':components:virtual-node:cpk-read-service-impl')
     integrationTestRuntimeOnly project(':libs:sandbox-internal')
-    integrationTestRuntimeOnly project(':libs:serialization:serialization-checkpoint-api')
     integrationTestRuntimeOnly project(':libs:serialization:serialization-kryo')
     integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
     integrationTestRuntimeOnly project(":libs:crypto:crypto-serialization-impl")

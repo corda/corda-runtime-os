@@ -13,6 +13,5 @@ dependencies {
     implementation "net.corda:corda-cipher-suite"
 
     implementation project(":libs:ledger:ledger-common-impl")
-
     implementation project(":libs:application:application-impl")
 }

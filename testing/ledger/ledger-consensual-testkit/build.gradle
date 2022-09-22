@@ -10,10 +10,9 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation "net.corda:corda-cipher-suite"
+    implementation "net.corda:corda-application"
 
     implementation project(":libs:ledger:ledger-common-impl")
     implementation project(":libs:ledger:ledger-consensual-impl")
     implementation project(":testing:ledger:ledger-common-testkit")
-
-    implementation "net.corda:corda-application"
 }

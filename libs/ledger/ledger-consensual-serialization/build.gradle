@@ -21,9 +21,9 @@ dependencies {
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 
+    testImplementation "net.corda:corda-ledger-common"
     testImplementation project(':testing:test-serialization')
     testImplementation project(':testing:ledger:ledger-consensual-testkit')
-    testImplementation "net.corda:corda-ledger-common"
     testImplementation project(":libs:serialization:serialization-amqp")
     testImplementation project(":libs:ledger:ledger-common-serialization")
     testImplementation project(":libs:crypto:cipher-suite-impl")
@@ -36,9 +36,7 @@ dependencies {
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
-
     integrationTestRuntimeOnly project(':libs:serialization:serialization-kryo')
     integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
-    integrationTestImplementation project(":libs:crypto:crypto-serialization-impl")
-
+    integrationTestRuntimeOnly project(":libs:crypto:crypto-serialization-impl")
 }
