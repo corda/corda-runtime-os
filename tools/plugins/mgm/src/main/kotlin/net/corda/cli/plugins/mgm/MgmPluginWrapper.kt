@@ -23,6 +23,14 @@ class MgmPluginWrapper(wrapper: PluginWrapper) : Plugin(wrapper) {
     }
 
     @Extension
-    @CommandLine.Command(name = "mgm", subcommands = [GenerateGroupPolicy::class], description = ["Plugin for membership operations."])
+    @CommandLine.Command(
+        name = "mgm",
+        subcommands = [
+            GenerateGroupPolicy::class,
+            SetupNetwork::class,
+            OnBoard::class,
+        ],
+        description = ["Plugin for membership operations."]
+    )
     class MgmPlugin : CordaCliPlugin
 }
