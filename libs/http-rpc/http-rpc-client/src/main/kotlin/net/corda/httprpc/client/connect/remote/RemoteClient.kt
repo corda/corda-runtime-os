@@ -108,7 +108,7 @@ internal class RemoteUnirestClient(override val baseAddress: String, private val
                     HttpStatus.FORBIDDEN, HttpStatus.UNAUTHORIZED, HttpStatus.METHOD_NOT_ALLOWED, HttpStatus.PROXY_AUTHENTICATION_REQUIRED
                     -> throw PermissionException(errorResponseJson)
                     HttpStatus.NOT_FOUND -> throw MissingRequestedResourceException(errorResponseJson)
-                    HttpStatus.CONFLICT -> throw ResourceAlreadyExistsException (errorResponseJson)
+                    HttpStatus.CONFLICT -> throw ResourceAlreadyExistsException(errorResponseJson)
                     else -> {
                         throw InternalErrorException(errorResponseJson)
                     }
