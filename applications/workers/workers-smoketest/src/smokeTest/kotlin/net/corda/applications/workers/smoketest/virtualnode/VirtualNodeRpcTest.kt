@@ -82,7 +82,10 @@ class VirtualNodeRpcTest {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
-            val requestId = cpiUpload(TEST_CPB_LOCATION, GROUP_ID).let { it.toJson()["id"].textValue() }
+            val requestId = cpiUpload(TEST_CPB_LOCATION, GROUP_ID).let {
+                println(it)
+                it.toJson()["id"].textValue()
+            }
             assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
 
             // BUG:  returning "OK" feels 'weakly' typed
