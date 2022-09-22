@@ -21,7 +21,7 @@ def S3_BUCKET_URI_PROPERTY = 'maven.repo.s3'
 
 def otherPluginsTasks = subprojects.collect {
         it.tasks.matching {
-            task -> task.name == 'cliPluginTask' // Module `plugins-common` will not have this task
+            task -> task.name == 'cliPluginTask' // Module `plugins-http-rpc` will not have this task
         }
     }
 
