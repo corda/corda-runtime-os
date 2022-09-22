@@ -50,25 +50,25 @@ class FlowTests {
         var charlieHoldingId: String = getHoldingIdShortHash(X500_CHARLIE, GROUP_ID)
 
         val invalidConstructorFlowNames = listOf(
-            "net.cordapp.flowworker.development.smoketests.flow.errors.PrivateConstructorFlow",
-            "net.cordapp.flowworker.development.smoketests.flow.errors.PrivateConstructorJavaFlow",
-            "net.cordapp.flowworker.development.smoketests.flow.errors.NoDefaultConstructorFlow",
-            "net.cordapp.flowworker.development.smoketests.flow.errors.NoDefaultConstructorJavaFlow",
+            "net.cordapp.testing.smoketests.flow.errors.PrivateConstructorFlow",
+            "net.cordapp.testing.smoketests.flow.errors.PrivateConstructorJavaFlow",
+            "net.cordapp.testing.smoketests.flow.errors.NoDefaultConstructorFlow",
+            "net.cordapp.testing.smoketests.flow.errors.NoDefaultConstructorJavaFlow",
         )
 
         val dependencyInjectionFlowNames = listOf(
-            "net.cordapp.flowworker.development.smoketests.flow.DependencyInjectionTestFlow",
-            "net.cordapp.flowworker.development.smoketests.flow.inheritance.DependencyInjectionTestJavaFlow",
+            "net.cordapp.testing.smoketests.flow.DependencyInjectionTestFlow",
+            "net.cordapp.testing.smoketests.flow.inheritance.DependencyInjectionTestJavaFlow",
         )
 
         val expectedFlows = listOf(
-            "net.cordapp.flowworker.development.smoketests.virtualnode.ReturnAStringFlow",
-            "net.cordapp.flowworker.development.smoketests.flow.RpcSmokeTestFlow",
-            "net.cordapp.flowworker.development.testflows.TestFlow",
-            "net.cordapp.flowworker.development.testflows.BrokenProtocolFlow",
-            "net.cordapp.flowworker.development.testflows.MessagingFlow",
-            "net.cordapp.flowworker.development.testflows.PersistenceFlow",
-            "net.cordapp.flowworker.development.testflows.UniquenessCheckTestFlow",
+            "net.cordapp.testing.smoketests.virtualnode.ReturnAStringFlow",
+            "net.cordapp.testing.smoketests.flow.RpcSmokeTestFlow",
+            "net.cordapp.testing.testflows.TestFlow",
+            "net.cordapp.testing.testflows.BrokenProtocolFlow",
+            "net.cordapp.testing.testflows.MessagingFlow",
+            "net.cordapp.testing.testflows.PersistenceFlow",
+            "net.cordapp.testing.testflows.UniquenessCheckTestFlow",
         ) + invalidConstructorFlowNames + dependencyInjectionFlowNames
 
         @BeforeAll
@@ -619,7 +619,7 @@ class FlowTests {
             startRpcFlow(
                 bobHoldingId,
                 mapOf(),
-                "net.cordapp.flowworker.development.testflows.UniquenessCheckTestFlow"
+                "net.cordapp.testing.testflows.UniquenessCheckTestFlow"
             )
         val result = awaitRpcFlowFinished(bobHoldingId, requestID)
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)

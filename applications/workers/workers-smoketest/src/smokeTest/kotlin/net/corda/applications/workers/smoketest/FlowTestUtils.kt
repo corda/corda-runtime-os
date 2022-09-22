@@ -11,7 +11,7 @@ import net.corda.httprpc.ResponseCode.OK
 import org.apache.commons.text.StringEscapeUtils.escapeJson
 import org.assertj.core.api.Assertions.assertThat
 
-const val SMOKE_TEST_CLASS_NAME = "net.cordapp.flowworker.development.smoketests.flow.RpcSmokeTestFlow"
+const val SMOKE_TEST_CLASS_NAME = "net.cordapp.testing.smoketests.flow.RpcSmokeTestFlow"
 const val RPC_FLOW_STATUS_SUCCESS = "COMPLETED"
 const val RPC_FLOW_STATUS_FAILED = "FAILED"
 
