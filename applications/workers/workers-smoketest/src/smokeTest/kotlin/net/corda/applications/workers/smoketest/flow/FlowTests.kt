@@ -5,10 +5,13 @@ import net.corda.applications.workers.smoketest.GROUP_ID
 import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_FAILED
 import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_SUCCESS
 import net.corda.applications.workers.smoketest.RpcSmokeTestInput
+import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
+import net.corda.applications.workers.smoketest.TEST_CPI_NAME
 import net.corda.applications.workers.smoketest.X500_BOB
 import net.corda.applications.workers.smoketest.X500_CHARLIE
 import net.corda.applications.workers.smoketest.X500_DAVID
 import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
+import net.corda.applications.workers.smoketest.conditionallyUploadCordaPackage
 import net.corda.applications.workers.smoketest.configWithDefaultsNode
 import net.corda.applications.workers.smoketest.getConfig
 import net.corda.applications.workers.smoketest.getFlowClasses
@@ -70,6 +73,9 @@ class FlowTests {
         @BeforeAll
         @JvmStatic
         internal fun beforeAll() {
+            // Upload test flows if not already uploaded
+            conditionallyUploadCordaPackage(TEST_CPI_NAME, TEST_CPB_LOCATION, GROUP_ID)
+
             // Make sure Virtual Nodes are created
             val bobActualHoldingId = getOrCreateVirtualNodeFor(X500_BOB)
             val charlieActualHoldingId = getOrCreateVirtualNodeFor(X500_CHARLIE)
