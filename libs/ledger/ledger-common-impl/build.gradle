@@ -19,7 +19,6 @@ dependencies {
     implementation project(":libs:crypto:crypto-core")
 
     testImplementation project(":testing:kryo-serialization-testkit")
-    testRuntimeOnly 'org.osgi:osgi.core'
     testImplementation project(":libs:serialization:serialization-kryo")
     testImplementation project(":libs:crypto:merkle-impl")
     testImplementation project(":libs:crypto:cipher-suite-impl")
