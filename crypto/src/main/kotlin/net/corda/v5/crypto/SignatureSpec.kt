@@ -6,18 +6,21 @@ import java.security.spec.PSSParameterSpec
 /**
  * This class is used to define a digital signature scheme.
  *
- * @property signatureName a signature-scheme name as required to create [java.security.Signature]
- * objects (e.g. "SHA256withECDSA")
+ * @param signatureName The signature-scheme name as required to create [java.security.Signature]
+ * objects (e.g. "SHA256withECDSA").
  *
  * When used for signing the [signatureName] must match the corresponding key scheme, e.g. you cannot use
  * "SHA256withECDSA" with "RSA" keys.
  */
 open class SignatureSpec(
+    /**
+     * The signature-scheme name as required to create [java.security.Signature] objects (e.g. "SHA256withECDSA").
+     */
     val signatureName: String
 ) {
     companion object {
         /**
-         * SHA256withRSA [SignatureSpec]
+         * SHA256withRSA [SignatureSpec].
          */
         @JvmField
         val RSA_SHA256 = SignatureSpec(
@@ -25,7 +28,7 @@ open class SignatureSpec(
         )
 
         /**
-         * SHA384withRSA [SignatureSpec]
+         * SHA384withRSA [SignatureSpec].
          */
         @JvmField
         val RSA_SHA384 = SignatureSpec(
@@ -33,7 +36,7 @@ open class SignatureSpec(
         )
 
         /**
-         * SHA512withRSA [SignatureSpec]
+         * SHA512withRSA [SignatureSpec].
          */
         @JvmField
         val RSA_SHA512 = SignatureSpec(
@@ -41,7 +44,7 @@ open class SignatureSpec(
         )
 
         /**
-         * RSASSA-PSS with SHA256 [SignatureSpec]
+         * RSASSA-PSS with SHA256 [SignatureSpec].
          */
         @JvmField
         val RSASSA_PSS_SHA256 = ParameterizedSignatureSpec(
@@ -56,7 +59,7 @@ open class SignatureSpec(
         )
 
         /**
-         * RSASSA-PSS with SHA384 [SignatureSpec]
+         * RSASSA-PSS with SHA384 [SignatureSpec].
          */
         @JvmField
         val RSASSA_PSS_SHA384 = ParameterizedSignatureSpec(
@@ -71,7 +74,7 @@ open class SignatureSpec(
         )
 
         /**
-         * RSASSA-PSS with SHA512 [SignatureSpec]
+         * RSASSA-PSS with SHA512 [SignatureSpec].
          */
         @JvmField
         val RSASSA_PSS_SHA512 = ParameterizedSignatureSpec(
@@ -86,25 +89,25 @@ open class SignatureSpec(
         )
 
         /**
-         * RSASSA-PSS with SHA256 and MGF1 [SignatureSpec]
+         * RSASSA-PSS with SHA256 and MGF1 [SignatureSpec].
          */
         @JvmField
         val RSA_SHA256_WITH_MGF1 = SignatureSpec("SHA256withRSAandMGF1")
 
         /**
-         * RSASSA-PSS with SHA384 and MGF1 [SignatureSpec]
+         * RSASSA-PSS with SHA384 and MGF1 [SignatureSpec].
          */
         @JvmField
         val RSA_SHA384_WITH_MGF1 = SignatureSpec("SHA384withRSAandMGF1")
 
         /**
-         * RSASSA-PSS with SHA512 and MGF1 [SignatureSpec]
+         * RSASSA-PSS with SHA512 and MGF1 [SignatureSpec].
          */
         @JvmField
         val RSA_SHA512_WITH_MGF1 = SignatureSpec("SHA512withRSAandMGF1")
 
         /**
-         * SHA256withECDSA [SignatureSpec]
+         * SHA256withECDSA [SignatureSpec].
          */
         @JvmField
         val ECDSA_SHA256 = SignatureSpec(
@@ -112,7 +115,7 @@ open class SignatureSpec(
         )
 
         /**
-         * SHA384withECDSA [SignatureSpec]
+         * SHA384withECDSA [SignatureSpec].
          */
         @JvmField
         val ECDSA_SHA384 = SignatureSpec(
@@ -120,7 +123,7 @@ open class SignatureSpec(
         )
 
         /**
-         * SHA512withECDSA [SignatureSpec]
+         * SHA512withECDSA [SignatureSpec].
          */
         @JvmField
         val ECDSA_SHA512 = SignatureSpec(
@@ -128,7 +131,7 @@ open class SignatureSpec(
         )
 
         /**
-         * EdDSA [SignatureSpec]
+         * EdDSA [SignatureSpec].
          */
         @JvmField
         val EDDSA_ED25519 = SignatureSpec(
@@ -136,7 +139,7 @@ open class SignatureSpec(
         )
 
         /**
-         * SHA512withSPHINCS256 [SignatureSpec]
+         * SHA512withSPHINCS256 [SignatureSpec].
          */
         @JvmField
         val SPHINCS256_SHA512 = SignatureSpec(
@@ -144,7 +147,7 @@ open class SignatureSpec(
         )
 
         /**
-         * SM3withSM2 [SignatureSpec]
+         * SM3withSM2 [SignatureSpec].
          */
         @JvmField
         val SM2_SM3 = SignatureSpec(
@@ -152,13 +155,13 @@ open class SignatureSpec(
         )
 
         /**
-         * SHA256withSM2 [SignatureSpec]
+         * SHA256withSM2 [SignatureSpec].
          */
         @JvmField
         val SM2_SHA256 = SignatureSpec("SHA256withSM2")
 
         /**
-         * GOST3411withGOST3410 [SignatureSpec]
+         * GOST3411withGOST3410 [SignatureSpec].
          */
         @JvmField
         val GOST3410_GOST3411 = SignatureSpec(
@@ -170,5 +173,8 @@ open class SignatureSpec(
         require(signatureName.isNotBlank()) { "The signatureName must not be blank." }
     }
 
+    /**
+     * Converts a [SignatureSpec] object to a string representation containing the [signatureName].
+     */
     override fun toString(): String = signatureName
 }

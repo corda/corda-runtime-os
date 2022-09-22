@@ -4,6 +4,16 @@
   "namespace": "net.corda.data.uniqueness",
   "fields": [
     {
+      "name": "holdingIdentity",
+      "type": "net.corda.data.identity.HoldingIdentity",
+      "doc": "The holding identity of the virtual node making the uniqueness check request."
+    },
+    {
+      "name": "flowExternalEventContext",
+      "type": "net.corda.data.flow.event.external.ExternalEventContext",
+      "doc": "The context of the external event that this request was sent from."
+    },
+    {
       "name": "txId",
       "type": "string"
     },

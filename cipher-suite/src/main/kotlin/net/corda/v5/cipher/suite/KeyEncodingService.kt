@@ -40,7 +40,7 @@ interface KeyEncodingService {
     fun encodeAsString(publicKey: PublicKey): String
 
     /**
-     * Convert a public key to a supported implementation. This can be used to convert a SUN's EC key to an BC key.
+     * Converts a public key to a supported implementation. This can be used to convert a SUN's EC key to an BC key.
      *
      * @throws IllegalArgumentException if the key scheme is not supported.
      * @throws net.corda.v5.crypto.exceptions.CryptoException for general cryptographic exceptions.

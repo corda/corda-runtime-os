@@ -1,0 +1,6 @@
+topics:
+  UniquenessCheckTopic:
+    name: uniqueness.check
+    consumers:
+    producers:
+    config:

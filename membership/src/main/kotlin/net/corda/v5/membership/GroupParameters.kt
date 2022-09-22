@@ -11,22 +11,31 @@ import java.time.Instant
  * Note: any values in the group parameters values map need to be
  * a.) serializable for P2P (AMQP) and checkpoints (Kryo)
  * b.) comparable with .equals()
+ *
+ * Example usages:
+ *
+ * ```java
+ * GroupParameters groupParameters = fullTransaction.getMembershipParameters();
+ * int minimumPlatformVersion = groupParameters.getMinimumPlatformVersion();
+ * Instant modifiedTime = groupParameters.getModifiedTime();
+ * int epoch = groupParameters.getEpoch();
+ * ```
+ *
+ * ```kotlin
+ * val groupParameters = fullTransaction.membershipParameters
+ * val minimumPlatformVersion = groupParameters?.minimumPlatformVersion
+ * val modifiedTime = groupParameters?.modifiedTime
+ * val epoch = groupParameters?.epoch
+ * ```
+ *
+ * @property minimumPlatformVersion The minimum platform version required to be running on in order to transact within a group.
+ * @property modifiedTime The [Instant] representing the last time the group parameters were modified.
+ * @property epoch An [Int] representing the version of the group parameters. This is incremented on each modification to the
+ * group parameters.
  */
 @CordaSerializable
 interface GroupParameters : LayeredPropertyMap {
-    /**
-     * The minimum platform version required to be running on in order to transact within a group.
-     */
     val minimumPlatformVersion: Int
-
-    /**
-     * The [Instant] representing the last time the group parameters were modified.
-     */
     val modifiedTime: Instant
-
-    /**
-     * An [Int] representing the version of the group parameters. This is incremented on each modification to the
-     * group parameters.
-     */
     val epoch: Int
 }

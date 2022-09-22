@@ -22,10 +22,11 @@ interface FlowContextProperties {
     /**
      * Puts a user value into the context property store.
      *
-     * Where keys exist as platform properties already, setting user properties with the same key will throw. It is
-     * highly advisable to scope user property keys with some unique prefix, e.g. package name. Corda's platform keys
-     * will usually be prefixed with [CORDA_RESERVED_PREFIX] which is reserved, meaning that an attempt to prefix a user
-     * key with [CORDA_RESERVED_PREFIX] will also throw whether it exists already or not.
+     * Setting user properties with the same key as existing platform properties throws an [IllegalArgumentException].
+     *
+     * It is highly advisable to scope user property keys with some unique prefix, e.g. package name. Corda's platform
+     * keys are usually prefixed with [CORDA_RESERVED_PREFIX]. This is reserved and an attempt to prefix a user key with
+     * [CORDA_RESERVED_PREFIX] also throws an [IllegalArgumentException], whether the key exists already or not.
      *
      * Both sets of context properties are propagated automatically from the originating [Flow] to all sub-flows
      * initiated flows, and services. Where sub-flows and initiated flows have extra user properties added, these are
@@ -38,7 +39,7 @@ interface FlowContextProperties {
      * @param key The property key.
      * @param value The property value.
      *
-     * @throws IllegalArgumentException if a platform property already exists for this key or if the key is prefixed by
+     * @throws IllegalArgumentException If a platform property already exists for this key or if the key is prefixed by
      * [CORDA_RESERVED_PREFIX].
      */
     fun put(key: String, value: String)
@@ -57,10 +58,11 @@ interface FlowContextProperties {
 /**
  * Puts a user value into the context property store.
  *
- * Where keys exist as platform properties already, setting user properties with the same key will throw. It is highly
- * advisable to scope user property keys with some unique prefix, e.g. package name. Corda's platform keys will usually
- * be prefixed with [CORDA_RESERVED_PREFIX] which is reserved, meaning that an attempt to prefix a user key with
- * [CORDA_RESERVED_PREFIX] will also throw whether it exists already or not.
+ * Setting user properties with the same key as existing platform properties throws an [IllegalArgumentException].
+ *
+ * It is highly advisable to scope user property keys with some unique prefix, e.g. package name. Corda's platform keys
+ * are usually prefixed with [CORDA_RESERVED_PREFIX]. This is reserved and an attempt to prefix a user key with
+ * [CORDA_RESERVED_PREFIX] also throws an [IllegalArgumentException], whether the key exists already or not.
  *
  * Both sets of context properties are propagated automatically from the originating [Flow] to all sub-flows, initiated
  * flows, and services. Where sub-flows and initiated flows have extra user properties added, these are only visible in
@@ -75,7 +77,7 @@ interface FlowContextProperties {
  * @param key The property key.
  * @param value The property value.
  *
- * @throws IllegalArgumentException if a platform property already exists for this key or if the key is prefixed by
+ * @throws IllegalArgumentException If a platform property already exists for this key or if the key is prefixed by
  * [CORDA_RESERVED_PREFIX].
  */
 operator fun FlowContextProperties.set(key: String, value: String) = put(key, value)

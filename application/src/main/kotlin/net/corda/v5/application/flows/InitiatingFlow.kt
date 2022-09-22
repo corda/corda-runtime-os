@@ -28,6 +28,9 @@ import kotlin.annotation.AnnotationTarget.CLASS
  * version 1 only. When initiating a flow, the platform will look for the highest supported protocol version as declared
  * on the initiating side and start that flow on the responder side.
  *
+ * @property protocol The protocol of the annotated flow.
+ * @property version The protocol version.
+ *
  * @see InitiatedBy
  * @see ResponderFlow
  */
