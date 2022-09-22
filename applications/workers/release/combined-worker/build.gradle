@@ -114,6 +114,7 @@ publishing {
             }
         }
     }
+
     publications {
         maven(MavenPublication) {
             artifactId 'corda-combined-worker'
