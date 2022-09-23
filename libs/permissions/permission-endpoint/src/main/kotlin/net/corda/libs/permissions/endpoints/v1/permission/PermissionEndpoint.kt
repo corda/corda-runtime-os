@@ -38,7 +38,8 @@ interface PermissionEndpoint : RpcOps {
     """)
     fun createPermission(
         @HttpRpcRequestBodyParameter(
-            description = """Details of the permission to be created. 
+            description = """
+            Details of the permission to be created. 
             permissionType: Defines whether this is an ALLOW or DENY type of permission
             permissionString: A machine-parseable string representing an individual permission; 
                 it can be any arbitrary string as long as the authorization code can make use of it in the context of user 
