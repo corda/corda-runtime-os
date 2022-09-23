@@ -9,7 +9,6 @@ import net.corda.flow.application.persistence.wrapWithPersistenceException
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -25,7 +24,6 @@ class LedgerPersistenceServiceImpl @Activate constructor(
     private val serializationService: SerializationService
 ) : LedgerPersistenceService, SingletonSerializeAsToken {
 
-    @Suspendable
     override fun find(id: SecureHash): WireTransaction? {
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
@@ -35,7 +33,6 @@ class LedgerPersistenceServiceImpl @Activate constructor(
         }.firstOrNull()?.let { serializationService.deserialize(it.array(), WireTransaction::class.java) }
     }
 
-    @Suspendable
     override fun persist(transaction: WireTransaction) {
         wrapWithPersistenceException {
             externalEventExecutor.execute(
