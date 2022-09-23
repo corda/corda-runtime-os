@@ -24,7 +24,7 @@ abstract class BaseOnboard : Runnable {
     }
 
     @Parameters(
-        description = ["The name of the k8s network (leave empty for combined worker on local host)"],
+        description = ["The name of the k8s namespace (leave empty for combined worker on local host)"],
         paramLabel = "NAME",
         arity = "0..1",
     )
@@ -89,7 +89,7 @@ abstract class BaseOnboard : Runnable {
         val id = cpi.use { jarInputStream ->
 
             Unirest.post("/cpi")
-                .field("upload", jarInputStream, "$name.cpb")
+                .field("upload", jarInputStream, "$name.cpi")
                 .asJson()
                 .bodyOrThrow()
                 .`object`.get("id")
@@ -132,7 +132,7 @@ abstract class BaseOnboard : Runnable {
             .let {
                 it.`object`.let { reply ->
                     if (reply.get("state") != "ACTIVE") {
-                        throw OnboardException("MGM node is not active")
+                        throw OnboardException("Virtual node is not active")
                     }
                     (reply.get("holdingIdentity") as JSONObject).let { holdingIdentity ->
                         println("Group ID is: ${holdingIdentity.get("groupId")}")
@@ -142,7 +142,7 @@ abstract class BaseOnboard : Runnable {
             }
     }
 
-    protected fun assignSoftHsm(category: String): String {
+    protected fun assignSoftHsmAndGenerateKey(category: String): String {
         Unirest.post("/hsm/soft/$holdingId/$category").asJson().bodyOrThrow()
         val response = Unirest
             .post("/keys/$holdingId/alias/$holdingId-$category/category/$category/scheme/CORDA.ECDSA.SECP256R1")
@@ -151,7 +151,7 @@ abstract class BaseOnboard : Runnable {
     }
 
     protected val sessionKeyId by lazy {
-        assignSoftHsm("SESSION_INIT")
+        assignSoftHsmAndGenerateKey("SESSION_INIT")
     }
     private val p2pHost by lazy {
         if (networkName == null) {

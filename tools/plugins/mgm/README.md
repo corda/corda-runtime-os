@@ -91,13 +91,13 @@ members:
     - name: "C=GB, L=London, O=Member2"
 ```
 
-# Setup Kubernetes networks
+# Setup Corda cluster in Kubernetes
 
 This is a sub-command under the `mgm` plugin for setting up Kubernetes networks. 
 
-Running `setupNetwork` with the name of the networks to create. For example:
+Running `setupCluster` with the name of the networks to create. For example:
 ```shell
-./corda-cli.sh mgm setupNetwork demo-network-one demo-network-two
+./corda-cli.sh mgm setupCluster demo-network-one demo-network-two
 ```
 By default, it will use the latest released tag. Change it using the `--baseImage` option. It will delete any
 existing network with that name. Use the `--help` to view all the other options.

@@ -9,16 +9,17 @@ import java.io.File
 import kotlin.concurrent.thread
 
 @Command(
-    name = "setupNetwork",
-    description = ["Setup a test network"]
+    name = "setupCluster",
+    aliases = ["cluster"],
+    description = ["Setup a test Corda cluster on Kubernetes"]
 )
-class SetupNetwork : Runnable {
+class SetupCordaCluster : Runnable {
     private companion object {
         const val PREFIX = "5.0.0.0-beta-"
     }
 
     @Parameters(
-        description = ["The name of the networks"],
+        description = ["The name of the clusters (the Kubernetes namespaces to create)"],
         paramLabel = "NAME",
         arity = "1..*"
     )
@@ -150,7 +151,7 @@ class SetupNetwork : Runnable {
                 "eks",
                 "update-kubeconfig",
                 "--name",
-                "eks-e2e"
+                awsName!!
             )
         }
 

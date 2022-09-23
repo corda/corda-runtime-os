@@ -193,7 +193,7 @@ class OnBoardMember : Runnable, BaseOnboard() {
     }
 
     private val ledgerKeyId by lazy {
-        assignSoftHsm("LEDGER")
+        assignSoftHsmAndGenerateKey("LEDGER")
     }
 
     override val registrationContext by lazy {
