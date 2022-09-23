@@ -48,7 +48,8 @@ interface FlowRpcOps : RpcOps {
         @HttpRpcPathParameter(description = "The short hash of the holding identity; obtained during node registration")
         holdingIdentityShortHash: String,
         @HttpRpcRequestBodyParameter(
-            description = """Information required to start a flow for this holdingId, including:
+            description = """
+                Information required to start a flow for this holdingId, including:
                 clientRequestId: a client provided flow identifier
                 flowClassName: fully qualified class name of the flow to start
                 requestData: optional start arguments string passed to the flow; defaults to an empty string

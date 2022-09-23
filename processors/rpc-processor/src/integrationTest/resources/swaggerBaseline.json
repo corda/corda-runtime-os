@@ -31,7 +31,7 @@
     "description" : "The HSM API consists of endpoints used to work with Hardware Security Modules (HSM) for securely storing keys."
   }, {
     "name" : "Hello RPC API",
-    "description" : "The endpoint used to test interactions via HTTP RPC API. It verifies that a call to HTTP-RPC can be made, and that the identity of the user making the call can be recognized.RBAC permissions are checked and the call is successfully processed by the HTTP-RPC worker."
+    "description" : "The Hello RPC API is used to test interactions via the HTTP-RPC API. It verifies that a call to HTTP-RPC can be made, and that the identity of the user making the call can be recognized. RBAC permissions are checked and the call is successfully processed by the HTTP-RPC worker."
   }, {
     "name" : "Keys Management API",
     "description" : "The Keys Management API consists of endpoints used to manage public and private key pairs. The API allows you to list scheme codes which are supported by the associated HSM integration, retrieve information about key pairs owned by a tenant, generate a key pair for a tenant, and retrieve a tenant's public key in PEM format."
@@ -501,7 +501,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "The status of the flow.",
+            "description" : "\n            A collection of statuses for the flow instances, including:\n            \n            holdingIdentityShortHash: The short form hash of the Holding Identity\n            clientRequestId: The unique ID supplied by the client when the flow was created.\n            flowId: The internal unique ID for the flow.\n            flowStatus: The current state of the executing flow.\n            flowResult: The result returned from a completed flow, only set when the flow status is 'COMPLETED' otherwise null\n            flowError: The details of the error that caused a flow to fail, only set when the flow status is 'FAILED' otherwise null\n            timestamp: The timestamp of when the status was last updated (in UTC)\n            ",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -595,7 +595,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "\n            The status of the flow instance.\n            \n            holdingIdentityShortHash: The short form hash of the Holding Identity\n            clientRequestId: The unique ID supplied by the client when the flow was created.\n            flowId: The internal unique ID for the flow.\n            flowStatus: The current state of the executing flow.\n            flowResult: The result returned from a completed flow, only set when the flow status is 'COMPLETED' otherwise null\n            flowError: The details of the error that caused a flow to fail, only set when the flow status is 'FAILED' otherwise null\n            timestamp: The timestamp of when the status was last updated (in UTC)\n            ",
+            "description" : "\n            The status of the flow instance, including:\n            \n            holdingIdentityShortHash: The short form hash of the Holding Identity\n            clientRequestId: The unique ID supplied by the client when the flow was created.\n            flowId: The internal unique ID for the flow.\n            flowStatus: The current state of the executing flow.\n            flowResult: The result returned from a completed flow, only set when the flow status is 'COMPLETED' otherwise null\n            flowError: The details of the error that caused a flow to fail, only set when the flow status is 'FAILED' otherwise null\n            timestamp: The timestamp of when the status was last updated (in UTC)\n            ",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -650,11 +650,11 @@
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "Short hash of the holding identity. Obtained during node registration.",
+          "description" : "The short hash of the holding identity; this is obtained during node registration",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Short hash of the holding identity. Obtained during node registration.",
+            "description" : "The short hash of the holding identity; this is obtained during node registration",
             "nullable" : false,
             "example" : "string"
           }
@@ -682,7 +682,7 @@
     "/hello" : {
       "post" : {
         "tags" : [ "Hello RPC API" ],
-        "description" : "Produces a greeting phrase for the addressee.",
+        "description" : "This method produces a greeting phrase for the addressee.",
         "operationId" : "post_hello",
         "parameters" : [ {
           "name" : "addressee",
@@ -698,7 +698,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success",
+            "description" : "A greeting phrase for the addressee",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -779,7 +779,7 @@
     "/hsm/soft/{tenantid}/{category}" : {
       "post" : {
         "tags" : [ "HSM API" ],
-        "description" : "Enables you to assign a soft HSM to the tenant for the specified category",
+        "description" : "This method enables you to assign a soft HSM to the tenant for the specified category.",
         "operationId" : "post_hsm_soft__tenantid___category_",
         "parameters" : [ {
           "name" : "tenantid",
@@ -806,7 +806,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success",
+            "description" : "\n            The HSM association details including:\n            id: the unique identifier of the HSM association\n            hsmId: the HSM identifier included into the association\n            category: the category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', \n                'TLS', or 'JWT_KEY'\n            masterKeyAlias: optional master key alias to be used on HSM\n            deprecatedAt: time when the association was deprecated, epoch time in seconds; \n                value of 0 means the association is active",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -827,7 +827,7 @@
     "/hsm/{tenantid}/{category}" : {
       "get" : {
         "tags" : [ "HSM API" ],
-        "description" : "Enables you to retrieve information on the HSM of the specified category assigned to the tenant",
+        "description" : "This method retrieves information on the HSM of the specified category assigned to the tenant.",
         "operationId" : "get_hsm__tenantid___category_",
         "parameters" : [ {
           "name" : "tenantid",
@@ -854,7 +854,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success",
+            "description" : "\n            The HSM association details including:\n            id: the unique identifier of the HSM association\n            hsmId: the HSM identifier included into the association\n            category: the category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', \n                'TLS', or 'JWT_KEY'\n            masterKeyAlias: optional master key alias to be used on HSM\n            deprecatedAt: time when the association was deprecated, epoch time in seconds; \n                value of 0 means the association is active",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -876,7 +876,7 @@
       },
       "post" : {
         "tags" : [ "HSM API" ],
-        "description" : "Enables you to assign a hardware-backed HSM to the tenant for the specified category",
+        "description" : "This method enables you to assign a hardware-backed HSM to the tenant for the specified category.",
         "operationId" : "post_hsm__tenantid___category_",
         "parameters" : [ {
           "name" : "tenantid",
@@ -903,7 +903,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success",
+            "description" : "\n            The HSM association details including:\n            id: the unique identifier of the HSM association\n            hsmId: the HSM identifier included into the association\n            category: the category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', \n                'TLS', or 'JWT_KEY'\n            masterKeyAlias: optional master key alias to be used on HSM\n            deprecatedAt: time when the association was deprecated, epoch time in seconds; \n                value of 0 means the association is active",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -953,7 +953,7 @@
     "/keys/{tenantid}" : {
       "get" : {
         "tags" : [ "Keys Management API" ],
-        "description" : "Enables you to retrieve information about a list of key pairs belonging to a tenant",
+        "description" : "This method retrieves information about a list of key pairs belonging to a tenant.",
         "operationId" : "get_keys__tenantid_",
         "parameters" : [ {
           "name" : "tenantid",
@@ -1110,7 +1110,7 @@
     "/keys/{tenantid}/alias/{alias}/category/{hsmcategory}/scheme/{scheme}" : {
       "post" : {
         "tags" : [ "Keys Management API" ],
-        "description" : "Enables you to generate a new key pair for a tenant",
+        "description" : "This method generates a new key pair for a tenant.",
         "operationId" : "post_keys__tenantid__alias__alias__category__hsmcategory__scheme__scheme_",
         "parameters" : [ {
           "name" : "tenantid",
@@ -1180,7 +1180,7 @@
     "/keys/{tenantid}/schemes/{hsmcategory}" : {
       "get" : {
         "tags" : [ "Keys Management API" ],
-        "description" : "Enables you to retrieve a list of supported key schemes for a specified tenant and HSM category",
+        "description" : "This method retrieves a list of supported key schemes for a specified tenant and HSM category.",
         "operationId" : "get_keys__tenantid__schemes__hsmcategory_",
         "parameters" : [ {
           "name" : "tenantid",
@@ -1234,7 +1234,7 @@
     "/keys/{tenantid}/{keyid}" : {
       "get" : {
         "tags" : [ "Keys Management API" ],
-        "description" : "Enables you to retrieve a tenant's public key in PEM format",
+        "description" : "This method retrieves a tenant's public key in PEM format.",
         "operationId" : "get_keys__tenantid___keyid_",
         "parameters" : [ {
           "name" : "tenantid",
@@ -3391,7 +3391,7 @@
             } ]
           }
         },
-        "description" : "Information required to start a flow for this holdingId"
+        "description" : "\n                Information required to start a flow for this holdingId, including:\n                clientRequestId: a client provided flow identifier\n                flowClassName: fully qualified class name of the flow to start\n                requestData: optional start arguments string passed to the flow; defaults to an empty string\n            "
       },
       "StartableFlowsResponse" : {
         "required" : [ "flowClassNames" ],
