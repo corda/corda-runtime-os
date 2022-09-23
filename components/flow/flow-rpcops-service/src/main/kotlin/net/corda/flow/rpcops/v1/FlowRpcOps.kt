@@ -48,7 +48,11 @@ interface FlowRpcOps : RpcOps {
         @HttpRpcPathParameter(description = "The short hash of the holding identity; obtained during node registration")
         holdingIdentityShortHash: String,
         @HttpRpcRequestBodyParameter(
-            description = "Information required to start a flow for this holdingId",
+            description = """Information required to start a flow for this holdingId, including:
+                clientRequestId: a client provided flow identifier
+                flowClassName: fully qualified class name of the flow to start
+                requestData: optional start arguments string passed to the flow; defaults to an empty string
+            """,
             required = true
         )
         startFlow: StartFlowParameters
@@ -59,7 +63,7 @@ interface FlowRpcOps : RpcOps {
         title = "Get Flow Status",
         description = "This method gets the current status of the specified flow instance.",
         responseDescription = """
-            The status of the flow instance.
+            The status of the flow instance, including:
             
             holdingIdentityShortHash: The short form hash of the Holding Identity
             clientRequestId: The unique ID supplied by the client when the flow was created.
@@ -77,12 +81,22 @@ interface FlowRpcOps : RpcOps {
         clientRequestId: String
     ): FlowStatusResponse
 
-    @Suppress("MaxLineLength")
     @HttpRpcGET(
         path = "{holdingIdentityShortHash}",
         title = "Get Multiple Flow Status",
-        description = "This method returns an array containing the statuses of all flows running for a specified holding identity. An empty array is returned if there are no flows running.",
-        responseDescription = "The status of the flow."
+        description = "This method returns an array containing the statuses of all flows running for a specified " +
+                "holding identity. An empty array is returned if there are no flows running.",
+        responseDescription = """
+            A collection of statuses for the flow instances, including:
+            
+            holdingIdentityShortHash: The short form hash of the Holding Identity
+            clientRequestId: The unique ID supplied by the client when the flow was created.
+            flowId: The internal unique ID for the flow.
+            flowStatus: The current state of the executing flow.
+            flowResult: The result returned from a completed flow, only set when the flow status is 'COMPLETED' otherwise null
+            flowError: The details of the error that caused a flow to fail, only set when the flow status is 'FAILED' otherwise null
+            timestamp: The timestamp of when the status was last updated (in UTC)
+            """
     )
     fun getMultipleFlowStatus(
         @HttpRpcPathParameter(description = "The short hash of the holding identity; obtained during node registration")
