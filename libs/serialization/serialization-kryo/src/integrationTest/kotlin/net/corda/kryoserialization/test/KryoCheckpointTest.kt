@@ -1,4 +1,4 @@
-package net.corda.kryoserialization
+package net.corda.kryoserialization.test
 
 import net.cordapp.bundle1.Cash
 import net.corda.sandbox.SandboxException
