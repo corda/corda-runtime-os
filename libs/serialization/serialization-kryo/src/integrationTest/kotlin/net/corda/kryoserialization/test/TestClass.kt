@@ -1,4 +1,4 @@
-package net.corda.kryoserialization
+package net.corda.kryoserialization.test
 
 import net.corda.serialization.checkpoint.CheckpointInput
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
@@ -14,6 +14,7 @@ internal class TestClass(
     }
 
     internal class Serializer : CheckpointInternalCustomSerializer<TestClass> {
+        override val type: Class<TestClass> get() = TestClass::class.java
         override fun write(output: CheckpointOutput, obj: TestClass) {
             output.writeInt(obj.someInt)
             output.writeString(obj.someString)

@@ -1,5 +1,6 @@
 plugins {
     id 'corda.common-publishing'
+    id 'corda.osgi-test-conventions'
     id 'corda.common-library'
 }
 
@@ -8,14 +9,23 @@ description 'Corda ledger common - implementation'
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
-    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation "net.corda:corda-ledger-common"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
 
+    implementation project(":libs:serialization:serialization-checkpoint-api")
     implementation project(":libs:crypto:crypto-core")
 
+    testImplementation project(":testing:kryo-serialization-testkit")
+    testImplementation project(":libs:serialization:serialization-kryo")
     testImplementation project(":libs:crypto:merkle-impl")
+    testImplementation project(":libs:crypto:cipher-suite-impl")
 
+    integrationTestImplementation project(':testing:sandboxes')
+
+    integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
 }
