@@ -1,4 +1,4 @@
-package net.corda.ledger.consensual.impl.test
+package net.corda.ledger.consensual.impl.transaction.serializer.test
 
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.impl.transaction.WireTransaction
@@ -53,7 +53,7 @@ class SandboxManagementService @Activate constructor(
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
-class WireTransactionKryoSerializationTest {
+class ConsensualSignedTransactionImplKryoSerializationTest {
     @RegisterExtension
     private val lifecycle = AllTestsLifecycle()
 
