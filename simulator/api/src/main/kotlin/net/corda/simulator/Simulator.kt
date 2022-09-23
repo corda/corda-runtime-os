@@ -33,12 +33,13 @@ class Simulator(
         throw ServiceConfigurationException(SimulatedCordaNetwork::class.java)
 
     /**
-     * Registers a flow class against a given member with Simulator. Flow classes will be checked
-     * for validity. Responder flows will also be registered against their protocols.
+     * Checks the flow class and creates a simulated virtual node for the given holding identity with a list of
+     * [Flow] classes that the node can run. See [net.corda.simulator.tools.FlowChecker] for details of exceptions
+     * that can be thrown.
      *
-     * @member The member for whom this node will be created
-     * @flowClasses The flows which will be available to run in the nodes. Must be `RPCStartableFlow`
-     * or `ResponderFlow`
+     * @param holdingIdentity The holding identity for which to create the flow.
+     * @param flowClasses A list of flow classes to be checked.
+     * @return A simulated virtual node in which flows can be run.
      */
     override fun createVirtualNode(
         holdingIdentity: HoldingIdentity,
@@ -48,12 +49,13 @@ class Simulator(
     }
 
     /**
-     * Creates a virtual node holding a concrete instance of a responder flow. Note that this bypasses all
+     * Creates a simulated virtual node holding a concrete instance of a responder flow. Note that this bypasses all
      * checks for constructor and annotations on the flow.
      *
-     * @responder The member for whom this node will be created
-     * @protocol The protocol for which this flow will be called (does not need to be annotated on the flow)
-     * @responderFlow The instance of flow to be called in response to an initiating flow with the given protocol
+     * @param responder The holding identity which will respond with this flow.
+     * @param protocol The protocol for which this responder instance should be run.
+     * @param responderFlow An instance of a responder flow.
+     * @return A simulated virtual node which can run this instance of a responder flow.
      */
     override fun createVirtualNode(
         responder: HoldingIdentity,
@@ -63,6 +65,9 @@ class Simulator(
         return delegate.createVirtualNode(responder, protocol, responderFlow)
     }
 
+    /**
+     * Closes Simulator, releasing all resources including any database connections and in-memory databases.
+     */
     override fun close() {
         return delegate.close()
     }

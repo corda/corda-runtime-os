@@ -51,6 +51,7 @@ pluginManagement {
         id "org.gradle.test-retry" version gradleTestRetryPluginVersion
         id "com.jfrog.artifactory" version artifactoryPluginVersion
         id 'io.snyk.gradle.plugin.snykplugin' version snykVersion
+        id 'org.jetbrains.dokka' version dokkaVersion
     }
 }
 
@@ -347,8 +348,8 @@ include 'testing:cpbs:crypto-custom-digest-two-consumer'
 include 'testing:cpbs:connect4'
 include 'testing:cpbs:consensual-ledger'
 include 'testing:cpbs:extendable-cpb'
-include 'testing:cpbs:flow-worker-dev'
-include 'testing:cpbs:flow-worker-dev-for-cache-testing'
+include 'testing:cpbs:test-cordapp'
+include 'testing:cpbs:test-cordapp-for-cache-testing'
 include 'testing:cpbs:mandelbrot'
 include 'testing:cpbs:mgm'
 include 'testing:cpbs:sandbox-scr-cpk'
@@ -364,6 +365,7 @@ include 'testing:flow:dummy-link-manager'
 include 'testing:flow:external-events'
 include 'testing:flow:flow-utilities'
 include 'testing:layered-property-map-testkit'
+include 'testing:kryo-serialization-testkit'
 include 'testing:message-patterns'
 include 'testing:p2p:inmemory-messaging-impl'
 include 'testing:packaging-test-utilities'
@@ -377,6 +379,7 @@ include 'testing:uniqueness:uniqueness-utilities'
 include 'testing:cpi-info-read-service-fake'
 include 'testing:virtual-node-info-read-service-fake'
 include 'tools:crypto-tck'
+include 'tools:plugins:plugins-http-rpc'
 include 'tools:plugins:db-config'
 include 'tools:plugins:initial-config'
 include 'tools:plugins:mgm'

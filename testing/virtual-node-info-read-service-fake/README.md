@@ -11,9 +11,9 @@ and placed in the working directory, e.g.:
 virtualNodeInfos:
   - holdingIdentity:
       x500Name: 'CN=Alice, O=Alice Corp, L=LDN, C=GB'
-      groupId: flow-worker-dev
+      groupId: test-cordapp
     cpiIdentifier:
-      name: flow-worker-dev
+      name: test-cordapp
       version: 5.0.0.0-SNAPSHOT
     cryptoDmlConnectionId: 04e8e967-e174-45e7-aea1-8da6daa107e1
     vaultDmlConnectionId: 929a21c5-687c-469d-9347-0eb7e99e722a
