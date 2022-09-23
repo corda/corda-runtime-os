@@ -31,7 +31,7 @@
     "description" : "The HSM API consists of endpoints used to work with Hardware Security Modules (HSM) for securely storing keys."
   }, {
     "name" : "Hello RPC API",
-    "description" : "The endpoint used to test interactions via HTTP RPC API. It verifies that a call to HTTP-RPC can be made, and that the identity of the user making the call can be recognized.RBAC permissions are checked and the call is successfully processed by the HTTP-RPC worker."
+    "description" : "The Hello RPC API is used to test interactions via the HTTP-RPC API. It verifies that a call to HTTP-RPC can be made, and that the identity of the user making the call can be recognized. RBAC permissions are checked and the call is successfully processed by the HTTP-RPC worker."
   }, {
     "name" : "Keys Management API",
     "description" : "The Keys Management API consists of endpoints used to manage public and private key pairs. The API allows you to list scheme codes which are supported by the associated HSM integration, retrieve information about key pairs owned by a tenant, generate a key pair for a tenant, and retrieve a tenant's public key in PEM format."
@@ -72,7 +72,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -85,10 +85,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -96,7 +96,7 @@
     "/certificates/{tenantid}" : {
       "put" : {
         "tags" : [ "Certificates API" ],
-        "description" : "Enables you to import a certificate chain for a tenant",
+        "description" : "This method imports a certificate chain for a specified tenant.",
         "operationId" : "put_certificates__tenantid_",
         "parameters" : [ {
           "name" : "tenantid",
@@ -129,7 +129,7 @@
                     "nullable" : false,
                     "items" : {
                       "type" : "string",
-                      "description" : "A file to upload.",
+                      "description" : "A content of the file to upload.",
                       "format" : "binary",
                       "example" : "No example available for this type"
                     }
@@ -142,13 +142,13 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success."
+            "description" : "Success"
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -156,7 +156,7 @@
     "/certificates/{tenantid}/{keyid}" : {
       "post" : {
         "tags" : [ "Certificates API" ],
-        "description" : "Enables you to generate a certificate signing request (CSR) for a tenant",
+        "description" : "This method enables you to generate a certificate signing request (CSR) for a tenant.",
         "operationId" : "post_certificates__tenantid___keyid_",
         "parameters" : [ {
           "name" : "tenantid",
@@ -194,7 +194,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Success",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -206,10 +206,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -233,7 +233,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "The updated cluster configuration for the specified section.",
+            "description" : "\n            The updated cluster configuration for the specified section:\n            - `section`: the section of the configuration to be updated.\n            - `config`: the updated configuration in JSON or HOCON format.\n            - `schemaVersion`: the schema version of the configuration.\n            - `version`: the version number used for optimistic locking. The request fails if this version does not \n                match the version stored in the database for the corresponding section or -1 if this is a new section \n                for which no configuration has yet been stored.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -243,10 +243,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -259,7 +259,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -272,10 +272,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -299,7 +299,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "The configuration for the given section.",
+            "description" : "The configuration for the given section",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -309,10 +309,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -335,16 +335,16 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       },
       "post" : {
         "tags" : [ "CPI API" ],
-        "description" : "The upload endpoint uses the POST method to upload a Corda Package Installer (CPI) file to the Corda cluster.",
+        "description" : "This method uses the POST method to upload a Corda Package Installer (CPI) file to the Corda cluster.",
         "operationId" : "post_cpi",
         "parameters" : [ ],
         "requestBody" : {
@@ -369,7 +369,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "The Id for the CPI upload request.",
+            "description" : "The ID for the CPI upload request",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -379,10 +379,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -395,7 +395,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -408,10 +408,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -435,7 +435,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Success",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -445,10 +445,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -461,7 +461,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -474,10 +474,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -501,7 +501,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "The status of the flow.",
+            "description" : "\n            A collection of statuses for the flow instances, including:\n            \n            holdingIdentityShortHash: The short form hash of the Holding Identity\n            clientRequestId: The unique ID supplied by the client when the flow was created.\n            flowId: The internal unique ID for the flow.\n            flowStatus: The current state of the executing flow.\n            flowResult: The result returned from a completed flow, only set when the flow status is 'COMPLETED' otherwise null\n            flowError: The details of the error that caused a flow to fail, only set when the flow status is 'FAILED' otherwise null\n            timestamp: The timestamp of when the status was last updated (in UTC)\n            ",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -511,10 +511,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       },
@@ -557,10 +557,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -595,7 +595,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "\n            The status of the flow instance.\n            \n            holdingIdentityShortHash: The short form hash of the Holding Identity\n            clientRequestId: The unique ID supplied by the client when the flow was created.\n            flowId: The internal unique ID for the flow.\n            flowStatus: The current state of the executing flow.\n            flowResult: The result returned from a completed flow, only set when the flow status is 'COMPLETED' otherwise null\n            flowError: The details of the error that caused a flow to fail, only set when the flow status is 'FAILED' otherwise null\n            timestamp: The timestamp of when the status was last updated (in UTC)\n            ",
+            "description" : "\n            The status of the flow instance, including:\n            \n            holdingIdentityShortHash: The short form hash of the Holding Identity\n            clientRequestId: The unique ID supplied by the client when the flow was created.\n            flowId: The internal unique ID for the flow.\n            flowStatus: The current state of the executing flow.\n            flowResult: The result returned from a completed flow, only set when the flow status is 'COMPLETED' otherwise null\n            flowError: The details of the error that caused a flow to fail, only set when the flow status is 'FAILED' otherwise null\n            timestamp: The timestamp of when the status was last updated (in UTC)\n            ",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -605,10 +605,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -621,7 +621,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -634,10 +634,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -650,11 +650,11 @@
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
           "in" : "path",
-          "description" : "Short hash of the holding identity. Obtained during node registration.",
+          "description" : "The short hash of the holding identity; this is obtained during node registration",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Short hash of the holding identity. Obtained during node registration.",
+            "description" : "The short hash of the holding identity; this is obtained during node registration",
             "nullable" : false,
             "example" : "string"
           }
@@ -671,10 +671,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -682,7 +682,7 @@
     "/hello" : {
       "post" : {
         "tags" : [ "Hello RPC API" ],
-        "description" : "Produces a greeting phrase for the addressee.",
+        "description" : "This method produces a greeting phrase for the addressee.",
         "operationId" : "post_hello",
         "parameters" : [ {
           "name" : "addressee",
@@ -698,7 +698,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "A greeting phrase for the addressee",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -710,10 +710,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -726,7 +726,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -739,10 +739,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -755,7 +755,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -768,10 +768,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -779,7 +779,7 @@
     "/hsm/soft/{tenantid}/{category}" : {
       "post" : {
         "tags" : [ "HSM API" ],
-        "description" : "Enables you to assign a soft HSM to the tenant for the specified category",
+        "description" : "This method enables you to assign a soft HSM to the tenant for the specified category.",
         "operationId" : "post_hsm_soft__tenantid___category_",
         "parameters" : [ {
           "name" : "tenantid",
@@ -806,7 +806,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "\n            The HSM association details including:\n            id: the unique identifier of the HSM association\n            hsmId: the HSM identifier included into the association\n            category: the category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', \n                'TLS', or 'JWT_KEY'\n            masterKeyAlias: optional master key alias to be used on HSM\n            deprecatedAt: time when the association was deprecated, epoch time in seconds; \n                value of 0 means the association is active",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -816,10 +816,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -827,7 +827,7 @@
     "/hsm/{tenantid}/{category}" : {
       "get" : {
         "tags" : [ "HSM API" ],
-        "description" : "Enables you to retrieve information on the HSM of the specified category assigned to the tenant",
+        "description" : "This method retrieves information on the HSM of the specified category assigned to the tenant.",
         "operationId" : "get_hsm__tenantid___category_",
         "parameters" : [ {
           "name" : "tenantid",
@@ -854,7 +854,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "\n            The HSM association details including:\n            id: the unique identifier of the HSM association\n            hsmId: the HSM identifier included into the association\n            category: the category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', \n                'TLS', or 'JWT_KEY'\n            masterKeyAlias: optional master key alias to be used on HSM\n            deprecatedAt: time when the association was deprecated, epoch time in seconds; \n                value of 0 means the association is active",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -867,16 +867,16 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       },
       "post" : {
         "tags" : [ "HSM API" ],
-        "description" : "Enables you to assign a hardware-backed HSM to the tenant for the specified category",
+        "description" : "This method enables you to assign a hardware-backed HSM to the tenant for the specified category.",
         "operationId" : "post_hsm__tenantid___category_",
         "parameters" : [ {
           "name" : "tenantid",
@@ -903,7 +903,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "\n            The HSM association details including:\n            id: the unique identifier of the HSM association\n            hsmId: the HSM identifier included into the association\n            category: the category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', \n                'TLS', or 'JWT_KEY'\n            masterKeyAlias: optional master key alias to be used on HSM\n            deprecatedAt: time when the association was deprecated, epoch time in seconds; \n                value of 0 means the association is active",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -913,10 +913,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -929,7 +929,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -942,10 +942,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -953,7 +953,7 @@
     "/keys/{tenantid}" : {
       "get" : {
         "tags" : [ "Keys Management API" ],
-        "description" : "Enables you to retrieve information about a list of key pairs belonging to a tenant",
+        "description" : "This method retrieves information about a list of key pairs belonging to a tenant.",
         "operationId" : "get_keys__tenantid_",
         "parameters" : [ {
           "name" : "tenantid",
@@ -1099,10 +1099,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1110,7 +1110,7 @@
     "/keys/{tenantid}/alias/{alias}/category/{hsmcategory}/scheme/{scheme}" : {
       "post" : {
         "tags" : [ "Keys Management API" ],
-        "description" : "Enables you to generate a new key pair for a tenant",
+        "description" : "This method generates a new key pair for a tenant.",
         "operationId" : "post_keys__tenantid__alias__alias__category__hsmcategory__scheme__scheme_",
         "parameters" : [ {
           "name" : "tenantid",
@@ -1169,10 +1169,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1180,7 +1180,7 @@
     "/keys/{tenantid}/schemes/{hsmcategory}" : {
       "get" : {
         "tags" : [ "Keys Management API" ],
-        "description" : "Enables you to retrieve a list of supported key schemes for a specified tenant and HSM category",
+        "description" : "This method retrieves a list of supported key schemes for a specified tenant and HSM category.",
         "operationId" : "get_keys__tenantid__schemes__hsmcategory_",
         "parameters" : [ {
           "name" : "tenantid",
@@ -1223,10 +1223,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1234,7 +1234,7 @@
     "/keys/{tenantid}/{keyid}" : {
       "get" : {
         "tags" : [ "Keys Management API" ],
-        "description" : "Enables you to retrieve a tenant's public key in PEM format",
+        "description" : "This method retrieves a tenant's public key in PEM format.",
         "operationId" : "get_keys__tenantid___keyid_",
         "parameters" : [ {
           "name" : "tenantid",
@@ -1273,10 +1273,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1284,7 +1284,7 @@
     "/maintenance/virtualnode/forcecpiupload" : {
       "post" : {
         "tags" : [ "Virtual Node Maintenance API" ],
-        "description" : "Force uploads a CPI file. Even if CPI with the same metadata has already been uploaded, this endpoint will overwrite the previously stored CPI record. This operation also purges any sandboxes running an overwritten version of a CPI. This action can take some time to process, therefore it is performed asynchronously.",
+        "description" : "Even if CPI with the same metadata has already been uploaded, this endpoint will overwrite the previously stored CPI record. This operation also purges any sandboxes running an overwritten version of a CPI. This action can take some time to process, therefore it is performed asynchronously.",
         "operationId" : "post_maintenance_virtualnode_forcecpiupload",
         "parameters" : [ ],
         "requestBody" : {
@@ -1296,7 +1296,7 @@
                 "properties" : {
                   "upload" : {
                     "type" : "string",
-                    "description" : "A file to upload.",
+                    "description" : "A content of the file to upload.",
                     "format" : "binary",
                     "nullable" : false,
                     "example" : "No example available for this type"
@@ -1319,10 +1319,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1335,7 +1335,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1348,10 +1348,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1359,7 +1359,7 @@
     "/maintenance/virtualnode/{virtualnodeshortid}/state/{newstate}" : {
       "put" : {
         "tags" : [ "Virtual Node Maintenance API" ],
-        "description" : "Updates the state of a new virtual node to one of the pre-defined values.",
+        "description" : "This method updates the state of a new virtual node to one of the pre-defined values.",
         "operationId" : "put_maintenance_virtualnode__virtualnodeshortid__state__newstate_",
         "parameters" : [ {
           "name" : "virtualnodeshortid",
@@ -1396,10 +1396,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1412,7 +1412,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1425,10 +1425,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1436,7 +1436,7 @@
     "/members/{holdingidentityshorthash}" : {
       "get" : {
         "tags" : [ "Member Lookup API" ],
-        "description" : "Enables you to retrieve a list of all active and pending members in the membership group",
+        "description" : "This method retrieves a list of all active and pending members in the membership group.",
         "operationId" : "get_members__holdingidentityshorthash_",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
@@ -1518,7 +1518,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "Success",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1528,10 +1528,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1544,7 +1544,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1557,10 +1557,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1568,7 +1568,7 @@
     "/membership/{holdingidentityshorthash}" : {
       "get" : {
         "tags" : [ "Member Registration API" ],
-        "description" : "Enables you to check the statuses of all registration requests for a holding identity",
+        "description" : "This method checks the statuses of all registration requests for a specified holding identity.",
         "operationId" : "get_membership__holdingidentityshorthash_",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
@@ -1584,7 +1584,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "\n            The registration status information, including:\n            registrationId: the registration request ID\n            registrationSent: the date and the when the registration progress started; \n                value of null indicated that registration has not started yet\n            registrationUpdated: the date and the when the registration has been last updated    \n            registrationStatus: the status of the registration request; \n                possible values are \"SUBMITTED and \"NOT_SUBMITTED\"\n            memberInfoSubmitted: the properties submitted to MGM during the registration     \n        ",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1599,16 +1599,16 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       },
       "post" : {
         "tags" : [ "Member Registration API" ],
-        "description" : "Enables you to start the registration process for a holding identity",
+        "description" : "This method starts the registration process for a holding identity.",
         "operationId" : "post_membership__holdingidentityshorthash_",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
@@ -1635,7 +1635,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "\n            The registration progress information, including:\n            registrationId: the registration request ID\n            registrationSent: the date and the when the registration progress started; \n                value of null indicated that registration has not started yet\n            registrationStatus: the status of the registration request; \n                possible values are \"SUBMITTED and \"NOT_SUBMITTED\"\n            memberInfoSubmitted: the properties submitted to MGM during the registration     \n        ",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1645,10 +1645,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1656,7 +1656,7 @@
     "/membership/{holdingidentityshorthash}/{registrationrequestid}" : {
       "get" : {
         "tags" : [ "Member Registration API" ],
-        "description" : "Enables you to check the status of the specified registration request for a holding identity",
+        "description" : "This method checks the status of the specified registration request for a holding identity.",
         "operationId" : "get_membership__holdingidentityshorthash___registrationrequestid_",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
@@ -1683,7 +1683,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "\n            The registration status information, including:\n            registrationId: the registration request ID\n            registrationSent: the date and the when the registration progress started; \n                value of null indicated that registration has not started yet\n            registrationUpdated: the date and the when the registration has been last updated    \n            registrationStatus: the status of the registration request; \n                possible values are \"SUBMITTED and \"NOT_SUBMITTED\"\n            memberInfoSubmitted: the properties submitted to MGM during the registration     \n        ",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1696,10 +1696,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1712,7 +1712,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1725,10 +1725,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1736,7 +1736,7 @@
     "/mgm/{holdingidentityshorthash}/info" : {
       "get" : {
         "tags" : [ "MGM API" ],
-        "description" : "Enables you to retrieve the group policy from the MGM required to join the membership group",
+        "description" : "This method retrieves the group policy from the MGM required to join the membership group.",
         "operationId" : "get_mgm__holdingidentityshorthash__info",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
@@ -1752,7 +1752,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success.",
+            "description" : "The group policy from the MGM required to join the membership group as a string in JSON format",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1764,10 +1764,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1780,7 +1780,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1793,10 +1793,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1804,7 +1804,7 @@
     "/network/setup/{holdingidentityshorthash}" : {
       "put" : {
         "tags" : [ "Network API" ],
-        "description" : "Enables you to configure a holding identity as a network participant by setting properties required for P2P messaging",
+        "description" : "This method configures a holding identity as a network participant by setting properties required for P2P messaging.",
         "operationId" : "put_network_setup__holdingidentityshorthash_",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
@@ -1831,13 +1831,13 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success."
+            "description" : "Success"
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1871,10 +1871,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1887,7 +1887,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1900,10 +1900,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1937,10 +1937,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -1953,7 +1953,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Set of roles with each role having the following attributes: \n        id: The unique identifier of the role\n        version: The version number of the role\n        updateTimestamp: The date and time when the role was last updated\n        roleName: The name of the role\n        groupVisibility: An optional group visibility of the role\n        permissions: The list of permissions associated with the role\n    ",
+            "description" : "\n        Set of roles with each role having the following attributes: \n        id: The unique identifier of the role\n        version: The version number of the role\n        updateTimestamp: The date and time when the role was last updated\n        roleName: The name of the role\n        groupVisibility: An optional group visibility of the role\n        permissions: The list of permissions associated with the role\n    ",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1968,10 +1968,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       },
@@ -1993,7 +1993,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Newly created role with attributes:\n        id: The unique identifier of the role\n        version: The version number of the role\n        updateTimestamp: The date and time when the role was last updated\n        roleName: The name of the role\n        groupVisibility: An optional group visibility of the role\n        permissions: The list of permissions associated with the role",
+            "description" : "\n        Newly created role with attributes:\n        id: The unique identifier of the role\n        version: The version number of the role\n        updateTimestamp: The date and time when the role was last updated\n        roleName: The name of the role\n        groupVisibility: An optional group visibility of the role\n        permissions: The list of permissions associated with the role",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2003,10 +2003,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -2019,7 +2019,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2032,10 +2032,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -2059,7 +2059,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Role with attributes:\n        id: The unique identifier of the role\n        version: The version number of the role\n        updateTimestamp: The date and time when the role was last updated\n        roleName: The name of the role\n        groupVisibility: An optional group visibility of the role\n        permissions: The list of permissions associated with the role",
+            "description" : "\n        Role with attributes:\n        id: The unique identifier of the role\n        version: The version number of the role\n        updateTimestamp: The date and time when the role was last updated\n        roleName: The name of the role\n        groupVisibility: An optional group visibility of the role\n        permissions: The list of permissions associated with the role",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2069,10 +2069,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -2107,7 +2107,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Role with attributes:\n            id: The unique identifier of the role\n            version: The version number of the role\n            updateTimestamp: The date and time when the role was last updated\n            roleName: The name of the role\n            groupVisibility: An optional group visibility of the role\n            permissions: The list of permissions associated with the role",
+            "description" : "\n            Role with attributes:\n            id: The unique identifier of the role\n            version: The version number of the role\n            updateTimestamp: The date and time when the role was last updated\n            roleName: The name of the role\n            groupVisibility: An optional group visibility of the role\n            permissions: The list of permissions associated with the role",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2117,10 +2117,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       },
@@ -2153,7 +2153,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Role with attributes:\n            id: The unique identifier of the role\n            version: The version number of the role\n            updateTimestamp: The date and time when the role was last updated\n            roleName: The name of the role\n            groupVisibility: An optional group visibility of the role\n            permissions: The list of permissions associated with the role",
+            "description" : "\n            Role with attributes:\n            id: The unique identifier of the role\n            version: The version number of the role\n            updateTimestamp: The date and time when the role was last updated\n            roleName: The name of the role\n            groupVisibility: An optional group visibility of the role\n            permissions: The list of permissions associated with the role",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2163,10 +2163,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -2190,7 +2190,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "A newly created user with the following attributes:\n            id: Unique server generated identifier for the user\n            version: The version of the user; version 0 is assigned to a newly created user\n            updateTimestamp: The date and time when the user was last updated\n            fullName: The full name for the new user\n            loginName: The login name for the new user\n            enabled: If true, the user account is enabled; false, the account is disabled\n            ssoAuth: If true, the user account is enabled for SSO authentication; \n                false, the account is enabled for password authentication\n            passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;\n                    value of null means that the password does not expire\n            parentGroup: An optional identifier of the user group for the new user to be included;\n                    value of null means that the user will belong to the root group\n            properties: An optional set of key/value properties associated with a user account\n            roleAssociations: A set of roles associated with the user account",
+            "description" : "\n            A newly created user with the following attributes:\n            id: Unique server generated identifier for the user\n            version: The version of the user; version 0 is assigned to a newly created user\n            updateTimestamp: The date and time when the user was last updated\n            fullName: The full name for the new user\n            loginName: The login name for the new user\n            enabled: If true, the user account is enabled; false, the account is disabled\n            ssoAuth: If true, the user account is enabled for SSO authentication; \n                false, the account is enabled for password authentication\n            passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;\n                    value of null means that the password does not expire\n            parentGroup: An optional identifier of the user group for the new user to be included;\n                    value of null means that the user will belong to the root group\n            properties: An optional set of key/value properties associated with a user account\n            roleAssociations: A set of roles associated with the user account",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2200,10 +2200,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       },
@@ -2225,7 +2225,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "A newly created user with the following attributes:\n            id: Unique server generated identifier for the user\n            version: The version of the user; version 0 is assigned to a newly created user\n            updateTimestamp: The date and time when the user was last updated\n            fullName: The full name for the new user\n            loginName: The login name for the new user\n            enabled: If true, the user account is enabled; false, the account is disabled\n            ssoAuth: If true, the user account is enabled for SSO authentication; \n                false, the account is enabled for password authentication\n            passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;\n                    value of null means that the password does not expire\n            parentGroup: An optional identifier of the user group for the new user to be included;\n                    value of null means that the user will belong to the root group\n            properties: An optional set of key/value properties associated with a user account\n            roleAssociations: A set of roles associated with the user account",
+            "description" : "\n            A newly created user with the following attributes:\n            id: Unique server generated identifier for the user\n            version: The version of the user; version 0 is assigned to a newly created user\n            updateTimestamp: The date and time when the user was last updated\n            fullName: The full name for the new user\n            loginName: The login name for the new user\n            enabled: If true, the user account is enabled; false, the account is disabled\n            ssoAuth: If true, the user account is enabled for SSO authentication; \n                false, the account is enabled for password authentication\n            passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;\n                    value of null means that the password does not expire\n            parentGroup: An optional identifier of the user group for the new user to be included;\n                    value of null means that the user will belong to the root group\n            properties: An optional set of key/value properties associated with a user account\n            roleAssociations: A set of roles associated with the user account",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2235,10 +2235,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -2251,7 +2251,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2264,10 +2264,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -2291,7 +2291,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "\n            enabled: True if the user account is enabled; false otherwise\n            lastUpdateTimestamp: The date and time when the user was last updated\n            loginName: The login name of the user\n            permissions: An array of one or more permissions associated with the user\n        ",
+            "description" : "\n            enabled: If true, the user account is enabled; false, the account is disabled\n            lastUpdateTimestamp: The date and time when the user was last updated\n            loginName: The login name of the user\n            permissions: An array of one or more permissions associated with the user\n        ",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2301,10 +2301,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -2339,7 +2339,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "A newly created user with the following attributes:\n            id: Unique server generated identifier for the user\n            version: The version of the user; version 0 is assigned to a newly created user\n            updateTimestamp: The date and time when the user was last updated\n            fullName: The full name for the new user\n            loginName: The login name for the new user\n            enabled: If true, the user account is enabled; false, the account is disabled\n            ssoAuth: If true, the user account is enabled for SSO authentication; \n                false, the account is enabled for password authentication\n            passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;\n                    value of null means that the password does not expire\n            parentGroup: An optional identifier of the user group for the new user to be included;\n                    value of null means that the user will belong to the root group\n            properties: An optional set of key/value properties associated with a user account\n            roleAssociations: A set of roles associated with the user account",
+            "description" : "\n            A newly created user with the following attributes:\n            id: Unique server generated identifier for the user\n            version: The version of the user; version 0 is assigned to a newly created user\n            updateTimestamp: The date and time when the user was last updated\n            fullName: The full name for the new user\n            loginName: The login name for the new user\n            enabled: If true, the user account is enabled; false, the account is disabled\n            ssoAuth: If true, the user account is enabled for SSO authentication; \n                false, the account is enabled for password authentication\n            passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;\n                    value of null means that the password does not expire\n            parentGroup: An optional identifier of the user group for the new user to be included;\n                    value of null means that the user will belong to the root group\n            properties: An optional set of key/value properties associated with a user account\n            roleAssociations: A set of roles associated with the user account",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2349,10 +2349,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       },
@@ -2385,7 +2385,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "A newly created user with the following attributes:\n            id: Unique server generated identifier for the user\n            version: The version of the user; version 0 is assigned to a newly created user\n            updateTimestamp: The date and time when the user was last updated\n            fullName: The full name for the new user\n            loginName: The login name for the new user\n            enabled: If true, the user account is enabled; false, the account is disabled\n            ssoAuth: If true, the user account is enabled for SSO authentication; \n                false, the account is enabled for password authentication\n            passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;\n                    value of null means that the password does not expire\n            parentGroup: An optional identifier of the user group for the new user to be included;\n                    value of null means that the user will belong to the root group\n            properties: An optional set of key/value properties associated with a user account\n            roleAssociations: A set of roles associated with the user account",
+            "description" : "\n            A newly created user with the following attributes:\n            id: Unique server generated identifier for the user\n            version: The version of the user; version 0 is assigned to a newly created user\n            updateTimestamp: The date and time when the user was last updated\n            fullName: The full name for the new user\n            loginName: The login name for the new user\n            enabled: If true, the user account is enabled; false, the account is disabled\n            ssoAuth: If true, the user account is enabled for SSO authentication; \n                false, the account is enabled for password authentication\n            passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;\n                    value of null means that the password does not expire\n            parentGroup: An optional identifier of the user group for the new user to be included;\n                    value of null means that the user will belong to the root group\n            properties: An optional set of key/value properties associated with a user account\n            roleAssociations: A set of roles associated with the user account",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2395,10 +2395,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -2406,7 +2406,7 @@
     "/virtualnode" : {
       "get" : {
         "tags" : [ "Virtual Node API" ],
-        "description" : "The virtual node endpoint uses the GET method to list all virtual nodes in the cluster.",
+        "description" : "This method lists all virtual nodes in the cluster.",
         "operationId" : "get_virtualnode",
         "parameters" : [ ],
         "responses" : {
@@ -2421,16 +2421,16 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       },
       "post" : {
         "tags" : [ "Virtual Node API" ],
-        "description" : "The virtual node endpoint uses the POST method to create a new virtual node.",
+        "description" : "This method creates a new virtual node.",
         "operationId" : "post_virtualnode",
         "parameters" : [ ],
         "requestBody" : {
@@ -2456,10 +2456,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -2472,7 +2472,7 @@
         "parameters" : [ ],
         "responses" : {
           "200" : {
-            "description" : "Integer value specifying the version of the endpoint.",
+            "description" : "An integer value specifying the version of the endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2485,10 +2485,10 @@
             }
           },
           "401" : {
-            "description" : "Unauthorized."
+            "description" : "Unauthorized"
           },
           "403" : {
-            "description" : "Forbidden."
+            "description" : "Forbidden"
           }
         }
       }
@@ -2710,7 +2710,7 @@
             "example" : "string"
           }
         },
-        "description" : "Details of the permission to be created. \n            permissionType: Defines whether this is an ALLOW or DENY type of permission\n            permissionString: A machine-parseable string representing an individual permission; \n                it can be any arbitrary string as long as the authorization code can make use of it in the context of user \n                permission matching\n            groupVisibility: An optional group visibility identifier of the permission\n            virtualNode: An optional identifier of the virtual node to which the physical node permission applies"
+        "description" : "\n            Details of the permission to be created. \n            permissionType: Defines whether this is an ALLOW or DENY type of permission\n            permissionString: A machine-parseable string representing an individual permission; \n                it can be any arbitrary string as long as the authorization code can make use of it in the context of user \n                permission matching\n            groupVisibility: An optional group visibility identifier of the permission\n            virtualNode: An optional identifier of the virtual node to which the physical node permission applies"
       },
       "CreateRoleType" : {
         "required" : [ "roleName" ],
@@ -2727,7 +2727,7 @@
             "example" : "string"
           }
         },
-        "description" : "Details of the role to be created: \n                roleName - name of the role.\n                groupVisibility - optional group visibility of the role.\n            "
+        "description" : "\n                Details of the role to be created: \n                roleName - name of the role\n                groupVisibility - optional group visibility of the role\n            "
       },
       "CreateUserType" : {
         "required" : [ "enabled", "fullName", "loginName" ],
@@ -2765,7 +2765,7 @@
             "example" : "2022-06-24T10:15:30Z"
           }
         },
-        "description" : "Details of the user to be created with the following parameters:\n                enabled: If true, the user account is enabled; false, the account is disabled\n                fullName: The full name for the new user\n                initialPassword: The initial password for the new user; \n                    the value can be null for Single Sign On (SSO) users\n                loginName: The login name for the new user\n                parentGroup: An optional identifier of the user group for the new user to be included;\n                    value of null means that the user will belong to the root group\n                passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;\n                    value of null means that the password does not expire"
+        "description" : "\n                Details of the user to be created with the following parameters:\n                enabled: If true, the user account is enabled; false, the account is disabled\n                fullName: The full name for the new user\n                initialPassword: The initial password for the new user; \n                    the value can be null for Single Sign On (SSO) users\n                loginName: The login name for the new user\n                parentGroup: An optional identifier of the user group for the new user to be included;\n                    value of null means that the user will belong to the root group\n                passwordExpiry: The date and time when the password should expire, specified as an ISO-8601 string;\n                    value of null means that the password does not expire"
       },
       "FlowStateErrorResponse" : {
         "required" : [ "message", "type" ],
@@ -2868,7 +2868,7 @@
           },
           "x500Name" : {
             "type" : "string",
-            "description" : "X.500 name that will be the subject associated with the request",
+            "description" : "The X.500 name that will be the subject associated with the request",
             "nullable" : false,
             "example" : "string"
           }
@@ -2971,7 +2971,7 @@
             "example" : "string"
           }
         },
-        "description" : "Request object which contains properties for P2P messaging including the P2P TLS certificate chain alias, the TLS tenant ID (either 'p2p' or holding identity ID), the tenant ID under which the session initiation key is stored, and the session key identifier"
+        "description" : "\n                Request object which contains properties for P2P messaging including:\n                p2pTlsCertificateChainAlias: the P2P TLS certificate chain alias\n                p2pTlsTenantId: the TLS tenant ID (either 'p2p' or holding identity ID)\n                sessionKeyTenantId: the tenant ID under which the session initiation key is stored\n                sessionKeyId: the session key identifier"
       },
       "HsmAssociationInfo" : {
         "required" : [ "category", "deprecatedAt", "hsmId", "id" ],
@@ -3391,7 +3391,7 @@
             } ]
           }
         },
-        "description" : "Information required to start a flow for this holdingId"
+        "description" : "\n                Information required to start a flow for this holdingId, including:\n                clientRequestId: a client provided flow identifier\n                flowClassName: fully qualified class name of the flow to start\n                requestData: optional start arguments string passed to the flow; defaults to an empty string\n            "
       },
       "StartableFlowsResponse" : {
         "required" : [ "flowClassNames" ],
@@ -3432,7 +3432,7 @@
             "example" : 0
           }
         },
-        "description" : "Details of the updated configuration. Includes: \n- config: The updated configuration in JSON or HOCON format.\n- schemaVersion: The schema version of the configuration.\n- section: The section of the configuration to be updated.\n- version: The version number used for optimistic locking.\n"
+        "description" : "\n            Details of the updated configuration. Includes:\n            - `section`: the section of the configuration to be updated.\n            - `config`: the updated configuration in JSON or HOCON format.\n            - `schemaVersion`: the schema version of the configuration.\n            - `version`: the version number used for optimistic locking. The request fails if this version does not \n                match the version stored in the database for the corresponding section or -1 if this is a new section \n                for which no configuration has yet been stored."
       },
       "UpdateConfigResponse" : {
         "required" : [ "config", "schemaVersion", "section", "version" ],
