@@ -17,19 +17,18 @@ while getopts "v" opt; do
   v)
     verify=true
     ;;
+  *) echo "Unknown option '${opt}' ignored"
+    ;;
   esac
 done
 
 # download package to tmp and verify if requested
-wget "${s3Bucket}.zip" -P "$tempDir"
+wget "${s3Bucket}.zip" -O "${tempDir}/corda-cli.zip"
 
 if [ "$verify" = true ]; then
-  wget "${s3Bucket}.zip.md5" -O "${tempDir}.zip.md5"
+  wget "${s3Bucket}.zip.md5" -O "${tempDir}/corda-cli.zip.md5"
 
-  str=$(md5sum corda-cli*.zip)
-  sum=$(cat corda-cli*.zip.md5)
-
-  if [[ "$str" == *"$sum"* ]];
+  if echo "$(cat ${tempDir}/corda-cli.zip.md5)  ${tempDir}/corda-cli.zip" | md5sum -c &>/dev/null
   then
     echo "Checksums match!"
   else
@@ -40,13 +39,12 @@ fi
 
 # unzip the archive
 cd "$tempDir" || exit
-unzip corda-cli-*.zip
+unzip corda-cli.zip
 
 usr=$(id -u)
 grp=$(id -g)
 # generate script
-# shellcheck disable=SC2145
-echo "java -Dpf4j.pluginsDir=$cliHome/plugins -jar $cliHome/corda-cli.jar $@" > corda-cli.sh
+echo "java -Dpf4j.pluginsDir=$cliHome/plugins -jar $cliHome/corda-cli.jar \"\$@\"" > corda-cli.sh
 chmod 755 corda-cli.sh
 
 sudo bash -c """

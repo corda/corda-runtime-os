@@ -18,6 +18,8 @@ dependencies {
 }
 
 def S3_BUCKET_URI_PROPERTY = 'maven.repo.s3'
+def S3_BUCKET_GROUP_ID_PROPERTY = 'maven.repo.groupId'
+def s3_upload_group_id = project.hasProperty(S3_BUCKET_GROUP_ID_PROPERTY) ? "${project.findProperty(S3_BUCKET_GROUP_ID_PROPERTY)}" : project.group
 
 tasks.register('copyCliFiles') {
     dependsOn subprojects.collect { it.tasks.named("cliPluginTask").get() }
@@ -57,7 +59,7 @@ tasks.register("cliS3Download", Copy) {
     dependsOn cleanDir
     description 'Copy corda-cli install scripts to a location in build dir and update to use correct version'
     if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
-        def s3Url = System.getenv('HTTPS_PATH') + '/'+ project.group.replace('.','/') + "/corda-cli-downloader/$version/corda-cli-downloader-$version"
+        def s3Url = System.getenv('HTTPS_PATH') + '/'+ s3_upload_group_id.replace('.','/') + "/corda-cli-downloader/$version/corda-cli-downloader-$version"
         logger.info ("S3 Https URL: $s3Url")
         from 'templateScripts'
         into 'build/generatedScripts'
@@ -137,18 +139,17 @@ if (project.hasProperty(S3_BUCKET_URI_PROPERTY)) {
     }
 }
 
-
 publishing {
     publications {
         maven(MavenPublication) {
             artifactId "corda-cli-installer"
-            groupId project.group
+            groupId s3_upload_group_id
             artifact cliInstallArchive
         }
         if (project.hasProperty(S3_BUCKET_URI_PROPERTY) && s3Script != null) {
             maven(MavenPublication) {
                 artifactId "corda-cli-downloader"
-                groupId project.group
+                groupId s3_upload_group_id
                 artifact s3Script
             }
         }
