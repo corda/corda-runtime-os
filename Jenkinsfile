@@ -14,4 +14,6 @@ cordaPipeline(
     combinedWorkere2eTests: true,
     // allow publishing artifacts to S3 bucket
     publishToMavenS3Repository: true,
+    // allow publishing an installer to a download site
+    publishToDownloadSiteTask: ':tools:plugins:publish',
     )
