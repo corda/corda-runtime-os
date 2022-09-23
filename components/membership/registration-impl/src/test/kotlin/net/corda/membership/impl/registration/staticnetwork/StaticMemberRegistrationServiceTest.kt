@@ -29,6 +29,7 @@ import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithInvalidStaticNetworkTemplate
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithStaticNetwork
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithoutStaticNetwork
+import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
@@ -37,6 +38,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.lib.MemberInfoExtension.Companion.softwareVersion
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.impl.EndpointInfoImpl
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.registration.RegistrationRequest
@@ -194,6 +196,9 @@ class StaticMemberRegistrationServiceTest {
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory = mock {
         on { createValidator() } doReturn membershipSchemaValidator
     }
+    private val endpointInfoFactory: EndpointInfoFactory = mock {
+        on { create(any(), any()) } doReturn EndpointInfoImpl("https://corda5.r3.com:10001")
+    }
 
     private val registrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
@@ -206,7 +211,8 @@ class StaticMemberRegistrationServiceTest {
         memberInfoFactory,
         persistenceClient,
         cordaAvroSerializationFactory,
-        membershipSchemaValidatorFactory
+        membershipSchemaValidatorFactory,
+        endpointInfoFactory,
     )
 
     private fun setUpPublisher() {
