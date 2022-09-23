@@ -3,7 +3,6 @@ package net.corda.membership.impl.read.subscription
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.layeredpropertymap.toAvro
-import net.corda.membership.lib.impl.EndpointInfoImpl
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
@@ -24,6 +23,7 @@ import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.membership.impl.read.cache.MembershipGroupReadCache
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.impl.EndpointInfoFactoryImpl
 import net.corda.messaging.api.records.Record
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.membership.MemberInfo
@@ -45,9 +45,10 @@ class MemberListProcessorTest {
         private val knownKey: PublicKey = mock()
         private const val knownKeyAsString = "12345"
         private val modifiedTime = clock.instant()
+        private val endpointInfoFactory = EndpointInfoFactoryImpl()
         private val endpoints = listOf(
-            EndpointInfoImpl("https://corda5.r3.com:10000"),
-            EndpointInfoImpl("https://corda5.r3.com:10001", 10)
+            endpointInfoFactory.create("https://corda5.r3.com:10000"),
+            endpointInfoFactory.create("https://corda5.r3.com:10001", 10)
         )
         private val ledgerKeys = listOf(knownKey, knownKey)
         private lateinit var memberInfoFactory: MemberInfoFactory

@@ -23,7 +23,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
-import net.corda.membership.lib.impl.EndpointInfoImpl
+import net.corda.membership.lib.impl.EndpointInfoFactoryImpl
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.read.MembershipGroupReader
@@ -93,9 +93,10 @@ class MGMOpsClientTest {
     private val knownKey: PublicKey = mock()
     private val keys = listOf(knownKey, knownKey)
 
+    private val endpointInfoFactory = EndpointInfoFactoryImpl()
     private val endpoints = listOf(
-        EndpointInfoImpl("https://corda5.r3.com:10000"),
-        EndpointInfoImpl("https://corda5.r3.com:10001", 10)
+        endpointInfoFactory.create("https://corda5.r3.com:10000"),
+        endpointInfoFactory.create("https://corda5.r3.com:10001", 10)
     )
 
     private val keyEncodingService: CipherSchemeMetadata = mock {

@@ -14,7 +14,7 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(":libs:membership:membership-common")
-    implementation project(':libs:membership:membership-impl')
+    implementation project(':libs:layered-property-map')
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation "net.corda:corda-ledger-common"
     implementation "net.corda:corda-ledger-consensual"

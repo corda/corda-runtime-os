@@ -1,6 +1,5 @@
 package net.corda.membership.impl.registration.staticnetwork
 
-import net.corda.membership.lib.impl.EndpointInfoImpl
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_PROTOCOL
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_URL
@@ -9,6 +8,7 @@ import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplate
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.STATIC_PLATFORM_VERSION
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.STATIC_SERIAL
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.STATIC_SOFTWARE_VERSION
+import net.corda.membership.lib.impl.EndpointInfoFactoryImpl
 import net.corda.v5.membership.EndpointInfo
 import net.corda.utilities.time.UTCClock
 
@@ -23,6 +23,7 @@ class StaticMember(private val staticMemberData: Map<String, Any>) : Map<String,
         const val DEFAULT_PLATFORM_VERSION = "10"
         const val DEFAULT_SERIAL = "1"
         private val clock = UTCClock()
+        private val endpointInfoFactory = EndpointInfoFactoryImpl()
     }
 
     val name: String?
@@ -53,7 +54,7 @@ class StaticMember(private val staticMemberData: Map<String, Any>) : Map<String,
         (staticMemberData[key] as Int?)?.toString() ?: default
 
     fun getEndpoint(index: Int): EndpointInfo {
-        return EndpointInfoImpl(
+        return endpointInfoFactory.create(
             staticMemberData[String.format(ENDPOINT_URL, index)].toString(),
             Integer.parseInt(staticMemberData[String.format(ENDPOINT_PROTOCOL, index)].toString())
         )

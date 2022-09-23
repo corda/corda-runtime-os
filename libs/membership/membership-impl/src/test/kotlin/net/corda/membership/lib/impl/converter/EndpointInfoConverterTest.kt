@@ -1,7 +1,7 @@
 package net.corda.membership.lib.impl.converter
 
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
-import net.corda.membership.lib.impl.EndpointInfoImpl
+import net.corda.membership.lib.impl.EndpointInfoFactoryImpl
 import net.corda.membership.lib.impl.MemberContextImpl
 import net.corda.v5.base.exceptions.ValueNotFoundException
 import net.corda.v5.base.util.parse
@@ -13,7 +13,7 @@ import kotlin.test.assertFailsWith
 
 class EndpointInfoConverterTest {
     companion object {
-        private val endpoint = EndpointInfoImpl("https://localhost:10000")
+        private val endpoint = EndpointInfoFactoryImpl().create("https://localhost:10000")
         private val converters = listOf(EndpointInfoConverter())
     }
 

@@ -8,7 +8,6 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.httprpc.v1.types.response.RpcMemberInfo
 import net.corda.membership.httprpc.v1.types.response.RpcMemberInfoList
-import net.corda.membership.lib.impl.EndpointInfoImpl
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
@@ -24,6 +23,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.crypto.impl.converter.PublicKeyConverter
+import net.corda.membership.lib.impl.EndpointInfoFactoryImpl
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.test.util.identity.createTestHoldingIdentity
@@ -69,9 +69,10 @@ class MemberLookupRpcOpsTest {
     private val knownKey: PublicKey = mock()
     private val keys = listOf(knownKey, knownKey)
 
+    private val endpointInfoFactory = EndpointInfoFactoryImpl()
     private val endpoints = listOf(
-        EndpointInfoImpl("https://corda5.r3.com:10000"),
-        EndpointInfoImpl("https://corda5.r3.com:10001", 10)
+        endpointInfoFactory.create("https://corda5.r3.com:10000"),
+        endpointInfoFactory.create("https://corda5.r3.com:10001", 10)
     )
 
     private val holdingIdentity = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "0")

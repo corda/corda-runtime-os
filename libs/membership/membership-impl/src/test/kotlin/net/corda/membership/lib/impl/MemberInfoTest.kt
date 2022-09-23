@@ -64,9 +64,10 @@ class MemberInfoTest {
 
         private val clock = TestClock(Instant.ofEpochSecond(100))
         private val modifiedTime = clock.instant()
+        private val endpointInfoFactory = EndpointInfoFactoryImpl()
         private val endpoints = listOf(
-            EndpointInfoImpl("https://localhost:10000"),
-            EndpointInfoImpl("https://google.com", 10)
+            endpointInfoFactory.create("https://localhost:10000"),
+            endpointInfoFactory.create("https://google.com", 10)
         )
         private val ledgerKeys = listOf(key, key)
         private val testObjects = listOf(
