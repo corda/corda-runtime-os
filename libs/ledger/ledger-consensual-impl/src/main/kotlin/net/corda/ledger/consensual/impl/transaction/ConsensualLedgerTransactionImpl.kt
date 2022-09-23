@@ -11,7 +11,7 @@ import java.time.Instant
 class ConsensualLedgerTransactionImpl(
     private val wireTransaction: WireTransaction,
     private val serializer: SerializationService
-    ) : ConsensualLedgerTransaction {
+) : ConsensualLedgerTransaction {
 
     override fun equals(other: Any?): Boolean =
         (other === this) ||
