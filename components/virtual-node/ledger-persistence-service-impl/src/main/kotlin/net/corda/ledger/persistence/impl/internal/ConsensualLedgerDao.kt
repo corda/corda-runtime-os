@@ -4,6 +4,7 @@ import net.corda.data.persistence.EntityResponse
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPK_IDENTIFIERS_KEY
 import net.corda.ledger.common.impl.transaction.WireTransaction
+import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.SecureHash
@@ -20,7 +21,7 @@ class ConsensualLedgerDao(
     }
 
     // TODO This should probably take a ConsensualSignedTransactionImpl which includes WireTransaction and signers.
-    fun persistTransaction(transaction: WireTransaction, entityManager: EntityManager): EntityResponse {
+    fun persistTransaction(entityManager: EntityManager, transaction: WireTransaction): EntityResponse {
         val now = Instant.now()
         writeTransaction(entityManager, now, transaction)
         transaction.componentGroupLists.mapIndexed { groupIndex, leaves ->
@@ -38,9 +39,8 @@ class ConsensualLedgerDao(
         return EntityResponse(emptyList())
     }
 
-    fun findTransaction(id: String, entityManager: EntityManager): WireTransaction {
+    fun findTransaction(entityManager: EntityManager, id: String): WireTransaction? {
 
-        // TODO DB index
         val rows = entityManager.createNativeQuery(
             """
                 SELECT tx.id, tx.privacy_salt, tx.account_id, tx.created, txc.group_idx, txc.leaf_idx, txc.data, txc.hash
@@ -49,38 +49,42 @@ class ConsensualLedgerDao(
                 WHERE tx.id = :id
                 ORDER BY txc.group_idx, txc.leaf_idx
                 """
-            //,Tuple::class.java
         )
             .setParameter("id", id)
             .resultList
 
-        // TODO specific exception
-        check(rows.isNotEmpty()) { "Transaction with ID $id not found" }
+        if (rows.isEmpty()) return null
 
         val firstRowColumns = rows.first() as Array<*>
         val privacySalt = PrivacySaltImpl(firstRowColumns[1] as ByteArray)
+        val componentGroupLists = queryRowsToComponentGroupLists(rows)
+        return WireTransaction(merkleTreeFactory, digestService, privacySalt, componentGroupLists)
+    }
 
+    @VisibleForTesting
+    internal fun queryRowsToComponentGroupLists(rows: List<Any?>): List<List<ByteArray>> {
         val componentGroupLists: MutableList<MutableList<ByteArray>> = mutableListOf()
         var componentsList: MutableList<ByteArray> = mutableListOf()
         var expectedGroupIdx = 0
         rows.forEach {
             val columns = it as Array<*>
-            val groupIdx = (columns[4] as Number).toInt()
-            val leafIdx = (columns[5] as Number).toInt()
-            val data = columns[6] as ByteArray
+            val groupIdx = (columns[4] as Number).toInt()   // txc.group_idx
+            val leafIdx = (columns[5] as Number).toInt()    // txc.leaf_idx
+            val data = columns[6] as ByteArray              // txc.data
             while (groupIdx > expectedGroupIdx) {
+                // add empty lists for skipped group indices
                 componentGroupLists.add(componentsList)
                 componentsList = mutableListOf()
                 expectedGroupIdx++
             }
             check(componentsList.size == leafIdx) {
-                "Missing transaction data ID: $id, groupIdx: $groupIdx, leafIdx: $leafIdx"
+                val id = columns[0] as String   // tx.id
+                "Missing data for transaction with ID: $id, groupIdx: $groupIdx, leafIdx: ${componentsList.size}"
             }
             componentsList.add(data)
         }
         componentGroupLists.add(componentsList)
-
-        return WireTransaction(merkleTreeFactory, digestService, privacySalt, componentGroupLists)
+        return componentGroupLists
     }
 
     private fun writeTransaction(entityManager: EntityManager, timestamp: Instant, tx: WireTransaction) {
@@ -114,6 +118,7 @@ class ConsensualLedgerDao(
             .setParameter("groupIndex", groupIndex)
             .setParameter("leafIndex", leafIndex)
             .setParameter("bytes", bytes)
+            // TODO calculate hash
             .setParameter("hash", "fake_hash_123")
             .setParameter("createdAt", timestamp)
             .executeUpdate()

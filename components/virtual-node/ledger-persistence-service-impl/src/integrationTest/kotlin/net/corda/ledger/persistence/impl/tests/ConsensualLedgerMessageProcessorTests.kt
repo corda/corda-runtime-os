@@ -63,8 +63,6 @@ import java.nio.file.Path
 import java.time.Instant
 import java.util.UUID
 
-// TODO: Move common parts outside rather than copy-pasting from PersistenceServiceInternalTests.kt
-
 /**
  * To use Postgres rather than in-memory (HSQL):
  *

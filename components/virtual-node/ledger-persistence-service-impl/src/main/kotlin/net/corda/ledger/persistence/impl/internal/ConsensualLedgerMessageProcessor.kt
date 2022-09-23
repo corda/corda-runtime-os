@@ -27,7 +27,6 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
-import net.corda.v5.serialization.SerializedBytes
 import net.corda.virtualnode.toCorda
 
 /**
@@ -114,19 +113,18 @@ class ConsensualLedgerMessageProcessor(
         // Any exception that occurs next we assume originates in Hibernate and categorise
         // it accordingly.
         val response = try {
-            entityManagerFactory.createEntityManager().transaction {
+            entityManagerFactory.createEntityManager().transaction { emf ->
                 when (val req = request.request) {
                     is PersistTransaction -> successResponse(
                         request.flowExternalEventContext,
-                        consensualLedgerDAO.persistTransaction(serializationService.deserialize(req), it)
+                        consensualLedgerDAO.persistTransaction(emf, serializationService.deserialize(req))
                     )
 
                     is FindTransaction -> successResponse(
                         request.flowExternalEventContext,
                         createEntityResponse(
-                            serializationService.serialize(
-                                consensualLedgerDAO.findTransaction(req.id, it)
-                            )
+                            consensualLedgerDAO.findTransaction(emf, req.id),
+                            serializationService
                         ))
                     else -> {
                         fatalErrorResponse(request.flowExternalEventContext, CordaRuntimeException("Unknown command"))
@@ -150,7 +148,12 @@ class ConsensualLedgerMessageProcessor(
         return response
     }
 
-    private fun createEntityResponse(obj: SerializedBytes<Any>) = EntityResponse(listOf(ByteBuffer.wrap(obj.bytes)))
+    private fun createEntityResponse(obj: Any?, serializationService: SerializationService) =
+        obj?.let {
+            val serializedObj = serializationService.serialize(obj)
+            EntityResponse(listOf(ByteBuffer.wrap(serializedObj.bytes)))
+        } ?: EntityResponse(emptyList())
+
     private fun SerializationService.deserialize(persistTransaction: PersistTransaction) =
         deserialize(persistTransaction.transaction.array(), WireTransaction::class.java)
 
