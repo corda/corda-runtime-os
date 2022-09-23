@@ -5,10 +5,13 @@ import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPK_IDENTIFIERS_KEY
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.v5.base.types.toHexString
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.DigestService
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
+import java.security.MessageDigest
 import java.time.Instant
 import javax.persistence.EntityManager
 
@@ -29,7 +32,7 @@ class ConsensualLedgerDao(
                 writeComponentLeaf(entityManager, now, transaction, groupIndex, leafIndex, bytes)
             }
         }
-        writeTransactionStatus(entityManager, now, transaction, "Faked")
+        writeTransactionStatus(entityManager, now, transaction, "Faked") // TODO where to get the status from
         // TODO when and what do we write to the signatures table?
         // TODO when and what do we write to the CPKs table?
         writeCpk(entityManager, now, transaction)
@@ -107,19 +110,21 @@ class ConsensualLedgerDao(
         tx: WireTransaction,
         groupIndex: Int,
         leafIndex: Int,
-        bytes: ByteArray
+        data: ByteArray
     ) {
+        val dataDigest = MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name)
+        val hash = dataDigest.digest(data).toHexString()
+
         entityManager.createNativeQuery(
             """
                 INSERT INTO {h-schema}consensual_transaction_component(transaction_id, group_idx, leaf_idx, data, hash, created)
-                VALUES(:transactionId, :groupIndex, :leafIndex, :bytes, :hash, :createdAt)"""
+                VALUES(:transactionId, :groupIndex, :leafIndex, :data, :hash, :createdAt)"""
         )
             .setParameter("transactionId", tx.id.toHexString())
             .setParameter("groupIndex", groupIndex)
             .setParameter("leafIndex", leafIndex)
-            .setParameter("bytes", bytes)
-            // TODO calculate hash
-            .setParameter("hash", "fake_hash_123")
+            .setParameter("data", data)
+            .setParameter("hash", hash)
             .setParameter("createdAt", timestamp)
             .executeUpdate()
     }
