@@ -43,7 +43,7 @@ interface KeysRpcOps : RpcOps {
      */
     @HttpRpcGET(
         path = "{tenantId}/schemes/{hsmCategory}",
-        description = "Enables you to retrieve a list of supported key schemes for a specified tenant and HSM category",
+        description = "This method retrieves a list of supported key schemes for a specified tenant and HSM category.",
         responseDescription = "The list of scheme codes which are supported by the associated HSM integration"
     )
     fun listSchemes(
@@ -102,7 +102,7 @@ interface KeysRpcOps : RpcOps {
      */
     @HttpRpcGET(
         path = "{tenantId}",
-        description = "Enables you to retrieve information about a list of key pairs belonging to a tenant",
+        description = "This method retrieves information about a list of key pairs belonging to a tenant.",
         responseDescription = "A map of key IDs to the respective key pair information"
     )
     @Suppress("LongParameterList")
@@ -198,7 +198,7 @@ interface KeysRpcOps : RpcOps {
      */
     @HttpRpcPOST(
         path = "{tenantId}/alias/{alias}/category/{hsmCategory}/scheme/{scheme}",
-        description = "Enables you to generate a new key pair for a tenant",
+        description = "This method generates a new key pair for a tenant.",
         responseDescription = "The ID of the newly generated key pair"
     )
     fun generateKeyPair(
@@ -240,7 +240,7 @@ interface KeysRpcOps : RpcOps {
      */
     @HttpRpcGET(
         path = "{tenantId}/{keyId}",
-        description = "Enables you to retrieve a tenant's public key in PEM format",
+        description = "This method retrieves a tenant's public key in PEM format.",
         responseDescription = "The public key in PEM format"
     )
     fun generateKeyPem(
