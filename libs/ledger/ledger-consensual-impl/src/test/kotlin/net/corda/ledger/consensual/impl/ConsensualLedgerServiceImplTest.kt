@@ -2,6 +2,7 @@ package net.corda.ledger.consensual.impl
 
 import java.security.KeyPairGenerator
 import java.security.PublicKey
+import kotlin.test.assertIs
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeFactoryImpl
@@ -15,6 +16,7 @@ import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
+import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.ledger.consensual.ConsensualState
@@ -25,7 +27,6 @@ import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import kotlin.test.assertIs
 
 class TestFlowFiberServiceWithSerializationProxy constructor(
     private val schemeMetadata: CipherSchemeMetadata
@@ -47,6 +48,7 @@ class ConsensualLedgerServiceImplTest {
         private lateinit var schemeMetadata: CipherSchemeMetadata
         private lateinit var flowFiberService: FlowFiberService
         private lateinit var externalEventExecutor: ExternalEventExecutor
+        private lateinit var keyEncodingService: KeyEncodingService
 
         private lateinit var testPublicKey: PublicKey
         private lateinit var testConsensualState: ConsensualState
@@ -67,7 +69,8 @@ class ConsensualLedgerServiceImplTest {
 
             flowFiberService = TestFlowFiberServiceWithSerializationProxy(schemeMetadata)
             externalEventExecutor = ExternalEventExecutorImpl(flowFiberService)
-            signingService = SigningServiceImpl(externalEventExecutor, schemeMetadata)
+            keyEncodingService = CipherSchemeMetadataImpl()
+            signingService = SigningServiceImpl(externalEventExecutor, keyEncodingService)
 
             val kpg = KeyPairGenerator.getInstance("RSA")
             kpg.initialize(512) // Shortest possible to not slow down tests.

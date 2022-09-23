@@ -4,6 +4,7 @@ import net.corda.applications.workers.rpc.http.TestToolkitProperty
 import net.corda.applications.workers.rpc.http.SkipWhenRpcEndpointUnavailable
 import net.corda.httprpc.client.exceptions.MissingRequestedResourceException
 import net.corda.httprpc.client.exceptions.RequestErrorException
+import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
@@ -135,7 +136,7 @@ class CreateRoleE2eTest {
             }
 
             // Try to add same association again when it already exists
-            assertThatThrownBy { proxy.addPermission(roleId, permId) }.isInstanceOf(RequestErrorException::class.java)
+            assertThatThrownBy { proxy.addPermission(roleId, permId) }.isInstanceOf(ResourceAlreadyExistsException::class.java)
                 .hasMessageContaining("Permission '$permId' is already associated with Role '$roleId'.")
 
             // Remove permission and test the outcome

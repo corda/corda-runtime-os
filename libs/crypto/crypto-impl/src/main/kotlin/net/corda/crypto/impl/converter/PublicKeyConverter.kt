@@ -25,6 +25,11 @@ class PublicKeyConverter @Activate constructor(
     /**
      * Select the single element in case the structure is like 'corda.ledger.keys.1'
      */
-    override fun convert(context: ConversionContext): PublicKey? =
+    override fun convert(context: ConversionContext): PublicKey? = if (context.value("pem") != null) {
+        context.value("pem")?.let {
+            keyEncodingService.decodePublicKey(it)
+        }
+    } else {
         context.value()?.let { keyEncodingService.decodePublicKey(it) }
+    }
 }
