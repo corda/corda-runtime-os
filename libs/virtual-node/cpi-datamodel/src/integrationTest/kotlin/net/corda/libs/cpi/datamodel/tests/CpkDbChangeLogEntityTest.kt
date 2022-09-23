@@ -183,7 +183,7 @@ class CpkDbChangeLogEntityTest {
                 CpkDbChangeLogKey(cpk.metadata.id.cpkName, cpk.metadata.id.cpkVersion,
                     cpk.metadata.id.cpkSignerSummaryHash, "master")
             )
-            val loadedDbLogAuditEntity = findDbChangeLogAuditForCpi(
+            val loadedDbLogAuditEntities = findDbChangeLogAuditForCpi(
                 this,
                 CpiIdentifier(
                     cpi.name,
