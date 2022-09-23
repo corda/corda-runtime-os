@@ -1436,7 +1436,7 @@
     "/members/{holdingidentityshorthash}" : {
       "get" : {
         "tags" : [ "Member Lookup API" ],
-        "description" : "Enables you to retrieve a list of all active and pending members in the membership group",
+        "description" : "This method retrieves a list of all active and pending members in the membership group.",
         "operationId" : "get_members__holdingidentityshorthash_",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
@@ -1568,7 +1568,7 @@
     "/membership/{holdingidentityshorthash}" : {
       "get" : {
         "tags" : [ "Member Registration API" ],
-        "description" : "Enables you to check the statuses of all registration requests for a holding identity",
+        "description" : "This method checks the statuses of all registration requests for a specified holding identity.",
         "operationId" : "get_membership__holdingidentityshorthash_",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
@@ -1584,7 +1584,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success",
+            "description" : "\n            The registration status information, including:\n            registrationId: the registration request ID\n            registrationSent: the date and the when the registration progress started; \n                value of null indicated that registration has not started yet\n            registrationUpdated: the date and the when the registration has been last updated    \n            registrationStatus: the status of the registration request; \n                possible values are \"SUBMITTED and \"NOT_SUBMITTED\"\n            memberInfoSubmitted: the properties submitted to MGM during the registration     \n        ",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1608,7 +1608,7 @@
       },
       "post" : {
         "tags" : [ "Member Registration API" ],
-        "description" : "Enables you to start the registration process for a holding identity",
+        "description" : "This method starts the registration process for a holding identity.",
         "operationId" : "post_membership__holdingidentityshorthash_",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
@@ -1635,7 +1635,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "Success",
+            "description" : "\n            The registration progress information, including:\n            registrationId: the registration request ID\n            registrationSent: the date and the when the registration progress started; \n                value of null indicated that registration has not started yet\n            registrationStatus: the status of the registration request; \n                possible values are \"SUBMITTED and \"NOT_SUBMITTED\"\n            memberInfoSubmitted: the properties submitted to MGM during the registration     \n        ",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1656,7 +1656,7 @@
     "/membership/{holdingidentityshorthash}/{registrationrequestid}" : {
       "get" : {
         "tags" : [ "Member Registration API" ],
-        "description" : "Enables you to check the status of the specified registration request for a holding identity",
+        "description" : "This method checks the status of the specified registration request for a holding identity.",
         "operationId" : "get_membership__holdingidentityshorthash___registrationrequestid_",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
@@ -1683,7 +1683,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success",
+            "description" : "\n            The registration status information, including:\n            registrationId: the registration request ID\n            registrationSent: the date and the when the registration progress started; \n                value of null indicated that registration has not started yet\n            registrationUpdated: the date and the when the registration has been last updated    \n            registrationStatus: the status of the registration request; \n                possible values are \"SUBMITTED and \"NOT_SUBMITTED\"\n            memberInfoSubmitted: the properties submitted to MGM during the registration     \n        ",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1736,7 +1736,7 @@
     "/mgm/{holdingidentityshorthash}/info" : {
       "get" : {
         "tags" : [ "MGM API" ],
-        "description" : "Enables you to retrieve the group policy from the MGM required to join the membership group",
+        "description" : "This method retrieves the group policy from the MGM required to join the membership group.",
         "operationId" : "get_mgm__holdingidentityshorthash__info",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
@@ -1752,7 +1752,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Success",
+            "description" : "The group policy from the MGM required to join the membership group as a string in JSON format",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1804,7 +1804,7 @@
     "/network/setup/{holdingidentityshorthash}" : {
       "put" : {
         "tags" : [ "Network API" ],
-        "description" : "Enables you to configure a holding identity as a network participant by setting properties required for P2P messaging",
+        "description" : "This method configures a holding identity as a network participant by setting properties required for P2P messaging.",
         "operationId" : "put_network_setup__holdingidentityshorthash_",
         "parameters" : [ {
           "name" : "holdingidentityshorthash",
@@ -2710,7 +2710,7 @@
             "example" : "string"
           }
         },
-        "description" : "Details of the permission to be created. \n            permissionType: Defines whether this is an ALLOW or DENY type of permission\n            permissionString: A machine-parseable string representing an individual permission; \n                it can be any arbitrary string as long as the authorization code can make use of it in the context of user \n                permission matching\n            groupVisibility: An optional group visibility identifier of the permission\n            virtualNode: An optional identifier of the virtual node to which the physical node permission applies"
+        "description" : "\n            Details of the permission to be created. \n            permissionType: Defines whether this is an ALLOW or DENY type of permission\n            permissionString: A machine-parseable string representing an individual permission; \n                it can be any arbitrary string as long as the authorization code can make use of it in the context of user \n                permission matching\n            groupVisibility: An optional group visibility identifier of the permission\n            virtualNode: An optional identifier of the virtual node to which the physical node permission applies"
       },
       "CreateRoleType" : {
         "required" : [ "roleName" ],
@@ -2971,7 +2971,7 @@
             "example" : "string"
           }
         },
-        "description" : "Request object which contains properties for P2P messaging including the P2P TLS certificate chain alias, the TLS tenant ID (either 'p2p' or holding identity ID), the tenant ID under which the session initiation key is stored, and the session key identifier"
+        "description" : "\n                Request object which contains properties for P2P messaging including:\n                p2pTlsCertificateChainAlias: the P2P TLS certificate chain alias\n                p2pTlsTenantId: the TLS tenant ID (either 'p2p' or holding identity ID)\n                sessionKeyTenantId: the tenant ID under which the session initiation key is stored\n                sessionKeyId: the session key identifier"
       },
       "HsmAssociationInfo" : {
         "required" : [ "category", "deprecatedAt", "hsmId", "id" ],
