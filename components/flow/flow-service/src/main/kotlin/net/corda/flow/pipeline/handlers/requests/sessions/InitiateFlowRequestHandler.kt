@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.handlers.requests.sessions
 
+import java.time.Instant
 import net.corda.data.flow.state.waiting.SessionConfirmation
 import net.corda.data.flow.state.waiting.SessionConfirmationType
 import net.corda.data.flow.state.waiting.WaitingFor
@@ -14,7 +15,6 @@ import net.corda.flow.utils.keyValuePairListOf
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.time.Instant
 
 @Component(service = [FlowRequestHandler::class])
 class InitiateFlowRequestHandler @Activate constructor(
@@ -27,7 +27,7 @@ class InitiateFlowRequestHandler @Activate constructor(
     override val type = FlowIORequest.InitiateFlow::class.java
 
     override fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: FlowIORequest.InitiateFlow): WaitingFor {
-        return WaitingFor(SessionConfirmation(listOf(request.sessionId), SessionConfirmationType.INITIATE))
+        return WaitingFor(SessionConfirmation(request.sessionToCounterparty.keys.toList(), SessionConfirmationType.INITIATE))
     }
 
     override fun postProcess(
@@ -52,17 +52,19 @@ class InitiateFlowRequestHandler @Activate constructor(
 
         val (protocolName, protocolVersions) = protocolStore.protocolsForInitiator(initiator, context)
 
-        checkpoint.putSessionState(
-            flowSessionManager.sendInitMessage(
-                checkpoint,
-                request.sessionId,
-                request.x500Name,
-                protocolName,
-                protocolVersions,
-                contextUserProperties = keyValuePairListOf(request.contextUserProperties),
-                contextPlatformProperties = keyValuePairListOf(request.contextPlatformProperties),
-                Instant.now()
-            )
+        checkpoint.putSessionStates(
+            request.sessionToCounterparty.entries.map {
+                flowSessionManager.sendInitMessage(
+                    checkpoint,
+                    it.key,
+                    it.value,
+                    protocolName,
+                    protocolVersions,
+                    contextUserProperties = keyValuePairListOf(request.contextUserProperties),
+                    contextPlatformProperties = keyValuePairListOf(request.contextPlatformProperties),
+                    Instant.now()
+                )
+            }
         )
 
         return context

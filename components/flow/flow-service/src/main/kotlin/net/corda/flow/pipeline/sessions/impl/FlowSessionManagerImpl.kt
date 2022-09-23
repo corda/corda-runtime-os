@@ -175,7 +175,7 @@ class FlowSessionManagerImpl @Activate constructor(
         val invalidSessions = sessions
             .map { it.value }
             .filterNotNull()
-            .filterNot { it.status == SessionStateType.CONFIRMED }
+            .filterNot { it.status == SessionStateType.CONFIRMED || it.status == SessionStateType.CREATED }
             .toList()
 
         if (missingSessionStates.isEmpty() && invalidSessions.isEmpty()) {

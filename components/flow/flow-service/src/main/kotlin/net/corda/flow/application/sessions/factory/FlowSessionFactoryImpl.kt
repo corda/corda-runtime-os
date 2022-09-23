@@ -38,8 +38,7 @@ class FlowSessionFactoryImpl @Activate constructor(
                     FlatSerializableContext(
                         contextUserProperties = emptyMap(),
                         contextPlatformProperties = contextProperties
-                    ),
-                    FlowSessionImpl.Direction.INITIATED_SIDE
+                    )
                 )
             })
         } catch (e: PrivilegedActionException) {
@@ -62,8 +61,7 @@ class FlowSessionFactoryImpl @Activate constructor(
                     createInitiatingFlowContextProperties(
                         flowContextPropertiesBuilder,
                         flowFiberService
-                    ),
-                    FlowSessionImpl.Direction.INITIATING_SIDE
+                    )
                 )
             })
         } catch (e: PrivilegedActionException) {

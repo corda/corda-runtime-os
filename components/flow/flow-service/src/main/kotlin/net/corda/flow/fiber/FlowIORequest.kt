@@ -14,7 +14,10 @@ interface FlowIORequest<out R> {
      *
      * @property sessionToPayload a map from session to message-to-be-sent.
      */
-    data class Send(val sessionToPayload: Map<String, ByteArray>) : FlowIORequest<Unit> {
+    data class Send(
+        val sessionToPayload: Map<String, ByteArray>,
+        val sessionToCounterparty: Map<String, MemberX500Name>?
+    ) : FlowIORequest<Unit> {
         override fun toString() = "Send(sessionToMessage=${sessionToPayload.mapValues { it.value }})"
     }
 
@@ -37,8 +40,7 @@ interface FlowIORequest<out R> {
     }
 
     data class InitiateFlow(
-        val x500Name: MemberX500Name,
-        val sessionId: String,
+        val sessionToCounterparty: Map<String, MemberX500Name>,
         val contextUserProperties: Map<String, String>,
         val contextPlatformProperties: Map<String, String>
     ) : FlowIORequest<Unit>

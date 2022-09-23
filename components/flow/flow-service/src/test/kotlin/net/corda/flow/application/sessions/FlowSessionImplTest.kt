@@ -184,7 +184,6 @@ class FlowSessionImplTest {
         mockFlowFiberService,
         serializationService,
         flowContext,
-        FlowSessionImpl.Direction.INITIATED_SIDE
     )
 
     private fun createInitiatingSession() = FlowSessionImpl(
@@ -193,15 +192,14 @@ class FlowSessionImplTest {
         mockFlowFiberService,
         serializationService,
         flowContext,
-        FlowSessionImpl.Direction.INITIATING_SIDE
     )
 
     private fun validateInitiateFlowRequest(request: FlowIORequest.InitiateFlow) {
         with(request) {
             assertThat(contextUserProperties).isEqualTo(userContext)
             assertThat(contextPlatformProperties).isEqualTo(platformContext)
-            assertThat(sessionId).isEqualTo(SESSION_ID)
-            assertThat(x500Name).isEqualTo(ALICE_X500_NAME)
+            assertThat(sessionToCounterparty.keys.first()).isEqualTo(SESSION_ID)
+            assertThat(sessionToCounterparty.values.first()).isEqualTo(ALICE_X500_NAME)
         }
     }
 }
