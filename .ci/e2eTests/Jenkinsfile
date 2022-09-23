@@ -176,7 +176,7 @@ pipeline {
                        portForwarding("deployment/corda-$c-rpc-worker", 8887 + index, 8888)
                     }
                     workers.eachWithIndex {w, index  ->
-                       portForwarding("deployment/corda-alice-$w", 7001 + index, 7000)
+                       portForwarding("deployment/corda-bob-$w", 7001 + index, 7000)
                     }
                 }
                 sh '''\

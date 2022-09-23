@@ -84,13 +84,6 @@ tasks.register('e2eTest', Test) {
     outputs.upToDateWhen { false }
 }
 
-def setE2eClusterConfig = { Task testTask, String envVarName, String propName ->
-    def prop = System.getenv(envVarName) ?: project.getProperties().get(propName)
-    if(prop != null) {
-        testTask.jvmArgs "-D${envVarName}=${prop}"
-    }
-}
-
 tasks.named('e2eTest') {
     if(System.getenv("JDK_HOSTS_FILE") != null) {
         jvmArgs "-Djdk.net.hosts.file=${System.getenv("JDK_HOSTS_FILE")}"
