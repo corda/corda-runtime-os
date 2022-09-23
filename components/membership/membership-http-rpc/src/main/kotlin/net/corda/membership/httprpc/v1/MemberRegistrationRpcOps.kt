@@ -45,7 +45,16 @@ interface MemberRegistrationRpcOps : RpcOps {
      */
     @HttpRpcPOST(
         path = "{holdingIdentityShortHash}",
-        description = "Enables you to start the registration process for a holding identity"
+        description = "This method starts the registration process for a holding identity.",
+        responseDescription = """
+            The registration progress information, including:
+            registrationId: the registration request ID
+            registrationSent: the date and the when the registration progress started; 
+                value of null indicated that registration has not started yet
+            registrationStatus: the status of the registration request; 
+                possible values are "SUBMITTED and "NOT_SUBMITTED"
+            memberInfoSubmitted: the properties submitted to MGM during the registration     
+        """
     )
     fun startRegistration(
         @HttpRpcPathParameter(description = "The holding identity ID of the requesting virtual node")
@@ -74,7 +83,17 @@ interface MemberRegistrationRpcOps : RpcOps {
      */
     @HttpRpcGET(
         path = "{holdingIdentityShortHash}",
-        description = "Enables you to check the statuses of all registration requests for a holding identity"
+        description = "This method checks the statuses of all registration requests for a specified holding identity.",
+        responseDescription = """
+            The registration status information, including:
+            registrationId: the registration request ID
+            registrationSent: the date and the when the registration progress started; 
+                value of null indicated that registration has not started yet
+            registrationUpdated: the date and the when the registration has been last updated    
+            registrationStatus: the status of the registration request; 
+                possible values are "SUBMITTED and "NOT_SUBMITTED"
+            memberInfoSubmitted: the properties submitted to MGM during the registration     
+        """
     )
     fun checkRegistrationProgress(
         @HttpRpcPathParameter(description = "The ID of the holding identity whose registration progress is to be checked")
@@ -100,7 +119,17 @@ interface MemberRegistrationRpcOps : RpcOps {
      */
     @HttpRpcGET(
         path = "{holdingIdentityShortHash}/{registrationRequestId}",
-        description = "Enables you to check the status of the specified registration request for a holding identity"
+        description = "This method checks the status of the specified registration request for a holding identity.",
+        responseDescription = """
+            The registration status information, including:
+            registrationId: the registration request ID
+            registrationSent: the date and the when the registration progress started; 
+                value of null indicated that registration has not started yet
+            registrationUpdated: the date and the when the registration has been last updated    
+            registrationStatus: the status of the registration request; 
+                possible values are "SUBMITTED and "NOT_SUBMITTED"
+            memberInfoSubmitted: the properties submitted to MGM during the registration     
+        """
     )
     fun checkSpecificRegistrationProgress(
         @HttpRpcPathParameter(description = "The ID of the holding identity whose registration progress is to be checked")
