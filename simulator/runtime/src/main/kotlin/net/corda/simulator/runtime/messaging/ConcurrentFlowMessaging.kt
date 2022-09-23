@@ -1,5 +1,7 @@
 package net.corda.simulator.runtime.messaging
 
+import java.util.concurrent.LinkedBlockingQueue
+import kotlin.concurrent.thread
 import net.corda.simulator.exceptions.NoRegisteredResponderException
 import net.corda.simulator.runtime.flows.FlowFactory
 import net.corda.simulator.runtime.flows.FlowServicesInjector
@@ -8,8 +10,6 @@ import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
-import java.util.concurrent.LinkedBlockingQueue
-import kotlin.concurrent.thread
 
 /**
  * FlowMessaging is responsible for sending messages and from other "virtual nodes".
@@ -83,6 +83,22 @@ class ConcurrentFlowMessaging(
         x500Name: MemberX500Name,
         flowContextPropertiesBuilder: FlowContextPropertiesBuilder
     ): FlowSession {
+        TODO("Not yet implemented")
+    }
+
+    override fun <R> receiveAll(receiveType: Class<out R>, sessions: Set<FlowSession>): List<R> {
+        TODO("Not yet implemented")
+    }
+
+    override fun receiveAllMap(sessions: Map<FlowSession, Class<out Any>>): Map<FlowSession, Any> {
+        TODO("Not yet implemented")
+    }
+
+    override fun sendAll(payload: Any, sessions: Set<FlowSession>) {
+        TODO("Not yet implemented")
+    }
+
+    override fun sendAllMap(payloadsPerSession: Map<FlowSession, Any>) {
         TODO("Not yet implemented")
     }
 }

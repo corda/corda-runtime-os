@@ -32,7 +32,7 @@ class InitiateFlowRequestHandlerTest {
     private val platformContext = mapOf("platform" to "platform")
 
     private val ioRequest =
-        FlowIORequest.InitiateFlow(ALICE_X500_NAME, sessionId1, userContext, platformContext)
+        FlowIORequest.InitiateFlow(mapOf(sessionId1 to ALICE_X500_NAME), userContext, platformContext)
     private val handler = InitiateFlowRequestHandler(testContext.flowSessionManager, testContext.flowSandboxService)
     private val sandboxGroupContext = mock<FlowSandboxGroupContext>()
     private val protocolStore = mock<FlowProtocolStore>()

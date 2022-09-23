@@ -16,7 +16,7 @@ interface FlowIORequest<out R> {
      */
     data class Send(
         val sessionToPayload: Map<String, ByteArray>,
-        val sessionToCounterparty: Map<String, MemberX500Name>?
+        val sessionToCounterparty: Map<String, MemberX500Name>? = null
     ) : FlowIORequest<Unit> {
         override fun toString() = "Send(sessionToMessage=${sessionToPayload.mapValues { it.value }})"
     }

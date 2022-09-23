@@ -72,7 +72,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
                 Arguments.of(
                     FlowIORequest.InitiateFlow::class.simpleName,
                     FlowIORequest.InitiateFlow(
-                        BOB_X500_NAME, SESSION_ID_2,
+                        mapOf(SESSION_ID_2 to BOB_X500_NAME),
                         emptyMap(),
                         emptyMap()
                     )

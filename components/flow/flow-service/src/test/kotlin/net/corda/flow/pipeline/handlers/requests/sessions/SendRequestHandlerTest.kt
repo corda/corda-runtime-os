@@ -8,6 +8,7 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.messaging.api.records.Record
+import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -26,8 +27,9 @@ class SendRequestHandlerTest {
     private val sessionState1 = SessionState().apply { this.sessionId = sessionId1 }
     private val sessionState2 = SessionState().apply { this.sessionId = sessionId2 }
     private val testContext = RequestHandlerTestContext(Any())
-    private val ioRequest = FlowIORequest.Send(mapOf(sessionId1 to payload1, sessionId2 to payload2))
-    private val handler = SendRequestHandler(testContext.flowSessionManager, testContext.flowRecordFactory)
+    private val ioRequest = FlowIORequest.Send(mapOf(sessionId1 to payload1, sessionId2 to payload2), mapOf(sessionId1 to MemberX500Name
+        .parse("Alice"), sessionId2 to MemberX500Name.parse("bob")))
+    private val handler = SendRequestHandler(testContext.flowSessionManager, testContext.flowRecordFactory, testContext.flowSandboxService)
 
 
     @Suppress("Unused")
