@@ -8,13 +8,6 @@ plugins {
 
 description 'Corda consensual ledger - implementation'
 
-configurations {
-    cpis {
-        canBeConsumed = false
-        transitive = false
-    }
-}
-
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
@@ -35,53 +28,6 @@ dependencies {
     implementation project(":libs:virtual-node:sandbox-group-context")
     implementation project(":libs:serialization:serialization-internal")
 
-    // dependencies for persistence + integration tests
-    implementation 'javax.persistence:javax.persistence-api'
-    implementation 'net.corda:corda-application'
-    implementation 'net.corda:corda-base'
-    implementation 'net.corda:corda-config-schema'
-    implementation 'net.corda:corda-db-schema'
-    implementation 'net.corda:corda-topic-schema'
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
-    implementation 'org.slf4j:slf4j-api'
-
-    // tmp
-    implementation project(':libs:virtual-node:virtual-node-info')
-    implementation project(':components:configuration:configuration-read-service')
-    implementation project(':components:db:db-connection-manager')
-    implementation project(':components:db:db-connection-manager-impl')
-    implementation project(':components:virtual-node:cpi-info-read-service')
-    implementation project(':components:virtual-node:entity-processor-service')
-    implementation project(':components:virtual-node:virtual-node-info-read-service')
-    implementation project(':components:virtual-node:sandbox-group-context-service')
-    implementation project(':libs:configuration:configuration-core')
-    implementation project(':libs:configuration:configuration-datamodel')
-    implementation project(':libs:db:db-admin')
-    implementation project(':libs:db:db-admin-impl')
-    implementation project(':libs:db:db-core')
-    implementation project(':libs:db:db-orm')
-    implementation project(':libs:lifecycle:lifecycle')
-    implementation project(":libs:messaging:messaging")
-    implementation project(':libs:virtual-node:sandbox-group-context')
-    implementation project(':libs:serialization:serialization-amqp')
-    implementation project(':libs:serialization:serialization-internal')
-    implementation project(':libs:utilities')
-
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation 'javax.persistence:javax.persistence-api'
-    implementation 'net.corda:corda-application'
-    implementation 'net.corda:corda-avro-schema'
-    implementation 'net.corda:corda-base'
-    implementation 'net.corda:corda-config-schema'
-    implementation 'net.corda:corda-db-schema'
-    implementation 'net.corda:corda-membership'
-    implementation 'net.corda:corda-topic-schema'
-    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
-    implementation 'org.slf4j:slf4j-api'
-
-    testImplementation project(':libs:db:db-orm-impl')
-    testImplementation project(':libs:messaging:messaging')
-    testImplementation project(':testing:db-testkit')
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation project(":testing:layered-property-map-testkit")
