@@ -1,9 +1,10 @@
 @Library('corda-shared-build-pipeline-steps@CORE-6843-allow-cordaPipeline-groovy-to-publish-to-S3-bucket-corda-download-prod') _
 
 cordaPipeline(
-    nexusAppId: 'flow-worker-5.0',
+    nexusAppId: '', //flow-worker-5.0',
     runIntegrationTests: false,
-    publishRepoPrefix: 'corda-ent-maven',
+    runUnitTests: false,
+    publishRepoPrefix: '', // corda-ent-maven',
     createPostgresDb: false,
     publishOSGiImage: false, // dont merge back to release branch
     publishPreTestImage: false,
