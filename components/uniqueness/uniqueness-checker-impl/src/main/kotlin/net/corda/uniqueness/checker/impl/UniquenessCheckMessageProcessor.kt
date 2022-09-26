@@ -1,6 +1,7 @@
 package net.corda.uniqueness.checker.impl
 
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
+import net.corda.data.uniqueness.UniquenessCheckResultUnhandledExceptionAvro
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
@@ -23,9 +24,13 @@ class UniquenessCheckMessageProcessor(
         val requests = events.map { it.value }.filterNotNull()
 
         return requests.zip(uniquenessChecker.processRequests(requests)).map { (request, response) ->
-            // TODO - need to rethink exception handling and whether we should be throwing exceptions
-            // with platform errors or not
-            externalEventResponseFactory.success(request.flowExternalEventContext, response)
+            if (response.result !is UniquenessCheckResultUnhandledExceptionAvro) {
+                externalEventResponseFactory.success(request.flowExternalEventContext, response)
+            } else {
+                externalEventResponseFactory.platformError(
+                    request.flowExternalEventContext,
+                    (response.result as UniquenessCheckResultUnhandledExceptionAvro).exception)
+            }
         }
     }
 }

@@ -43,6 +43,18 @@ object UniquenessAssertions {
     }
 
     /**
+     * Checks for an unhandled exception response with the specified exception type
+     */
+    fun assertUnhandledExceptionResponse(
+        response: UniquenessCheckResponseAvro,
+        expectedExceptionType: String
+    ) {
+        getResultOfType<UniquenessCheckResultUnhandledExceptionAvro>(response).run {
+            assertThat(exception.errorType).isEqualTo(expectedExceptionType)
+        }
+    }
+
+    /**
      * Checks for an unknown input state response, ensuring that all specified unknown states
      *  are captured.
      */
