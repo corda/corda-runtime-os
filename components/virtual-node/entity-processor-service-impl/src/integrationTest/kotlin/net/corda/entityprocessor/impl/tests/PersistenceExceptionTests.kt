@@ -27,7 +27,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.persistence.common.exceptions.NotReadyException
 import net.corda.persistence.common.exceptions.VirtualNodeException
 import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_SERIALIZER
-import net.corda.persistence.common.EntitySandboxServiceImpl
+import net.corda.persistence.common.EntitySandboxServiceFactory
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
@@ -101,7 +101,7 @@ class PersistenceExceptionTests {
         }
 
         val brokenEntitySandboxService =
-            EntitySandboxServiceImpl(
+            EntitySandboxServiceFactory().create(
                 virtualNode.sandboxGroupContextComponent,
                 brokenCpiInfoReadService,
                 virtualNodeInfoReadService,
@@ -138,7 +138,7 @@ class PersistenceExceptionTests {
         }
 
         val brokenEntitySandboxService =
-            EntitySandboxServiceImpl(
+            EntitySandboxServiceFactory().create(
                 virtualNode.sandboxGroupContextComponent,
                 brokenCpiInfoReadService,
                 virtualNodeInfoReadService,
@@ -174,7 +174,7 @@ class PersistenceExceptionTests {
             )
 
         val entitySandboxService =
-            EntitySandboxServiceImpl(
+            EntitySandboxServiceFactory().create(
                 virtualNode.sandboxGroupContextComponent,
                 cpiInfoReadService,
                 virtualNodeInfoReadService,
@@ -213,7 +213,7 @@ class PersistenceExceptionTests {
 
         // We need a 'working' service to set up the test
         val entitySandboxService =
-            EntitySandboxServiceImpl(
+            EntitySandboxServiceFactory().create(
                 virtualNode.sandboxGroupContextComponent,
                 cpiInfoReadService,
                 virtualNodeInfoReadService,

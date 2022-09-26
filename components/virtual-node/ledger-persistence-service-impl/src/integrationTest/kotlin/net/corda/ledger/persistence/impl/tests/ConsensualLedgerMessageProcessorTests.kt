@@ -19,7 +19,7 @@ import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
 import net.corda.messaging.api.records.Record
 import net.corda.orm.JpaEntitiesSet
-import net.corda.processors.ledger.impl.tests.helpers.DbTestContext
+import net.corda.ledger.persistence.impl.tests.helpers.DbTestContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
@@ -35,7 +35,7 @@ import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.transaction.serialization.internal.WireTransactionSerializer
 import net.corda.ledger.persistence.impl.internal.ConsensualLedgerMessageProcessor
 import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_SERIALIZER
-import net.corda.persistence.common.EntitySandboxServiceImpl
+import net.corda.persistence.common.EntitySandboxServiceFactory
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
@@ -77,6 +77,7 @@ import java.util.UUID
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ConsensualLedgerMessageProcessorTests {
     companion object {
+        const val INTERNAL_CUSTOM_SERIALIZERS = "internalCustomSerializers"
         const val TOPIC = "consensual-ledger-dummy-topic"
         val EXTERNAL_EVENT_CONTEXT = ExternalEventContext("request id", "flow id", KeyValuePairList(emptyList()))
         private val logger = contextLogger()
@@ -216,12 +217,12 @@ class ConsensualLedgerMessageProcessorTests {
         val dbConnectionManager = FakeDbConnectionManager(listOf(animalDbConnection), schemaName)
 
         val componentContext = Mockito.mock(ComponentContext::class.java)
-        whenever(componentContext.locateServices(EntitySandboxServiceImpl.INTERNAL_CUSTOM_SERIALIZERS))
+        whenever(componentContext.locateServices(INTERNAL_CUSTOM_SERIALIZERS))
             .thenReturn(arrayOf(wireTransactionSerializer))
 
         // set up sandbox
         val entitySandboxService =
-            EntitySandboxServiceImpl(
+            EntitySandboxServiceFactory().create(
                 virtualNode.sandboxGroupContextComponent,
                 cpiInfoReadService,
                 virtualNodeInfoReadService,

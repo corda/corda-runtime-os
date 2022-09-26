@@ -1,10 +1,10 @@
-package net.corda.persistence.common
+package net.corda.persistence.common.internal
 
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_EMF
 import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_SERIALIZER
-import net.corda.persistence.common.EntitySandboxServiceImpl.Companion.INTERNAL_CUSTOM_SERIALIZERS
+import net.corda.persistence.common.internal.EntitySandboxServiceImpl.Companion.INTERNAL_CUSTOM_SERIALIZERS
 import net.corda.internal.serialization.AMQP_P2P_CONTEXT
 import net.corda.internal.serialization.SerializationServiceImpl
 import net.corda.internal.serialization.amqp.DeserializationInput
@@ -13,6 +13,8 @@ import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.orm.JpaEntitiesSet
+import net.corda.persistence.common.EntityExtractor
+import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.exceptions.NotReadyException
 import net.corda.persistence.common.exceptions.VirtualNodeException
 import net.corda.sandbox.SandboxException

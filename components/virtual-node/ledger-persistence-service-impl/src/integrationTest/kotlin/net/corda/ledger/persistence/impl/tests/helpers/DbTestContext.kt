@@ -1,15 +1,15 @@
-package net.corda.processors.ledger.impl.tests.helpers
+package net.corda.ledger.persistence.impl.tests.helpers
 
-import net.corda.persistence.common.EntitySandboxServiceImpl
 import net.corda.orm.utils.transaction
 import net.corda.orm.utils.use
+import net.corda.persistence.common.EntitySandboxService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.virtualnode.VirtualNodeInfo
 import javax.persistence.EntityManagerFactory
 
 data class DbTestContext(
     val virtualNodeInfo: VirtualNodeInfo,
-    val entitySandboxService: EntitySandboxServiceImpl,
+    val entitySandboxService: EntitySandboxService,
     val sandbox: SandboxGroupContext,
     private val entityManagerFactory: EntityManagerFactory,
     val schemaName: String

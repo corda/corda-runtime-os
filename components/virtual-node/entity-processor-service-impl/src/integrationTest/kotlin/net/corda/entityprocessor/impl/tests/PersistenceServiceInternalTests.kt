@@ -73,7 +73,8 @@ import net.corda.db.persistence.testkit.helpers.SandboxHelper.getOwnerClass
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getSerializer
 import net.corda.entityprocessor.impl.internal.PersistenceServiceInternal
 import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_SERIALIZER
-import net.corda.persistence.common.EntitySandboxServiceImpl
+import net.corda.persistence.common.EntitySandboxService
+import net.corda.persistence.common.EntitySandboxServiceFactory
 import net.corda.persistence.common.exceptions.KafkaMessageSizeException
 
 sealed class QuerySetup {
@@ -113,7 +114,7 @@ class PersistenceServiceInternalTests {
     private lateinit var deserializer: CordaAvroDeserializer<EntityResponse>
 
     private lateinit var virtualNodeInfo: VirtualNodeInfo
-    private lateinit var entitySandboxService: EntitySandboxServiceImpl
+    private lateinit var entitySandboxService: EntitySandboxService
     private lateinit var sandbox: SandboxGroupContext
     private lateinit var entityManagerFactory: EntityManagerFactory
     private lateinit var dogClass: Class<*>
@@ -714,14 +715,13 @@ class PersistenceServiceInternalTests {
     }
 
 
-    private fun createEntitySandbox(dbConnectionManager: DbConnectionManager = BasicMocks.dbConnectionManager()): EntitySandboxServiceImpl =
-        EntitySandboxServiceImpl(
+    private fun createEntitySandbox(dbConnectionManager: DbConnectionManager = BasicMocks.dbConnectionManager()) =
+        EntitySandboxServiceFactory().create(
             virtualNode.sandboxGroupContextComponent,
             cpiInfoReadService,
             virtualNodeInfoReadService,
             dbConnectionManager,
-            BasicMocks.componentContext()
-        )
+            BasicMocks.componentContext())
 
     private fun findDogDirectInDb(dogId: UUID): Any? = findDirectInDb(dogId, dogClass)
 
