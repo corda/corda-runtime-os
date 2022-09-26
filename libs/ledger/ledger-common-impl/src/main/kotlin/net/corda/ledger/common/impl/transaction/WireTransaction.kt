@@ -7,7 +7,7 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.PrivacySalt
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import net.corda.v5.application.crypto.MerkleTreeFactory
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION
@@ -18,7 +18,7 @@ import java.util.Base64
 const val ALL_LEDGER_METADATA_COMPONENT_GROUP_ID = 0
 
 class WireTransaction(
-    private val merkleTreeFactory: MerkleTreeFactory,
+    private val merkleTreeProvider: MerkleTreeProvider,
     private val digestService: DigestService,
     val privacySalt: PrivacySalt,
     val componentGroupLists: List<List<ByteArray>>
@@ -93,14 +93,14 @@ class WireTransaction(
         )
 
     private fun getRootMerkleTreeDigestProvider() : MerkleTreeHashDigestProvider =
-        merkleTreeFactory.createHashDigest(
+        merkleTreeProvider.createHashDigestProvider(
         rootMerkleTreeDigestProviderName,
         rootMerkleTreeDigestAlgorithmName,
         mapOf(
             HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION to rootMerkleTreeDigestOptionsLeafPrefix,
             HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION to rootMerkleTreeDigestOptionsNodePrefix
         )
-    ) as MerkleTreeHashDigestProvider
+    )
 
     private fun getComponentGroupEntropy(
         privacySalt: PrivacySalt,
@@ -115,26 +115,26 @@ class WireTransaction(
         privacySalt: PrivacySalt,
         componentGroupIndex: Int
     ) : MerkleTreeHashDigestProvider =
-        merkleTreeFactory.createHashDigest(
+        merkleTreeProvider.createHashDigestProvider(
             componentMerkleTreeDigestProviderName,
             componentMerkleTreeDigestAlgorithmName,
             mapOf(
                 HASH_DIGEST_PROVIDER_ENTROPY_OPTION to
                     getComponentGroupEntropy(privacySalt, componentGroupIndex.toByteArray())
             )
-    ) as MerkleTreeHashDigestProvider
+    )
 
     private val rootMerkleTree: MerkleTree by lazy(LazyThreadSafetyMode.PUBLICATION) {
         val componentGroupRoots = mutableListOf<ByteArray>()
         componentGroupLists.forEachIndexed{ index, leaves: List<ByteArray> ->
-            val componentMerkleTree = merkleTreeFactory.createTree(
+            val componentMerkleTree = merkleTreeProvider.createTree(
                 leaves,
                 getComponentGroupMerkleTreeDigestProvider(privacySalt, index)
             )
             componentGroupRoots += componentMerkleTree.root.bytes
         }
 
-        merkleTreeFactory.createTree(componentGroupRoots, getRootMerkleTreeDigestProvider())
+        merkleTreeProvider.createTree(componentGroupRoots, getRootMerkleTreeDigestProvider())
     }
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

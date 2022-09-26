@@ -6,12 +6,12 @@ import net.corda.data.KeyValuePairList
 import net.corda.layeredpropertymap.toAvro
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_TWEAKABLE_NAME
 import net.corda.v5.crypto.merkle.MerkleTree
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
-import net.corda.v5.crypto.merkle.MerkleTreeHashDigestProvider
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
@@ -28,7 +28,7 @@ class MerkleTreeGeneratorTest {
     private val digestProvider = mock<MerkleTreeHashDigestProvider>()
     private val tree = mock<MerkleTree>()
     private val leaves = argumentCaptor<List<ByteArray>>()
-    private val merkleTreeFactory = mock<MerkleTreeFactory> {
+    private val merkleTreeFactory = mock<MerkleTreeProvider> {
         on {
             createHashDigestProvider(
                 eq(HASH_DIGEST_PROVIDER_TWEAKABLE_NAME),

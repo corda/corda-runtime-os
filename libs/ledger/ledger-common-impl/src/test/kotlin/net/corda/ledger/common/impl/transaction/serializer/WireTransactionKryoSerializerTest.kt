@@ -3,14 +3,14 @@ package net.corda.ledger.common.impl.transaction.serializer
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
-import net.corda.crypto.merkle.impl.MerkleTreeFactoryImpl
+import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.kryoserialization.testkit.createCheckpointSerializer
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.TransactionMetaData
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
-import net.corda.v5.application.crypto.MerkleTreeFactory
 import net.corda.v5.cipher.suite.DigestService
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
@@ -21,13 +21,13 @@ class WireTransactionKryoSerializerTest {
         private val schemeMetadata = CipherSchemeMetadataImpl()
 
         private lateinit var digestService: DigestService
-        private lateinit var merkleTreeFactory: MerkleTreeFactory
+        private lateinit var merkleTreeProvider: MerkleTreeProvider
 
         @BeforeAll
         @JvmStatic
         fun setup() {
             digestService = DigestServiceImpl(schemeMetadata, null)
-            merkleTreeFactory = MerkleTreeFactoryImpl(digestService)
+            merkleTreeProvider = MerkleTreeProviderImpl(digestService)
         }
     }
 
@@ -46,13 +46,13 @@ class WireTransactionKryoSerializerTest {
             listOf("abc d efg".toByteArray()),
         )
         val wireTransaction = WireTransaction(
-            merkleTreeFactory,
+            merkleTreeProvider,
             digestService,
             privacySalt,
             componentGroupLists
         )
 
-        val wireTransactionKryoSerializer = WireTransactionKryoSerializer(merkleTreeFactory, digestService)
+        val wireTransactionKryoSerializer = WireTransactionKryoSerializer(merkleTreeProvider, digestService)
 
         val serializer = createCheckpointSerializer(
             mapOf(

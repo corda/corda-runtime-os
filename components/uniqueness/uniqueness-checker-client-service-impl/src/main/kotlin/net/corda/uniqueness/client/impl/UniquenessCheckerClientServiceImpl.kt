@@ -10,6 +10,7 @@ import net.corda.uniqueness.datamodel.common.toUniquenessResult
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResponseImpl
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
+import net.corda.v5.application.crypto.MerkleTreeFactory
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResponse
@@ -21,7 +22,6 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_DEFAULT_NAME
 import net.corda.v5.crypto.merkle.MerkleTree
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckerClientService
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -118,14 +118,14 @@ class UniquenessCheckerClientServiceImpl @Activate constructor(
             digestService.hash(it.bytes, DigestAlgorithmName(algorithm))
         }
 
-        val hashDigestProvider = merkleTreeFactory.createHashDigestProvider(
+        val hashDigest = merkleTreeFactory.createHashDigest(
             HASH_DIGEST_PROVIDER_DEFAULT_NAME,
             DigestAlgorithmName(algorithm)
         )
 
         val merkleTree = merkleTreeFactory.createTree(
             allLeaves.map { it.bytes },
-            hashDigestProvider
+            hashDigest
         )
 
         val myInfo = memberLookup.myInfo()
