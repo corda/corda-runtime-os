@@ -34,10 +34,11 @@ dependencies {
     implementation project(":libs:messaging:messaging")
     implementation project(':libs:virtual-node:sandbox-group-context')
 
-    // TODO Serializers not referenced in code but needed
-    implementation project(':libs:ledger:ledger-common-serialization')
+    // TODO This might not be needed if code is refactored so that WireTransactionSerializer is not used and
+    //  WireTransaction's ID is sent over wire (doesn't need to be calculated using MerkleTreeFactory)
     implementation project(":libs:crypto:cipher-suite-impl")
-    implementation project(':libs:crypto:merkle-impl')
+    runtimeOnly project(':libs:crypto:merkle-impl')
+    runtimeOnly project(':libs:ledger:ledger-common-serialization')
 
     implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-db-schema'
