@@ -8,6 +8,7 @@ import net.corda.libs.cpi.datamodel.CpiCpkEntity
 import net.corda.libs.cpi.datamodel.CpiCpkKey
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogAuditEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.CpkFileEntity
 import net.corda.libs.cpi.datamodel.CpkKey
@@ -19,7 +20,6 @@ import net.corda.libs.cpi.datamodel.QUERY_PARAM_FILE_CHECKSUM
 import net.corda.libs.cpi.datamodel.QUERY_PARAM_ID
 import net.corda.libs.cpi.datamodel.QUERY_PARAM_INCREMENTED_ENTITY_VERSION
 import net.corda.libs.cpi.datamodel.findDbChangeLogForCpi
-import net.corda.libs.cpi.datamodel.toAudit
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
@@ -107,7 +107,6 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
             createOrUpdateCpkFileEntities(em, cpi.cpks)
 
-            log.info("Updating Changelogs")
             updateChangeLogs(cpkDbChangeLogEntities, em, cpi)
 
             return@persistMetadataAndCpks managedCpiMetadataEntity
@@ -133,14 +132,12 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         // The incoming changelogs will not be marked deleted
         cpkDbChangeLogEntities.forEach { require(!it.isDeleted) }
         val allChangelogs = findDbChangeLogForCpi(em, cpi.metadata.cpiId)
-        // Check have the changelogs actually changed
-        val changelogsDiffered = cpkDbChangeLogEntities.map { it.fileChecksum }.sorted() !=
-            allChangelogs.map { it.fileChecksum }.sorted()
         // We first mark each existing changelog for this CPI as deleted.
         allChangelogs.forEach { rec ->
             rec.isDeleted = true
             em.merge(rec)
         }
+        em.flush()
         // Then, for the currently declared changelog, we'll save the record and clear any isDeleted flags.
         // This all happens under one transaction so no one will see the isDeleted flags flicker.
         cpkDbChangeLogEntities.forEach {
@@ -148,15 +145,11 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
             if (inDb != null) it.entityVersion = inDb.entityVersion
             em.merge(it)
         }
-
-        if (changelogsDiffered) {
-            // Ensure DB has new entity version
-            em.flush()
-            cpkDbChangeLogEntities.forEach {
-                val inDb = em.find(CpkDbChangeLogEntity::class.java, it.id)
-                val audit = inDb.toAudit()
-                em.persist(audit)
-            }
+        // This is required to make sure we get the right entity version for the given
+        em.flush()
+        findDbChangeLogForCpi(em, cpi.metadata.cpiId).forEach {
+            val audit = CpkDbChangeLogAuditEntity(it)
+            em.persist(audit)
         }
     }
 
@@ -198,7 +191,6 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
             createOrUpdateCpkFileEntities(em, cpi.cpks)
 
-            log.info("Updating Changelogs")
             updateChangeLogs(cpkDbChangeLogEntities, em, cpi)
 
             return cpiMetadataEntity

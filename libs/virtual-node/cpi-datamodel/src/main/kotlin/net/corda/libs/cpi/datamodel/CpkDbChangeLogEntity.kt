@@ -41,14 +41,6 @@ class CpkDbChangeLogEntity(
     val insertTimestamp: Instant? = null
 }
 
-fun CpkDbChangeLogEntity.toAudit(): CpkDbChangeLogAuditEntity =
-    CpkDbChangeLogAuditEntity(
-        id.toAudit(fileChecksum, entityVersion),
-        id.cpkSignerSummaryHash,
-        content,
-        isDeleted
-    )
-
 /**
  * Composite primary key for a Cpk Change Log Entry.
  */
@@ -63,18 +55,6 @@ data class CpkDbChangeLogKey(
     @Column(name = "file_path", nullable = false)
     val filePath: String,
 ) : Serializable
-
-fun CpkDbChangeLogKey.toAudit(fileChecksum: String, entityVersion: Int): CpkDbChangeLogAuditKey {
-    this.apply {
-        return CpkDbChangeLogAuditKey(
-            cpkName,
-            cpkVersion,
-            fileChecksum,
-            entityVersion,
-            filePath
-        )
-    }
-}
 
 /*
  * Find all the db changelogs for a CPI
