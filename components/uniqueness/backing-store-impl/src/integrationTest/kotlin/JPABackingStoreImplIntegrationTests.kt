@@ -14,6 +14,9 @@ import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.impl.JpaEntitiesRegistryImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.uniqueness.backingstore.jpa.datamodel.JPABackingStoreEntities
+import net.corda.uniqueness.datamodel.common.toCharacterRepresentation
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorGeneralImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateRefImpl
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
@@ -43,6 +46,10 @@ import javax.persistence.OptimisticLockException
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+/**
+ * Hint: To run tests against PostgreSQL, follow the steps in the link below.
+ * https://github.com/corda/corda-runtime-os/wiki/Debugging-integration-tests#debugging-integration-tests-with-postgres
+ */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class JPABackingStoreImplIntegrationTests {
     private lateinit var backingStoreImpl: JPABackingStoreImpl
@@ -170,35 +177,11 @@ class JPABackingStoreImplIntegrationTests {
         }
     }
 
-    // TODO/FIXME: This tests may be redundant - remove after review
-    @Nested
-    inner class LifeCycleTests {
-        @Test
-        fun `Starting backing store invokes life cycle start`() {
-            Mockito.verify(lifecycleCoordinator, never()).start()
-            backingStoreImpl.start()
-            Mockito.verify(lifecycleCoordinator).start()
-        }
-
-        @Test
-        fun `Stopping backing store invokes life cycle stop`() {
-            Mockito.verify(lifecycleCoordinator, never()).stop()
-            backingStoreImpl.stop()
-            Mockito.verify(lifecycleCoordinator).stop()
-        }
-
-        @Test
-        fun `Get running life cycle status`() {
-            backingStoreImpl.isRunning
-            Mockito.verify(lifecycleCoordinator).isRunning
-        }
-    }
-
     @Nested
     inner class PersistingDataTests {
         @Test
-        fun `Persisting transaction details succeeds`() {
-            val txCnt = 3
+        fun `Persisting accepted transaction details succeeds`() {
+            val txCnt = 1
             val txns = LinkedList<Pair<UniquenessCheckRequestInternal, UniquenessCheckResult>>()
             val txIds = LinkedList<SecureHash>()
 
@@ -220,6 +203,39 @@ class JPABackingStoreImplIntegrationTests {
                 assertEquals(txCnt, result.size)
                 result.forEach { secureHashTxnDetails ->
                     assertTrue(secureHashTxnDetails.key in txIds.toSet())
+                    assertTrue(secureHashTxnDetails.value.result.toCharacterRepresentation() == 'A')
+                }
+            }
+        }
+
+        @Test
+        fun `Persisting rejected transaction details succeeds`() {
+            val txns = LinkedList<Pair<UniquenessCheckRequestInternal, UniquenessCheckResult>>()
+            val txIds = LinkedList<SecureHash>()
+
+            val txId = SecureHashUtils.randomSecureHash()
+            val externalRequest = generateExternalRequest(txId)
+            txIds.add(txId)
+
+            val internalRequest = UniquenessCheckRequestInternal.create(externalRequest)
+            txns.add(
+                Pair(
+                    internalRequest, UniquenessCheckResultFailureImpl(
+                        Clock.systemUTC().instant(), UniquenessCheckErrorGeneralImpl("some error")
+                    )
+                )
+            )
+
+            backingStoreImpl.session { session ->
+                session.executeTransaction { _, txnOps -> txnOps.commitTransactions(txns) }
+            }
+
+            backingStoreImpl.session { session ->
+                val result = session.getTransactionDetails(txIds)
+                assertEquals(1, result.size)
+                result.forEach { secureHashTxnDetails ->
+                    assertTrue(secureHashTxnDetails.key in txIds.toSet())
+                    assertTrue(secureHashTxnDetails.value.result.toCharacterRepresentation() == 'R')
                 }
             }
         }
@@ -290,7 +306,39 @@ class JPABackingStoreImplIntegrationTests {
             val consumingStateRefs = LinkedList<UniquenessCheckStateRef>()
             consumingStateRefs.push(consumingStateRef)
 
-            // TODO/FIXME: using exception hierarchy we may want to throw a specific exception for debugging and readability
+            assertThrows<IllegalStateException> {
+                backingStoreImpl.session { session ->
+                    session.executeTransaction { _, txnOps ->
+                        txnOps.consumeStates(consumingTxId = consumingTxId, stateRefs = consumingStateRefs)
+                    }
+                }
+            }
+        }
+
+        @Test
+        fun `Double spend is prevented`() {
+            val hashCnt = 1
+            val secureHashes = generateSecureHashes(hashCnt)
+            val stateRefs = generateUniquenessCheckStateRef(secureHashes)
+
+            // Generate an unconsumed state in DB.
+            backingStoreImpl.session { session ->
+                session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
+            }
+
+            val consumingTxId = secureHashes[0]
+            val consumingStateRef = UniquenessCheckStateRefImpl(consumingTxId, 0)
+            val consumingStateRefs = LinkedList<UniquenessCheckStateRef>()
+            consumingStateRefs.push(consumingStateRef)
+
+            assertDoesNotThrow {
+                backingStoreImpl.session { session ->
+                    session.executeTransaction { _, txnOps ->
+                        txnOps.consumeStates(consumingTxId = consumingTxId, stateRefs = consumingStateRefs)
+                    }
+                }
+            }
+
             assertThrows<IllegalStateException> {
                 backingStoreImpl.session { session ->
                     session.executeTransaction { _, txnOps ->
