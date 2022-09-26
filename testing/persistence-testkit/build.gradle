@@ -1,9 +1,8 @@
 plugins {
-    id 'corda.common-publishing'
     id 'corda.common-library'
 }
 
-description "Cpi Info Service Fake Implementation"
+description "DB Persistence test Helpers and Fake Implementations"
 
 dependencies {
     compileOnly "org.osgi:org.osgi.service.component.annotations"
