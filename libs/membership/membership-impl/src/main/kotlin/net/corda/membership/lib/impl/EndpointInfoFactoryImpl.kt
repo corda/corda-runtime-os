@@ -8,8 +8,8 @@ import org.osgi.service.component.annotations.Component
 class EndpointInfoFactoryImpl : EndpointInfoFactory {
     override fun create(
         url: String,
-        protocolVersion: Int?
-    ) = EndpointInfoImpl(url, protocolVersion ?: EndpointInfoFactory.DEFAULT_PROTOCOL_VERSION)
+        protocolVersion: Int
+    ) = EndpointInfoImpl(url, protocolVersion)
 }
 
 fun NetworkHostAndPort.toEndpointInfo(protocolVersion: Int = EndpointInfoFactory.DEFAULT_PROTOCOL_VERSION) =

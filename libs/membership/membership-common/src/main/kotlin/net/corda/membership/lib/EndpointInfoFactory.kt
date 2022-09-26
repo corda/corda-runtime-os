@@ -28,6 +28,6 @@ interface EndpointInfoFactory {
      */
     fun create(
         url: String,
-        protocolVersion: Int? = null
+        protocolVersion: Int = DEFAULT_PROTOCOL_VERSION
     ): EndpointInfo
 }

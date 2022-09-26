@@ -28,7 +28,6 @@ class PartyConverter @Activate constructor(
         get() = Party::class.java
 
     override fun convert(context: ConversionContext): Party {
-        println(context)
         return PartyImpl(
             name = context.value(NAME)?.let {
                 MemberX500Name.parse(it)
