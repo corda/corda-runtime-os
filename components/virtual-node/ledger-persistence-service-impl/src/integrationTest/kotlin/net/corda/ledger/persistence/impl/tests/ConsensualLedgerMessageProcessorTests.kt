@@ -155,6 +155,9 @@ class ConsensualLedgerMessageProcessorTests {
         // Native SQL is used that is specific to Postgres and won't work with in-memory DB
         Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
 
+        // TODO Refactor this after https://github.com/corda/corda-runtime-os/pull/2201 is merged
+        //  see https://github.com/corda/corda-runtime-os/pull/1883#discussion_r979778303
+
         // create ConsensualSignedTransactionImpl instance (or WireTransaction at first)
         val mapper = jacksonObjectMapper()
 

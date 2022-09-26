@@ -1,3 +1,3 @@
-# Cpi Info Service Fake
+# Persistence testkit
 
-An in-memory fake implementation of the `CpiInfoReadService`.
+DB Persistence test Helpers and Fake Implementations.
