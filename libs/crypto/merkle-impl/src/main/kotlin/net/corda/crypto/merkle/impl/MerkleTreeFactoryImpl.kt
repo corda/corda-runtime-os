@@ -24,10 +24,10 @@ class MerkleTreeFactoryImpl @Activate constructor(
     @Reference(service = DigestService::class)
     private val digestService: DigestService
 ) : MerkleTreeFactory, SingletonSerializeAsToken {
-    override fun createTree(leaves: List<ByteArray>, digestProvider: MerkleTreeHashDigest) =
-        MerkleTreeImpl(leaves, digestProvider)
+    override fun createTree(leaves: List<ByteArray>, digest: MerkleTreeHashDigest) =
+        MerkleTreeImpl(leaves, digest)
 
-    override fun createHashDigestProvider(
+    override fun createHashDigest(
         merkleTreeHashDigestProviderName: String,
         digestAlgorithmName: DigestAlgorithmName,
         options: Map<String, Any>,

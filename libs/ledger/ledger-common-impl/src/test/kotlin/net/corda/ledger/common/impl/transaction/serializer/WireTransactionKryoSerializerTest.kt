@@ -9,8 +9,8 @@ import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.TransactionMetaData
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
+import net.corda.v5.application.crypto.MerkleTreeFactory
 import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll

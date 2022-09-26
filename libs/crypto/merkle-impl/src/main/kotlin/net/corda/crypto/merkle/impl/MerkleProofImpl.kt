@@ -24,8 +24,8 @@ class MerkleProofImpl(
      * It recreates the routes towards the root element from the items in the leaves to be proven with using
      * the proof's hashes when they are needed.
      */
-    override fun verify(root: SecureHash, digestProvider: MerkleTreeHashDigest): Boolean {
-        val provider = digestProvider as MerkleTreeHashDigestProvider
+    override fun verify(root: SecureHash, digest: MerkleTreeHashDigest): Boolean {
+        val digestProvider = digest as MerkleTreeHashDigestProvider
 
         if (leaves.isEmpty()) {
             return false
@@ -38,7 +38,7 @@ class MerkleProofImpl(
         }
         var hashIndex = 0
         val sortedLeaves = leaves.sortedBy { it.index }
-        var nodeHashes = sortedLeaves.map { Pair(it.index, provider.leafHash(it.index, it.nonce, it.leafData)) }
+        var nodeHashes = sortedLeaves.map { Pair(it.index, digestProvider.leafHash(it.index, it.nonce, it.leafData)) }
         var treeDepth = MerkleTreeImpl.treeDepth(treeSize)
         var currentSize = treeSize
         while (currentSize > 1) {
@@ -57,7 +57,7 @@ class MerkleProofImpl(
                         if (item.first xor next.first == 1) {       // ... and they are a pair with the current
                             newItems += Pair(                       // in the original tree, we create their parent.
                                 item.first / 2,
-                                digestProvider.nodeHash(treeDepth, item.second, next.second)
+                                digest.nodeHash(treeDepth, item.second, next.second)
                             )
                             index += 2
                             continue
@@ -71,12 +71,12 @@ class MerkleProofImpl(
                     newItems += if ((item.first and 1) == 0) {      // Even index means, that the item is on the left
                         Pair(
                             item.first / 2,
-                            digestProvider.nodeHash(treeDepth, item.second, hashes[hashIndex++])
+                            digest.nodeHash(treeDepth, item.second, hashes[hashIndex++])
                         )
                     } else {                                        // Odd index means, that the item is on the right
                         Pair(
                             item.first / 2,
-                            digestProvider.nodeHash(treeDepth, hashes[hashIndex++], item.second)
+                            digest.nodeHash(treeDepth, hashes[hashIndex++], item.second)
                         )
                     }
                 } else {                                            // The last odd element, just gets lifted.

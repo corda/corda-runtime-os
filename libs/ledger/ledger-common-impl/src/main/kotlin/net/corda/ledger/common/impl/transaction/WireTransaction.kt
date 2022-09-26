@@ -93,7 +93,7 @@ class WireTransaction(
         )
 
     private fun getRootMerkleTreeDigestProvider() : MerkleTreeHashDigestProvider =
-        merkleTreeFactory.createHashDigestProvider(
+        merkleTreeFactory.createHashDigest(
         rootMerkleTreeDigestProviderName,
         rootMerkleTreeDigestAlgorithmName,
         mapOf(
@@ -115,7 +115,7 @@ class WireTransaction(
         privacySalt: PrivacySalt,
         componentGroupIndex: Int
     ) : MerkleTreeHashDigestProvider =
-        merkleTreeFactory.createHashDigestProvider(
+        merkleTreeFactory.createHashDigest(
             componentMerkleTreeDigestProviderName,
             componentMerkleTreeDigestAlgorithmName,
             mapOf(
