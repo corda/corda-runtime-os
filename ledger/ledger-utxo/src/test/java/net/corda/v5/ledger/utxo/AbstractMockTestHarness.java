@@ -29,30 +29,23 @@ public class AbstractMockTestHarness {
     protected final PublicKey aliceKey = Mockito.mock(PublicKey.class);
     protected final PublicKey bobKey = Mockito.mock(PublicKey.class);
     protected final ContractState contractState = Mockito.mock(ContractState.class);
+    protected final Contract contract = Mockito.mock(Contract.class);
+    protected final UtxoLedgerTransaction utxoLedgerTransaction = Mockito.mock(UtxoLedgerTransaction.class);
 
     // Mocked Data
-    protected final Set<PublicKey> keys = Set.of(aliceKey, bobKey);
-    protected final MemberX500Name aliceName = new MemberX500Name("Alice", "London", "GB");
-    protected final MemberX500Name bobName = new MemberX500Name("Bob", "London", "GB");
-    protected final MemberX500Name notaryName = new MemberX500Name("Notary", "London", "GB");
-    protected final UUID id = UUID.fromString("00000000-0000-4000-0000-000000000000");
-    protected final BigDecimal quantity = BigDecimal.valueOf(123.45);
-    protected final SecureHash hash = SecureHash.parse("SHA256:0000000000000000000000000000000000000000000000000000000000000000");
-    protected final Instant minInstant = Instant.MIN;
-    protected final Instant maxInstant = Instant.MAX;
-    protected final Instant midpoint = Instant.EPOCH;
-    protected final Duration duration = Duration.between(minInstant, maxInstant);
-    protected final String contractId = "com.example.contract.id";
-    protected final DigitalSignature.WithKey signature = new DigitalSignature.WithKey(aliceKey, new byte[]{0}, Map.of());
-    protected final DigitalSignatureMetadata metadata = new DigitalSignatureMetadata(minInstant, Map.of());
-    protected final DigitalSignatureAndMetadata signatureAndMetadata = new DigitalSignatureAndMetadata(signature, metadata);
+    protected final Set<PublicKey> participants = Set.of(aliceKey, bobKey);
 
     protected AbstractMockTestHarness() {
         initializeParties();
         initializeContractState();
+        initializeContract();
     }
 
     private void initializeContractState() {
-        Mockito.when(contractState.getParticipants()).thenReturn(keys);
+        Mockito.when(contractState.getParticipants()).thenReturn(participants);
+    }
+
+    private void initializeContract() {
+        Mockito.doNothing().when(contract).verify(utxoLedgerTransaction);
     }
 }
