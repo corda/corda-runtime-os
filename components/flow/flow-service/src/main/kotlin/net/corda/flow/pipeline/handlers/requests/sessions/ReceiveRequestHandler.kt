@@ -33,17 +33,9 @@ class ReceiveRequestHandler @Activate constructor(
         val checkpoint = context.checkpoint
 
         val hasReceivedEvents = try {
-            flowSessionManager.validateSessionStates(
-                checkpoint,
-                request.sessions,
-                FlowSessionManager.Operation.RECEIVING
-            )
             flowSessionManager.hasReceivedEvents(checkpoint, request.sessions.toList())
         } catch (e: FlowSessionStateException) {
-            throw FlowPlatformException(
-                "Failed to receive session data for for session: ${e.message}. $PROTOCOL_MISMATCH_HINT",
-                e
-            )
+            throw FlowPlatformException("Failed to receive: ${e.message}. $PROTOCOL_MISMATCH_HINT", e)
         }
 
         return if (hasReceivedEvents) {

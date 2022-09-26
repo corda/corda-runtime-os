@@ -33,20 +33,12 @@ class SendRequestHandler @Activate constructor(
         val checkpoint = context.checkpoint
 
         try {
-            flowSessionManager.validateSessionStates(
-                checkpoint,
-                request.sessionToPayload.keys,
-                FlowSessionManager.Operation.SENDING
-            )
             flowSessionManager.sendDataMessages(checkpoint, request.sessionToPayload, Instant.now())
                 .forEach { updatedSessionState ->
                     checkpoint.putSessionState(updatedSessionState)
                 }
         } catch (e: FlowSessionStateException) {
-            throw FlowPlatformException(
-                "Failed to send session data for for session: ${e.message}. $PROTOCOL_MISMATCH_HINT",
-                e
-            )
+            throw FlowPlatformException("Failed to send: ${e.message}. $PROTOCOL_MISMATCH_HINT", e)
         }
 
         val wakeup = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())
