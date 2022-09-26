@@ -71,6 +71,7 @@ dependencies {
     integrationTestImplementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
 
     integrationTestImplementation project(':libs:db:db-admin-impl')
+    integrationTestImplementation project(':libs:ledger:ledger-common-serialization')
     integrationTestImplementation project(":testing:db-message-bus-testkit")
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation project(':testing:test-utilities')
