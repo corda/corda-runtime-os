@@ -33,7 +33,7 @@ import java.util.*
  */
 @Component(service = [ LedgerUniquenessCheckerClientService::class, SingletonSerializeAsToken::class ],
     scope = ServiceScope.PROTOTYPE)
-class UniquenessCheckerClientServiceImpl @Activate constructor(
+class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
     @Reference(service = ExternalEventExecutor::class)
     private val externalEventExecutor: ExternalEventExecutor,
     @Reference(service = DigestService::class)
@@ -63,7 +63,7 @@ class UniquenessCheckerClientServiceImpl @Activate constructor(
 
         val result = externalEventExecutor.execute(
             UniquenessCheckExternalEventFactory::class.java,
-            RequestUniquenessCheck(
+            UniquenessCheckExternalEventParams(
                 txId,
                 inputStates,
                 referenceStates,
@@ -73,10 +73,8 @@ class UniquenessCheckerClientServiceImpl @Activate constructor(
             )
         )
 
-        val txIds = listOf(SecureHash.parse(txId))
-
         val signature = if (result is UniquenessCheckResultSuccess) {
-            signBatch(txIds).rootSignature
+            signBatch(listOf(SecureHash.parse(txId))).rootSignature
         } else null
 
         return UniquenessCheckResponseImpl(

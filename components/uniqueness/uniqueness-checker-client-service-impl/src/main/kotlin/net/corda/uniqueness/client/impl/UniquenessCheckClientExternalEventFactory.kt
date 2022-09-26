@@ -16,14 +16,14 @@ import java.time.Instant
 
 @Component(service = [ExternalEventFactory::class])
 class UniquenessCheckExternalEventFactory @Activate constructor():
-    ExternalEventFactory<RequestUniquenessCheck, UniquenessCheckResponseAvro, UniquenessCheckResult> {
+    ExternalEventFactory<UniquenessCheckExternalEventParams, UniquenessCheckResponseAvro, UniquenessCheckResult> {
 
     override val responseType = UniquenessCheckResponseAvro::class.java
 
     override fun createExternalEvent(
         checkpoint: FlowCheckpoint,
         flowExternalEventContext: ExternalEventContext,
-        parameters: RequestUniquenessCheck
+        parameters: UniquenessCheckExternalEventParams
     ): ExternalEventRecord {
         return ExternalEventRecord(
             topic = Schemas.UniquenessChecker.UNIQUENESS_CHECK_TOPIC,
@@ -35,7 +35,7 @@ class UniquenessCheckExternalEventFactory @Activate constructor():
         return response.toUniquenessResult()
     }
 
-    private fun createRequest(params: RequestUniquenessCheck,
+    private fun createRequest(params: UniquenessCheckExternalEventParams,
                               context: ExternalEventContext,
                               checkpoint: FlowCheckpoint) = UniquenessCheckRequestAvro(
         checkpoint.holdingIdentity.toAvro(),
@@ -49,7 +49,7 @@ class UniquenessCheckExternalEventFactory @Activate constructor():
     )
 }
 
-data class RequestUniquenessCheck(
+data class UniquenessCheckExternalEventParams(
     val txId: String,
     val inputStates: List<String>,
     val referenceStates: List<String>,
