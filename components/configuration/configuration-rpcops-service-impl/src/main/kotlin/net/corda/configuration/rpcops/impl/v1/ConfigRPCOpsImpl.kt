@@ -11,6 +11,7 @@ import net.corda.configuration.rpcops.impl.exception.ConfigVersionException
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.data.config.ConfigurationSchemaVersion
+import net.corda.httprpc.JsonObject
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InternalServerException
@@ -166,7 +167,7 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         val rpcRequest = request.run {
             ConfigurationManagementRequest(
                 section,
-                config,
+                config.escapedJson,
                 ConfigurationSchemaVersion(schemaVersion.major, schemaVersion.minor),
                 actor,
                 version
@@ -216,7 +217,7 @@ internal class ConfigRPCOpsImpl @Activate constructor(
      * schema for this request.
      */
     private fun validateRequestedConfig(request: UpdateConfigParameters) = try {
-        val config = request.config
+        val config = request.config.escapedJson
         val smartConfig = SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.parseString(config))
         val updatedConfig = validator.validate(
             request.section,
@@ -225,7 +226,7 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         )
         logger.debug { "UpdatedConfig: $updatedConfig" }
     } catch (e: Exception) {
-        val message = "Configuration \"${request.config}\" could not be validated. Valid JSON or HOCON expected. Cause: ${e.message}"
+        val message = "Configuration \"${request.config.escapedJson}\" could not be validated. Valid JSON or HOCON expected. Cause: ${e.message}"
         throw BadRequestException(message)
     }
 

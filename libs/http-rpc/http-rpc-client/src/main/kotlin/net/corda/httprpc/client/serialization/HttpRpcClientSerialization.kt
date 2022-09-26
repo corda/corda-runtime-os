@@ -1,14 +1,15 @@
 package net.corda.httprpc.client.serialization
 
+import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.databind.BeanProperty
-import com.fasterxml.jackson.databind.DeserializationContext
-import com.fasterxml.jackson.databind.JavaType
-import com.fasterxml.jackson.databind.JsonDeserializer
+import com.fasterxml.jackson.core.TreeNode
+import com.fasterxml.jackson.databind.*
 import com.fasterxml.jackson.databind.deser.ContextualDeserializer
 import com.fasterxml.jackson.databind.module.SimpleModule
+import com.fasterxml.jackson.databind.node.ValueNode
 import net.corda.common.json.serialization.jacksonObjectMapper
+import net.corda.httprpc.JsonObject
 import net.corda.httprpc.durablestream.DurableCursorTransferObject
 import net.corda.httprpc.durablestream.api.Cursor
 import net.corda.v5.base.types.MemberX500Name
@@ -22,6 +23,7 @@ internal val objectMapper = jacksonObjectMapper().apply {
     module.addDeserializer(Cursor.PollResult.PositionedValue::class.java, PositionedValueDeserializer())
     module.addDeserializer(SecureHash::class.java, SecureHashDeserializer)
     module.addDeserializer(MemberX500Name::class.java, MemberX500NameDeserializer)
+    module.addSerializer(JsonObject::class.java, JsonObjectSerializer)
     this.registerModule(module)
 }
 
@@ -79,5 +81,11 @@ internal object MemberX500NameDeserializer : JsonDeserializer<MemberX500Name>() 
                 throw JsonParseException(parser, it, e)
             }
         }.also { log.trace { "Deserialize completed." } }
+    }
+}
+
+internal object JsonObjectSerializer : JsonSerializer<JsonObject>() {
+    override fun serialize(obj: JsonObject, generator: JsonGenerator, provider: SerializerProvider) {
+        generator.writeString(obj.toString())
     }
 }

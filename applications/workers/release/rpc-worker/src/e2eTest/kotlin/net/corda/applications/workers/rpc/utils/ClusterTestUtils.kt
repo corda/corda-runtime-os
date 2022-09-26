@@ -3,6 +3,7 @@ package net.corda.applications.workers.rpc.utils
 import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.httprpc.HttpFileUpload
+import net.corda.httprpc.JsonObject
 import net.corda.libs.configuration.endpoints.v1.ConfigRPCOps
 import net.corda.libs.configuration.endpoints.v1.types.ConfigSchemaVersion
 import net.corda.libs.configuration.endpoints.v1.types.UpdateConfigParameters
@@ -28,6 +29,8 @@ const val P2P_TENANT_ID = "p2p"
 const val HSM_CAT_SESSION = "SESSION_INIT"
 const val HSM_CAT_LEDGER = "LEDGER"
 const val HSM_CAT_TLS = "TLS"
+
+data class TestJsonObject(override val escapedJson: String = "") : JsonObject
 
 fun E2eCluster.uploadCpi(
     groupPolicy: ByteArray,
@@ -221,7 +224,7 @@ fun E2eCluster.disableCLRChecks() = with(testToolkit) {
                 UpdateConfigParameters(
                     GATEWAY_CONFIG,
                     configResponse.version,
-                    "{ \"$sslConfig\": { \"$revocationCheck\": { \"$mode\": \"$modeOff\" }  }  }",
+                    TestJsonObject("{ \"$sslConfig\": { \"$revocationCheck\": { \"$mode\": \"$modeOff\" }  }  }"),
                     ConfigSchemaVersion(1, 0)
                 )
             )
