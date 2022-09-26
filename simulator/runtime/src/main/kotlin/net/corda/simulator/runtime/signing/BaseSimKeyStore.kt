@@ -6,6 +6,11 @@ import java.security.PublicKey
 import java.security.SecureRandom
 import java.security.spec.ECGenParameterSpec
 
+/**
+ * A store for keys.
+ *
+ * @see SimKeyStore for details.
+ */
 class BaseSimKeyStore : SimKeyStore {
 
     private val keys = HashMap<PublicKey, KeyParameters>()

@@ -11,7 +11,12 @@ import java.security.KeyFactory
 import java.security.PublicKey
 import java.security.spec.X509EncodedKeySpec
 
-
+/**
+ * A utility function to encode an ECDSA public key into bytes.
+ *
+ * @param publicKey The key to encode.
+ * @return The public key in encoded string form.
+ */
 fun pemEncode(publicKey: PublicKey): String {
     val pemObject = PemObject("ECDSA PUBLIC KEY", publicKey.encoded)
     val byteStream = ByteArrayOutputStream()
@@ -21,6 +26,12 @@ fun pemEncode(publicKey: PublicKey): String {
     return String(byteStream.toByteArray())
 }
 
+/**
+ * A utility function to decode an ECDSA public key from bytes.
+ *
+ * @param pemEncodedPublicKey The public key in encoded string form.
+ * @return The key.
+ */
 fun pemDecode(pemEncodedPublicKey: String) : PublicKey {
     val byteStream = ByteArrayInputStream(pemEncodedPublicKey.toByteArray())
     val pemObject = PemReader(InputStreamReader(byteStream)).readPemObject()
