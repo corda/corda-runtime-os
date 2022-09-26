@@ -1,6 +1,5 @@
 package net.corda.uniqueness.backingstore.impl
 
-
 import net.corda.crypto.testkit.SecureHashUtils
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.external.ExternalEventContext
@@ -8,7 +7,14 @@ import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
-import net.corda.lifecycle.*
+import net.corda.lifecycle.LifecycleCoordinator
+import net.corda.lifecycle.LifecycleStatus
+import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.lifecycle.LifecycleEvent
+import net.corda.lifecycle.LifecycleCoordinatorName
+import net.corda.lifecycle.StartEvent
+import net.corda.lifecycle.StopEvent
+import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.test.util.identity.createTestHoldingIdentity
@@ -24,17 +30,35 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.toAvro
-import org.junit.jupiter.api.*
+import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mockito
-import org.mockito.kotlin.*
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.never
+import org.mockito.kotlin.times
+import org.mockito.kotlin.whenever
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doReturn
 import java.sql.Connection
 import java.time.Clock
 import java.time.LocalDate
 import java.time.ZoneOffset
-import java.util.*
-import javax.persistence.*
+import java.util.LinkedList
+import java.util.UUID
+import javax.persistence.EntityManager
+import javax.persistence.EntityManagerFactory
+import javax.persistence.EntityTransaction
+import javax.persistence.TypedQuery
+import javax.persistence.EntityExistsException
+import javax.persistence.RollbackException
+import javax.persistence.OptimisticLockException
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 
@@ -67,6 +91,7 @@ class JPABackingStoreImplTests {
 
     class DummyException(message: String) : Exception(message)
 
+    @Suppress("ComplexMethod")
     @BeforeEach
     fun init() {
         lifecycleCoordinator = mock<LifecycleCoordinator>()
@@ -220,7 +245,7 @@ class JPABackingStoreImplTests {
                     setOf(LifecycleCoordinatorName.forComponent<DbConnectionManager>())
                 )
             )
-            // FIXME: it's failing. review the expected behaviour and update test accordingly
+            // REVIEW: review the expected behaviour and update test accordingly
 //            assertTrue(backingStoreImpl.isRunning)
 //            Mockito.verify(lifecycleCoordinator).updateStatus(LifecycleStatus.UP)
         }
@@ -231,7 +256,7 @@ class JPABackingStoreImplTests {
             backingStoreImpl.eventHandler(StopEvent(), mockCoordinator)
 
             assertFalse(backingStoreImpl.isRunning)
-            // FIXME: it's failing. review the expected behaviour and update test accordingly
+            // REVIEW: review the expected behaviour and update test accordingly
 //            Mockito.verify(lifecycleCoordinator).updateStatus(LifecycleStatus.DOWN)
         }
 
@@ -251,7 +276,6 @@ class JPABackingStoreImplTests {
             Mockito.verify(mockCoordinator).updateStatus(LifecycleStatus.ERROR)
         }
 
-        // TODO/FIXME: review
         @Test
         fun `Unknown life cycle event does not throw exception`() {
             assertDoesNotThrow {
@@ -541,7 +565,6 @@ class JPABackingStoreImplTests {
                 )
             }
 
-            // TODO/FIXME: a more specific exception type would be better for debugging and readability
             // Expect an IllegalStateException for an invalid result type.
             assertThrows<IllegalStateException> {
                 backingStoreImpl.session { session ->
