@@ -14,6 +14,7 @@ import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.impl.JpaEntitiesRegistryImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.uniqueness.backingstore.jpa.datamodel.JPABackingStoreEntities
+import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTransactionDetailEntity
 import net.corda.uniqueness.datamodel.common.toCharacterRepresentation
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorGeneralImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
@@ -34,15 +35,18 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.whenever
+import org.mockito.kotlin.times
+import org.mockito.Mockito
 import java.time.Clock
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.UUID
 import java.util.LinkedList
 import javax.persistence.EntityExistsException
-import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.OptimisticLockException
+import javax.persistence.PersistenceException
+import javax.persistence.QueryTimeoutException
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -52,8 +56,9 @@ import kotlin.test.assertTrue
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class JPABackingStoreImplIntegrationTests {
+    private val maxAttemptsCnt = 10 // Set it same as "MAX_ATTEMPTS" in JPABackingStoreImpl.kt
     private lateinit var backingStoreImpl: JPABackingStoreImpl
-    private val entityManager: EntityManager
+
     private val entityManagerFactory: EntityManagerFactory
     private val dbConfig = DbUtils.getEntityManagerConfiguration("uniqueness_default")
 
@@ -63,12 +68,7 @@ class JPABackingStoreImplIntegrationTests {
     class DummyException(message: String) : Exception(message)
 
     init {
-        entityManagerFactory = EntityManagerFactoryFactoryImpl().create(
-            "uniqueness_default",
-            JPABackingStoreEntities.classes.toList(),
-            dbConfig
-        )
-        entityManager = entityManagerFactory.createEntityManager()
+        entityManagerFactory = createEntityManagerFactory("uniqueness_default")
     }
 
     @BeforeEach
@@ -78,14 +78,23 @@ class JPABackingStoreImplIntegrationTests {
             whenever(createCoordinator(any(), any())) doReturn lifecycleCoordinator
         }
 
-        backingStoreImpl = JPABackingStoreImpl(lifecycleCoordinatorFactory,
+        backingStoreImpl = createBackingStoreImpl(entityManagerFactory)
+        backingStoreImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
+    }
+
+    private fun createBackingStoreImpl(emFactory: EntityManagerFactory): JPABackingStoreImpl {
+        return JPABackingStoreImpl(lifecycleCoordinatorFactory,
             JpaEntitiesRegistryImpl(),
             mock<DbConnectionManager>().apply {
-                whenever(getOrCreateEntityManagerFactory(any(), any(), any())) doReturn entityManagerFactory
+                whenever(getOrCreateEntityManagerFactory(any(), any(), any())) doReturn emFactory
                 whenever(getClusterDataSource()) doReturn dbConfig.dataSource
             })
+    }
 
-        backingStoreImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
+    private fun createEntityManagerFactory(persistenceUnitName: String): EntityManagerFactory {
+        return EntityManagerFactoryFactoryImpl().create(
+            persistenceUnitName, JPABackingStoreEntities.classes.toList(), dbConfig
+        )
     }
 
     private fun generateSecureHashes(cnt: Int): LinkedList<SecureHash> {
@@ -129,12 +138,10 @@ class JPABackingStoreImplIntegrationTests {
         ).setInputStates(listOf(inputStateRef)).build()
     }
 
-
     @Nested
-    inner class TransactionTests {
+    inner class ExecutingTransactionRetryTests {
         @Test
         fun `Executing transaction retries upon expected exceptions`() {
-            val maxRetryCount = 10
             var execCounter = 0
             assertThrows<IllegalStateException> {
                 backingStoreImpl.session { session ->
@@ -144,7 +151,7 @@ class JPABackingStoreImplIntegrationTests {
                     }
                 }
             }
-            assertEquals(maxRetryCount, execCounter)
+            assertEquals(maxAttemptsCnt, execCounter)
         }
 
         @Test
@@ -291,31 +298,6 @@ class JPABackingStoreImplIntegrationTests {
         }
 
         @Test
-        fun `Attempt to consume an unknown state fails with an exception`() {
-            val hashCnt = 2
-            val secureHashes = generateSecureHashes(hashCnt)
-            val stateRefs = generateUniquenessCheckStateRef(secureHashes)
-
-            // Generate unconsumed states in DB.
-            backingStoreImpl.session { session ->
-                session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
-            }
-
-            val consumingTxId: SecureHash = SecureHashUtils.randomSecureHash()
-            val consumingStateRef = UniquenessCheckStateRefImpl(consumingTxId, 0)
-            val consumingStateRefs = LinkedList<UniquenessCheckStateRef>()
-            consumingStateRefs.push(consumingStateRef)
-
-            assertThrows<IllegalStateException> {
-                backingStoreImpl.session { session ->
-                    session.executeTransaction { _, txnOps ->
-                        txnOps.consumeStates(consumingTxId = consumingTxId, stateRefs = consumingStateRefs)
-                    }
-                }
-            }
-        }
-
-        @Test
         fun `Double spend is prevented`() {
             val hashCnt = 1
             val secureHashes = generateSecureHashes(hashCnt)
@@ -339,6 +321,7 @@ class JPABackingStoreImplIntegrationTests {
                 }
             }
 
+            // An attempt to spend an already spent state should fail.
             assertThrows<IllegalStateException> {
                 backingStoreImpl.session { session ->
                     session.executeTransaction { _, txnOps ->
@@ -346,6 +329,84 @@ class JPABackingStoreImplIntegrationTests {
                     }
                 }
             }
+        }
+
+        @Test
+        fun `Attempt to consume an unknown state fails with an exception`() {
+            val hashCnt = 2
+            val secureHashes = generateSecureHashes(hashCnt)
+            val stateRefs = generateUniquenessCheckStateRef(secureHashes)
+
+            // Generate unconsumed states in DB.
+            backingStoreImpl.session { session ->
+                session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
+            }
+
+            val consumingTxId: SecureHash = SecureHashUtils.randomSecureHash()
+            val consumingStateRef = UniquenessCheckStateRefImpl(consumingTxId, 0)
+            val consumingStateRefs = LinkedList<UniquenessCheckStateRef>()
+            consumingStateRefs.push(consumingStateRef)
+
+            assertThrows<IllegalStateException> {
+                backingStoreImpl.session { session ->
+                    session.executeTransaction { _, txnOps ->
+                        txnOps.consumeStates(consumingTxId = consumingTxId, stateRefs = consumingStateRefs)
+                    }
+                }
+            }
+        }
+    }
+
+    @Nested
+    inner class FlakyConnectionTests {
+        @Test
+        fun `Query timeout triggers retry`() {
+            val emFactory = createEntityManagerFactory("uniqueness_2")
+            val spyEmFactory = Mockito.spy(emFactory)
+            val em = spyEmFactory.createEntityManager()
+            val spyEm = Mockito.spy(em)
+            Mockito.doReturn(spyEm).whenever(spyEmFactory).createEntityManager()
+
+            val queryName = "UniquenessTransactionDetailEntity.select"
+            val resultClass = UniquenessTransactionDetailEntity::class.java
+            // Find a way to mock a TypedQuery while make the logic JPA implementation agnostic.
+            // Actual execution of the query happens at invoking resultList of the query.
+            Mockito.doThrow(QueryTimeoutException("Executing a query timed out"))
+                .whenever(spyEm).createNamedQuery(queryName, resultClass)
+
+            val storeImpl = createBackingStoreImpl(spyEmFactory)
+            storeImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
+
+            assertThrows<QueryTimeoutException> {
+                storeImpl.session { session ->
+                    val txIds = LinkedList<SecureHash>()
+                    txIds.add(SecureHashUtils.randomSecureHash())
+                    session.getTransactionDetails(txIds)
+                }
+            }
+            Mockito.verify(spyEm, times(maxAttemptsCnt)).createNamedQuery(queryName, resultClass)
+        }
+
+        @Test
+        fun `Persistence errors triggers retry`() {
+            val emFactory = createEntityManagerFactory("uniqueness_2")
+            val spyEmFactory = Mockito.spy(emFactory)
+            val em = spyEmFactory.createEntityManager()
+            val spyEm = Mockito.spy(em)
+            Mockito.doThrow(PersistenceException("Persistence error")).whenever(spyEm).persist(any())
+            Mockito.doReturn(spyEm).whenever(spyEmFactory).createEntityManager()
+
+            val storeImpl = createBackingStoreImpl(spyEmFactory)
+            storeImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
+
+            val secureHashes = generateSecureHashes(1)
+            val stateRefs = generateUniquenessCheckStateRef(secureHashes)
+            assertThrows<PersistenceException> {
+                storeImpl.session { session ->
+                    session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
+                }
+            }
+            Mockito.verify(spyEm, times(maxAttemptsCnt)).persist(any())
         }
     }
 }
