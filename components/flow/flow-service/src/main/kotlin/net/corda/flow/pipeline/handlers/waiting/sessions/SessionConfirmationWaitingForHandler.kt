@@ -65,7 +65,10 @@ class SessionConfirmationWaitingForHandler @Activate constructor(
         return flowSessionManager.doAllSessionsHaveStatus(checkpoint, waitingFor.sessionIds, SessionStateType.CONFIRMED)
     }
 
-    private fun waitingForSessionsToClose(context: FlowEventContext<*>, waitingFor: SessionConfirmation): FlowContinuation {
+    private fun waitingForSessionsToClose(
+        context: FlowEventContext<*>,
+        waitingFor: SessionConfirmation
+    ): FlowContinuation {
         val checkpoint = context.checkpoint
         val erroredSessions = flowSessionManager.getSessionsWithStatus(
             checkpoint,
@@ -96,14 +99,19 @@ class SessionConfirmationWaitingForHandler @Activate constructor(
                 )
             )
             FlowContinuation.Error(
-                CordaRuntimeException("Failed to close due to errors from sessions: $erroredSessions")
+                CordaRuntimeException(
+                    "Failed to close due to errors from sessions: $erroredSessions. $PROTOCOL_MISMATCH_HINT"
+                )
             )
         } else {
             FlowContinuation.Continue
         }
     }
 
-    private fun sessionsClosedWithoutErrorsContinuation(checkpoint: FlowCheckpoint, waitingFor: SessionConfirmation): FlowContinuation {
+    private fun sessionsClosedWithoutErrorsContinuation(
+        checkpoint: FlowCheckpoint,
+        waitingFor: SessionConfirmation
+    ): FlowContinuation {
         val receivedEvents = flowSessionManager.getReceivedEvents(checkpoint, waitingFor.sessionIds)
         return if (receivedEvents.any { (_, event) -> event.payload !is SessionClose }) {
             FlowContinuation.Error(
@@ -124,7 +132,8 @@ class SessionConfirmationWaitingForHandler @Activate constructor(
         erroredSessions: List<String>
     ): Boolean {
         val possiblyClosedSessions = waitingFor.sessionIds - erroredSessions
-        val closedSessions = flowSessionManager.getSessionsWithStatus(checkpoint, possiblyClosedSessions, SessionStateType.CLOSED)
+        val closedSessions =
+            flowSessionManager.getSessionsWithStatus(checkpoint, possiblyClosedSessions, SessionStateType.CLOSED)
         return waitingFor.sessionIds.toSet() == (closedSessions.map { it.sessionId } + erroredSessions).toSet()
     }
 

@@ -74,6 +74,7 @@ class FlowSessionManagerImpl @Activate constructor(
         sessionToPayload: Map<String, ByteArray>,
         instant: Instant
     ): List<SessionState> {
+        validateSessionStates(checkpoint, sessionToPayload.keys, Operation.SENDING)
         return sessionToPayload.map { (sessionId, payload) ->
             sendSessionMessageToExistingSession(
                 checkpoint,
@@ -148,6 +149,7 @@ class FlowSessionManagerImpl @Activate constructor(
     }
 
     override fun hasReceivedEvents(checkpoint: FlowCheckpoint, sessionIds: List<String>): Boolean {
+        validateSessionStates(checkpoint, sessionIds, Operation.RECEIVING)
         return getReceivedEvents(checkpoint, sessionIds).size == sessionIds.size
     }
 
@@ -169,13 +171,28 @@ class FlowSessionManagerImpl @Activate constructor(
         return getSessionsWithStatus(checkpoint, sessionIds, status).size == sessionIds.size
     }
 
-    override fun validateSessionStates(checkpoint: FlowCheckpoint, sessionIds: Set<String>) {
+    private enum class Operation { SENDING, RECEIVING }
+
+    /**
+     * Validation only differs in that receiving messages can be more tolerant to sessions which are in the closing down
+     * state, before they are actually closed.
+     */
+    private fun validateSessionStates(
+        checkpoint: FlowCheckpoint,
+        sessionIds: Collection<String>,
+        operation: Operation
+    ) {
+        val validStatuses = when (operation) {
+            Operation.SENDING -> setOf(SessionStateType.CONFIRMED)
+            Operation.RECEIVING -> setOf(SessionStateType.CONFIRMED, SessionStateType.CLOSING)
+        }
+
         val sessions = sessionIds.associateWith { checkpoint.getSessionState(it) }
         val missingSessionStates = sessions.filter { it.value == null }.map { it.key }.toList()
         val invalidSessions = sessions
             .map { it.value }
             .filterNotNull()
-            .filterNot { it.status == SessionStateType.CONFIRMED }
+            .filterNot { validStatuses.contains(it.status) }
             .toList()
 
         if (missingSessionStates.isEmpty() && invalidSessions.isEmpty()) {
