@@ -4,9 +4,9 @@ import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.serialization.checkpoint.CheckpointInput
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import net.corda.serialization.checkpoint.CheckpointOutput
+import net.corda.v5.application.crypto.MerkleTreeFactory
 import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.ledger.common.transaction.PrivacySalt
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component

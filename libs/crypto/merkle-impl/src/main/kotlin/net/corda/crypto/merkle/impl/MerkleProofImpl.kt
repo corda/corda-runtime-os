@@ -1,9 +1,10 @@
 package net.corda.crypto.merkle.impl
 
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
 import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
 import net.corda.v5.crypto.merkle.MerkleProof
-import net.corda.v5.crypto.merkle.MerkleTreeHashDigestProvider
+import net.corda.v5.crypto.merkle.MerkleTreeHashDigest
 
 class MerkleProofImpl(
     override val treeSize: Int,
@@ -23,7 +24,9 @@ class MerkleProofImpl(
      * It recreates the routes towards the root element from the items in the leaves to be proven with using
      * the proof's hashes when they are needed.
      */
-    override fun verify(root: SecureHash, digestProvider: MerkleTreeHashDigestProvider): Boolean {
+    override fun verify(root: SecureHash, digestProvider: MerkleTreeHashDigest): Boolean {
+        val provider = digestProvider as MerkleTreeHashDigestProvider
+
         if (leaves.isEmpty()) {
             return false
         }
@@ -35,7 +38,7 @@ class MerkleProofImpl(
         }
         var hashIndex = 0
         val sortedLeaves = leaves.sortedBy { it.index }
-        var nodeHashes = sortedLeaves.map { Pair(it.index, digestProvider.leafHash(it.index, it.nonce, it.leafData)) }
+        var nodeHashes = sortedLeaves.map { Pair(it.index, provider.leafHash(it.index, it.nonce, it.leafData)) }
         var treeDepth = MerkleTreeImpl.treeDepth(treeSize)
         var currentSize = treeSize
         while (currentSize > 1) {

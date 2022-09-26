@@ -7,8 +7,8 @@ import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
 import net.corda.v5.crypto.merkle.MerkleProof
-import net.corda.v5.crypto.merkle.MerkleTreeHashDigestProvider
-import net.corda.v5.crypto.merkle.MerkleTreeHashDigestProviderWithSizeProofSupport
+import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
+import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProviderWithSizeProofSupport
 import java.nio.charset.Charset
 import java.security.SecureRandom
 

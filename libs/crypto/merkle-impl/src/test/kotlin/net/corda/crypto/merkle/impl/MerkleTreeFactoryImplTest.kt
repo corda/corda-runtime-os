@@ -3,6 +3,7 @@ package net.corda.crypto.merkle.impl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.core.toByteArray
+import net.corda.v5.application.crypto.MerkleTreeFactory
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -14,7 +15,6 @@ import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NONCE_NAME
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NONCE_SIZE_ONLY_VERIFY_NAME
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NONCE_VERIFY_NAME
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_TWEAKABLE_NAME
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Assertions.assertEquals
