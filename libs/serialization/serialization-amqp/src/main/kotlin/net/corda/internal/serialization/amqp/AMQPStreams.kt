@@ -7,14 +7,14 @@ import net.corda.internal.serialization.serializeOutputStreamPool
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.ByteBuffer
+import net.corda.internal.serialization.byteArrayOutput
 
 fun InputStream.asByteBuffer(): ByteBuffer {
     return if (this is ByteBufferInputStream) {
         byteBuffer // BBIS has no other state, so this is perfectly safe.
     } else {
-        ByteBuffer.wrap(serializeOutputStreamPool.run {
+        ByteBuffer.wrap(byteArrayOutput {
             copyTo(it)
-            it.toByteArray()
         })
     }
 }
