@@ -10,7 +10,7 @@ interface SimKeyStore {
 
     /**
      * Generates an ECDSA key, regardless of the parameters used. Stores that key along with these parameters
-     * for use in simultaed signing and verification. Note that these are the parameters which would commonly be passed
+     * for use in simulated signing and verification. Note that these are the parameters which would commonly be passed
      * to the Key Management API in real Corda.
      *
      * @param alias An alias for the key.

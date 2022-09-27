@@ -58,7 +58,7 @@ interface SimFiber : Closeable, HasMemberInfos {
     /**
      * Gets the existing persistence service for the given member, or creates one if it does not exist.
      *
-     * @param member The member for whom to create the persistence service
+     * @param member The member for whom to create the persistence service.
      * @return The [PersistenceService] for the given member.
      */
     fun getOrCreatePersistenceService(member: MemberX500Name): PersistenceService
