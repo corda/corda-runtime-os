@@ -65,7 +65,7 @@ internal class ConfigRPCOpsImpl @Activate constructor(
     private val configurationValidatorFactory: ConfigurationValidatorFactory,
     @Reference(service = ConfigurationGetService::class)
     private val configurationGetService: ConfigurationGetService
-    ) : ConfigRPCOps, PluggableRPCOps<ConfigRPCOps>, Lifecycle {
+) : ConfigRPCOps, PluggableRPCOps<ConfigRPCOps>, Lifecycle {
     private companion object {
         // The configuration used for the RPC sender.
         val RPC_CONFIG = RPCConfig(
@@ -225,7 +225,9 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         )
         logger.debug { "UpdatedConfig: $updatedConfig" }
     } catch (e: Exception) {
-        val message = "Configuration \"${request.config.escapedJson}\" could not be validated. Valid JSON or HOCON expected. Cause: ${e.message}"
+        val message =
+            "Configuration \"${request.config.escapedJson}\" could not be validated. " +
+                    "Valid JSON or HOCON expected. Cause: ${e.message}"
         throw BadRequestException(message)
     }
 
