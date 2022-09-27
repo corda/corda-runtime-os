@@ -11,7 +11,6 @@ import net.corda.configuration.rpcops.impl.exception.ConfigVersionException
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.data.config.ConfigurationSchemaVersion
-import net.corda.httprpc.JsonObject
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InternalServerException
