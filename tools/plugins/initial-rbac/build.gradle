@@ -12,7 +12,6 @@ ext {
 group 'net.corda.cli.deployment'
 
 dependencies {
-    implementation platform("net.corda:corda-api:$cordaApiVersion")
     compileOnly 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
 
     compileOnly "net.corda.cli.host:api:$pluginHostVersion"
