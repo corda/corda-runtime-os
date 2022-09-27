@@ -19,6 +19,8 @@ import javax.persistence.Table
 class CpkDbChangeLogAuditEntity(
     @EmbeddedId
     var id: CpkDbChangeLogAuditKey,
+    @Column(name = "file_path", nullable = false)
+    val filePath: String,
     @Column(name = "content", nullable = false)
     val content: String,
     @Column(name = "is_deleted", nullable = false)
@@ -34,6 +36,7 @@ class CpkDbChangeLogAuditEntity(
             cpkDbChangeLogEntity.fileChecksum,
             cpkDbChangeLogEntity.entityVersion
         ),
+        cpkDbChangeLogEntity.id.filePath,
         cpkDbChangeLogEntity.content,
         cpkDbChangeLogEntity.isDeleted
     )
@@ -73,7 +76,7 @@ fun findDbChangeLogAuditForCpi(
         "${CpiCpkEntity::class.simpleName} AS cpi " +
         "ON changelog.id.cpkName = cpi.metadata.id.cpkName AND " +
         "   changelog.id.cpkVersion = cpi.id.cpkVersion AND " +
-        "   changelog.cpkSignerSummaryHash = cpi.id.cpkSignerSummaryHash " +
+        "   changelog.id.cpkSignerSummaryHash = cpi.id.cpkSignerSummaryHash " +
         "WHERE cpi.id.cpiName = :name AND " +
         "      cpi.id.cpiVersion = :version AND " +
         "      cpi.id.cpiSignerSummaryHash = :signerSummaryHash " +

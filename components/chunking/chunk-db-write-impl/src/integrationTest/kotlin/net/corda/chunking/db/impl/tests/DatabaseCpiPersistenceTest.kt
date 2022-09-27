@@ -848,7 +848,7 @@ internal class DatabaseCpiPersistenceTest {
                     "cpk_signer_summary_hash",
                     signerSummaryHash.toString()
                 ).first()
-            assertThat(changeLog.entityVersion).isEqualTo(i)
+            assertThat(changeLog.entityVersion).isEqualTo(i * 2)
         }
     }
 
