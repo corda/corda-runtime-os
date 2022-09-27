@@ -28,7 +28,8 @@ interface RoleEndpoint : RpcOps {
      * Get all the roles available in RBAC permission system.
      */
     @HttpRpcGET(description = "This method returns an array with information about all roles in the permission system.",
-    responseDescription = """Set of roles with each role having the following attributes: 
+    responseDescription = """
+        Set of roles with each role having the following attributes: 
         id: The unique identifier of the role
         version: The version number of the role
         updateTimestamp: The date and time when the role was last updated
@@ -42,7 +43,8 @@ interface RoleEndpoint : RpcOps {
      * Create a role in the RBAC permission system.
      */
     @HttpRpcPOST(description = "The method creates a new role in the RBAC permission system.",
-    responseDescription = """Newly created role with attributes:
+    responseDescription = """
+        Newly created role with attributes:
         id: The unique identifier of the role
         version: The version number of the role
         updateTimestamp: The date and time when the role was last updated
@@ -52,9 +54,10 @@ interface RoleEndpoint : RpcOps {
     fun createRole(
         @HttpRpcRequestBodyParameter(
             description =
-            """Details of the role to be created: 
-                roleName - name of the role.
-                groupVisibility - optional group visibility of the role.
+            """
+                Details of the role to be created: 
+                roleName - name of the role
+                groupVisibility - optional group visibility of the role
             """)
         createRoleType: CreateRoleType
     ): ResponseEntity<RoleResponseType>
@@ -63,7 +66,8 @@ interface RoleEndpoint : RpcOps {
      * Get a role by its identifier in the RBAC permission system.
      */
     @HttpRpcGET(path = "{id}", description = "This method gets the details of a role specified by its ID.",
-    responseDescription = """Role with attributes:
+    responseDescription = """
+        Role with attributes:
         id: The unique identifier of the role
         version: The version number of the role
         updateTimestamp: The date and time when the role was last updated
@@ -81,7 +85,8 @@ interface RoleEndpoint : RpcOps {
      */
     @HttpRpcPUT(path = "{roleId}/permission/{permissionId}",
         description = "This method adds the specified permission to the specified role.",
-        responseDescription = """Role with attributes:
+        responseDescription = """
+            Role with attributes:
             id: The unique identifier of the role
             version: The version number of the role
             updateTimestamp: The date and time when the role was last updated
@@ -100,7 +105,8 @@ interface RoleEndpoint : RpcOps {
      */
     @HttpRpcDELETE(path = "{roleId}/permission/{permissionId}",
         description = "This method removes the specified permission from the specified role.",
-        responseDescription = """Role with attributes:
+        responseDescription = """
+            Role with attributes:
             id: The unique identifier of the role
             version: The version number of the role
             updateTimestamp: The date and time when the role was last updated

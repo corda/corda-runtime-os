@@ -19,8 +19,8 @@ import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
 import java.security.PublicKey
 import java.security.SecureRandom
 import java.time.Instant
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
+import net.corda.v5.application.marshalling.JsonMarshallingService
 
 @Suppress("LongParameterList")
 class ConsensualTransactionBuilderImpl(
@@ -29,6 +29,7 @@ class ConsensualTransactionBuilderImpl(
     private val secureRandom: SecureRandom,
     private val serializer: SerializationService,
     private val signingService: SigningService,
+    private val jsonMarshallingService: JsonMarshallingService,
     override val states: List<ConsensualState> = emptyList(),
 ) : ConsensualTransactionBuilder {
 
@@ -48,7 +49,7 @@ class ConsensualTransactionBuilderImpl(
         states: List<ConsensualState> = this.states
     ): ConsensualTransactionBuilderImpl {
         return ConsensualTransactionBuilderImpl(
-            merkleTreeProvider, digestService, secureRandom, serializer, signingService,
+            merkleTreeProvider, digestService, secureRandom, serializer, signingService, jsonMarshallingService,
             states,
         )
     }
@@ -69,7 +70,6 @@ class ConsensualTransactionBuilderImpl(
 
     private fun calculateComponentGroupLists(serializer: SerializationService): List<List<ByteArray>>
     {
-        val mapper = jacksonObjectMapper()
         val requiredSigningKeys = states
             .map{it.participants}
             .flatten()
@@ -80,7 +80,7 @@ class ConsensualTransactionBuilderImpl(
         for (componentGroupIndex in ConsensualComponentGroupEnum.values()) {
             componentGroupLists += when (componentGroupIndex) {
                 ConsensualComponentGroupEnum.METADATA ->
-                    listOf(mapper.writeValueAsBytes(calculateMetaData())) // TODO(update with CORE-5940)
+                    listOf(jsonMarshallingService.format(calculateMetaData()).toByteArray(Charsets.UTF_8)) // TODO(update with CORE-5940)
                 ConsensualComponentGroupEnum.TIMESTAMP ->
                     listOf(serializer.serialize(Instant.now()).bytes)
                 ConsensualComponentGroupEnum.REQUIRED_SIGNING_KEYS ->
@@ -118,6 +118,7 @@ class ConsensualTransactionBuilderImpl(
         return WireTransaction(
             merkleTreeProvider,
             digestService,
+            jsonMarshallingService,
             privacySalt,
             componentGroupLists
         )

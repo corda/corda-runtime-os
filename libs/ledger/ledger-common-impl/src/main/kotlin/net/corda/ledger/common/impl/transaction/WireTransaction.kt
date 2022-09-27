@@ -6,7 +6,7 @@ import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.PrivacySalt
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION
@@ -20,6 +20,7 @@ const val ALL_LEDGER_METADATA_COMPONENT_GROUP_ID = 0
 class WireTransaction(
     private val merkleTreeProvider: MerkleTreeProvider,
     private val digestService: DigestService,
+    private val jsonMarshallingService: JsonMarshallingService,
     val privacySalt: PrivacySalt,
     val componentGroupLists: List<List<ByteArray>>
 ){
@@ -33,9 +34,9 @@ class WireTransaction(
         check(componentGroupLists.all { it.isNotEmpty() }) { "Empty component groups are not allowed" }
         check(componentGroupLists.all { i -> i.all { j-> j.isNotEmpty() } }) { "Empty components are not allowed" }
 
-        val mapper = jacksonObjectMapper()
         val metadataBytes = componentGroupLists[ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first()
-        metadata = mapper.readValue(metadataBytes, TransactionMetaData::class.java) // TODO(update with CORE-5940)
+        // TODO(update with CORE-5940)
+        metadata = jsonMarshallingService.parse(metadataBytes.decodeToString(), TransactionMetaData::class.java)
 
         check(metadata.getDigestSettings() == WireTransactionDigestSettings.defaultValues) {
             "Only the default digest settings are acceptable now! ${metadata.getDigestSettings()} vs " +

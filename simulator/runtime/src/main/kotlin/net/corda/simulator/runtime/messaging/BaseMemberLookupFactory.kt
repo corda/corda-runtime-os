@@ -6,6 +6,9 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.MemberInfo
 import java.security.PublicKey
 
+/**
+ * @see [MemberLookupFactory].
+ */
 class BaseMemberLookupFactory : MemberLookupFactory {
 
     override fun createMemberLookup(member: MemberX500Name, memberRegistry: HasMemberInfos): MemberLookup {

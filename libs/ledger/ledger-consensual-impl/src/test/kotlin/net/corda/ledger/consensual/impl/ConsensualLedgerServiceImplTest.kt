@@ -1,5 +1,6 @@
 package net.corda.ledger.consensual.impl
 
+import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import java.security.KeyPairGenerator
 import java.security.PublicKey
 import kotlin.test.assertIs
@@ -13,6 +14,7 @@ import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.internal.serialization.amqp.helper.TestFlowFiberServiceWithSerialization
 import net.corda.v5.application.crypto.SigningService
+import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
@@ -45,6 +47,7 @@ class ConsensualLedgerServiceImplTest {
         private lateinit var digestService: DigestService
         private lateinit var merkleTreeProvider: MerkleTreeProvider
         private lateinit var signingService: SigningService
+        private lateinit var jsonMarshallingService: JsonMarshallingService
         private lateinit var schemeMetadata: CipherSchemeMetadata
         private lateinit var flowFiberService: FlowFiberService
         private lateinit var externalEventExecutor: ExternalEventExecutor
@@ -71,6 +74,7 @@ class ConsensualLedgerServiceImplTest {
             externalEventExecutor = ExternalEventExecutorImpl(flowFiberService)
             keyEncodingService = CipherSchemeMetadataImpl()
             signingService = SigningServiceImpl(externalEventExecutor, keyEncodingService)
+            jsonMarshallingService = JsonMarshallingServiceImpl()
 
             val kpg = KeyPairGenerator.getInstance("RSA")
             kpg.initialize(512) // Shortest possible to not slow down tests.
@@ -93,14 +97,28 @@ class ConsensualLedgerServiceImplTest {
 
     @Test
     fun `getTransactionBuilder should return a Transaction Builder`() {
-        val service = ConsensualLedgerServiceImpl(merkleTreeProvider, digestService, signingService, flowFiberService, schemeMetadata)
+        val service = ConsensualLedgerServiceImpl(
+            merkleTreeProvider,
+            digestService,
+            signingService,
+            flowFiberService,
+            schemeMetadata,
+            jsonMarshallingService
+        )
         val transactionBuilder = service.getTransactionBuilder()
         assertIs<ConsensualTransactionBuilder>(transactionBuilder)
     }
 
     @Test
     fun `ConsensualLedgerServiceImpl's getTransactionBuilder() can build a SignedTransaction`() {
-        val service = ConsensualLedgerServiceImpl(merkleTreeProvider, digestService, signingService, flowFiberService, schemeMetadata)
+        val service = ConsensualLedgerServiceImpl(
+            merkleTreeProvider,
+            digestService,
+            signingService,
+            flowFiberService,
+            schemeMetadata,
+            jsonMarshallingService
+        )
         val transactionBuilder = service.getTransactionBuilder()
         val signedTransaction = transactionBuilder
             .withStates(testConsensualState)

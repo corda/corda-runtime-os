@@ -20,6 +20,16 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 
 
+/**
+ * The base class to which Simulator delegates.
+ *
+ * @param configuration The configuration for this instance of Simulator.
+ * @param flowChecker A flow checker for checking flows.
+ * @param fiber The simulated fiber / Kafka bus on which all shared state is stored.
+ * @param injector The injector for services on flows.
+ *
+ * @see [net.corda.simulator.Simulator] for details.
+ */
 class SimulatorDelegateBase  (
     private val configuration: SimulatorConfiguration,
     private val flowChecker: FlowChecker = CordaFlowChecker(),

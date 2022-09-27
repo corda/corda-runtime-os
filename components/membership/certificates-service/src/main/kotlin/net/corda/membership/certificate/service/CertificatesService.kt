@@ -7,7 +7,8 @@ interface CertificatesService : Lifecycle {
     /**
      * Import certificate chain.
      *
-     * @param tenantId 'codesigner', 'p2p', 'rpc-api', or holding identity identity ID.
+     * @param tenantId can either be a holding identity ID, the value 'p2p' for a cluster-level tenant
+     *          of the P2P services, or 'rpc-api' for a cluster-level tenant of the HTTP RPC API
      * @param alias Unique alias of the certificate.
      * @param certificates The certificates in PEM format
      * @throws Exception in case of network or persistent error.
@@ -17,7 +18,8 @@ interface CertificatesService : Lifecycle {
     /**
      * Retrieve certificate.
      *
-     * @param tenantId 'codesigner', 'p2p', 'rpc-api', or holding identity identity ID.
+     * @param tenantId can either be a holding identity ID, the value 'p2p' for a cluster-level tenant
+     *          of the P2P services, or 'rpc-api' for a cluster-level tenant of the HTTP RPC API
      * @param alias Unique alias of the certificate
      * @return Certificate in PEM format.
      */
@@ -26,7 +28,8 @@ interface CertificatesService : Lifecycle {
     /**
      * Retrieve all certificates for given tenant.
      *
-     * @param tenantId 'codesigner', 'p2p', 'rpc-api', or holding identity identity ID.
+     * @param tenantId can either be a holding identity ID, the value 'p2p' for a cluster-level tenant
+     *      of the P2P services, or 'rpc-api' for a cluster-level tenant of the HTTP RPC API
      * @return Certificates in PEM format.
      */
     fun retrieveAllCertificates(tenantId: String): List<String>
