@@ -34,7 +34,9 @@ interface MGMRpcOps : RpcOps {
      */
     @HttpRpcGET(
         path = "{holdingIdentityShortHash}/info",
-        description = "Enables you to retrieve the group policy from the MGM required to join the membership group"
+        description = "This method retrieves the group policy from the MGM required to join the membership group.",
+        responseDescription = "The group policy from the MGM required to join the membership group as a string " +
+                "in JSON format"
     )
     fun generateGroupPolicy(
         @HttpRpcPathParameter(description = "The holding identity ID of the MGM of the membership group to be joined")
