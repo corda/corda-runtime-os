@@ -9,7 +9,7 @@ import java.nio.ByteBuffer
 import java.util.Arrays
 import kotlin.math.min
 
-fun <T> byteArrayOutput(task: (ByteBufferOutputStream) -> T): ByteArray {
+fun byteArrayOutput(task: (ByteBufferOutputStream) -> Unit): ByteArray {
     val byteBufferOutputStream = ByteBufferOutputStream(64 * 1024)
     task(byteBufferOutputStream)
     return byteBufferOutputStream.use {
