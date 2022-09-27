@@ -3,7 +3,6 @@ package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.ByteBufferInputStream
 import net.corda.internal.serialization.ByteBufferOutputStream
-import net.corda.internal.serialization.serializeOutputStreamPool
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.ByteBuffer
@@ -23,7 +22,7 @@ fun <T> OutputStream.alsoAsByteBuffer(remaining: Int, task: (ByteBuffer) -> T): 
     return if (this is ByteBufferOutputStream) {
         alsoAsByteBuffer(remaining, task)
     } else {
-        serializeOutputStreamPool.run {
+        ByteBufferOutputStream(64 * 1024).use {
             val result = it.alsoAsByteBuffer(remaining, task)
             it.copyTo(this)
             result
