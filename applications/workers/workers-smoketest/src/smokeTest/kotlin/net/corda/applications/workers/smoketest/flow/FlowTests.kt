@@ -68,6 +68,7 @@ class FlowTests {
             "net.cordapp.testing.testflows.MessagingFlow",
             "net.cordapp.testing.testflows.PersistenceFlow",
             "net.cordapp.testing.testflows.UniquenessCheckTestFlow",
+            "net.cordapp.testing.testflows.ledger.ConsensualSignedTransactionSerializationFlow",
         ) + invalidConstructorFlowNames + dependencyInjectionFlowNames
 
         @BeforeAll
@@ -611,6 +612,19 @@ class FlowTests {
             )
         val result = awaitRpcFlowFinished(bobHoldingId, requestID)
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+    }
+
+    @Test
+    fun `Consensul Ledger - Signed Transaction serialization and deserialization without exceptions`() {
+        val requestID =
+            startRpcFlow(
+                bobHoldingId,
+                mapOf(),
+                "net.cordapp.testing.testflows.ledger.ConsensualSignedTransactionSerializationFlow"
+            )
+        val result = awaitRpcFlowFinished(bobHoldingId, requestID)
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        val flowResult = result.getRpcFlowResult()
     }
 
     @Test
