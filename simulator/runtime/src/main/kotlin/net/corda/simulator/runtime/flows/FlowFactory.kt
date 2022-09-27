@@ -18,7 +18,7 @@ interface FlowFactory {
      * @return An instance of the given flow class.
      *
      * @throws [net.corda.simulator.exceptions.UnrecognizedFlowClassException] if the class does not extend
-     * [RPCStartableFlow]
+     * [RPCStartableFlow].
      */
     fun createInitiatingFlow(member: MemberX500Name, flowClassName: String): RPCStartableFlow
 
