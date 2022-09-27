@@ -26,7 +26,9 @@ private const val USER_ADMIN_ROLE = "UserAdminRole"
 class UserAdminSubcommand : HttpRpcCommand(), Callable<Int> {
 
     private companion object {
-        private val logger: Logger = LoggerFactory.getLogger(this::class.java)
+        val logger: Logger = LoggerFactory.getLogger(this::class.java)
+        val sysOut: Logger = LoggerFactory.getLogger("SystemOut")
+        val errOut: Logger = LoggerFactory.getLogger("SystemErr")
     }
 
     private val permissionsToCreate: Map<String, String> = listOf(
@@ -57,8 +59,8 @@ class UserAdminSubcommand : HttpRpcCommand(), Callable<Int> {
             val roleEndpoint = roleEndpointClient.start().proxy
             val allRoles = roleEndpoint.getRoles()
             if (allRoles.any { it.roleName == USER_ADMIN_ROLE }) {
-                logger.warn("$USER_ADMIN_ROLE already exists - nothing to do.")
-                return 1
+                errOut.error("$USER_ADMIN_ROLE already exists - nothing to do.")
+                return 5
             }
 
             val permissionIds = createHttpRpcClient(PermissionEndpoint::class).use { permissionEndpointClient ->
@@ -78,10 +80,10 @@ class UserAdminSubcommand : HttpRpcCommand(), Callable<Int> {
             }
 
             val roleId = roleEndpoint.createRole(CreateRoleType(USER_ADMIN_ROLE, null)).responseBody.id
-            logger.info("Created $USER_ADMIN_ROLE with id: $roleId")
             permissionIds.forEach { permId ->
                 roleEndpoint.addPermission(roleId, permId)
             }
+            sysOut.info("Successfully created $USER_ADMIN_ROLE with id: $roleId and assigned permissions")
         }
 
         return 0
