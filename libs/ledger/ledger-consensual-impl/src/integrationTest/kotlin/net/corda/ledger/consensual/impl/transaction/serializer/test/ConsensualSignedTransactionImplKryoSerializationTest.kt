@@ -7,7 +7,7 @@ import net.corda.ledger.consensual.testkit.getConsensualSignedTransactionImpl
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFactory
-import net.corda.testing.sandboxes.SandboxManagementService
+import net.corda.testing.sandboxes.EmptySandboxService
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
@@ -53,7 +53,7 @@ class ConsensualSignedTransactionImplKryoSerializationTest {
     @InjectService(timeout = 1000)
     lateinit var jsonMarshallingService: JsonMarshallingService
 
-    private lateinit var sandboxManagementService: SandboxManagementService
+    private lateinit var emptySandboxService: EmptySandboxService
 
     private lateinit var wireTransactionKryoSerializer: CheckpointInternalCustomSerializer<WireTransaction>
     private lateinit var consensualSignedTransactionImplSeralizer: CheckpointInternalCustomSerializer<ConsensualSignedTransactionImpl>
@@ -71,7 +71,7 @@ class ConsensualSignedTransactionImplKryoSerializationTest {
     ) {
         sandboxSetup.configure(bundleContext, baseDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
-            sandboxManagementService = setup.fetchService(timeout = 1500)
+            emptySandboxService = setup.fetchService(timeout = 1500)
             partySerializer = setup.fetchService(
                 "(component.name=net.corda.ledger.consensual.impl.PartySerializer)",
                 1500
@@ -95,7 +95,7 @@ class ConsensualSignedTransactionImplKryoSerializationTest {
         }, schemeMetadata)
 
         val builder =
-            checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(sandboxManagementService.group1)
+            checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(emptySandboxService.emptySandboxGroup)
         val kryoSerializer = builder
             .addSerializer(WireTransaction::class.java, wireTransactionKryoSerializer)
             .addSerializer(ConsensualSignedTransactionImpl::class.java, consensualSignedTransactionImplSeralizer)

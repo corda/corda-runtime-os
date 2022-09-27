@@ -7,16 +7,16 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 
-@Component(service = [ SandboxManagementService::class ])
-class SandboxManagementService @Activate constructor(
+@Component(service = [ EmptySandboxService::class ])
+class EmptySandboxService @Activate constructor(
     @Reference
     private val sandboxCreationService: SandboxCreationService
 ) {
-    val group1: SandboxGroup = sandboxCreationService.createSandboxGroup(emptyList())
+    val emptySandboxGroup: SandboxGroup = sandboxCreationService.createSandboxGroup(emptyList())
 
     @Suppress("unused")
     @Deactivate
     fun cleanup() {
-        sandboxCreationService.unloadSandboxGroup(group1)
+        sandboxCreationService.unloadSandboxGroup(emptySandboxGroup)
     }
 }
