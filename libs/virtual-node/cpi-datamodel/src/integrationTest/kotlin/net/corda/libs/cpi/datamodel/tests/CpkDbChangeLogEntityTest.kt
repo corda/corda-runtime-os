@@ -4,17 +4,12 @@ import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
-import net.corda.libs.cpi.datamodel.CpiCpkEntity
 import net.corda.libs.cpi.datamodel.CpiEntities
-import net.corda.libs.cpi.datamodel.CpiMetadataEntity
-import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogAuditEntity
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogAuditKey
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
 import net.corda.libs.cpi.datamodel.findDbChangeLogAuditForCpi
 import net.corda.libs.cpi.datamodel.findDbChangeLogForCpi
-import net.corda.libs.cpi.datamodel.toAudit
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
@@ -108,7 +103,7 @@ class CpkDbChangeLogEntityTest {
             "master-content"
         )
 
-        val changeLog1Audit = changeLog1.toAudit()
+        val changeLog1Audit = CpkDbChangeLogAuditEntity(changeLog1)
 
         transaction {
             persist(cpi)
@@ -131,10 +126,12 @@ class CpkDbChangeLogEntityTest {
                     cpi.version,
                     SecureHash.parse(cpi.signerSummaryHash)
                 )
-            ).single()
+            ).singleOrNull()
 
-            assertThat(loadedDbLogEntity.toAudit())
-                .isNotEqualTo(loadedDbLogAuditEntity)
+            assertThat(loadedDbLogAuditEntity)
+                .isNotEqualTo(null)
+            assertThat(CpkDbChangeLogAuditEntity(loadedDbLogEntity).id.cpkName)
+                .isEqualTo(loadedDbLogAuditEntity!!.id.cpkName)
         }
     }
 
@@ -149,7 +146,7 @@ class CpkDbChangeLogEntityTest {
             "master-content"
         )
 
-        val changeLog1Audit = changeLog1.toAudit()
+        val changeLog1Audit = CpkDbChangeLogAuditEntity(changeLog1)
 
         transaction {
             persist(cpi)
@@ -165,7 +162,7 @@ class CpkDbChangeLogEntityTest {
                 CpkDbChangeLogKey(cpk.metadata.id.cpkName, cpk.metadata.id.cpkVersion,
                     cpk.metadata.id.cpkSignerSummaryHash, "master")
             )
-            loadedDbLogEntity.isDeleted = !loadedDbLogEntity.isDeleted
+            loadedDbLogEntity.content = "something else"
             merge(loadedDbLogEntity)
             flush()
             val updatedDbLogEntity = find(
@@ -173,7 +170,7 @@ class CpkDbChangeLogEntityTest {
                 CpkDbChangeLogKey(cpk.metadata.id.cpkName, cpk.metadata.id.cpkVersion,
                     cpk.metadata.id.cpkSignerSummaryHash, "master")
             )
-            persist(updatedDbLogEntity.toAudit())
+            persist(CpkDbChangeLogAuditEntity(updatedDbLogEntity))
             flush()
         }
 
@@ -192,10 +189,10 @@ class CpkDbChangeLogEntityTest {
                 )
             )
 
-            assertThat(loadedDbLogEntity.toAudit().id.entityVersion)
-                .isNotEqualTo(loadedDbLogAuditEntity.first().id.entityVersion)
-            assertThat(loadedDbLogEntity.toAudit().id.entityVersion)
-                .isEqualTo(loadedDbLogAuditEntity.last().id.entityVersion)
+            assertThat(CpkDbChangeLogAuditEntity(loadedDbLogEntity).id.entityVersion)
+                .isNotEqualTo(loadedDbLogAuditEntities.first().id.entityVersion)
+            assertThat(CpkDbChangeLogAuditEntity(loadedDbLogEntity).id.entityVersion)
+                .isEqualTo(loadedDbLogAuditEntities.last().id.entityVersion)
         }
     }
 
