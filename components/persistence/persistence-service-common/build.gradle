@@ -11,6 +11,9 @@ dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
     compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
 
+    implementation 'net.corda:corda-application'
+    implementation 'net.corda:corda-config-schema'
+
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation project(':components:db:db-connection-manager')
@@ -18,6 +21,8 @@ dependencies {
     implementation project(':components:virtual-node:sandbox-group-context-service')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
 
+    implementation project(':libs:flows:external-event-responses')
+    implementation project(":libs:messaging:messaging")
     implementation project(':libs:serialization:serialization-amqp')
     implementation project(':libs:serialization:serialization-internal')
     implementation project(':libs:virtual-node:sandbox-group-context')

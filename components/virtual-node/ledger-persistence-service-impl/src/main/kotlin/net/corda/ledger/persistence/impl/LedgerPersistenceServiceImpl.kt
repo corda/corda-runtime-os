@@ -59,10 +59,10 @@ class LedgerPersistenceServiceImpl  @Activate constructor(
     private val coordinator = coordinatorFactory.createCoordinator<LedgerPersistenceService>(dependentComponents, ::eventHandler)
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.debug { "FlowPersistenceService received: $event" }
+        logger.debug { "LedgerPersistenceService received: $event" }
         when (event) {
             is StartEvent -> {
-                logger.debug { "Starting flow persistence component." }
+                logger.debug { "Starting ledger persistence component." }
             }
             is RegistrationStatusChangeEvent -> {
                 if (event.status == LifecycleStatus.UP) {
@@ -79,14 +79,14 @@ class LedgerPersistenceServiceImpl  @Activate constructor(
                 val newEntityProcessor = entityProcessorFactory.create(
                     event.config.getConfig(MESSAGING_CONFIG)
                 )
-                logger.debug("Starting EntityProcessor.")
+                logger.debug("Starting LedgerPersistenceService.")
                 newEntityProcessor.start()
                 entityProcessor = newEntityProcessor
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
             is StopEvent -> {
                 entityProcessor?.stop()
-                logger.debug { "Stopping EntityProcessor." }
+                logger.debug { "Stopping LedgerPersistenceService." }
             }
         }
     }

@@ -11,7 +11,6 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.PayloadChecker
 import net.corda.schema.Schemas
-import net.corda.schema.configuration.MessagingConfig
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -35,12 +34,11 @@ class EntityProcessorFactoryImpl @Activate constructor(
 
     override fun create(config: SmartConfig): EntityProcessor {
         val subscriptionConfig = SubscriptionConfig(GROUP_NAME, Schemas.VirtualNode.ENTITY_PROCESSOR)
-        // max allowed msg size minus headroom for wrapper message
-        val maxPayLoadSize = config.getInt(MessagingConfig.MAX_ALLOWED_MSG_SIZE) - CORDA_MESSAGE_OVERHEAD
+
         val processor = EntityMessageProcessor(
             entitySandboxService,
             externalEventResponseFactory,
-            PayloadChecker(maxPayLoadSize)::checkSize
+            PayloadChecker(config)::checkSize
         )
 
         val subscription = subscriptionFactory.createDurableSubscription(

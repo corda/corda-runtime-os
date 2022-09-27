@@ -10,7 +10,6 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.persistence.common.PayloadChecker
 import net.corda.schema.Schemas
-import net.corda.schema.configuration.MessagingConfig
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
@@ -36,20 +35,19 @@ class ConsensualLedgerProcessorFactoryImpl @Activate constructor(
 ) : ConsensualLedgerProcessorFactory {
     companion object {
         internal const val GROUP_NAME = "virtual.node.ledger.persistence"
-        private const val CORDA_MESSAGE_OVERHEAD = 1024
+
     }
 
     override fun create(config: SmartConfig): ConsensualLedgerProcessor {
         val subscriptionConfig = SubscriptionConfig(GROUP_NAME, Schemas.VirtualNode.LEDGER_PERSISTENCE_TOPIC)
-        // max allowed msg size minus headroom for wrapper message
-        val maxPayLoadSize = config.getInt(MessagingConfig.MAX_ALLOWED_MSG_SIZE) - CORDA_MESSAGE_OVERHEAD
+
         val processor = ConsensualLedgerMessageProcessor(
             entitySandboxService,
             externalEventResponseFactory,
             merkleTreeFactory,
             digestService,
             jsonMarshallingService,
-            PayloadChecker(maxPayLoadSize)::checkSize
+            PayloadChecker(config)::checkSize
         )
 
         val subscription = subscriptionFactory.createDurableSubscription(
