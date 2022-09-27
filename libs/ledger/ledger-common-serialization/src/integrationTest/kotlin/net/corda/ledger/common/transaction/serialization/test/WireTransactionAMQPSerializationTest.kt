@@ -11,7 +11,7 @@ import net.corda.ledger.common.testkit.getWireTransaction
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.serialization.SerializationContext
-import net.corda.testing.sandboxes.SandboxManagementService
+import net.corda.testing.sandboxes.EmptySandboxService
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
@@ -56,7 +56,7 @@ class WireTransactionAMQPSerializationTest {
     @InjectService(timeout = 1000)
     lateinit var jsonMarshallingService: JsonMarshallingService
 
-    private lateinit var sandboxManagementService: SandboxManagementService
+    private lateinit var emptySandboxService: EmptySandboxService
 
     private lateinit var wireTransactionSerializer: InternalCustomSerializer<WireTransaction>
 
@@ -72,7 +72,7 @@ class WireTransactionAMQPSerializationTest {
     ) {
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
-            sandboxManagementService = setup.fetchService(timeout = 1500)
+            emptySandboxService = setup.fetchService(timeout = 1500)
             wireTransactionSerializer = setup.fetchService(1500)
         }
     }
@@ -93,11 +93,11 @@ class WireTransactionAMQPSerializationTest {
     fun `successfully serialize and deserialize a wireTransaction`() {
         // Create sandbox group
         // Initialised two serialisation factories to avoid having successful tests due to caching
-        val factory1 = testDefaultFactory(sandboxManagementService.group1)
-        val factory2 = testDefaultFactory(sandboxManagementService.group1)
+        val factory1 = testDefaultFactory(emptySandboxService.emptySandboxGroup)
+        val factory2 = testDefaultFactory(emptySandboxService.emptySandboxGroup)
 
         // Initialise the serialisation context
-        val testSerializationContext = testSerializationContext.withSandboxGroup(sandboxManagementService.group1)
+        val testSerializationContext = testSerializationContext.withSandboxGroup(emptySandboxService.emptySandboxGroup)
 
             val wireTransaction = getWireTransaction(digestService, merkleTreeProvider, jsonMarshallingService)
 
