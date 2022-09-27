@@ -4,11 +4,10 @@ import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.ledger.consensual.testkit.getConsensualSignedTransactionImpl
-import net.corda.sandbox.SandboxCreationService
-import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFactory
+import net.corda.testing.sandboxes.SandboxManagementService
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
@@ -27,29 +26,11 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.framework.BundleContext
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Deactivate
-import org.osgi.service.component.annotations.Reference
 import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.file.Path
-
-@Component(service = [ SandboxManagementService::class ])
-class SandboxManagementService @Activate constructor(
-    @Reference
-    private val sandboxCreationService: SandboxCreationService
-) {
-    val group1: SandboxGroup = sandboxCreationService.createSandboxGroup(emptyList())
-
-    @Suppress("unused")
-    @Deactivate
-    fun cleanup() {
-        sandboxCreationService.unloadSandboxGroup(group1)
-    }
-}
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)

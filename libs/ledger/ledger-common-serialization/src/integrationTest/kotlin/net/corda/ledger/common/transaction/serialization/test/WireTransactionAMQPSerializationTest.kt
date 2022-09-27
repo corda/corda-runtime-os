@@ -8,10 +8,10 @@ import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.common.testkit.getWireTransaction
-import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.serialization.SerializationContext
+import net.corda.testing.sandboxes.SandboxManagementService
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
@@ -30,9 +30,6 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.framework.BundleContext
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
 import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
@@ -40,20 +37,6 @@ import org.osgi.test.junit5.service.ServiceExtension
 import java.io.NotSerializableException
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
-
-@Component(service = [ SandboxFactory::class ])
-class SandboxFactory @Activate constructor(
-    @Reference
-    private val sandboxCreationService: SandboxCreationService
-) {
-    fun loadSandboxGroup(): SandboxGroup {
-        return sandboxCreationService.createSandboxGroup(emptyList())
-    }
-
-    fun unloadSandboxGroup(sandboxGroup: SandboxGroup) {
-        sandboxCreationService.unloadSandboxGroup(sandboxGroup)
-    }
-}
 
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
@@ -73,7 +56,7 @@ class WireTransactionAMQPSerializationTest {
     @InjectService(timeout = 1000)
     lateinit var jsonMarshallingService: JsonMarshallingService
 
-    private lateinit var sandboxFactory: SandboxFactory
+    private lateinit var sandboxManagementService: SandboxManagementService
 
     private lateinit var wireTransactionSerializer: InternalCustomSerializer<WireTransaction>
 
@@ -89,7 +72,7 @@ class WireTransactionAMQPSerializationTest {
     ) {
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
-            sandboxFactory = setup.fetchService(timeout = 1500)
+            sandboxManagementService = setup.fetchService(timeout = 1500)
             wireTransactionSerializer = setup.fetchService(1500)
         }
     }
@@ -109,35 +92,29 @@ class WireTransactionAMQPSerializationTest {
     @Suppress("FunctionName")
     fun `successfully serialize and deserialize a wireTransaction`() {
         // Create sandbox group
-        val sandboxGroup = sandboxFactory.loadSandboxGroup()
-        try {
-            // Initialised two serialisation factories to avoid having successful tests due to caching
-            val factory1 = testDefaultFactory(sandboxGroup)
-            val factory2 = testDefaultFactory(sandboxGroup)
+        // Initialised two serialisation factories to avoid having successful tests due to caching
+        val factory1 = testDefaultFactory(sandboxManagementService.group1)
+        val factory2 = testDefaultFactory(sandboxManagementService.group1)
 
-            // Initialise the serialisation context
-            val testSerializationContext = testSerializationContext.withSandboxGroup(sandboxGroup)
+        // Initialise the serialisation context
+        val testSerializationContext = testSerializationContext.withSandboxGroup(sandboxManagementService.group1)
 
             val wireTransaction = getWireTransaction(digestService, merkleTreeProvider, jsonMarshallingService)
 
-            val serialised = SerializationOutput(factory1).serialize(wireTransaction, testSerializationContext)
+        val serialised = SerializationOutput(factory1).serialize(wireTransaction, testSerializationContext)
 
-            // Perform deserialization and check if the correct class is deserialized
-            val deserialized =
-                DeserializationInput(factory2).deserializeAndReturnEnvelope(serialised, testSerializationContext)
+        // Perform deserialization and check if the correct class is deserialized
+        val deserialized =
+            DeserializationInput(factory2).deserializeAndReturnEnvelope(serialised, testSerializationContext)
 
-            assertThat(deserialized.obj.javaClass.name).isEqualTo(
-                "net.corda.ledger.common.impl.transaction.WireTransaction"
-            )
+        assertThat(deserialized.obj.javaClass.name).isEqualTo(
+            "net.corda.ledger.common.impl.transaction.WireTransaction"
+        )
 
-            assertThat(deserialized.obj).isEqualTo(wireTransaction)
-            Assertions.assertDoesNotThrow {
-                deserialized.obj.id
-            }
-            assertThat(deserialized.obj.id).isEqualTo(wireTransaction.id)
-
-        } finally {
-            sandboxFactory.unloadSandboxGroup(sandboxGroup)
+        assertThat(deserialized.obj).isEqualTo(wireTransaction)
+        Assertions.assertDoesNotThrow {
+            deserialized.obj.id
         }
+        assertThat(deserialized.obj.id).isEqualTo(wireTransaction.id)
     }
 }
