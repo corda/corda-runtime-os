@@ -14,9 +14,6 @@ import net.corda.db.persistence.testkit.fake.FakeDbConnectionManager
 import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.db.schema.DbSchema
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
-import net.corda.ledger.common.impl.transaction.TransactionMetaData
-import net.corda.ledger.common.impl.transaction.WireTransaction
-import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
 import net.corda.messaging.api.records.Record
 import net.corda.orm.JpaEntitiesSet
 import net.corda.ledger.persistence.impl.tests.helpers.DbTestContext
@@ -24,18 +21,19 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.ledger.consensual.FindTransaction
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getSerializer
 import net.corda.db.testkit.DbUtils
-import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
-import net.corda.ledger.common.transaction.serialization.internal.WireTransactionSerializer
+import net.corda.ledger.common.impl.transaction.WireTransaction
+import net.corda.ledger.common.testkit.getWireTransaction
 import net.corda.ledger.persistence.impl.internal.ConsensualLedgerMessageProcessor
 import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_SERIALIZER
 import net.corda.persistence.common.EntitySandboxServiceFactory
+import net.corda.serialization.InternalCustomSerializer
+import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
@@ -100,7 +98,9 @@ class ConsensualLedgerMessageProcessorTests {
     lateinit var digestService: DigestService
     @InjectService
     lateinit var merkleTreeFactory: MerkleTreeFactory
-    lateinit var wireTransactionSerializer: WireTransactionSerializer
+    @InjectService
+    lateinit var jsonMarshallingService: JsonMarshallingService
+    private lateinit var wireTransactionSerializer: InternalCustomSerializer<WireTransaction>
     private lateinit var ctx: DbTestContext
 
     @BeforeAll
@@ -119,7 +119,10 @@ class ConsensualLedgerMessageProcessorTests {
             cpiInfoReadService = setup.fetchService(timeout = 10000)
             virtualNode = setup.fetchService(timeout = 10000)
             virtualNodeInfoReadService = setup.fetchService(timeout = 10000)
-            wireTransactionSerializer = WireTransactionSerializer(merkleTreeFactory, digestService)
+            wireTransactionSerializer = setup.fetchService(
+                "(component.name=net.corda.ledger.common.transaction.serialization.internal.WireTransactionSerializer)",
+                10000
+            )
             deserializer = setup.fetchService<CordaAvroSerializationFactory>(timeout = 10000)
                 .createAvroDeserializer({}, EntityResponse::class.java)
         }
@@ -156,24 +159,8 @@ class ConsensualLedgerMessageProcessorTests {
         // Native SQL is used that is specific to Postgres and won't work with in-memory DB
         Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
 
-        // TODO Refactor this after https://github.com/corda/corda-runtime-os/pull/2201 is merged
-        //  see https://github.com/corda/corda-runtime-os/pull/1883#discussion_r979778303
-
         // create ConsensualSignedTransactionImpl instance (or WireTransaction at first)
-        val mapper = jacksonObjectMapper()
-
-        val transactionMetaData = TransactionMetaData(
-            mapOf(
-                TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues
-            )
-        )
-        val privacySalt = PrivacySaltImpl("1".repeat(32).toByteArray())
-        val componentGroupLists = listOf(
-            listOf(mapper.writeValueAsBytes(transactionMetaData)),
-            listOf(".".toByteArray()),
-            listOf("abc d efg".toByteArray()),
-        )
-        val tx = WireTransaction(merkleTreeFactory, digestService, privacySalt, componentGroupLists)
+        val tx = getWireTransaction(digestService, merkleTreeFactory, jsonMarshallingService)
         logger.info("WireTransaction: ", tx)
 
         // serialise tx into bytebuffer and add to PersistTransaction payload
@@ -187,6 +174,7 @@ class ConsensualLedgerMessageProcessorTests {
             externalEventResponseFactory,
             merkleTreeFactory,
             digestService,
+            jsonMarshallingService,
             this::noOpPayloadCheck)
         val requestId = UUID.randomUUID().toString()
         val records = listOf(Record(TOPIC, requestId, request))

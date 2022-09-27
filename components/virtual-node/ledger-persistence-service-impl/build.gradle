@@ -72,7 +72,9 @@ dependencies {
 
     integrationTestImplementation project(':libs:db:db-admin-impl')
     integrationTestImplementation project(':libs:ledger:ledger-common-serialization')
+    integrationTestImplementation project(':libs:serialization:serialization-internal')
     integrationTestImplementation project(":testing:db-message-bus-testkit")
+    integrationTestImplementation project(':testing:ledger:ledger-common-testkit')
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation project(':testing:test-utilities')
 

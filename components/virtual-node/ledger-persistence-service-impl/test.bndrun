@@ -32,6 +32,7 @@
 # This should make bnd resolve everything else we need.
 -runrequires: \
     bnd.identity;id='${project.archivesBaseName}-tests',\
+    bnd.identity;id='net.corda.ledger-common-serialization',\
     bnd.identity;id='net.bytebuddy.byte-buddy',\
     bnd.identity;id='org.hsqldb.hsqldb',\
     bnd.identity;id='org.osgi.service.jdbc',\

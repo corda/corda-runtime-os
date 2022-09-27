@@ -4,6 +4,7 @@ import net.corda.data.persistence.EntityResponse
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPK_IDENTIFIERS_KEY
 import net.corda.ledger.common.impl.transaction.WireTransaction
+import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.base.util.contextLogger
@@ -17,7 +18,8 @@ import javax.persistence.EntityManager
 
 class ConsensualLedgerDao(
     private val merkleTreeFactory: MerkleTreeFactory,
-    private val digestService: DigestService
+    private val digestService: DigestService,
+    private val jsonMarshallingService: JsonMarshallingService
 ) {
     companion object {
         private val logger = contextLogger()
@@ -61,7 +63,7 @@ class ConsensualLedgerDao(
         val firstRowColumns = rows.first() as Array<*>
         val privacySalt = PrivacySaltImpl(firstRowColumns[1] as ByteArray)
         val componentGroupLists = queryRowsToComponentGroupLists(rows)
-        return WireTransaction(merkleTreeFactory, digestService, privacySalt, componentGroupLists)
+        return WireTransaction(merkleTreeFactory, digestService, jsonMarshallingService, privacySalt, componentGroupLists)
     }
 
     @VisibleForTesting

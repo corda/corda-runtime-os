@@ -11,6 +11,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.persistence.common.PayloadChecker
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.MessagingConfig
+import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import org.osgi.service.component.annotations.Activate
@@ -18,6 +19,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 @Component(service = [ConsensualLedgerProcessorFactory::class])
+@Suppress("LongParameterList")
 class ConsensualLedgerProcessorFactoryImpl @Activate constructor(
     @Reference
     private val subscriptionFactory: SubscriptionFactory,
@@ -28,7 +30,9 @@ class ConsensualLedgerProcessorFactoryImpl @Activate constructor(
     @Reference(service = MerkleTreeFactory::class)
     private val merkleTreeFactory: MerkleTreeFactory,
     @Reference(service = DigestService::class)
-    private val digestService: DigestService
+    private val digestService: DigestService,
+    @Reference(service = JsonMarshallingService::class)
+    private val jsonMarshallingService: JsonMarshallingService
 ) : ConsensualLedgerProcessorFactory {
     companion object {
         internal const val GROUP_NAME = "virtual.node.ledger.persistence"
@@ -44,6 +48,7 @@ class ConsensualLedgerProcessorFactoryImpl @Activate constructor(
             externalEventResponseFactory,
             merkleTreeFactory,
             digestService,
+            jsonMarshallingService,
             PayloadChecker(maxPayLoadSize)::checkSize
         )
 

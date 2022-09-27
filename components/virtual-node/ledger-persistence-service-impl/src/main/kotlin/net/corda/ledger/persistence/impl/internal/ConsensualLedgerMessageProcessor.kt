@@ -22,6 +22,7 @@ import net.corda.persistence.common.EntitySandboxContextTypes
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey
+import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
@@ -34,11 +35,13 @@ import net.corda.virtualnode.toCorda
  *
  * [payloadCheck] is called against each AMQP payload in the result (not the entire Avro array of results)
  */
+@Suppress("LongParameterList")
 class ConsensualLedgerMessageProcessor(
     private val entitySandboxService: EntitySandboxService,
     private val externalEventResponseFactory: ExternalEventResponseFactory,
     private val merkleTreeFactory: MerkleTreeFactory,
     private val digestService: DigestService,
+    private val jsonMarshallingService: JsonMarshallingService,
     private val payloadCheck: (bytes: ByteBuffer) -> ByteBuffer,
 ) : DurableProcessor<String, ConsensualLedgerRequest> {
     companion object {
@@ -107,7 +110,7 @@ class ConsensualLedgerMessageProcessor(
         // get the per-sandbox entity manager and serialization services
         val entityManagerFactory = sandbox.getEntityManagerFactory()
         val serializationService = sandbox.getSerializationService()
-        val consensualLedgerDAO = ConsensualLedgerDao(merkleTreeFactory, digestService)
+        val consensualLedgerDAO = ConsensualLedgerDao(merkleTreeFactory, digestService, jsonMarshallingService)
 
         // We match on the type, and pass the cast into the persistence service.
         // Any exception that occurs next we assume originates in Hibernate and categorise
