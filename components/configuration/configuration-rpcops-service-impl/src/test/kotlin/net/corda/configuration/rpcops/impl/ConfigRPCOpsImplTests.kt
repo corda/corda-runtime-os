@@ -130,7 +130,7 @@ class ConfigRPCOpsImplTests {
     @Test
     fun `updateConfig throws if config is not valid JSON or HOCON`() {
         val invalidConfig = TestJsonObject("a=b\nc")
-        val expectedMessage = "Configuration \"$invalidConfig\" could not be validated. Valid JSON or HOCON expected. " +
+        val expectedMessage = "Configuration \"${invalidConfig.escapedJson}\" could not be validated. Valid JSON or HOCON expected. " +
                 "Cause: String: 2: Key 'c' may not be followed by token: end of file"
 
         val (_, configRPCOps) = getConfigRPCOps(mock())
