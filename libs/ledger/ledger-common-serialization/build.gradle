@@ -1,5 +1,8 @@
+import aQute.bnd.gradle.Bundle
+
 plugins {
     id 'corda.common-publishing'
+    id 'corda.osgi-test-conventions'
     id 'corda.common-library'
 }
 
@@ -18,10 +21,18 @@ dependencies {
     implementation project(":libs:ledger:ledger-common-impl")
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
-    testImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
 
     testImplementation project(':testing:test-serialization')
+    testImplementation project(':testing:ledger:ledger-common-testkit')
     testImplementation project(":libs:serialization:serialization-amqp")
     testImplementation project(":libs:crypto:cipher-suite-impl")
     testImplementation project(":libs:crypto:merkle-impl")
+    testImplementation project(":libs:application:application-impl")
+
+    integrationTestImplementation project(':testing:sandboxes')
+    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
+    integrationTestRuntimeOnly project(':libs:crypto:cipher-suite-impl')
+    integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
+    integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
 }

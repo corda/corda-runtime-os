@@ -20,6 +20,13 @@ import java.sql.Connection
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
+/**
+ * An implementation of PersistenceService that uses JPA, Hibernate and HSQLDB.
+ *
+ * @param member The member for whom the PersistenceService is being created.
+ *
+ * @see [net.corda.v5.application.persistence.PersistenceService] for details of methods.
+ */
 class DbPersistenceService(member : MemberX500Name) : CloseablePersistenceService {
 
     private val emf = createEntityManagerFactory(member)

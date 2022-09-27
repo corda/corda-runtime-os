@@ -39,7 +39,16 @@ interface HsmRpcOps : RpcOps {
      */
     @HttpRpcGET(
         path = "{tenantId}/{category}",
-        description = "Enables you to retrieve information on the HSM of the specified category assigned to the tenant"
+        description = "This method retrieves information on the HSM of the specified category assigned to the tenant.",
+        responseDescription = """
+            The HSM association details including:
+            id: the unique identifier of the HSM association
+            hsmId: the HSM identifier included into the association
+            category: the category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 
+                'TLS', or 'JWT_KEY'
+            masterKeyAlias: optional master key alias to be used on HSM
+            deprecatedAt: time when the association was deprecated, epoch time in seconds; 
+                value of 0 means the association is active"""
     )
     fun assignedHsm(
         @HttpRpcPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
@@ -70,7 +79,16 @@ interface HsmRpcOps : RpcOps {
      */
     @HttpRpcPOST(
         path = "soft/{tenantId}/{category}",
-        description = "Enables you to assign a soft HSM to the tenant for the specified category"
+        description = "This method enables you to assign a soft HSM to the tenant for the specified category.",
+        responseDescription = """
+            The HSM association details including:
+            id: the unique identifier of the HSM association
+            hsmId: the HSM identifier included into the association
+            category: the category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 
+                'TLS', or 'JWT_KEY'
+            masterKeyAlias: optional master key alias to be used on HSM
+            deprecatedAt: time when the association was deprecated, epoch time in seconds; 
+                value of 0 means the association is active"""
     )
     fun assignSoftHsm(
         @HttpRpcPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
@@ -100,7 +118,17 @@ interface HsmRpcOps : RpcOps {
      */
     @HttpRpcPOST(
         path = "{tenantId}/{category}",
-        description = "Enables you to assign a hardware-backed HSM to the tenant for the specified category"
+        description = "This method enables you to assign a hardware-backed HSM to the tenant for the specified " +
+                "category.",
+        responseDescription = """
+            The HSM association details including:
+            id: the unique identifier of the HSM association
+            hsmId: the HSM identifier included into the association
+            category: the category of the HSM; can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 
+                'TLS', or 'JWT_KEY'
+            masterKeyAlias: optional master key alias to be used on HSM
+            deprecatedAt: time when the association was deprecated, epoch time in seconds; 
+                value of 0 means the association is active"""
     )
     fun assignHsm(
         @HttpRpcPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +

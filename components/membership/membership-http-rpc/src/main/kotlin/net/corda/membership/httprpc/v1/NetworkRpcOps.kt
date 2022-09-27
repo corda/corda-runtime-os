@@ -36,16 +36,19 @@ interface NetworkRpcOps : RpcOps {
      */
     @HttpRpcPUT(
         path = "setup/{holdingIdentityShortHash}",
-        description = "Enables you to configure a holding identity as a network participant by setting properties" +
-                " required for P2P messaging"
+        description = "This method configures a holding identity as a network participant by setting properties " +
+                "required for P2P messaging."
     )
     fun setupHostedIdentities(
         @HttpRpcPathParameter(description = "ID of the holding identity to set up")
         holdingIdentityShortHash: String,
         @HttpRpcRequestBodyParameter(
-            description = "Request object which contains properties for P2P messaging including the P2P TLS certificate" +
-                    " chain alias, the TLS tenant ID (either 'p2p' or holding identity ID), the tenant ID under which" +
-                    " the session initiation key is stored, and the session key identifier",
+            description = """
+                Request object which contains properties for P2P messaging including:
+                p2pTlsCertificateChainAlias: the P2P TLS certificate chain alias
+                p2pTlsTenantId: the TLS tenant ID (either 'p2p' or holding identity ID)
+                sessionKeyTenantId: the tenant ID under which the session initiation key is stored
+                sessionKeyId: the session key identifier""",
         )
         request: HostedIdentitySetupRequest
     )

@@ -5,6 +5,9 @@ import net.corda.simulator.factories.RequestDataFactory
 import net.corda.simulator.runtime.tools.SimpleJsonMarshallingService
 import net.corda.v5.application.flows.Flow
 
+/**
+ * @see [RequestDataFactory] for details.
+ */
 class RPCRequestDataWrapperFactory : RequestDataFactory {
     private val jms = SimpleJsonMarshallingService()
 
