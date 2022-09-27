@@ -5,9 +5,10 @@ import net.corda.data.flow.state.waiting.SessionData
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.FlowEventContext
-import net.corda.flow.pipeline.exceptions.FlowFatalException
+import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
+import net.corda.flow.pipeline.handlers.waiting.sessions.PROTOCOL_MISMATCH_HINT
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import org.osgi.service.component.annotations.Activate
@@ -34,8 +35,7 @@ class ReceiveRequestHandler @Activate constructor(
         val hasReceivedEvents = try {
             flowSessionManager.hasReceivedEvents(checkpoint, request.sessions.toList())
         } catch (e: FlowSessionStateException) {
-            // TODO CORE-4850 Wakeup with error when session does not exist
-            throw FlowFatalException(e.message, e)
+            throw FlowPlatformException("Failed to receive: ${e.message}. $PROTOCOL_MISMATCH_HINT", e)
         }
 
         return if (hasReceivedEvents) {

@@ -16,7 +16,6 @@ dependencies {
     implementation project(":libs:membership:membership-common")
     implementation project(':libs:membership:membership-impl')
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
-    implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     implementation "net.corda:corda-ledger-common"
     implementation "net.corda:corda-ledger-consensual"
     implementation "net.corda:corda-base"
@@ -30,26 +29,29 @@ dependencies {
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation project(":libs:ledger:ledger-common-serialization")
     testImplementation project(":testing:layered-property-map-testkit")
+    testImplementation project(':testing:ledger:ledger-consensual-testkit')
+    testImplementation project(":testing:kryo-serialization-testkit")
     testImplementation project(":libs:crypto:cipher-suite-impl")
     testImplementation project(":libs:crypto:crypto-serialization-impl")
     testImplementation project(":libs:crypto:merkle-impl")
     testImplementation project(':libs:flows:flow-api')
     testImplementation project(":libs:serialization:serialization-amqp")
     testImplementation project(":libs:serialization:serialization-internal")
+    testImplementation project(':libs:serialization:serialization-kryo')
+    testImplementation project(":libs:application:application-impl")
     testImplementation project(':testing:test-serialization')
 
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
+    integrationTestImplementation project(':testing:sandboxes')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
-    integrationTestRuntimeOnly project(':testing:cpi-info-read-service-fake')
-    integrationTestRuntimeOnly project(':components:membership:membership-group-read-impl')
-    integrationTestRuntimeOnly project(':components:virtual-node:cpk-read-service-impl')
     integrationTestRuntimeOnly project(':libs:sandbox-internal')
-    integrationTestRuntimeOnly project(':libs:serialization:serialization-checkpoint-api')
     integrationTestRuntimeOnly project(':libs:serialization:serialization-kryo')
     integrationTestRuntimeOnly project(':libs:flows:session-manager-impl')
     integrationTestRuntimeOnly project(":libs:crypto:crypto-serialization-impl")
     integrationTestRuntimeOnly project(':testing:test-serialization')
+    integrationTestRuntimeOnly project(":libs:application:application-impl")
 }

@@ -4,6 +4,8 @@ import net.corda.v5.base.types.ByteSequence
 
 //Implemented in other modules
 interface CheckpointInternalCustomSerializer<OBJ> {
+    val type: Class<OBJ>
+
     fun write(output: CheckpointOutput, obj: OBJ)
     fun read(input: CheckpointInput, type: Class<OBJ>): OBJ
 }
