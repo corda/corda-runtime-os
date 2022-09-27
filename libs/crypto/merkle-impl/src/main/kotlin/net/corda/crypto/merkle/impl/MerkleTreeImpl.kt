@@ -5,7 +5,6 @@ import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
 import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
 import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.crypto.merkle.MerkleTree
-import net.corda.v5.crypto.merkle.MerkleTreeHashDigest
 
 /**
  *  leaves:         [L0, L1, L2, L3, L4]
@@ -72,21 +71,19 @@ import net.corda.v5.crypto.merkle.MerkleTreeHashDigest
 
 class MerkleTreeImpl(
     override val leaves: List<ByteArray>,
-    override val digest: MerkleTreeHashDigest
+    override val digest: MerkleTreeHashDigestProvider
 ) : MerkleTree {
 
     init {
         require(leaves.isNotEmpty()) { "Merkle tree must have at least one item" }
     }
 
-    val digestProvider by lazy { digest as MerkleTreeHashDigestProvider }
-
     companion object {
         @JvmStatic
         fun createMerkleTree(
             leaves: List<ByteArray>,
-            digest: MerkleTreeHashDigest
-        ): MerkleTreeImpl = MerkleTreeImpl(leaves, digest)
+            digestProvider: MerkleTreeHashDigestProvider
+        ): MerkleTreeImpl = MerkleTreeImpl(leaves, digestProvider)
 
         fun nextHigherPower2(value: Int): Int {
             require(value > 0) { "nextHigherPower2 requires positive value" }
@@ -110,8 +107,8 @@ class MerkleTreeImpl(
 
     private val leafHashes: List<SecureHash> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         leaves.mapIndexed { index, bytes ->
-            val nonce = digestProvider.leafNonce(index)
-            digestProvider.leafHash(index, nonce, bytes)
+            val nonce = digest.leafNonce(index)
+            digest.leafHash(index, nonce, bytes)
         }
     }
 
@@ -137,7 +134,7 @@ class MerkleTreeImpl(
             val nodeHashes = mutableListOf<SecureHash>()
             for (i in hashes.indices step 2) {
                 if (i <= hashes.size - 2) {
-                    nodeHashes += digestProvider.nodeHash(depthCounter, hashes[i], hashes[i + 1])
+                    nodeHashes += digest.nodeHash(depthCounter, hashes[i], hashes[i + 1])
                 }
             }
             if ((hashes.size and 1) == 1) { // Non-paired last elements of odd lists, just get lifted one level upper.
@@ -217,7 +214,7 @@ class MerkleTreeImpl(
         require(level == depth) { "Sanity check calc" }
         return MerkleProofImpl(
             leaves.size,
-            leafIndices.sorted().map { IndexedMerkleLeaf(it, digestProvider.leafNonce(it), leaves[it].copyOf()) },
+            leafIndices.sorted().map { IndexedMerkleLeaf(it, digest.leafNonce(it), leaves[it].copyOf()) },
             outputHashes
         )
     }

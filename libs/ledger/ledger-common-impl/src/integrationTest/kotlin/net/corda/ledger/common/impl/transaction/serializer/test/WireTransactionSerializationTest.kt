@@ -12,8 +12,8 @@ import net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFac
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
-import net.corda.v5.application.crypto.MerkleTreeFactory
 import net.corda.v5.cipher.suite.DigestService
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions
@@ -62,7 +62,7 @@ class WireTransactionSerializationTest {
     lateinit var digestService: DigestService
 
     @InjectService(timeout = 1000)
-    lateinit var merkleTreeFactory: MerkleTreeFactory
+    lateinit var merkleTreeProvider: MerkleTreeProvider
 
     private lateinit var sandboxManagementService: SandboxManagementService
 
@@ -98,7 +98,7 @@ class WireTransactionSerializationTest {
             listOf("abc d efg".toByteArray()),
         )
         return WireTransaction(
-            merkleTreeFactory,
+            merkleTreeProvider,
             digestService,
             privacySalt,
             componentGroupLists
@@ -112,7 +112,7 @@ class WireTransactionSerializationTest {
         val serializer = builder
             .addSingletonSerializableInstances(setOf(
                 digestService as SingletonSerializeAsToken,
-                merkleTreeFactory as SingletonSerializeAsToken
+                merkleTreeProvider as SingletonSerializeAsToken
             ))
             .addSerializer(WireTransaction::class.java, wireTransactionKryoSerializer)
             .build()

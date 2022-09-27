@@ -1,9 +1,11 @@
 package net.corda.crypto.merkle.impl
 
 import net.corda.v5.application.crypto.MerkleTreeFactory
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
+import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.crypto.merkle.MerkleTreeHashDigest
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -16,8 +18,12 @@ class MerkleTreeFactoryImpl @Activate constructor(
     @Reference(service = MerkleTreeProvider::class)
     private val merkleTreeProvider: MerkleTreeProvider
 ) : MerkleTreeFactory, SingletonSerializeAsToken {
-    override fun createTree(leaves: List<ByteArray>, digest: MerkleTreeHashDigest) =
-        merkleTreeProvider.createTree(leaves, digest as MerkleTreeHashDigestProvider)
+    override fun createTree(leaves: List<ByteArray>, digest: MerkleTreeHashDigest): MerkleTree =
+        when (digest) {
+            is MerkleTreeHashDigestProvider -> merkleTreeProvider.createTree(leaves, digest)
+            else -> throw CordaRuntimeException("An instance of MerkleTreeHashDigestProvider is required when " +
+                    "creating a Merkle tree, but received ${digest.javaClass.name} instead.")
+        }
 
     override fun createHashDigest(
         merkleTreeHashDigestProviderName: String,
