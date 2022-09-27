@@ -21,7 +21,7 @@ class TestPartyImpl(override val name: MemberX500Name, override val owningKey: P
 
 @Suppress("unused")
 class ConsensualSignedTransactionSerializationFlow : RPCStartableFlow {
-    data class ResultMessage(val serialized: String)
+    data class ResultMessage(val serializedLength: Int)
 
     class TestConsensualState(
         val testField: String,
@@ -52,7 +52,6 @@ class ConsensualSignedTransactionSerializationFlow : RPCStartableFlow {
         try {
             val member = memberLookup.lookup(MemberX500Name("Bob", "Application", "R3", "London", null, "GB"))!!
 
-            log.info("2")
             val testConsensualState =
                 TestConsensualState(
                     "test",
@@ -83,7 +82,7 @@ class ConsensualSignedTransactionSerializationFlow : RPCStartableFlow {
                     "Deserialized tx Id != original tx Id (${deserialized.id} != ${signedTransaction.id}")
             }
 
-            val resultMessage = ResultMessage(serialized.toString())
+            val resultMessage = ResultMessage(serialized.toString().length)
             log.info("Success! Serialized: $resultMessage")
             return jsonMarshallingService.format(resultMessage)
         } catch (e: Exception) {
