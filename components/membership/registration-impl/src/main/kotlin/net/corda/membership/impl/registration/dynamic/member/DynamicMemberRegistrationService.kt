@@ -115,10 +115,10 @@ class DynamicMemberRegistrationService @Activate constructor(
         val logger: Logger = contextLogger()
 
         const val PUBLICATION_TIMEOUT_SECONDS = 30L
-        const val SESSION_KEY_ID = "${PARTY_SESSION_KEY}.id"
-        const val SESSION_KEY_SIGNATURE_SPEC = "${PARTY_SESSION_KEY}.signature.spec"
-        const val LEDGER_KEY_ID = "${LEDGER_KEYS_KEY}.id"
-        const val LEDGER_KEY_SIGNATURE_SPEC = "${LEDGER_KEYS_KEY}.signature.spec"
+        const val SESSION_KEY_ID = "$PARTY_SESSION_KEY.id"
+        const val SESSION_KEY_SIGNATURE_SPEC = "$PARTY_SESSION_KEY.signature.spec"
+        const val LEDGER_KEY_ID = "$LEDGER_KEYS.%s.id"
+        const val LEDGER_KEY_SIGNATURE_SPEC = "$LEDGER_KEYS.%s.signature.spec"
         const val MEMBERSHIP_P2P_SUBSYSTEM = "membership"
         const val PLATFORM_VERSION_CONST = "5000"
         const val SOFTWARE_VERSION_CONST = "5.0.0"

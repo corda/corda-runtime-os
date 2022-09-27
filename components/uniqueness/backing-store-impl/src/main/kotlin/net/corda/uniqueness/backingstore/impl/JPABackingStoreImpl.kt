@@ -39,7 +39,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import javax.persistence.EntityExistsException
@@ -68,7 +67,7 @@ open class JPABackingStoreImpl @Activate constructor(
 
         // TODO: Replace constants with config
         const val DEFAULT_UNIQUENESS_DB_NAME = "uniqueness_default"
-        const val MAX_RETRIES = 10
+        const val MAX_ATTEMPTS = 10
     }
 
     private val lifecycleCoordinator: LifecycleCoordinator = coordinatorFactory
@@ -99,19 +98,13 @@ open class JPABackingStoreImpl @Activate constructor(
     }
 
     override fun start() {
-        log.info("Uniqueness checker starting.")
+        log.info("Backing store starting.")
         lifecycleCoordinator.start()
     }
 
     override fun stop() {
-        log.info("Uniqueness checker stopping.")
+        log.info("Backing store stopping.")
         lifecycleCoordinator.stop()
-    }
-
-    @Deactivate
-    fun close() {
-        entityManagerFactory.close()
-        stop()
     }
 
     protected open inner class SessionImpl(
@@ -124,7 +117,7 @@ open class JPABackingStoreImpl @Activate constructor(
         override fun executeTransaction(
             block: (BackingStore.Session, BackingStore.Session.TransactionOps) -> Unit
         ) {
-            for (retryCount in 0..MAX_RETRIES) {
+            for (attemptNumber in 1..MAX_ATTEMPTS) {
                 try {
                     entityManager.transaction.begin()
                     block(this, transactionOps)
@@ -139,12 +132,7 @@ open class JPABackingStoreImpl @Activate constructor(
                             // request with conflicting input states. Retry (by not re-throwing the
                             // exception), because the requests with conflicts are removed from the
                             // batch by the code passed in as `block`.
-                            contextLogger().warn(
-                                "Retrying DB operation. The request might have been " +
-                                    "handled by a different notary worker or a DB error " +
-                                    "occurred when attempting to commit.",
-                                e
-                            )
+
                             // TODO This is needed because some of the exceptions
                             //  we retry do not roll the transaction back. Once
                             //  we improve our error handling in CORE-4983 this
@@ -152,6 +140,21 @@ open class JPABackingStoreImpl @Activate constructor(
                             if (entityManager.transaction.isActive) {
                                 entityManager.transaction.rollback()
                                 contextLogger().info("Rolled back transaction.")
+                            }
+
+                            if (attemptNumber < MAX_ATTEMPTS) {
+                                contextLogger().warn(
+                                    "Retrying DB operation. The request might have been " +
+                                            "handled by a different notary worker or a DB error " +
+                                            "occurred when attempting to commit.",
+                                    e
+                                )
+                            } else {
+                                throw IllegalStateException(
+                                    "Failed to execute transaction after the maximum number of " +
+                                            "attempts ($MAX_ATTEMPTS).",
+                                    e
+                                )
                             }
                         }
                         else -> {
@@ -170,10 +173,6 @@ open class JPABackingStoreImpl @Activate constructor(
                     }
                 }
             }
-            throw IllegalStateException(
-                "Database operation reached the maximum number of " +
-                    "retries: $MAX_RETRIES, something went wrong."
-            )
         }
 
         override fun getStateDetails(

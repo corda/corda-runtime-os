@@ -11,9 +11,8 @@ import net.corda.applications.workers.smoketest.X500_BOB
 import net.corda.applications.workers.smoketest.X500_CHARLIE
 import net.corda.applications.workers.smoketest.X500_DAVID
 import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
+import net.corda.applications.workers.smoketest.conditionallyUploadCordaPackage
 import net.corda.applications.workers.smoketest.configWithDefaultsNode
-import net.corda.applications.workers.smoketest.createKeyFor
-import net.corda.applications.workers.smoketest.forceUploadCordaPackage
 import net.corda.applications.workers.smoketest.getConfig
 import net.corda.applications.workers.smoketest.getFlowClasses
 import net.corda.applications.workers.smoketest.getHoldingIdShortHash
@@ -74,8 +73,8 @@ class FlowTests {
         @BeforeAll
         @JvmStatic
         internal fun beforeAll() {
-            // Make sure test flows are deployed
-            forceUploadCordaPackage(TEST_CPI_NAME, TEST_CPB_LOCATION, GROUP_ID)
+            // Upload test flows if not already uploaded
+            conditionallyUploadCordaPackage(TEST_CPI_NAME, TEST_CPB_LOCATION, GROUP_ID)
 
             // Make sure Virtual Nodes are created
             val bobActualHoldingId = getOrCreateVirtualNodeFor(X500_BOB)
@@ -190,12 +189,7 @@ class FlowTests {
             .isEqualTo("${X500_BOB}=echo:m1; ${X500_CHARLIE}=echo:m2")
     }
 
-    /**
-     * This test is failing unexpectedly, a bug has been raised to investigate
-     * https://r3-cev.atlassian.net/browse/CORE-5372
-     */
     @Test
-    @Disabled
     fun `Platform Error - user code receives platform errors`() {
         val requestBody = RpcSmokeTestInput().apply {
             command = "throw_platform_error"
@@ -209,7 +203,7 @@ class FlowTests {
         val flowResult = result.getRpcFlowResult()
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(flowResult.command).isEqualTo("throw_platform_error")
-        assertThat(flowResult.result).isEqualTo("type")
+        assertThat(flowResult.result).startsWith("Type='PLATFORM_ERROR'")
     }
 
     @Test
@@ -485,12 +479,9 @@ class FlowTests {
 
     @Test
     fun `Crypto - Sign and verify bytes`() {
-
-        val publicKey = createKeyFor(bobHoldingId, UUID.randomUUID().toString(), "LEDGER", "CORDA.RSA")
-
         val requestBody = RpcSmokeTestInput().apply {
             command = "crypto_sign_and_verify"
-            data = mapOf("publicKey" to publicKey)
+            data = mapOf("memberX500" to X500_BOB)
         }
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
@@ -507,12 +498,9 @@ class FlowTests {
 
     @Test
     fun `Crypto - Verify invalid signature`() {
-
-        val publicKey = createKeyFor(bobHoldingId, UUID.randomUUID().toString(), "LEDGER", "CORDA.RSA")
-
         val requestBody = RpcSmokeTestInput().apply {
             command = "crypto_verify_invalid_signature"
-            data = mapOf("publicKey" to publicKey)
+            data = mapOf("memberX500" to X500_BOB)
         }
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
@@ -651,7 +639,7 @@ class FlowTests {
                     bobHoldingId,
                     RpcSmokeTestInput().apply {
                         command = "crypto_sign_and_verify"
-                        data = mapOf("publicKey" to createKeyFor(bobHoldingId, UUID.randomUUID().toString(), "LEDGER", "CORDA.RSA"))
+                        data = mapOf("memberX500" to X500_BOB)
                     }
                 ),
 

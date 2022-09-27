@@ -51,6 +51,7 @@ pluginManagement {
         id "org.gradle.test-retry" version gradleTestRetryPluginVersion
         id "com.jfrog.artifactory" version artifactoryPluginVersion
         id 'io.snyk.gradle.plugin.snykplugin' version snykVersion
+        id 'org.jetbrains.dokka' version dokkaVersion
     }
 }
 
@@ -232,6 +233,7 @@ include 'libs:ledger:notary'
 include 'libs:ledger:ledger-common-impl'
 include 'libs:ledger:ledger-common-serialization'
 include 'libs:ledger:ledger-consensual-impl'
+include 'libs:ledger:ledger-consensual-serialization'
 include 'libs:lifecycle:lifecycle'
 include 'libs:lifecycle:lifecycle-impl'
 include 'libs:lifecycle:lifecycle-test-impl'
@@ -364,6 +366,9 @@ include 'testing:flow:dummy-link-manager'
 include 'testing:flow:external-events'
 include 'testing:flow:flow-utilities'
 include 'testing:layered-property-map-testkit'
+include 'testing:ledger:ledger-common-testkit'
+include 'testing:ledger:ledger-consensual-testkit'
+include 'testing:kryo-serialization-testkit'
 include 'testing:message-patterns'
 include 'testing:p2p:inmemory-messaging-impl'
 include 'testing:packaging-test-utilities'
@@ -377,6 +382,7 @@ include 'testing:uniqueness:uniqueness-utilities'
 include 'testing:cpi-info-read-service-fake'
 include 'testing:virtual-node-info-read-service-fake'
 include 'tools:crypto-tck'
+include 'tools:plugins:plugins-http-rpc'
 include 'tools:plugins:db-config'
 include 'tools:plugins:initial-config'
 include 'tools:plugins:mgm'

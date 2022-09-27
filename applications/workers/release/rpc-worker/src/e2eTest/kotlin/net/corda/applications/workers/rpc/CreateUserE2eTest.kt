@@ -13,6 +13,7 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import java.time.Instant
 import java.time.temporal.ChronoUnit.DAYS
 import net.corda.httprpc.client.exceptions.RequestErrorException
+import net.corda.httprpc.exception.ResourceAlreadyExistsException
 
 @SkipWhenRpcEndpointUnavailable
 class CreateUserE2eTest {
@@ -58,7 +59,7 @@ class CreateUserE2eTest {
 
             // Try to create a user with the same login name again and verify that it fails
             assertThatThrownBy { proxy.createUser(createUserType.copy(fullName = "Alice")) }
-                .isInstanceOf(RequestErrorException::class.java)
+                .isInstanceOf(ResourceAlreadyExistsException::class.java)
                 .hasMessageContaining("User '${userName.lowercase()}' already exists.")
         }
     }
