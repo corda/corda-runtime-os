@@ -86,7 +86,8 @@ class ConsensualSignedTransactionSerializationFlow : RPCStartableFlow {
             log.info("Success! Serialized: $resultMessage")
             return jsonMarshallingService.format(resultMessage)
         } catch (e: Exception) {
-            log.warn("Failed to process ConsensualSignedTransactionSerializationFlow for request body '$requestBody' because:'${e.message}'")
+            log.warn("Failed to process ConsensualSignedTransactionSerializationFlow for request body " +
+                    "'$requestBody' because:'${e.message}'")
             throw e
         }
     }
