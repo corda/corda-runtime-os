@@ -1,13 +1,14 @@
 package net.corda.crypto.impl
 
+import net.corda.crypto.core.OID_COMPOSITE_KEY_IDENTIFIER
+import net.corda.crypto.core.OID_COMPOSITE_SIGNATURE_IDENTIFIER
 import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.crypto.CompositeKey
-import net.corda.v5.crypto.OID_COMPOSITE_KEY_IDENTIFIER
-import net.corda.v5.crypto.OID_COMPOSITE_SIGNATURE_IDENTIFIER
 import java.security.Provider
 import java.util.Optional
 import java.util.concurrent.ConcurrentHashMap
 
+// Install various Corda specific security services into Java Security, including Java
+//
 class CordaSecurityProvider(
     keyEncoder: KeyEncodingService
 ) : Provider(PROVIDER_NAME, "0.1", "$PROVIDER_NAME security provider wrapper") {
@@ -76,7 +77,7 @@ class CordaSecurityProvider(
     ) : Service(
         provider,
         "KeyFactory",
-        CompositeKey.KEY_ALGORITHM,
+        CompositeKeyImpl.KEY_ALGORITHM,
         CompositeKeyFactory::class.java.name,
         listOf(
             OID_COMPOSITE_KEY_IDENTIFIER.toString(),

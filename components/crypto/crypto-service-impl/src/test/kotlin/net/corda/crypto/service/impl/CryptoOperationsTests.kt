@@ -7,6 +7,7 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FIL
 import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.ecies.impl.EphemeralKeyPairEncryptorImpl
 import net.corda.crypto.ecies.impl.StableKeyPairDecryptorImpl
+import net.corda.crypto.impl.CompositeKeyProviderImpl
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningKeyInfo
 import net.corda.crypto.service.SigningService
@@ -21,12 +22,12 @@ import net.corda.v5.cipher.suite.CustomSignatureSpec
 import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.cipher.suite.schemes.KeySchemeCapability
-import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
+import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import net.corda.v5.crypto.publicKeyId
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jcajce.provider.util.DigestFactory
@@ -541,10 +542,12 @@ class CryptoOperationsTests {
         }
         val bobPublicKey = info.publicKey
         verifyCachedKeyRecord(bobPublicKey, info.alias, null, scheme)
-        val aliceAndBob = CompositeKey.Builder()
-            .addKey(alicePublicKey, 2)
-            .addKey(bobPublicKey, 1)
-            .build(threshold = 2)
+        val aliceAndBob = CompositeKeyProviderImpl().create(
+            listOf(
+                CompositeKeyNodeAndWeight(alicePublicKey, 2),
+                CompositeKeyNodeAndWeight(bobPublicKey, 1)
+            ), threshold = 2
+        )
         val signature = info.signingService.sign(tenantId, aliceAndBob, spec, testData)
         assertEquals(bobPublicKey, signature.by)
         validateSignatureUsingExplicitSignatureSpec(signature.by, spec, signature.bytes, testData)
@@ -563,10 +566,10 @@ class CryptoOperationsTests {
         }
         val bobPublicKey = info.publicKey
         verifyCachedKeyRecord(bobPublicKey, null, info.externalId, scheme)
-        val aliceAndBob = CompositeKey.Builder()
-            .addKey(alicePublicKey, 2)
-            .addKey(bobPublicKey, 1)
-            .build(threshold = 2)
+        val aliceAndBob = CompositeKeyProviderImpl().create(
+            listOf(CompositeKeyNodeAndWeight(alicePublicKey, 2), CompositeKeyNodeAndWeight(bobPublicKey, 1)),
+            threshold = 2
+        )
         val signature = info.signingService.sign(tenantId, aliceAndBob, spec, testData)
         assertEquals(bobPublicKey, signature.by)
         validateSignatureUsingExplicitSignatureSpec(signature.by, spec, signature.bytes, testData)

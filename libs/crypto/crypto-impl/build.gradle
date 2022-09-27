@@ -8,6 +8,7 @@ description 'Common crypto implementation'
 dependencies {
     api project(":libs:crypto:crypto-core")
 
+
     compileOnly "org.osgi:org.osgi.service.component.annotations"
     compileOnly "org.osgi:osgi.annotation"
 
