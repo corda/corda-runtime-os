@@ -58,8 +58,8 @@ import javax.persistence.EntityManagerFactory
 import net.corda.data.persistence.FindEntities
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.persistence.testkit.fake.FakeDbConnectionManager
-import net.corda.db.persistence.testkit.helpers.AnimalCreator.createCats
-import net.corda.db.persistence.testkit.helpers.AnimalCreator.createDogs
+import net.corda.entityprocessor.impl.tests.helpers.AnimalCreator.createCats
+import net.corda.entityprocessor.impl.tests.helpers.AnimalCreator.createDogs
 import net.corda.db.persistence.testkit.helpers.BasicMocks
 import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.CAT_CLASS_NAME

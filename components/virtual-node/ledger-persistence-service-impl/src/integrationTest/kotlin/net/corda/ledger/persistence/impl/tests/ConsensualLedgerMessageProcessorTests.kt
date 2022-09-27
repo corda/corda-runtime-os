@@ -23,6 +23,7 @@ import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.ledger.consensual.FindTransaction
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getSerializer
@@ -77,7 +78,8 @@ class ConsensualLedgerMessageProcessorTests {
     companion object {
         const val INTERNAL_CUSTOM_SERIALIZERS = "internalCustomSerializers"
         const val TOPIC = "consensual-ledger-dummy-topic"
-        val EXTERNAL_EVENT_CONTEXT = ExternalEventContext("request id", "flow id", KeyValuePairList(emptyList()))
+        val EXTERNAL_EVENT_CONTEXT = ExternalEventContext(
+            "request id", "flow id", KeyValuePairList(listOf(KeyValuePair("corda.account", "test account"))))
         private val logger = contextLogger()
     }
 

@@ -20,8 +20,5 @@ class ConsensualLedgerProcessorImpl(
 
     override fun start() = subscription.start()
 
-    // It is important to call `subscription.close()` rather than `subscription.stop()` as the latter does not remove
-    // Lifecycle coordinator from the registry, causing it to appear there in `DOWN` state. This will in turn fail
-    // overall Health check's `status` check.
     override fun stop() = subscription.close()
 }

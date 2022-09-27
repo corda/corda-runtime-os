@@ -46,7 +46,12 @@ class ConsensualLedgerMessageProcessor(
 ) : DurableProcessor<String, ConsensualLedgerRequest> {
     companion object {
         private val log = contextLogger()
+        private const val CORDA_ACCOUNT = "corda.account"
     }
+
+    override val keyClass = String::class.java
+
+    override val valueClass = ConsensualLedgerRequest::class.java
 
     private fun SandboxGroupContext.getSerializationService(): SerializationService =
         getObjectByKey(EntitySandboxContextTypes.SANDBOX_SERIALIZER)
@@ -110,7 +115,7 @@ class ConsensualLedgerMessageProcessor(
         // get the per-sandbox entity manager and serialization services
         val entityManagerFactory = sandbox.getEntityManagerFactory()
         val serializationService = sandbox.getSerializationService()
-        val consensualLedgerDAO = ConsensualLedgerDao(merkleTreeFactory, digestService, jsonMarshallingService)
+        val consensualLedgerRepository = ConsensualLedgerRepository(merkleTreeFactory, digestService, jsonMarshallingService)
 
         // We match on the type, and pass the cast into the persistence service.
         // Any exception that occurs next we assume originates in Hibernate and categorise
@@ -120,13 +125,14 @@ class ConsensualLedgerMessageProcessor(
                 when (val req = request.request) {
                     is PersistTransaction -> successResponse(
                         request.flowExternalEventContext,
-                        consensualLedgerDAO.persistTransaction(emf, serializationService.deserialize(req))
+                        consensualLedgerRepository.persistTransaction(
+                            emf, serializationService.deserialize(req), request.account())
                     )
 
                     is FindTransaction -> successResponse(
                         request.flowExternalEventContext,
                         createEntityResponse(
-                            consensualLedgerDAO.findTransaction(emf, req.id),
+                            consensualLedgerRepository.findTransaction(emf, req.id),
                             serializationService
                         ))
                     else -> {
@@ -150,6 +156,10 @@ class ConsensualLedgerMessageProcessor(
 
         return response
     }
+
+    private fun ConsensualLedgerRequest.account() =
+        flowExternalEventContext.contextProperties.items.find { it.key == CORDA_ACCOUNT }?.value
+            ?: throw NullParameterException("Flow external event context property '$CORDA_ACCOUNT' not set")
 
     private fun createEntityResponse(obj: Any?, serializationService: SerializationService) =
         obj?.let {
@@ -197,8 +207,4 @@ class ConsensualLedgerMessageProcessor(
     ): String {
         return "Exception occurred (type=$errorType) for flow-worker request ${flowExternalEventContext.requestId}"
     }
-
-    override val keyClass = String::class.java
-
-    override val valueClass = ConsensualLedgerRequest::class.java
 }

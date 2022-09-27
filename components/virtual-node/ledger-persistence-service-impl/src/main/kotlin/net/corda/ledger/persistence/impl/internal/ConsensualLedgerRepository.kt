@@ -16,7 +16,7 @@ import java.security.MessageDigest
 import java.time.Instant
 import javax.persistence.EntityManager
 
-class ConsensualLedgerDao(
+class ConsensualLedgerRepository(
     private val merkleTreeFactory: MerkleTreeFactory,
     private val digestService: DigestService,
     private val jsonMarshallingService: JsonMarshallingService
@@ -26,19 +26,19 @@ class ConsensualLedgerDao(
     }
 
     // TODO This should probably take a ConsensualSignedTransactionImpl which includes WireTransaction and signers.
-    fun persistTransaction(entityManager: EntityManager, transaction: WireTransaction): EntityResponse {
+    fun persistTransaction(entityManager: EntityManager, transaction: WireTransaction, account :String): EntityResponse {
         val now = Instant.now()
-        writeTransaction(entityManager, now, transaction)
+        persistTransaction(entityManager, now, transaction, account)
         transaction.componentGroupLists.mapIndexed { groupIndex, leaves ->
             leaves.mapIndexed { leafIndex, bytes ->
-                writeComponentLeaf(entityManager, now, transaction, groupIndex, leafIndex, bytes)
+                persistComponentLeaf(entityManager, now, transaction, groupIndex, leafIndex, bytes)
             }
         }
-        writeTransactionStatus(entityManager, now, transaction, "Faked") // TODO where to get the status from
+        persistTransactionStatus(entityManager, now, transaction, "Faked") // TODO where to get the status from
         // TODO when and what do we write to the signatures table?
         // TODO when and what do we write to the CPKs table?
-        writeCpk(entityManager, now, transaction)
-        writeTransactionCpk(entityManager, transaction)
+        persistCpk(entityManager, now, transaction)
+        persistTransactionCpk(entityManager, transaction)
 
         // construct response
         return EntityResponse(emptyList())
@@ -92,7 +92,7 @@ class ConsensualLedgerDao(
         return componentGroupLists
     }
 
-    private fun writeTransaction(entityManager: EntityManager, timestamp: Instant, tx: WireTransaction) {
+    private fun persistTransaction(entityManager: EntityManager, timestamp: Instant, tx: WireTransaction, account: String) {
         entityManager.createNativeQuery(
             """
                 INSERT INTO {h-schema}consensual_transaction(id, privacy_salt, account_id, created)
@@ -100,13 +100,13 @@ class ConsensualLedgerDao(
         )
             .setParameter("id", tx.id.toHexString())
             .setParameter("privacySalt", tx.privacySalt.bytes)
-            .setParameter("accountId", 123)             // TODO where do we get this?
+            .setParameter("accountId", account)
             .setParameter("createdAt", timestamp)
             .executeUpdate()
     }
 
     @Suppress("LongParameterList")
-    private fun writeComponentLeaf(
+    private fun persistComponentLeaf(
         entityManager: EntityManager,
         timestamp: Instant,
         tx: WireTransaction,
@@ -131,7 +131,7 @@ class ConsensualLedgerDao(
             .executeUpdate()
     }
 
-    private fun writeTransactionStatus(
+    private fun persistTransactionStatus(
         entityManager: EntityManager,
         timestamp: Instant,
         tx: WireTransaction,
@@ -148,7 +148,7 @@ class ConsensualLedgerDao(
             .executeUpdate()
     }
 
-    private fun writeCpk(
+    private fun persistCpk(
         entityManager: EntityManager,
         timestamp: Instant,
         tx: WireTransaction
@@ -175,7 +175,7 @@ class ConsensualLedgerDao(
             .executeUpdate()
     }
 
-    private fun writeTransactionCpk(
+    private fun persistTransactionCpk(
         entityManager: EntityManager,
         tx: WireTransaction
     ) {

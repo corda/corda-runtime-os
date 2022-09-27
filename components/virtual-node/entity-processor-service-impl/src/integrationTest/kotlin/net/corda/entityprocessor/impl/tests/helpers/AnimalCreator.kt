@@ -1,5 +1,6 @@
-package net.corda.db.persistence.testkit.helpers
+package net.corda.entityprocessor.impl.tests.helpers
 
+import net.corda.db.persistence.testkit.helpers.SandboxHelper
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.createCat
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.createDog
 import net.corda.sandboxgroupcontext.SandboxGroupContext
