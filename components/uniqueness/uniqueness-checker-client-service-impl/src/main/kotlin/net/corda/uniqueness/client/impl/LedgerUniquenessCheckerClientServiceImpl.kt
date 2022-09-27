@@ -1,18 +1,13 @@
 package net.corda.uniqueness.client.impl
 
-import net.corda.data.KeyValuePairList
-import net.corda.data.flow.event.external.ExternalEventContext
-import net.corda.data.identity.HoldingIdentity
-import net.corda.data.uniqueness.UniquenessCheckRequestAvro
-import net.corda.data.uniqueness.UniquenessCheckResultSuccessAvro
-import net.corda.uniqueness.checker.UniquenessChecker
-import net.corda.uniqueness.datamodel.common.toUniquenessResult
+import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResponseImpl
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResponse
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.DigestService
@@ -32,17 +27,15 @@ import java.time.Instant
 import java.util.*
 
 /**
- * TODO Add more specific KDocs once CORE-4730 is finished
+ * Implementation of the Uniqueness Checker Client Service which will invoke the batched uniqueness checker
+ * through the message bus. This communication uses the external events API. Once the uniqueness checker has
+ * finished the validation of the given batch it will return the response to the client service.
  */
-@Component(service = [ LedgerUniquenessCheckerClientService::class, SingletonSerializeAsToken::class ], scope = ServiceScope.PROTOTYPE)
-class UniquenessCheckerClientServiceImpl @Activate constructor(
-    // TODO for now uniqueness checker is referenced,
-    //  but once CORE-4730 is finished it will be invoked
-    //  through the message bus. This will refer to the
-    //  "fake" uniqueness checker for now
-    @Reference(service = UniquenessChecker::class)
-    private val uniquenessChecker: UniquenessChecker,
-
+@Component(service = [ LedgerUniquenessCheckerClientService::class, SingletonSerializeAsToken::class ],
+    scope = ServiceScope.PROTOTYPE)
+class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
+    @Reference(service = ExternalEventExecutor::class)
+    private val externalEventExecutor: ExternalEventExecutor,
     @Reference(service = DigestService::class)
     private val digestService: DigestService,
     @Reference(service = SigningService::class)
@@ -68,29 +61,20 @@ class UniquenessCheckerClientServiceImpl @Activate constructor(
     ): UniquenessCheckResponse {
         log.info("Received request with id: $txId, sending it to Uniqueness Checker")
 
-        @Suppress("ForbiddenComment")
-        // TODO: CORE-4730 to pass through the Vnode holding id plus a sensible event context
-        val request = UniquenessCheckRequestAvro(
-            HoldingIdentity("DUMMY_X500_NAME", "DUMMY_GROUP_ID"),
-            ExternalEventContext(
-                UUID.randomUUID().toString(),
-                "DUMMY_FLOW_ID",
-                KeyValuePairList(emptyList())),
-            txId,
-            inputStates,
-            referenceStates,
-            numOutputStates,
-            timeWindowLowerBound,
-            timeWindowUpperBound
+        val result = externalEventExecutor.execute(
+            UniquenessCheckExternalEventFactory::class.java,
+            UniquenessCheckExternalEventParams(
+                txId,
+                inputStates,
+                referenceStates,
+                numOutputStates,
+                timeWindowLowerBound,
+                timeWindowUpperBound
+            )
         )
 
-        val txIds = listOf(SecureHash.parse(request.txId))
-
-        val uniquenessCheckResponse = uniquenessChecker.processRequests(listOf(request)).first()
-
-        val result = uniquenessCheckResponse.toUniquenessResult()
-        val signature = if (uniquenessCheckResponse.result is UniquenessCheckResultSuccessAvro) {
-            signBatch(txIds).rootSignature
+        val signature = if (result is UniquenessCheckResultSuccess) {
+            signBatch(listOf(SecureHash.parse(txId))).rootSignature
         } else null
 
         return UniquenessCheckResponseImpl(
