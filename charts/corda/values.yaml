@@ -147,6 +147,11 @@ bootstrap:
         # -- maximum JDBC connection pool size for RBAC DB
         maxSize: 5
 
+  # Configuration for RBAC bootstrap
+  rbac:
+    # -- Indicates whether RBAC bootstrap is enabled as part of installation
+    enabled: true
+
 
   # Configuration for Kafka bootstrap
   kafka:
