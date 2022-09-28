@@ -4,7 +4,7 @@ import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 
 @CordaSerializable
-class TransactionMetaData(private val properties: LinkedHashMap<String, Any>) {
+class TransactionMetadata(private val properties: LinkedHashMap<String, Any>) {
 
     operator fun get(key: String): Any? = properties[key]
 
@@ -21,7 +21,7 @@ class TransactionMetaData(private val properties: LinkedHashMap<String, Any>) {
     }
 
     override fun equals(other: Any?): Boolean {
-        if (other == null || other !is TransactionMetaData) return false
+        if (other == null || other !is TransactionMetadata) return false
         if (this === other) return true
         return properties == other.properties
     }

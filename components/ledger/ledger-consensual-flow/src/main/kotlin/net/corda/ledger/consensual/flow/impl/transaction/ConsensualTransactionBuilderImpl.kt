@@ -2,7 +2,7 @@ package net.corda.ledger.consensual.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
-import net.corda.ledger.common.data.transaction.TransactionMetaData
+import net.corda.ledger.common.data.transaction.TransactionMetadata
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.flow.impl.transaction.createTransactionSignature
 import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
@@ -34,7 +34,7 @@ class ConsensualTransactionBuilderImpl(
     private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
     private val currentSandboxGroup: SandboxGroup, // TODO CORE-7101 use CurrentSandboxService when it gets available
     // cpi defines what type of signing/hashing is used (related to the digital signature signing and verification stuff)
-    private val transactionMetaData: TransactionMetaData,
+    private val transactionMetaData: TransactionMetadata,
     override val states: List<ConsensualState> = emptyList(),
 ) : ConsensualTransactionBuilder {
 

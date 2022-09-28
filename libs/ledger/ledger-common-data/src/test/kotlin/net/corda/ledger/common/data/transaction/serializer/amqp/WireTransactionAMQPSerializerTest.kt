@@ -1,4 +1,4 @@
-package net.corda.ledger.common.data.transaction.serializer.internal
+package net.corda.ledger.common.data.transaction.serializer.amqp
 
 import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl

@@ -103,7 +103,7 @@ open class NonceHashDigestProvider(
         override fun leafNonce(index: Int): ByteArray? = null
 
         override fun leafHash(index: Int, nonce: ByteArray?, bytes: ByteArray): SecureHash {
-            require(nonce == null) { "Nonce must not be null" }
+            require(nonce == null) { "Nonce must be null" }
             return SecureHash.deserialize(bytes, digestService)
         }
 
@@ -165,6 +165,8 @@ private fun MerkleTreeHashDigestProvider.checkMatchingAlgorithms(left: SecureHas
 
 const val SERIALIZATION_SEPARATOR: Char = ':'
 
+// do I need to use this to turn a leaf byte array into a secure hash?
+// it is used by some of the provider.leafHash implementations but Matthew said not to use that method
 internal fun SecureHash.Companion.deserialize(bytes: ByteArray, digestService: DigestService): SecureHash {
     val idxOfSeparator = bytes.indexOf(SERIALIZATION_SEPARATOR.code.toByte())
     if (idxOfSeparator == -1) {
