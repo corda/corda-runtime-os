@@ -46,6 +46,11 @@ topics:
     consumers:
     producers:
     config:
+  VirtualNodeLedgerPersistenceTopic:
+    name: virtual.node.ledger.persistence
+    consumers:
+    producers:
+    config:
   VirtualNodeManagementTopic:
     name: virtual.node.management
     consumers:
