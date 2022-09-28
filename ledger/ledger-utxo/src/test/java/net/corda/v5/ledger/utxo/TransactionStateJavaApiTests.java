@@ -1,5 +1,6 @@
 package net.corda.v5.ledger.utxo;
 
+import net.corda.v5.ledger.common.transaction.Party;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -12,8 +13,20 @@ public final class TransactionStateJavaApiTests extends AbstractMockTestHarness 
     }
 
     @Test
-    public void getInformationShouldReturnTheExpectedValue() {
-        TransactionStateInformation value = contractTransactionState.getInformation();
-        Assertions.assertEquals(transactionStateInformation, value);
+    public void getContractTypeShouldReturnTheExpectedValue() {
+        Class<? extends Contract> value = contractTransactionState.getContractType();
+        Assertions.assertEquals(contract.getClass(), value);
+    }
+
+    @Test
+    public void getNotaryShouldReturnTheExpectedValue() {
+        Party value = contractTransactionState.getNotary();
+        Assertions.assertEquals(notaryParty, value);
+    }
+
+    @Test
+    public void getEncumbranceShouldReturnTheExpectedValue() {
+        Integer value = contractTransactionState.getEncumbrance();
+        Assertions.assertEquals(0, value);
     }
 }
