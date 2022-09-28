@@ -1,3 +1,5 @@
+import aQute.bnd.gradle.Bundle
+
 plugins {
     id 'corda.common-publishing'
     id 'corda.osgi-test-conventions'

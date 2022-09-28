@@ -1,10 +1,7 @@
 package net.corda.entityprocessor.impl.internal
 
 import java.nio.ByteBuffer
-import javax.persistence.EntityManagerFactory
 import net.corda.data.flow.event.FlowEvent
-import net.corda.data.flow.event.external.ExternalEventContext
-import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.data.persistence.DeleteEntities
 import net.corda.data.persistence.DeleteEntitiesById
 import net.corda.data.persistence.EntityRequest
@@ -14,19 +11,18 @@ import net.corda.data.persistence.FindEntities
 import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.data.persistence.MergeEntities
 import net.corda.data.persistence.PersistEntities
-import net.corda.entityprocessor.impl.internal.exceptions.KafkaMessageSizeException
-import net.corda.entityprocessor.impl.internal.exceptions.NotReadyException
-import net.corda.entityprocessor.impl.internal.exceptions.NullParameterException
-import net.corda.entityprocessor.impl.internal.exceptions.VirtualNodeException
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
+import net.corda.persistence.common.EntitySandboxService
+import net.corda.persistence.common.ResponseFactory
+import net.corda.persistence.common.getEntityManagerFactory
+import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.sandboxgroupcontext.getObjectByKey
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 
@@ -45,29 +41,21 @@ fun EntitySandboxService.getClass(holdingIdentity: HoldingIdentity, fullyQualifi
  */
 class EntityMessageProcessor(
     private val entitySandboxService: EntitySandboxService,
-    private val externalEventResponseFactory: ExternalEventResponseFactory,
+    externalEventResponseFactory: ExternalEventResponseFactory,
     private val payloadCheck: (bytes: ByteBuffer) -> ByteBuffer,
 ) : DurableProcessor<String, EntityRequest> {
-    companion object {
-        private val log = contextLogger()
+    private companion object {
+        val log = contextLogger()
     }
 
-    private fun SandboxGroupContext.getSerializationService(): SerializationService =
-        getObjectByKey(EntitySandboxContextTypes.SANDBOX_SERIALIZER)
-            ?: throw CordaRuntimeException(
-                "Entity serialization service not found within the sandbox for identity: " +
-                        "${virtualNodeContext.holdingIdentity}"
-            )
+    private val responseFactory = ResponseFactory(externalEventResponseFactory, log)
 
-    private fun SandboxGroupContext.getEntityManagerFactory(): EntityManagerFactory =
-        getObjectByKey(EntitySandboxContextTypes.SANDBOX_EMF)
-            ?: throw CordaRuntimeException(
-                "Entity manager factory not found within the sandbox for identity: " +
-                        "${virtualNodeContext.holdingIdentity}"
-            )
+    override val keyClass = String::class.java
+
+    override val valueClass = EntityRequest::class.java
 
     override fun onNext(events: List<Record<String, EntityRequest>>): List<Record<*, *>> {
-        log.debug("onNext processing messages ${events.joinToString(",") { it.key }}")
+        log.debug { "onNext processing messages ${events.joinToString(",") { it.key }}" }
         return events.mapNotNull { event ->
             val request = event.value
             if (request == null) {
@@ -75,32 +63,14 @@ class EntityMessageProcessor(
                 return@mapNotNull null
             } else {
                 try {
-                    processRequest(request)
+                    val holdingIdentity = request.holdingIdentity.toCorda()
+                    val sandbox = entitySandboxService.get(holdingIdentity)
+                    processRequestWithSandbox(sandbox, request)
                 } catch (e: Exception) {
-                    // If we're catching at this point, it's an unrecoverable error.
-                    fatalErrorResponse(request.flowExternalEventContext, e)
+                    responseFactory.errorResponse(request.flowExternalEventContext, e)
                 }
             }
         }
-    }
-
-    private fun processRequest(request: EntityRequest): Record<String, FlowEvent> {
-        val holdingIdentity = request.holdingIdentity.toCorda()
-        // Get the sandbox for the given request.
-        // Handle any exceptions as close to the throw-site as possible.
-        val sandbox = try {
-            entitySandboxService.get(holdingIdentity)
-        } catch (e: NotReadyException) {
-            // Flow worker could retry later, but may not be successful.
-            return transientErrorResponse(request.flowExternalEventContext, e)
-        } catch (e: VirtualNodeException) {
-            // Flow worker could retry later, but may not be successful.
-            return transientErrorResponse(request.flowExternalEventContext, e)
-        } catch (e: Exception) {
-            throw e // rethrow and handle higher up
-        }
-
-        return processRequestWithSandbox(sandbox, request)
     }
 
     @Suppress("ComplexMethod")
@@ -116,106 +86,45 @@ class EntityMessageProcessor(
 
         val persistenceServiceInternal = PersistenceServiceInternal(entitySandboxService::getClass, payloadCheck)
 
-        // We match on the type, and pass the cast into the persistence service.
-        // Any exception that occurs next we assume originates in Hibernate and categorise
-        // it accordingly.
-        val response = try {
-            entityManagerFactory.createEntityManager().transaction {
-                when (val entityRequest = request.request) {
-                    is PersistEntities -> successResponse(
-                        request.flowExternalEventContext,
-                        persistenceServiceInternal.persist(serializationService, it, entityRequest)
+        return entityManagerFactory.createEntityManager().transaction {
+            when (val entityRequest = request.request) {
+                is PersistEntities -> responseFactory.successResponse(
+                    request.flowExternalEventContext,
+                    persistenceServiceInternal.persist(serializationService, it, entityRequest)
+                )
+                is DeleteEntities -> responseFactory.successResponse(
+                    request.flowExternalEventContext,
+                    persistenceServiceInternal.deleteEntities(serializationService, it, entityRequest)
+                )
+                is DeleteEntitiesById -> responseFactory.successResponse(
+                    request.flowExternalEventContext,
+                    persistenceServiceInternal.deleteEntitiesByIds(
+                        serializationService,
+                        it,
+                        entityRequest,
+                        holdingIdentity
                     )
-                    is DeleteEntities -> successResponse(
-                        request.flowExternalEventContext,
-                        persistenceServiceInternal.deleteEntities(serializationService, it, entityRequest)
-                    )
-                    is DeleteEntitiesById -> successResponse(
-                        request.flowExternalEventContext,
-                        persistenceServiceInternal.deleteEntitiesByIds(
-                            serializationService,
-                            it,
-                            entityRequest,
-                            holdingIdentity
-                        )
-                    )
-                    is MergeEntities -> successResponse(
-                        request.flowExternalEventContext,
-                        persistenceServiceInternal.merge(serializationService, it, entityRequest)
-                    )
-                    is FindEntities -> successResponse(
-                        request.flowExternalEventContext,
-                        persistenceServiceInternal.find(serializationService, it, entityRequest, holdingIdentity)
-                    )
-                    is FindAll -> successResponse(
-                        request.flowExternalEventContext,
-                        persistenceServiceInternal.findAll(serializationService, it, entityRequest, holdingIdentity)
-                    )
-                    is FindWithNamedQuery -> successResponse(
-                        request.flowExternalEventContext,
-                        persistenceServiceInternal.findWithNamedQuery(serializationService, it, entityRequest)
-                    )
-                    else -> {
-                        fatalErrorResponse(request.flowExternalEventContext, CordaRuntimeException("Unknown command"))
-                    }
+                )
+                is MergeEntities -> responseFactory.successResponse(
+                    request.flowExternalEventContext,
+                    persistenceServiceInternal.merge(serializationService, it, entityRequest)
+                )
+                is FindEntities -> responseFactory.successResponse(
+                    request.flowExternalEventContext,
+                    persistenceServiceInternal.find(serializationService, it, entityRequest, holdingIdentity)
+                )
+                is FindAll -> responseFactory.successResponse(
+                    request.flowExternalEventContext,
+                    persistenceServiceInternal.findAll(serializationService, it, entityRequest, holdingIdentity)
+                )
+                is FindWithNamedQuery -> responseFactory.successResponse(
+                    request.flowExternalEventContext,
+                    persistenceServiceInternal.findWithNamedQuery(serializationService, it, entityRequest)
+                )
+                else -> {
+                    responseFactory.fatalErrorResponse(request.flowExternalEventContext, CordaRuntimeException("Unknown command"))
                 }
             }
-        } catch (e: java.io.NotSerializableException) {
-            // Deserialization failure should be deterministic, and therefore retrying won't save you.
-            // We mark this as FATAL so the flow worker knows about it, as per PR discussion.
-            platformErrorResponse(request.flowExternalEventContext, e)
-        } catch (e: KafkaMessageSizeException) {
-            // Results exceeded max packet size that we support at the moment.
-            // We intend to support chunked results later.
-            fatalErrorResponse(request.flowExternalEventContext, e)
-        } catch (e: NullParameterException) {
-            fatalErrorResponse(request.flowExternalEventContext, e)
-        } catch (e: Exception) {
-            transientErrorResponse(request.flowExternalEventContext, e)
         }
-
-        return response
     }
-
-    private fun successResponse(
-        flowExternalEventContext: ExternalEventContext,
-        entityResponse: EntityResponse
-    ): Record<String, FlowEvent> {
-        return externalEventResponseFactory.success(flowExternalEventContext, entityResponse)
-    }
-
-    private fun transientErrorResponse(
-        flowExternalEventContext: ExternalEventContext,
-        e: Exception
-    ): Record<String, FlowEvent> {
-        log.warn(errorLogMessage(flowExternalEventContext, ExternalEventResponseErrorType.TRANSIENT), e)
-        return externalEventResponseFactory.transientError(flowExternalEventContext, e)
-    }
-
-    private fun platformErrorResponse(
-        flowExternalEventContext: ExternalEventContext,
-        e: Exception
-    ): Record<String, FlowEvent> {
-        log.warn(errorLogMessage(flowExternalEventContext, ExternalEventResponseErrorType.PLATFORM), e)
-        return externalEventResponseFactory.platformError(flowExternalEventContext, e)
-    }
-
-    private fun fatalErrorResponse(
-        flowExternalEventContext: ExternalEventContext,
-        e: Exception
-    ): Record<String, FlowEvent> {
-        log.error(errorLogMessage(flowExternalEventContext, ExternalEventResponseErrorType.FATAL), e)
-        return externalEventResponseFactory.fatalError(flowExternalEventContext, e)
-    }
-
-    private fun errorLogMessage(
-        flowExternalEventContext: ExternalEventContext,
-        errorType: ExternalEventResponseErrorType
-    ): String {
-        return "Exception occurred (type=$errorType) for flow-worker request ${flowExternalEventContext.requestId}"
-    }
-
-    override val keyClass = String::class.java
-
-    override val valueClass = EntityRequest::class.java
 }
