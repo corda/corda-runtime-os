@@ -4,17 +4,23 @@ import net.corda.data.persistence.EntityResponse
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPK_IDENTIFIERS_KEY
 import net.corda.ledger.common.impl.transaction.WireTransaction
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
+import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
+import java.security.KeyPairGenerator
 import java.security.MessageDigest
+import java.security.spec.ECGenParameterSpec
 import java.time.Instant
 import javax.persistence.EntityManager
+
 
 class ConsensualLedgerRepository(
     private val merkleTreeFactory: MerkleTreeFactory,
@@ -27,18 +33,37 @@ class ConsensualLedgerRepository(
 
     // TODO This should probably take a ConsensualSignedTransactionImpl which includes WireTransaction and signers.
     fun persistTransaction(entityManager: EntityManager, transaction: WireTransaction, account :String): EntityResponse {
+        val transactionId = transaction.id.toHexString()
         val now = Instant.now()
         persistTransaction(entityManager, now, transaction, account)
         transaction.componentGroupLists.mapIndexed { groupIndex, leaves ->
             leaves.mapIndexed { leafIndex, bytes ->
-                persistComponentLeaf(entityManager, now, transaction, groupIndex, leafIndex, bytes)
+                persistComponentLeaf(entityManager, now, transactionId, groupIndex, leafIndex, bytes)
             }
         }
-        persistTransactionStatus(entityManager, now, transaction, "Faked") // TODO where to get the status from
+        persistTransactionStatus(entityManager, now, transactionId, "Faked") // TODO where to get the status from
         // TODO when and what do we write to the signatures table?
         // TODO when and what do we write to the CPKs table?
         persistCpk(entityManager, now, transaction)
-        persistTransactionCpk(entityManager, transaction)
+        persistTransactionCpk(entityManager, transactionId)
+
+        // TODO Signatures should come from ConsensualSignedTransactionImpl
+        val fakePublicKey = KeyPairGenerator.getInstance("EC")
+            .apply { initialize(ECGenParameterSpec("secp256r1")) }
+            .generateKeyPair().public
+        val fakeSignatures = listOf(
+            DigitalSignatureAndMetadata(
+                DigitalSignature.WithKey(fakePublicKey, ByteArray(1), emptyMap()),
+                DigitalSignatureMetadata(now, emptyMap())
+            ),
+            DigitalSignatureAndMetadata(
+                DigitalSignature.WithKey(fakePublicKey, ByteArray(1), emptyMap()),
+                DigitalSignatureMetadata(now, emptyMap())
+            )
+        )
+        fakeSignatures.forEachIndexed { index, digitalSignatureAndMetadata ->
+            persistSignature(entityManager, now, transactionId, index, digitalSignatureAndMetadata.signature.bytes)
+        }
 
         // construct response
         return EntityResponse(emptyList())
@@ -109,7 +134,7 @@ class ConsensualLedgerRepository(
     private fun persistComponentLeaf(
         entityManager: EntityManager,
         timestamp: Instant,
-        tx: WireTransaction,
+        transactionId: String,
         groupIndex: Int,
         leafIndex: Int,
         data: ByteArray
@@ -122,7 +147,7 @@ class ConsensualLedgerRepository(
                 INSERT INTO {h-schema}consensual_transaction_component(transaction_id, group_idx, leaf_idx, data, hash, created)
                 VALUES(:transactionId, :groupIndex, :leafIndex, :data, :hash, :createdAt)"""
         )
-            .setParameter("transactionId", tx.id.toHexString())
+            .setParameter("transactionId", transactionId)
             .setParameter("groupIndex", groupIndex)
             .setParameter("leafIndex", leafIndex)
             .setParameter("data", data)
@@ -134,7 +159,7 @@ class ConsensualLedgerRepository(
     private fun persistTransactionStatus(
         entityManager: EntityManager,
         timestamp: Instant,
-        tx: WireTransaction,
+        transactionId: String,
         status: String
     ) {
         entityManager.createNativeQuery(
@@ -142,7 +167,7 @@ class ConsensualLedgerRepository(
                 INSERT INTO {h-schema}consensual_transaction_status(transaction_id, status, created)
                 VALUES (:txId, :status, :createdAt)"""
         )
-            .setParameter("txId", tx.id.toHexString())
+            .setParameter("txId", transactionId)
             .setParameter("status", status)
             .setParameter("createdAt", timestamp)
             .executeUpdate()
@@ -177,7 +202,7 @@ class ConsensualLedgerRepository(
 
     private fun persistTransactionCpk(
         entityManager: EntityManager,
-        tx: WireTransaction
+        transactionId: String
     ) {
         // TODO get values from transaction metadata
         val fileHash = SecureHash.parse("SHA-256:1234567890123456")
@@ -185,8 +210,26 @@ class ConsensualLedgerRepository(
             """
                 INSERT INTO {h-schema}consensual_transaction_cpk(transaction_id, file_hash)
                 VALUES (:transactionId, :fileHash)""")
-            .setParameter("transactionId", tx.id.toHexString())
+            .setParameter("transactionId", transactionId)
             .setParameter("fileHash", fileHash.toHexString())
+            .executeUpdate()
+    }
+
+    private fun persistSignature(
+        entityManager: EntityManager,
+        timestamp: Instant,
+        transactionId: String,
+        index: Int,
+        signature: ByteArray
+    ) {
+        entityManager.createNativeQuery(
+            """
+                INSERT INTO {h-schema}consensual_transaction_signature(transaction_id, signature_idx, signature, created)
+                VALUES (:transactionId, :signatureIdx, :signature, :createdAt)""")
+            .setParameter("transactionId", transactionId)
+            .setParameter("signatureIdx", index)
+            .setParameter("signature", signature)
+            .setParameter("createdAt", timestamp)
             .executeUpdate()
     }
 
