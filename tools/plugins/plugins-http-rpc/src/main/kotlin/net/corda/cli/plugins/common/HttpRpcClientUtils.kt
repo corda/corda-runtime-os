@@ -36,6 +36,7 @@ object HttpRpcClientUtils {
                 return this.start()
             } catch (ex: Exception) {
                 lastException = ex
+                Thread.sleep(1000)
             }
         } while (System.currentTimeMillis() <= endTime)
 
