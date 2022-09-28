@@ -5,6 +5,11 @@ import net.corda.simulator.factories.SimulatorConfigurationBuilder
 import java.time.Clock
 import java.time.Duration
 
+/**
+ * Builder for Simulator configuration.
+ *
+ * @see SimulatorConfigurationBuilder for details.
+ */
 class DefaultConfigurationBuilder : SimulatorConfigurationBuilder {
 
     companion object {

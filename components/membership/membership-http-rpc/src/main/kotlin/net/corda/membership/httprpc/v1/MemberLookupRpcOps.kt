@@ -42,7 +42,7 @@ interface MemberLookupRpcOps : RpcOps {
      */
     @HttpRpcGET(
         path = "{holdingIdentityShortHash}",
-        description = "Enables you to retrieve a list of all active and pending members in the membership group"
+        description = "This method retrieves a list of all active and pending members in the membership group."
     )
     @Suppress("LongParameterList")
     fun lookup(

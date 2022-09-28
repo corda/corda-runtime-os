@@ -14,6 +14,15 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import java.security.PublicKey
 
+/**
+ * The base class for simulated virtual nodes.
+ *
+ * @property holdingIdentity The holding identity of the node.
+ * @param fiber The simulated fiber / kafka bus on which shared state is stored.
+ * @param injector The injector to initialize services on flows called in this node.
+ * @param flowFactory A flow factory for creating called flows.
+ * @param keyStore A store for generated keys.
+ */
 class SimulatedVirtualNodeBase(
     override val holdingIdentity: HoldingIdentity,
     private val fiber: SimFiber,

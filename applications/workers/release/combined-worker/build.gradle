@@ -13,15 +13,15 @@ description 'Combined Worker'
 
 osgiRun {
     frameworkProperties.putAll(
-        'org.osgi.framework.security': 'osgi'
+            'org.osgi.framework.security': 'osgi'
     )
 }
 
 quasar {
     excludeLocations = [ 'PERSISTENCE/*', 'VERIFICATION/*' ]
     excludePackages.addAll([
-        'org.eclipse.jetty**',
-        'net.corda.membership**'
+            'org.eclipse.jetty**',
+            'net.corda.membership**'
     ])
 }
 
@@ -114,11 +114,37 @@ publishing {
             }
         }
     }
+
     publications {
         maven(MavenPublication) {
             artifactId 'corda-combined-worker'
             groupId project.group
             artifact javadocJar
+            pom {
+                name = 'corda-combined-worker'
+                description = 'corda-combined-worker'
+                url = 'https://github.com/corda/corda-runtime-os'
+
+                scm {
+                    url = 'https://github.com/corda/corda-runtime-os'
+                }
+
+                licenses {
+                    license {
+                        name = licenseName
+                        url = licenseUrl
+                        distribution = 'repo'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = 'R3'
+                        name = 'R3'
+                        email = 'dev@corda.net'
+                    }
+                }
+            }
         }
     }
 }

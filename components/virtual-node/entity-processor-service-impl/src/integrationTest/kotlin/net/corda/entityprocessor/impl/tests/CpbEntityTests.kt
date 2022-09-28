@@ -1,8 +1,8 @@
 package net.corda.entityprocessor.impl.tests
 
 import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.entityprocessor.impl.tests.components.VirtualNodeService
-import net.corda.entityprocessor.impl.tests.helpers.Resources
+import net.corda.db.persistence.testkit.components.VirtualNodeService
+import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle

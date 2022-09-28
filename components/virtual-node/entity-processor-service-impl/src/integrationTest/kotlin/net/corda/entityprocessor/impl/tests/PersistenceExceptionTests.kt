@@ -2,7 +2,6 @@ package net.corda.entityprocessor.impl.tests
 
 import java.nio.ByteBuffer
 import java.nio.file.Path
-import java.time.Instant
 import java.util.UUID
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.ExceptionEnvelope
@@ -14,21 +13,21 @@ import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.PersistEntities
 import net.corda.db.messagebus.testkit.DBSetup
+import net.corda.db.persistence.testkit.components.VirtualNodeService
+import net.corda.db.persistence.testkit.fake.FakeDbConnectionManager
+import net.corda.db.persistence.testkit.helpers.BasicMocks
+import net.corda.db.persistence.testkit.helpers.Resources
+import net.corda.db.persistence.testkit.helpers.SandboxHelper.createDog
+import net.corda.db.persistence.testkit.helpers.SandboxHelper.getSerializer
 import net.corda.entityprocessor.impl.internal.EntityMessageProcessor
-import net.corda.entityprocessor.impl.internal.EntitySandboxServiceImpl
-import net.corda.entityprocessor.impl.internal.exceptions.NotReadyException
-import net.corda.entityprocessor.impl.internal.exceptions.VirtualNodeException
-import net.corda.entityprocessor.impl.tests.components.VirtualNodeService
-import net.corda.entityprocessor.impl.tests.fake.FakeCpiInfoReadService
-import net.corda.entityprocessor.impl.tests.fake.FakeDbConnectionManager
-import net.corda.entityprocessor.impl.tests.helpers.BasicMocks
-import net.corda.entityprocessor.impl.tests.helpers.Resources
-import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.createDog
-import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getSerializer
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.messaging.api.records.Record
+import net.corda.persistence.common.exceptions.NotReadyException
+import net.corda.persistence.common.exceptions.VirtualNodeException
+import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_SERIALIZER
+import net.corda.persistence.common.EntitySandboxServiceFactory
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
@@ -95,14 +94,14 @@ class PersistenceExceptionTests {
 
         // But we need a "broken" service to throw the exception to trigger the new handler.
         // Emulate the throw that occurs if we don't have the cpks
-        val brokenCpiInfoReadService = object : FakeCpiInfoReadService() {
+        val brokenCpiInfoReadService = object : CpiInfoReadService by cpiInfoReadService {
             override fun get(identifier: CpiIdentifier): CpiMetadata? {
                 throw NotReadyException("Not ready!")
             }
         }
 
         val brokenEntitySandboxService =
-            EntitySandboxServiceImpl(
+            EntitySandboxServiceFactory().create(
                 virtualNode.sandboxGroupContextComponent,
                 brokenCpiInfoReadService,
                 virtualNodeInfoReadService,
@@ -132,14 +131,14 @@ class PersistenceExceptionTests {
 
         // But we need a "broken" service to throw the exception to trigger the new handler.
         // Emulate the throw that occurs if we don't have the cpks
-        val brokenCpiInfoReadService = object : FakeCpiInfoReadService() {
+        val brokenCpiInfoReadService = object : CpiInfoReadService by cpiInfoReadService {
             override fun get(identifier: CpiIdentifier): CpiMetadata? {
                 throw VirtualNodeException("Placeholder")
             }
         }
 
         val brokenEntitySandboxService =
-            EntitySandboxServiceImpl(
+            EntitySandboxServiceFactory().create(
                 virtualNode.sandboxGroupContextComponent,
                 brokenCpiInfoReadService,
                 virtualNodeInfoReadService,
@@ -175,7 +174,7 @@ class PersistenceExceptionTests {
             )
 
         val entitySandboxService =
-            EntitySandboxServiceImpl(
+            EntitySandboxServiceFactory().create(
                 virtualNode.sandboxGroupContextComponent,
                 cpiInfoReadService,
                 virtualNodeInfoReadService,
@@ -214,7 +213,7 @@ class PersistenceExceptionTests {
 
         // We need a 'working' service to set up the test
         val entitySandboxService =
-            EntitySandboxServiceImpl(
+            EntitySandboxServiceFactory().create(
                 virtualNode.sandboxGroupContextComponent,
                 cpiInfoReadService,
                 virtualNodeInfoReadService,
@@ -226,7 +225,7 @@ class PersistenceExceptionTests {
 
         // create dog using dog-aware sandbox
         val dog = sandboxOne.createDog("Stray", owner = "Not Known")
-        val serialisedDog = sandboxOne.getSerializer().serialize(dog.instance).bytes
+        val serialisedDog = sandboxOne.getSerializer(SANDBOX_SERIALIZER).serialize(dog.instance).bytes
 
         // create persist request for the sandbox that isn't dog-aware
         val request = EntityRequest(

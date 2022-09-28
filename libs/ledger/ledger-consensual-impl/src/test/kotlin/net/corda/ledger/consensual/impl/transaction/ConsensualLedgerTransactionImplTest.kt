@@ -1,5 +1,6 @@
 package net.corda.ledger.consensual.impl.transaction
 
+import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import java.security.KeyPairGenerator
 import java.security.PublicKey
 import java.security.SecureRandom
@@ -16,6 +17,7 @@ import net.corda.flow.fiber.FlowFiberServiceImpl
 import net.corda.ledger.consensual.impl.PartyImpl
 import net.corda.ledger.consensual.impl.helper.ConfiguredTestSerializationService
 import net.corda.v5.application.crypto.SigningService
+import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -39,6 +41,8 @@ internal class ConsensualLedgerTransactionImplTest{
         private lateinit var secureRandom: SecureRandom
         private lateinit var serializer: SerializationService
         private lateinit var signingService: SigningService
+        private lateinit var jsonMarshallingService: JsonMarshallingService
+
         private lateinit var externalEventExecutor: ExternalEventExecutor
         private lateinit var testPublicKey: PublicKey
         private lateinit var testConsensualState: ConsensualState
@@ -69,6 +73,7 @@ internal class ConsensualLedgerTransactionImplTest{
             secureRandom = schemeMetadata.secureRandom
             merkleTreeFactory = MerkleTreeFactoryImpl(digestService)
             serializer = ConfiguredTestSerializationService.getTestSerializationService(schemeMetadata)
+            jsonMarshallingService = JsonMarshallingServiceImpl()
 
             val flowFiberService = FlowFiberServiceImpl()
             externalEventExecutor = ExternalEventExecutorImpl(flowFiberService)
@@ -86,7 +91,14 @@ internal class ConsensualLedgerTransactionImplTest{
     @Test
     fun `ledger transaction contains the same data what it was created with`() {
         val testTimestamp = Instant.now()
-        val signedTransaction = ConsensualTransactionBuilderImpl(merkleTreeFactory, digestService, secureRandom, serializer, signingService)
+        val signedTransaction = ConsensualTransactionBuilderImpl(
+            merkleTreeFactory,
+            digestService,
+            secureRandom,
+            serializer,
+            signingService,
+            jsonMarshallingService
+        )
             .withStates(testConsensualState)
             .signInitial(testPublicKey)
         val ledgerTransaction = signedTransaction.toLedgerTransaction()

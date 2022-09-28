@@ -133,7 +133,15 @@ class FlowFiberImpl(
         @Suppress("unchecked_cast")
         return when (val outcome = suspensionOutcome!!) {
             is FlowContinuation.Run -> outcome.value as SUSPENDRETURN
-            is FlowContinuation.Error -> throw FlowContinuationErrorException(outcome.exception)
+            is FlowContinuation.Error -> throw FlowContinuationErrorException(
+                // We populate the container exception message in case user code has a try/catch around the failing statement.
+                outcome.exception.message ?: "Unknown error",
+                outcome.exception.apply {
+                    // If resume occurred in the function which caused a handler to fail, filling in the stack trace here will
+                    // identify that function in the log. Out of user code the stack trace is ignored, so we don't need to worry
+                    // that it might be filled with less useful information.
+                    fillInStackTrace()
+                })
             else -> throw IllegalStateException("Tried to return when suspension outcome says to continue")
         }
     }
