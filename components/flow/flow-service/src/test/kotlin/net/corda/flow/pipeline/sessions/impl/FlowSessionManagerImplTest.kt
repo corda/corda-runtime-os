@@ -63,7 +63,7 @@ class FlowSessionManagerImplTest {
         fun sessionStateTypes(): Stream<Arguments> {
             return Stream.of(
                 Arguments.of(SessionStateType.CONFIRMED, true),
-                Arguments.of(SessionStateType.CREATED, false),
+                Arguments.of(SessionStateType.CREATED, true),
                 Arguments.of(SessionStateType.CLOSING, false),
                 Arguments.of(SessionStateType.WAIT_FOR_FINAL_ACK, false),
                 Arguments.of(SessionStateType.CLOSED, false),

@@ -16,11 +16,12 @@ import net.corda.v5.base.util.contextLogger
 @Suppress("LongParameterList")
 class FlowSessionImpl(
     override val counterparty: MemberX500Name,
-    val sourceSessionId: String,
+    private val sourceSessionId: String,
     private val flowFiberService: FlowFiberService,
     private val serializationService: SerializationServiceInternal,
-    private val flowContext: FlowContext
-) : FlowSession {
+    private val flowContext: FlowContext,
+    direction: Direction
+) : FlowSession, FlowSessionInternal {
 
     private companion object {
         private val log = contextLogger()
@@ -28,12 +29,30 @@ class FlowSessionImpl(
 
     override val contextProperties: FlowContextProperties = flowContext
 
+    enum class Direction {
+        INITIATING_SIDE,
+        INITIATED_SIDE
+    }
+
+    private var isSessionConfirmed = when (direction) {
+        Direction.INITIATING_SIDE -> false // Initiating flows need to establish a session
+        Direction.INITIATED_SIDE -> true // Initiated flows are always instantiated as the result of an existing session
+    }
+
     private val fiber: FlowFiber get() = flowFiberService.getExecutingFiber()
+
+    override fun setSessionConfirmed() {
+        isSessionConfirmed = true
+    }
+
+    override fun getSessionId(): String {
+        return sourceSessionId
+    }
 
     @Suspendable
     override fun <R : Any> sendAndReceive(receiveType: Class<R>, payload: Any): R {
         requireBoxedType(receiveType)
-        val request = FlowIORequest.SendAndReceive(mapOf(sourceSessionId to serialize(payload)))
+        val request = FlowIORequest.SendAndReceive(mapOf(FlowIORequest.SessionInfo(sourceSessionId, counterparty) to serialize(payload)))
         val received = fiber.suspend(request)
         return deserializeReceivedPayload(received, receiveType)
     }
@@ -41,7 +60,7 @@ class FlowSessionImpl(
     @Suspendable
     override fun <R : Any> receive(receiveType: Class<R>): R {
         requireBoxedType(receiveType)
-        val request = FlowIORequest.Receive(setOf(sourceSessionId))
+        val request = FlowIORequest.Receive(setOf(FlowIORequest.SessionInfo(sourceSessionId, counterparty)))
         val received = fiber.suspend(request)
         return deserializeReceivedPayload(received, receiveType)
     }
@@ -49,15 +68,18 @@ class FlowSessionImpl(
     @Suspendable
     override fun send(payload: Any) {
         val request =
-            FlowIORequest.Send(sessionToPayload = mapOf(sourceSessionId to serialize(payload)), mapOf(sourceSessionId to counterparty))
+            FlowIORequest.Send(mapOf(FlowIORequest.SessionInfo(sourceSessionId, counterparty) to serialize(payload)))
         return fiber.suspend(request)
     }
 
     @Suspendable
     override fun close() {
-        //todo - close shouldn't execute if not initiated
-        fiber.suspend(FlowIORequest.CloseSessions(setOf(sourceSessionId)))
-        log.info("Closed session: $sourceSessionId")
+        if (isSessionConfirmed) {
+            fiber.suspend(FlowIORequest.CloseSessions(setOf(sourceSessionId)))
+            log.info("Closed session: $sourceSessionId")
+        } else {
+            log.info("Ignoring close on uninitiated session: $sourceSessionId")
+        }
     }
 
     /**
@@ -94,5 +116,5 @@ class FlowSessionImpl(
     override fun hashCode(): Int = sourceSessionId.hashCode()
 
     override fun toString(): String =
-        "FlowSessionImpl(counterparty=$counterparty, sourceSessionId=$sourceSessionId)"
+        "FlowSessionImpl(counterparty=$counterparty, sourceSessionId=$sourceSessionId, initiated=$isSessionConfirmed)"
 }

@@ -4,7 +4,7 @@ import java.util.UUID
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.application.serialization.DeserializedWrongAMQPObjectException
 import net.corda.flow.application.serialization.SerializationServiceInternal
-import net.corda.flow.application.sessions.FlowSessionImpl
+import net.corda.flow.application.sessions.FlowSessionInternal
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
@@ -51,7 +51,10 @@ class FlowMessagingImpl @Activate constructor(
     @Suspendable
     override fun <R> receiveAll(receiveType: Class<out R>, sessions: Set<FlowSession>): List<R> {
         requireBoxedType(receiveType)
-        val request = FlowIORequest.Receive(sessions = sessions.map { (it as FlowSessionImpl).sourceSessionId }.toSet())
+        val request = FlowIORequest.Receive(sessions = sessions.map {
+            val flowSession = (it as FlowSessionInternal)
+            FlowIORequest.SessionInfo(flowSession.getSessionId(), flowSession.counterparty)
+        }.toSet())
         val received = fiber.suspend(request)
         return deserializeReceivedPayload(received, receiveType)
     }
@@ -60,10 +63,12 @@ class FlowMessagingImpl @Activate constructor(
     override fun receiveAllMap(sessions: Map<FlowSession, Class<out Any>>): Map<FlowSession, Any> {
         val flowSessionImpls = sessions.mapKeys {
             requireBoxedType(it.value)
-            (it.key as FlowSessionImpl)
+            (it.key as FlowSessionInternal)
         }
-
-        val request = FlowIORequest.Receive(sessions = flowSessionImpls.map { it.key.sourceSessionId }.toSet())
+        val request = FlowIORequest.Receive(sessions = sessions.map {
+            val flowSession = (it as FlowSessionInternal)
+            FlowIORequest.SessionInfo(flowSession.getSessionId(), flowSession.counterparty)
+        }.toSet())
         val received = fiber.suspend(request)
         return deserializeReceivedPayload(received, flowSessionImpls)
     }
@@ -71,21 +76,21 @@ class FlowMessagingImpl @Activate constructor(
     @Suspendable
     override fun sendAll(payload: Any, sessions: Set<FlowSession>) {
         requireBoxedType(payload::class.java)
-        val flowSessions = sessions.map { it as FlowSessionImpl }
-        val sessionToPayload = flowSessions.associate { it.sourceSessionId to serialize(payload) }
-        val sessionToCounterparty = flowSessions.associate { it.sourceSessionId to it.counterparty }
-        return fiber.suspend(FlowIORequest.Send(sessionToPayload, sessionToCounterparty))
+        val flowSessions = sessions.map { it as FlowSessionInternal }
+        val serializedPayload = serialize(payload)
+        val sessionToPayload =
+            flowSessions.associate { FlowIORequest.SessionInfo(it.getSessionId(), it.counterparty) to serializedPayload }
+        return fiber.suspend(FlowIORequest.Send(sessionToPayload))
     }
 
     @Suspendable
     override fun sendAllMap(payloadsPerSession: Map<FlowSession, Any>) {
-        val flowSessions = payloadsPerSession.map { it.key as FlowSessionImpl }
-        val sessionToCounterparty = flowSessions.associate { it.sourceSessionId to it.counterparty }
         val sessionPayload = payloadsPerSession.map {
             requireBoxedType(it.value::class.java)
-            (it.key as FlowSessionImpl).sourceSessionId to serialize(it.value)
+            val flowSessionInternal = (it.key as FlowSessionInternal)
+            FlowIORequest.SessionInfo(flowSessionInternal.getSessionId(), flowSessionInternal.counterparty) to serialize(it.key)
         }.toMap()
-        return fiber.suspend(FlowIORequest.Send(sessionPayload, sessionToCounterparty))
+        return fiber.suspend(FlowIORequest.Send(sessionPayload))
     }
 
     @Suspendable
@@ -145,10 +150,10 @@ class FlowMessagingImpl @Activate constructor(
 
     private fun deserializeReceivedPayload(
         received: Map<String, ByteArray>,
-        receiveType: Map<FlowSessionImpl, Class<out Any>>
+        receiveType: Map<FlowSessionInternal, Class<out Any>>
     ): Map<FlowSession, Any> {
         return uncheckedCast(receiveType.mapValues {
-            val sessionId = it.key.sourceSessionId
+            val sessionId = it.key.getSessionId()
             val bytes = received[sessionId] ?: throw CordaRuntimeException("Unexpected error. $sessionId not found in received data.")
             deserializeReceivedPayload(sessionId, bytes, it.value)
         })

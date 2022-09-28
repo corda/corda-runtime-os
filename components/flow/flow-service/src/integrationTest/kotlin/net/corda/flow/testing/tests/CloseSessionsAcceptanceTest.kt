@@ -70,11 +70,9 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
         fun flowIORequestsThatDoNotWaitForWakeup(): Stream<Arguments> {
             return Stream.of(
                 Arguments.of(
-                    FlowIORequest.InitiateFlow::class.simpleName,
-                    FlowIORequest.InitiateFlow(
-                        mapOf(SESSION_ID_2 to BOB_X500_NAME),
-                        emptyMap(),
-                        emptyMap()
+                    FlowIORequest.Send::class.simpleName,
+                    FlowIORequest.Send(
+                        mapOf(FlowIORequest.SessionInfo(SESSION_ID_2, BOB_X500_NAME) to "bytes".toByteArray()),
                     )
                 )
             )
@@ -257,7 +255,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_1))
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_1)))
+                .suspendsWith(FlowIORequest.Receive(setOf(FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName))))
 
         }
 
@@ -280,7 +278,7 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_1))
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_1)))
+                .suspendsWith(FlowIORequest.Receive(setOf(FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName))))
 
         }
 
@@ -693,7 +691,10 @@ class CloseSessionsAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_2))
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_1, SESSION_ID_2)))
+                .suspendsWith(FlowIORequest.Receive(setOf(
+                    FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
+                    FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName),
+                )))
         }
 
         `when` {

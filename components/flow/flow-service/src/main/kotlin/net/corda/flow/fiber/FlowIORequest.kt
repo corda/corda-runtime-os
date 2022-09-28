@@ -12,13 +12,24 @@ interface FlowIORequest<out R> {
     /**
      * Send payloads to sessions.
      *
-     * @property sessionToPayload a map from session to message-to-be-sent.
+     * @property sessionPayloads map of data packets to send to counterparties
      */
     data class Send(
-        val sessionToPayload: Map<String, ByteArray>,
-        val sessionToCounterparty: Map<String, MemberX500Name>? = null
+        val sessionPayloads: Map<SessionInfo, ByteArray>,
     ) : FlowIORequest<Unit> {
-        override fun toString() = "Send(sessionToMessage=${sessionToPayload.mapValues { it.value }})"
+        override fun toString() = "Send(payloads=${sessionPayloads.keys.joinToString { it.toString() }})"
+    }
+
+    /**
+     * Information about a session
+     * @property sessionId Id of the session
+     * @property counterparty x500 name of the counterparty
+     */
+    data class SessionInfo(
+        val sessionId: String,
+        val counterparty: MemberX500Name
+    ) {
+        override fun toString() = "SessionInfo(sessionId=$sessionId, counterparty=$counterparty) "
     }
 
     /**
@@ -27,16 +38,18 @@ interface FlowIORequest<out R> {
      * @property sessions the sessions to receive payloads from.
      * @return a map from session to received payload.
      */
-    data class Receive(val sessions: Set<String>) : FlowIORequest<Map<String, ByteArray>>
+    data class Receive(val sessions: Set<SessionInfo>) : FlowIORequest<Map<String, ByteArray>>
 
     /**
      * Send and receive payloads from the specified sessions.
      *
-     * @property sessionToPayload a map from session to payload-to-be-sent. The keys also specify which sessions to receive from.
+     * @property sessionToInfo Map of data packets to send to counterparties
      * @return a map from session to received message.
      */
-    data class SendAndReceive(val sessionToPayload: Map<String, ByteArray>) : FlowIORequest<Map<String, ByteArray>> {
-        override fun toString() = "SendAndReceive(${sessionToPayload.mapValues { (key, value) -> "$key=$value" }})"
+    data class SendAndReceive(
+        val sessionToInfo: Map<SessionInfo, ByteArray>,
+    ) : FlowIORequest<Map<String, ByteArray>> {
+        override fun toString() = "SendAndReceive(${sessionToInfo.keys.joinToString { it.toString() }})"
     }
 
     data class InitiateFlow(

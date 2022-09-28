@@ -50,7 +50,11 @@ class SendAcceptanceTest : FlowServiceTestBase() {
 
         `when` {
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.Send(mapOf(SESSION_ID_1 to DATA_MESSAGE_1, SESSION_ID_2 to DATA_MESSAGE_2)))
+                .suspendsWith(FlowIORequest.Send(
+                    mapOf(
+                    FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_1,
+                    FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to  DATA_MESSAGE_2,
+                )))
         }
 
         then {
@@ -73,7 +77,10 @@ class SendAcceptanceTest : FlowServiceTestBase() {
 
         `when` {
             sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.Send(mapOf(SESSION_ID_1 to DATA_MESSAGE_1)))
+                .suspendsWith(FlowIORequest.Send(
+                    mapOf(
+                        FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_1,
+                    )))
         }
 
         then {
@@ -108,13 +115,25 @@ class SendAcceptanceTest : FlowServiceTestBase() {
 
         `when` {
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.Send(mapOf(SESSION_ID_1 to DATA_MESSAGE_1, SESSION_ID_2 to DATA_MESSAGE_2)))
+                .suspendsWith(FlowIORequest.Send(
+                    mapOf(
+                        FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_1,
+                        FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to  DATA_MESSAGE_2,
+                    )))
 
             wakeupEventReceived(FLOW_ID1)
-                .suspendsWith(FlowIORequest.Send(mapOf(SESSION_ID_1 to DATA_MESSAGE_3, SESSION_ID_2 to DATA_MESSAGE_4)))
+                .suspendsWith(FlowIORequest.Send(
+                    mapOf(
+                        FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_3,
+                        FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to  DATA_MESSAGE_4,
+                    )))
 
             wakeupEventReceived(FLOW_ID1)
-                .suspendsWith(FlowIORequest.Send(mapOf(SESSION_ID_1 to DATA_MESSAGE_5, SESSION_ID_2 to DATA_MESSAGE_6)))
+                .suspendsWith(FlowIORequest.Send(
+                    mapOf(
+                        FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_5,
+                        FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to  DATA_MESSAGE_6,
+                    )))
         }
 
         then {
@@ -147,14 +166,21 @@ class SendAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_2))
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_1, SESSION_ID_2)))
+                .suspendsWith(FlowIORequest.Receive(setOf(
+                    FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
+                    FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName)
+                )))
         }
 
         `when` {
             sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 1)
 
             sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_2, sequenceNum = 1, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.Send(mapOf(SESSION_ID_1 to DATA_MESSAGE_3, SESSION_ID_2 to DATA_MESSAGE_4)))
+                .suspendsWith(FlowIORequest.Send(
+                    mapOf(
+                        FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_3,
+                        FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to  DATA_MESSAGE_4,
+                    )))
         }
 
         then {

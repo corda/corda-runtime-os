@@ -12,6 +12,7 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.receive
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
@@ -57,7 +58,7 @@ class SendReceiveAllMessagingFlow : RPCStartableFlow {
 
         log.info("Sent data to two sessions")
 
-        val receivedMap = flowMessaging.receiveAllMap(mapOf(sessionOne to MyClass::class.java, sessionTwo to MyClass::class.java))
+        val receivedMap = flowMessaging.receiveAllMap(mapOf(sessionOne to MyClass::class.java, sessionTwo to MyOtherClass::class.java))
         log.info("received Map")
 
         receivedMap.forEach { (_, received) ->
@@ -98,12 +99,16 @@ class SendReceiveAllInitiatedFlow : ResponderFlow {
 
         val received = session.receive<MyClass>()
         log.info("Receive from send map from peer: $received")
-        session.send(received.copy(string = "this is a new object 1"))
-
+        if (received.int == 2) {
+            session.send(received.copy(string = "this is a new object 1"))
+        } else {
+            session.send(MyOtherClass( 1, "this is a new object 1", received.int))
+        }
 
         val received2 = session.receive<MyClass>()
         log.info("Receive from send all from peer: $received2")
         session.send(received.copy(string = "this is a new object 2"))
+
 
         val received3 = session.receive<MyClass>()
         log.info("Receive from send from peer: $received3")
@@ -113,4 +118,11 @@ class SendReceiveAllInitiatedFlow : ResponderFlow {
         log.info("Closed session 1")
     }
 }
+
+@CordaSerializable
+data class MyOtherClass (
+    val long: Long,
+    val string: String,
+    val int: Int
+)
 

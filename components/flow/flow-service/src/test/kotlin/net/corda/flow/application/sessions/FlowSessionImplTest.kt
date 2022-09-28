@@ -8,7 +8,6 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.state.FlowContext
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.serialization.SerializedBytes
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -69,12 +68,9 @@ class FlowSessionImplTest {
 
         val flowIORequestCapture = argumentCaptor<FlowIORequest<*>>()
 
-        verify(flowFiber, times(2)).suspend(flowIORequestCapture.capture())
+        verify(flowFiber, times(1)).suspend(flowIORequestCapture.capture())
 
-        assertTrue(flowIORequestCapture.firstValue is FlowIORequest.InitiateFlow)
-        assertTrue(flowIORequestCapture.secondValue is FlowIORequest.SendAndReceive)
-
-        validateInitiateFlowRequest(flowIORequestCapture.firstValue as FlowIORequest.InitiateFlow)
+        assertTrue(flowIORequestCapture.firstValue is FlowIORequest.SendAndReceive)
     }
 
     @Test
@@ -108,12 +104,9 @@ class FlowSessionImplTest {
 
         val flowIORequestCapture = argumentCaptor<FlowIORequest<*>>()
 
-        verify(flowFiber, times(2)).suspend(flowIORequestCapture.capture())
+        verify(flowFiber, times(1)).suspend(flowIORequestCapture.capture())
 
-        assertTrue(flowIORequestCapture.firstValue is FlowIORequest.InitiateFlow)
-        assertTrue(flowIORequestCapture.secondValue is FlowIORequest.Receive)
-
-        validateInitiateFlowRequest(flowIORequestCapture.firstValue as FlowIORequest.InitiateFlow)
+        assertTrue(flowIORequestCapture.firstValue is FlowIORequest.Receive)
     }
 
     @Test
@@ -147,12 +140,9 @@ class FlowSessionImplTest {
 
         val flowIORequestCapture = argumentCaptor<FlowIORequest<*>>()
 
-        verify(flowFiber, times(2)).suspend(flowIORequestCapture.capture())
+        verify(flowFiber, times(1)).suspend(flowIORequestCapture.capture())
 
-        assertTrue(flowIORequestCapture.firstValue is FlowIORequest.InitiateFlow)
-        assertTrue(flowIORequestCapture.secondValue is FlowIORequest.Send)
-
-        validateInitiateFlowRequest(flowIORequestCapture.firstValue as FlowIORequest.InitiateFlow)
+        assertTrue(flowIORequestCapture.firstValue is FlowIORequest.Send)
     }
 
     @Test
@@ -184,6 +174,7 @@ class FlowSessionImplTest {
         mockFlowFiberService,
         serializationService,
         flowContext,
+        FlowSessionImpl.Direction.INITIATED_SIDE
     )
 
     private fun createInitiatingSession() = FlowSessionImpl(
@@ -192,14 +183,7 @@ class FlowSessionImplTest {
         mockFlowFiberService,
         serializationService,
         flowContext,
+        FlowSessionImpl.Direction.INITIATING_SIDE
     )
 
-    private fun validateInitiateFlowRequest(request: FlowIORequest.InitiateFlow) {
-        with(request) {
-            assertThat(contextUserProperties).isEqualTo(userContext)
-            assertThat(contextPlatformProperties).isEqualTo(platformContext)
-            assertThat(sessionToCounterparty.keys.first()).isEqualTo(SESSION_ID)
-            assertThat(sessionToCounterparty.values.first()).isEqualTo(ALICE_X500_NAME)
-        }
-    }
 }

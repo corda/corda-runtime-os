@@ -8,7 +8,6 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
 import net.corda.messaging.api.records.Record
-import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -27,9 +26,15 @@ class SendRequestHandlerTest {
     private val sessionState1 = SessionState().apply { this.sessionId = sessionId1 }
     private val sessionState2 = SessionState().apply { this.sessionId = sessionId2 }
     private val testContext = RequestHandlerTestContext(Any())
-    private val ioRequest = FlowIORequest.Send(mapOf(sessionId1 to payload1, sessionId2 to payload2), mapOf(sessionId1 to MemberX500Name
-        .parse("Alice"), sessionId2 to MemberX500Name.parse("bob")))
-    private val handler = SendRequestHandler(testContext.flowSessionManager, testContext.flowRecordFactory, testContext.flowSandboxService)
+
+    private val ioRequest = FlowIORequest.Send(
+        mapOf(
+            FlowIORequest.SessionInfo(sessionId1, testContext.counterparty) to payload1,
+            FlowIORequest.SessionInfo(sessionId2, testContext.counterparty) to payload2
+        )
+    )
+    private val handler =
+        SendRequestHandler(testContext.flowSessionManager, testContext.flowRecordFactory, testContext.initiateFlowReqService)
 
 
     @Suppress("Unused")
@@ -52,7 +57,20 @@ class SendRequestHandlerTest {
     @Test
     fun `Waiting for Wakeup event`() {
         val waitingFor = handler.getUpdatedWaitingFor(testContext.flowEventContext, ioRequest)
+        verify(testContext.initiateFlowReqService).getSessionsNotInitiated(any(), any())
+
         assertThat(waitingFor.value).isInstanceOf(net.corda.data.flow.state.waiting.Wakeup()::class.java)
+    }
+
+    @Test
+    fun `Waiting for session confirmation event`() {
+        whenever(testContext.initiateFlowReqService.getSessionsNotInitiated(any(), any())).thenReturn(setOf(
+            FlowIORequest.SessionInfo
+            (sessionId1, testContext.counterparty)))
+        val waitingFor = handler.getUpdatedWaitingFor(testContext.flowEventContext, ioRequest)
+        verify(testContext.initiateFlowReqService).getSessionsNotInitiated(any(), any())
+
+        assertThat(waitingFor.value).isInstanceOf(net.corda.data.flow.state.waiting.SessionConfirmation()::class.java)
     }
 
     @Test
@@ -62,10 +80,11 @@ class SendRequestHandlerTest {
         verify(testContext.flowCheckpoint).putSessionState(sessionState2)
         verify(testContext.flowSessionManager).sendDataMessages(
             eq(testContext.flowCheckpoint),
-            eq(ioRequest.sessionToPayload),
+            any(),
             any()
         )
         verify(testContext.flowRecordFactory).createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
+        verify(testContext.initiateFlowReqService).initiateFlowsNotInitiated(any(), any())
         assertThat(outputContext.outputRecords).containsOnly(record)
     }
 

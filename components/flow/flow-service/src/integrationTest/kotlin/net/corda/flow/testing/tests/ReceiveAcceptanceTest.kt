@@ -102,7 +102,15 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_2))
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_1, SESSION_ID_2)))
+                .suspendsWith(
+                    FlowIORequest.Receive(
+                        setOf(
+                            FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
+                            FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName),
+                        )
+                    )
+                )
+
         }
 
         `when` {
@@ -143,7 +151,14 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_2))
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_1, SESSION_ID_2)))
+                .suspendsWith(
+                    FlowIORequest.Receive(
+                        setOf(
+                            FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
+                            FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName),
+                        )
+                    )
+                )
         }
 
         `when` {
@@ -172,7 +187,13 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_2))
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_1)))
+                .suspendsWith(
+                    FlowIORequest.Receive(
+                        setOf(
+                            FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
+                        )
+                    )
+                )
         }
 
         `when` {
@@ -194,7 +215,13 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_1))
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_1)))
+                .suspendsWith(
+                    FlowIORequest.Receive(
+                        setOf(
+                            FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
+                        )
+                    )
+                )
         }
 
         `when` {
@@ -218,7 +245,10 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_2))
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_1, SESSION_ID_2)))
+                .suspendsWith(FlowIORequest.Receive(setOf(
+                    FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
+                    FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName),
+                )))
         }
 
         `when` {
@@ -243,7 +273,10 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_2))
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_1, SESSION_ID_2)))
+                .suspendsWith(FlowIORequest.Receive(setOf(
+                    FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
+                    FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName),
+                )))
         }
 
         `when` {
@@ -279,7 +312,10 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
 
             sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_1, SESSION_ID_2)))
+                .suspendsWith(FlowIORequest.Receive(setOf(
+                    FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
+                    FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName),
+                )))
         }
 
         `when` {
@@ -313,7 +349,10 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
 
         `when` {
             sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_2, sequenceNum = 1, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_1, SESSION_ID_2)))
+                .suspendsWith(FlowIORequest.Receive(setOf(
+                    FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
+                    FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName),
+                )))
         }
 
         then {
@@ -341,10 +380,14 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
 
         `when` {
             sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_2, sequenceNum = 1, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_1)))
+                .suspendsWith(FlowIORequest.Receive(setOf(
+                    FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
+                )))
 
             wakeupEventReceived(FLOW_ID1)
-                .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_2)))
+                .suspendsWith(FlowIORequest.Receive(setOf(
+                    FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName),
+                )))
         }
 
         then {
@@ -395,7 +438,10 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_2))
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_1, SESSION_ID_2)))
+                .suspendsWith(FlowIORequest.Receive(setOf(
+                    FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
+                    FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName),
+                )))
         }
 
         `when` {
@@ -421,7 +467,10 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_2))
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_1, SESSION_ID_2)))
+                .suspendsWith(FlowIORequest.Receive(setOf(
+                    FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
+                    FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName),
+                )))
         }
 
         `when` {
@@ -453,7 +502,10 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_2))
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_1, SESSION_ID_2)))
+                .suspendsWith(FlowIORequest.Receive(setOf(
+                    FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
+                    FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName),
+                )))
         }
 
         `when` {
@@ -485,7 +537,10 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_2))
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_1, SESSION_ID_2)))
+                .suspendsWith(FlowIORequest.Receive(setOf(
+                    FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
+                    FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName),
+                )))
         }
 
         `when` {
@@ -516,7 +571,10 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_2))
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_1, SESSION_ID_2)))
+                .suspendsWith(FlowIORequest.Receive(setOf(
+                    FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
+                    FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName),
+                )))
         }
 
         `when` {
@@ -546,7 +604,10 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_2))
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_1, SESSION_ID_2)))
+                .suspendsWith(FlowIORequest.Receive(setOf(
+                    FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
+                    FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName),
+                )))
         }
 
         `when` {
@@ -581,7 +642,10 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
                 .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_1))
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
-                .suspendsWith(FlowIORequest.Receive(setOf(SESSION_ID_1, SESSION_ID_1)))
+                .suspendsWith(FlowIORequest.Receive(setOf(
+                    FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
+                    FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
+                )))
         }
 
         `when` {
