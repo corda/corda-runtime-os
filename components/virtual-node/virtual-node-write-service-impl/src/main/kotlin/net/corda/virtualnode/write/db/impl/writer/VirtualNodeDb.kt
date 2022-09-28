@@ -25,7 +25,7 @@ import net.corda.virtualnode.ShortHash
  */
 @Suppress("LongParameterList")
 class VirtualNodeDb(
-    private val dbType: VirtualNodeDbType, val isClusterDb: Boolean, private val holdingIdentityShortHash: ShortHash,
+    val dbType: VirtualNodeDbType, val isClusterDb: Boolean, private val holdingIdentityShortHash: ShortHash,
     val dbConnections: Map<DbPrivilege, DbConnection?>, private val dbAdmin: DbAdmin,
     private val dbConnectionManager: DbConnectionManager, private val schemaMigrator: LiquibaseSchemaMigrator
 ) {
@@ -70,7 +70,7 @@ class VirtualNodeDb(
     /**
      * Runs DB migration
      */
-    fun runDbMigration() {
+    fun runDbMigration(tagToUse: String?) {
         val dbConnection = dbConnections[DDL]
             ?: throw VirtualNodeDbException("No DDL database connection when due to apply system migrations")
         dbConnectionManager.getDataSource(dbConnection.config).use { dataSource ->
@@ -83,9 +83,9 @@ class VirtualNodeDb(
             dataSource.connection.use { connection ->
                 if (isClusterDb) {
                     val dbSchema = dbType.getSchemaName(holdingIdentityShortHash)
-                    schemaMigrator.updateDb(connection, dbChange, dbSchema)
+                    schemaMigrator.updateDb(connection, dbChange, dbSchema, tagToUse)
                 } else {
-                    schemaMigrator.updateDb(connection, dbChange)
+                    schemaMigrator.updateDb(connection, dbChange, tagToUse)
                 }
             }
         }
@@ -96,7 +96,7 @@ class VirtualNodeDb(
             ?: throw VirtualNodeDbException("No DDL database connection when due to apply CPI migrations")
         dbConnectionManager.getDataSource(dbConnection.config).use { dataSource ->
             dataSource.connection.use { connection ->
-                LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange)
+                LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange, null)
             }
         }
     }

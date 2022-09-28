@@ -51,3 +51,4 @@ class VirtualNodeDbChangeLog(
             ?: throw CordaRuntimeException("Cannot find changelog file: $path")
     }
 }
+
