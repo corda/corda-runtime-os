@@ -105,10 +105,10 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
      * @param holdingIdentityShortHash Holding identity ID (short hash)
      * @return Holding identity with vault connections
      */
-    internal fun getHoldingIdentityAndConnections(holdingIdentityShortHash: ShortHash): HoldingIdentityAndConnections? {
+    internal fun getHoldingIdentityAndConnections(holdingIdentityShortHash: String): HoldingIdentityAndConnections? {
         return entityManagerFactory
             .transaction { entityManager ->
-                val hidEntity = entityManager.find(HoldingIdentityEntity::class.java, holdingIdentityShortHash.value)
+                val hidEntity = entityManager.find(HoldingIdentityEntity::class.java, holdingIdentityShortHash)
                     ?: return null
                 HoldingIdentityAndConnections(
                     HoldingIdentity(
@@ -191,18 +191,18 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
      * @param holdingId Holding identity
      * @return lightweight representation of the virtual node
      */
-    internal fun findByHoldingIdentity(holdingId: HoldingIdentity): VirtualNodeLite {
+    internal fun findByHoldingIdentity(holdingIdShortHash: String): VirtualNodeLite? {
         return entityManagerFactory.use { em ->
             em.transaction {
                 val queryString = "FROM ${VirtualNodeEntity::class.java.simpleName} v " +
                         "WHERE v.holdingIdentity.holdingIdentityShortHash = :holdingIdentityShortHash"
                 val holdingIdentityList = em.createQuery(queryString, VirtualNodeEntity::class.java)
-                    .setParameter("holdingIdentityShortHash", holdingId.shortHash.value)
+                    .setParameter("holdingIdentityShortHash", holdingIdShortHash)
                     .resultList
                 if(holdingIdentityList.size > 1) {
-                    throw CordaRuntimeException("More than one virtual node for the given holding identity ${holdingId.shortHash.value}")
+                    throw CordaRuntimeException("More than one virtual node for the given holding identity ${holdingIdShortHash}")
                 }
-                holdingIdentityList.first().toVirtualNodeLite()
+                holdingIdentityList.firstOrNull()?.toVirtualNodeLite()
             }
         }
     }
@@ -211,7 +211,8 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
         holdingIdentity.holdingIdentityShortHash,
         cpiName,
         cpiVersion,
-        cpiSignerSummaryHash
+        cpiSignerSummaryHash,
+        virtualNodeState
     )
 
     data class VirtualNodeLite(
@@ -219,6 +220,7 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
         val cpiName: String,
         val cpiVersion: String,
         val cpiSignerSummaryHash: String,
+        val virtualNodeState: String,
     )
 
     internal fun updateVirtualNodeCpi(holdingId: HoldingIdentity, cpiId: CpiIdentifier) {
@@ -260,6 +262,20 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
             )
         } else {
             log.debug { "vNode for key already exists: $virtualNodeEntityKey" }
+        }
+    }
+
+    internal fun setVirtualNodeState(holdingIdentityShortHash: String, newState: String): VirtualNodeEntity {
+        entityManagerFactory.use { em ->
+            em.transaction {
+                // Lookup virtual node and grab the latest one based on the cpi Version.
+                val latestVirtualNodeInstance = it.findVirtualNode(holdingIdentityShortHash)
+                    ?: throw VirtualNodeNotFoundException(holdingIdentityShortHash)
+                val updatedVirtualNodeInstance = latestVirtualNodeInstance.apply {
+                    update(newState)
+                }
+                return it.merge(updatedVirtualNodeInstance)
+            }
         }
     }
 
