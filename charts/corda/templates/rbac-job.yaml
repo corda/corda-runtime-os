@@ -29,18 +29,18 @@ spec:
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
-          args: [ 'initial-rbac', 'user-admin', '--user', "$(INITIAL_ADMIN_USER_USERNAME)", '--password', "$(INITIAL_ADMIN_USER_PASSWORD)", '--target', "https://http-rpc-worker-service"]
+          args: [ 'initial-rbac', 'user-admin', '--user', "$(INITIAL_ADMIN_USER_USERNAME)", '--password', "$(INITIAL_ADMIN_USER_PASSWORD)", '--target', 'https://corda-rpc-worker:8888']
           env:
             - name: INITIAL_ADMIN_USER_USERNAME
               valueFrom:
                 secretKeyRef:
-                  name: { { include "corda.initialAdminUserSecretName" . } }
-                  key: { { include "corda.initialAdminUserSecretUsernameKey" . } }
+                  name: {{ include "corda.initialAdminUserSecretName" . }}
+                  key: {{ include "corda.initialAdminUserSecretUsernameKey" . }}
             - name: INITIAL_ADMIN_USER_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: { { include "corda.initialAdminUserSecretName" . } }
-                  key: { { include "corda.initialAdminUserSecretPasswordKey" . } }
+                  name: {{ include "corda.initialAdminUserSecretName" . }}
+                  key: {{ include "corda.initialAdminUserSecretPasswordKey" . }}
 
       {{- include "corda.bootstrapNodeSelector" . | nindent 6 }}
 
