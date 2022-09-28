@@ -31,11 +31,14 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.whenever
 import org.mockito.kotlin.times
+import org.mockito.kotlin.never
 import org.mockito.Mockito
 import java.time.Clock
 import java.time.LocalDate
@@ -47,6 +50,13 @@ import javax.persistence.EntityManagerFactory
 import javax.persistence.OptimisticLockException
 import javax.persistence.PersistenceException
 import javax.persistence.QueryTimeoutException
+import javax.persistence.RollbackException
+import javax.persistence.EntityNotFoundException
+import javax.persistence.LockTimeoutException
+import javax.persistence.NoResultException
+import javax.persistence.NonUniqueResultException
+import javax.persistence.TransactionRequiredException
+import javax.persistence.PessimisticLockException
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -359,8 +369,24 @@ class JPABackingStoreImplIntegrationTests {
 
     @Nested
     inner class FlakyConnectionTests {
+        // Below is the complete list of PersistenceException and other exceptions that extend it.
+        // We may want to reduce this list that only relevant to us.
+        val persistenceExceptions = mapOf(
+            "PersistenceException" to PersistenceException(),
+            "EntityExistsException" to EntityExistsException(),
+            "RollbackException" to RollbackException(),
+            "OptimisticLockException" to OptimisticLockException(),
+            "EntityNotFoundException" to EntityNotFoundException(),
+            "LockTimeoutException" to LockTimeoutException(),
+            "NoResultException" to NoResultException(),
+            "NonUniqueResultException" to NonUniqueResultException(),
+            "PessimisticLockException" to PessimisticLockException(),
+            "QueryTimeoutException" to QueryTimeoutException(),
+            "TransactionRequiredException" to TransactionRequiredException()
+        )
+
         @Test
-        fun `Query timeout triggers retry`() {
+        fun `Query timeout while querying triggers retry`() {
             val emFactory = createEntityManagerFactory("uniqueness_2")
             val spyEmFactory = Mockito.spy(emFactory)
             val em = spyEmFactory.createEntityManager()
@@ -369,8 +395,8 @@ class JPABackingStoreImplIntegrationTests {
 
             val queryName = "UniquenessTransactionDetailEntity.select"
             val resultClass = UniquenessTransactionDetailEntity::class.java
-            // Find a way to mock a TypedQuery while make the logic JPA implementation agnostic.
             // Actual execution of the query happens at invoking resultList of the query.
+            // Find a way to mock a TypedQuery while make the logic JPA implementation agnostic.
             Mockito.doThrow(QueryTimeoutException("Executing a query timed out"))
                 .whenever(spyEm).createNamedQuery(queryName, resultClass)
 
@@ -387,13 +413,19 @@ class JPABackingStoreImplIntegrationTests {
             Mockito.verify(spyEm, times(maxAttemptsCnt)).createNamedQuery(queryName, resultClass)
         }
 
-        @Test
-        fun `Persistence errors triggers retry`() {
+        @ParameterizedTest
+        @ValueSource(
+            strings = ["PersistenceException",
+                "EntityExistsException",
+                "RollbackException",
+                "OptimisticLockException"]
+        )
+        fun `Persistence errors raised while persisting trigger retry`(persistenceException: String) {
             val emFactory = createEntityManagerFactory("uniqueness_2")
             val spyEmFactory = Mockito.spy(emFactory)
             val em = spyEmFactory.createEntityManager()
             val spyEm = Mockito.spy(em)
-            Mockito.doThrow(PersistenceException("Persistence error")).whenever(spyEm).persist(any())
+            Mockito.doThrow(persistenceExceptions[persistenceException]).whenever(spyEm).persist(any())
             Mockito.doReturn(spyEm).whenever(spyEmFactory).createEntityManager()
 
             val storeImpl = createBackingStoreImpl(spyEmFactory)
@@ -401,12 +433,52 @@ class JPABackingStoreImplIntegrationTests {
 
             val secureHashes = generateSecureHashes(1)
             val stateRefs = generateUniquenessCheckStateRef(secureHashes)
-            assertThrows<PersistenceException> {
+            assertThrows<IllegalStateException> {
                 storeImpl.session { session ->
                     session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
                 }
             }
             Mockito.verify(spyEm, times(maxAttemptsCnt)).persist(any())
         }
+
+        @Test
+        fun `Transaction rollback gets triggered if transaction is active for an unexpected exception type`() {
+            val emFactory = createEntityManagerFactory("uniqueness")
+            val spyEmFactory = Mockito.spy(emFactory)
+            val em = emFactory.createEntityManager()
+            val spyEm = Mockito.spy(em)
+            val emTransaction = em.transaction
+            val spyEmTransaction = Mockito.spy(emTransaction)
+            Mockito.doReturn(spyEm).whenever(spyEmFactory).createEntityManager()
+            Mockito.doReturn(spyEmTransaction).whenever(spyEm).transaction
+
+            val storeImpl = createBackingStoreImpl(spyEmFactory)
+            storeImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
+
+            assertThrows<DummyException> {
+                storeImpl.session { session ->
+                    session.executeTransaction { _, _ -> throw DummyException("dummy exception") }
+                }
+            }
+            // Note that unlike for expected exceptions, no retry should happen.
+            Mockito.verify(spyEmTransaction, times(1)).begin()
+            Mockito.verify(spyEmTransaction, never()).commit()
+            Mockito.verify(spyEmTransaction, times(1)).rollback()
+        }
+    }
+
+    @Test
+    fun `Session always creates a new entity manager`() {
+        val emFactory = createEntityManagerFactory("uniqueness")
+        val spyEmFactory = Mockito.spy(emFactory)
+
+        val storeImpl = createBackingStoreImpl(spyEmFactory)
+        storeImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
+
+        val sessionInvokeCnt = 3
+        repeat(sessionInvokeCnt) {
+            storeImpl.session { session -> session.executeTransaction { _, _ -> } }
+        }
+        Mockito.verify(spyEmFactory, times(sessionInvokeCnt)).createEntityManager()
     }
 }
