@@ -2,7 +2,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: corda-setup-db
+  name: {{ include "corda.fullname" . }}-setup-db
   labels:
     {{- include "corda.labels" . | nindent 4 }}
   annotations:

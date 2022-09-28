@@ -31,8 +31,8 @@ interface VirtualNodeMaintenanceRPCOps : RpcOps {
      */
     @HttpRpcPOST(
         path = "forceCpiUpload",
-        title = "Force upload a CPI",
-        description = "Force uploads a CPI file. Even if CPI with the same metadata has already been uploaded, " +
+        title = "This method force uploads a CPI file.",
+        description = "Even if CPI with the same metadata has already been uploaded, " +
                 "this endpoint will overwrite the previously stored CPI record. This operation also purges any sandboxes running " +
                 "an overwritten version of a CPI. This action can take some time to process, therefore it is performed asynchronously.",
         responseDescription = "The response ID which can be used to track the progress of the force CPI upload operation."
@@ -48,7 +48,7 @@ interface VirtualNodeMaintenanceRPCOps : RpcOps {
     @HttpRpcPUT(
         path = "{virtualNodeShortId}/state/{newState}",
         title = "Update virtual node state",
-        description = "Updates the state of a new virtual node to one of the pre-defined values.",
+        description = "This method updates the state of a new virtual node to one of the pre-defined values.",
         responseDescription = "Complete information about updated virtual node which will also contain the updated state."
     )
     fun updateVirtualNodeState(

@@ -1,7 +1,7 @@
 package net.corda.simulator.runtime.messaging
 
 import net.corda.simulator.runtime.persistence.CloseablePersistenceService
-import net.corda.simulator.runtime.persistence.HsqlPersistenceServiceFactory
+import net.corda.simulator.runtime.persistence.DbPersistenceServiceFactory
 import net.corda.simulator.runtime.persistence.PersistenceServiceFactory
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.application.membership.MemberLookup
@@ -11,10 +11,15 @@ import net.corda.v5.membership.MemberInfo
 import java.security.PublicKey
 
 /**
- * Registers, and looks up, responder flows via their protocol.
+ * Registers responder flows and other members, and looks up responder flows via their protocol. All state shared
+ * between nodes is stored in this class, so that all generated keys are available on the [MemberInfo]s and
+ * that a member's [PersistenceService] is available to each of their nodes.
+ *
+ * @param persistenceServiceFactory The factory for creating persistence services.
+ * @param memberLookUpFactory The factory for creating member lookup.
  */
 class SimFiberBase(
-    private val persistenceServiceFactory : PersistenceServiceFactory = HsqlPersistenceServiceFactory(),
+    private val persistenceServiceFactory : PersistenceServiceFactory = DbPersistenceServiceFactory(),
     private val memberLookUpFactory: MemberLookupFactory = BaseMemberLookupFactory()
 ) : SimFiber {
 

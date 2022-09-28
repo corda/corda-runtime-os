@@ -29,14 +29,24 @@ interface ConfigRPCOps : RpcOps {
     @HttpRpcPUT(
         title = "Update cluster configuration",
         description = "This method updates a section of the cluster configuration.",
-        responseDescription = "The updated cluster configuration for the specified section."
+        responseDescription = """
+            The updated cluster configuration for the specified section:
+            - `section`: the section of the configuration to be updated.
+            - `config`: the updated configuration in JSON or HOCON format.
+            - `schemaVersion`: the schema version of the configuration.
+            - `version`: the version number used for optimistic locking. The request fails if this version does not 
+                match the version stored in the database for the corresponding section or -1 if this is a new section 
+                for which no configuration has yet been stored."""
     )
     fun updateConfig(
-        @HttpRpcRequestBodyParameter(description = "Details of the updated configuration. Includes: \n" +
-                "- config: The updated configuration in JSON or HOCON format.\n" +
-                "- schemaVersion: The schema version of the configuration.\n" +
-                "- section: The section of the configuration to be updated.\n" +
-                "- version: The version number used for optimistic locking.\n")
+        @HttpRpcRequestBodyParameter(description = """
+            Details of the updated configuration. Includes:
+            - `section`: the section of the configuration to be updated.
+            - `config`: the updated configuration in JSON or HOCON format.
+            - `schemaVersion`: the schema version of the configuration.
+            - `version`: the version number used for optimistic locking. The request fails if this version does not 
+                match the version stored in the database for the corresponding section or -1 if this is a new section 
+                for which no configuration has yet been stored.""")
         request: UpdateConfigParameters
     ): UpdateConfigResponse
 
@@ -50,7 +60,7 @@ interface ConfigRPCOps : RpcOps {
         title = "Get Configuration.",
         description = "This method returns the 'active' configuration for the given section, " +
                 "in both the 'raw' format and with defaults applied.",
-        responseDescription = "The configuration for the given section."
+        responseDescription = "The configuration for the given section"
     )
     fun get(
         @HttpRpcPathParameter(description = "Section name for the configuration.")
