@@ -1,6 +1,5 @@
 package net.corda.crypto.merkle.impl
 
-import net.corda.v5.application.crypto.MerkleTreeFactory
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -20,7 +19,10 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope
 
-@Component(service = [MerkleTreeProvider::class, SingletonSerializeAsToken::class], scope = ServiceScope.PROTOTYPE, property=["corda.system=true"])
+@Component(
+    service = [MerkleTreeProvider::class, SingletonSerializeAsToken::class],
+    scope = ServiceScope.PROTOTYPE,
+    property=["corda.system=true"])
 class MerkleTreeProviderImpl @Activate constructor(
     @Reference(service = DigestService::class)
     private val digestService: DigestService,
