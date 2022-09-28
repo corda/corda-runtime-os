@@ -14,14 +14,14 @@ abstract class HttpRpcCommand : ExtensionPoint {
 
     @Option(
         names = ["-u", "--user"],
-        description = ["User name"],
+        description = ["HTTP RPC user name"],
         required = true
     )
     lateinit var username: String
 
     @Option(
         names = ["-p", "--password"],
-        description = ["Password"],
+        description = ["HTTP RPC password"],
         required = true
     )
     lateinit var password: String
@@ -29,7 +29,7 @@ abstract class HttpRpcCommand : ExtensionPoint {
     @Option(
         names = ["-pv", "--protocol-version"],
         required = false,
-        description = ["Minimum protocol version."]
+        description = ["Minimum protocol version. Defaults to 1 if missing."]
     )
     var minimumServerProtocolVersion: Int = 1
 }
