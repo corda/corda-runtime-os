@@ -140,6 +140,7 @@ fun CpiPersistence.persistCpiToDatabase(
             )
         }
     } catch (ex: Exception) {
+        log.error("$ex")
         when (ex) {
             is ValidationException -> throw ex
             is PersistenceException -> throw ValidationException("Could not persist CPI and CPK to database", requestId, ex)

@@ -20,7 +20,6 @@ import net.corda.libs.cpi.datamodel.CpiCpkKey
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogAuditEntity
 import net.corda.libs.cpi.datamodel.CpkFileEntity
 import net.corda.libs.cpi.datamodel.CpkKey
 import net.corda.libs.cpi.datamodel.CpkMetadataEntity
@@ -811,12 +810,58 @@ internal class DatabaseCpiPersistenceTest {
         val updatedCpi = mockCpiWithId(listOf(cpkWithNewChangelogs), cpi.metadata.cpiId)
         val updateCpiEntity = cpiPersistence.updateMetadataAndCpks(
             updatedCpi, "test.cpi", newRandomSecureHash(), UUID.randomUUID().toString(), "group-A",
-            makeChangeLogs(arrayOf(cpkWithNewChangelogs), "Something different")
+            makeChangeLogs(arrayOf(cpkWithNewChangelogs), listOf("Something different"))
         )
         val updatedChangelogs = findChangelogs(updateCpiEntity)
         val updatedChangelogAudits = findChangelogAudits(updateCpiEntity)
         assertThat(updatedChangelogs.size).isEqualTo(1)
         assertThat(updatedChangelogAudits.size).isEqualTo(2)
+    }
+
+    @Test
+    fun `force upload adds multiple changelog audit entry for multiple changesets`() {
+        val (cpkWithChangelogs, cpkWithNewChangelogs) = makeCpks(2)
+        val cpi = mockCpi(listOf(cpkWithChangelogs))
+        val cpiEntity = cpiPersistence.persistMetadataAndCpks(
+            cpi, "test.cpi", newRandomSecureHash(), UUID.randomUUID().toString(),
+            "group-A", makeChangeLogs(arrayOf(cpkWithChangelogs))
+        )
+
+        fun findChangelogs(cpiEntity: CpiMetadataEntity) = entityManagerFactory.createEntityManager().transaction {
+            findDbChangeLogForCpi(
+                it,
+                CpiIdentifier(
+                    name = cpiEntity.name,
+                    version = cpiEntity.version,
+                    signerSummaryHash = SecureHash.parse(cpiEntity.signerSummaryHash)
+                )
+            )
+        }
+
+        fun findChangelogAudits(cpiEntity: CpiMetadataEntity) = entityManagerFactory.createEntityManager().transaction {
+            findDbChangeLogAuditForCpi(
+                it,
+                CpiIdentifier(
+                    name = cpiEntity.name,
+                    version = cpiEntity.version,
+                    signerSummaryHash = SecureHash.parse(cpiEntity.signerSummaryHash)
+                )
+            )
+        }
+
+        val changelogs = findChangelogs(cpiEntity)
+        val changelogAudits = findChangelogAudits(cpiEntity)
+        assertThat(changelogs.size).isEqualTo(1)
+        assertThat(changelogAudits.size).isEqualTo(1)
+        val updatedCpi = mockCpiWithId(listOf(cpkWithNewChangelogs), cpi.metadata.cpiId)
+        val updateCpiEntity = cpiPersistence.updateMetadataAndCpks(
+            updatedCpi, "test.cpi", newRandomSecureHash(), UUID.randomUUID().toString(), "group-A",
+            makeChangeLogs(arrayOf(cpkWithNewChangelogs), listOf("Something different", "Something else"))
+        )
+        val updatedChangelogs = findChangelogs(updateCpiEntity)
+        val updatedChangelogAudits = findChangelogAudits(updateCpiEntity)
+        assertThat(updatedChangelogs.size).isEqualTo(2)
+        assertThat(updatedChangelogAudits.size).isEqualTo(3)
     }
 
     @Test
@@ -875,17 +920,22 @@ internal class DatabaseCpiPersistenceTest {
             )
         }.toTypedArray()
 
-    private fun makeChangeLogs(cpks: Array<Cpk>, changeLog: String = mockChangeLogContent) = cpks.map {
-        CpkDbChangeLogEntity(
-            CpkDbChangeLogKey(
-                it.metadata.cpkId.name,
-                it.metadata.cpkId.version,
-                it.metadata.cpkId.signerSummaryHash.toString(),
-                "resources/db.changelog-master.xml"
-            ),
-            newRandomSecureHash().toString(),
-            changeLog
-        )
+    private fun makeChangeLogs(
+        cpks: Array<Cpk>,
+        changeLogs: List<String> = listOf(mockChangeLogContent)
+    ): List<CpkDbChangeLogEntity> = cpks.flatMap {
+        changeLogs.map { changeLog ->
+            CpkDbChangeLogEntity(
+                CpkDbChangeLogKey(
+                    it.metadata.cpkId.name,
+                    it.metadata.cpkId.version,
+                    it.metadata.cpkId.signerSummaryHash.toString(),
+                    "resources/$changeLog"
+                ),
+                newRandomSecureHash().toString(),
+                changeLog
+            )
+        }
     }
 
     private fun findAndAssertCpk(

@@ -19,8 +19,6 @@ import javax.persistence.Table
 class CpkDbChangeLogAuditEntity(
     @EmbeddedId
     var id: CpkDbChangeLogAuditKey,
-    @Column(name = "file_path", nullable = false)
-    val filePath: String,
     @Column(name = "content", nullable = false)
     val content: String,
     @Column(name = "is_deleted", nullable = false)
@@ -36,7 +34,6 @@ class CpkDbChangeLogAuditEntity(
             cpkDbChangeLogEntity.fileChecksum,
             cpkDbChangeLogEntity.entityVersion
         ),
-        cpkDbChangeLogEntity.id.filePath,
         cpkDbChangeLogEntity.content,
         cpkDbChangeLogEntity.isDeleted
     )
@@ -54,6 +51,8 @@ data class CpkDbChangeLogAuditKey(
     val fileChecksum: String,
     @Column(name = "entity_version", nullable = false)
     var entityVersion: Int,
+    @Column(name = "file_path", nullable = false)
+    val filePath: String,
 ) : Serializable {
     constructor(cpkDbChangeLogKey: CpkDbChangeLogKey, fileChecksum: String, entityVersion: Int) : this(
         cpkDbChangeLogKey.cpkName,
@@ -61,6 +60,7 @@ data class CpkDbChangeLogAuditKey(
         cpkDbChangeLogKey.cpkSignerSummaryHash,
         fileChecksum,
         entityVersion,
+        cpkDbChangeLogKey.filePath
     )
 }
 
