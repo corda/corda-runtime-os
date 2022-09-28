@@ -24,6 +24,7 @@ spec:
   - name: http
     port: 443
     targetPort: http
+  hostname: http-rpc-worker-service
 ---
 apiVersion: apps/v1
 kind: Deployment
