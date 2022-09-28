@@ -87,6 +87,7 @@ class FlowRPCOpsImpl @Activate constructor(
         }
 
         val vNode = getVirtualNode(holdingIdentityShortHash)
+        validateVirtualNodeStatus(vNode)
         val clientRequestId = startFlow.clientRequestId
         val flowStatus = flowStatusCacheService.getStatus(clientRequestId, vNode.holdingIdentity)
 
@@ -135,6 +136,15 @@ class FlowRPCOpsImpl @Activate constructor(
         }
 
         return ResponseEntity.accepted(messageFactory.createFlowStatusResponse(status))
+    }
+
+    private fun validateVirtualNodeStatus(vNode: VirtualNodeInfo) {
+        if(vNode.virtualNodeState == "IN_MAINTENANCE") {
+            throw FlowRPCOpsServiceException("Virtual node is in maintenance mode.")
+        }
+        if(vNode.virtualNodeState == "DRAINING") {
+            throw FlowRPCOpsServiceException("Virtual node is in draining mode.")
+        }
     }
 
     private fun getStartableFlows(holdingIdentityShortHash: String, vNode: VirtualNodeInfo): List<String> {
@@ -199,6 +209,10 @@ class FlowRPCOpsImpl @Activate constructor(
             log.error("Unexpected error at registerFlowStatusListener")
             error(e)
         }
+    }
+
+    override fun killFlow(holdingIdentityShortHash: String, clientRequestId: String): FlowStatusResponse {
+        TODO("Not yet implemented")
     }
 
     override fun start() = Unit

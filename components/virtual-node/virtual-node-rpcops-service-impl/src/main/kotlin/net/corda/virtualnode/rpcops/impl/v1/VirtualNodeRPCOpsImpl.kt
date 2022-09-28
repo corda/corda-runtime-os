@@ -41,6 +41,8 @@ import net.corda.virtualnode.rpcops.impl.v1.ExceptionTranslator.Companion.transl
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.virtualnode.ShortHash
 import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity as HoldingIdentityEndpointType
 
 @Component(service = [PluggableRPCOps::class])
@@ -222,6 +224,12 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
             is VirtualNodeManagementResponseFailure -> throw translate(resolvedResponse.exception)
             else -> throw UnknownResponseTypeException(resp.responseType::class.java.name)
         }
+    }
+
+    override fun getVirtualNode(virtualNodeShortId: String): VirtualNodeInfo {
+        return virtualNodeInfoReadService.getByHoldingIdentityShortHash(ShortHash.Companion.of(virtualNodeShortId))
+            ?.toEndpointType()
+            ?: throw ResourceNotFoundException("Virtual node", virtualNodeShortId)
     }
 
     private fun HoldingIdentity.toEndpointType(): HoldingIdentityEndpointType =

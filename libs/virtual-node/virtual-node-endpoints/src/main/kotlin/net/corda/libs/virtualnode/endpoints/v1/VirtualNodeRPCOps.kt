@@ -3,6 +3,7 @@ package net.corda.libs.virtualnode.endpoints.v1
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
+import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeRequest
@@ -31,6 +32,19 @@ interface VirtualNodeRPCOps : RpcOps {
     fun createVirtualNode(
         @HttpRpcRequestBodyParameter(description = "Details of the virtual node to be created")
         request: VirtualNodeRequest
+    ): VirtualNodeInfo
+
+    /**
+     * Get a virtual node.
+     */
+    @HttpRpcGET(
+        path = "{virtualNodeShortId}",
+        description = "Get a virtual node.",
+        responseDescription = "The details of the virtual node."
+    )
+    fun getVirtualNode(
+        @HttpRpcPathParameter(description = "Short ID of the virtual node instance to update")
+        virtualNodeShortId: String
     ): VirtualNodeInfo
 
     /**

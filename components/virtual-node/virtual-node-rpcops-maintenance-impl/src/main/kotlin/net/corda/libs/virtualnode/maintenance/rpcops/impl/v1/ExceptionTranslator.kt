@@ -1,4 +1,4 @@
-package net.corda.virtualnode.rpcops.impl.v1
+package net.corda.libs.virtualnode.maintenance.rpcops.impl.v1
 
 import net.corda.data.ExceptionEnvelope
 import net.corda.httprpc.exception.BadRequestException
@@ -11,7 +11,8 @@ import net.corda.libs.virtualnode.common.exception.HoldingIdentityNotFoundExcept
 import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
 import net.corda.v5.base.util.contextLogger
 
-class ExceptionTranslator {
+// todo conal - harmonize this with existing one after rebasing
+internal class ExceptionTranslator {
     companion object {
         private val logger = contextLogger()
 
@@ -27,13 +28,13 @@ class ExceptionTranslator {
             return when (exception.errorType) {
                 IllegalArgumentException::class.java.name,
                 CpiNotFoundException::class.java.name
-                    -> BadRequestException(exception.errorMessage)
+                -> BadRequestException(exception.errorMessage)
                 VirtualNodeAlreadyExistsException::class.java.name
-                    -> ResourceAlreadyExistsException(exception.errorMessage)
+                -> ResourceAlreadyExistsException(exception.errorMessage)
                 HoldingIdentityNotFoundException::class.java.name
-                        -> ResourceNotFoundException(exception.errorMessage)
+                -> ResourceNotFoundException(exception.errorMessage)
                 else
-                    -> InternalServerException(exception.errorMessage)
+                -> InternalServerException(exception.errorMessage)
             }
         }
     }

@@ -36,6 +36,14 @@ class VirtualNodeDbFactory(
         private val random = SecureRandom()
     }
 
+    fun createVaultDbs(
+        holdingIdentityShortHash: ShortHash,
+        vaultDdlConnection: String?,
+        vaultDmlConnection: String?
+    ): VirtualNodeDb {
+        return createVNodeDb(VAULT, holdingIdentityShortHash, vaultDdlConnection, vaultDmlConnection)
+    }
+
     /**
      * Creates [VirtualNodeDb]s using connection configurations from virtual node creation request
      *
@@ -49,12 +57,32 @@ class VirtualNodeDbFactory(
         request: VirtualNodeCreateRequest
     ): Map<VirtualNodeDbType, VirtualNodeDb> {
         with(request) {
-            return mapOf(
-                Pair(VAULT, createVNodeDb(VAULT, holdingIdentityShortHash, vaultDdlConnection, vaultDmlConnection)),
-                Pair(CRYPTO, createVNodeDb(CRYPTO, holdingIdentityShortHash, cryptoDdlConnection, cryptoDmlConnection)),
-                Pair(UNIQUENESS, createVNodeDb(UNIQUENESS, holdingIdentityShortHash, uniquenessDdlConnection, uniquenessDmlConnection))
+            return createVNodeDbs(
+                holdingIdentityShortHash,
+                vaultDdlConnection,
+                vaultDmlConnection,
+                cryptoDdlConnection,
+                cryptoDmlConnection,
+                uniquenessDdlConnection,
+                uniquenessDmlConnection
             )
         }
+    }
+
+    fun createVNodeDbs(
+        holdingIdentityShortHash: ShortHash,
+        vaultDdlConnection: String?,
+        vaultDmlConnection: String?,
+        cryptoDdlConnection: String?,
+        cryptoDmlConnection: String?,
+        uniquenessDdlConnection: String?,
+        uniquenessDmlConnection: String?
+    ): Map<VirtualNodeDbType, VirtualNodeDb> {
+        return mapOf(
+            Pair(VAULT, createVaultDbs(holdingIdentityShortHash, vaultDdlConnection, vaultDmlConnection)),
+            Pair(CRYPTO, createVNodeDb(CRYPTO, holdingIdentityShortHash, cryptoDdlConnection, cryptoDmlConnection)),
+            Pair(UNIQUENESS, createVNodeDb(UNIQUENESS, holdingIdentityShortHash, uniquenessDdlConnection, uniquenessDmlConnection))
+        )
     }
 
     /**

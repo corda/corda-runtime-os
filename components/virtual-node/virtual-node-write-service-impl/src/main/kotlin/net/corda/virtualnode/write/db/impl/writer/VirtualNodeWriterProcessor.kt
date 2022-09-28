@@ -18,8 +18,6 @@ import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.DDL
 import net.corda.db.core.DbPrivilege.DML
 import net.corda.layeredpropertymap.toAvro
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
-import net.corda.libs.cpi.datamodel.findDbChangeLogForCpi
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
@@ -49,6 +47,10 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import javax.persistence.EntityManager
 import kotlin.system.measureTimeMillis
+import net.corda.data.virtualnode.VirtualNodeCpiUpgradeRequest
+import net.corda.virtualnode.write.db.impl.writer.management.VirtualNodeManagementHandler
+import net.corda.virtualnode.write.db.impl.writer.management.common.MigrationUtility
+import net.corda.virtualnode.write.db.impl.writer.management.common.VirtualNodeInfoRecordPublisher
 
 /**
  * An RPC responder processor that handles virtual node creation requests.
@@ -73,8 +75,10 @@ internal class VirtualNodeWriterProcessor(
     private val virtualNodeEntityRepository: VirtualNodeEntityRepository,
     private val vnodeDbFactory: VirtualNodeDbFactory,
     private val groupPolicyParser: GroupPolicyParser,
+    private val upgradeVirtualNodeCpiHandler: VirtualNodeManagementHandler<VirtualNodeCpiUpgradeRequest>,
+    private val migrationUtility: MigrationUtility,
+    private val virtualNodeInfoRecordPublisher: VirtualNodeInfoRecordPublisher,
     private val clock: Clock,
-    private val getChangelogs: (EntityManager, CpiIdentifier) -> List<CpkDbChangeLogEntity> = ::findDbChangeLogForCpi
 ) : RPCResponderProcessor<VirtualNodeManagementRequest, VirtualNodeManagementResponse> {
 
     companion object {
@@ -186,7 +190,7 @@ internal class VirtualNodeWriterProcessor(
             }
 
             measureTimeMillis {
-                publishVNodeInfo(holdingId, cpiMetadata, dbConnections)
+                virtualNodeInfoRecordPublisher.publishVNodeInfo(holdingId, cpiMetadata, dbConnections)
             }.also {
                 logger.debug {"[Create ${create.x500Name}] persisting VNode Info to Kafka took $it ms, elapsed " +
                         "${currentTimeMillis() - startMillis} ms"}
@@ -314,6 +318,7 @@ internal class VirtualNodeWriterProcessor(
         when (val typedRequest = request.request) {
             is VirtualNodeCreateRequest -> createVirtualNode(request.timestamp, typedRequest, respFuture)
             is VirtualNodeStateChangeRequest -> changeVirtualNodeState(request.timestamp, typedRequest, respFuture)
+            is VirtualNodeCpiUpgradeRequest -> upgradeVirtualNodeCpiHandler.handle(request.timestamp, typedRequest, respFuture)
             else -> throw VirtualNodeWriteServiceException("Unknown management request of type: ${typedRequest::class.java.name}")
         }
     }
@@ -433,71 +438,7 @@ internal class VirtualNodeWriterProcessor(
     }
 
     private fun runCpiMigrations(cpiMetadata: CpiMetadataLite, vaultDb: VirtualNodeDb) =
-        // we could potentially do one transaction per CPK; it seems more useful to blow up the
-        // who migration if any CPK fails though, so that they can be iterative developed and repeated
-        dbConnectionManager.getClusterEntityManagerFactory().createEntityManager().transaction {
-            val changelogs = getChangelogs(it, cpiMetadata.id)
-            changelogs.map { cl -> cl.id.cpkName }.distinct().sorted().forEach { cpkName ->
-                val cpkChangelogs = changelogs.filter { cl2 -> cl2.id.cpkName == cpkName }
-                logger.info("Doing ${cpkChangelogs.size} migrations for $cpkName")
-                val dbChange = VirtualNodeDbChangeLog(cpkChangelogs)
-                try {
-                    vaultDb.runCpiMigrations(dbChange)
-                } catch (e: Exception) {
-                    logger.error("Virtual node liquibase DB migration failure on CPK $cpkName with error $e")
-                    throw VirtualNodeWriteServiceException(
-                        "Error running virtual node DB migration for CPI liquibase migrations",
-                        e
-                    )
-                }
-                logger.info("Completed ${cpkChangelogs.size} migrations for $cpkName")
-            }
-        }
-
-    private fun createVirtualNodeRecord(
-        holdingIdentity: HoldingIdentity,
-        cpiMetadata: CpiMetadataLite,
-        dbConnections: VirtualNodeDbConnections
-    ):
-        Record<net.corda.data.identity.HoldingIdentity, net.corda.data.virtualnode.VirtualNodeInfo> {
-
-        val cpiIdentifier = CpiIdentifier(cpiMetadata.id.name, cpiMetadata.id.version, cpiMetadata.id.signerSummaryHash)
-        val virtualNodeInfo = with(dbConnections) {
-            VirtualNodeInfo(
-                holdingIdentity,
-                cpiIdentifier,
-                vaultDdlConnectionId,
-                vaultDmlConnectionId,
-                cryptoDdlConnectionId,
-                cryptoDmlConnectionId,
-                uniquenessDdlConnectionId,
-                uniquenessDmlConnectionId,
-                timestamp = clock.instant(),
-                state = VirtualNodeInfo.DEFAULT_INITIAL_STATE
-            )
-                .toAvro()
-        }
-        return Record(VIRTUAL_NODE_INFO_TOPIC, virtualNodeInfo.holdingIdentity, virtualNodeInfo)
-    }
-
-    private fun publishVNodeInfo(
-        holdingIdentity: HoldingIdentity,
-        cpiMetadata: CpiMetadataLite,
-        dbConnections: VirtualNodeDbConnections
-    ) {
-        val virtualNodeRecord = createVirtualNodeRecord(holdingIdentity, cpiMetadata, dbConnections)
-        try {
-            // TODO - CORE-3319 - Strategy for DB and Kafka retries.
-            val future = vnodePublisher.publish(listOf(virtualNodeRecord)).first()
-
-            // TODO - CORE-3730 - Define timeout policy.
-            future.get()
-        } catch (e: Exception) {
-            throw VirtualNodeWriteServiceException(
-                "Record $virtualNodeRecord was written to the database, but couldn't be published. Cause: $e", e
-            )
-        }
-    }
+        migrationUtility.runCpiMigrations(cpiMetadata, vaultDb)
 
     private fun publishMgmInfo(holdingIdentity: HoldingIdentity, groupPolicyJson: String) {
         val mgmInfo = groupPolicyParser.run {

@@ -1,4 +1,4 @@
-package net.corda.virtualnode.rpcops.impl.v1
+package net.corda.libs.virtualnode.maintenance.rpcops.impl.v1
 
 import net.corda.v5.base.exceptions.CordaRuntimeException
 

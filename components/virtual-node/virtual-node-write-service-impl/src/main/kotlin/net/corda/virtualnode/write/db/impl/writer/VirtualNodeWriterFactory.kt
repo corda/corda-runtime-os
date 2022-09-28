@@ -19,6 +19,10 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_CREATION_REQUEST_TOPIC
 import net.corda.utilities.time.UTCClock
 import javax.persistence.EntityManager
+import net.corda.db.connection.manager.DbConnectionsRepository
+import net.corda.virtualnode.write.db.impl.writer.management.common.impl.MigrationUtilityImpl
+import net.corda.virtualnode.write.db.impl.writer.management.common.impl.VirtualNodeInfoRecordPublisherImpl
+import net.corda.virtualnode.write.db.impl.writer.management.impl.UpgradeVirtualNodeCpiHandler
 
 /** A factory for [VirtualNodeWriter]s. */
 @Suppress("LongParameterList")
@@ -29,6 +33,7 @@ internal class VirtualNodeWriterFactory(
     private val dbAdmin: DbAdmin,
     private val schemaMigrator: LiquibaseSchemaMigrator,
     private val groupPolicyParser: GroupPolicyParser,
+    private val dbConnectionsRepository: DbConnectionsRepository,
     private val getChangeLogs: (EntityManager, CpiIdentifier) -> List<CpkDbChangeLogEntity> = ::findDbChangeLogForCpi
 ) {
 
@@ -72,17 +77,22 @@ internal class VirtualNodeWriterFactory(
             VirtualNodeManagementRequest::class.java,
             VirtualNodeManagementResponse::class.java,
         )
+        val clock = UTCClock()
         val virtualNodeEntityRepository =
             VirtualNodeEntityRepository(dbConnectionManager.getClusterEntityManagerFactory())
         val vnodeDbFactory = VirtualNodeDbFactory(dbConnectionManager, dbAdmin, schemaMigrator)
+        val migrationUtility = MigrationUtilityImpl(dbConnectionManager, getChangeLogs)
+        val virtualNodeInfoPublisher = VirtualNodeInfoRecordPublisherImpl(vnodePublisher, clock)
         val processor = VirtualNodeWriterProcessor(
             vnodePublisher,
             dbConnectionManager,
             virtualNodeEntityRepository,
             vnodeDbFactory,
             groupPolicyParser,
-            UTCClock(),
-            getChangeLogs
+            UpgradeVirtualNodeCpiHandler(virtualNodeEntityRepository, dbConnectionsRepository, vnodeDbFactory, migrationUtility, virtualNodeInfoPublisher, clock),
+            migrationUtility,
+            virtualNodeInfoPublisher,
+            clock,
         )
 
         return subscriptionFactory.createRPCSubscription(rpcConfig, messagingConfig, processor)

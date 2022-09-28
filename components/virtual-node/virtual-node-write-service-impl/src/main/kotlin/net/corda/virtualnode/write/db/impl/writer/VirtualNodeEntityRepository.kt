@@ -100,6 +100,39 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
     }
 
     /**
+     * Reads a holding identity from the database and returns the holding identity with vault schema connection details.
+     *
+     * @param holdingIdentityShortHash Holding identity ID (short hash)
+     * @return Holding identity with vault connections
+     */
+    internal fun getHoldingIdentityAndConnections(holdingIdentityShortHash: ShortHash): HoldingIdentityAndConnections? {
+        return entityManagerFactory
+            .transaction { entityManager ->
+                val hidEntity = entityManager.find(HoldingIdentityEntity::class.java, holdingIdentityShortHash.value)
+                    ?: return null
+                HoldingIdentityAndConnections(
+                    HoldingIdentity(
+                        MemberX500Name.parse(hidEntity.x500Name),
+                        hidEntity.mgmGroupId
+                    ),
+                    VirtualNodeDbConnections(
+                        hidEntity.vaultDDLConnectionId,
+                        hidEntity.vaultDMLConnectionId!!, // can these ever be null in db?
+                        hidEntity.cryptoDDLConnectionId,
+                        hidEntity.cryptoDMLConnectionId!!, // can these ever be null in db?
+                        hidEntity.uniquenessDDLConnectionId,
+                        hidEntity.uniquenessDMLConnectionId!!, // can these ever be null in db?
+                    )
+                )
+            }
+    }
+
+    data class HoldingIdentityAndConnections(
+        val holdingId: HoldingIdentity,
+        val connections: VirtualNodeDbConnections
+    )
+
+    /**
      * Writes a holding identity to the database.
      *
      * @param entityManager [EntityManager]
@@ -148,6 +181,57 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
                 val hie = it.find(HoldingIdentityEntity::class.java, holdingId.shortHash.value) ?: return false // TODO throw?
                 val key = VirtualNodeEntityKey(hie, cpiId.name, cpiId.version, signerSummaryHash)
                 it.find(VirtualNodeEntity::class.java, key) != null
+            }
+        }
+    }
+
+    /**
+     * Get a virtual node by its holding identity short hash.
+     *
+     * @param holdingId Holding identity
+     * @return lightweight representation of the virtual node
+     */
+    internal fun findByHoldingIdentity(holdingId: HoldingIdentity): VirtualNodeLite {
+        return entityManagerFactory.use { em ->
+            em.transaction {
+                val queryString = "FROM ${VirtualNodeEntity::class.java.simpleName} v " +
+                        "WHERE v.holdingIdentity.holdingIdentityShortHash = :holdingIdentityShortHash"
+                val holdingIdentityList = em.createQuery(queryString, VirtualNodeEntity::class.java)
+                    .setParameter("holdingIdentityShortHash", holdingId.shortHash.value)
+                    .resultList
+                if(holdingIdentityList.size > 1) {
+                    throw CordaRuntimeException("More than one virtual node for the given holding identity ${holdingId.shortHash.value}")
+                }
+                holdingIdentityList.first().toVirtualNodeLite()
+            }
+        }
+    }
+
+    private fun VirtualNodeEntity.toVirtualNodeLite() = VirtualNodeLite(
+        holdingIdentity.holdingIdentityShortHash,
+        cpiName,
+        cpiVersion,
+        cpiSignerSummaryHash
+    )
+
+    data class VirtualNodeLite(
+        val holdingIdentityShortHash: String,
+        val cpiName: String,
+        val cpiVersion: String,
+        val cpiSignerSummaryHash: String,
+    )
+
+    internal fun updateVirtualNodeCpi(holdingId: HoldingIdentity, cpiId: CpiIdentifier) {
+        return entityManagerFactory.use { em ->
+            em.transaction {
+                val signerSummaryHash = if (cpiId.signerSummaryHash != null) cpiId.signerSummaryHash.toString() else ""
+                val hie = it.find(HoldingIdentityEntity::class.java, holdingId.shortHash.value)
+                val key = VirtualNodeEntityKey(hie, cpiId.name, cpiId.version, signerSummaryHash)
+                val vNodeEntity = it.find(VirtualNodeEntity::class.java, key)
+                vNodeEntity.cpiName = cpiId.name
+                vNodeEntity.cpiVersion = cpiId.version
+                vNodeEntity.cpiSignerSummaryHash = signerSummaryHash
+                em.merge(vNodeEntity)
             }
         }
     }

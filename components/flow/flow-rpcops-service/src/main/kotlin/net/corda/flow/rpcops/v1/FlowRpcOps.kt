@@ -4,6 +4,7 @@ import net.corda.flow.rpcops.v1.types.request.StartFlowParameters
 import net.corda.flow.rpcops.v1.types.response.FlowStatusResponse
 import net.corda.flow.rpcops.v1.types.response.FlowStatusResponses
 import net.corda.httprpc.RpcOps
+import net.corda.httprpc.annotations.HttpRpcDELETE
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPathParameter
@@ -117,4 +118,14 @@ interface FlowRpcOps : RpcOps {
         @HttpRpcPathParameter(description = "Client provided flow identifier")
         clientRequestId: String
     )
+
+    @HttpRpcDELETE(
+        path = "{holdingIdentityShortHash}/{clientRequestId}"
+    )
+    fun killFlow(
+        @HttpRpcPathParameter(description = "Short hash of the holding identity")
+        holdingIdentityShortHash: String,
+        @HttpRpcPathParameter(description = "Client provided flow identifier")
+        clientRequestId: String
+    ): FlowStatusResponse
 }
