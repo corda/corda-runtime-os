@@ -32,4 +32,11 @@ abstract class HttpRpcCommand : ExtensionPoint {
         description = ["Minimum protocol version. Defaults to 1 if missing."]
     )
     var minimumServerProtocolVersion: Int = 1
+
+    @Option(
+        names = ["-y", "--yield"],
+        required = false,
+        description = ["Duration in seconds to patiently wait till HTTP RPC connection will become available. Default to 10 seconds is missing."]
+    )
+    var waitDurationSeconds: Int = 10
 }

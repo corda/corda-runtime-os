@@ -2,6 +2,7 @@ package net.corda.cli.plugins.common
 
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.client.HttpRpcClient
+import net.corda.httprpc.client.HttpRpcConnection
 import net.corda.httprpc.client.config.HttpRpcClientConfig
 import kotlin.reflect.KClass
 
@@ -23,5 +24,21 @@ object HttpRpcClientUtils {
                 .password(password),
             healthCheckInterval = 500
         )
+    }
+
+    fun <I : RpcOps> HttpRpcClient<I>.startAndWait(waitDurationSeconds: Int): HttpRpcConnection<I> {
+        val endTime = System.currentTimeMillis() + waitDurationSeconds * 1000
+
+        var lastException: Exception?
+
+        do {
+            try {
+                return this.start()
+            } catch (ex: Exception) {
+                lastException = ex
+            }
+        } while (System.currentTimeMillis() <= endTime)
+
+        throw lastException!!
     }
 }

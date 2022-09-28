@@ -1,6 +1,7 @@
 package net.corda.cli.plugin.initialRbac.commands
 
 import net.corda.cli.plugins.common.HttpRpcClientUtils.createHttpRpcClient
+import net.corda.cli.plugins.common.HttpRpcClientUtils.startAndWait
 import net.corda.cli.plugins.common.HttpRpcCommand
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
@@ -56,7 +57,7 @@ class UserAdminSubcommand : HttpRpcCommand(), Callable<Int> {
         logger.info("Running UserAdminSubcommand")
 
         createHttpRpcClient(RoleEndpoint::class).use { roleEndpointClient ->
-            val roleEndpoint = roleEndpointClient.start().proxy
+            val roleEndpoint = roleEndpointClient.startAndWait(waitDurationSeconds).proxy
             val allRoles = roleEndpoint.getRoles()
             if (allRoles.any { it.roleName == USER_ADMIN_ROLE }) {
                 errOut.error("$USER_ADMIN_ROLE already exists - nothing to do.")

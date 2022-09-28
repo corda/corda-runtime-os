@@ -29,7 +29,8 @@ spec:
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
-          args: [ 'initial-rbac', 'user-admin', '--user', "$(INITIAL_ADMIN_USER_USERNAME)", '--password', "$(INITIAL_ADMIN_USER_PASSWORD)", '--target', 'https://corda-rpc-worker:443']
+          args: ['initial-rbac', 'user-admin', '--yield', '60', '--user', "$(INITIAL_ADMIN_USER_USERNAME)",
+                  '--password', "$(INITIAL_ADMIN_USER_PASSWORD)", '--target', 'https://corda-rpc-worker:443']
           env:
             - name: INITIAL_ADMIN_USER_USERNAME
               valueFrom:
