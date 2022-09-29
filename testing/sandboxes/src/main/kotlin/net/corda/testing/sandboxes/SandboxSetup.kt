@@ -14,6 +14,8 @@ interface SandboxSetup {
 
     fun <T> getService(serviceType: Class<T>, filter: String?, timeout: Long): T
     fun <T> getService(serviceType: Class<T>, timeout: Long): T = getService(serviceType, null, timeout)
+
+    fun withCleanup(closeable: AutoCloseable)
 }
 
 inline fun <reified T> SandboxSetup.fetchService(timeout: Long): T {
