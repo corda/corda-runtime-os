@@ -317,19 +317,21 @@ class DynamicMemberRegistrationService @Activate constructor(
             member: HoldingIdentity
         ): KeyValuePairList {
             return KeyValuePairList(
-                context.filterNot { it.key.startsWith(LEDGER_KEYS) || it.key.startsWith(PARTY_SESSION_KEY) }
-                    .toWire().items
-                        + generateSessionKeyData(context, member.shortHash.value).items
-                        + generateLedgerKeyData(context, member.shortHash.value).items
-                        + listOf(
-                    KeyValuePair(REGISTRATION_ID, registrationId),
-                    KeyValuePair(PARTY_NAME, member.x500Name.toString()),
-                    KeyValuePair(GROUP_ID, member.groupId),
-                    // temporarily hardcoded
-                    KeyValuePair(PLATFORM_VERSION, PLATFORM_VERSION_CONST),
-                    KeyValuePair(SOFTWARE_VERSION, SOFTWARE_VERSION_CONST),
-                    KeyValuePair(SERIAL, SERIAL_CONST),
-                ).sortedBy {
+                (
+                    context.filterNot { it.key.startsWith(LEDGER_KEYS) || it.key.startsWith(PARTY_SESSION_KEY) }
+                        .toWire().items +
+                        generateSessionKeyData(context, member.shortHash.value).items +
+                        generateLedgerKeyData(context, member.shortHash.value).items +
+                        listOf(
+                            KeyValuePair(REGISTRATION_ID, registrationId),
+                            KeyValuePair(PARTY_NAME, member.x500Name.toString()),
+                            KeyValuePair(GROUP_ID, member.groupId),
+                            // temporarily hardcoded
+                            KeyValuePair(PLATFORM_VERSION, PLATFORM_VERSION_CONST),
+                            KeyValuePair(SOFTWARE_VERSION, SOFTWARE_VERSION_CONST),
+                            KeyValuePair(SERIAL, SERIAL_CONST),
+                        )
+                    ).sortedBy {
                     it.key
                 }
             )
@@ -386,20 +388,25 @@ class DynamicMemberRegistrationService @Activate constructor(
             if (specFromContext != null) {
                 return SignatureSpec(specFromContext)
             }
-            logger.info("Signature spec for key with ID: ${key.id} was not specified. Applying default signature spec " +
-                    "for ${key.schemeCodeName}.")
+            logger.info(
+                "Signature spec for key with ID: ${key.id} was not specified. Applying default signature spec " +
+                    "for ${key.schemeCodeName}."
+            )
             return defaultCodeNameToSpec[key.schemeCodeName]
                 ?: throw IllegalArgumentException(
                     "Could not find a suitable signature spec for ${key.schemeCodeName}. " +
-                            "Specify signature spec for key with ID: ${key.id} explicitly in the context."
+                        "Specify signature spec for key with ID: ${key.id} explicitly in the context."
                 )
         }
 
         private fun generateLedgerKeyData(context: Map<String, String>, tenantId: String): KeyValuePairList {
             val ledgerKeys =
-                getKeysFromIds(context.filter {
-                    LEDGER_KEY_ID.format("[0-9]+").toRegex().matches(it.key)
-                }.values.toList(), tenantId)
+                getKeysFromIds(
+                    context.filter {
+                        LEDGER_KEY_ID.format("[0-9]+").toRegex().matches(it.key)
+                    }.values.toList(),
+                    tenantId
+                )
             val ledgerPublicKeys = ledgerKeys.map { keyEncodingService.decodePublicKey(it.publicKey.array()) }
             val ledgerKeyInfo = mutableListOf<KeyValuePair>()
             ledgerPublicKeys.forEachIndexed { index, ledgerKey ->

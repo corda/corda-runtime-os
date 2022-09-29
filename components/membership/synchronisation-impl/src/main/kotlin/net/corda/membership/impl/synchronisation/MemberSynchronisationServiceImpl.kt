@@ -367,7 +367,9 @@ class MemberSynchronisationServiceImpl internal constructor(
             memberSignature,
             member,
         )
-        verifier.verify(memberContext.array())
+        verifier.verify(memberContext.array()).also {
+            println("QQQ Verified!!!")
+        }
     }
 
     private fun createSynchronisationRequestMessage(
