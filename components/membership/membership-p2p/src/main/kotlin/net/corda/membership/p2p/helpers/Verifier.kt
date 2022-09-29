@@ -17,6 +17,7 @@ class Verifier(
     cryptoOpsClient,
 ) {
     fun verify(date: ByteArray) {
+        println("QQQ in verify spec is $spec")
         signatureVerificationService.verify(
             publicKey,
             spec,

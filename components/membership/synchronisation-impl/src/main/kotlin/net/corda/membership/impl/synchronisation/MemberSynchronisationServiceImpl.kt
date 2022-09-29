@@ -52,6 +52,7 @@ import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.toBase64
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
@@ -353,6 +354,11 @@ class MemberSynchronisationServiceImpl internal constructor(
         member: ShortHash,
         memberContext: ByteBuffer,
     ) {
+        println("QQQ in verifyMemberSignature")
+        println("QQQ member short hash: $member")
+        println("QQQ member context: ${memberContext.array().toBase64()}")
+        println("QQQ signature public key: ${memberSignature.publicKey.array().toBase64()}")
+        println("QQQ signature content: ${memberSignature.bytes.array().toBase64()}")
         val verifier = verifierFactory.createVerifier(
             memberSignature,
             member,

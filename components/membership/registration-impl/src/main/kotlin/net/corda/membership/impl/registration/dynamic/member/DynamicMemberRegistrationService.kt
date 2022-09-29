@@ -57,6 +57,7 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.membership.MembershipSchema.RegistrationContextSchema
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.toBase64
 import net.corda.v5.base.versioning.Version
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_TEMPLATE
@@ -252,6 +253,12 @@ class DynamicMemberRegistrationService @Activate constructor(
                         KeyValuePairList(emptyList())
                     )
                 }
+                println("QQQ signing member context")
+                println("QQQ short hash ${member.shortHash}")
+                println("QQQ public key ${memberSignature.publicKey.array().toBase64()}")
+                println("QQQ spec ${memberContext.items.first { it.key == SESSION_KEY_SIGNATURE_SPEC }.value}")
+                println("QQQ data ${serializedMemberContext.toBase64()}")
+                println("QQQ signature ${memberSignature.bytes.array().toBase64()}")
                 val mgm = membershipGroupReaderProvider.getGroupReader(member).lookup().firstOrNull { it.isMgm }
                     ?: throw IllegalArgumentException("Failed to look up MGM information.")
                 val messageHeader = UnauthenticatedMessageHeader(
