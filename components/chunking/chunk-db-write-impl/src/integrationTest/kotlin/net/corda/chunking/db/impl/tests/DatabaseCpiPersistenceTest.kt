@@ -20,6 +20,7 @@ import net.corda.libs.cpi.datamodel.CpiCpkKey
 import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogAuditEntity
 import net.corda.libs.cpi.datamodel.CpkFileEntity
 import net.corda.libs.cpi.datamodel.CpkKey
 import net.corda.libs.cpi.datamodel.CpkMetadataEntity
@@ -814,8 +815,11 @@ internal class DatabaseCpiPersistenceTest {
         )
         val updatedChangelogs = findChangelogs(updateCpiEntity)
         val updatedChangelogAudits = findChangelogAudits(updateCpiEntity)
+
         assertThat(updatedChangelogs.size).isEqualTo(1)
         assertThat(updatedChangelogAudits.size).isEqualTo(2)
+        assertThat((changelogs + updatedChangelogs).map { CpkDbChangeLogAuditEntity(it).id })
+            .containsAll(updatedChangelogAudits.map { it.id })
     }
 
     @Test
@@ -860,8 +864,11 @@ internal class DatabaseCpiPersistenceTest {
         )
         val updatedChangelogs = findChangelogs(updateCpiEntity)
         val updatedChangelogAudits = findChangelogAudits(updateCpiEntity)
+
         assertThat(updatedChangelogs.size).isEqualTo(2)
         assertThat(updatedChangelogAudits.size).isEqualTo(3)
+        assertThat((changelogs + updatedChangelogs).map { CpkDbChangeLogAuditEntity(it).id })
+            .containsAll(updatedChangelogAudits.map { it.id })
     }
 
     @Test

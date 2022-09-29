@@ -130,8 +130,21 @@ class CpkDbChangeLogEntityTest {
 
             assertThat(loadedDbLogAuditEntity)
                 .isNotEqualTo(null)
-            assertThat(CpkDbChangeLogAuditEntity(loadedDbLogEntity).id.cpkName)
-                .isEqualTo(loadedDbLogAuditEntity!!.id.cpkName)
+            assertThat(CpkDbChangeLogAuditEntity(loadedDbLogEntity).id)
+                .isEqualTo(loadedDbLogAuditEntity!!.id)
+            assertThat(
+                listOf(
+                    loadedDbLogEntity.id.cpkName,
+                    loadedDbLogEntity.id.cpkVersion,
+                    loadedDbLogEntity.id.cpkSignerSummaryHash
+                )
+            ).isEqualTo(
+                listOf(
+                    loadedDbLogAuditEntity.id.cpkName,
+                    loadedDbLogAuditEntity.id.cpkVersion,
+                    loadedDbLogAuditEntity.id.cpkSignerSummaryHash
+                )
+            )
         }
     }
 
@@ -187,12 +200,12 @@ class CpkDbChangeLogEntityTest {
                     cpi.version,
                     SecureHash.parse(cpi.signerSummaryHash)
                 )
-            )
+            ).sortedBy { it.id.entityVersion }
 
-            assertThat(CpkDbChangeLogAuditEntity(loadedDbLogEntity).id.entityVersion)
-                .isNotEqualTo(loadedDbLogAuditEntities.first().id.entityVersion)
-            assertThat(CpkDbChangeLogAuditEntity(loadedDbLogEntity).id.entityVersion)
-                .isEqualTo(loadedDbLogAuditEntities.last().id.entityVersion)
+            assertThat(CpkDbChangeLogAuditEntity(loadedDbLogEntity).id)
+                .isNotEqualTo(loadedDbLogAuditEntities.first().id)
+            assertThat(CpkDbChangeLogAuditEntity(loadedDbLogEntity).id)
+                .isEqualTo(loadedDbLogAuditEntities.last().id)
         }
     }
 

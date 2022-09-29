@@ -79,8 +79,7 @@ fun findDbChangeLogAuditForCpi(
         "   changelog.id.cpkSignerSummaryHash = cpi.id.cpkSignerSummaryHash " +
         "WHERE cpi.id.cpiName = :name AND " +
         "      cpi.id.cpiVersion = :version AND " +
-        "      cpi.id.cpiSignerSummaryHash = :signerSummaryHash " +
-        "ORDER BY changelog.id.entityVersion",
+        "      cpi.id.cpiSignerSummaryHash = :signerSummaryHash",
     CpkDbChangeLogAuditEntity::class.java
 )
     .setParameter("name", cpi.name)
