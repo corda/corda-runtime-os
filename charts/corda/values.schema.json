@@ -9,7 +9,6 @@
         "db",
         "kafka"
     ],
-    "additionalProperties": false,
     "properties": {
         "fullnameOverride": {
             "type": "string",
@@ -936,6 +935,29 @@
                     "required": [],
                     "properties": {},
                     "examples": [{}]
+                },
+                "rbac": {
+                    "type": "object",
+                    "default": {},
+                    "title": "RBAC roles bootstrap configuration",
+                    "required": [
+                        "enabled"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "default": true,
+                            "title": "Enables RBAC roles bootstrapping as part of installation",
+                            "examples": [
+                                false,
+                                true
+                            ]
+                        }
+                    },
+                    "examples": [{
+                        "enabled": true
+                    }]
                 }
             }
         },
