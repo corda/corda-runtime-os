@@ -3,12 +3,15 @@ package net.corda.applications.workers.smoketest
 import com.fasterxml.jackson.databind.JsonNode
 import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetryIgnoringExceptions
 import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
+import net.corda.httprpc.JsonObject
 import net.corda.httprpc.ResponseCode.OK
 import net.corda.test.util.eventually
 import org.apache.commons.text.StringEscapeUtils
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import java.io.IOException
 import java.time.Duration
+
+data class TestJsonObject(override val escapedJson: String = "") : JsonObject
 
 fun JsonNode.sourceConfigNode(): JsonNode =
     this["sourceConfig"].textValue().toJson()
@@ -45,7 +48,8 @@ fun updateConfig(config: String, section: String) {
                 val currentSchemaVersion = currentConfig["schemaVersion"]
 
                 putConfig(
-                    StringEscapeUtils.escapeJson(config), section,
+                    TestJsonObject(config),
+                    section,
                     currentConfig["version"].toString(),
                     currentSchemaVersion["major"].toString(),
                     currentSchemaVersion["minor"].toString()
