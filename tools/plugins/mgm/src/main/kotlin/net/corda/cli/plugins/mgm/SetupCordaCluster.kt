@@ -11,7 +11,10 @@ import kotlin.concurrent.thread
 @Command(
     name = "setupCluster",
     aliases = ["cluster"],
-    description = ["Setup a test Corda cluster on Kubernetes"]
+    description = [
+        "Setup a test Corda cluster on Kubernetes",
+        "This sub command should only be used in for internal development.",
+    ]
 )
 class SetupCordaCluster : Runnable {
     private companion object {
@@ -23,7 +26,7 @@ class SetupCordaCluster : Runnable {
         paramLabel = "NAME",
         arity = "1..*"
     )
-    lateinit var networkNames: List<String>
+    lateinit var cordaClusterNames: List<String>
 
     @Option(
         names = ["--awk-name", "-a"],
@@ -78,10 +81,10 @@ class SetupCordaCluster : Runnable {
         execute("helm", *arguments)
     }
 
-    private fun deploy(networkName: String) {
-        kubectl("delete", "ns", networkName, "--ignore-not-found=true")
-        kubectl("create", "ns", networkName)
-        kubectl("label", "ns", networkName, "namespace-type=corda-e2e", "--overwrite=true")
+    private fun deploy(clusterName: String) {
+        kubectl("delete", "ns", clusterName, "--ignore-not-found=true")
+        kubectl("create", "ns", clusterName)
+        kubectl("label", "ns", clusterName, "namespace-type=corda-e2e", "--overwrite=true")
 
         try {
             kubectl(
@@ -89,7 +92,7 @@ class SetupCordaCluster : Runnable {
                 "--docker-server=corda-os-docker.software.r3.com",
                 "--docker-username=${System.getenv("CORDA_ARTIFACTORY_USERNAME")}",
                 "--docker-password=${System.getenv("CORDA_ARTIFACTORY_PASSWORD")}",
-                "-n", networkName
+                "-n", clusterName
             )
         } catch (e: SetupException) {
             // Do nothing, the secret might already be there
@@ -98,7 +101,7 @@ class SetupCordaCluster : Runnable {
         helm(
             "install", "prereqs", "oci://corda-os-docker.software.r3.com/helm-charts/corda-dev",
             "--set", "kafka.replicaCount=$kafkaReplicas,kafka.zookeeper.replicaCount=$zooKeeperReplicas",
-            "-n", networkName, "--wait", "--timeout", "600s"
+            "-n", clusterName, "--wait", "--timeout", "600s"
         )
 
         val chart = File(cordaOsRuntimeDir, "charts")
@@ -109,7 +112,7 @@ class SetupCordaCluster : Runnable {
             "corda", cordaChart.absolutePath,
             "-f", yaml.absolutePath,
             "--set", "image.tag=$actualBaseImage,bootstrap.kafka.replicas=$kafkaReplicas,kafka.sasl.enabled=false",
-            "-n", networkName, "--wait", "--timeout", "600s"
+            "-n", clusterName, "--wait", "--timeout", "600s"
         )
     }
 
@@ -142,6 +145,7 @@ class SetupCordaCluster : Runnable {
     }
 
     override fun run() {
+        println("This sub command should only be used in for internal development")
         if (minikube) {
             kubectl("config", "use-context", "minikube")
         }
@@ -155,7 +159,7 @@ class SetupCordaCluster : Runnable {
             )
         }
 
-        networkNames.map { networkName ->
+        cordaClusterNames.map { networkName ->
             thread {
                 deploy(networkName)
             }

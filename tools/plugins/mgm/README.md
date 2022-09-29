@@ -93,6 +93,8 @@ members:
 
 # Setup Corda cluster in Kubernetes
 
+This command should only be used for internal development. 
+
 This is a sub-command under the `mgm` plugin for setting up Kubernetes networks. 
 
 Running `setupCluster` with the name of the clusters to create. For example:
@@ -102,12 +104,16 @@ Running `setupCluster` with the name of the clusters to create. For example:
 By default, it will use the latest released tag. Change it using the `--baseImage` option. It will delete any
 existing cluster with that name. Use the `--help` to view all the other options.
 
-# Onboard a member to an existing corda cluster
-This is a sub-command under the `mgm` plugin for on-boarding a member (MGM or standard member) into a running corda cluster.
+# Onboard a member to an existing Corda cluster
+This command should only be used for internal development.
+
+This is a sub-command under the `mgm` plugin for on-boarding a member (MGM or standard member) into a running Corda cluster.
 
 To run the network either use the `setupCluster` command or run a combine worker locally ([see here](../../../applications/workers/release/combined-worker/README.md)).
 
-## Onboard an MGM member to an existing corda cluster
+## Onboard an MGM member to an existing Corda cluster
+This command should only be used for internal development. See the [wiki](https://github.com/corda/corda-runtime-os/wiki/MGM-Onboarding) for more details.
+
 This is a sub-command under the `onboard` sub-command to onboard a new MGM member (and create a new group).
 
 To onboard on a Kubernetes cluster use the cluster name as parameter. By default, it will try to onboard on a combined worker.
@@ -125,9 +131,11 @@ Use the `--help` to view all the other options and defaults.
 See [here](https://github.com/corda/corda-runtime-os/wiki/MGM-Onboarding) for details on how to do it manually.
 
 ## Onboard a standard member to an existing cluster
+This command should only be used for internal development. See the [wiki](https://github.com/corda/corda-runtime-os/wiki/Member-Onboarding-(Dynamic-Networks)) for more details.
+
 This is a sub-command under the `onboard` sub-command to onboard a new member to an existing group.
 
-To onboard on a Kubernetes cluster use the corda cluster name as parameter. By default, it will try to on board on a combined worker.
+To onboard on a Kubernetes cluster use the Corda cluster name as parameter. By default, it will try to on board on a combined worker.
 To decide which CPI to use, there are three options:
 * If you know the CPI hash, you can use it with the `--cpi-hash` option
 * If you have the CPI file (for example, from the [package command](../package/README.md)), you can use it with the `--cpi-file` option.

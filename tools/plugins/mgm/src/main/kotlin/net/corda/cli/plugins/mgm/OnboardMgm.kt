@@ -16,7 +16,10 @@ import java.util.zip.ZipEntry
 
 @Command(
     name = "mgm",
-    description = ["Onboard MGM member"]
+    description = [
+        "Onboard MGM member.",
+        "This sub command should only be used in for internal development",
+    ]
 )
 class OnboardMgm : Runnable, BaseOnboard() {
     @Option(
@@ -127,6 +130,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
         uploadCpi(jar.inputStream(), cpbName)
     }
     override fun run() {
+        println("This sub command should only be used in for internal development")
         println("On-boarding MGM member $x500Name")
 
         setupClient()

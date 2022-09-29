@@ -19,8 +19,8 @@ import kotlin.concurrent.thread
 
 abstract class BaseOnboard : Runnable {
     private companion object {
-        const val P2P_ALIAS = "p2p-tls-cert"
-        const val P2P_CERTIFICATE_ALIAS = "p2p-tls-cert"
+        const val P2P_TLS_KEY_ALIAS = "p2p-tls-key"
+        const val P2P_TLS_CERTIFICATE_ALIAS = "p2p-tls-cert"
     }
 
     @Parameters(
@@ -28,7 +28,7 @@ abstract class BaseOnboard : Runnable {
         paramLabel = "NAME",
         arity = "0..1",
     )
-    var networkName: String? = null
+    var cordaClusterName: String? = null
 
     @Option(
         names = ["--ca"],
@@ -36,12 +36,18 @@ abstract class BaseOnboard : Runnable {
     )
     var caHome: File = File(File(File(System.getProperty("user.home")), ".corda"), "ca")
 
+    @Option(
+        names = ["--rpc-worker-deployment-name"],
+        description = ["The RPC worker deployment name (default to corda-rpc-worker)"]
+    )
+    var rpcWorkerDeploymentName: String = "corda-rpc-worker"
+
     protected val json by lazy {
         ObjectMapper()
     }
 
     private val url by lazy {
-        val rpcPort = if (networkName != null) {
+        val rpcPort = if (cordaClusterName != null) {
             val port = ServerSocket(0).use {
                 it.localPort
             }
@@ -49,8 +55,8 @@ abstract class BaseOnboard : Runnable {
                 "kubectl",
                 "port-forward",
                 "--namespace",
-                networkName,
-                "deployment/corda-rpc-worker",
+                cordaClusterName,
+                "deployment/$rpcWorkerDeploymentName",
                 "$port:8888"
             )
                 .inheritIO()
@@ -154,10 +160,10 @@ abstract class BaseOnboard : Runnable {
         assignSoftHsmAndGenerateKey("SESSION_INIT")
     }
     private val p2pHost by lazy {
-        if (networkName == null) {
+        if (cordaClusterName == null) {
             "localhost"
         } else {
-            "corda-p2p-gateway-worker.$networkName"
+            "corda-p2p-gateway-worker.$cordaClusterName"
         }
     }
 
@@ -179,7 +185,7 @@ abstract class BaseOnboard : Runnable {
         if (!keys.bodyOrThrow().`object`.isEmpty) {
             return
         }
-        val generateKeyPairResponse = Unirest.post("/keys/p2p/alias/$P2P_ALIAS/category/TLS/scheme/CORDA.ECDSA.SECP256R1").asJson()
+        val generateKeyPairResponse = Unirest.post("/keys/p2p/alias/$P2P_TLS_KEY_ALIAS/category/TLS/scheme/CORDA.ECDSA.SECP256R1").asJson()
         val tlsKeyId = generateKeyPairResponse
             .bodyOrThrow()
             .`object`.get("id").toString()
@@ -199,7 +205,7 @@ abstract class BaseOnboard : Runnable {
         ca.signCsr(csr).toPem().byteInputStream().use { certificate ->
             Unirest.put("/certificates/p2p")
                 .field("certificate", certificate, "certificate.pem")
-                .field("alias", P2P_CERTIFICATE_ALIAS)
+                .field("alias", P2P_TLS_CERTIFICATE_ALIAS)
                 .asJson()
                 .bodyOrThrow()
         }
@@ -210,7 +216,7 @@ abstract class BaseOnboard : Runnable {
             .body(
                 mapOf(
                     "request" to mapOf(
-                        "p2pTlsCertificateChainAlias" to P2P_CERTIFICATE_ALIAS,
+                        "p2pTlsCertificateChainAlias" to P2P_TLS_CERTIFICATE_ALIAS,
                         "p2pTlsTenantId" to "p2p",
                         "sessionKeyTenantId" to null,
                         "sessionKeyId" to sessionKeyId

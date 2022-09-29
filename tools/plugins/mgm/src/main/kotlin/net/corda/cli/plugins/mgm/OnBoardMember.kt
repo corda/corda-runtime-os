@@ -16,7 +16,10 @@ import java.util.zip.ZipEntry
 
 @Command(
     name = "member",
-    description = ["Onboard a member"]
+    description = [
+        "Onboard a member",
+        "This sub command should only be used in for internal development"
+    ]
 )
 class OnBoardMember : Runnable, BaseOnboard() {
     @Option(
@@ -120,10 +123,10 @@ class OnBoardMember : Runnable, BaseOnboard() {
         val hash = listOf(cpbFile, groupPolicyFile).hash()
         val cpiRoot = File(cpisRoot, hash)
         val cpiFile = File(cpiRoot, "${cpbFile.name}.cpi")
-        val baseNetworkName = if (networkName == null) {
+        val baseNetworkName = if (cordaClusterName == null) {
             "combined-worker"
         } else {
-            networkName
+            cordaClusterName
         }
         val cpiHashesFile = File(cpiRoot, "$baseNetworkName.shortHash")
         if (cpiHashesFile.canRead()) {
@@ -207,6 +210,7 @@ class OnBoardMember : Runnable, BaseOnboard() {
         )
     }
     override fun run() {
+        println("This sub command should only be used in for internal development")
         println("On-boarding member $x500Name")
 
         setupClient()
