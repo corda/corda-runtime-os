@@ -278,6 +278,10 @@ class MemberSynchronisationServiceImpl internal constructor(
                         mgmContext.toSortedMap()
                     ).also {
                         verifyMgmSignature(it, update.mgmSignature, mgm.shortHash)
+                        println("QQQ going to verifyMemberSignature:")
+                        memberContext.items.forEach {
+                            println("QQQ \t ${it.key} -> ${it.value}")
+                        }
                         verifyMemberSignature(
                             update.memberSignature,
                             it.holdingIdentity.shortHash,

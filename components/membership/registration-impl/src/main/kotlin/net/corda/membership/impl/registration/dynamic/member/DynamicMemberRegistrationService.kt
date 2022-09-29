@@ -258,6 +258,10 @@ class DynamicMemberRegistrationService @Activate constructor(
                 println("QQQ public key ${memberSignature.publicKey.array().toBase64()}")
                 println("QQQ spec ${memberContext.items.first { it.key == SESSION_KEY_SIGNATURE_SPEC }.value}")
                 println("QQQ data ${serializedMemberContext.toBase64()}")
+                println("QQQ content:")
+                memberContext.items.forEach {
+                    println("QQQ \t ${it.key} -> ${it.value}")
+                }
                 println("QQQ signature ${memberSignature.bytes.array().toBase64()}")
                 val mgm = membershipGroupReaderProvider.getGroupReader(member).lookup().firstOrNull { it.isMgm }
                     ?: throw IllegalArgumentException("Failed to look up MGM information.")
