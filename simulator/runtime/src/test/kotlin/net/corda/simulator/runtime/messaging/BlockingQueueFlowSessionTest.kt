@@ -45,14 +45,14 @@ class BlockingQueueFlowSessionTest {
 
         val sendingSession = BlockingQueueFlowSession(
             FlowContext(flowCallConfiguration, sender, "ping-ack"),
-            fromInitiatorToResponder,
-            fromResponderToInitiator
+            fromResponderToInitiator,
+            fromInitiatorToResponder
         )
 
         val receivingSession = BlockingQueueFlowSession(
             FlowContext(flowCallConfiguration, receiver, "ping-ack"),
-            fromResponderToInitiator,
-            fromInitiatorToResponder
+            fromInitiatorToResponder,
+            fromResponderToInitiator
         )
 
         // When we send a message
@@ -71,8 +71,8 @@ class BlockingQueueFlowSessionTest {
 
         val sendingSession = BlockingQueueFlowSession(
             FlowContext(flowCallConfiguration, sender, "ping-ack"),
-            fromInitiatorToResponder,
-            fromResponderToInitiator
+            fromResponderToInitiator,
+            fromInitiatorToResponder
         )
 
         // When we send a message and then set a received exception
@@ -95,8 +95,8 @@ class BlockingQueueFlowSessionTest {
 
         val sendingSession = BlockingQueueFlowSession(
             FlowContext(fakeClockConfiguration, sender, "ping-ack"),
-            fromInitiatorToResponder,
-            fromResponderToInitiator
+            fromResponderToInitiator,
+            fromInitiatorToResponder
         )
 
         // With a timeout of 5 minutes (for a demo)

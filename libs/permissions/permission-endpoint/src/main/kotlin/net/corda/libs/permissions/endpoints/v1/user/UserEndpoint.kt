@@ -30,7 +30,8 @@ interface UserEndpoint : RpcOps {
      * Create a user in the RBAC permission system.
      */
     @HttpRpcPOST(description = "This method creates a new user.",
-        responseDescription = """A newly created user with the following attributes:
+        responseDescription = """
+            A newly created user with the following attributes:
             id: Unique server generated identifier for the user
             version: The version of the user; version 0 is assigned to a newly created user
             updateTimestamp: The date and time when the user was last updated
@@ -47,7 +48,8 @@ interface UserEndpoint : RpcOps {
             roleAssociations: A set of roles associated with the user account""")
     fun createUser(
         @HttpRpcRequestBodyParameter(
-            description = """Details of the user to be created with the following parameters:
+            description = """
+                Details of the user to be created with the following parameters:
                 enabled: If true, the user account is enabled; false, the account is disabled
                 fullName: The full name for the new user
                 initialPassword: The initial password for the new user; 
@@ -64,7 +66,8 @@ interface UserEndpoint : RpcOps {
      * Get a user by loginName in the RBAC permission system.
      */
     @HttpRpcGET(description = "This method returns a user based on the specified login name.",
-        responseDescription = """A newly created user with the following attributes:
+        responseDescription = """
+            A newly created user with the following attributes:
             id: Unique server generated identifier for the user
             version: The version of the user; version 0 is assigned to a newly created user
             updateTimestamp: The date and time when the user was last updated
@@ -89,7 +92,8 @@ interface UserEndpoint : RpcOps {
      */
     @HttpRpcPUT(path = "{loginName}/role/{roleId}",
         description = "This method assigns a specified role to a specified user.",
-        responseDescription = """A newly created user with the following attributes:
+        responseDescription = """
+            A newly created user with the following attributes:
             id: Unique server generated identifier for the user
             version: The version of the user; version 0 is assigned to a newly created user
             updateTimestamp: The date and time when the user was last updated
@@ -116,7 +120,8 @@ interface UserEndpoint : RpcOps {
      */
     @HttpRpcDELETE(path = "{loginName}/role/{roleId}",
         description = "This method removes the specified role from the specified user.",
-        responseDescription = """A newly created user with the following attributes:
+        responseDescription = """
+            A newly created user with the following attributes:
             id: Unique server generated identifier for the user
             version: The version of the user; version 0 is assigned to a newly created user
             updateTimestamp: The date and time when the user was last updated
@@ -144,7 +149,7 @@ interface UserEndpoint : RpcOps {
     @HttpRpcGET(path = "{loginName}/permissionSummary",
         description = "This method returns a summary of the user's permissions.",
         responseDescription = """
-            enabled: True if the user account is enabled; false otherwise
+            enabled: If true, the user account is enabled; false, the account is disabled
             lastUpdateTimestamp: The date and time when the user was last updated
             loginName: The login name of the user
             permissions: An array of one or more permissions associated with the user

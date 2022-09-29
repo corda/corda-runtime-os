@@ -11,9 +11,9 @@ import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.requests.sessions.service.InitiateFlowRequestService
+import net.corda.flow.pipeline.handlers.waiting.sessions.PROTOCOL_MISMATCH_HINT
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -27,10 +27,6 @@ class SendRequestHandler @Activate constructor(
     @Reference(service = InitiateFlowRequestService::class)
     private val initiateFlowRequestService: InitiateFlowRequestService,
 ) : FlowRequestHandler<FlowIORequest.Send> {
-
-    private companion object {
-        val log = contextLogger()
-    }
 
     override val type = FlowIORequest.Send::class.java
 
@@ -56,8 +52,7 @@ class SendRequestHandler @Activate constructor(
                 checkpoint.putSessionState(updatedSessionState)
             }
         } catch (e: FlowSessionStateException) {
-            log.info("Failed to send session data for session", e)
-            throw FlowPlatformException(e.message, e)
+            throw FlowPlatformException("Failed to send: ${e.message}. $PROTOCOL_MISMATCH_HINT", e)
         }
 
         val wakeup = flowRecordFactory.createFlowEventRecord(checkpoint.flowId, Wakeup())

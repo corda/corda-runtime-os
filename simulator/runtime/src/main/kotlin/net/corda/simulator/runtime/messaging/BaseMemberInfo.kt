@@ -6,6 +6,14 @@ import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import java.security.PublicKey
 
+/**
+ * Simple implementation of the MemberInfo class. Note most methods are unimplemented. This class is also
+ * immutable (as with real Corda); if keys are added for a particular member then this will need to be re-retrieved from
+ * [net.corda.v5.application.membership.MemberLookup].
+ *
+ * @param name The name of the member.
+ * @param ledgerKeys Ledger keys generated for this member.
+ */
 data class BaseMemberInfo(
     override val name: MemberX500Name,
     override val ledgerKeys: List<PublicKey> = listOf()

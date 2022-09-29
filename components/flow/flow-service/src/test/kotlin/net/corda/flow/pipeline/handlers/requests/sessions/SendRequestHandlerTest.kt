@@ -90,7 +90,7 @@ class SendRequestHandlerTest {
 
     @Test
     fun `Throws exception when any of the sessions are invalid`() {
-        whenever(testContext.flowSessionManager.validateSessionStates(any(), any()))
+        whenever(testContext.flowSessionManager.sendDataMessages(any(), any(), any()))
             .thenThrow(FlowSessionStateException(""))
 
         assertThrows<FlowPlatformException> { handler.postProcess(testContext.flowEventContext, ioRequest) }

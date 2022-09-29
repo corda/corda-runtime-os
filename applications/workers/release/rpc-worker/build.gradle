@@ -91,6 +91,7 @@ tasks.named('e2eTest') {
     if(System.getenv("JAVA_SECURITY_AUTH_LOGIN_CONFIG") != null) {
         jvmArgs "-Djava.security.auth.login.config=${System.getenv("JAVA_SECURITY_AUTH_LOGIN_CONFIG")}"
     }
+
     ["A", "B", "C"].each {cluster ->
         if(System.getenv("E2E_CLUSTER_{$cluster}_RPC_HOST") == null) {
             environment "E2E_CLUSTER_{$cluster}_RPC_HOST",

@@ -46,7 +46,7 @@ interface CertificatesRpcOps : RpcOps {
      */
     @HttpRpcPUT(
         path = "{tenantId}",
-        description = "Enables you to import a certificate chain for a tenant"
+        description = "This method imports a certificate chain for a specified tenant."
     )
     fun importCertificateChain(
         @HttpRpcPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
@@ -82,7 +82,8 @@ interface CertificatesRpcOps : RpcOps {
      * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
      * services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.
      * @param keyId Identifier of the public key that will be included in the certificate.
-     * @param x500Name X.500 name that will be the subject associated with the request.
+     * @param x500Name The X.500 name that will be the subject associated with the request.
+     * @param certificateRole Can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'.
      * @param subjectAlternativeNames Optional. Used to specify additional subject names.
      * @param contextMap Optional. Used to add additional attributes to the CSR; for example, signature spec.
      *
@@ -91,7 +92,7 @@ interface CertificatesRpcOps : RpcOps {
     @Suppress("LongParameterList")
     @HttpRpcPOST(
         path = "{tenantId}/{keyId}",
-        description = "Enables you to generate a certificate signing request (CSR) for a tenant"
+        description = "This method enables you to generate a certificate signing request (CSR) for a tenant."
     )
     fun generateCsr(
         @HttpRpcPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
@@ -100,7 +101,7 @@ interface CertificatesRpcOps : RpcOps {
         @HttpRpcPathParameter(description = "Identifier of the public key that will be included in the certificate")
         keyId: String,
         @HttpRpcRequestBodyParameter(
-            description = "X.500 name that will be the subject associated with the request",
+            description = "The X.500 name that will be the subject associated with the request",
             required = true,
         )
         x500Name: String,
