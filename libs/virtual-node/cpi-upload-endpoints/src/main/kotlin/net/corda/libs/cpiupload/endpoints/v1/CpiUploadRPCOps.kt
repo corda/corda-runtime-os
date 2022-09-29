@@ -29,9 +29,9 @@ interface CpiUploadRPCOps : RpcOps {
      */
     @HttpRpcPOST(
         title = "CPI upload",
-        description = "The upload endpoint uses the POST method to upload a Corda Package Installer (CPI) file to the " +
+        description = "This method uses the POST method to upload a Corda Package Installer (CPI) file to the " +
                 "Corda cluster.",
-        responseDescription = "The Id for the CPI upload request."
+        responseDescription = "The ID for the CPI upload request"
     )
     fun cpi(
         @HttpRpcRequestBodyParameter(

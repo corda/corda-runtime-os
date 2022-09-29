@@ -11,7 +11,7 @@ import net.corda.httprpc.ResponseCode.OK
 import org.apache.commons.text.StringEscapeUtils.escapeJson
 import org.assertj.core.api.Assertions.assertThat
 
-const val SMOKE_TEST_CLASS_NAME = "net.cordapp.flowworker.development.smoketests.flow.RpcSmokeTestFlow"
+const val SMOKE_TEST_CLASS_NAME = "net.cordapp.testing.smoketests.flow.RpcSmokeTestFlow"
 const val RPC_FLOW_STATUS_SUCCESS = "COMPLETED"
 const val RPC_FLOW_STATUS_FAILED = "FAILED"
 
@@ -205,25 +205,26 @@ fun getHoldingIdShortHash(x500Name: String, groupId: String): String {
 
 /**
  * Transform a Corda Package Bundle (CPB) into a Corda Package Installer (CPI) by adding the default group policy
- * used by smoke tests and upload the resulting CPI to the system (override the existing one, if it already exists).
+ * used by smoke tests and upload the resulting CPI to the system if it doesn't already exist.
  */
-fun forceUploadCordaPackage(name: String, cpb: String, groupId: String): String {
+fun conditionallyUploadCordaPackage(name: String, cpb: String, groupId: String) {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
         val cpis = cpiList().toJson()["cpis"]
         val existingCpi = cpis.toList().firstOrNull { it["id"]["cpiName"].textValue() == name }
-        val uploadResponse = if (existingCpi == null ) cpiUpload(cpb, groupId) else forceCpiUpload(cpb, groupId)
-        assertThat(uploadResponse.code).isEqualTo(OK.statusCode)
-        assertThat(uploadResponse.toJson()["id"].textValue()).isNotEmpty
-        val responseStatusId = uploadResponse.toJson()["id"].textValue()
 
-        assertWithRetry {
-            command { cpiStatus(responseStatusId) }
-            condition { it.code == OK.statusCode && it.toJson()["status"].textValue() == OK.toString() }
+        if (existingCpi == null) {
+            val uploadResponse = cpiUpload(cpb, groupId)
+            assertThat(uploadResponse.code).isEqualTo(OK.statusCode)
+            assertThat(uploadResponse.toJson()["id"].textValue()).isNotEmpty
+            val responseStatusId = uploadResponse.toJson()["id"].textValue()
+
+            assertWithRetry {
+                command { cpiStatus(responseStatusId) }
+                condition { it.code == OK.statusCode && it.toJson()["status"].textValue() == OK.toString() }
+            }
         }
-
-        responseStatusId
     }
 }
 

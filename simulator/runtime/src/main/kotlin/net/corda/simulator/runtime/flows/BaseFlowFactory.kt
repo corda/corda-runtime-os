@@ -10,6 +10,8 @@ import net.corda.v5.base.types.MemberX500Name
 
 /**
  * A simple utility class for creating initiating or responding flows while handling any errors.
+ *
+ * See [FlowFactory] for details of methods.
  */
 class BaseFlowFactory : FlowFactory {
 

@@ -13,8 +13,8 @@ production-like implementation of Corda.
 You will need to set up the following dependencies in your build file, assuming you are using this for testing:
 
 ```
-      testImplementation "net.corda:simulator-api:$simulatorVersion"
-      testRuntimeOnly "net.corda:simulator-runtime:$simulatorVersion"
+      testImplementation "net.corda:corda-simulator-api:$simulatorVersion"
+      testRuntimeOnly "net.corda:corda-simulator-runtime:$simulatorVersion"
 ```
 
 Do not use the runtime libraries as an implementation dependency, as your code may fail to compile or run

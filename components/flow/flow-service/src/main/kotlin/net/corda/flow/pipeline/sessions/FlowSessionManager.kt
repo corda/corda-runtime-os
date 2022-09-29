@@ -53,7 +53,8 @@ interface FlowSessionManager {
      *
      * @return Updated [SessionState] containing [SessionData] messages to send.
      *
-     * @throws FlowSessionStateException If a session does not exist within the flow's [FlowCheckpoint].
+     * @throws FlowSessionStateException If a session does not exist within the flow's [FlowCheckpoint], or is not in
+     * the CONFIRMED state.
      */
     fun sendDataMessages(
         checkpoint: FlowCheckpoint,
@@ -125,7 +126,8 @@ interface FlowSessionManager {
      *
      * @return `true`, if all sessions have received their next session event, `false` otherwise.
      *
-     * @throws []FlowSessionStateException] If a session does not exist within the flow's [FlowCheckpoint].
+     * @throws FlowSessionStateException If a session does not exist within the flow's [FlowCheckpoint], or is not in
+     * the CONFIRMED or CLOSING state. Receiving events is tolerant to sessions which are closing but not yet closed.
      */
     fun hasReceivedEvents(checkpoint: FlowCheckpoint, sessionIds: List<String>): Boolean
 
@@ -158,16 +160,6 @@ interface FlowSessionManager {
      * @throws [FlowSessionStateException] If a session does not exist within the flow's [FlowCheckpoint].
      */
     fun doAllSessionsHaveStatus(checkpoint: FlowCheckpoint, sessionIds: List<String>, status: SessionStateType): Boolean
-
-    /**
-     * Checks the sessions to ensure they are in valid state for sending data to a peer
-     *
-     * @param checkpoint The flow's [FlowCheckpoint].
-     * @param sessionIds The session ids to check the status of.
-     *
-     * @throws FlowSessionStateException If any of the sessions don't exist, or they are not in the CONFIRMED state
-     */
-    fun validateSessionStates(checkpoint: FlowCheckpoint, sessionIds: Set<String>)
 
     /**
      * Get the states whose next ordered message is a SessionClose.

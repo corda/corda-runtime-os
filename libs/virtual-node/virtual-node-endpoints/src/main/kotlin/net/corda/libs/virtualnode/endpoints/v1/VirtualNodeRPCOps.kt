@@ -25,7 +25,7 @@ interface VirtualNodeRPCOps : RpcOps {
      */
     @HttpRpcPOST(
         title = "Create virtual node",
-        description = "The virtual node endpoint uses the POST method to create a new virtual node.",
+        description = "This method creates a new virtual node.",
         responseDescription = "The details of the created virtual node."
     )
     fun createVirtualNode(
@@ -40,7 +40,7 @@ interface VirtualNodeRPCOps : RpcOps {
      */
     @HttpRpcGET(
         title = "Lists all virtual nodes",
-        description = "The virtual node endpoint uses the GET method to list all virtual nodes in the cluster.",
+        description = "This method lists all virtual nodes in the cluster.",
         responseDescription = "List of virtual node details."
     )
     fun getAllVirtualNodes(): VirtualNodes

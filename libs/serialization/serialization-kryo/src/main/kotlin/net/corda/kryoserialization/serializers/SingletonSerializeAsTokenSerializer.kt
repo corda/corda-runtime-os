@@ -11,7 +11,7 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 /**
  * A Kryo serializer for [SingletonSerializeAsToken] implementations.
  */
-internal class SingletonSerializeAsTokenSerializer(
+class SingletonSerializeAsTokenSerializer(
     private val serializableInstances: Map<String, SingletonSerializeAsToken>,
 ) : Serializer<SingletonSerializeAsToken>() {
     @Suppress("unused")

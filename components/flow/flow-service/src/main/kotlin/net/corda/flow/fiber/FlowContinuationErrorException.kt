@@ -22,6 +22,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
  * will be the flow top level exception catching code will treat them as internal Corda errors with no special handling.
  * In general this means the log will contain the callstack from the point of the rethrow.
  *
+ * @param message The original message thrown from the failing flow fiber
  * @param cause The original [Throwable] thrown from the failing flow fiber
  */
-class FlowContinuationErrorException(cause: Throwable) : CordaRuntimeException(null, null, cause)
+class FlowContinuationErrorException(message: String, cause: Throwable) : CordaRuntimeException(message, cause)

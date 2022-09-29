@@ -11,6 +11,9 @@ import net.corda.simulator.RequestData
 import net.corda.simulator.runtime.RPCRequestDataWrapper
 import net.corda.v5.application.marshalling.JsonMarshallingService
 
+/**
+ * A simple JsonMarshallingService, without the caching that Corda uses.
+ */
 class SimpleJsonMarshallingService : JsonMarshallingService{
 
     private val objectMapper = jacksonObjectMapper()
