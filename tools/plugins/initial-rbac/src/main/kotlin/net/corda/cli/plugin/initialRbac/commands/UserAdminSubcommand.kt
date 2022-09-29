@@ -1,7 +1,7 @@
 package net.corda.cli.plugin.initialRbac.commands
 
 import net.corda.cli.plugins.common.HttpRpcClientUtils.createHttpRpcClient
-import net.corda.cli.plugins.common.HttpRpcClientUtils.startAndWait
+import net.corda.cli.plugins.common.HttpRpcClientUtils.executeWithRetry
 import net.corda.cli.plugins.common.HttpRpcCommand
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
@@ -11,6 +11,8 @@ import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
+import java.time.Duration
+import java.time.temporal.ChronoUnit.SECONDS
 import java.util.concurrent.Callable
 
 private const val USER_ADMIN_ROLE = "UserAdminRole"
@@ -57,8 +59,13 @@ class UserAdminSubcommand : HttpRpcCommand(), Callable<Int> {
         logger.info("Running UserAdminSubcommand")
 
         createHttpRpcClient(RoleEndpoint::class).use { roleEndpointClient ->
-            val roleEndpoint = roleEndpointClient.startAndWait(waitDurationSeconds).proxy
-            val allRoles = roleEndpoint.getRoles()
+            val waitDuration = Duration.of(waitDurationSeconds.toLong(), SECONDS)
+            val roleEndpoint = executeWithRetry(waitDuration, "Start of role HTTP endpoint") {
+                roleEndpointClient.start().proxy
+            }
+            val allRoles = executeWithRetry(waitDuration, "Obtain list of available roles") {
+                roleEndpoint.getRoles()
+            }
             if (allRoles.any { it.roleName == USER_ADMIN_ROLE }) {
                 errOut.error("$USER_ADMIN_ROLE already exists - nothing to do.")
                 return 5

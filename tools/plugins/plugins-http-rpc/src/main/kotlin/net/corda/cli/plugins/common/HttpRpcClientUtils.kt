@@ -6,6 +6,7 @@ import net.corda.httprpc.client.HttpRpcConnection
 import net.corda.httprpc.client.config.HttpRpcClientConfig
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.time.Duration
 import kotlin.reflect.KClass
 
 object HttpRpcClientUtils {
@@ -31,22 +32,20 @@ object HttpRpcClientUtils {
         )
     }
 
-    fun <I : RpcOps> HttpRpcClient<I>.startAndWait(waitDurationSeconds: Int): HttpRpcConnection<I> {
-        val endTime = System.currentTimeMillis() + waitDurationSeconds * 1000
-
+    fun <T> executeWithRetry(waitDuration: Duration, operationName: String, block: () -> T): T {
+        val endTime = System.currentTimeMillis() + waitDuration.seconds
         var lastException: Exception?
-
         do {
             try {
-                return this.start()
+                return block()
             } catch (ex: Exception) {
                 lastException = ex
-                logger.info("Cannot start HttpRpcClient yet", ex)
+                logger.info("Cannot perform $operationName yet", ex)
                 Thread.sleep(1000)
             }
         } while (System.currentTimeMillis() <= endTime)
 
-        errOut.error("Unable to start HttpRpcClient", lastException)
+        errOut.error("Unable to perform $operationName", lastException)
         throw lastException!!
     }
 }
