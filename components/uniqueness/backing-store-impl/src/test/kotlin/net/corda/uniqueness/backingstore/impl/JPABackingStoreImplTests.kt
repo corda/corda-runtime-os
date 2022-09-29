@@ -61,8 +61,6 @@ import javax.persistence.EntityExistsException
 import javax.persistence.RollbackException
 import javax.persistence.OptimisticLockException
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
