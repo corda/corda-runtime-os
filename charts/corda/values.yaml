@@ -3,17 +3,17 @@
 # Declare variables to be passed into your templates.
 
 # -- override chart fullname
-fullnameOverride: ""
+fullnameOverride: ''
 
 # -- override chart name
-nameOverride: ""
+nameOverride: ''
 
 # worker and cli image defaults
 image:
   # -- worker image registry
-  registry: "corda-os-docker.software.r3.com"
+  registry: 'docke-js-temp.software.r3.com'
   # -- worker image tag, defaults to Chart appVersion
-  tag: ""
+  tag: ''
 
 # -- image pull secrets
 imagePullSecrets: []
@@ -31,12 +31,12 @@ resources:
 # Logging configuration
 logging:
   # -- log format; "json" or "text"
-  format: "json"
+  format: 'json'
   # -- log level; one of "all", "trace", "debug", "info", "warn" (the default), "error", "fatal", or "off"
-  level: "warn"
+  level: 'warn'
 
 # -- Path on Kubernetes hosts to mount on Corda workers for collecting dumps
-dumpHostPath: ""
+dumpHostPath: ''
 
 # -- Enables capturing JVM heap dumps from Corda workers on an OutOfMemory error
 heapDumpOnOutOfMemoryError: false
@@ -48,7 +48,7 @@ openTelemetry:
   # -- the Open Telemetry endpoint to use e.g https://otel.example.com:4317; telemetry will be logged locally if this is unset
   endpoint:
   # -- the Open Telemetry protocol the endpoint is using; one of `grpc` or `http/protobuf`
-  protocol: "grpc"
+  protocol: 'grpc'
 
 # -- node labels for pod assignment, see https://kubernetes.io/docs/user-guide/node-selection/
 nodeSelector: {}
@@ -58,9 +58,9 @@ db:
   # Cluster database configuration
   cluster:
     # -- the cluster database host (required)
-    host: ""
+    host: ''
     # -- the cluster database type
-    type: "postgresql"
+    type: 'postgresql'
     # -- the cluster database port
     port: 5432
     # -- the cluster database user
@@ -68,12 +68,12 @@ db:
     # -- the name of the cluster database
     database: cordacluster
     # -- the cluster database password (ignored if existingSecret is set, otherwise required)
-    password: ""
+    password: ''
     # -- the name of an existing secret containing the cluster database password with a key of 'password'
-    existingSecret: ""
+    existingSecret: ''
   clientImage:
     # -- registry for image containing a db client, used to set up the db
-    registry: ""
+    registry: ''
     # -- repository for image containing a db client, used to set up the db
     repository: postgres
     # -- tag for image containing a db client, used to set up the db
@@ -82,9 +82,9 @@ db:
 # Kafka configuration
 kafka:
   # -- comma-separated list of Kafka bootstrap servers (required)
-  bootstrapServers: ""
+  bootstrapServers: ''
   # -- prefix to use for Kafka topic names (to support the use of a single Kafka cluster by multiple Corda clusters)
-  topicPrefix: ""
+  topicPrefix: ''
   # TLS configuration for client connections to Kafka
   tls:
     # -- indicates whether TLS should be used for client connections to Kafka
@@ -94,41 +94,40 @@ kafka:
       # if TLS is enabled, details of an existing Kubernetes secret containing the truststore for client connections to Kafka
       secretRef:
         # -- if TLS is enabled, the name of an existing Kubernetes secret containing the truststore for client connections to Kafka; blank if no truststore is required
-        name: ""
+        name: ''
         # -- if TLS is enabled, the name of an existing Kubernetes secret containing the truststore for client connections to Kafka
-        key: "ca.crt"
+        key: 'ca.crt'
       # -- if TLS is enabled, the type of the truststore for client connections to Kafka; one of PEM or JKS
-      type: "PEM"
+      type: 'PEM'
       # -- if TLS is enabled, the password for the truststore for client connections to Kafka, if any
-      password: ""
+      password: ''
   # SASL configuration for client connection to Kafka
   sasl:
     # -- SASL username for client connection to Kafka
-    username: "user"
+    username: 'user'
     # -- SASL password for client connection to Kafka
-    password: ""
+    password: ''
     # -- SASL mechanism for client connection to Kafka
-    mechanism: "SCRAM-SHA-256"
+    mechanism: 'SCRAM-SHA-256'
     # -- enable/disable SASL for client connection to Kafka
     enabled: false
 
 # Configuration for cluster bootstrap
 bootstrap:
-
   # Configuration for the initial user created with admin permissions
   initialAdminUser:
     # -- Username for the initial admin user
-    username: "admin"
+    username: 'admin'
     # -- Password for the initial admin user; generated if not specified
-    password: ""
+    password: ''
     # Reference to a Kubernetes secret that holds the initial admin user credentials to be used in preference to any provided via username and password
     secretRef:
       # -- If specified, the name of an existing secret that contains the initial admin user credentials to be used in preference to any provided via username and password
-      name: ""
+      name: ''
       # -- The key name for the secret entry containing the initial admin user's username
-      usernameKey: "username"
+      usernameKey: 'username'
       # -- The key name for the secret entry containing the initial admin user's password
-      passwordKey: "password"
+      passwordKey: 'password'
 
   # Configuration for database bootstrap
   db:
@@ -147,7 +146,6 @@ bootstrap:
         # -- maximum JDBC connection pool size for RBAC DB
         maxSize: 5
 
-
   # Configuration for Kafka bootstrap
   kafka:
     # -- Indicates whether Kafka bootstrap is enabled as part of installation
@@ -162,21 +160,21 @@ bootstrap:
   # Configuration for CLI image used for bootstrap
   image:
     # -- CLI image registry; defaults to image.registry
-    registry: ""
+    registry: ''
     # -- CLI image repository
-    repository: "corda-os-plugins"
+    repository: 'corda-os-plugins'
     # -- CLI default tag; defaults to image.tag
-    tag: ""
+    tag: ''
 
   # resource limits and requests configuration for the bootstrap containers
   resources:
     # -- the CPU/memory resource requests for the bootstrap containers
-    requests: { }
+    requests: {}
     # -- the CPU/memory resource limits for the bootstrap containers
-    limits: { }
+    limits: {}
 
   # node selector for the bootstrap containers
-  nodeSelector: { }
+  nodeSelector: {}
 
 # worker configuration
 workers:
@@ -185,11 +183,11 @@ workers:
     # crypto worker image configuration
     image:
       # -- crypto worker image registry, defaults to image.registry
-      registry: ""
+      registry: ''
       # -- crypto worker image repository
-      repository: "corda-os-crypto-worker"
+      repository: 'corda-os-crypto-worker'
       # -- crypto worker image tag, defaults to image.tag
-      tag: ""
+      tag: ''
     # -- crypto worker replica count
     replicaCount: 1
     # crypto worker debug configuration
@@ -201,7 +199,7 @@ workers:
     # logging configuration
     logging:
       # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
-      level: ""
+      level: ''
     profiling:
       # -- run crypto worker with profiling enabled
       enabled: false
@@ -221,11 +219,11 @@ workers:
     # DB worker image configuration
     image:
       # -- DB worker image registry, defaults to image.registry
-      registry: ""
+      registry: ''
       # -- DB worker image repository
-      repository: "corda-os-db-worker"
+      repository: 'corda-os-db-worker'
       # -- DB worker image tag, defaults to image.tag
-      tag: ""
+      tag: ''
     # -- DB worker replica count
     replicaCount: 1
     # DB worker debug configuration
@@ -237,14 +235,14 @@ workers:
     # logging configuration
     logging:
       # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
-      level: ""
+      level: ''
     profiling:
       # -- run DB worker with profiling enabled
       enabled: false
     # -- DB worker salt, defaults to a value randomly-generated on install
-    salt: ""
+    salt: ''
     # -- DB worker passphrase, defaults to a value randomly-generated on install
-    passphrase: ""
+    passphrase: ''
     # resource limits and requests configuration for the DB worker containers.
     resources:
       # -- the CPU/memory resource requests for the DB worker containers
@@ -261,11 +259,11 @@ workers:
     # flow worker image configuration
     image:
       # -- flow worker image registry, defaults to image.registry
-      registry: ""
+      registry: ''
       # -- flow worker image repository
-      repository: "corda-os-flow-worker"
+      repository: 'corda-os-flow-worker'
       # -- flow worker image tag, defaults to image.tag
-      tag: ""
+      tag: ''
     # -- flow worker replica count
     replicaCount: 1
     # flow worker debug configuration
@@ -277,7 +275,7 @@ workers:
     # logging configuration
     logging:
       # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
-      level: ""
+      level: ''
     profiling:
       # -- run flow worker with profiling enabled
       enabled: false
@@ -295,11 +293,11 @@ workers:
     # membership worker image configuration
     image:
       # -- membership worker image registry, defaults to image.registry
-      registry: ""
+      registry: ''
       # -- membership worker image repository
-      repository: "corda-os-member-worker"
+      repository: 'corda-os-member-worker'
       # -- membership worker image tag, defaults to image.tag
-      tag: ""
+      tag: ''
     # -- membership worker replica count
     replicaCount: 1
     # membership worker debug configuration
@@ -311,7 +309,7 @@ workers:
     # logging configuration
     logging:
       # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
-      level: ""
+      level: ''
     profiling:
       # -- run membership worker with profiling enabled
       enabled: false
@@ -327,11 +325,11 @@ workers:
     # RPC worker image configuration
     image:
       # -- RPC worker image registry, defaults to image.registry
-      registry: ""
+      registry: ''
       # -- RPC worker image repository
-      repository: "corda-os-rpc-worker"
+      repository: 'corda-os-rpc-worker'
       # -- RPC worker image tag, defaults to image.tag
-      tag: ""
+      tag: ''
     # -- RPC worker replica count
     replicaCount: 1
     # RPC worker debug configuration
@@ -343,7 +341,7 @@ workers:
     # logging configuration
     logging:
       # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
-      level: ""
+      level: ''
     profiling:
       # -- run RPC worker with profiling enabled
       enabled: false
@@ -358,7 +356,7 @@ workers:
       # -- the type for the RPC worker service
       type: ClusterIP
       # -- the traffic policy for the RPC worker service
-      externalTrafficPolicy: ""
+      externalTrafficPolicy: ''
       # -- the LoadBalancer source ranges to limit access to the RPC worker service
       loadBalancerSourceRanges: []
       # -- the annotations for RPC worker service
@@ -369,11 +367,11 @@ workers:
     # p2p-link-manager worker image configuration
     image:
       # -- p2p-link-manager worker image registry, defaults to image.registry
-      registry: ""
+      registry: ''
       # -- p2p-link-manager worker image repository
-      repository: "corda-os-p2p-link-manager-worker"
+      repository: 'corda-os-p2p-link-manager-worker'
       # -- p2p-link-manager worker image tag, defaults to image.tag
-      tag: ""
+      tag: ''
     # -- p2p-link-manager worker replica count
     replicaCount: 1
     # -- Use stubbed crypto processor, membership group reader and group policy provider
@@ -387,7 +385,7 @@ workers:
     # logging configuration
     logging:
       # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
-      level: ""
+      level: ''
     profiling:
       # -- run p2p-link-manager worker with profiling enabled
       enabled: false
@@ -403,11 +401,11 @@ workers:
     # p2p-gateway worker image configuration
     image:
       # -- p2p-gateway worker image registry, defaults to image.registry
-      registry: ""
+      registry: ''
       # -- p2p-gateway worker image repository
-      repository: "corda-os-p2p-gateway-worker"
+      repository: 'corda-os-p2p-gateway-worker'
       # -- p2p-gateway worker image tag, defaults to image.tag
-      tag: ""
+      tag: ''
     # -- p2p-gateway worker replica count
     replicaCount: 1
     # -- Use stub crypto processor
@@ -421,7 +419,7 @@ workers:
     # logging configuration
     logging:
       # -- log level: one of "all", "trace", "debug", "info", "warn", "error", "fatal", or "off"; defaults to logging.level if not specified
-      level: ""
+      level: ''
     profiling:
       # -- run p2p-gateway worker with profiling enabled
       enabled: false
