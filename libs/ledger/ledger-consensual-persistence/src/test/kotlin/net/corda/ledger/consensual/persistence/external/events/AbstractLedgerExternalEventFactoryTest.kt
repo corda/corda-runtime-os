@@ -1,11 +1,11 @@
-package net.corda.flow.application.ledger.external.events
+package net.corda.ledger.consensual.persistence.external.events
 
 import net.corda.data.KeyValuePairList
 import java.nio.ByteBuffer
 import net.corda.data.flow.event.external.ExternalEventContext
+import net.corda.data.identity.HoldingIdentity
 import net.corda.data.persistence.ConsensualLedgerRequest
 import net.corda.data.persistence.EntityResponse
-import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.schema.Schemas
 import net.corda.virtualnode.toCorda
@@ -18,10 +18,11 @@ import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
 
-class AbstractLedgerExternalEventFactoryTest {
-    private val testClock = Clock.fixed(Instant.now(), ZoneId.of("UTC"))
+val TEST_CLOCK = Clock.fixed(Instant.now(), ZoneId.of("UTC"))
+val ALICE_X500_HOLDING_IDENTITY = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group1")
 
-    private val abstractLedgerExternalEventFactory = object : AbstractLedgerExternalEventFactory<String>(testClock) {
+class AbstractLedgerExternalEventFactoryTest {
+    private val abstractLedgerExternalEventFactory = object : AbstractLedgerExternalEventFactory<String>(TEST_CLOCK) {
         override fun createRequest(parameters: String): Any {
             return parameters
         }
@@ -49,7 +50,7 @@ class AbstractLedgerExternalEventFactoryTest {
         assertNull(externalEventRecord.key)
         assertEquals(
             ConsensualLedgerRequest(
-                testClock.instant(),
+                TEST_CLOCK.instant(),
                 ALICE_X500_HOLDING_IDENTITY,
                 payload,
                 externalEventContext

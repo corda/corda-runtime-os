@@ -1,10 +1,9 @@
-package net.corda.flow.application.ledger.external.events
+package net.corda.ledger.consensual.persistence.external.events
 
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.consensual.FindTransaction
 import net.corda.data.persistence.ConsensualLedgerRequest
-import net.corda.flow.ALICE_X500_HOLDING_IDENTITY
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.schema.Schemas
 import net.corda.virtualnode.toCorda
@@ -16,7 +15,6 @@ import org.mockito.kotlin.whenever
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
-
 
 class FindTransactionExternalEventFactoryTest {
 

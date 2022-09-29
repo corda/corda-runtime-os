@@ -1,14 +1,15 @@
-package net.corda.flow.application.ledger
+package net.corda.ledger.consensual.persistence.internal
 
 import java.nio.ByteBuffer
-import net.corda.flow.application.ledger.external.events.FindTransactionExternalEventFactory
-import net.corda.flow.application.ledger.external.events.FindTransactionParameters
-import net.corda.flow.application.ledger.external.events.PersistTransactionExternalEventFactory
-import net.corda.flow.application.ledger.external.events.PersistTransactionParameters
-import net.corda.flow.application.persistence.wrapWithPersistenceException
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.ledger.common.impl.transaction.WireTransaction
+import net.corda.ledger.consensual.persistence.LedgerPersistenceService
+import net.corda.ledger.consensual.persistence.external.events.FindTransactionExternalEventFactory
+import net.corda.ledger.consensual.persistence.external.events.FindTransactionParameters
+import net.corda.ledger.consensual.persistence.external.events.PersistTransactionExternalEventFactory
+import net.corda.ledger.consensual.persistence.external.events.PersistTransactionParameters
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -30,7 +31,7 @@ class LedgerPersistenceServiceImpl @Activate constructor(
                 FindTransactionExternalEventFactory::class.java,
                 FindTransactionParameters(id.toHexString())
             )
-        }.firstOrNull()?.let { serializationService.deserialize(it.array(), WireTransaction::class.java) }
+        }.firstOrNull()?.let { serializationService.deserialize(it.array()) }
     }
 
     override fun persist(transaction: WireTransaction) {

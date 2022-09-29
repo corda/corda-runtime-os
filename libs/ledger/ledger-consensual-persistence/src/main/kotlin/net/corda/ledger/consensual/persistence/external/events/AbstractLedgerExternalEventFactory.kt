@@ -1,4 +1,4 @@
-package net.corda.flow.application.ledger.external.events
+package net.corda.ledger.consensual.persistence.external.events
 
 import java.nio.ByteBuffer
 import net.corda.data.flow.event.external.ExternalEventContext
@@ -11,7 +11,9 @@ import net.corda.schema.Schemas
 import net.corda.virtualnode.toAvro
 import java.time.Clock
 
-abstract class AbstractLedgerExternalEventFactory<PARAMETERS : Any>(private val clock: Clock = Clock.systemUTC()) :
+abstract class AbstractLedgerExternalEventFactory<PARAMETERS : Any>(
+    private val clock: Clock = Clock.systemUTC()
+) :
     ExternalEventFactory<PARAMETERS, EntityResponse, List<ByteBuffer>>
 {
 

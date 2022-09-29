@@ -1,12 +1,14 @@
-package net.corda.flow.application.ledger.external.events
+package net.corda.ledger.consensual.persistence.external.events
 
 import net.corda.data.ledger.consensual.FindTransaction
 import net.corda.flow.external.events.factory.ExternalEventFactory
+import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import java.time.Clock
 
 @Component(service = [ExternalEventFactory::class])
 class FindTransactionExternalEventFactory : AbstractLedgerExternalEventFactory<FindTransactionParameters> {
+    @Activate
     constructor() : super()
     constructor(clock: Clock) : super(clock)
 
