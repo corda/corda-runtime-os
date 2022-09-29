@@ -37,7 +37,7 @@ abstract class HttpRpcCommand : ExtensionPoint {
         names = ["-y", "--yield"],
         required = false,
         description = ["Duration in seconds to patiently wait till HTTP RPC connection will become available. " +
-                "Defaults to 10 seconds is missing."]
+                "Defaults to 10 seconds if missing."]
     )
     var waitDurationSeconds: Int = 10
 }
