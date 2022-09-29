@@ -1282,9 +1282,6 @@
                             "type": "object",
                             "default": {},
                             "title": "logging configuration",
-                            "required": [
-                                "level"
-                            ],
                             "additionalProperties": false,
                             "properties": {
                                 "level": {
@@ -1536,9 +1533,6 @@
                             "type": "object",
                             "default": {},
                             "title": "logging configuration",
-                            "required": [
-                                "level"
-                            ],
                             "additionalProperties": false,
                             "properties": {
                                 "level": {
@@ -1778,9 +1772,6 @@
                             "type": "object",
                             "default": {},
                             "title": "logging configuration",
-                            "required": [
-                                "level"
-                            ],
                             "additionalProperties": false,
                             "properties": {
                                 "level": {
@@ -2002,9 +1993,6 @@
                             "type": "object",
                             "default": {},
                             "title": "logging configuration",
-                            "required": [
-                                "level"
-                            ],
                             "additionalProperties": false,
                             "properties": {
                                 "level": {
@@ -2305,9 +2293,6 @@
                             "type": "object",
                             "default": {},
                             "title": "logging configuration",
-                            "required": [
-                                "level"
-                            ],
                             "additionalProperties": false,
                             "properties": {
                                 "level": {
@@ -2551,9 +2536,6 @@
                             "type": "object",
                             "default": {},
                             "title": "logging configuration",
-                            "required": [
-                                "level"
-                            ],
                             "additionalProperties": false,
                             "properties": {
                                 "level": {
