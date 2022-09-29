@@ -32,6 +32,7 @@ object HttpRpcClientUtils {
     }
 
     fun <T> executeWithRetry(waitDuration: Duration, operationName: String, block: () -> T): T {
+        logger.info("Performing $operationName")
         val endTime = System.currentTimeMillis() + waitDuration.seconds
         var lastException: Exception?
         do {

@@ -73,23 +73,30 @@ class UserAdminSubcommand : HttpRpcCommand(), Callable<Int> {
 
             val permissionIds = createHttpRpcClient(PermissionEndpoint::class).use { permissionEndpointClient ->
                 val permissionEndpoint = permissionEndpointClient.start().proxy
-                 permissionsToCreate.map { entry ->
-                    permissionEndpoint.createPermission(
-                        CreatePermissionType(
-                            PermissionType.ALLOW,
-                            entry.value,
-                            null,
-                            null
+                permissionsToCreate.map { entry ->
+                    executeWithRetry(waitDuration, "Creating permission: ${entry.key}") {
+                        permissionEndpoint.createPermission(
+                            CreatePermissionType(
+                                PermissionType.ALLOW,
+                                entry.value,
+                                null,
+                                null
+                            )
                         )
-                    ).responseBody.id.also {
+                    }
+                    .responseBody.id.also {
                         logger.info("Created permission: ${entry.key} with id: $it")
                     }
                 }
             }
 
-            val roleId = roleEndpoint.createRole(CreateRoleType(USER_ADMIN_ROLE, null)).responseBody.id
+            val roleId = executeWithRetry(waitDuration, "Creating role: $USER_ADMIN_ROLE") {
+                roleEndpoint.createRole(CreateRoleType(USER_ADMIN_ROLE, null)).responseBody.id
+            }
             permissionIds.forEach { permId ->
-                roleEndpoint.addPermission(roleId, permId)
+                executeWithRetry(waitDuration, "Adding permission: $permId") {
+                    roleEndpoint.addPermission(roleId, permId)
+                }
             }
             sysOut.info("Successfully created $USER_ADMIN_ROLE with id: $roleId and assigned permissions")
         }
