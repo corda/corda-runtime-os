@@ -175,6 +175,40 @@
                                  constraintName="FK_cpk_db_change_log_cpk_metadata"
                                  baseTableSchemaName="${schema.name}"
                                  referencedTableSchemaName="${schema.name}"/>
+        <!-- Append only audit table. Unlike cpk_db_change_logs which will be updated during CPI update process. -->
+        <createTable tableName="cpk_db_change_log_audit" schemaName="${schema.name}">
+            <column name="cpk_name" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cpk_version" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cpk_signer_summary_hash" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cpk_file_checksum" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="file_path" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="content" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="entity_version" type="INT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_deleted" type="BOOLEAN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="insert_ts" type="TIMESTAMP"
+                    defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addPrimaryKey tableName="cpk_db_change_log_audit" columnNames="cpk_name, cpk_version, cpk_signer_summary_hash, cpk_file_checksum, entity_version, file_path"
+                       constraintName="cpk_db_change_log_audit_pk" schemaName="${schema.name}"/>
 
         <createTable tableName="cpi_cpk" schemaName="${schema.name}">
             <column name="cpi_name" type="VARCHAR(255)">
