@@ -36,6 +36,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
+import net.corda.membership.p2p.helpers.VerifierFactory
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
@@ -214,6 +215,7 @@ class MemberSynchronisationServiceImplTest {
         on { readAllLocalMembers() } doReturn emptyList()
     }
     private val clock = TestClock(Instant.ofEpochSecond(100))
+    private val verifierFactory = mock<VerifierFactory>()
     private val synchronisationService = MemberSynchronisationServiceImpl(
         publisherFactory,
         configurationReadService,
@@ -221,6 +223,7 @@ class MemberSynchronisationServiceImplTest {
         serializationFactory,
         memberInfoFactory,
         groupReaderProvider,
+        verifierFactory,
         locallyHostedMembersReader,
         p2pRecordsFactory,
         merkleTreeGenerator,
