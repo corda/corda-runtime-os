@@ -38,7 +38,7 @@ fun getConfig(section: String): JsonNode {
  * The currently installed schema and configuration versions are automatically obtained from the running system
  * before updating.
  */
-fun updateConfig(config: String, section: String) {
+fun updateConfig(config: String, section: String, rawConfig: Boolean = false) {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
@@ -47,13 +47,22 @@ fun updateConfig(config: String, section: String) {
                 val currentConfig = getConfig(section).body.toJson()
                 val currentSchemaVersion = currentConfig["schemaVersion"]
 
-                putConfig(
-                    TestJsonObject(config),
-                    section,
-                    currentConfig["version"].toString(),
-                    currentSchemaVersion["major"].toString(),
-                    currentSchemaVersion["minor"].toString()
-                )
+                if(rawConfig) {
+                    putConfigRawJson(
+                        TestJsonObject(config),
+                        section,
+                        currentConfig["version"].toString(),
+                        currentSchemaVersion["major"].toString(),
+                        currentSchemaVersion["minor"].toString()
+                    )
+                } else {
+                    putConfig(
+                        StringEscapeUtils.escapeJson(config), section,
+                        currentConfig["version"].toString(),
+                        currentSchemaVersion["major"].toString(),
+                        currentSchemaVersion["minor"].toString()
+                    )
+                }
             }
 
             condition { it.code == OK.statusCode }
