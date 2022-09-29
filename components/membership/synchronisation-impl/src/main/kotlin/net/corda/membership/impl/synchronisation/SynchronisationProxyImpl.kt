@@ -271,7 +271,7 @@ class SynchronisationProxyImpl @Activate constructor(
         }
     }
 
-    private inner class Processor : DurableProcessor<String, SynchronisationCommand> {
+    internal inner class Processor : DurableProcessor<String, SynchronisationCommand> {
         private val handlers = mapOf<Class<*>, SynchronisationHandler<*>>(
             ProcessMembershipUpdates::class.java to ProcessMembershipUpdatesHandler(),
             ProcessSyncRequest::class.java to ProcessSyncRequestHandler(),

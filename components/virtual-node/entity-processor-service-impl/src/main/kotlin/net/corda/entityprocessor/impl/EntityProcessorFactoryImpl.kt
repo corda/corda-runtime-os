@@ -1,19 +1,16 @@
 package net.corda.entityprocessor.impl
 
-import java.nio.ByteBuffer
 import net.corda.entityprocessor.EntityProcessorFactory
-import net.corda.entityprocessor.FlowPersistenceProcessor
+import net.corda.entityprocessor.EntityProcessor
 import net.corda.entityprocessor.impl.internal.EntityMessageProcessor
-import net.corda.entityprocessor.impl.internal.EntitySandboxService
-import net.corda.entityprocessor.impl.internal.exceptions.KafkaMessageSizeException
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.persistence.common.EntitySandboxService
+import net.corda.persistence.common.PayloadChecker
 import net.corda.schema.Schemas
-import net.corda.schema.configuration.MessagingConfig
-import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -35,32 +32,13 @@ class EntityProcessorFactoryImpl @Activate constructor(
         private const val CORDA_MESSAGE_OVERHEAD = 1024
     }
 
-    class PayloadChecker(private val maxPayloadSize: Int) {
-        companion object {
-            private val log = contextLogger()
-        }
-
-        fun checkSize(
-            bytes: ByteBuffer
-        ): ByteBuffer {
-            val kb = bytes.array().size / 1024
-            if (bytes.array().size > maxPayloadSize) {
-                throw KafkaMessageSizeException("Payload $kb kb, exceeds max Kafka payload size ${maxPayloadSize / (1024)} kb")
-            }
-            if(log.isDebugEnabled)
-                log.debug("Payload $kb kb < max Kafka payload size ${maxPayloadSize / (1024)} kb")
-            return bytes
-        }
-    }
-
-    override fun create(config: SmartConfig): FlowPersistenceProcessor {
+    override fun create(config: SmartConfig): EntityProcessor {
         val subscriptionConfig = SubscriptionConfig(GROUP_NAME, Schemas.VirtualNode.ENTITY_PROCESSOR)
-        // max allowed msg size minus headroom for wrapper message
-        val maxPayLoadSize = config.getInt(MessagingConfig.MAX_ALLOWED_MSG_SIZE) - CORDA_MESSAGE_OVERHEAD
+
         val processor = EntityMessageProcessor(
             entitySandboxService,
             externalEventResponseFactory,
-            PayloadChecker(maxPayLoadSize)::checkSize
+            PayloadChecker(config)::checkSize
         )
 
         val subscription = subscriptionFactory.createDurableSubscription(
@@ -70,7 +48,7 @@ class EntityProcessorFactoryImpl @Activate constructor(
             null
         )
 
-        return FlowPersistenceProcessorImpl(subscription)
+        return EntityProcessorImpl(subscription)
     }
 
 }
