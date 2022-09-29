@@ -20,13 +20,13 @@ build_cpi() {
    local WORKING_DIR=$PWD
    cd $REPO_TOP_LEVEL_DIR
 
-   ./gradlew testing:cpbs:flow-worker-dev:build
+   ./gradlew testing:cpbs:test-cordapp:build
 
    cd $WORKING_DIR
 
-   cp $REPO_TOP_LEVEL_DIR/testing/cpbs/flow-worker-dev/build/libs/flow-worker-dev-5.0.0.0-SNAPSHOT-package.cpb ./
+   cp $REPO_TOP_LEVEL_DIR/testing/cpbs/test-cordapp/build/libs/test-cordapp-5.0.0.0-SNAPSHOT-package.cpb ./
 
-   zip flow-worker-dev-5.0.0.0-SNAPSHOT-package.cpb -j $1
+   zip test-cordapp-5.0.0.0-SNAPSHOT-package.cpb -j $1
 }
 
 upload_cpi() {
@@ -130,7 +130,7 @@ on_board_mgm() {
 
    build_cpi ./GroupPolicy.json
 
-   CPI_ID=$(upload_cpi $MGM_RPC ./flow-worker-dev-5.0.0.0-SNAPSHOT-package.cpb)
+   CPI_ID=$(upload_cpi $MGM_RPC ./test-cordapp-5.0.0.0-SNAPSHOT-package.cpb)
 
    echo "MGM CPI ID $CPI_ID"
    sleep 120
@@ -182,7 +182,7 @@ on_board_node() {
 
    build_cpi ./GroupPolicy.json
 
-   CPI_ID=$(upload_cpi $1 ./flow-worker-dev-5.0.0.0-SNAPSHOT-package.cpb)
+   CPI_ID=$(upload_cpi $1 ./test-cordapp-5.0.0.0-SNAPSHOT-package.cpb)
 
    echo "NODE $2 CPI ID $CPI_ID"
    sleep 120
