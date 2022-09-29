@@ -20,6 +20,11 @@ import java.lang.IndexOutOfBoundsException
 
 class HttpServerChannelHandler(private val serverListener: HttpServerListener,
                                private val logger: Logger): BaseHttpChannelHandler(serverListener, logger) {
+
+    companion object {
+        const val MAX_CONTENT_LENGTH = 500_000_000
+    }
+
     private var responseCode: HttpResponseStatus? = null
 
     /**

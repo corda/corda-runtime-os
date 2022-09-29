@@ -10,6 +10,7 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import io.netty.handler.codec.http.HttpRequest
 import io.netty.handler.codec.http.HttpResponse
 import io.netty.handler.codec.http.DefaultFullHttpResponse
+import net.corda.p2p.gateway.messaging.http.HttpServerChannelHandler.Companion.MAX_CONTENT_LENGTH
 import java.lang.IllegalArgumentException
 import java.net.URI
 import java.net.URL
@@ -93,6 +94,10 @@ class HttpHelper {
 
             if (this.headers()[HttpHeaderNames.CONTENT_LENGTH] == null) {
                 return HttpResponseStatus.LENGTH_REQUIRED
+            }
+
+            if (this.headers()[HttpHeaderNames.CONTENT_LENGTH].toLong() > MAX_CONTENT_LENGTH) {
+                return HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE
             }
 
             if (!HttpHeaderValues.APPLICATION_JSON.contentEqualsIgnoreCase(this.headers()[HttpHeaderNames.CONTENT_TYPE]))

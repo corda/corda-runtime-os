@@ -21,7 +21,7 @@ abstract class BaseHttpChannelHandler(private val eventListener: HttpConnectionL
     }
 
     protected fun readBytesIntoBodyBuffer(buffer: ByteBuf) {
-        buffer.readBytes(messageBodyBuf, buffer.readableBytes())
+        messageBodyBuf!!.writeBytes(buffer)
     }
 
     protected fun releaseBodyBuffer() {
