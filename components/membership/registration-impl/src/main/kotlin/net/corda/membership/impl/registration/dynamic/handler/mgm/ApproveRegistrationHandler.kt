@@ -86,7 +86,7 @@ internal class ApproveRegistrationHandler(
                 )
             if (memberTypeChecker.isMgm(approvedMember)) {
                 throw CordaRuntimeException(
-                    "The registration request: '$registrationId' cannot be approved by ${approvedMember.x500Name} as it is an MGM."
+                    "The registration request: '$registrationId' cannot be approved for ${approvedMember.x500Name} as it is an MGM."
                 )
             }
 

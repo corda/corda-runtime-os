@@ -59,7 +59,7 @@ internal class ProcessMemberVerificationResponseHandler(
                 throw CordaRuntimeException("Member ${member.x500Name} is an MGM and can not register.")
             }
             if (!memberTypeChecker.isMgm(mgm)) {
-                throw CordaRuntimeException("Member ${mgm.x500Name} is not an MGM and can not register.")
+                throw CordaRuntimeException("Member ${mgm.x500Name} is not an MGM and can not process member's registration.")
             }
             membershipPersistenceClient.setRegistrationRequestStatus(
                 mgm.toCorda(),
