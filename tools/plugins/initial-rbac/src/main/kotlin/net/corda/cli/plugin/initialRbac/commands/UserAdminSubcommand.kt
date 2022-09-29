@@ -73,7 +73,7 @@ class UserAdminSubcommand : HttpRpcCommand(), Callable<Int> {
 
             val permissionIds = createHttpRpcClient(PermissionEndpoint::class).use { permissionEndpointClient ->
                 val permissionEndpoint = permissionEndpointClient.start().proxy
-                permissionsToCreate.map { entry ->
+                permissionsToCreate.toSortedMap().map { entry ->
                     executeWithRetry(waitDuration, "Creating permission: ${entry.key}") {
                         permissionEndpoint.createPermission(
                             CreatePermissionType(

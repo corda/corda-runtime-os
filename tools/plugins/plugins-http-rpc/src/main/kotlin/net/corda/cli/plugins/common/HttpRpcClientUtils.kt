@@ -33,15 +33,17 @@ object HttpRpcClientUtils {
 
     fun <T> executeWithRetry(waitDuration: Duration, operationName: String, block: () -> T): T {
         logger.info("Performing $operationName")
-        val endTime = System.currentTimeMillis() + waitDuration.seconds
+        val endTime = System.currentTimeMillis() + waitDuration.toMillis()
         var lastException: Exception?
+        var sleep = 1000L
         do {
             try {
                 return block()
             } catch (ex: Exception) {
                 lastException = ex
-                logger.info("Cannot perform $operationName yet", ex)
-                Thread.sleep(1000)
+                logger.warn("Cannot perform $operationName yet", ex)
+                Thread.sleep(sleep)
+                sleep *= 2
             }
         } while (System.currentTimeMillis() <= endTime)
 
