@@ -141,7 +141,7 @@ class ClusterBuilder {
                   schemaMinorVersion: String) : SimpleResponse {
         val payload = """
             {
-                "config": "${config.escapedJson}",
+                "config": ${config.escapedJson},
                 "schemaVersion": {
                   "major": "$schemaMajorVersion",
                   "minor": "$schemaMinorVersion"
