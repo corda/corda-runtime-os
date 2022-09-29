@@ -49,7 +49,7 @@ class FlowMessagingImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun <R> receiveAll(receiveType: Class<out R>, sessions: Set<FlowSession>): List<R> {
+    override fun <R: Any> receiveAll(receiveType: Class<out R>, sessions: Set<FlowSession>): List<R> {
         requireBoxedType(receiveType)
         val request = FlowIORequest.Receive(sessions = sessions.map {
             val flowSession = (it as FlowSessionInternal)

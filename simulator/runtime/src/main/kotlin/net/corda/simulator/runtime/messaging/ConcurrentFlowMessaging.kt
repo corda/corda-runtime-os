@@ -101,7 +101,7 @@ class ConcurrentFlowMessaging(
         TODO("Not yet implemented")
     }
 
-    override fun <R> receiveAll(receiveType: Class<out R>, sessions: Set<FlowSession>): List<R> {
+    override fun <R : Any> receiveAll(receiveType: Class<out R>, sessions: Set<FlowSession>): List<R> {
         TODO("Not yet implemented")
     }
 
@@ -116,4 +116,5 @@ class ConcurrentFlowMessaging(
     override fun sendAllMap(payloadsPerSession: Map<FlowSession, Any>) {
         TODO("Not yet implemented")
     }
+
 }
