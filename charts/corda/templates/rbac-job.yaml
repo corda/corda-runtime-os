@@ -15,16 +15,6 @@ spec:
     spec:
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
       containers:
-        - name: fin
-          image: {{ include "corda.bootstrapImage" . }}
-          imagePullPolicy: {{ .Values.imagePullPolicy }}
-          {{- include "corda.bootstrapResources" . | nindent 10 }}
-          command:
-            - /bin/sh
-            - -e
-            - -c
-          args: ["echo", "'RBAC roles provisioned'"]
-      initContainers:
         - name: create-rbac-roles
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
@@ -42,8 +32,7 @@ spec:
                 secretKeyRef:
                   name: {{ include "corda.initialAdminUserSecretName" . }}
                   key: {{ include "corda.initialAdminUserSecretPasswordKey" . }}
-
       {{- include "corda.bootstrapNodeSelector" . | nindent 6 }}
-
       restartPolicy: Never
+  backoffLimit: 0
 {{- end }}
