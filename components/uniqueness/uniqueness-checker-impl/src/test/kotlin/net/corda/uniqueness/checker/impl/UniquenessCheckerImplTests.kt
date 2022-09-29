@@ -1253,7 +1253,7 @@ class UniquenessCheckerImplTests {
         fun `Unhandled exception raised in the uniqueness checker returns the appropriate error`() {
             val exceptionThrowingBackingStore = mock<BackingStore>()
 
-            whenever(exceptionThrowingBackingStore.transactionSession(any()))
+            whenever(exceptionThrowingBackingStore.transactionSession(any(), any()))
                 .doThrow(UnsupportedOperationException())
 
             val exceptionThrowingUniquenessChecker = BatchedUniquenessCheckerImpl(

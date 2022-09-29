@@ -48,6 +48,8 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -157,7 +159,9 @@ class BatchedUniquenessCheckerImpl(
         // TODO - Re-instate batch processing logic if needed - need to establish what batching
         // there is in the message bus layer first
         try {
-            results += processBatch(requestsToProcess).map { (request, result) ->
+            results += processBatch(
+                requests.first().holdingIdentity.toCorda(),
+                requestsToProcess).map { (request, result) ->
                 UniquenessCheckResponseAvro(
                     request.rawTxId,
                     when (result) {
@@ -178,6 +182,9 @@ class BatchedUniquenessCheckerImpl(
         } catch (e: Exception) {
             // In practice, if we've received an unhandled exception then this will be before we
             // managed to commit to the DB, so raise an exception against all requests in the batch
+            log.warn("Unhandled exception was thrown for transaction(s) " +
+                    "${requests.map { it.txId }}: $e")
+
             results += requestsToProcess.map { request ->
                 UniquenessCheckResponseAvro(
                     request.rawTxId,
@@ -196,6 +203,7 @@ class BatchedUniquenessCheckerImpl(
 
     @Suppress("ComplexMethod", "LongMethod")
     private fun processBatch(
+        holdingIdentity: HoldingIdentity,
         batch: List<UniquenessCheckRequestInternal>
     ): List<Pair<UniquenessCheckRequestInternal, UniquenessCheckResult>> {
 
@@ -203,7 +211,7 @@ class BatchedUniquenessCheckerImpl(
             mutableListOf<Pair<UniquenessCheckRequestInternal, UniquenessCheckResult>>()
 
         // DB operations are retried, removing conflicts from the batch on each attempt.
-        backingStore.transactionSession { session, transactionOps ->
+        backingStore.transactionSession(holdingIdentity) { session, transactionOps ->
             // We can clear these between retries, data will be retrieved from the backing store
             // anyway.
             stateDetailsCache.clear()

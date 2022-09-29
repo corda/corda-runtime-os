@@ -8,6 +8,7 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.crypto.SecureHash
+import net.corda.virtualnode.HoldingIdentity
 
 /**
  * Abstracts the retrieval and persistence of data required by uniqueness checker implementations.
@@ -51,7 +52,7 @@ interface BackingStore : Lifecycle {
      * Opens a new session with the backing store and runs the supplied block of code in the
      * context of the session.
      */
-    fun session(block: (Session) -> Unit)
+    fun session(holdingIdentity: HoldingIdentity, block: (Session) -> Unit)
 
     /**
      * Convenience function which opens a session with the backing store and then immediately
@@ -59,8 +60,11 @@ interface BackingStore : Lifecycle {
      * and [TransactionOps][Session.TransactionOps] interfaces. Useful when you know you will need
      * to perform commit operations up front.
      */
-    fun transactionSession(block: (Session, Session.TransactionOps) -> Unit) {
-        session { session -> session.executeTransaction(block) }
+    fun transactionSession(
+        holdingIdentity: HoldingIdentity,
+        block: (Session, Session.TransactionOps) -> Unit
+    ) {
+        session(holdingIdentity) { session -> session.executeTransaction(block) }
     }
 
     /**

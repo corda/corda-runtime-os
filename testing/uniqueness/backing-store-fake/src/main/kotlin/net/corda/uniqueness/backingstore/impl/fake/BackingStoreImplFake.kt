@@ -23,9 +23,9 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
+import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
 import org.slf4j.Logger
@@ -61,7 +61,10 @@ open class BackingStoreImplFake @Activate constructor(
         HashMap<SecureHash, UniquenessCheckTransactionDetailsInternal>()
 
     @Synchronized
-    override fun session(block: (BackingStore.Session) -> Unit) = block(SessionImpl())
+    override fun session(
+        holdingIdentity: HoldingIdentity,
+        block: (BackingStore.Session) -> Unit
+    ) = block(SessionImpl())
 
     override fun start() {
         log.info("Backing store starting.")
@@ -71,14 +74,6 @@ open class BackingStoreImplFake @Activate constructor(
     override fun stop() {
         log.info("Backing store stopping.")
         lifecycleCoordinator.stop()
-    }
-
-    @Synchronized
-    @Deactivate
-    fun close() {
-        sessionStateData.clear()
-        sessionTxnData.clear()
-        stop()
     }
 
     protected open inner class SessionImpl : BackingStore.Session {

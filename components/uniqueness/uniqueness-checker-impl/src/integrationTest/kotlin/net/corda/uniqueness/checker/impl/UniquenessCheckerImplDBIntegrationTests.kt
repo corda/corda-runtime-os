@@ -5,10 +5,16 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.data.uniqueness.UniquenessCheckResponseAvro
 import net.corda.data.uniqueness.UniquenessCheckResultSuccessAvro
+import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
+import net.corda.db.connection.manager.DBConfigurationException
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.connection.manager.VirtualNodeDbType
+import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.DbUtils
+import net.corda.db.testkit.TestDbInfo
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
+import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.impl.JpaEntitiesRegistryImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
@@ -28,6 +34,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Duration
@@ -45,13 +53,22 @@ import javax.persistence.EntityManagerFactory
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class UniquenessCheckerImplDBIntegrationTests {
 
-    private val entityManagerFactory: EntityManagerFactory
-    private val dbConfig = DbUtils.getEntityManagerConfiguration("uniqueness_default")
+    private val dbConfig = DbUtils.getEntityManagerConfiguration("testdb")
 
     private val baseTime: Instant = Instant.EPOCH
 
+    // Default holding id used in most tests
     private val defaultHoldingIdentity = createTestHoldingIdentity(
-        "C=GB, L=London, O=Alice", "Test Group").toAvro()
+        "C=GB, L=London, O=Alice", "Test Group")
+    private val defaultHoldingIdentityDbName =
+        VirtualNodeDbType.UNIQUENESS.getSchemaName(defaultHoldingIdentity.shortHash)
+    private val defaultHoldingIdentityDb: EntityManagerFactory
+
+    // Holding id that has no associated uniqueness DB
+    private val noDbHoldingIdentity = createTestHoldingIdentity(
+        "C=GB, L=London, O=Nobody", "Test Group")
+    private val noDbHoldingIdentityDbName =
+        VirtualNodeDbType.UNIQUENESS.getSchemaName(noDbHoldingIdentity.shortHash)
 
     // We don't use Instant.MAX because this appears to cause a long overflow in Avro
     private val defaultTimeWindowUpperBound: Instant =
@@ -67,7 +84,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             : UniquenessCheckRequestAvro.Builder =
         UniquenessCheckRequestAvro.newBuilder(
             UniquenessCheckRequestAvro(
-                defaultHoldingIdentity,
+                defaultHoldingIdentity.toAvro(),
                 ExternalEventContext(),
                 txId.toString(),
                 emptyList(),
@@ -108,10 +125,15 @@ class UniquenessCheckerImplDBIntegrationTests {
      * [entityManagerFactory].
      */
     init {
-        entityManagerFactory = EntityManagerFactoryFactoryImpl().create(
-            "uniqueness_default",
-            JPABackingStoreEntities.classes.toList(),
-            dbConfig
+        val databaseInstaller = DatabaseInstaller(
+            EntityManagerFactoryFactoryImpl(),
+            LiquibaseSchemaMigratorImpl(),
+            JpaEntitiesRegistryImpl())
+
+        defaultHoldingIdentityDb = databaseInstaller.setupDatabase(
+            TestDbInfo("uniq_test", defaultHoldingIdentityDbName),
+            "vnode-uniqueness",
+            JPABackingStoreEntities.classes
         )
     }
 
@@ -130,7 +152,10 @@ class UniquenessCheckerImplDBIntegrationTests {
             mock(),
             JpaEntitiesRegistryImpl(),
             mock<DbConnectionManager>().apply {
-                whenever(getOrCreateEntityManagerFactory(any(),any(),any())) doReturn entityManagerFactory
+                whenever(getOrCreateEntityManagerFactory(
+                    eq(defaultHoldingIdentityDbName), any(), any())) doReturn defaultHoldingIdentityDb
+                whenever(getOrCreateEntityManagerFactory(
+                    eq(noDbHoldingIdentityDbName), any(), any())) doThrow DBConfigurationException("")
                 whenever(getClusterDataSource()) doReturn dbConfig.dataSource
             }
         )
@@ -1184,6 +1209,26 @@ class UniquenessCheckerImplDBIntegrationTests {
                             responses[0], expectedUpperBound = upperBound
                         )
                     }
+                )
+            }
+        }
+    }
+
+    @Nested
+    inner class DbSelection {
+        @Test
+        fun `Uniqueness check for holding id with no uniqueness DB fails`() {
+            processRequests(
+                newRequestBuilder()
+                    .setHoldingIdentity(noDbHoldingIdentity.toAvro())
+                    .setNumOutputStates(1)
+                    .build()
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(1) },
+                    { UniquenessAssertions.assertUnhandledExceptionResponse(
+                        responses[0],
+                        "net.corda.db.connection.manager.DBConfigurationException") }
                 )
             }
         }
