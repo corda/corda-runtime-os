@@ -2,7 +2,6 @@ package net.corda.cli.plugins.common
 
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.client.HttpRpcClient
-import net.corda.httprpc.client.HttpRpcConnection
 import net.corda.httprpc.client.config.HttpRpcClientConfig
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
