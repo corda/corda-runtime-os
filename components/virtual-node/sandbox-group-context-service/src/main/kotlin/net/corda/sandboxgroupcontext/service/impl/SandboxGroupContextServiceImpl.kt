@@ -201,7 +201,10 @@ class SandboxGroupContextServiceImpl(
         bundleContext: BundleContext
     ): AutoCloseable? {
         val serviceObj = try {
-            serviceFactory.service ?: return null
+            serviceFactory.service ?: run {
+                logger.warn("CANNOT CREATE SERVICE {}", serviceFactory.serviceReference)
+                return null
+            }
         } catch (e: Exception) {
             logger.warn("Service ${serviceFactory.serviceReference} is not available.", e)
             throw SandboxException("Service ${serviceFactory.serviceReference} is unavailable", e)
