@@ -1,15 +1,15 @@
-@Library('corda-shared-build-pipeline-steps@mag1c/CORE-5662/sbom') _
+@Library('corda-shared-build-pipeline-steps@mag1c/feature/CORE-6894/sbom-jar') _
 
 cordaPipeline(
     nexusAppId: 'flow-worker-5.0',
     runIntegrationTests: true,
     publishRepoPrefix: 'corda-ent-maven',
     createPostgresDb: true,
-    publishOSGiImage: true,
+    publishOSGiImage: false,
     publishPreTestImage: true,
     publishHelmChart: true,
     e2eTestName: 'corda-runtime-os-e2e-tests',
-    runE2eTests: true,
+    runE2eTests: false,
     combinedWorkere2eTests: true,
     // allow publishing artifacts to S3 bucket
     publishToMavenS3Repository: true,
