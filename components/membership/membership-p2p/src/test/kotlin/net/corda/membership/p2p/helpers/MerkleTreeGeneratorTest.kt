@@ -28,7 +28,7 @@ class MerkleTreeGeneratorTest {
     private val digestProvider = mock<MerkleTreeHashDigestProvider>()
     private val tree = mock<MerkleTree>()
     private val leaves = argumentCaptor<List<ByteArray>>()
-    private val merkleTreeFactory = mock<MerkleTreeProvider> {
+    private val merkleTreeProvider = mock<MerkleTreeProvider> {
         on {
             createHashDigestProvider(
                 eq(HASH_DIGEST_PROVIDER_TWEAKABLE_NAME),
@@ -70,7 +70,7 @@ class MerkleTreeGeneratorTest {
     }
 
     private val generator = MerkleTreeGenerator(
-        merkleTreeFactory,
+        merkleTreeProvider,
         cordaAvroSerializationFactory,
     )
 
