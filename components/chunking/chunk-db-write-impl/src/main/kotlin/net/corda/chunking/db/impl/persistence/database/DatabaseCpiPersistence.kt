@@ -131,26 +131,31 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
     ) {
         // The incoming changelogs will not be marked deleted
         cpkDbChangeLogEntities.forEach { require(!it.isDeleted) }
-        val allChangelogs = findDbChangeLogForCpi(em, cpi.metadata.cpiId)
+        val allChangelogs = findDbChangeLogForCpi(em, cpi.metadata.cpiId).associateBy { it.id }
         // We first mark each existing changelog for this CPI as deleted.
-        allChangelogs.forEach { rec ->
-            rec.isDeleted = true
-            em.merge(rec)
-        }
-        em.flush()
+        val changeLogUpdates = cpkDbChangeLogEntities.associateBy { it.id }
+
         // Then, for the currently declared changelog, we'll save the record and clear any isDeleted flags.
         // This all happens under one transaction so no one will see the isDeleted flags flicker.
-        cpkDbChangeLogEntities.forEach {
-            val inDb = em.find(CpkDbChangeLogEntity::class.java, it.id)
-            if (inDb != null) it.entityVersion = inDb.entityVersion
-            em.merge(it)
-        }
-        // This is required to make sure we get the right entity version for the given
-        em.flush()
-        findDbChangeLogForCpi(em, cpi.metadata.cpiId).forEach {
-            val audit = CpkDbChangeLogAuditEntity(it)
-            em.persist(audit)
-        }
+        (allChangelogs + changeLogUpdates)
+            .entries
+            .distinctBy { it.key }
+            .forEach { (changelogId, changelog) ->
+                val inDb = em.find(CpkDbChangeLogEntity::class.java, changelogId)
+                val ret = if (inDb != null) {
+                    if (allChangelogs.containsKey(changelogId)) {
+                        changelog.isDeleted = true
+                    }
+                    changelog.entityVersion = inDb.entityVersion
+                    em.merge(changelog)
+                } else {
+                    em.persist(changelog)
+                    changelog
+                }
+                log.info("THIS IS THE NEW CHANGELOG ${ret.id.cpkName} ${ret.id.cpkName} ${ret.id.cpkName} ${ret.entityVersion}")
+                val audit = CpkDbChangeLogAuditEntity(ret)
+                em.persist(audit)
+            }
     }
 
     override fun updateMetadataAndCpks(
