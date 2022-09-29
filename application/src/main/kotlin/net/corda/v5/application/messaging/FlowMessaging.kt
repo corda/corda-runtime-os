@@ -144,7 +144,7 @@ interface FlowMessaging {
      * @returns a [List] containing the objects received, wrapped in an [UntrustworthyData], with the same order of [sessions].
      */
     @Suspendable
-    fun <R> receiveAll(receiveType: Class<out R>, sessions: Set<FlowSession>): List<R>
+    fun <R : Any> receiveAll(receiveType: Class<out R>, sessions: Set<FlowSession>): List<R>
 
     /**
      * Queues the given [payload] for sending to the provided [sessions] and continues without suspending.
