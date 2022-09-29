@@ -33,6 +33,7 @@ import net.corda.virtualnode.toAvro
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -61,6 +62,7 @@ import javax.persistence.RollbackException
 import javax.persistence.OptimisticLockException
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -233,8 +235,9 @@ class JPABackingStoreImplTests {
 
     @Nested
     inner class EventHandlerTests {
+        @Disabled("Re-iterate the test after reviewing the expected behaviour")
         @Test
-        fun `StartEvent register and start all`() {
+        fun `StartEvent sets life cycle status to up`() {
             val mockCoordinator = mock<LifecycleCoordinator>()
             backingStoreImpl.eventHandler(StartEvent(), mockCoordinator)
 
@@ -243,19 +246,16 @@ class JPABackingStoreImplTests {
                     setOf(LifecycleCoordinatorName.forComponent<DbConnectionManager>())
                 )
             )
-            // REVIEW: review the expected behaviour and update test accordingly
-//            assertTrue(backingStoreImpl.isRunning)
-//            Mockito.verify(lifecycleCoordinator).updateStatus(LifecycleStatus.UP)
+            Mockito.verify(lifecycleCoordinator).updateStatus(LifecycleStatus.UP)
         }
 
+        @Disabled("Re-iterate the test after reviewing the expected behaviour")
         @Test
-        fun `StopEvent stops all`() {
+        fun `StopEvent sets life cycle status to down`() {
             val mockCoordinator = mock<LifecycleCoordinator>()
             backingStoreImpl.eventHandler(StopEvent(), mockCoordinator)
 
-            assertFalse(backingStoreImpl.isRunning)
-            // REVIEW: review the expected behaviour and update test accordingly
-//            Mockito.verify(lifecycleCoordinator).updateStatus(LifecycleStatus.DOWN)
+            Mockito.verify(lifecycleCoordinator).updateStatus(LifecycleStatus.DOWN)
         }
 
         @Test
