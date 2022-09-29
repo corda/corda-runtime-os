@@ -79,8 +79,15 @@ class UniquenessCheckerImplTests {
             )
         )
 
-    private fun processRequests(vararg requests: UniquenessCheckRequestAvro) =
-        uniquenessChecker.processRequests(requests.asList())
+    private fun processRequests(
+        vararg requests: UniquenessCheckRequestAvro
+    ) : List<UniquenessCheckResponseAvro> {
+        val requestsList = requests.asList()
+
+        val responses = uniquenessChecker.processRequests(requests.asList())
+
+        return requestsList.map { responses[it]!! }
+    }
 
     private fun generateUnspentStates(numOutputStates: Int): List<String> {
         val issueTxId = randomSecureHash()
@@ -262,15 +269,16 @@ class UniquenessCheckerImplTests {
             uniquenessChecker.processRequests(requests).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(5) },
-                    { assertStandardSuccessResponse(responses[0], testClock) },
-                    { assertStandardSuccessResponse(responses[1], testClock) },
-                    { assertStandardSuccessResponse(responses[2], testClock) },
-                    { assertStandardSuccessResponse(responses[3], testClock) },
-                    { assertStandardSuccessResponse(responses[4], testClock) },
+                    { assertStandardSuccessResponse(responses[requests[0]]!!, testClock) },
+                    { assertStandardSuccessResponse(responses[requests[1]]!!, testClock) },
+                    { assertStandardSuccessResponse(responses[requests[2]]!!, testClock) },
+                    { assertStandardSuccessResponse(responses[requests[3]]!!, testClock) },
+                    { assertStandardSuccessResponse(responses[requests[4]]!!, testClock) },
                     // Check all tx ids match up to corresponding requests and commit timestamps
                     // are unique
-                    { assertIterableEquals(requests.map { it.txId }, responses.map { it.txId }) },
-                    { assertUniqueCommitTimestamps(responses) }
+                    { assertIterableEquals(
+                        responses.keys.map { it.txId }, responses.values.map { it.txId }) },
+                    { assertUniqueCommitTimestamps(responses.values) }
                 )
             }
         }
@@ -317,13 +325,14 @@ class UniquenessCheckerImplTests {
             uniquenessChecker.processRequests(requests).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(3) },
-                    { assertStandardSuccessResponse(responses[0], testClock) },
-                    { assertStandardSuccessResponse(responses[1], testClock) },
-                    { assertStandardSuccessResponse(responses[2], testClock) },
+                    { assertStandardSuccessResponse(responses[requests[0]]!!, testClock) },
+                    { assertStandardSuccessResponse(responses[requests[1]]!!, testClock) },
+                    { assertStandardSuccessResponse(responses[requests[2]]!!, testClock) },
                     // Check all tx ids match up to corresponding requests and commit timestamps
                     // are unique
-                    { assertIterableEquals(requests.map { it.txId }, responses.map { it.txId }) },
-                    { assertUniqueCommitTimestamps(responses) }
+                    { assertIterableEquals(
+                        responses.keys.map { it.txId }, responses.values.map { it.txId }) },
+                    { assertUniqueCommitTimestamps(responses.values) }
                 )
             }
         }
@@ -1099,7 +1108,7 @@ class UniquenessCheckerImplTests {
         @Test
         fun `Empty request list returns no results`() {
             assertEquals(
-                emptyList(),
+                emptyMap(),
                 uniquenessChecker.processRequests(emptyList())
             )
         }
@@ -1274,8 +1283,28 @@ class UniquenessCheckerImplTests {
                 assertAll(
                     { assertThat(responses).hasSize(1) },
                     { assertUnhandledExceptionResponse(
-                        responses[0],
+                        responses.values.single(),
                         UnsupportedOperationException::class.java.typeName) }
+                )
+            }
+        }
+
+        @Test
+        fun `Successful and malformed requests in the same batch return results in correct order`() {
+            processRequests(
+                newRequestBuilder()
+                    .setNumOutputStates(1)
+                    .build(),
+                newRequestBuilder()
+                    .setNumOutputStates(-1)
+                    .build()
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(2) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertMalformedRequestResponse(
+                        responses[1],
+                        "Number of output states cannot be less than 0.") }
                 )
             }
         }
@@ -1294,9 +1323,9 @@ class UniquenessCheckerImplTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(2) },
-                    { assertStandardSuccessResponse(responses[0], testClock) },
-                    { assertStandardSuccessResponse(responses[1], testClock) },
-                    { assertUniqueCommitTimestamps(responses) }
+                    { assertStandardSuccessResponse(responses.values.elementAt(0), testClock) },
+                    { assertStandardSuccessResponse(responses.values.elementAt(1), testClock) },
+                    { assertUniqueCommitTimestamps(responses.values) }
                 )
             }
 

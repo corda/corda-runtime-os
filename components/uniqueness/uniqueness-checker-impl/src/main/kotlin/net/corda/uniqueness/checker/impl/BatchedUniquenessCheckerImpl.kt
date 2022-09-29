@@ -131,63 +131,78 @@ class BatchedUniquenessCheckerImpl(
     }
 
     @Synchronized
+    /**
+     * Performs uniqueness checking against a list of requests and returns a map of requests and
+     * their corresponding responses. This implementation will process valid (i.e. non-malformed)
+     * requests in the order they are presented in the [requests] list for a given holding identity,
+     * but no guarantees are given for the ordering of requests across different holding identities.
+     *
+     * The ordering of the returned mappings is not guaranteed to match those of the supplied
+     * [requests] parameter. Callers should therefore use the request objects in the returned
+     * responses if relying on any data stored in the request.
+     *
+     * See [UniquenessCheckRequestAvro] and [UniquenessCheckResponseAvro] for details of message
+     * formats.
+     */
     override fun processRequests(
         requests: List<UniquenessCheckRequestAvro>
-    ): List<UniquenessCheckResponseAvro> {
+    ): Map<UniquenessCheckRequestAvro, UniquenessCheckResponseAvro> {
 
-        val results = LinkedList<UniquenessCheckResponseAvro>()
+        val results = HashMap<UniquenessCheckRequestAvro, UniquenessCheckResponseAvro>()
+        val requestsToProcess = ArrayList<
+                Pair<UniquenessCheckRequestInternal, UniquenessCheckRequestAvro>>(requests.size)
 
         // Convert the supplied batch of external requests to internal requests. Doing this can
         // throw an exception if the request is malformed. These are filtered out immediately with
         // the appropriate result returned as we can't make any assumptions about the input and
         // such a failure would be inherently idempotent anyway (changing the request would change
         // the tx id)
-        val requestsToProcess = requests.mapNotNull {
+        for ( request in requests ) {
             try {
-                UniquenessCheckRequestInternal.create(it)
+                requestsToProcess.add(
+                    Pair(UniquenessCheckRequestInternal.create(request), request))
             } catch (e: IllegalArgumentException) {
-                results.add(
-                    UniquenessCheckResponseAvro(
-                        it.txId,
-                        UniquenessCheckResultMalformedRequestAvro(e.message)
-                    )
+                results[request] = UniquenessCheckResponseAvro(
+                    request.txId,
+                    UniquenessCheckResultMalformedRequestAvro(e.message)
                 )
-                null
             }
         }
 
-        // TODO - Re-instate batch processing logic if needed - need to establish what batching
-        // there is in the message bus layer first
+        // TODO - Re-instate batch processing logic based on number of states if needed - need to
+        // establish what batching there is in the message bus layer first
         try {
-            results += processBatch(
+            processBatch(
                 requests.first().holdingIdentity.toCorda(),
-                requestsToProcess).map { (request, result) ->
-                UniquenessCheckResponseAvro(
-                    request.rawTxId,
-                    when (result) {
-                        is UniquenessCheckResultSuccess -> {
-                            UniquenessCheckResultSuccessAvro(result.resultTimestamp)
+                requestsToProcess.map { it.first }
+            ).forEachIndexed { idx, (internalRequest, internalResult) ->
+                results[requestsToProcess[idx].second] =
+                    UniquenessCheckResponseAvro(
+                        internalRequest.rawTxId,
+                        when (internalResult) {
+                            is UniquenessCheckResultSuccess -> {
+                                UniquenessCheckResultSuccessAvro(internalResult.resultTimestamp)
+                            }
+                            is UniquenessCheckResultFailure -> {
+                                internalResult.toExternalError()
+                            }
+                            else -> {
+                                throw IllegalStateException(
+                                    "Unknown result type: ${internalResult.javaClass.typeName}"
+                                )
+                            }
                         }
-                        is UniquenessCheckResultFailure -> {
-                            result.toExternalError()
-                        }
-                        else -> {
-                            throw IllegalStateException(
-                                "Unknown result type: ${result.javaClass.typeName}"
-                            )
-                        }
-                    }
-                )
-            }
+                    )
+                }
         } catch (e: Exception) {
             // In practice, if we've received an unhandled exception then this will be before we
             // managed to commit to the DB, so raise an exception against all requests in the batch
             log.warn("Unhandled exception was thrown for transaction(s) " +
                     "${requests.map { it.txId }}: $e")
 
-            results += requestsToProcess.map { request ->
-                UniquenessCheckResponseAvro(
-                    request.rawTxId,
+            requestsToProcess.map{it.second}.forEach { avroRequest ->
+                results[avroRequest] = UniquenessCheckResponseAvro(
+                    avroRequest.txId,
                     UniquenessCheckResultUnhandledExceptionAvro(
                         ExceptionEnvelope().apply {
                             errorType = e::class.java.name
