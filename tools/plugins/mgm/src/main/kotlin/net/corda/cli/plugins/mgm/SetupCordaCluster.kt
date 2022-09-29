@@ -111,7 +111,12 @@ class SetupCordaCluster : Runnable {
             "install",
             "corda", cordaChart.absolutePath,
             "-f", yaml.absolutePath,
-            "--set", "image.tag=$actualBaseImage,bootstrap.kafka.replicas=$kafkaReplicas,kafka.sasl.enabled=false",
+            "--set",
+            "image.tag=$actualBaseImage," +
+                "bootstrap.kafka.replicas=$kafkaReplicas," +
+                "kafka.sasl.enabled=false," +
+                "db.cluster.host=prereqs-postgresql," +
+                "db.cluster.existingSecret=prereqs-postgresql",
             "-n", clusterName, "--wait", "--timeout", "600s"
         )
     }
