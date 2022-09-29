@@ -1,5 +1,6 @@
 package net.corda.crypto.merkle.impl
 
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
 import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
@@ -25,7 +26,10 @@ class MerkleProofImpl(
      * the proof's hashes when they are needed.
      */
     override fun verify(root: SecureHash, digest: MerkleTreeHashDigest): Boolean {
-        val digestProvider = digest as MerkleTreeHashDigestProvider
+        if (digest !is MerkleTreeHashDigestProvider) {
+            throw CordaRuntimeException("An instance of MerkleTreeHashDigestProvider is required when " +
+                "verifying a Merkle root, but received ${digest.javaClass.name} instead.")
+        }
 
         if (leaves.isEmpty()) {
             return false
@@ -38,7 +42,7 @@ class MerkleProofImpl(
         }
         var hashIndex = 0
         val sortedLeaves = leaves.sortedBy { it.index }
-        var nodeHashes = sortedLeaves.map { Pair(it.index, digestProvider.leafHash(it.index, it.nonce, it.leafData)) }
+        var nodeHashes = sortedLeaves.map { Pair(it.index, digest.leafHash(it.index, it.nonce, it.leafData)) }
         var treeDepth = MerkleTreeImpl.treeDepth(treeSize)
         var currentSize = treeSize
         while (currentSize > 1) {
