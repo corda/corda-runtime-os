@@ -214,14 +214,12 @@ class JPABackingStoreImplTests {
     inner class LifeCycleTests {
         @Test
         fun `Starting backing store invokes life cycle start`() {
-            Mockito.verify(lifecycleCoordinator, never()).start()
             backingStoreImpl.start()
             Mockito.verify(lifecycleCoordinator).start()
         }
 
         @Test
         fun `Stopping backing store invokes life cycle stop`() {
-            Mockito.verify(lifecycleCoordinator, never()).stop()
             backingStoreImpl.stop()
             Mockito.verify(lifecycleCoordinator).stop()
         }
@@ -272,8 +270,15 @@ class JPABackingStoreImplTests {
             val mockCoordinator = mock<LifecycleCoordinator>()
             backingStoreImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.DOWN), mockCoordinator)
             Mockito.verify(mockCoordinator).updateStatus(LifecycleStatus.DOWN)
+            Mockito.verify(dbConnectionManager, never()).getOrCreateEntityManagerFactory(any(), any(), any())
+
             backingStoreImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.ERROR), mockCoordinator)
             Mockito.verify(mockCoordinator).updateStatus(LifecycleStatus.ERROR)
+            Mockito.verify(dbConnectionManager, never()).getOrCreateEntityManagerFactory(any(), any(), any())
+
+            backingStoreImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mockCoordinator)
+            Mockito.verify(mockCoordinator).updateStatus(LifecycleStatus.UP)
+            Mockito.verify(dbConnectionManager, times(1)).getOrCreateEntityManagerFactory(any(), any(), any())
         }
 
         @Test
@@ -294,9 +299,9 @@ class JPABackingStoreImplTests {
         }
 
         @Test
-        fun `Session closes entity manager after use`() {
+        fun `Session always closes entity manager after use`() {
             backingStoreImpl.session { }
-            Mockito.verify(entityManager).close()
+            Mockito.verify(entityManager, times(1)).close()
         }
 
         @Test
@@ -304,7 +309,7 @@ class JPABackingStoreImplTests {
             assertThrows<java.lang.RuntimeException> {
                 backingStoreImpl.session { throw java.lang.RuntimeException("test exception") }
             }
-            Mockito.verify(entityManager).close()
+            Mockito.verify(entityManager, times(1)).close()
         }
     }
 
