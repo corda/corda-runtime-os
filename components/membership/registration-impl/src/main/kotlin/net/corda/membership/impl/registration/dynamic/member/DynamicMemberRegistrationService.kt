@@ -329,7 +329,9 @@ class DynamicMemberRegistrationService @Activate constructor(
                     KeyValuePair(PLATFORM_VERSION, PLATFORM_VERSION_CONST),
                     KeyValuePair(SOFTWARE_VERSION, SOFTWARE_VERSION_CONST),
                     KeyValuePair(SERIAL, SERIAL_CONST),
-                )
+                ).sortedBy {
+                    it.key
+                }
             )
         }
 
