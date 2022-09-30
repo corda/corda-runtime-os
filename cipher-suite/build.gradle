@@ -14,6 +14,7 @@ dependencies {
 
     api platform(project(':corda-api'))
     api project(':crypto')
+    api project(":crypto-extensions")
 
     api "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion"
     api "org.bouncycastle:bcpkix-jdk15on:$bouncycastleVersion"

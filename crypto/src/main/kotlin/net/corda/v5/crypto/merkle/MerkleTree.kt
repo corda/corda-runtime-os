@@ -9,13 +9,13 @@ import net.corda.v5.crypto.SecureHash
  * tree without revealing the remaining data.
  *
  * @property leaves The input data elements. Usually something deterministically serialized.
- * @property digestProvider The [MerkleTreeHashDigestProvider] used to construct the tree's node and leaf hashes.
+ * @property digest The [MerkleTreeHashDigest] used to construct the tree's node and leaf hashes.
  * @property root The root element of the tree which is essentially the fingerprint of the whole tree/data set.
  *
  */
 interface MerkleTree {
     val leaves: List<ByteArray>
-    val digestProvider: MerkleTreeHashDigestProvider
+    val digest: MerkleTreeHashDigest
     val root: SecureHash
 
     /**
