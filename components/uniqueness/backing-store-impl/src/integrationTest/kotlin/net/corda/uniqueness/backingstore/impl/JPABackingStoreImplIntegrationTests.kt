@@ -67,7 +67,7 @@ import kotlin.test.assertTrue
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class JPABackingStoreImplIntegrationTests {
-    private val maxAttemptsCnt = 10 // Set it same as "MAX_ATTEMPTS" in JPABackingStoreImpl.kt
+    private val MAX_ATTEMPTS = 10 // Set it same as "MAX_ATTEMPTS" in JPABackingStoreImpl.kt
     private lateinit var backingStoreImpl: JPABackingStoreImpl
 
     private val entityManagerFactory: EntityManagerFactory
@@ -162,7 +162,7 @@ class JPABackingStoreImplIntegrationTests {
                     }
                 }
             }
-            assertEquals(maxAttemptsCnt, execCounter)
+            assertEquals(MAX_ATTEMPTS, execCounter)
         }
 
         @Test
@@ -415,7 +415,7 @@ class JPABackingStoreImplIntegrationTests {
                     session.getTransactionDetails(txIds)
                 }
             }
-            Mockito.verify(spyEm, times(maxAttemptsCnt)).createNamedQuery(queryName, resultClass)
+            Mockito.verify(spyEm, times(MAX_ATTEMPTS)).createNamedQuery(queryName, resultClass)
         }
 
         @Disabled(
@@ -447,7 +447,7 @@ class JPABackingStoreImplIntegrationTests {
                     session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
                 }
             }
-            Mockito.verify(spyEm, times(maxAttemptsCnt)).persist(any())
+            Mockito.verify(spyEm, times(MAX_ATTEMPTS)).persist(any())
         }
 
         @Test
