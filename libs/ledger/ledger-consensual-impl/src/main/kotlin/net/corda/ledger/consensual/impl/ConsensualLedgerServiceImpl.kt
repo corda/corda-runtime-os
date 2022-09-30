@@ -13,18 +13,25 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.osgi.service.component.annotations.ReferenceScope.PROTOTYPE_REQUIRED
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 @Suppress("LongParameterList")
 @Component(service = [ConsensualLedgerService::class, SingletonSerializeAsToken::class], scope = PROTOTYPE)
 class ConsensualLedgerServiceImpl @Activate constructor(
-    @Reference(service = MerkleTreeFactory::class) private val merkleTreeFactory: MerkleTreeFactory,
-    @Reference(service = DigestService::class) private val digestService: DigestService,
-    @Reference(service = SigningService::class) private val signingService: SigningService,
-    @Reference(service = FlowFiberService::class) private val flowFiberService: FlowFiberService,
-    @Reference(service = CipherSchemeMetadata::class) private val schemeMetadata: CipherSchemeMetadata,
-    @Reference(service = JsonMarshallingService::class) private val jsonMarshallingService: JsonMarshallingService
-    ): ConsensualLedgerService, SingletonSerializeAsToken {
+    @Reference(service = MerkleTreeFactory::class, scope = PROTOTYPE_REQUIRED)
+    private val merkleTreeFactory: MerkleTreeFactory,
+    @Reference(service = DigestService::class, scope = PROTOTYPE_REQUIRED)
+    private val digestService: DigestService,
+    @Reference(service = SigningService::class)
+    private val signingService: SigningService,
+    @Reference(service = FlowFiberService::class)
+    private val flowFiberService: FlowFiberService,
+    @Reference(service = CipherSchemeMetadata::class)
+    private val schemeMetadata: CipherSchemeMetadata,
+    @Reference(service = JsonMarshallingService::class, scope = PROTOTYPE_REQUIRED)
+    private val jsonMarshallingService: JsonMarshallingService
+): ConsensualLedgerService, SingletonSerializeAsToken {
 
     override fun getTransactionBuilder(): ConsensualTransactionBuilder {
         val secureRandom = schemeMetadata.secureRandom
