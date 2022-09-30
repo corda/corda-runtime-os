@@ -19,8 +19,9 @@ internal class PersistRegistrationRequestHandler(
 
     override fun invoke(context: MembershipRequestContext, request: PersistRegistrationRequest) {
         logger.info("Persisting registration request with ID [${request.registrationRequest.registrationId}].")
-        println("QQQ persisting member signature for ${request.registeringHoldingIdentity.x500Name}")
-        println("QQQ context is ${request.registrationRequest.memberSignature.context.toMap()}")
+        println("QQQ persisting member signature for " +
+                "${request.registeringHoldingIdentity.x500Name} " +
+                "context is ${request.registrationRequest.memberSignature.context.toMap()}")
         transaction(context.holdingIdentity.toCorda().shortHash) { em ->
             val now = clock.instant()
             em.merge(

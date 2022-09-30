@@ -204,7 +204,8 @@ class StartRegistrationHandler(
             source.toCorda(),
             memberRegistrationRequest.memberContext,
             memberRegistrationRequest.memberSignature.publicKey,
-            memberRegistrationRequest.memberSignature.bytes
+            memberRegistrationRequest.memberSignature.bytes,
+            memberRegistrationRequest.memberSignature.context,
         )
     }
 }

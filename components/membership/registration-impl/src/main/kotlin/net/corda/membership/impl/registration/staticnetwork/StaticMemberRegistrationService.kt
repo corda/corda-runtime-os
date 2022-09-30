@@ -186,6 +186,7 @@ class StaticMemberRegistrationService @Activate constructor(
                 memberContext = ByteBuffer.wrap(memberContext),
                 publicKey = ByteBuffer.wrap(byteArrayOf()),
                 signature = ByteBuffer.wrap(byteArrayOf()),
+                signatureContext = KeyValuePairList(emptyList()),
             )
         )
     }

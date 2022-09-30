@@ -378,7 +378,8 @@ class MembershipPersistenceTest {
                     )
                 ),
                 ByteBuffer.wrap(byteArrayOf()),
-                ByteBuffer.wrap(byteArrayOf())
+                ByteBuffer.wrap(byteArrayOf()),
+                KeyValuePairList(emptyList()),
             )
         )
 
@@ -595,6 +596,11 @@ class MembershipPersistenceTest {
                     KeyValuePair(MEMBER_CONTEXT_KEY, MEMBER_CONTEXT_VALUE)
                 )
             )
+            val signatureContext = KeyValuePairList(
+                listOf(
+                    KeyValuePair("key", "value")
+                )
+            )
             membershipPersistenceClientWrapper.persistRegistrationRequest(
                 viewOwningHoldingIdentity,
                 RegistrationRequest(
@@ -608,6 +614,7 @@ class MembershipPersistenceTest {
                     ),
                     publicKey,
                     signature,
+                    signatureContext,
                 )
             ).getOrThrow()
             val cryptoSignatureWithKey = CryptoSignatureWithKey(
@@ -643,7 +650,8 @@ class MembershipPersistenceTest {
                     )
                 ),
                 ByteBuffer.wrap(byteArrayOf()),
-                ByteBuffer.wrap(byteArrayOf())
+                ByteBuffer.wrap(byteArrayOf()),
+                KeyValuePairList(emptyList()),
             )
         )
 
@@ -726,7 +734,8 @@ class MembershipPersistenceTest {
                     )
                 ),
                 ByteBuffer.wrap(byteArrayOf()),
-                ByteBuffer.wrap(byteArrayOf())
+                ByteBuffer.wrap(byteArrayOf()),
+                KeyValuePairList(emptyList()),
             )
         )
     }

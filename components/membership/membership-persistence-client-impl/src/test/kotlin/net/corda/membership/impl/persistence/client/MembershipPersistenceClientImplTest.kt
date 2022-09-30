@@ -111,6 +111,11 @@ class MembershipPersistenceClientImplTest {
         ByteBuffer.wrap("123".toByteArray()),
         ByteBuffer.wrap("456".toByteArray()),
         ByteBuffer.wrap("789".toByteArray()),
+        KeyValuePairList(
+            listOf(
+                KeyValuePair("key", "value")
+            )
+        )
     )
 
     private val memberInfoFactory = mock<MemberInfoFactory>()

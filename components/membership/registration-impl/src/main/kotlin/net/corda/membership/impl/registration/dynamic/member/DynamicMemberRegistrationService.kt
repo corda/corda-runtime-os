@@ -294,6 +294,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                         memberContext = ByteBuffer.wrap(serializedMemberContext),
                         publicKey = ByteBuffer.wrap(byteArrayOf()),
                         signature = ByteBuffer.wrap(byteArrayOf()),
+                        signatureContext = KeyValuePairList(emptyList())
                     )
                 )
 

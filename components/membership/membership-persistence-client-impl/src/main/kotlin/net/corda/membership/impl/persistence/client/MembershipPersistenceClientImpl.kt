@@ -1,7 +1,6 @@
 package net.corda.membership.impl.persistence.client
 
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.RegistrationStatus
@@ -134,7 +133,7 @@ class MembershipPersistenceClientImpl(
                         CryptoSignatureWithKey(
                             publicKey,
                             signature,
-                            KeyValuePairList(emptyList())
+                            signatureContext,
                         )
                     )
                 }
