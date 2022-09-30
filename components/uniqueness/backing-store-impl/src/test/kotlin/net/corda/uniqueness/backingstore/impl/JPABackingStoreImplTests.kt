@@ -459,34 +459,6 @@ class JPABackingStoreImplTests {
         }
 
         @Test
-        fun `Getting transaction details invokes correct query for a successful result`() {
-            val txIds = List(1) { SecureHashUtils.randomSecureHash() }
-
-            txnDetails.apply {
-                whenever(firstOrNull()) doReturn UniquenessTransactionDetailEntity(
-                    "SHA-256",
-                    "0xA1".toByteArray(),
-                    LocalDate.parse("2099-12-12").atStartOfDay().toInstant(ZoneOffset.UTC),
-                    LocalDate.now().atStartOfDay().toInstant(ZoneOffset.UTC),
-                    UniquenessConstants.RESULT_ACCEPTED_REPRESENTATION
-                )
-            }
-
-            backingStoreImpl.session { session ->
-                val result = session.getTransactionDetails(txIds)
-                assertEquals(1, result.size)
-                assertEquals(txIds[0], result[txIds[0]]!!.txId)
-                assertEquals(UniquenessConstants.RESULT_ACCEPTED_REPRESENTATION,
-                    result[txIds[0]]!!.result.toCharacterRepresentation())
-                Mockito.verify(entityManager)
-                    .createNamedQuery(
-                        eq("UniquenessTransactionDetailEntity.select"),
-                        eq(UniquenessTransactionDetailEntity::class.java)
-                    )
-            }
-        }
-
-        @Test
         fun `Throw if no error detail is available for a failed transaction`() {
             // Prepare a rejected transaction
             txnDetails.apply {
@@ -503,81 +475,6 @@ class JPABackingStoreImplTests {
             assertThrows<IllegalStateException> {
                 backingStoreImpl.session { session ->
                     session.getTransactionDetails(List(1) { SecureHashUtils.randomSecureHash() } )
-                }
-            }
-        }
-
-        @Test
-        fun `Getting transaction details invokes correct query for a failed result`() {
-            // Prepare a rejected transaction
-            txnDetails.apply {
-                whenever(firstOrNull()) doReturn UniquenessTransactionDetailEntity(
-                    "SHA-256",
-                    "0xA1".toByteArray(),
-                    LocalDate.parse("2099-12-12").atStartOfDay().toInstant(ZoneOffset.UTC),
-                    LocalDate.now().atStartOfDay().toInstant(ZoneOffset.UTC),
-                    UniquenessConstants.RESULT_REJECTED_REPRESENTATION
-                )
-            }
-            // Prepare a transaction error
-            txnErrors.apply {
-                whenever(firstOrNull()) doReturn UniquenessRejectedTransactionEntity(
-                    "SHA-256",
-                    "0xA1".toByteArray(),
-                    "{\"type\": \"generalErrorImpl\", \"errorText\": \"test error\"}".toByteArray()
-                )
-            }
-
-            backingStoreImpl.session { session ->
-                val txIds = List(1) { SecureHashUtils.randomSecureHash() }
-                val result = session.getTransactionDetails(txIds)
-
-                assertEquals(1, result.size)
-                assertEquals(txIds[0], result[txIds[0]]!!.txId)
-                assertEquals(UniquenessConstants.RESULT_REJECTED_REPRESENTATION,
-                    result[txIds[0]]!!.result.toCharacterRepresentation())
-                Mockito.verify(entityManager)
-                    .createNamedQuery(
-                        eq("UniquenessTransactionDetailEntity.select"),
-                        eq(UniquenessTransactionDetailEntity::class.java)
-                    )
-                Mockito.verify(entityManager)
-                    .createNamedQuery(
-                        eq("UniquenessRejectedTransactionEntity.select"),
-                        eq(UniquenessRejectedTransactionEntity::class.java)
-                    )
-            }
-        }
-
-        @Test
-        fun `Getting transaction details invokes correct query for an invalid result`() {
-            val txIds = List(1) { SecureHashUtils.randomSecureHash() }
-
-            txnDetails.apply {
-                whenever(firstOrNull()) doReturn UniquenessTransactionDetailEntity(
-                    "SHA-256",
-                    "0xA1".toByteArray(),
-                    LocalDate.parse("2099-12-12").atStartOfDay().toInstant(ZoneOffset.UTC),
-                    LocalDate.now().atStartOfDay().toInstant(ZoneOffset.UTC),
-                    'X' // Invalid result.
-                )
-            }
-
-            // Expect an IllegalStateException for an invalid result type.
-            assertThrows<IllegalStateException> {
-                backingStoreImpl.session { session ->
-                    session.getTransactionDetails(txIds)
-
-                    Mockito.verify(entityManager)
-                        .createNamedQuery(
-                            eq("UniquenessTransactionDetailEntity.select"),
-                            eq(UniquenessTransactionDetailEntity::class.java)
-                        )
-                    Mockito.verify(entityManager)
-                        .createNamedQuery(
-                            eq("UniquenessRejectedTransactionEntity.select"),
-                            eq(UniquenessRejectedTransactionEntity::class.java)
-                        )
                 }
             }
         }
