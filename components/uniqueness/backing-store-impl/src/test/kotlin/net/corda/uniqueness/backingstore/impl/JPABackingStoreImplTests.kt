@@ -76,11 +76,11 @@ class JPABackingStoreImplTests {
     private lateinit var dummyDataSource: CloseableDataSource
     private lateinit var jpaEntitiesRegistry: JpaEntitiesRegistry
 
-    private lateinit var txnDetails: LinkedList<UniquenessTransactionDetailEntity>
+    private lateinit var txnDetails: List<UniquenessTransactionDetailEntity>
     private lateinit var txnDetailQuery: TypedQuery<UniquenessTransactionDetailEntity>
     private lateinit var stateEntities: List<UniquenessStateDetailEntity>
     private lateinit var stateDetailSelectQuery: TypedQuery<UniquenessStateDetailEntity>
-    private lateinit var txnErrors: LinkedList<UniquenessRejectedTransactionEntity>
+    private lateinit var txnErrors: List<UniquenessRejectedTransactionEntity>
     private lateinit var txnErrorQuery: TypedQuery<UniquenessRejectedTransactionEntity>
 
     // NOTE: While expecting refactoring around createDefaultUniquenessDb(), it's mocked for testing
@@ -111,14 +111,14 @@ class JPABackingStoreImplTests {
             whenever(resultList) doReturn stateEntities
         }
 
-        txnDetails = mock<LinkedList<UniquenessTransactionDetailEntity>>()
+        txnDetails = mock<List<UniquenessTransactionDetailEntity>>()
         txnDetailQuery = mock<TypedQuery<UniquenessTransactionDetailEntity>>().apply {
             whenever(setParameter(eq("txAlgo"), any())) doReturn this
             whenever(setParameter(eq("txId"), any())) doReturn this
             whenever(resultList) doReturn txnDetails
         }
 
-        txnErrors = mock<LinkedList<UniquenessRejectedTransactionEntity>>()
+        txnErrors = mock<List<UniquenessRejectedTransactionEntity>>()
         txnErrorQuery = mock<TypedQuery<UniquenessRejectedTransactionEntity>>().apply {
             whenever(setParameter(eq("txAlgo"), any())) doReturn this
             whenever(setParameter(eq("txId"), any())) doReturn this
@@ -460,8 +460,7 @@ class JPABackingStoreImplTests {
 
         @Test
         fun `Getting transaction details invokes correct query for a successful result`() {
-            val txIds = LinkedList<SecureHash>()
-            txIds.add(SecureHashUtils.randomSecureHash())
+            val txIds = List(1) { SecureHashUtils.randomSecureHash() }
 
             txnDetails.apply {
                 whenever(firstOrNull()) doReturn UniquenessTransactionDetailEntity(
@@ -502,11 +501,8 @@ class JPABackingStoreImplTests {
 
             // Expect an exception because no error details is available from the mock.
             assertThrows<IllegalStateException> {
-                val txIds = LinkedList<SecureHash>()
-                txIds.add(SecureHashUtils.randomSecureHash())
-
                 backingStoreImpl.session { session ->
-                    session.getTransactionDetails(txIds)
+                    session.getTransactionDetails(List(1) { SecureHashUtils.randomSecureHash() } )
                 }
             }
         }
@@ -533,8 +529,7 @@ class JPABackingStoreImplTests {
             }
 
             backingStoreImpl.session { session ->
-                val txIds = LinkedList<SecureHash>()
-                txIds.add(SecureHashUtils.randomSecureHash())
+                val txIds = List(1) { SecureHashUtils.randomSecureHash() }
                 val result = session.getTransactionDetails(txIds)
 
                 assertEquals(1, result.size)
@@ -556,8 +551,7 @@ class JPABackingStoreImplTests {
 
         @Test
         fun `Getting transaction details invokes correct query for an invalid result`() {
-            val txIds = LinkedList<SecureHash>()
-            txIds.add(SecureHashUtils.randomSecureHash())
+            val txIds = List(1) { SecureHashUtils.randomSecureHash() }
 
             txnDetails.apply {
                 whenever(firstOrNull()) doReturn UniquenessTransactionDetailEntity(
