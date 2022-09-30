@@ -5,16 +5,16 @@ import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.layeredpropertymap.toAvro
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_TWEAKABLE_NAME
 import net.corda.v5.crypto.merkle.MerkleTree
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.membership.MemberInfo
 
 class MerkleTreeGenerator(
-    private val merkleTreeFactory: MerkleTreeFactory,
+    private val merkleTreeProvider: MerkleTreeProvider,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
 ) {
     private companion object {
@@ -22,7 +22,7 @@ class MerkleTreeGenerator(
         const val NODE_HASH_PREFIX = "CORDA_MEMBERSHIP_NODE"
         const val LEAF_HASH_PREFIX = "CORDA_MEMBERSHIP_LEAF"
     }
-    private val hashDigestProvider = merkleTreeFactory.createHashDigestProvider(
+    private val hashDigestProvider = merkleTreeProvider.createHashDigestProvider(
         HASH_DIGEST_PROVIDER_TWEAKABLE_NAME,
         DigestAlgorithmName.DEFAULT_ALGORITHM_NAME,
         mapOf(
@@ -46,6 +46,6 @@ class MerkleTreeGenerator(
                     serializer.serialize(member.mgmProvidedContext.toAvro()),
                 )
             }.filterNotNull()
-        return merkleTreeFactory.createTree(leaves, hashDigestProvider)
+        return merkleTreeProvider.createTree(leaves, hashDigestProvider)
     }
 }

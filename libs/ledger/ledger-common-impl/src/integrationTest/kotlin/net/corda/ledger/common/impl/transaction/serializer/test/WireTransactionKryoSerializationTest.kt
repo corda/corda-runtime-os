@@ -11,7 +11,7 @@ import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
@@ -59,7 +59,7 @@ class WireTransactionKryoSerializationTest {
     lateinit var digestService: DigestService
 
     @InjectService(timeout = 1000)
-    lateinit var merkleTreeFactory: MerkleTreeFactory
+    lateinit var merkleTreeProvider: MerkleTreeProvider
 
     @InjectService(timeout = 1000)
     lateinit var jsonMarshallingService: JsonMarshallingService
@@ -93,7 +93,7 @@ class WireTransactionKryoSerializationTest {
             .addSerializer(WireTransaction::class.java, wireTransactionKryoSerializer)
             .build()
 
-        val wireTransaction = getWireTransaction(digestService, merkleTreeFactory, jsonMarshallingService)
+        val wireTransaction = getWireTransaction(digestService, merkleTreeProvider, jsonMarshallingService)
         val bytes = kryoSerializer.serialize(wireTransaction)
         val deserialized = kryoSerializer.deserialize(bytes, WireTransaction::class.java)
 

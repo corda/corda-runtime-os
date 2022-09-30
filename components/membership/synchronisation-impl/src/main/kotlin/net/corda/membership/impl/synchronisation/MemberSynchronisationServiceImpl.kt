@@ -52,7 +52,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.cipher.suite.SignatureVerificationService
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -97,8 +97,8 @@ class MemberSynchronisationServiceImpl internal constructor(
         membershipGroupReaderProvider: MembershipGroupReaderProvider,
         @Reference(service = CordaAvroSerializationFactory::class)
         cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-        @Reference(service = MerkleTreeFactory::class)
-        merkleTreeFactory: MerkleTreeFactory,
+        @Reference(service = MerkleTreeProvider::class)
+        merkleTreeProvider: MerkleTreeProvider,
         @Reference(service = VirtualNodeInfoReadService::class)
         virtualNodeInfoReadService: VirtualNodeInfoReadService,
         @Reference(service = SignatureVerificationService::class)
@@ -125,7 +125,7 @@ class MemberSynchronisationServiceImpl internal constructor(
             UTCClock(),
         ),
         MerkleTreeGenerator(
-            merkleTreeFactory,
+            merkleTreeProvider,
             cordaAvroSerializationFactory,
         ),
         UTCClock(),

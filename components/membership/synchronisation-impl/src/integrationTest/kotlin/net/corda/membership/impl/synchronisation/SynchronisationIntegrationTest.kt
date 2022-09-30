@@ -80,7 +80,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
@@ -132,7 +132,7 @@ class SynchronisationIntegrationTest {
         lateinit var membershipP2PReadService: MembershipP2PReadService
 
         @InjectService(timeout = 5000)
-        lateinit var merkleTreeFactory: MerkleTreeFactory
+        lateinit var merkleTreeProvider: MerkleTreeProvider
 
         @InjectService(timeout = 5000)
         lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
@@ -151,7 +151,7 @@ class SynchronisationIntegrationTest {
 
         val merkleTreeGenerator: MerkleTreeGenerator by lazy {
             MerkleTreeGenerator(
-                merkleTreeFactory,
+                merkleTreeProvider,
                 cordaAvroSerializationFactory
             )
         }

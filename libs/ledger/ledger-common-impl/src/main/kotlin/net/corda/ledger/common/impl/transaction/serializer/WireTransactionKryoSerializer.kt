@@ -7,7 +7,7 @@ import net.corda.serialization.checkpoint.CheckpointOutput
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.ledger.common.transaction.PrivacySalt
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -15,7 +15,7 @@ import org.osgi.service.component.annotations.Reference
 
 @Component(service = [CheckpointInternalCustomSerializer::class])
 class WireTransactionKryoSerializer @Activate constructor(
-    @Reference(service = MerkleTreeFactory::class) private val merkleTreeFactory: MerkleTreeFactory,
+    @Reference(service = MerkleTreeProvider::class) private val merkleTreeProvider: MerkleTreeProvider,
     @Reference(service = DigestService::class) private val digestService: DigestService,
     @Reference(service = JsonMarshallingService::class) private val jsonMarshallingService: JsonMarshallingService
 ) : CheckpointInternalCustomSerializer<WireTransaction> {
@@ -30,7 +30,7 @@ class WireTransactionKryoSerializer @Activate constructor(
         val privacySalt = input.readClassAndObject() as PrivacySalt
         val componentGroupLists : List<List<ByteArray>> = uncheckedCast(input.readClassAndObject())
         return WireTransaction(
-            merkleTreeFactory,
+            merkleTreeProvider,
             digestService,
             jsonMarshallingService,
             privacySalt,

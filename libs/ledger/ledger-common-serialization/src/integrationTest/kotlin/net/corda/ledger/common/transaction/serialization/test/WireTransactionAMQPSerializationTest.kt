@@ -17,7 +17,7 @@ import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions
@@ -68,7 +68,7 @@ class WireTransactionAMQPSerializationTest {
     lateinit var digestService: DigestService
 
     @InjectService(timeout = 1000)
-    lateinit var merkleTreeFactory: MerkleTreeFactory
+    lateinit var merkleTreeProvider: MerkleTreeProvider
 
     @InjectService(timeout = 1000)
     lateinit var jsonMarshallingService: JsonMarshallingService
@@ -118,7 +118,7 @@ class WireTransactionAMQPSerializationTest {
             // Initialise the serialisation context
             val testSerializationContext = testSerializationContext.withSandboxGroup(sandboxGroup)
 
-            val wireTransaction = getWireTransaction(digestService, merkleTreeFactory, jsonMarshallingService)
+            val wireTransaction = getWireTransaction(digestService, merkleTreeProvider, jsonMarshallingService)
 
             val serialised = SerializationOutput(factory1).serialize(wireTransaction, testSerializationContext)
 
