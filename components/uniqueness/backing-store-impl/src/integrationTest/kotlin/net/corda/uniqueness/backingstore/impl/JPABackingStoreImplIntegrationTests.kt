@@ -192,18 +192,13 @@ class JPABackingStoreImplIntegrationTests {
     inner class PersistingDataTests {
         @Test
         fun `Persisting accepted transaction details succeeds`() {
-            val txCnt = 1
+            val txId = SecureHashUtils.randomSecureHash()
+            val txIds = List(1) { txId }
+
+            val externalRequest = generateExternalRequest(txId)
+            val internalRequest = UniquenessCheckRequestInternal.create(externalRequest)
             val txns = LinkedList<Pair<UniquenessCheckRequestInternal, UniquenessCheckResult>>()
-            val txIds = LinkedList<SecureHash>()
-
-            repeat(txCnt) {
-                val txId = SecureHashUtils.randomSecureHash()
-                val externalRequest = generateExternalRequest(txId)
-                txIds.add(txId)
-
-                val internalRequest = UniquenessCheckRequestInternal.create(externalRequest)
-                txns.add(Pair(internalRequest, UniquenessCheckResultSuccessImpl(Clock.systemUTC().instant())))
-            }
+            txns.add(Pair(internalRequest, UniquenessCheckResultSuccessImpl(Clock.systemUTC().instant())))
 
             backingStoreImpl.session { session ->
                 session.executeTransaction { _, txnOps -> txnOps.commitTransactions(txns) }
@@ -211,7 +206,7 @@ class JPABackingStoreImplIntegrationTests {
 
             backingStoreImpl.session { session ->
                 val result = session.getTransactionDetails(txIds)
-                assertEquals(txCnt, result.size)
+                assertEquals(1, result.size)
                 result.forEach { secureHashTxnDetails ->
                     assertTrue(secureHashTxnDetails.key in txIds.toSet())
                     assertEquals(secureHashTxnDetails.value.result.toCharacterRepresentation(),
