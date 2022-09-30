@@ -14,7 +14,7 @@ fun KeyValuePairList.toMap() = items.associate { it.key to it.value }
  */
 fun Map<String, String>.toWire(): KeyValuePairList {
     return KeyValuePairList(
-        map {
+        toSortedMap().map {
             KeyValuePair(it.key, it.value)
         }
     )

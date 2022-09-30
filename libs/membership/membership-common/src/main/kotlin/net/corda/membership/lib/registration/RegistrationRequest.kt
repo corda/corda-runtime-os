@@ -1,5 +1,7 @@
 package net.corda.membership.lib.registration
 
+import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.virtualnode.HoldingIdentity
 import java.nio.ByteBuffer
@@ -12,6 +14,9 @@ data class RegistrationRequest(
     val registrationId: String,
     val requester: HoldingIdentity,
     val memberContext: ByteBuffer,
-    val publicKey: ByteBuffer,
-    val signature: ByteBuffer
+    val signature: CryptoSignatureWithKey = CryptoSignatureWithKey(
+        ByteBuffer.wrap(byteArrayOf()),
+        ByteBuffer.wrap(byteArrayOf()),
+        KeyValuePairList(emptyList()),
+    ),
 )

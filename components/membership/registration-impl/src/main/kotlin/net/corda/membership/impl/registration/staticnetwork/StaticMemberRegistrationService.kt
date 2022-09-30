@@ -184,8 +184,6 @@ class StaticMemberRegistrationService @Activate constructor(
                 registrationId = registrationId.toString(),
                 requester = memberInfo.holdingIdentity,
                 memberContext = ByteBuffer.wrap(memberContext),
-                publicKey = ByteBuffer.wrap(byteArrayOf()),
-                signature = ByteBuffer.wrap(byteArrayOf()),
             )
         )
     }

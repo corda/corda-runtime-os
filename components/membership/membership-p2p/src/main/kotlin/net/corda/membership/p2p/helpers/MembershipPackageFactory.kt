@@ -16,7 +16,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.MemberInfo
@@ -27,7 +27,7 @@ import java.nio.ByteBuffer
 class MembershipPackageFactory(
     private val clock: Clock,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-    private val cipherSchemeMetadata: CipherSchemeMetadata,
+    private val keyEncodingService: KeyEncodingService,
     private val type: DistributionType,
     private val merkleTreeGenerator: MerkleTreeGenerator,
     private val idFactory: () -> String,
@@ -38,7 +38,7 @@ class MembershipPackageFactory(
     private fun DigitalSignature.WithKey.toAvro() =
         CryptoSignatureWithKey.newBuilder()
             .setBytes(ByteBuffer.wrap(this.bytes))
-            .setPublicKey(ByteBuffer.wrap(cipherSchemeMetadata.encodeAsByteArray(this.by)))
+            .setPublicKey(ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(this.by)))
             .setContext(
                 KeyValuePairList(
                     this.context.map { KeyValuePair(it.key, it.value) }

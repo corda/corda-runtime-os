@@ -5,6 +5,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
@@ -109,8 +110,15 @@ class MembershipPersistenceClientImplTest {
         registrationId,
         ourHoldingIdentity,
         ByteBuffer.wrap("123".toByteArray()),
-        ByteBuffer.wrap("456".toByteArray()),
-        ByteBuffer.wrap("789".toByteArray()),
+        CryptoSignatureWithKey(
+            ByteBuffer.wrap("456".toByteArray()),
+            ByteBuffer.wrap("789".toByteArray()),
+            KeyValuePairList(
+                listOf(
+                    KeyValuePair("key", "value")
+                )
+            ),
+        ),
     )
 
     private val memberInfoFactory = mock<MemberInfoFactory>()

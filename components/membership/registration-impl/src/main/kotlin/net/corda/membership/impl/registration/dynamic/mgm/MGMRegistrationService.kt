@@ -304,8 +304,6 @@ class MGMRegistrationService @Activate constructor(
                         registrationId = registrationId.toString(),
                         requester = member,
                         memberContext = ByteBuffer.wrap(serializedMemberContext),
-                        publicKey = ByteBuffer.wrap(byteArrayOf()),
-                        signature = ByteBuffer.wrap(byteArrayOf()),
                     )
                 )
                 if (registrationRequestPersistenceResult is MembershipPersistenceResult.Failure) {
