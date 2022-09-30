@@ -9,6 +9,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.p2p.HostedIdentityEntry
 import net.corda.schema.Schemas
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.HoldingIdentity
@@ -21,6 +22,7 @@ import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import java.io.StringWriter
 import java.security.InvalidKeyException
 import java.security.cert.CertificateFactory
+import kotlin.math.log
 
 internal class HostedIdentityEntryFactory(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
@@ -29,6 +31,9 @@ internal class HostedIdentityEntryFactory(
     private val groupPolicyProvider: GroupPolicyProvider,
     private val retrieveCertificates: (String, String) -> String?,
 ) {
+    private companion object {
+        val logger = contextLogger()
+    }
 
     private fun getNode(holdingIdentityShortHash: ShortHash): VirtualNodeInfo {
         return virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
@@ -132,8 +137,12 @@ internal class HostedIdentityEntryFactory(
             .firstOrNull()
             ?: throw CordaRuntimeException("This certificate public key is unknown to $tenantId")
 
-        val policy = groupPolicyProvider.getGroupPolicy(holdingIdentity)
-            ?: throw CordaRuntimeException("No group policy file found for holding identity ID [${holdingIdentity.shortHash}].")
+        val policy = try {
+            groupPolicyProvider.getGroupPolicy(holdingIdentity)
+        } catch (e: IllegalStateException) {
+            logger.warn("Could not retrieve group policy for validating TLS trust root certificates.", e)
+            null
+        } ?: throw CordaRuntimeException("No group policy file found for holding identity ID [${holdingIdentity.shortHash}].")
         val tlsTrustRoots = policy.p2pParameters.tlsTrustRoots
         if (tlsTrustRoots.isEmpty()) {
             throw CordaRuntimeException("The group ${holdingIdentity.groupId} P2P parameters tlsTrustRoots is empty")

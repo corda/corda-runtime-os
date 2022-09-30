@@ -151,8 +151,8 @@ class RegistrationProcessor(
         } catch (e: MissingRegistrationStateException) {
             logger.error("RegistrationState was null during dynamic registration.", e)
             createEmptyResult()
-        } catch (e: CordaRuntimeException) {
-            logger.error("Unexpected error in handling registration.", e)
+        } catch (e: Exception) {
+            logger.error("Unexpected error in handling registration command.", e)
             createEmptyResult()
         }
         return StateAndEventProcessor.Response(
