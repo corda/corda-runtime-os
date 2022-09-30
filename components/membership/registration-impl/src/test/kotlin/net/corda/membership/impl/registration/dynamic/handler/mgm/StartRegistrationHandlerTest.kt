@@ -210,6 +210,7 @@ class StartRegistrationHandlerTest {
         }
         verifyServices(
             persistRegistrationRequest = true,
+            verify = true,
         )
     }
 
@@ -226,7 +227,6 @@ class StartRegistrationHandlerTest {
             assertDeclinedRegistration()
         }
         verifyServices(
-            persistRegistrationRequest = true,
             verify = true,
         )
     }
