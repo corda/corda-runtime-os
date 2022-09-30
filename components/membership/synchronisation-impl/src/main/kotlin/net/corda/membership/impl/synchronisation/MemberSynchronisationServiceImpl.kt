@@ -4,7 +4,6 @@ import net.corda.chunking.toAvro
 import net.corda.chunking.toCorda
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
@@ -28,7 +27,6 @@ import net.corda.lifecycle.TimerEvent
 import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toSortedMap
 import net.corda.membership.lib.toWire
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
@@ -52,7 +50,6 @@ import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.toBase64
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
@@ -64,7 +61,6 @@ import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.nio.ByteBuffer
 import java.util.Random
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -265,6 +261,10 @@ class MemberSynchronisationServiceImpl internal constructor(
             try {
                 cancelCurrentRequestAndScheduleNewOne(viewOwningMember, mgm)
                 val updateMembersInfo = updates.membershipPackage.memberships.memberships.map { update ->
+                    verifier.verify(
+                        update.memberSignature,
+                        update.memberContext.array(),
+                    )
                     val memberContext = deserializer.deserialize(update.memberContext.array())
                         ?: throw CordaRuntimeException("Invalid member context")
                     val mgmContext = deserializer.deserialize(update.mgmContext.array())
@@ -274,14 +274,6 @@ class MemberSynchronisationServiceImpl internal constructor(
                         mgmContext.toSortedMap()
                     ).also {
                         verifyMgmSignature(it, update.mgmSignature)
-                        println("QQQ going to verifyMemberSignature:")
-                        memberContext.items.forEach {
-                            println("QQQ \t ${it.key} -> ${it.value}")
-                        }
-                        verifyMemberSignature(
-                            update.memberSignature,
-                            update.memberContext,
-                        )
                     }
                 }.associateBy { it.id }
 
@@ -339,26 +331,9 @@ class MemberSynchronisationServiceImpl internal constructor(
     }
 
     private fun verifyMgmSignature(memberInfo: MemberInfo, mgmSignature: CryptoSignatureWithKey) {
-        println("QQQ going to verify Mgm Signature")
         val data = merkleTreeGenerator.generateTree(listOf(memberInfo))
             .root.bytes
-        verifier.verify(mgmSignature, data).also {
-            println("QQQ verified")
-        }
-    }
-
-    private fun verifyMemberSignature(
-        memberSignature: CryptoSignatureWithKey,
-        memberContext: ByteBuffer,
-    ) {
-        println("QQQ in verifyMemberSignature")
-        println("QQQ member context: ${memberContext.array().toBase64()}")
-        println("QQQ signature public key: ${memberSignature.publicKey.array().toBase64()}")
-        println("QQQ signature content: ${memberSignature.bytes.array().toBase64()}")
-        println("QQQ signature context: ${memberSignature.context.toMap()}")
-        verifier.verify(memberSignature, memberContext.array()).also {
-            println("QQQ Verified!!!")
-        }
+        verifier.verify(mgmSignature, data)
     }
 
     private fun createSynchronisationRequestMessage(
@@ -433,7 +408,6 @@ class MemberSynchronisationServiceImpl internal constructor(
             setOf(
                 LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
                 LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
-                LifecycleCoordinatorName.forComponent<CryptoOpsClient>(),
             )
         )
     }

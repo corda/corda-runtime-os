@@ -377,9 +377,6 @@ class MembershipPersistenceTest {
                         )
                     )
                 ),
-                ByteBuffer.wrap(byteArrayOf()),
-                ByteBuffer.wrap(byteArrayOf()),
-                KeyValuePairList(emptyList()),
             )
         )
 
@@ -612,9 +609,11 @@ class MembershipPersistenceTest {
                             context
                         )
                     ),
-                    publicKey,
-                    signature,
-                    signatureContext,
+                    CryptoSignatureWithKey(
+                        publicKey,
+                        signature,
+                        signatureContext,
+                    )
                 )
             ).getOrThrow()
             val cryptoSignatureWithKey = CryptoSignatureWithKey(
@@ -649,9 +648,6 @@ class MembershipPersistenceTest {
                         )
                     )
                 ),
-                ByteBuffer.wrap(byteArrayOf()),
-                ByteBuffer.wrap(byteArrayOf()),
-                KeyValuePairList(emptyList()),
             )
         )
 
@@ -733,9 +729,6 @@ class MembershipPersistenceTest {
                         )
                     )
                 ),
-                ByteBuffer.wrap(byteArrayOf()),
-                ByteBuffer.wrap(byteArrayOf()),
-                KeyValuePairList(emptyList()),
             )
         )
     }

@@ -14,7 +14,6 @@ class Verifier(
         const val SIGNATURE_SPEC = "corda.membership.signature.spec"
     }
     fun verify(signature: CryptoSignatureWithKey, date: ByteArray) {
-        println("QQQ TTT going to verify....")
         val publicKey = keyEncodingService.decodePublicKey(signature.publicKey.array())
         val spec = signature.context
             .items
@@ -27,8 +26,6 @@ class Verifier(
             SignatureSpec(spec),
             signature.bytes.array(),
             date
-        ).also {
-            println("QQQ TTT verified, yep!")
-        }
+        )
     }
 }
