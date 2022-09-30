@@ -184,7 +184,6 @@ abstract class DeployableContainerBuilder extends DefaultTask {
 
         List<String> javaArgs = new ArrayList<String>(arguments.get())
         javaArgs.add("-Dlog4j2.debug=\${ENABLE_LOG4J2_DEBUG:-false}")
-        javaArgs.add("-Dlog4j.configurationFile=\${LOG4J_CONFIG_FILE}")
 
         if (setEntry.get()) {
             def entryName = overrideEntryName.get().empty ? projectName : overrideEntryName.get()
@@ -201,7 +200,6 @@ abstract class DeployableContainerBuilder extends DefaultTask {
                 builder.addEnvironmentVariable(key, value)
             }
         }
-        builder.addEnvironmentVariable('LOG4J_CONFIG_FILE', 'log4j2-console.xml')
         builder.addEnvironmentVariable('ENABLE_LOG4J2_DEBUG', 'false')
         builder.addEnvironmentVariable('CONSOLE_LOG_LEVEL', 'info')
 
