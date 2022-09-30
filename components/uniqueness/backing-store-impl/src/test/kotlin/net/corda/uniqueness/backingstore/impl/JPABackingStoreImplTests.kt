@@ -21,6 +21,7 @@ import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessRejectedTransactionEntity
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessStateDetailEntity
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTransactionDetailEntity
+import net.corda.uniqueness.datamodel.common.UniquenessConstants
 import net.corda.uniqueness.datamodel.common.toCharacterRepresentation
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorGeneralImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
@@ -390,7 +391,7 @@ class JPABackingStoreImplTests {
 
     @Nested
     inner class TransactionTests {
-        private val maxRetriesCnt = 10
+        private val MAX_ATTEMPTS = 10
         private val expectedTxnExceptions = mapOf(
             "EntityExistsException" to EntityExistsException(),
             "RollbackException" to RollbackException(),
@@ -424,7 +425,7 @@ class JPABackingStoreImplTests {
                 }
             }
 
-            Mockito.verify(entityTransaction, times(maxRetriesCnt)).begin()
+            Mockito.verify(entityTransaction, times(MAX_ATTEMPTS)).begin()
             Mockito.verify(entityTransaction, never()).commit()
         }
 
@@ -446,7 +447,7 @@ class JPABackingStoreImplTests {
                     session.executeTransaction { _, _ -> throw EntityExistsException() }
                 }
             }
-            Mockito.verify(entityTransaction, times(maxRetriesCnt)).rollback()
+            Mockito.verify(entityTransaction, times(MAX_ATTEMPTS)).rollback()
         }
 
         @Test
@@ -476,7 +477,7 @@ class JPABackingStoreImplTests {
                     "0xA1".toByteArray(),
                     LocalDate.parse("2099-12-12").atStartOfDay().toInstant(ZoneOffset.UTC),
                     LocalDate.now().atStartOfDay().toInstant(ZoneOffset.UTC),
-                    'A'
+                    UniquenessConstants.RESULT_ACCEPTED_REPRESENTATION
                 )
             }
 
@@ -484,7 +485,8 @@ class JPABackingStoreImplTests {
                 val result = session.getTransactionDetails(txIds)
                 assertEquals(1, result.size)
                 assertEquals(txIds[0], result[txIds[0]]!!.txId)
-                assertEquals('A', result[txIds[0]]!!.result.toCharacterRepresentation())
+                assertEquals(UniquenessConstants.RESULT_ACCEPTED_REPRESENTATION,
+                    result[txIds[0]]!!.result.toCharacterRepresentation())
                 Mockito.verify(entityManager)
                     .createNamedQuery(
                         eq("UniquenessTransactionDetailEntity.select"),
@@ -502,7 +504,7 @@ class JPABackingStoreImplTests {
                     "0xA1".toByteArray(),
                     LocalDate.parse("2099-12-12").atStartOfDay().toInstant(ZoneOffset.UTC),
                     LocalDate.now().atStartOfDay().toInstant(ZoneOffset.UTC),
-                    'R'
+                    UniquenessConstants.RESULT_REJECTED_REPRESENTATION
                 )
             }
 
@@ -526,7 +528,7 @@ class JPABackingStoreImplTests {
                     "0xA1".toByteArray(),
                     LocalDate.parse("2099-12-12").atStartOfDay().toInstant(ZoneOffset.UTC),
                     LocalDate.now().atStartOfDay().toInstant(ZoneOffset.UTC),
-                    'R'
+                    UniquenessConstants.RESULT_REJECTED_REPRESENTATION
                 )
             }
             // Prepare a transaction error
@@ -545,7 +547,8 @@ class JPABackingStoreImplTests {
 
                 assertEquals(1, result.size)
                 assertEquals(txIds[0], result[txIds[0]]!!.txId)
-                assertEquals('R', result[txIds[0]]!!.result.toCharacterRepresentation())
+                assertEquals(UniquenessConstants.RESULT_REJECTED_REPRESENTATION,
+                    result[txIds[0]]!!.result.toCharacterRepresentation())
                 Mockito.verify(entityManager)
                     .createNamedQuery(
                         eq("UniquenessTransactionDetailEntity.select"),

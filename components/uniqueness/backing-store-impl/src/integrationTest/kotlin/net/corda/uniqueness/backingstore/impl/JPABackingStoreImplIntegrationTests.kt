@@ -15,6 +15,7 @@ import net.corda.orm.impl.JpaEntitiesRegistryImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.uniqueness.backingstore.jpa.datamodel.JPABackingStoreEntities
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTransactionDetailEntity
+import net.corda.uniqueness.datamodel.common.UniquenessConstants
 import net.corda.uniqueness.datamodel.common.toCharacterRepresentation
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorGeneralImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
@@ -221,7 +222,8 @@ class JPABackingStoreImplIntegrationTests {
                 assertEquals(txCnt, result.size)
                 result.forEach { secureHashTxnDetails ->
                     assertTrue(secureHashTxnDetails.key in txIds.toSet())
-                    assertTrue(secureHashTxnDetails.value.result.toCharacterRepresentation() == 'A')
+                    assertEquals(secureHashTxnDetails.value.result.toCharacterRepresentation(),
+                        UniquenessConstants.RESULT_ACCEPTED_REPRESENTATION)
                 }
             }
         }
@@ -253,7 +255,8 @@ class JPABackingStoreImplIntegrationTests {
                 assertEquals(1, result.size)
                 result.forEach { secureHashTxnDetails ->
                     assertTrue(secureHashTxnDetails.key in txIds.toSet())
-                    assertTrue(secureHashTxnDetails.value.result.toCharacterRepresentation() == 'R')
+                    assertEquals(secureHashTxnDetails.value.result.toCharacterRepresentation(),
+                        UniquenessConstants.RESULT_REJECTED_REPRESENTATION)
                 }
             }
         }
