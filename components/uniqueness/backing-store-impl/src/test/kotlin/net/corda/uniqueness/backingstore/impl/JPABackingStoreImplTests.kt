@@ -170,15 +170,7 @@ class JPABackingStoreImplTests {
         )
     }
 
-    private fun generateSecureHashes(cnt: Int): LinkedList<SecureHash> {
-        val secureHashes = LinkedList<SecureHash>()
-        repeat(cnt) {
-            secureHashes.push(SecureHashUtils.randomSecureHash())
-        }
-        return secureHashes
-    }
-
-    private fun generateUniquenessCheckStateRef(hashes: LinkedList<SecureHash>): LinkedList<UniquenessCheckStateRef> {
+    private fun generateUniquenessCheckStateRef(hashes: List<SecureHash>): LinkedList<UniquenessCheckStateRef> {
         val uniquenessCheckInternalStateRefs = hashes.let {
             val tmpUniquenessCheckInternalStateRefs = LinkedList<UniquenessCheckStateRef>()
             it.forEachIndexed { i, hash ->
@@ -330,7 +322,7 @@ class JPABackingStoreImplTests {
         @Test
         fun `Creating unconsumed states persist correct fields`() {
             val hashCnt = 1
-            val secureHashes = generateSecureHashes(hashCnt)
+            val secureHashes = List(hashCnt) { SecureHashUtils.randomSecureHash() }
             val stateRefs = generateUniquenessCheckStateRef(secureHashes)
 
             backingStoreImpl.session { session ->
@@ -453,7 +445,7 @@ class JPABackingStoreImplTests {
         @Test
         fun `Getting state details invokes correct query`() {
             val hashCnt = 3
-            val secureHashes = generateSecureHashes(hashCnt)
+            val secureHashes = List(hashCnt) { SecureHashUtils.randomSecureHash() }
             val stateRefs = generateUniquenessCheckStateRef(secureHashes)
 
             backingStoreImpl.session { session ->

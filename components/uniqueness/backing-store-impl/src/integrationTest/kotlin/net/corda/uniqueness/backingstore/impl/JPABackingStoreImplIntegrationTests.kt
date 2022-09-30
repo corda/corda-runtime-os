@@ -109,15 +109,7 @@ class JPABackingStoreImplIntegrationTests {
         )
     }
 
-    private fun generateSecureHashes(cnt: Int): LinkedList<SecureHash> {
-        val secureHashes = LinkedList<SecureHash>()
-        repeat(cnt) {
-            secureHashes.push(SecureHashUtils.randomSecureHash())
-        }
-        return secureHashes
-    }
-
-    private fun generateUniquenessCheckStateRef(hashes: LinkedList<SecureHash>): LinkedList<UniquenessCheckStateRef> {
+    private fun generateUniquenessCheckStateRef(hashes: List<SecureHash>): LinkedList<UniquenessCheckStateRef> {
         val uniquenessCheckInternalStateRefs = hashes.let {
             val tmpUniquenessCheckInternalStateRefs = LinkedList<UniquenessCheckStateRef>()
             it.forEachIndexed { i, hash ->
@@ -264,7 +256,7 @@ class JPABackingStoreImplIntegrationTests {
         @Test
         fun `Persisting unconsumed states succeeds`() {
             val hashCnt = 5
-            val secureHashes = generateSecureHashes(hashCnt)
+            val secureHashes = List(hashCnt) { SecureHashUtils.randomSecureHash() }
             val stateRefs = generateUniquenessCheckStateRef(secureHashes)
 
             backingStoreImpl.session { session ->
@@ -283,7 +275,7 @@ class JPABackingStoreImplIntegrationTests {
         @Test
         fun `Consuming an unconsumed state succeeds`() {
             val hashCnt = 2
-            val secureHashes = generateSecureHashes(hashCnt)
+            val secureHashes = List(hashCnt) { SecureHashUtils.randomSecureHash() }
             val stateRefs = generateUniquenessCheckStateRef(secureHashes)
 
             // Generate unconsumed states in DB.
@@ -314,7 +306,7 @@ class JPABackingStoreImplIntegrationTests {
         @Test
         fun `Double spend is prevented`() {
             val hashCnt = 1
-            val secureHashes = generateSecureHashes(hashCnt)
+            val secureHashes = List(hashCnt) { SecureHashUtils.randomSecureHash() }
             val stateRefs = generateUniquenessCheckStateRef(secureHashes)
 
             // Generate an unconsumed state in DB.
@@ -348,7 +340,7 @@ class JPABackingStoreImplIntegrationTests {
         @Test
         fun `Attempt to consume an unknown state fails with an exception`() {
             val hashCnt = 2
-            val secureHashes = generateSecureHashes(hashCnt)
+            val secureHashes = List(hashCnt) { SecureHashUtils.randomSecureHash() }
             val stateRefs = generateUniquenessCheckStateRef(secureHashes)
 
             // Generate unconsumed states in DB.
@@ -443,7 +435,7 @@ class JPABackingStoreImplIntegrationTests {
             val storeImpl = createBackingStoreImpl(spyEmFactory)
             storeImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
 
-            val secureHashes = generateSecureHashes(1)
+            val secureHashes = List(1) { SecureHashUtils.randomSecureHash() }
             val stateRefs = generateUniquenessCheckStateRef(secureHashes)
             assertThrows<IllegalStateException> {
                 storeImpl.session { session ->
