@@ -10,6 +10,7 @@ import net.corda.data.membership.db.response.query.MemberSignatureQueryResponse
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.datamodel.MemberSignatureEntity
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.toMap
 import net.corda.virtualnode.toCorda
 import java.nio.ByteBuffer
 
@@ -32,6 +33,7 @@ internal class QueryMemberSignatureHandler(
         return transaction(context.holdingIdentity.toCorda().shortHash) { em ->
             MemberSignatureQueryResponse(
                 request.queryIdentities.mapNotNull { holdingIdentity ->
+                    println("QQQ getting member signature for ${holdingIdentity.x500Name}")
                     val signatureEntity = em.find(
                         MemberSignatureEntity::class.java,
                         MemberInfoEntityPrimaryKey(
@@ -44,6 +46,7 @@ internal class QueryMemberSignatureHandler(
                     } else {
                         keyValuePairListDeserializer.deserialize(signatureEntity.context)
                     }
+                    println("QQQ context is ${signatureContext?.toMap()}")
                     val signature = CryptoSignatureWithKey(
                         ByteBuffer.wrap(signatureEntity.publicKey),
                         ByteBuffer.wrap(signatureEntity.content),

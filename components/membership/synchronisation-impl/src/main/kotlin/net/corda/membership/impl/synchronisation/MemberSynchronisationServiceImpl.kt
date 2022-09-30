@@ -28,6 +28,7 @@ import net.corda.lifecycle.TimerEvent
 import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toSortedMap
 import net.corda.membership.lib.toWire
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
@@ -338,9 +339,12 @@ class MemberSynchronisationServiceImpl internal constructor(
     }
 
     private fun verifyMgmSignature(memberInfo: MemberInfo, mgmSignature: CryptoSignatureWithKey) {
+        println("QQQ going to verify Mgm Signature")
         val data = merkleTreeGenerator.generateTree(listOf(memberInfo))
             .root.bytes
-        verifier.verify(mgmSignature, data)
+        verifier.verify(mgmSignature, data).also {
+            println("QQQ verified")
+        }
     }
 
     private fun verifyMemberSignature(
@@ -351,6 +355,7 @@ class MemberSynchronisationServiceImpl internal constructor(
         println("QQQ member context: ${memberContext.array().toBase64()}")
         println("QQQ signature public key: ${memberSignature.publicKey.array().toBase64()}")
         println("QQQ signature content: ${memberSignature.bytes.array().toBase64()}")
+        println("QQQ signature context: ${memberSignature.context.toMap()}")
         verifier.verify(memberSignature, memberContext.array()).also {
             println("QQQ Verified!!!")
         }

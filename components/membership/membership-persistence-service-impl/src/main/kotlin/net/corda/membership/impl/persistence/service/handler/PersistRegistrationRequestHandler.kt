@@ -6,6 +6,7 @@ import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.membership.datamodel.MemberSignatureEntity
 import net.corda.membership.datamodel.RegistrationRequestEntity
+import net.corda.membership.lib.toMap
 import net.corda.virtualnode.toCorda
 
 internal class PersistRegistrationRequestHandler(
@@ -18,6 +19,8 @@ internal class PersistRegistrationRequestHandler(
 
     override fun invoke(context: MembershipRequestContext, request: PersistRegistrationRequest) {
         logger.info("Persisting registration request with ID [${request.registrationRequest.registrationId}].")
+        println("QQQ persisting member signature for ${request.registeringHoldingIdentity.x500Name}")
+        println("QQQ context is ${request.registrationRequest.memberSignature.context.toMap()}")
         transaction(context.holdingIdentity.toCorda().shortHash) { em ->
             val now = clock.instant()
             em.merge(
