@@ -42,7 +42,8 @@ object HttpRpcClientUtils {
             } catch (ex: Exception) {
                 lastException = ex
                 logger.warn("Cannot perform $operationName yet", ex)
-                Thread.sleep(sleep)
+                val remaining = (endTime - System.currentTimeMillis()).coerceAtLeast(0)
+                Thread.sleep(sleep.coerceAtMost(remaining))
                 sleep *= 2
             }
         } while (System.currentTimeMillis() <= endTime)
