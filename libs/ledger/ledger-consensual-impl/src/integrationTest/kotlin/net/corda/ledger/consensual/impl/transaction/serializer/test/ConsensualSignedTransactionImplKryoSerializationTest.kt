@@ -4,10 +4,11 @@ import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.ledger.consensual.testkit.getConsensualSignedTransactionImpl
+import net.corda.sandbox.SandboxCreationService
+import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFactory
-import net.corda.testing.sandboxes.EmptySandboxService
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
@@ -53,7 +54,7 @@ class ConsensualSignedTransactionImplKryoSerializationTest {
     @InjectService(timeout = 1000)
     lateinit var jsonMarshallingService: JsonMarshallingService
 
-    private lateinit var emptySandboxService: EmptySandboxService
+    private lateinit var emptySandboxGroup: SandboxGroup
 
     private lateinit var wireTransactionKryoSerializer: CheckpointInternalCustomSerializer<WireTransaction>
     private lateinit var consensualSignedTransactionImplSeralizer: CheckpointInternalCustomSerializer<ConsensualSignedTransactionImpl>
@@ -71,7 +72,11 @@ class ConsensualSignedTransactionImplKryoSerializationTest {
     ) {
         sandboxSetup.configure(bundleContext, baseDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
-            emptySandboxService = setup.fetchService(timeout = 1500)
+            val sandboxCreationService = setup.fetchService<SandboxCreationService>(timeout = 1500)
+            emptySandboxGroup = sandboxCreationService.createSandboxGroup(emptyList())
+            setup.withCleanup {
+                sandboxCreationService.unloadSandboxGroup(emptySandboxGroup)
+            }
             partySerializer = setup.fetchService(
                 "(component.name=net.corda.ledger.consensual.impl.PartySerializer)",
                 1500
@@ -95,7 +100,7 @@ class ConsensualSignedTransactionImplKryoSerializationTest {
         }, schemeMetadata)
 
         val builder =
-            checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(emptySandboxService.emptySandboxGroup)
+            checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(emptySandboxGroup)
         val kryoSerializer = builder
             .addSerializer(WireTransaction::class.java, wireTransactionKryoSerializer)
             .addSerializer(ConsensualSignedTransactionImpl::class.java, consensualSignedTransactionImplSeralizer)

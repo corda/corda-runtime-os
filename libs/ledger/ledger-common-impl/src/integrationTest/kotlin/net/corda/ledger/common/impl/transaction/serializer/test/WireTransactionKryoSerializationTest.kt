@@ -2,9 +2,10 @@ package net.corda.ledger.common.impl.transaction.serializer.test
 
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.common.testkit.getWireTransaction
+import net.corda.sandbox.SandboxCreationService
+import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFactory
-import net.corda.testing.sandboxes.EmptySandboxService
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
@@ -45,7 +46,7 @@ class WireTransactionKryoSerializationTest {
     @InjectService(timeout = 1000)
     lateinit var jsonMarshallingService: JsonMarshallingService
 
-    private lateinit var emptySandboxService: EmptySandboxService
+    private lateinit var emptySandboxGroup: SandboxGroup
 
     private lateinit var wireTransactionKryoSerializer: CheckpointInternalCustomSerializer<WireTransaction>
 
@@ -60,7 +61,11 @@ class WireTransactionKryoSerializationTest {
     ) {
         sandboxSetup.configure(bundleContext, baseDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
-            emptySandboxService = setup.fetchService(timeout = 1500)
+            val sandboxCreationService = setup.fetchService<SandboxCreationService>(timeout = 1500)
+            emptySandboxGroup = sandboxCreationService.createSandboxGroup(emptyList())
+            setup.withCleanup {
+                sandboxCreationService.unloadSandboxGroup(emptySandboxGroup)
+            }
             wireTransactionKryoSerializer = setup.fetchService(1500)
         }
     }
@@ -69,7 +74,7 @@ class WireTransactionKryoSerializationTest {
     @Suppress("FunctionName")
     fun `correct serialization of a wire Transaction`() {
         val builder =
-            checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(emptySandboxService.emptySandboxGroup)
+            checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(emptySandboxGroup)
         val kryoSerializer = builder
             .addSerializer(WireTransaction::class.java, wireTransactionKryoSerializer)
             .build()

@@ -11,10 +11,10 @@ import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.ledger.consensual.testkit.getConsensualSignedTransactionImpl
+import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.serialization.SerializationContext
-import net.corda.testing.sandboxes.EmptySandboxService
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
@@ -65,7 +65,7 @@ class ConsensualSignedTransactionImplAMQPSerializationTest {
     @InjectService(timeout = 1000)
     lateinit var jsonMarshallingService: JsonMarshallingService
 
-    private lateinit var emptySandboxService: EmptySandboxService
+    private lateinit var emptySandboxGroup: SandboxGroup
 
     private lateinit var partySerializer: InternalCustomSerializer<Party>
     private lateinit var publickeySerializer: InternalCustomSerializer<PublicKey>
@@ -84,7 +84,11 @@ class ConsensualSignedTransactionImplAMQPSerializationTest {
     ) {
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
-            emptySandboxService = setup.fetchService(timeout = 1500)
+            val sandboxCreationService = setup.fetchService<SandboxCreationService>(timeout = 1500)
+            emptySandboxGroup = sandboxCreationService.createSandboxGroup(emptyList())
+            setup.withCleanup {
+                sandboxCreationService.unloadSandboxGroup(emptySandboxGroup)
+            }
             partySerializer = setup.fetchService(
                 "(component.name=net.corda.ledger.consensual.impl.PartySerializer)",
                 1500
@@ -131,11 +135,11 @@ class ConsensualSignedTransactionImplAMQPSerializationTest {
         } , schemeMetadata)
 
         // Initialised two serialisation factories to avoid having successful tests due to caching
-        val factory1 = testDefaultFactory(emptySandboxService.emptySandboxGroup)
-        val factory2 = testDefaultFactory(emptySandboxService.emptySandboxGroup)
+        val factory1 = testDefaultFactory(emptySandboxGroup)
+        val factory2 = testDefaultFactory(emptySandboxGroup)
 
         // Initialise the serialisation context
-        val testSerializationContext = testSerializationContext.withSandboxGroup(emptySandboxService.emptySandboxGroup)
+        val testSerializationContext = testSerializationContext.withSandboxGroup(emptySandboxGroup)
 
         val signedTransaction = getConsensualSignedTransactionImpl(
             digestService,
