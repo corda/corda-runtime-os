@@ -21,7 +21,7 @@ import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.ledger.consensual.Party
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
@@ -77,7 +77,7 @@ class ConsensualSignedTransactionImplAMQPSerializationTest {
     lateinit var schemeMetadata: CipherSchemeMetadata
 
     @InjectService(timeout = 1000)
-    lateinit var merkleTreeFactory: MerkleTreeFactory
+    lateinit var merkleTreeProvider: MerkleTreeProvider
 
     @InjectService(timeout = 1000)
     lateinit var jsonMarshallingService: JsonMarshallingService
@@ -158,7 +158,7 @@ class ConsensualSignedTransactionImplAMQPSerializationTest {
 
             val signedTransaction = getConsensualSignedTransactionImpl(
                 digestService,
-                merkleTreeFactory,
+                merkleTreeProvider,
                 serializationService,
                 jsonMarshallingService
             )

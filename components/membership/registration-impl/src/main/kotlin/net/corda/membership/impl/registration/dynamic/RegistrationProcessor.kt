@@ -32,7 +32,7 @@ import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 
 @Suppress("LongParameterList")
 class RegistrationProcessor(
@@ -45,7 +45,7 @@ class RegistrationProcessor(
     cryptoOpsClient: CryptoOpsClient,
     cipherSchemeMetadata: CipherSchemeMetadata,
     layeredPropertyMapFactory: LayeredPropertyMapFactory,
-    merkleTreeFactory: MerkleTreeFactory,
+    merkleTreeProvider: MerkleTreeProvider,
 ) : StateAndEventProcessor<String, RegistrationState, RegistrationCommand> {
 
     override val keyClass = String::class.java
@@ -73,7 +73,7 @@ class RegistrationProcessor(
             clock,
             cryptoOpsClient,
             cordaAvroSerializationFactory,
-            merkleTreeFactory
+            merkleTreeProvider
         ),
         DeclineRegistration::class.java to DeclineRegistrationHandler(membershipPersistenceClient, clock, cordaAvroSerializationFactory),
 

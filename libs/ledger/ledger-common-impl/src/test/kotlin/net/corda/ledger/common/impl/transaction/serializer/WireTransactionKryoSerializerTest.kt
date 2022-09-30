@@ -3,14 +3,14 @@ package net.corda.ledger.common.impl.transaction.serializer
 import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
-import net.corda.crypto.merkle.impl.MerkleTreeFactoryImpl
+import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.kryoserialization.testkit.createCheckpointSerializer
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.common.testkit.getWireTransaction
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test
 class WireTransactionKryoSerializerTest {
     companion object {
         private lateinit var digestService: DigestService
-        private lateinit var merkleTreeFactory: MerkleTreeFactory
+        private lateinit var merkleTreeProvider: MerkleTreeProvider
         private lateinit var jsonMarshallingService: JsonMarshallingService
 
         @BeforeAll
@@ -27,7 +27,7 @@ class WireTransactionKryoSerializerTest {
         fun setup() {
             val schemeMetadata = CipherSchemeMetadataImpl()
             digestService = DigestServiceImpl(schemeMetadata, null)
-            merkleTreeFactory = MerkleTreeFactoryImpl(digestService)
+            merkleTreeProvider = MerkleTreeProviderImpl(digestService)
             jsonMarshallingService = JsonMarshallingServiceImpl()
         }
     }
@@ -36,11 +36,11 @@ class WireTransactionKryoSerializerTest {
     fun `serialization of a Wire Tx object using the kryo default serialization`() {
         val wireTransaction = getWireTransaction(
             digestService,
-            merkleTreeFactory,
+            merkleTreeProvider,
             jsonMarshallingService
         )
         val wireTransactionKryoSerializer = WireTransactionKryoSerializer(
-            merkleTreeFactory,
+            merkleTreeProvider,
             digestService,
             jsonMarshallingService
         )
