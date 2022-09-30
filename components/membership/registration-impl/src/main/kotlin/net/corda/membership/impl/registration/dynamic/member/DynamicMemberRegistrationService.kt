@@ -248,11 +248,11 @@ class DynamicMemberRegistrationService @Activate constructor(
                     SignatureSpec(signatureSpec),
                     serializedMemberContext,
                     mapOf(SIGNATURE_SPEC to signatureSpec),
-                ).bytes.run {
+                ).let {
                     CryptoSignatureWithKey(
-                        ByteBuffer.wrap(publicKey.encoded),
-                        ByteBuffer.wrap(this),
-                        KeyValuePairList(emptyList())
+                        ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(it.by)),
+                        ByteBuffer.wrap(it.bytes),
+                        it.context.toWire()
                     )
                 }
                 println("QQQ signing member context")
