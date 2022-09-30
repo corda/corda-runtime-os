@@ -386,7 +386,10 @@ class JPABackingStoreImplIntegrationTests {
             "TransactionRequiredException" to TransactionRequiredException()
         )
 
-        @Disabled("Re-iterate the test after reviewing the expected behaviour")
+        @Disabled(
+            "Re-iterate the test after reviewing the expected behaviour." +
+                    "This test fails because QueryTimeoutException is not caught nor retried when querying."
+        )
         @Test
         fun `Query timeout while querying triggers retry`() {
             val emFactory = createEntityManagerFactory("uniqueness")
@@ -415,7 +418,10 @@ class JPABackingStoreImplIntegrationTests {
             Mockito.verify(spyEm, times(maxAttemptsCnt)).createNamedQuery(queryName, resultClass)
         }
 
-        @Disabled("Re-iterate the test after reviewing the expected behaviour")
+        @Disabled(
+            "Re-iterate the test after reviewing the expected behaviour." +
+                    "This test fails because PersistenceException is not caught nor retried while persisting."
+        )
         @ParameterizedTest
         @ValueSource(
             strings = ["PersistenceException",
