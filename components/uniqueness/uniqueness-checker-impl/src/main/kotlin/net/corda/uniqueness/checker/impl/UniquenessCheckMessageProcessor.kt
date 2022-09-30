@@ -21,15 +21,15 @@ class UniquenessCheckMessageProcessor(
 
     override fun onNext(events: List<Record<String, UniquenessCheckRequestAvro>>): List<Record<*, *>> {
 
-        val requests = events.map { it.value }.filterNotNull()
+        val requests = events.mapNotNull { it.value }
 
         return requests.zip(uniquenessChecker.processRequests(requests)).map { (request, response) ->
-            if (response.result !is UniquenessCheckResultUnhandledExceptionAvro) {
-                externalEventResponseFactory.success(request.flowExternalEventContext, response)
-            } else {
+            if (response.result is UniquenessCheckResultUnhandledExceptionAvro) {
                 externalEventResponseFactory.platformError(
                     request.flowExternalEventContext,
                     (response.result as UniquenessCheckResultUnhandledExceptionAvro).exception)
+            } else {
+                externalEventResponseFactory.success(request.flowExternalEventContext, response)
             }
         }
     }
