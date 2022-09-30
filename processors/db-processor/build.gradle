@@ -47,6 +47,8 @@ dependencies {
     implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-db-schema'
 
+    runtimeOnly 'net.corda:corda-ledger-consensual'
+
     runtimeOnly project(':components:chunking:chunk-read-service-impl')
     runtimeOnly project(':components:chunking:chunk-db-write-impl')
     runtimeOnly project(':components:configuration:configuration-write-service-impl')
@@ -63,10 +65,6 @@ dependencies {
     runtimeOnly project(':components:virtual-node:entity-processor-service-impl')
     runtimeOnly project(':components:virtual-node:virtual-node-write-service-impl')
     runtimeOnly project(':components:membership:certificates-service-impl')
-
-    runtimeOnly 'net.corda:corda-ledger-consensual'
-    runtimeOnly project(":libs:crypto:crypto-serialization-impl")
-//    runtimeOnly project(":libs:ledger:ledger-consensual-impl")
 
     runtimeOnly project(':libs:crypto:cipher-suite-impl')
     runtimeOnly project(':libs:db:db-orm-impl')
