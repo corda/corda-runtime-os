@@ -47,11 +47,6 @@ dependencies {
     implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-db-schema'
 
-    runtimeOnly project(':libs:ledger:ledger-common-impl')
-    runtimeOnly project(':libs:ledger:ledger-common-serialization')
-    runtimeOnly project(':libs:ledger:ledger-consensual-impl')
-    runtimeOnly project(':libs:ledger:ledger-consensual-serialization')
-
     runtimeOnly project(':components:chunking:chunk-read-service-impl')
     runtimeOnly project(':components:chunking:chunk-db-write-impl')
     runtimeOnly project(':components:configuration:configuration-write-service-impl')
