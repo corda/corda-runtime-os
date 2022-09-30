@@ -13,7 +13,7 @@ echo '{
 }
 
 disable_revocation () {
-   curl -s -S --insecure -u admin:admin -X PUT  -d '{ "section" : "corda.p2p.gateway" , "config": "{ \"sslConfig\": { \"revocationCheck\": { \"mode\": \"OFF\" }  }  }", "schemaVersion": {"major": 1, "minor": 0}, "version": 0}' https://$1/api/v1/config
+   curl --fail-with-body -s -S --insecure -u admin:admin -X PUT  -d '{ "section" : "corda.p2p.gateway" , "config": "{ \"sslConfig\": { \"revocationCheck\": { \"mode\": \"OFF\" }  }  }", "schemaVersion": {"major": 1, "minor": 0}, "version": 0}' https://$1/api/v1/config
 }
 
 build_cpi() {
@@ -30,34 +30,34 @@ build_cpi() {
 }
 
 upload_cpi() {
-   local CPI_ID=$(curl -s -S --insecure -u admin:admin -F upload=@$2 https://$1/api/v1/cpi/ | jq -M '.["id"]' | tr -d '"')
+   local CPI_ID=$(curl --fail-with-body -s -S --insecure -u admin:admin -F upload=@$2 https://$1/api/v1/cpi/ | jq -M '.["id"]' | tr -d '"')
    echo $CPI_ID
 }
 
 cpi_checksum() {
-   local CPI_CHECKSUM=$(curl -s -S --insecure -u admin:admin https://$1/api/v1/cpi/status/$2 | jq -M '.["cpiFileChecksum"]' | tr -d '"')
+   local CPI_CHECKSUM=$(curl --fail-with-body -s -S --insecure -u admin:admin https://$1/api/v1/cpi/status/$2 | jq -M '.["cpiFileChecksum"]' | tr -d '"')
    echo $CPI_CHECKSUM
 }
 
 create_vnode() {
-    local MGM_HOLDING_ID_SHORT_HASH=$(curl -s -S --insecure -u admin:admin -d '{ "request": { "cpiFileChecksum": "'$2'", "x500Name": "'$3'"  } }' https://$1/api/v1/virtualnode | jq -M '.["holdingIdentity"]|.["shortHash"]' | tr -d '"')
+    local MGM_HOLDING_ID_SHORT_HASH=$(curl --fail-with-body -s -S --insecure -u admin:admin -d '{ "request": { "cpiFileChecksum": "'$2'", "x500Name": "'$3'"  } }' https://$1/api/v1/virtualnode | jq -M '.["holdingIdentity"]|.["shortHash"]' | tr -d '"')
     echo $MGM_HOLDING_ID_SHORT_HASH
 }
 
 assign_hsm_and_generate_session_key_pair() {
-    curl -s -S --insecure -u admin:admin -X POST https://$1/api/v1/hsm/soft/$2/SESSION_INIT &> /dev/null
-    local MGM_SESSION_KEY_ID=$(curl -s -S --insecure -u admin:admin -X POST https://$1/api/v1/keys/$2/alias/$2-session/category/SESSION_INIT/scheme/CORDA.ECDSA.SECP256R1 | jq -M '.["id"]' | tr -d '"')
+    curl --fail-with-body -s -S --insecure -u admin:admin -X POST https://$1/api/v1/hsm/soft/$2/SESSION_INIT &> /dev/null
+    local MGM_SESSION_KEY_ID=$(curl --fail-with-body -s -S --insecure -u admin:admin -X POST https://$1/api/v1/keys/$2/alias/$2-session/category/SESSION_INIT/scheme/CORDA.ECDSA.SECP256R1 | jq -M '.["id"]' | tr -d '"')
     echo $MGM_SESSION_KEY_ID
 }
 
 assign_hsm_and_generate_tls_key_pair() {
-    curl -s -S -k -u admin:admin -X POST https://$1/api/v1/hsm/soft/p2p/TLS &> /dev/null
-    MGM_TLS_KEY_ID=$(curl -s -S -k -u admin:admin -X POST https://$1/api/v1/keys/p2p/alias/cluster-tls/category/TLS/scheme/CORDA.RSA | jq -M '.["id"]' | tr -d '"')
+    curl --fail-with-body -s -S -k -u admin:admin -X POST https://$1/api/v1/hsm/soft/p2p/TLS &> /dev/null
+    MGM_TLS_KEY_ID=$(curl --fail-with-body -s -S -k -u admin:admin -X POST https://$1/api/v1/keys/p2p/alias/cluster-tls/category/TLS/scheme/CORDA.RSA | jq -M '.["id"]' | tr -d '"')
     echo $MGM_TLS_KEY_ID
 }
 
 get_csr() {
-    curl -s -S -k -u admin:admin  -X POST -H "Content-Type: application/json" -d '{"x500Name": "'$2'", "certificateRole": "TLS", "subjectAlternativeNames": [ "'$3'" ]}' "https://$1/api/v1/certificates/p2p/$4" > ./$5.csr
+    curl --fail-with-body -s -S -k -u admin:admin  -X POST -H "Content-Type: application/json" -d '{"x500Name": "'$2'", "certificateRole": "TLS", "subjectAlternativeNames": [ "'$3'" ]}' "https://$1/api/v1/certificates/p2p/$4" > ./$5.csr
 }
 
 sign_certificate() {
@@ -65,7 +65,7 @@ sign_certificate() {
 }
 
 upload_certificate() {
-    curl -s -S -k -u admin:admin -X PUT  -F certificate=@$2 -F alias=cluster-tls "https://$1/api/v1/certificates/p2p"
+    curl --fail-with-body -s -S -k -u admin:admin -X PUT  -F certificate=@$2 -F alias=cluster-tls "https://$1/api/v1/certificates/p2p"
 }
 
 register_node() {
@@ -111,15 +111,15 @@ register() {
     echo $COMMAND | jq
 
     # Register MGM
-    curl -s -S --insecure -u admin:admin -d " $COMMAND " https://$1/api/v1/membership/$2 | jq
+    curl --fail-with-body -s -S --insecure -u admin:admin -d " $COMMAND " https://$1/api/v1/membership/$2 | jq
 }
 
 complete_network_setup() {
-    curl -s -S -k -u admin:admin -X PUT -d '{"p2pTlsCertificateChainAlias": "cluster-tls", "p2pTlsTenantId": "p2p", "sessionKeyId": "'$3'"}' "https://$1/api/v1/network/setup/$2"
+    curl --fail-with-body -s -S -k -u admin:admin -X PUT -d '{"p2pTlsCertificateChainAlias": "cluster-tls", "p2pTlsTenantId": "p2p", "sessionKeyId": "'$3'"}' "https://$1/api/v1/network/setup/$2"
 }
 
 extract_group_policy() {
-   curl -s -S --insecure -u admin:admin -X GET "https://$1/api/v1/mgm/$2/info" > ./GroupPolicy-out.json
+   curl --fail-with-body -s -S --insecure -u admin:admin -X GET "https://$1/api/v1/mgm/$2/info" > ./GroupPolicy-out.json
 }
 
 on_board_mgm() {
