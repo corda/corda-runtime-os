@@ -9,6 +9,7 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHash
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.data.membership.command.synchronisation.SynchronisationMetaData
@@ -165,9 +166,13 @@ class MemberSynchronisationServiceImplTest {
     private val mgmContext: ByteBuffer = mock {
         on { array() } doReturn MGM_CONTEXT_BYTES
     }
+    private val memberSignature = mock<CryptoSignatureWithKey>()
+    private val mgmSignature = mock<CryptoSignatureWithKey>()
     private val signedMemberInfo: SignedMemberInfo = mock {
         on { memberContext } doReturn memberContext
         on { mgmContext } doReturn mgmContext
+        on { memberSignature } doReturn memberSignature
+        on { mgmSignature } doReturn mgmSignature
     }
     private val hash = SecureHash("algo", ByteBuffer.wrap(byteArrayOf(1, 2, 3)))
     private val signedMemberships: SignedMemberships = mock {
