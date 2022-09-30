@@ -5,7 +5,6 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
-import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
@@ -40,6 +39,7 @@ import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.lib.toWire
+import net.corda.membership.p2p.helpers.Verifier.Companion.SIGNATURE_SPEC
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.registration.MemberRegistrationService
@@ -241,11 +241,13 @@ class DynamicMemberRegistrationService @Activate constructor(
                     ?: throw IllegalArgumentException("Failed to serialize the member context for this request.")
                 val publicKey =
                     keyEncodingService.decodePublicKey(memberContext.items.first { it.key == PARTY_SESSION_KEY }.value)
+                val signatureSpec = memberContext.items.first { it.key == SESSION_KEY_SIGNATURE_SPEC }.value
                 val memberSignature = cryptoOpsClient.sign(
                     member.shortHash.value,
                     publicKey,
-                    SignatureSpec(memberContext.items.first { it.key == SESSION_KEY_SIGNATURE_SPEC }.value),
-                    serializedMemberContext
+                    SignatureSpec(signatureSpec),
+                    serializedMemberContext,
+                    mapOf(SIGNATURE_SPEC to signatureSpec),
                 ).bytes.run {
                     CryptoSignatureWithKey(
                         ByteBuffer.wrap(publicKey.encoded),
@@ -316,25 +318,21 @@ class DynamicMemberRegistrationService @Activate constructor(
             registrationId: String,
             member: HoldingIdentity
         ): KeyValuePairList {
-            return KeyValuePairList(
-                (
-                    context.filterNot { it.key.startsWith(LEDGER_KEYS) || it.key.startsWith(PARTY_SESSION_KEY) }
-                        .toWire().items +
-                        generateSessionKeyData(context, member.shortHash.value).items +
-                        generateLedgerKeyData(context, member.shortHash.value).items +
-                        listOf(
-                            KeyValuePair(REGISTRATION_ID, registrationId),
-                            KeyValuePair(PARTY_NAME, member.x500Name.toString()),
-                            KeyValuePair(GROUP_ID, member.groupId),
-                            // temporarily hardcoded
-                            KeyValuePair(PLATFORM_VERSION, PLATFORM_VERSION_CONST),
-                            KeyValuePair(SOFTWARE_VERSION, SOFTWARE_VERSION_CONST),
-                            KeyValuePair(SERIAL, SERIAL_CONST),
-                        )
-                    ).sortedBy {
-                    it.key
-                }
-            )
+            return (
+                context.filterNot {
+                    it.key.startsWith(LEDGER_KEYS) || it.key.startsWith(PARTY_SESSION_KEY)
+                } + generateSessionKeyData(context, member.shortHash.value) +
+                    generateLedgerKeyData(context, member.shortHash.value) +
+                    mapOf(
+                        REGISTRATION_ID to registrationId,
+                        PARTY_NAME to member.x500Name.toString(),
+                        GROUP_ID to member.groupId,
+                        // temporarily hardcoded
+                        PLATFORM_VERSION to PLATFORM_VERSION_CONST,
+                        SOFTWARE_VERSION to SOFTWARE_VERSION_CONST,
+                        SERIAL to SERIAL_CONST,
+                    )
+                ).toWire()
         }
 
         private fun validateContext(context: Map<String, String>) {
@@ -399,7 +397,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                 )
         }
 
-        private fun generateLedgerKeyData(context: Map<String, String>, tenantId: String): KeyValuePairList {
+        private fun generateLedgerKeyData(context: Map<String, String>, tenantId: String): Map<String, String> {
             val ledgerKeys =
                 getKeysFromIds(
                     context.filter {
@@ -407,46 +405,27 @@ class DynamicMemberRegistrationService @Activate constructor(
                     }.values.toList(),
                     tenantId
                 )
-            val ledgerPublicKeys = ledgerKeys.map { keyEncodingService.decodePublicKey(it.publicKey.array()) }
-            val ledgerKeyInfo = mutableListOf<KeyValuePair>()
-            ledgerPublicKeys.forEachIndexed { index, ledgerKey ->
-                ledgerKeyInfo.add(
-                    KeyValuePair(
-                        String.format(LEDGER_KEYS_KEY, index),
-                        keyEncodingService.encodeAsString(ledgerKey)
-                    )
+            return ledgerKeys.map {
+                keyEncodingService.decodePublicKey(it.publicKey.array())
+            }.flatMapIndexed { index, ledgerKey ->
+                listOf(
+                    String.format(LEDGER_KEYS_KEY, index) to keyEncodingService.encodeAsString(ledgerKey),
+                    String.format(LEDGER_KEY_HASHES_KEY, index) to ledgerKey.calculateHash().value,
+                    String.format(LEDGER_KEY_SIGNATURE_SPEC, index) to getSignatureSpec(
+                        ledgerKeys[index],
+                        context[String.format(LEDGER_KEY_SIGNATURE_SPEC, index)]
+                    ).signatureName
                 )
-                ledgerKeyInfo.add(
-                    KeyValuePair(
-                        String.format(LEDGER_KEY_HASHES_KEY, index),
-                        ledgerKey.calculateHash().value
-                    )
-                )
-                ledgerKeyInfo.add(
-                    KeyValuePair(
-                        String.format(LEDGER_KEY_SIGNATURE_SPEC, index),
-                        getSignatureSpec(
-                            ledgerKeys[index],
-                            context[String.format(LEDGER_KEY_SIGNATURE_SPEC, index)]
-                        ).signatureName
-                    )
-                )
-            }
-            return KeyValuePairList(ledgerKeyInfo)
+            }.toMap()
         }
 
-        private fun generateSessionKeyData(context: Map<String, String>, tenantId: String): KeyValuePairList {
+        private fun generateSessionKeyData(context: Map<String, String>, tenantId: String): Map<String, String> {
             val sessionKey = getKeysFromIds(listOf(context[SESSION_KEY_ID]!!), tenantId).first()
             val sessionPublicKey = keyEncodingService.decodePublicKey(sessionKey.publicKey.array())
-            return KeyValuePairList(
-                listOf(
-                    KeyValuePair(PARTY_SESSION_KEY, keyEncodingService.encodeAsString(sessionPublicKey)),
-                    KeyValuePair(SESSION_KEY_HASH, sessionPublicKey.calculateHash().value),
-                    KeyValuePair(
-                        SESSION_KEY_SIGNATURE_SPEC,
-                        getSignatureSpec(sessionKey, context[SESSION_KEY_SIGNATURE_SPEC]).signatureName
-                    )
-                )
+            return mapOf(
+                PARTY_SESSION_KEY to keyEncodingService.encodeAsString(sessionPublicKey),
+                SESSION_KEY_HASH to sessionPublicKey.calculateHash().value,
+                SESSION_KEY_SIGNATURE_SPEC to getSignatureSpec(sessionKey, context[SESSION_KEY_SIGNATURE_SPEC]).signatureName
             )
         }
 

@@ -25,7 +25,6 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.TimerEvent
-import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoFactory
@@ -33,7 +32,7 @@ import net.corda.membership.lib.toSortedMap
 import net.corda.membership.lib.toWire
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
-import net.corda.membership.p2p.helpers.VerifierFactory
+import net.corda.membership.p2p.helpers.Verifier
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.synchronisation.MemberSynchronisationService
@@ -58,7 +57,6 @@ import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
@@ -79,7 +77,7 @@ class MemberSynchronisationServiceImpl internal constructor(
     private val serializationFactory: CordaAvroSerializationFactory,
     private val memberInfoFactory: MemberInfoFactory,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
-    private val verifierFactory: VerifierFactory,
+    private val verifier: Verifier,
     private val membersReader: LocallyHostedMembersReader,
     private val p2pRecordsFactory: P2pRecordsFactory,
     private val merkleTreeGenerator: MerkleTreeGenerator,
@@ -110,8 +108,6 @@ class MemberSynchronisationServiceImpl internal constructor(
         signatureVerificationService: SignatureVerificationService,
         @Reference(service = KeyEncodingService::class)
         keyEncodingService: KeyEncodingService,
-        @Reference(service = CryptoOpsClient::class)
-        cryptoOpsClient: CryptoOpsClient,
     ) : this(
         publisherFactory,
         configurationReadService,
@@ -119,10 +115,9 @@ class MemberSynchronisationServiceImpl internal constructor(
         serializationFactory,
         memberInfoFactory,
         membershipGroupReaderProvider,
-        VerifierFactory(
+        Verifier(
             signatureVerificationService,
             keyEncodingService,
-            cryptoOpsClient,
         ),
         LocallyHostedMembersReader(
             virtualNodeInfoReadService,
@@ -277,14 +272,13 @@ class MemberSynchronisationServiceImpl internal constructor(
                         memberContext.toSortedMap(),
                         mgmContext.toSortedMap()
                     ).also {
-                        verifyMgmSignature(it, update.mgmSignature, mgm.shortHash)
+                        verifyMgmSignature(it, update.mgmSignature)
                         println("QQQ going to verifyMemberSignature:")
                         memberContext.items.forEach {
                             println("QQQ \t ${it.key} -> ${it.value}")
                         }
                         verifyMemberSignature(
                             update.memberSignature,
-                            it.holdingIdentity.shortHash,
                             update.memberContext,
                         )
                     }
@@ -343,31 +337,21 @@ class MemberSynchronisationServiceImpl internal constructor(
         }
     }
 
-    private fun verifyMgmSignature(memberInfo: MemberInfo, mgmSignature: CryptoSignatureWithKey, mgm: ShortHash) {
-        val verifier = verifierFactory.createVerifier(
-            mgmSignature,
-            mgm,
-        )
+    private fun verifyMgmSignature(memberInfo: MemberInfo, mgmSignature: CryptoSignatureWithKey) {
         val data = merkleTreeGenerator.generateTree(listOf(memberInfo))
             .root.bytes
-        verifier.verify(data)
+        verifier.verify(mgmSignature, data)
     }
 
     private fun verifyMemberSignature(
         memberSignature: CryptoSignatureWithKey,
-        member: ShortHash,
         memberContext: ByteBuffer,
     ) {
         println("QQQ in verifyMemberSignature")
-        println("QQQ member short hash: $member")
         println("QQQ member context: ${memberContext.array().toBase64()}")
         println("QQQ signature public key: ${memberSignature.publicKey.array().toBase64()}")
         println("QQQ signature content: ${memberSignature.bytes.array().toBase64()}")
-        val verifier = verifierFactory.createVerifier(
-            memberSignature,
-            member,
-        )
-        verifier.verify(memberContext.array()).also {
+        verifier.verify(memberSignature, memberContext.array()).also {
             println("QQQ Verified!!!")
         }
     }

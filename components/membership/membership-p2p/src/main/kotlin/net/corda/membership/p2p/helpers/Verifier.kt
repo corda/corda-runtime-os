@@ -1,26 +1,29 @@
 package net.corda.membership.p2p.helpers
 
-import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.cipher.suite.SignatureVerificationService
+import net.corda.v5.crypto.SignatureSpec
 
 class Verifier(
-    private val signature: CryptoSignatureWithKey,
     private val signatureVerificationService: SignatureVerificationService,
-    keyEncodingService: KeyEncodingService,
-    tenantId: String,
-    cryptoOpsClient: CryptoOpsClient,
-) : CryptoAction(
-    tenantId,
-    keyEncodingService.decodePublicKey(signature.publicKey.array()),
-    cryptoOpsClient,
+    private val keyEncodingService: KeyEncodingService,
 ) {
-    fun verify(date: ByteArray) {
-        println("QQQ in verify spec is $spec")
+    companion object {
+        const val SIGNATURE_SPEC = "corda.membership.signature.spec"
+    }
+    fun verify(signature: CryptoSignatureWithKey, date: ByteArray) {
+        val publicKey = keyEncodingService.decodePublicKey(signature.publicKey.array())
+        val spec = signature.context
+            .items
+            .firstOrNull {
+                it.key == SIGNATURE_SPEC
+            }?.value
+            ?: throw CordaRuntimeException("Can not find signature spec")
         signatureVerificationService.verify(
             publicKey,
-            spec,
+            SignatureSpec(spec),
             signature.bytes.array(),
             date
         )
