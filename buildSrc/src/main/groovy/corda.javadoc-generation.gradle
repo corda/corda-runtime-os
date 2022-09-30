@@ -1,0 +1,13 @@
+plugins {
+    id 'org.jetbrains.dokka'
+}
+
+tasks.register('javadocJar', Jar) {
+    description = 'Create JavaDoc Jar from dokka docs'
+    group = 'documentation'
+
+    dependsOn(dokkaHtml)
+    archiveBaseName = jar.archiveBaseName
+    archiveClassifier.set("javadoc")
+    from(dokkaHtml.outputDirectory)
+}

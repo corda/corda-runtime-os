@@ -20,11 +20,11 @@ class MemberInfoExtension {
 
         /** Key name for ledger keys property. */
         const val LEDGER_KEYS = "corda.ledger.keys"
-        const val LEDGER_KEYS_KEY = "corda.ledger.keys.%s"
+        const val LEDGER_KEYS_KEY = "corda.ledger.keys.%s.pem"
 
         /** Key name for ledger key hashes property. */
-        const val LEDGER_KEY_HASHES = "corda.ledgerKeyHashes"
-        const val LEDGER_KEY_HASHES_KEY = "corda.ledgerKeyHashes.%s"
+        const val LEDGER_KEY_HASHES = "corda.ledger.keys"
+        const val LEDGER_KEY_HASHES_KEY = "corda.ledger.keys.%s.hash"
 
         /** Key name for platform version property. */
         const val PLATFORM_VERSION = "corda.platformVersion"
@@ -34,7 +34,7 @@ class MemberInfoExtension {
         const val PARTY_SESSION_KEY = "corda.session.key"
 
         /** Key name for the session key hash **/
-        const val SESSION_KEY_HASH = "corda.sessionKeyHash"
+        const val SESSION_KEY_HASH = "corda.session.key.hash"
 
         /** Key name for notary service property. */
         const val NOTARY_SERVICE_PARTY_NAME = "corda.notaryService.name"

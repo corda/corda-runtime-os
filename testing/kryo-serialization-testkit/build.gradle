@@ -1,0 +1,18 @@
+plugins {
+    id 'corda.common-library'
+}
+
+description 'Kryo serialization test utilities'
+
+dependencies {
+    implementation "org.osgi:osgi.core"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation "com.esotericsoftware:kryo:$kryoVersion"
+    implementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    implementation project(":libs:serialization:serialization-kryo")
+    implementation project(":libs:serialization:serialization-checkpoint-api")
+    implementation project(":libs:sandbox")
+    implementation project(":libs:crypto:cipher-suite-impl")
+}

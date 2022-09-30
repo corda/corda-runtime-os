@@ -7,16 +7,30 @@ import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.membership.httprpc.v1.types.response.RpcMemberInfoList
 
+/**
+ * The Member Lookup API consists of endpoints used to look up information related to membership groups. The API allows
+ * you to retrieve a list of active and pending members in the membership group.
+ */
 @HttpRpcResource(
     name = "Member Lookup API",
-    description = "Network Membership Lookup endpoints.",
+    description = "The Member Lookup API consists of endpoints used to look up information related to membership groups.",
     path = "members"
 )
 interface MemberLookupRpcOps : RpcOps {
     /**
-     * GET endpoint which returns the list of active members in the membership group.
+     * The [lookup] method enables you to retrieve a list of all active and pending members in the membership group that
+     * are visible to the member represented by [holdingIdentityShortHash]. The list can be optionally filtered by
+     * X.500 name attributes. This method returns an empty list if no members matching the criteria are found.
      *
-     * @param holdingIdentityShortHash ID of the holding identity to be checked.
+     * Example usage:
+     * ```
+     * memberLookupOps.lookup(holdingIdentityShortHash = "58B6030FABDD")
+     *
+     * memberLookupOps.lookup(holdingIdentityShortHash = "58B6030FABDD", commonName = "Alice", country = "GB")
+     * ```
+     *
+     * @param holdingIdentityShortHash Holding identity ID of the requesting member, which uniquely identifies the member
+     * and its group. The result only contains members that are visible to this member.
      * @param commonName Optional. Common Name (CN) attribute of the X.500 name to filter members by.
      * @param organization Optional. Organization (O) attribute of the X.500 name to filter members by.
      * @param organizationUnit Optional. Organization Unit (OU) attribute of the X.500 name to filter members by.
@@ -24,15 +38,16 @@ interface MemberLookupRpcOps : RpcOps {
      * @param state Optional. State (ST) attribute of the X.500 name to filter members by.
      * @param country Optional. Country (C) attribute of the X.500 name to filter members by.
      *
-     * @return The known information of ACTIVE members.
+     * @return List of active and pending members matching the criteria as [RpcMemberInfoList].
      */
     @HttpRpcGET(
         path = "{holdingIdentityShortHash}",
-        description = "Lists the active members in the membership group."
+        description = "This method retrieves a list of all active and pending members in the membership group."
     )
     @Suppress("LongParameterList")
     fun lookup(
-        @HttpRpcPathParameter(description = "ID of the holding identity to be checked.")
+        @HttpRpcPathParameter(description = "Holding identity ID of the requesting member. The result only contains" +
+                " members that are visible to this member")
         holdingIdentityShortHash: String,
         @HttpRpcQueryParameter(
             name = "cn",

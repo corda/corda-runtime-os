@@ -1,8 +1,8 @@
 package net.corda.httprpc.annotations
 
-import net.corda.httprpc.response.ResponseEntity
 import net.corda.httprpc.ResponseCode
 import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.response.ResponseEntity
 
 /**
  * Annotation that is meant to be applied on annotations to flag the fact that they are meant for exposing

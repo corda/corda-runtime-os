@@ -1,6 +1,7 @@
 plugins {
     id 'corda.common-publishing'
     id 'corda.common-library'
+    id 'corda.javadoc-generation'
 }
 
 ext {
@@ -30,5 +31,37 @@ dependencies {
 }
 
 tasks.named('jar', Jar) {
-    archiveBaseName = 'simulator-runtime'
+    archiveBaseName = 'corda-simulator-runtime'
+}
+
+publishing {
+    publications {
+        configureEach {
+            pom {
+                name = 'corda-simulator-runtime'
+                description = 'corda-simulator-runtime'
+                url = 'https://github.com/corda/corda-runtime-os'
+
+                scm {
+                    url = 'https://github.com/corda/corda-runtime-os'
+                }
+
+                licenses {
+                    license {
+                        name = licenseName
+                        url = licenseUrl
+                        distribution = 'repo'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = 'R3'
+                        name = 'R3'
+                        email = 'dev@corda.net'
+                    }
+                }
+            }
+        }
+    }
 }

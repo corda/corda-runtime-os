@@ -16,8 +16,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 /**
- * Uniqueness processor implementation. Currently a bare-bones implementation that will instantiate
- * an in-memory uniqueness checker component.
+ * Uniqueness processor implementation.
  */
 @Component(service = [UniquenessProcessor::class])
 class UniquenessProcessorImpl @Activate constructor(

@@ -247,7 +247,6 @@ class CertificatesClientImplTest {
     inner class PlumbingTests {
         @Test
         fun `isRunning return true if sender is running`() {
-            whenever(sender.isRunning).doReturn(true)
             val event = ConfigChangedEvent(
                 emptySet(),
                 mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
@@ -255,18 +254,6 @@ class CertificatesClientImplTest {
             handler.firstValue.processEvent(event, coordinator)
 
             assertThat(client.isRunning).isTrue
-        }
-
-        @Test
-        fun `isRunning return false if sender is not`() {
-            whenever(sender.isRunning).doReturn(false)
-            val event = ConfigChangedEvent(
-                emptySet(),
-                mapOf(ConfigKeys.MESSAGING_CONFIG to mock())
-            )
-            handler.firstValue.processEvent(event, coordinator)
-
-            assertThat(client.isRunning).isFalse
         }
 
         @Test

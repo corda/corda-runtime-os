@@ -4,7 +4,7 @@ import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.entityprocessor.EntityProcessorFactory
-import net.corda.entityprocessor.FlowPersistenceProcessor
+import net.corda.entityprocessor.EntityProcessor
 import net.corda.entityprocessor.FlowPersistenceService
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.DependentComponents
@@ -18,7 +18,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
-import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -41,10 +41,10 @@ class FlowPersistenceServiceImpl  @Activate constructor(
     @Reference(service = CpiInfoReadService::class)
     private val cpiInfoReadService: CpiInfoReadService,
     @Reference(service = EntityProcessorFactory::class)
-    private val flowEventProcessorFactory: EntityProcessorFactory
+    private val entityProcessorFactory: EntityProcessorFactory
 ) : FlowPersistenceService {
     private var configHandle: Resource? = null
-    private var flowPersistenceProcessor: FlowPersistenceProcessor? = null
+    private var entityProcessor: EntityProcessor? = null
 
     companion object {
         private val logger = contextLogger()
@@ -68,25 +68,25 @@ class FlowPersistenceServiceImpl  @Activate constructor(
                 if (event.status == LifecycleStatus.UP) {
                     configHandle = configurationReadService.registerComponentForUpdates(
                         coordinator,
-                        setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG)
+                        setOf(BOOT_CONFIG, MESSAGING_CONFIG)
                     )
                 } else {
                     configHandle?.close()
                 }
             }
             is ConfigChangedEvent -> {
-                flowPersistenceProcessor?.stop()
-                val newFlowPersisenceProcessor = flowEventProcessorFactory.create(
+                entityProcessor?.stop()
+                val newEntityProcessor = entityProcessorFactory.create(
                     event.config.getConfig(MESSAGING_CONFIG)
                 )
-                logger.debug("Starting FlowPersistenceProcessor.")
-                newFlowPersisenceProcessor.start()
-                flowPersistenceProcessor = newFlowPersisenceProcessor
+                logger.debug("Starting EntityProcessor.")
+                newEntityProcessor.start()
+                entityProcessor = newEntityProcessor
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
             is StopEvent -> {
-                flowPersistenceProcessor?.stop()
-                logger.debug { "Stopping FlowPersistenceProcessor." }
+                entityProcessor?.stop()
+                logger.debug { "Stopping EntityProcessor." }
             }
         }
     }

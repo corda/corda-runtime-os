@@ -1,9 +1,9 @@
 package net.corda.entityprocessor.impl.tests.helpers
 
-import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.createCat
-import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.createDog
+import net.corda.db.persistence.testkit.helpers.SandboxHelper
+import net.corda.db.persistence.testkit.helpers.SandboxHelper.createCat
+import net.corda.db.persistence.testkit.helpers.SandboxHelper.createDog
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import java.util.UUID
 
 object AnimalCreator {
     private val dogNames = listOf(
@@ -35,6 +35,11 @@ object AnimalCreator {
 
     /** Persist some cats.  Returns the total persisted. */
     fun createCats(sandbox: SandboxGroupContext, times: Int): List<SandboxHelper.Box> = catNames.map { name ->
-            (1..times).map {i -> sandbox.createCat("${name.first} $i", colour=colours.random(), ownerName=name.second, ownerAge = (20..30).random()) }
+            (1..times).map { i ->
+                sandbox.createCat(
+                    "${name.first} $i", colour= colours.random(),
+                    ownerName=name.second,
+                    ownerAge = (20..30).random())
+            }
         }.flatten()
 }

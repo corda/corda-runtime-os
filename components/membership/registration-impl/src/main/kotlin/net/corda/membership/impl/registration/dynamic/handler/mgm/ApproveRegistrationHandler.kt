@@ -33,7 +33,7 @@ import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
@@ -48,11 +48,11 @@ internal class ApproveRegistrationHandler(
     clock: Clock,
     cryptoOpsClient: CryptoOpsClient,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-    merkleTreeFactory: MerkleTreeFactory,
+    merkleTreeProvider: MerkleTreeProvider,
     private val memberTypeChecker: MemberTypeChecker,
     private val signerFactory: SignerFactory = SignerFactory(cryptoOpsClient),
     private val merkleTreeGenerator: MerkleTreeGenerator = MerkleTreeGenerator(
-        merkleTreeFactory,
+        merkleTreeProvider,
         cordaAvroSerializationFactory
     ),
     private val p2pRecordsFactory: P2pRecordsFactory = P2pRecordsFactory(
@@ -86,7 +86,7 @@ internal class ApproveRegistrationHandler(
                 )
             if (memberTypeChecker.isMgm(approvedMember)) {
                 throw CordaRuntimeException(
-                    "The registration request: '$registrationId' cannot be approved for ${approvedMember.x500Name} as it is an MGM."
+                    "The registration request: '$registrationId' cannot be approved by ${approvedMember.x500Name} as it is an MGM."
                 )
             }
 

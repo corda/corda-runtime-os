@@ -6,6 +6,7 @@ import net.corda.applications.workers.rpc.http.TestToolkitProperty
 import net.corda.applications.workers.rpc.http.SkipWhenRpcEndpointUnavailable
 import net.corda.httprpc.client.exceptions.MissingRequestedResourceException
 import net.corda.httprpc.client.exceptions.RequestErrorException
+import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.libs.permissions.endpoints.v1.role.RoleEndpoint
 import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
 import net.corda.libs.permissions.endpoints.v1.user.UserEndpoint
@@ -108,7 +109,7 @@ class UserRoleAssociationE2eTest {
 
             // add the role again to assert validation
             Assertions.assertThatThrownBy { proxy.addRole(userName, roleId) }
-                .isInstanceOf(RequestErrorException::class.java)
+                .isInstanceOf(ResourceAlreadyExistsException::class.java)
                 .hasMessageContaining("Role '$roleId' is already associated with User '${userName.lowercase()}'.")
 
             // remove role

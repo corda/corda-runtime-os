@@ -20,7 +20,6 @@ import org.osgi.framework.Bundle
 import org.osgi.framework.Bundle.RESOLVED
 import org.osgi.framework.BundleContext
 import org.osgi.framework.BundleException
-import org.osgi.framework.Constants.FRAGMENT_HOST
 import org.osgi.framework.Constants.SYSTEM_BUNDLE_ID
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -190,7 +189,7 @@ internal class SandboxServiceImpl @Activate constructor(
                 sandboxId,
                 securityDomain
             )
-            sandboxForbidsThat(isFragment(mainBundle)) {
+            sandboxForbidsThat(mainBundle.isFragment) {
                 "CPK main bundle $mainBundle cannot be a fragment"
             }
 
@@ -335,17 +334,13 @@ internal class SandboxServiceImpl @Activate constructor(
     private fun startBundles(bundles: Collection<Bundle>) {
         // OSGi merges fragments with their host bundle,
         // and so we only start non-fragment bundles.
-        bundles.filterNot(::isFragment).forEach { bundle ->
+        bundles.filterNot(Bundle::isFragment).forEach { bundle ->
             try {
                 bundle.start()
             } catch (e: BundleException) {
                 throw SandboxException("Bundle $bundle could not be started.", e)
             }
         }
-    }
-
-    private fun isFragment(bundle: Bundle): Boolean {
-        return bundle.headers.get(FRAGMENT_HOST) != null
     }
 }
 

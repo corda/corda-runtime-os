@@ -60,11 +60,23 @@ class FlowSessionManagerImplTest {
         val COUNTERPARTY_HOLDING_IDENTITY = HoldingIdentity(X500_NAME.toString(), "group id")
 
         @JvmStatic
-        fun sessionStateTypes(): Stream<Arguments> {
+        fun sendingSessionStateTypes(): Stream<Arguments> {
             return Stream.of(
                 Arguments.of(SessionStateType.CONFIRMED, true),
                 Arguments.of(SessionStateType.CREATED, false),
                 Arguments.of(SessionStateType.CLOSING, false),
+                Arguments.of(SessionStateType.WAIT_FOR_FINAL_ACK, false),
+                Arguments.of(SessionStateType.CLOSED, false),
+                Arguments.of(SessionStateType.ERROR, false)
+            )
+        }
+
+        @JvmStatic
+        fun receivingSessionStateTypes(): Stream<Arguments> {
+            return Stream.of(
+                Arguments.of(SessionStateType.CONFIRMED, true),
+                Arguments.of(SessionStateType.CREATED, false),
+                Arguments.of(SessionStateType.CLOSING, true),
                 Arguments.of(SessionStateType.WAIT_FOR_FINAL_ACK, false),
                 Arguments.of(SessionStateType.CLOSED, false),
                 Arguments.of(SessionStateType.ERROR, false)
@@ -548,9 +560,9 @@ class FlowSessionManagerImplTest {
         )
     }
 
-    @ParameterizedTest(name = "validate session states - always throws if one of the sessions is anything other than CONFIRMED status={0}")
-    @MethodSource("sessionStateTypes")
-    fun `validate session states - always throws if one of the sessions is anything other than CONFIRMED`(
+    @ParameterizedTest(name = "validate session states when sending - throws if not CONFIRMED status={0}")
+    @MethodSource("sendingSessionStateTypes")
+    fun `validate session states when sending - throws if not CONFIRMED`(
         status: SessionStateType,
         expectedResult: Boolean
     ) {
@@ -558,13 +570,38 @@ class FlowSessionManagerImplTest {
         anotherSessionState.status = SessionStateType.CONFIRMED
 
         if (expectedResult) {
-            flowSessionManager.validateSessionStates(checkpoint, setOf(SESSION_ID, ANOTHER_SESSION_ID))
+            flowSessionManager.sendDataMessages(
+                checkpoint,
+                setOf(SESSION_ID, ANOTHER_SESSION_ID).associateWith { byteArrayOf() },
+                Instant.now()
+            )
         } else {
             assertThrows<FlowSessionStateException> {
-                flowSessionManager.validateSessionStates(
+                flowSessionManager.sendDataMessages(
                     checkpoint,
-                    setOf(SESSION_ID)
+                    setOf(SESSION_ID).associateWith { byteArrayOf() },
+                    Instant.now()
                 )
+            }
+        }
+    }
+
+    @ParameterizedTest(
+        name = "validate session states when receiving - throws if not CONFIRMED or CLOSING status={0}"
+    )
+    @MethodSource("receivingSessionStateTypes")
+    fun `validate session states when receiving - throws if not CONFIRMED or CLOSING`(
+        status: SessionStateType,
+        expectedResult: Boolean
+    ) {
+        sessionState.status = status
+        anotherSessionState.status = SessionStateType.CONFIRMED
+
+        if (expectedResult) {
+            flowSessionManager.hasReceivedEvents(checkpoint, listOf(SESSION_ID, ANOTHER_SESSION_ID))
+        } else {
+            assertThrows<FlowSessionStateException> {
+                flowSessionManager.hasReceivedEvents(checkpoint, listOf(SESSION_ID))
             }
         }
     }
@@ -572,24 +609,33 @@ class FlowSessionManagerImplTest {
     @Test
     fun `validate session states - always throws if one of the sessions is missing`() {
         sessionState.status = SessionStateType.ERROR
-        anotherSessionState.status = SessionStateType.CLOSING
-        val error = assertThrows<FlowSessionStateException> {
-            flowSessionManager.validateSessionStates(
+        anotherSessionState.status = SessionStateType.CLOSED
+
+        val sendError = assertThrows<FlowSessionStateException> {
+            flowSessionManager.sendDataMessages(
                 checkpoint,
-                setOf(SESSION_ID, ANOTHER_SESSION_ID)
+                setOf(SESSION_ID, ANOTHER_SESSION_ID).associateWith { byteArrayOf() },
+                Instant.now()
             )
         }
 
-        assertThat(error.message).isEqualTo("2 of 2 sessions are invalid ['${SESSION_ID}'=ERROR, '${ANOTHER_SESSION_ID}'=CLOSING]")
+        assertThat(sendError.message).isEqualTo("2 of 2 sessions are invalid ['${SESSION_ID}'=ERROR, '${ANOTHER_SESSION_ID}'=CLOSED]")
+
+        val receiveError = assertThrows<FlowSessionStateException> {
+            flowSessionManager.hasReceivedEvents(checkpoint, listOf(SESSION_ID, ANOTHER_SESSION_ID))
+        }
+
+        assertThat(receiveError.message).isEqualTo("2 of 2 sessions are invalid ['${SESSION_ID}'=ERROR, '${ANOTHER_SESSION_ID}'=CLOSED]")
     }
 
     @Test
     fun `validate session states - exception message lists all failures`() {
         sessionState.status = SessionStateType.CONFIRMED
         val error = assertThrows<FlowSessionStateException> {
-            flowSessionManager.validateSessionStates(
+            flowSessionManager.sendDataMessages(
                 checkpoint,
-                setOf(SESSION_ID, "unknown session id")
+                setOf(SESSION_ID, "unknown session id").associateWith { byteArrayOf() },
+                Instant.now()
             )
         }
 

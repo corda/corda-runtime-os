@@ -1,0 +1,27 @@
+plugins {
+    id 'corda.common-library'
+    id 'corda.common-publishing'
+}
+
+description 'Flow external events test utilities'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    implementation 'net.corda:corda-avro-schema'
+    implementation 'net.corda:corda-base'
+    implementation 'net.corda:corda-topic-schema'
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation "org.assertj:assertj-core:$assertjVersion"
+
+    implementation project(':libs:configuration:configuration-core')
+    implementation project(':libs:flows:external-event-responses')
+    implementation project(':libs:lifecycle:lifecycle')
+    implementation project(":libs:messaging:messaging")
+    implementation project(':testing:test-utilities')
+
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}

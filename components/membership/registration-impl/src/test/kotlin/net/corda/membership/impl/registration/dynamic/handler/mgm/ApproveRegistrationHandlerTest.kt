@@ -37,9 +37,9 @@ import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.MerkleTree
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
@@ -136,7 +136,7 @@ class ApproveRegistrationHandlerTest {
     private val merkleTree = mock<MerkleTree> {
         on { root } doReturn checkHash
     }
-    private val merkleTreeFactory = mock<MerkleTreeFactory>()
+    private val merkleTreeProvider = mock<MerkleTreeProvider>()
     private val merkleTreeGenerator = mock<MerkleTreeGenerator> {
         on { generateTree(any()) } doReturn merkleTree
     }
@@ -163,7 +163,7 @@ class ApproveRegistrationHandlerTest {
         clock,
         cryptoOpsClient,
         cordaAvroSerializationFactory,
-        merkleTreeFactory,
+        merkleTreeProvider,
         memberTypeChecker,
         signerFactory,
         merkleTreeGenerator,

@@ -79,7 +79,7 @@ class PermissionValidationService @Activate constructor(
             is StopEvent -> {
                 log.info("Stop event received, stopping dependencies.")
                 permissionValidationCacheService.stop()
-                _permissionValidator?.close()
+                _permissionValidator?.stop()
                 _permissionValidator = null
                 registration?.close()
                 registration = null
@@ -88,7 +88,7 @@ class PermissionValidationService @Activate constructor(
     }
 
     private fun startValidationComponent() {
-        _permissionValidator?.close()
+        _permissionValidator?.stop()
         _permissionValidator = permissionValidatorFactory.create(permissionValidationCacheService.permissionValidationCacheRef)
             .also { it.start() }
     }

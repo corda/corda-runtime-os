@@ -12,9 +12,16 @@ interface SandboxSetup {
     fun start()
     fun shutdown()
 
-    fun <T> getService(serviceType: Class<T>, timeout: Long): T
+    fun <T> getService(serviceType: Class<T>, filter: String?, timeout: Long): T
+    fun <T> getService(serviceType: Class<T>, timeout: Long): T = getService(serviceType, null, timeout)
+
+    fun withCleanup(closeable: AutoCloseable)
 }
 
 inline fun <reified T> SandboxSetup.fetchService(timeout: Long): T {
     return getService(T::class.java, timeout)
+}
+
+inline fun <reified T> SandboxSetup.fetchService(filter: String?, timeout: Long): T {
+    return getService(T::class.java, filter, timeout)
 }

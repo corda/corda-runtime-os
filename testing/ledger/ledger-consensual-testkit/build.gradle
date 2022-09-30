@@ -1,0 +1,18 @@
+plugins {
+    id 'corda.common-library'
+}
+
+description 'Corda ledger consensual test objects'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation "net.corda:corda-cipher-suite"
+    implementation "net.corda:corda-application"
+
+    implementation project(":libs:ledger:ledger-common-impl")
+    implementation project(":libs:ledger:ledger-consensual-impl")
+    implementation project(":testing:ledger:ledger-common-testkit")
+}
