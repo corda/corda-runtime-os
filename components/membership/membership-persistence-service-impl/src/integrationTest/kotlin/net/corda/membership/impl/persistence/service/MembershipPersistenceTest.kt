@@ -617,7 +617,7 @@ class MembershipPersistenceTest {
                 )
             ).getOrThrow()
             val cryptoSignatureWithKey = CryptoSignatureWithKey(
-                publicKey, signature, KeyValuePairList(emptyList())
+                publicKey, signature, signatureContext
             )
             holdingId to cryptoSignatureWithKey
         }
