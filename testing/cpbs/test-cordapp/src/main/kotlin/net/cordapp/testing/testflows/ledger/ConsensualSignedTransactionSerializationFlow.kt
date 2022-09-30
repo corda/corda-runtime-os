@@ -50,7 +50,7 @@ class ConsensualSignedTransactionSerializationFlow : RPCStartableFlow {
     override fun call(requestBody: RPCRequestData): String {
         log.info("ConsensualSignedTransactionSerializationFlow starting...")
         try {
-            val member = memberLookup.lookup(MemberX500Name("Bob", "Application", "R3", "London", null, "GB"))!!
+            val member = memberLookup.myInfo()
 
             val testConsensualState =
                 TestConsensualState(
