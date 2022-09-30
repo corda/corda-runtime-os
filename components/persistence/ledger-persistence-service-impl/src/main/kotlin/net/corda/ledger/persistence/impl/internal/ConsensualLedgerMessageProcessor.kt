@@ -7,7 +7,7 @@ import net.corda.data.ledger.consensual.PersistTransaction
 import net.corda.data.persistence.ConsensualLedgerRequest
 import net.corda.data.persistence.EntityResponse
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
-import net.corda.ledger.common.impl.transaction.WireTransaction
+import net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
@@ -19,6 +19,7 @@ import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -81,15 +82,18 @@ class ConsensualLedgerMessageProcessor(
         // get the per-sandbox entity manager and serialization services
         val entityManagerFactory = sandbox.getEntityManagerFactory()
         val serializationService = sandbox.getSerializationService()
-        val consensualLedgerRepository = ConsensualLedgerRepository(merkleTreeFactory, digestService, jsonMarshallingService)
+        val consensualLedgerRepository = ConsensualLedgerRepository(
+            merkleTreeFactory, digestService, jsonMarshallingService, serializationService)
 
         return entityManagerFactory.createEntityManager().transaction { em ->
             when (val req = request.request) {
-                is PersistTransaction -> responseFactory.successResponse(
-                    request.flowExternalEventContext,
-                    consensualLedgerRepository.persistTransaction(
-                        em, serializationService.deserialize(req), request.account())
-                )
+                is PersistTransaction -> {
+                    val transaction = serializationService.deserialize(req)
+                    responseFactory.successResponse(
+                        request.flowExternalEventContext,
+                        consensualLedgerRepository.persistTransaction(em, transaction, request.account())
+                    )
+                }
 
                 is FindTransaction -> responseFactory.successResponse(
                     request.flowExternalEventContext,
@@ -115,5 +119,5 @@ class ConsensualLedgerMessageProcessor(
         } ?: EntityResponse(emptyList())
 
     private fun SerializationService.deserialize(persistTransaction: PersistTransaction) =
-        deserialize(persistTransaction.transaction.array(), WireTransaction::class.java)
+        deserialize<ConsensualSignedTransactionImpl>(persistTransaction.transaction.array())
 }

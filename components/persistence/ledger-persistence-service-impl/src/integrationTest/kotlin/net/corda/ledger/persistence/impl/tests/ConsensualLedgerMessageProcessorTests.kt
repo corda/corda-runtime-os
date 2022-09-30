@@ -29,12 +29,14 @@ import net.corda.data.ledger.consensual.FindTransaction
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getSerializer
 import net.corda.db.testkit.DbUtils
 import net.corda.ledger.common.impl.transaction.WireTransaction
-import net.corda.ledger.common.testkit.getWireTransaction
+import net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl
+import net.corda.ledger.consensual.testkit.getConsensualSignedTransactionImpl
 import net.corda.ledger.persistence.impl.internal.ConsensualLedgerMessageProcessor
 import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_SERIALIZER
 import net.corda.persistence.common.EntitySandboxServiceFactory
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
@@ -101,7 +103,10 @@ class ConsensualLedgerMessageProcessorTests {
     @InjectService
     lateinit var merkleTreeFactory: MerkleTreeFactory
     @InjectService
+    lateinit var serializationService: SerializationService
+    @InjectService
     lateinit var jsonMarshallingService: JsonMarshallingService
+    private lateinit var transactionSerializer: InternalCustomSerializer<ConsensualSignedTransactionImpl>
     private lateinit var wireTransactionSerializer: InternalCustomSerializer<WireTransaction>
     private lateinit var ctx: DbTestContext
 
@@ -121,6 +126,10 @@ class ConsensualLedgerMessageProcessorTests {
             cpiInfoReadService = setup.fetchService(timeout = 10000)
             virtualNode = setup.fetchService(timeout = 10000)
             virtualNodeInfoReadService = setup.fetchService(timeout = 10000)
+            transactionSerializer = setup.fetchService(
+                "(component.name=net.corda.ledger.consensual.transaction.serialization.internal.ConsensualSignedTransactionImplSerializer)",
+                10000
+            )
             wireTransactionSerializer = setup.fetchService(
                 "(component.name=net.corda.ledger.common.transaction.serialization.internal.WireTransactionSerializer)",
                 10000
@@ -140,7 +149,6 @@ class ConsensualLedgerMessageProcessorTests {
     /* Simple wrapper to serialize bytes correctly during test */
     private fun SandboxGroupContext.serialize(obj: Any): ByteBuffer {
         val serializer = getSerializer(SANDBOX_SERIALIZER)
-        //val serializer = serializationService
         return ByteBuffer.wrap(serializer.serialize(obj).bytes)
     }
 
@@ -161,10 +169,7 @@ class ConsensualLedgerMessageProcessorTests {
         // Native SQL is used that is specific to Postgres and won't work with in-memory DB
         Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
 
-        // create ConsensualSignedTransactionImpl instance (or WireTransaction at first)
-        val tx = getWireTransaction(digestService, merkleTreeFactory, jsonMarshallingService)
-        logger.info("WireTransaction: ", tx)
-
+        val tx = getConsensualSignedTransactionImpl(digestService, merkleTreeFactory, serializationService, jsonMarshallingService)
         // serialise tx into bytebuffer and add to PersistTransaction payload
         val serializedTransaction = ctx.serialize(tx)
         val persistTransaction = PersistTransaction(serializedTransaction)
@@ -208,7 +213,7 @@ class ConsensualLedgerMessageProcessorTests {
 
         val componentContext = Mockito.mock(ComponentContext::class.java)
         whenever(componentContext.locateServices(INTERNAL_CUSTOM_SERIALIZERS))
-            .thenReturn(arrayOf(wireTransactionSerializer))
+            .thenReturn(arrayOf(transactionSerializer, wireTransactionSerializer))
 
         // set up sandbox
         val entitySandboxService =

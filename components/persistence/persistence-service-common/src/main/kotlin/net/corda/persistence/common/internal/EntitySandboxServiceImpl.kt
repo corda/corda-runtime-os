@@ -1,6 +1,8 @@
 package net.corda.persistence.common.internal
 
+import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.crypto.impl.serialization.PublicKeySerializer
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_EMF
 import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_SERIALIZER
@@ -185,6 +187,8 @@ class EntitySandboxServiceImpl @Activate constructor(
         // we might struggle to deserialize some entities.
         val factory = SerializerFactoryBuilder.build(ctx.sandboxGroup)
         registerCustomSerializers(factory)
+        //TODO Where is the right place for this?
+        factory.register(PublicKeySerializer(CipherSchemeMetadataImpl()), factory)
         internalCustomSerializers.forEach { factory.register(it, factory) }
 
         val cpkSerializers = cpks.flatMap { it.cordappManifest.serializers }.toSet()

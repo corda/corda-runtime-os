@@ -29,16 +29,25 @@ dependencies {
     implementation project(':components:virtual-node:sandbox-group-context-service')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
 
-    implementation project(':libs:flows:external-event-responses')
-    implementation project(':libs:ledger:ledger-common-impl')
-    implementation project(':libs:messaging:messaging')
-    implementation project(':libs:virtual-node:sandbox-group-context')
-
     // TODO This might not be needed if code is refactored so that WireTransactionSerializer is not used and
     //  WireTransaction's ID is sent over wire (doesn't need to be calculated using MerkleTreeFactory)
     implementation project(":libs:crypto:cipher-suite-impl")
+    implementation project(':libs:flows:external-event-responses')
+    implementation project(':libs:ledger:ledger-common-impl')
+    // TODO this also creates ConsensualLedgerServiceImpl and requires all it's dependencies,
+    //  while only data model class is needed (ConsensualSignedTransactionImpl)
+    implementation project(":libs:ledger:ledger-consensual-impl")
+    implementation project(':libs:messaging:messaging')
+    // TODO dependency of ConsensualLedgerServiceImpl (see above)
+    implementation project(':libs:serialization:serialization-checkpoint-api')
+    implementation project(':libs:virtual-node:sandbox-group-context')
+
     runtimeOnly project(':libs:crypto:merkle-impl')
-    runtimeOnly project(':libs:ledger:ledger-common-serialization')
+    runtimeOnly project(':libs:ledger:ledger-consensual-serialization')
+    // TODO dependency of ConsensualLedgerServiceImpl (see above)
+    runtimeOnly project(':libs:serialization:serialization-kryo')
+    // TODO dependency of ConsensualLedgerServiceImpl (see above)
+    runtimeOnly project(':libs:flows:session-manager-impl')
 
     implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-db-schema'
@@ -75,7 +84,7 @@ dependencies {
     integrationTestImplementation project(':libs:ledger:ledger-common-serialization')
     integrationTestImplementation project(':libs:serialization:serialization-internal')
     integrationTestImplementation project(":testing:db-message-bus-testkit")
-    integrationTestImplementation project(':testing:ledger:ledger-common-testkit')
+    integrationTestImplementation project(':testing:ledger:ledger-consensual-testkit')
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation project(':testing:test-utilities')
 

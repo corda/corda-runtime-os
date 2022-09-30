@@ -25,7 +25,7 @@ class ConsensualLedgerRepositoryTest {
             arrayOf(id, privacySalt, accountId, createdTs, groupIdx, leafIdx + 2, ByteArray(16), "hash")
         )
         val exception = assertThrows<IllegalStateException> {
-            ConsensualLedgerRepository(mock(), mock(), mock()).queryRowsToComponentGroupLists(rows)
+            ConsensualLedgerRepository(mock(), mock(), mock(), mock()).queryRowsToComponentGroupLists(rows)
         }
         assertEquals("Missing data for transaction with ID: id1, groupIdx: 1, leafIdx: 1", exception.message)
     }
@@ -42,7 +42,7 @@ class ConsensualLedgerRepositoryTest {
             arrayOf(id, privacySalt, accountId, createdTs, groupIdx + 2, leafIdx + 2, "data22".toByteArray(), "hash22"),
         )
 
-        val componentGroupLists = ConsensualLedgerRepository(mock(), mock(), mock()).queryRowsToComponentGroupLists(rows)
+        val componentGroupLists = ConsensualLedgerRepository(mock(), mock(), mock(), mock()).queryRowsToComponentGroupLists(rows)
 
         val expectedLists = listOf(
             listOf("data00", "data01").toBytes(),

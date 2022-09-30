@@ -4,9 +4,11 @@ import net.corda.data.persistence.EntityResponse
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPK_IDENTIFIERS_KEY
 import net.corda.ledger.common.impl.transaction.WireTransaction
+import net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.base.util.contextLogger
@@ -20,48 +22,40 @@ import java.security.MessageDigest
 import java.security.spec.ECGenParameterSpec
 import java.time.Instant
 import javax.persistence.EntityManager
+import javax.persistence.Tuple
 
 
 class ConsensualLedgerRepository(
     private val merkleTreeFactory: MerkleTreeFactory,
     private val digestService: DigestService,
-    private val jsonMarshallingService: JsonMarshallingService
+    private val jsonMarshallingService: JsonMarshallingService,
+    private val serializationService: SerializationService
 ) {
     companion object {
         private val logger = contextLogger()
+        // TODO
+        private val fakePublicKey = KeyPairGenerator.getInstance("EC")
+            .apply { initialize(ECGenParameterSpec("secp256r1")) }
+            .generateKeyPair().public
     }
 
-    // TODO This should probably take a ConsensualSignedTransactionImpl which includes WireTransaction and signers.
-    fun persistTransaction(entityManager: EntityManager, transaction: WireTransaction, account :String): EntityResponse {
+    fun persistTransaction(entityManager: EntityManager, transaction: ConsensualSignedTransactionImpl, account :String): EntityResponse {
         val transactionId = transaction.id.toHexString()
+        val wireTransaction = transaction.wireTransaction
         val now = Instant.now()
-        persistTransaction(entityManager, now, transaction, account)
-        transaction.componentGroupLists.mapIndexed { groupIndex, leaves ->
+        persistTransaction(entityManager, now, wireTransaction, account)
+        wireTransaction.componentGroupLists.mapIndexed { groupIndex, leaves ->
             leaves.mapIndexed { leafIndex, bytes ->
                 persistComponentLeaf(entityManager, now, transactionId, groupIndex, leafIndex, bytes)
             }
         }
         persistTransactionStatus(entityManager, now, transactionId, "Faked") // TODO where to get the status from
-        // TODO when and what do we write to the signatures table?
         // TODO when and what do we write to the CPKs table?
-        persistCpk(entityManager, now, transaction)
+        persistCpk(entityManager, now, wireTransaction)
         persistTransactionCpk(entityManager, transactionId)
 
-        // TODO Signatures should come from ConsensualSignedTransactionImpl
-        val fakePublicKey = KeyPairGenerator.getInstance("EC")
-            .apply { initialize(ECGenParameterSpec("secp256r1")) }
-            .generateKeyPair().public
-        val fakeSignatures = listOf(
-            DigitalSignatureAndMetadata(
-                DigitalSignature.WithKey(fakePublicKey, ByteArray(1), emptyMap()),
-                DigitalSignatureMetadata(now, emptyMap())
-            ),
-            DigitalSignatureAndMetadata(
-                DigitalSignature.WithKey(fakePublicKey, ByteArray(1), emptyMap()),
-                DigitalSignatureMetadata(now, emptyMap())
-            )
-        )
-        fakeSignatures.forEachIndexed { index, digitalSignatureAndMetadata ->
+        // TODO when and what do we write to the signatures table?
+        transaction.signatures.forEachIndexed { index, digitalSignatureAndMetadata ->
             persistSignature(entityManager, now, transactionId, index, digitalSignatureAndMetadata.signature.bytes)
         }
 
@@ -69,7 +63,7 @@ class ConsensualLedgerRepository(
         return EntityResponse(emptyList())
     }
 
-    fun findTransaction(entityManager: EntityManager, id: String): WireTransaction? {
+    fun findTransaction(entityManager: EntityManager, id: String): ConsensualSignedTransactionImpl? {
 
         val rows = entityManager.createNativeQuery(
             """
@@ -88,7 +82,11 @@ class ConsensualLedgerRepository(
         val firstRowColumns = rows.first() as Array<*>
         val privacySalt = PrivacySaltImpl(firstRowColumns[1] as ByteArray)
         val componentGroupLists = queryRowsToComponentGroupLists(rows)
-        return WireTransaction(merkleTreeFactory, digestService, jsonMarshallingService, privacySalt, componentGroupLists)
+        val wireTransaction = WireTransaction(merkleTreeFactory, digestService, jsonMarshallingService, privacySalt, componentGroupLists)
+        return ConsensualSignedTransactionImpl(
+            serializationService,
+            wireTransaction,
+            findSignatures(entityManager, id))
     }
 
     @VisibleForTesting
@@ -115,6 +113,27 @@ class ConsensualLedgerRepository(
         }
         componentGroupLists.add(componentsList)
         return componentGroupLists
+    }
+
+    private fun findSignatures(
+        entityManager: EntityManager,
+        transactionId: String
+    ): List<DigitalSignatureAndMetadata> {
+        return entityManager.createNativeQuery(
+            """
+                SELECT signature
+                FROM {h-schema}consensual_transaction_signature
+                WHERE transaction_id = :transactionId
+                ORDER BY signature_idx""",
+            Tuple::class.java)
+            .setParameter("transactionId", transactionId)
+            .resultList
+            .map { it as Tuple }
+            .map { r ->
+                DigitalSignatureAndMetadata(
+                    DigitalSignature.WithKey(fakePublicKey, r.get(0) as ByteArray, emptyMap()),
+                    DigitalSignatureMetadata(Instant.now(), emptyMap()))
+            }
     }
 
     private fun persistTransaction(entityManager: EntityManager, timestamp: Instant, tx: WireTransaction, account: String) {

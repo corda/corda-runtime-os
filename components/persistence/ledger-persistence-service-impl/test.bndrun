@@ -33,6 +33,8 @@
 -runrequires: \
     bnd.identity;id='${project.archivesBaseName}-tests',\
     bnd.identity;id='net.corda.ledger-common-serialization',\
+    bnd.identity;id='net.corda.ledger-consensual-serialization',\
+    bnd.identity;id='net.corda.cipher-suite-impl',\
     bnd.identity;id='net.bytebuddy.byte-buddy',\
     bnd.identity;id='org.hsqldb.hsqldb',\
     bnd.identity;id='org.osgi.service.jdbc',\
