@@ -452,7 +452,7 @@ gradleEnterprise {
             removeUnusedEntriesAfterDays = 14  // Garbage collect if a cache item is not used in 2 weeks.
         }
         remote(HttpBuildCache) {
-            url = "${gradleEnterpriseUrl}/cache/exp4-2022-oct01-take1"
+            url = "${gradleEnterpriseUrl}/cache/exp4-2022-oct01-take1/"
             credentials {
                 username = settings.ext.find('BUILD_CACHE_CREDENTIALS_USR') ?: System.getenv('BUILD_CACHE_CREDENTIALS_USR')
                 password = settings.ext.find('BUILD_CACHE_CREDENTIALS_PSW') ?: System.getenv('BUILD_CACHE_CREDENTIALS_PSW')
