@@ -408,8 +408,8 @@ def logArtifacts(Project project) {
             publication.artifacts.each { artifact ->
                 logger.quiet(" * ${artifact.file.name}")
             }
-        
         }
+    }
 }
 
 // report updatable dependencies: gradle dependencyUpdates
