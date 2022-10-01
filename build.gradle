@@ -402,12 +402,14 @@ subprojects {
 
 // helper to log artifacts we will or will not publish during a release process
 def logArtifacts(Project project) {
-    project.publishing.publications.each { publication ->
-        logger.quiet("\n${publication.groupId}:${publication.artifactId}:${publication.version} [${project.path}]")
-        publication.artifacts.each { artifact ->
-            logger.quiet(" * ${artifact.file.name}")
+    doLast {
+        project.publishing.publications.each { publication ->
+            logger.quiet("\n${publication.groupId}:${publication.artifactId}:${publication.version} [${project.path}]")
+            publication.artifacts.each { artifact ->
+                logger.quiet(" * ${artifact.file.name}")
+            }
+        
         }
-    }
 }
 
 // report updatable dependencies: gradle dependencyUpdates
