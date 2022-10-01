@@ -1,112 +1,153 @@
 package net.corda.v5.ledger.utxo;
 
-import net.corda.v5.crypto.SecureHash;
+import net.corda.v5.ledger.common.transaction.Party;
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction;
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder;
-import net.corda.v5.ledger.utxo.transaction.UtxoWireTransaction;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.security.PublicKey;
 import java.util.List;
+import java.util.Set;
 
 public final class UtxoTransactionBuilderJavaApiTests extends AbstractMockTestHarness {
 
     @Test
-    public void addAttachmentShouldReturnTheExpectedValue() {
-        UtxoTransactionBuilder builder = utxoTransactionBuilder.addAttachment(hash);
-        List<SecureHash> value = builder.getAttachments();
-        Assertions.assertEquals(List.of(hash), value);
+    public void getNotaryShouldReturnTheExpectedValue() {
+        Party value = utxoTransactionBuilder.getNotary();
+        Assertions.assertEquals(notaryParty, value);
     }
 
     @Test
-    public void addCommandAndSignatoriesShouldReturnTheExpectedValue() {
-        UtxoTransactionBuilder builder = utxoTransactionBuilder.addCommandAndSignatories(command, aliceKey, bobKey);
-        List<CommandAndSignatories<?>> value = builder.getCommands();
-        Assertions.assertEquals(List.of(commandAndSignatories), value);
+    public void getTimeWindowShouldReturnTheExpectedValue() {
+        TimeWindow value = utxoTransactionBuilder.getTimeWindow();
+        Assertions.assertEquals(timeWindow, value);
+    }
+
+    @Test
+    public void getCommandsShouldReturnTheExpectedValue() {
+        List<Command> value = utxoTransactionBuilder.getCommands();
+        Assertions.assertEquals(commands, value);
+    }
+
+    @Test
+    public void getSignatoriesShouldReturnTheExpectedValue() {
+        Set<PublicKey> value = utxoTransactionBuilder.getSignatories();
+        Assertions.assertEquals(keys, value);
+    }
+
+    @Test
+    public void getInputStateAndRefsShouldReturnTheExpectedValue() {
+        List<StateAndRef<?>> value = utxoTransactionBuilder.getInputStateAndRefs();
+        Assertions.assertEquals(List.of(contractStateAndRef), value);
+    }
+
+    @Test
+    public void getReferenceInputStateAndRefsShouldReturnTheExpectedValue() {
+        List<StateAndRef<?>> value = utxoTransactionBuilder.getReferenceInputStateAndRefs();
+        Assertions.assertEquals(List.of(contractStateAndRef), value);
+    }
+
+    @Test
+    public void getOutputTransactionStatesShouldReturnTheExpectedValue() {
+        List<TransactionState<?>> value = utxoTransactionBuilder.getOutputTransactionStates();
+        Assertions.assertEquals(List.of(contractTransactionState), value);
+    }
+
+    @Test
+    public void addAttachmentShouldReturnTheExpectedValue() {
+        UtxoTransactionBuilder value = utxoTransactionBuilder.addAttachment(hash);
+        Assertions.assertEquals(utxoTransactionBuilder, value);
+    }
+
+    @Test
+    public void addCommandOfTypeCreateShouldReturnTheExpectedValue() {
+        UtxoTransactionBuilder value = utxoTransactionBuilder.addCommand(createCommand);
+        Assertions.assertEquals(utxoTransactionBuilder, value);
+    }
+
+    @Test
+    public void addCommandOfTypeUpdateShouldReturnTheExpectedValue() {
+        UtxoTransactionBuilder value = utxoTransactionBuilder.addCommand(updateCommand);
+        Assertions.assertEquals(utxoTransactionBuilder, value);
+    }
+
+    @Test
+    public void addSignatoriesShouldReturnTheExpectedValue() {
+        UtxoTransactionBuilder value = utxoTransactionBuilder.addSignatories(keys);
+        Assertions.assertEquals(utxoTransactionBuilder, value);
+    }
+
+    @Test
+    public void addCommandAndSignatoriesOfTypeCreateShouldReturnTheExpectedValue() {
+        UtxoTransactionBuilder value = utxoTransactionBuilder.addCommandAndSignatories(createCommand, keys);
+        Assertions.assertEquals(utxoTransactionBuilder, value);
+    }
+
+    @Test
+    public void addCommandAndSignatoriesOfTypeUpdateShouldReturnTheExpectedValue() {
+        UtxoTransactionBuilder value = utxoTransactionBuilder.addCommandAndSignatories(updateCommand, keys);
+        Assertions.assertEquals(utxoTransactionBuilder, value);
+    }
+
+    @Test
+    public void addCommandAndSignatoriesOfTypeCreateWithVarargKeysShouldReturnTheExpectedValue() {
+        UtxoTransactionBuilder value = utxoTransactionBuilder.addCommandAndSignatories(createCommand, aliceKey, bobKey);
+        Assertions.assertEquals(utxoTransactionBuilder, value);
+    }
+
+    @Test
+    public void addCommandAndSignatoriesOfTypeUpdateWithVarargKeysShouldReturnTheExpectedValue() {
+        UtxoTransactionBuilder value = utxoTransactionBuilder.addCommandAndSignatories(updateCommand, aliceKey, bobKey);
+        Assertions.assertEquals(utxoTransactionBuilder, value);
     }
 
     @Test
     public void addInputStateShouldReturnTheExpectedValue() {
-        UtxoTransactionBuilder builder = utxoTransactionBuilder.addInputState(contractStateAndRef);
-        List<StateAndRef<?>> value = builder.getInputStateAndRefs();
-        Assertions.assertEquals(List.of(contractStateAndRef), value);
+        UtxoTransactionBuilder value = utxoTransactionBuilder.addInputState(contractStateAndRef);
+        Assertions.assertEquals(utxoTransactionBuilder, value);
     }
 
     @Test
     public void addReferenceInputStateShouldReturnTheExpectedValue() {
-        UtxoTransactionBuilder builder = utxoTransactionBuilder.addReferenceInputState(contractStateAndRef);
-        List<StateAndRef<?>> value = builder.getReferenceInputStateAndRefs();
-        Assertions.assertEquals(List.of(contractStateAndRef), value);
-    }
-
-    @Test
-    public void addOutputStateOfTransactionStateShouldReturnTheExpectedValue() {
-        UtxoTransactionBuilder builder = utxoTransactionBuilder.addOutputState(contractTransactionState);
-        List<TransactionState<?>> value = builder.getOutputTransactionStates();
-        Assertions.assertEquals(List.of(contractTransactionState), value);
+        UtxoTransactionBuilder value = utxoTransactionBuilder.addReferenceInputState(contractStateAndRef);
+        Assertions.assertEquals(utxoTransactionBuilder, value);
     }
 
     @Test
     public void addOutputStateOfContractStateShouldReturnTheExpectedValue() {
-        UtxoTransactionBuilder builder = utxoTransactionBuilder.addOutputState(contractState);
-        List<TransactionState<?>> value = builder.getOutputTransactionStates();
-        Assertions.assertEquals(List.of(contractTransactionState), value);
+        UtxoTransactionBuilder value = utxoTransactionBuilder.addOutputState(contractState);
+        Assertions.assertEquals(utxoTransactionBuilder, value);
     }
 
     @Test
-    public void addOutputStateOfContractStateAndNotaryShouldReturnTheExpectedValue() {
-        UtxoTransactionBuilder builder = utxoTransactionBuilder.addOutputState(contractState, notaryParty);
-        List<TransactionState<?>> value = builder.getOutputTransactionStates();
-        Assertions.assertEquals(List.of(contractTransactionState), value);
-    }
-
-    @Test
-    public void addOutputStateOfContractStateAndContractIdShouldReturnTheExpectedValue() {
-        UtxoTransactionBuilder builder = utxoTransactionBuilder.addOutputState(contractState, contractId);
-        List<TransactionState<?>> value = builder.getOutputTransactionStates();
-        Assertions.assertEquals(List.of(contractTransactionState), value);
-    }
-
-    @Test
-    public void addOutputStateOfContractStateAndContractIdAndNotaryShouldReturnTheExpectedValue() {
-        UtxoTransactionBuilder builder = utxoTransactionBuilder.addOutputState(contractState, contractId, notaryParty);
-        List<TransactionState<?>> value = builder.getOutputTransactionStates();
-        Assertions.assertEquals(List.of(contractTransactionState), value);
-    }
-
-    @Test
-    public void addOutputStateOfContractStateAndContractIdAndNotaryAndEncumbranceShouldReturnTheExpectedValue() {
-        UtxoTransactionBuilder builder = utxoTransactionBuilder.addOutputState(contractState, contractId, notaryParty, 0);
-        List<TransactionState<?>> value = builder.getOutputTransactionStates();
-        Assertions.assertEquals(List.of(contractTransactionState), value);
+    public void addOutputStateOfContractStateAndEncumbranceShouldReturnTheExpectedValue() {
+        UtxoTransactionBuilder value = utxoTransactionBuilder.addOutputState(contractState, 0);
+        Assertions.assertEquals(utxoTransactionBuilder, value);
     }
 
     @Test
     public void setTimeWindowFromShouldReturnTheExpectedValue() {
-        UtxoTransactionBuilder builder = utxoTransactionBuilder.setTimeWindowFrom(minInstant);
-        TimeWindow value = builder.getTimeWindow();
-        Assertions.assertEquals(timeWindow, value);
+        UtxoTransactionBuilder value = utxoTransactionBuilder.setTimeWindowFrom(minInstant);
+        Assertions.assertEquals(utxoTransactionBuilder, value);
     }
 
     @Test
     public void setTimeWindowUntilShouldReturnTheExpectedValue() {
-        UtxoTransactionBuilder builder = utxoTransactionBuilder.setTimeWindowUntil(maxInstant);
-        TimeWindow value = builder.getTimeWindow();
-        Assertions.assertEquals(timeWindow, value);
+        UtxoTransactionBuilder value = utxoTransactionBuilder.setTimeWindowUntil(maxInstant);
+        Assertions.assertEquals(utxoTransactionBuilder, value);
     }
 
     @Test
     public void setTimeWindowBetweenOfInstantAndInstantShouldReturnTheExpectedValue() {
-        UtxoTransactionBuilder builder = utxoTransactionBuilder.setTimeWindowBetween(minInstant, maxInstant);
-        TimeWindow value = builder.getTimeWindow();
-        Assertions.assertEquals(timeWindow, value);
+        UtxoTransactionBuilder value = utxoTransactionBuilder.setTimeWindowBetween(minInstant, maxInstant);
+        Assertions.assertEquals(utxoTransactionBuilder, value);
     }
 
     @Test
     public void setTimeWindowBetweenOfInstantAndDurationShouldReturnTheExpectedValue() {
-        UtxoTransactionBuilder builder = utxoTransactionBuilder.setTimeWindowBetween(midpoint, duration);
-        TimeWindow value = builder.getTimeWindow();
-        Assertions.assertEquals(timeWindow, value);
+        UtxoTransactionBuilder value = utxoTransactionBuilder.setTimeWindowBetween(midpoint, duration);
+        Assertions.assertEquals(utxoTransactionBuilder, value);
     }
 
     @Test
@@ -116,20 +157,37 @@ public final class UtxoTransactionBuilderJavaApiTests extends AbstractMockTestHa
     }
 
     @Test
-    public void signWithMultipleKeysShouldReturnTheExpectedValue() {
+    public void signWithKeysShouldReturnTheExpectedValue() {
         UtxoSignedTransaction value = utxoTransactionBuilder.sign(keys);
         Assertions.assertEquals(utxoSignedTransaction, value);
     }
 
     @Test
-    public void signWithSingleKeyShouldReturnTheExpectedValue() {
-        UtxoSignedTransaction value = utxoTransactionBuilder.sign(aliceKey);
+    public void signWithVarargKeysShouldReturnTheExpectedValue() {
+        UtxoSignedTransaction value = utxoTransactionBuilder.sign(aliceKey, bobKey);
         Assertions.assertEquals(utxoSignedTransaction, value);
     }
 
     @Test
-    public void toWireTransactionShouldReturnTheExpectedValue() {
-        UtxoWireTransaction value = utxoTransactionBuilder.toWireTransaction();
-        Assertions.assertEquals(utxoWireTransaction, value);
+    public void verifyShouldBeCallable() {
+        utxoTransactionBuilder.verify();
+    }
+
+    @Test
+    public void verifyAndSignShouldReturnTheExpectedValue() {
+        UtxoSignedTransaction value = utxoTransactionBuilder.verifyAndSign();
+        Assertions.assertEquals(utxoSignedTransaction, value);
+    }
+
+    @Test
+    public void verifyAndSignWithKeysShouldReturnTheExpectedValue() {
+        UtxoSignedTransaction value = utxoTransactionBuilder.verifyAndSign(keys);
+        Assertions.assertEquals(utxoSignedTransaction, value);
+    }
+
+    @Test
+    public void verifyAndSignWithVarargKeysShouldReturnTheExpectedValue() {
+        UtxoSignedTransaction value = utxoTransactionBuilder.verifyAndSign(aliceKey, bobKey);
+        Assertions.assertEquals(utxoSignedTransaction, value);
     }
 }

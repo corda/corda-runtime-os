@@ -11,20 +11,20 @@ public final class UtxoLedgerServiceJavaApiTests extends AbstractMockTestHarness
 
     @Test
     public void getTransactionBuilderShouldReturnTheExpectedResult() {
-        UtxoTransactionBuilder value = utxoLedgerService.getTransactionBuilder(notaryParty);
+        UtxoTransactionBuilder value = utxoLedgerService.getTransactionBuilder();
         Assertions.assertEquals(utxoTransactionBuilder, value);
     }
 
     @Test
-    public void resolveShouldReturnTheExpectedResult() {
-        List<StateAndRef<ContractState>> value = utxoLedgerService.resolve(Set.of(stateRef));
+    public void resolvePluralShouldReturnTheExpectedResult() {
+        List<StateAndRef<ContractState>> value = utxoLedgerService.resolve(List.of(stateRef));
         Assertions.assertEquals(List.of(contractStateAndRef), value);
     }
 
     @Test
-    public void resolveVarargShouldReturnTheExpectedResult() {
-        List<StateAndRef<ContractState>> value = utxoLedgerService.resolve(stateRef);
-        Assertions.assertEquals(List.of(contractStateAndRef), value);
+    public void resolveSingularShouldReturnTheExpectedResult() {
+        StateAndRef<ContractState> value = utxoLedgerService.resolve(stateRef);
+        Assertions.assertEquals(contractStateAndRef, value);
     }
 
     @Test

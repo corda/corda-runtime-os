@@ -19,7 +19,6 @@ import java.time.Instant
  * @property inputStateAndRefs The transaction input state and refs.
  * @property referenceInputStateAndRefs The transaction referenced input state and refs.
  * @property outputTransactionStates The transaction output states.
- * @property requiredSignatories The signatories required to sign the current transaction.
  */
 @DoNotImplement
 @CordaSerializable
@@ -27,13 +26,13 @@ import java.time.Instant
 interface UtxoTransactionBuilder {
 
     val notary: Party
-    val timeWindow: TimeWindow?
+    val timeWindow: TimeWindow
     val attachments: List<SecureHash>
-    val commands: List<CommandAndSignatories<*>>
+    val commands: List<Command>
+    val signatories: Set<PublicKey>
     val inputStateAndRefs: List<StateAndRef<*>>
     val referenceInputStateAndRefs: List<StateAndRef<*>>
     val outputTransactionStates: List<TransactionState<*>>
-    val requiredSignatories: List<PublicKey> get() = commands.flatMap { it.signatories }.distinct()
 
     /**
      * Adds an [Attachment] to the current [UtxoTransactionBuilder].
@@ -42,6 +41,22 @@ interface UtxoTransactionBuilder {
      * @return Returns a new [UtxoTransactionBuilder] with an added [Attachment].
      */
     fun addAttachment(attachmentId: SecureHash): UtxoTransactionBuilder
+
+    /**
+     * Adds a command to the current [UtxoTransactionBuilder].
+     *
+     * @param command The command to add to the current [UtxoTransactionBuilder].
+     * @return Returns a [UtxoTransactionBuilder] including the additional command.
+     */
+    fun addCommand(command: Command): UtxoTransactionBuilder
+
+    /**
+     * Adds signatories to the current [UtxoTransactionBuilder].
+     *
+     * @param signatories The signatories to add to the current [UtxoTransactionBuilder].
+     * @return Returns a [UtxoTransactionBuilder] including the additional signatories.
+     */
+    fun addSignatories(signatories: Iterable<PublicKey>): UtxoTransactionBuilder
 
     /**
      * Adds a command and associated signatories to the current [UtxoTransactionBuilder].
@@ -82,14 +97,6 @@ interface UtxoTransactionBuilder {
     /**
      * Adds an output state to the current [UtxoTransactionBuilder].
      *
-     * @param transactionState The [TransactionState] to add to the current [UtxoTransactionBuilder].
-     * @return Returns a [UtxoTransactionBuilder] including the additional output state.
-     */
-    fun addOutputState(transactionState: TransactionState<*>): UtxoTransactionBuilder
-
-    /**
-     * Adds an output state to the current [UtxoTransactionBuilder].
-     *
      * @param contractState The [ContractState] to add to the current [UtxoTransactionBuilder].
      * @return Returns a [UtxoTransactionBuilder] including the additional output state.
      */
@@ -99,40 +106,10 @@ interface UtxoTransactionBuilder {
      * Adds an output state to the current [UtxoTransactionBuilder].
      *
      * @param contractState The [ContractState] to add to the current [UtxoTransactionBuilder].
-     * @param notary The notary that will be used to notarise the specified [ContractState].
-     * @return Returns a [UtxoTransactionBuilder] including the additional output state.
-     */
-    fun addOutputState(contractState: ContractState, notary: Party): UtxoTransactionBuilder
-
-    /**
-     * Adds an output state to the current [UtxoTransactionBuilder].
-     *
-     * @param contractState The [ContractState] to add to the current [UtxoTransactionBuilder].
-     * @param contractId The class name of the [Contract] associated with the transaction state.
-     * @return Returns a [UtxoTransactionBuilder] including the additional output state.
-     */
-    fun addOutputState(contractState: ContractState, contractId: String): UtxoTransactionBuilder
-
-    /**
-     * Adds an output state to the current [UtxoTransactionBuilder].
-     *
-     * @param contractState The [ContractState] to add to the current [UtxoTransactionBuilder].
-     * @param contractId The class name of the [Contract] associated with the transaction state.
-     * @param notary The notary that will be used to notarise the specified [ContractState].
-     * @return Returns a [UtxoTransactionBuilder] including the additional output state.
-     */
-    fun addOutputState(contractState: ContractState, contractId: String, notary: Party): UtxoTransactionBuilder
-
-    /**
-     * Adds an output state to the current [UtxoTransactionBuilder].
-     *
-     * @param contractState The [ContractState] to add to the current [UtxoTransactionBuilder].
-     * @param contractId The class name of the [Contract] associated with the transaction state.
-     * @param notary The notary that will be used to notarise the specified [ContractState].
      * @param encumbrance The index of an associated, encumbered state, or null if no encumbrance applies to the associated transaction state.
      * @return Returns a [UtxoTransactionBuilder] including the additional output state.
      */
-    fun addOutputState(contractState: ContractState, contractId: String, notary: Party, encumbrance: Int?): UtxoTransactionBuilder
+    fun addOutputState(contractState: ContractState, encumbrance: Int?): UtxoTransactionBuilder
 
     /**
      * Sets the transaction time window to be valid from the specified [Instant], tending towards positive infinity.
@@ -218,11 +195,4 @@ interface UtxoTransactionBuilder {
      * @return Returns a [UtxoSignedTransaction] with signatures for the specified signatory keys.
      */
     fun verifyAndSign(vararg signatories: PublicKey): UtxoSignedTransaction
-
-    /**
-     * Builds the current transaction into a [UtxoWireTransaction].
-     *
-     * @return Returns a [UtxoWireTransaction] from the current [UtxoTransactionBuilder].
-     */
-    fun toWireTransaction(): UtxoWireTransaction
 }
