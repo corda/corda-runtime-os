@@ -4,7 +4,11 @@ import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.Party
-import net.corda.v5.ledger.utxo.*
+import net.corda.v5.ledger.utxo.Command
+import net.corda.v5.ledger.utxo.StateAndRef
+import net.corda.v5.ledger.utxo.TimeWindow
+import net.corda.v5.ledger.utxo.TransactionState
+import net.corda.v5.ledger.utxo.ContractState
 import java.security.PublicKey
 import java.time.Duration
 import java.time.Instant

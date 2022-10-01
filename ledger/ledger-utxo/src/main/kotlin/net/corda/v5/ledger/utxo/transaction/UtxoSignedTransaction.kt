@@ -1,7 +1,6 @@
 package net.corda.v5.ledger.utxo.transaction
 
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.crypto.SecureHash
