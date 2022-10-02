@@ -1,6 +1,7 @@
 package net.corda.ledger.consensual.impl.converter
 
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
+import net.corda.ledger.common.impl.PartyConverter
 import net.corda.ledger.consensual.impl.PartyImpl
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_SESSION_KEY

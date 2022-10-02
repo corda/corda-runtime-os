@@ -1,11 +1,11 @@
-package net.corda.ledger.consensual.impl
+package net.corda.ledger.common.impl
 
 import net.corda.v5.base.types.MemberX500Name
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import java.security.PublicKey
-import kotlin.test.assertEquals
-import kotlin.test.assertNotEquals
 
 class PartyTest {
     companion object {

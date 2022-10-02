@@ -50,5 +50,7 @@ data class StateRefImpl(override val transactionHash: SecureHash, override val i
      *
      * @return Returns a string that represents the current object.
      */
-    override fun toString(): String = "$transactionHash$DELIMITER$index"
+    override fun toString(): String {
+        return "$transactionHash$DELIMITER$index"
+    }
 }

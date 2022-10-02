@@ -17,6 +17,8 @@ dependencies {
     implementation project(":libs:serialization:serialization-checkpoint-api")
     implementation project(":libs:serialization:serialization-internal")
     implementation project(":libs:crypto:crypto-core")
+    implementation project(":libs:layered-property-map")
+    implementation project(":libs:serialization:serialization-internal")
 
     testImplementation project(":testing:kryo-serialization-testkit")
     testImplementation project(':testing:ledger:ledger-common-testkit')

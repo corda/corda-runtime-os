@@ -78,7 +78,7 @@ class ConsensualSignedTransactionImplKryoSerializationTest {
                 sandboxCreationService.unloadSandboxGroup(emptySandboxGroup)
             }
             partySerializer = setup.fetchService(
-                "(component.name=net.corda.ledger.consensual.impl.PartySerializer)",
+                "(component.name=net.corda.ledger.common.impl.PartySerializer)",
                 1500
             )
             wireTransactionKryoSerializer = setup.fetchService(
