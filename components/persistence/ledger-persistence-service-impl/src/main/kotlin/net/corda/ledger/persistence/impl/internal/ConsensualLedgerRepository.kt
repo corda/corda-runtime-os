@@ -33,10 +33,15 @@ class ConsensualLedgerRepository(
 ) {
     companion object {
         private val logger = contextLogger()
-        // TODO
-        private val fakePublicKey = KeyPairGenerator.getInstance("EC")
+        // TODO These values are used instead of missing values
+        val fakePublicKey = KeyPairGenerator.getInstance("EC")
             .apply { initialize(ECGenParameterSpec("secp256r1")) }
             .generateKeyPair().public
+        val fakeContext = emptyMap<String, String>()
+        val fakeSignature = DigitalSignature.WithKey(fakePublicKey, "0".toByteArray(), fakeContext)
+        val fakeDigitalSignatureMetadata =
+            DigitalSignatureMetadata(Instant.now(), mapOf()) //CORE-5091 populate this properly...
+        val fakeSignatureWithMetaData = DigitalSignatureAndMetadata(fakeSignature, fakeDigitalSignatureMetadata)
     }
 
     fun persistTransaction(entityManager: EntityManager, transaction: ConsensualSignedTransactionImpl, account :String): EntityResponse {
@@ -54,12 +59,10 @@ class ConsensualLedgerRepository(
         persistCpk(entityManager, now, wireTransaction)
         persistTransactionCpk(entityManager, transactionId)
 
-        // TODO when and what do we write to the signatures table?
         transaction.signatures.forEachIndexed { index, digitalSignatureAndMetadata ->
             persistSignature(entityManager, now, transactionId, index, digitalSignatureAndMetadata.signature.bytes)
         }
 
-        // construct response
         return EntityResponse(emptyList())
     }
 
@@ -131,8 +134,11 @@ class ConsensualLedgerRepository(
             .map { it as Tuple }
             .map { r ->
                 DigitalSignatureAndMetadata(
-                    DigitalSignature.WithKey(fakePublicKey, r.get(0) as ByteArray, emptyMap()),
-                    DigitalSignatureMetadata(Instant.now(), emptyMap()))
+                    // TODO where to get public key and context from (it's not in DB)?
+                    DigitalSignature.WithKey(fakePublicKey, r.get(0) as ByteArray, fakeContext),
+                    // TODO where to get digital signature metadata from?
+                    fakeDigitalSignatureMetadata)
+                    //DigitalSignatureMetadata(Instant.now(), emptyMap()))
             }
     }
 
