@@ -109,8 +109,6 @@ interface ObjectBuilder {
                     when (it) {
                         is LocalPropertyInformation.ConstructorPairedProperty ->
                             it.constructorSlot.constructorInformation == constructor
-                        is LocalPropertyInformation.PrivateConstructorPairedProperty ->
-                            it.constructorSlot.constructorInformation == constructor
                         else -> true
                     }
                 }
@@ -118,7 +116,6 @@ interface ObjectBuilder {
             val constructorIndices = properties.mapValues { (name, property) ->
                 when (property) {
                     is LocalPropertyInformation.ConstructorPairedProperty -> property.constructorSlot.parameterIndex
-                    is LocalPropertyInformation.PrivateConstructorPairedProperty -> property.constructorSlot.parameterIndex
                     is LocalPropertyInformation.CalculatedProperty -> IGNORE_COMPUTED
                     else -> throw NotSerializableException(
                         "Type ${typeIdentifier.prettyPrint(false)} has constructor arguments, " +

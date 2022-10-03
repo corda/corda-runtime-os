@@ -63,7 +63,7 @@ class LocalTypeModelTests {
     @Suppress("unused")
     class Nested(
         val collectionHolder: StringKeyedCollectionHolder<out Int>?,
-        private val intArray: IntArray,
+        val intArray: IntArray,
         @Suppress("UNUSED_PARAMETER") optionalParam: Short?
     )
 
