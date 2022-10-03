@@ -187,7 +187,7 @@ class MembershipPersistenceClientImpl(
         registrationId: String,
         registrationRequestStatus: RegistrationStatus
     ): MembershipPersistenceResult<Unit> {
-        logger.info("Updating the status of a registration request with ID $registrationId.")
+        logger.info("Updating the status of a registration request with ID '$registrationId'.")
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             UpdateRegistrationRequestStatus(registrationId, registrationRequestStatus)

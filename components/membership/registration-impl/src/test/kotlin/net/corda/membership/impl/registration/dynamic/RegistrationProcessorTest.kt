@@ -16,6 +16,7 @@ import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.p2p.VerificationRequest
 import net.corda.data.membership.p2p.VerificationResponse
 import net.corda.data.membership.state.RegistrationState
+import net.corda.membership.impl.registration.VerificationResponseKeys
 import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
@@ -88,7 +89,11 @@ class RegistrationProcessorTest {
 
         val verificationResponse = VerificationResponse(
             registrationId,
-            KeyValuePairList(emptyList<KeyValuePair>())
+            KeyValuePairList(
+                listOf(
+                    KeyValuePair(VerificationResponseKeys.VERIFIED, true.toString())
+                )
+            )
         )
 
         val verificationRequestCommand = RegistrationCommand(
@@ -104,35 +109,36 @@ class RegistrationProcessorTest {
     private lateinit var processor: RegistrationProcessor
 
     // test dependencies
-    lateinit var memberInfoFactory: MemberInfoFactory
-    lateinit var membershipGroupReader: MembershipGroupReader
-    lateinit var membershipGroupReaderProvider: MembershipGroupReaderProvider
-    lateinit var deserializer: CordaAvroDeserializer<KeyValuePairList>
-    lateinit var verificationRequestResponseSerializer: CordaAvroSerializer<Any>
-    lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
+    private lateinit var memberInfoFactory: MemberInfoFactory
+    private lateinit var membershipGroupReader: MembershipGroupReader
+    private lateinit var membershipGroupReaderProvider: MembershipGroupReaderProvider
+    private lateinit var deserializer: CordaAvroDeserializer<KeyValuePairList>
+    private lateinit var verificationRequestResponseSerializer: CordaAvroSerializer<Any>
+    private lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
     lateinit var membershipPersistenceClient: MembershipPersistenceClient
-    lateinit var membershipQueryClient: MembershipQueryClient
+    private lateinit var membershipQueryClient: MembershipQueryClient
 
-    val memberMemberContext: MemberContext = mock {
+    private val memberMemberContext: MemberContext = mock {
         on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
         on { parseList(eq(ENDPOINTS), eq(EndpointInfo::class.java)) } doReturn listOf(mock())
     }
-    val memberMgmContext: MGMContext = mock {
+    private val memberMgmContext: MGMContext = mock {
         on { parse(eq(STATUS), eq(String::class.java)) } doReturn MEMBER_STATUS_ACTIVE
+        on { parseOrNull(eq(IS_MGM), any<Class<Boolean>>()) } doReturn false
     }
-    val memberInfo: MemberInfo = mock {
+    private val memberInfo: MemberInfo = mock {
         on { name } doReturn x500Name
         on { memberProvidedContext } doReturn memberMemberContext
         on { mgmProvidedContext } doReturn memberMgmContext
     }
 
-    val mgmMemberContext: MemberContext = mock {
+    private val mgmMemberContext: MemberContext = mock {
         on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
     }
-    val mgmContext: MGMContext = mock {
+    private val mgmContext: MGMContext = mock {
         on { parseOrNull(eq(IS_MGM), any<Class<Boolean>>()) } doReturn true
     }
-    val mgmMemberInfo: MemberInfo = mock {
+    private val mgmMemberInfo: MemberInfo = mock {
         on { name } doReturn mgmX500Name
         on { memberProvidedContext } doReturn mgmMemberContext
         on { mgmProvidedContext } doReturn mgmContext
@@ -148,6 +154,7 @@ class RegistrationProcessorTest {
         }
         membershipGroupReaderProvider = mock {
             on { getGroupReader(eq(mgmHoldingIdentity.toCorda())) } doReturn membershipGroupReader
+            on { getGroupReader(eq(holdingIdentity.toCorda())) } doReturn membershipGroupReader
         }
         deserializer = mock {
             on { deserialize(eq(memberContext.toByteBuffer().array())) } doReturn memberContext

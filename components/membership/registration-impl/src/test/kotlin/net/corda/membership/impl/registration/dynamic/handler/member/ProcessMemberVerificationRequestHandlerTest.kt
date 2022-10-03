@@ -1,7 +1,6 @@
 package net.corda.membership.impl.registration.dynamic.handler.member
 
 import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.command.registration.RegistrationCommand
@@ -9,22 +8,25 @@ import net.corda.data.membership.command.registration.member.ProcessMemberVerifi
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.VerificationRequest
 import net.corda.data.membership.p2p.VerificationResponse
+import net.corda.membership.impl.registration.VerificationResponseKeys
+import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
+import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
-import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.KArgumentCaptor
-import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import java.time.Instant
 
 class ProcessMemberVerificationRequestHandlerTest {
@@ -43,19 +45,28 @@ class ProcessMemberVerificationRequestHandlerTest {
         requestBody
     )
 
-    private val response: KArgumentCaptor<VerificationResponse> = argumentCaptor()
-    private val responseSerializer: CordaAvroSerializer<VerificationResponse> = mock {
-        on { serialize(response.capture()) } doReturn "RESPONSE".toByteArray()
-    }
-    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock {
-        on { createAvroSerializer<VerificationResponse>(any()) } doReturn responseSerializer
-    }
+    private val response = argumentCaptor<VerificationResponse>()
+    private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory>()
     private val membershipPersistenceClient = mock<MembershipPersistenceClient>()
+    private val memberTypeChecker = mock<MemberTypeChecker>()
+    private val p2pMessage = mock<Record<String, AppMessage>>()
+    private val p2pRecordsFactory = mock<P2pRecordsFactory> {
+        on {
+            createAuthenticatedMessageRecord(
+                eq(member),
+                eq(mgm),
+                response.capture(),
+                isNull()
+            )
+        } doReturn p2pMessage
+    }
 
     private val processMemberVerificationRequestHandler = ProcessMemberVerificationRequestHandler(
         clock,
         cordaAvroSerializationFactory,
-        membershipPersistenceClient
+        membershipPersistenceClient,
+        memberTypeChecker,
+        p2pRecordsFactory,
     )
 
     @Test
@@ -71,19 +82,40 @@ class ProcessMemberVerificationRequestHandlerTest {
             )
         )
         assertThat(result.outputStates).hasSize(1)
+            .contains(p2pMessage)
         assertThat(result.updatedState).isNull()
-        val appMessage = result.outputStates.first().value as AppMessage
-        with(appMessage.message as AuthenticatedMessage) {
-            assertThat(this.header.source).isEqualTo(member)
-            assertThat(this.header.destination).isEqualTo(mgm)
-            assertThat(this.header.ttl).isNull()
-            assertThat(this.header.messageId).isNotNull
-            assertThat(this.header.traceId).isNull()
-            assertThat(this.header.subsystem).isEqualTo("membership")
-        }
         with(response.firstValue) {
             assertThat(this.registrationId).isEqualTo(REGISTRATION_ID)
+            assertThat(this.payload.items).hasSize(1)
+                .anySatisfy {
+                    assertThat(it.key).isEqualTo(VerificationResponseKeys.VERIFIED)
+                    assertThat(it.value).isEqualTo("true")
+                }
         }
+    }
+
+    @Test
+    fun `handler invalidate if the member type is not a member`() {
+        whenever(memberTypeChecker.isMgm(member)).doReturn(true)
+        processMemberVerificationRequestHandler.invoke(
+            null,
+            Record(
+                "dummyTopic",
+                member.toString(),
+                RegistrationCommand(
+                    ProcessMemberVerificationRequest(member, mgm, verificationRequest)
+                )
+            )
+        )
+        assertThat(response.firstValue.payload.items)
+            .anySatisfy {
+                assertThat(it.key).isEqualTo(VerificationResponseKeys.VERIFIED)
+                assertThat(it.value).isEqualTo("false")
+            }
+            .anySatisfy {
+                assertThat(it.key).isEqualTo(VerificationResponseKeys.FAILURE_REASONS)
+                assertThat(it.value).isNotBlank()
+            }
     }
 
     @Test

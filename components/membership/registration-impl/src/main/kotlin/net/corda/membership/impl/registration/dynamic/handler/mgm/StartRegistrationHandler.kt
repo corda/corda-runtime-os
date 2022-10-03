@@ -10,6 +10,7 @@ import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.layeredpropertymap.toAvro
+import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.lib.MemberInfoFactory
@@ -27,7 +28,6 @@ import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.persistence.client.MembershipQueryResult
-import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
@@ -40,10 +40,10 @@ import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
 
 @Suppress("LongParameterList")
-class StartRegistrationHandler(
+internal class StartRegistrationHandler(
     private val clock: Clock,
     private val memberInfoFactory: MemberInfoFactory,
-    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    private val memberTypeChecker: MemberTypeChecker,
     private val membershipPersistenceClient: MembershipPersistenceClient,
     private val membershipQueryClient: MembershipQueryClient,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
@@ -71,6 +71,11 @@ class StartRegistrationHandler(
             }
 
         val (outputCommand, outputStates) = try {
+            validateRegistrationRequest(!memberTypeChecker.isMgm(pendingMemberHoldingId)) {
+                "Registration request is registering an MGM holding identity."
+            }
+            val mgmMemberInfo = getMGMMemberInfo(mgmHoldingId)
+
             logger.info("Persisting the received registration request.")
             membershipPersistenceClient.persistRegistrationRequest(mgmHoldingId, registrationRequest).also {
                 require(it as? MembershipPersistenceResult.Failure == null) {
@@ -79,7 +84,6 @@ class StartRegistrationHandler(
                 }
             }
 
-            val mgmMemberInfo = getMGMMemberInfo(mgmHoldingId)
             logger.info("Registering $pendingMemberHoldingId with MGM for holding identity: $mgmHoldingId")
             val pendingMemberInfo = buildPendingMemberInfo(registrationRequest)
             // Parse the registration request and verify contents
@@ -184,12 +188,8 @@ class StartRegistrationHandler(
     }
 
     private fun getMGMMemberInfo(mgm: HoldingIdentity): MemberInfo {
-        val mgmMemberName = mgm.x500Name
-        return membershipGroupReaderProvider.getGroupReader(mgm).lookup(mgmMemberName).apply {
+        return memberTypeChecker.getMgmMemberInfo(mgm).apply {
             validateRegistrationRequest(this != null) {
-                "Could not find MGM matching name: [$mgmMemberName]"
-            }
-            validateRegistrationRequest(this!!.isMgm) {
                 "Registration request is targeted at non-MGM holding identity."
             }
         }!!

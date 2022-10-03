@@ -22,29 +22,11 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.framework.BundleContext
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Deactivate
-import org.osgi.service.component.annotations.Reference
 import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.file.Path
-
-@Component(service = [ SandboxManagementService::class ])
-class SandboxManagementService @Activate constructor(
-    @Reference
-    private val sandboxCreationService: SandboxCreationService
-) {
-    val group1: SandboxGroup = sandboxCreationService.createSandboxGroup(emptyList())
-
-    @Suppress("unused")
-    @Deactivate
-    fun cleanup() {
-        sandboxCreationService.unloadSandboxGroup(group1)
-    }
-}
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
@@ -64,7 +46,7 @@ class WireTransactionKryoSerializationTest {
     @InjectService(timeout = 1000)
     lateinit var jsonMarshallingService: JsonMarshallingService
 
-    private lateinit var sandboxManagementService: SandboxManagementService
+    private lateinit var emptySandboxGroup: SandboxGroup
 
     private lateinit var wireTransactionKryoSerializer: CheckpointInternalCustomSerializer<WireTransaction>
 
@@ -79,7 +61,11 @@ class WireTransactionKryoSerializationTest {
     ) {
         sandboxSetup.configure(bundleContext, baseDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
-            sandboxManagementService = setup.fetchService(timeout = 1500)
+            val sandboxCreationService = setup.fetchService<SandboxCreationService>(timeout = 1500)
+            emptySandboxGroup = sandboxCreationService.createSandboxGroup(emptyList())
+            setup.withCleanup {
+                sandboxCreationService.unloadSandboxGroup(emptySandboxGroup)
+            }
             wireTransactionKryoSerializer = setup.fetchService(1500)
         }
     }
@@ -88,7 +74,7 @@ class WireTransactionKryoSerializationTest {
     @Suppress("FunctionName")
     fun `correct serialization of a wire Transaction`() {
         val builder =
-            checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(sandboxManagementService.group1)
+            checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(emptySandboxGroup)
         val kryoSerializer = builder
             .addSerializer(WireTransaction::class.java, wireTransactionKryoSerializer)
             .build()

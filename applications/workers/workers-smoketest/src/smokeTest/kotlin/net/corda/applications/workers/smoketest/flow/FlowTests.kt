@@ -28,7 +28,6 @@ import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -68,6 +67,7 @@ class FlowTests {
             "net.cordapp.testing.testflows.MessagingFlow",
             "net.cordapp.testing.testflows.PersistenceFlow",
             "net.cordapp.testing.testflows.UniquenessCheckTestFlow",
+            "net.cordapp.testing.testflows.ledger.ConsensualSignedTransactionSerializationFlow",
         ) + invalidConstructorFlowNames + dependencyInjectionFlowNames
 
         @BeforeAll
