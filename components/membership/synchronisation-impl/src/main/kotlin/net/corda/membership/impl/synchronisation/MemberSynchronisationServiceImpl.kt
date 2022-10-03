@@ -260,18 +260,15 @@ class MemberSynchronisationServiceImpl internal constructor(
             try {
                 cancelCurrentRequestAndScheduleNewOne(viewOwningMember, mgm)
                 val updateMembersInfo = updates.membershipPackage.memberships.memberships.map { update ->
-                    println("QQQ going to verify member signature...")
                     verifier.verify(
                         update.memberSignature,
                         update.memberContext.array(),
                     )
-                    println("QQQ going to verify MGM signature...")
                     verifyMgmSignature(
                         update.mgmSignature,
                         update.memberContext.array(),
                         update.mgmContext.array(),
                     )
-                    println("QQQ verified...")
                     val memberContext = deserializer.deserialize(update.memberContext.array())
                         ?: throw CordaRuntimeException("Invalid member context")
                     val mgmContext = deserializer.deserialize(update.mgmContext.array())

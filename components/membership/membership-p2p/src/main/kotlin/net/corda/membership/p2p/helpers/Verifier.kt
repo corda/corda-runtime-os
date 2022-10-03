@@ -14,7 +14,6 @@ class Verifier(
         const val SIGNATURE_SPEC = "corda.membership.signature.spec"
     }
     fun verify(signature: CryptoSignatureWithKey, data: ByteArray) {
-        println("QQQ TTT in verify signatureVerificationService= $signatureVerificationService")
         val publicKey = keyEncodingService.decodePublicKey(signature.publicKey.array())
         val spec = signature.context
             .items
