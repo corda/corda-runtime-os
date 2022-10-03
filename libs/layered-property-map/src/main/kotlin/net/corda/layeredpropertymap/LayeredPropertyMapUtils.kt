@@ -9,9 +9,6 @@ import net.corda.v5.base.types.LayeredPropertyMap
  */
 fun LayeredPropertyMap.toAvro(): KeyValuePairList = KeyValuePairList(
     entries
-        .sortedBy {
-            it.key
-        }
         .map {
             KeyValuePair(it.key, it.value)
         }

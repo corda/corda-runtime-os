@@ -13,7 +13,7 @@ class Verifier(
     companion object {
         const val SIGNATURE_SPEC = "corda.membership.signature.spec"
     }
-    fun verify(signature: CryptoSignatureWithKey, date: ByteArray) {
+    fun verify(signature: CryptoSignatureWithKey, data: ByteArray) {
         val publicKey = keyEncodingService.decodePublicKey(signature.publicKey.array())
         val spec = signature.context
             .items
@@ -25,7 +25,7 @@ class Verifier(
             publicKey,
             SignatureSpec(spec),
             signature.bytes.array(),
-            date
+            data
         )
     }
 }

@@ -377,6 +377,11 @@ class MembershipPersistenceTest {
                         )
                     )
                 ),
+                CryptoSignatureWithKey(
+                    ByteBuffer.wrap(byteArrayOf()),
+                    ByteBuffer.wrap(byteArrayOf()),
+                    KeyValuePairList(emptyList()),
+                ),
             )
         )
 
@@ -648,6 +653,11 @@ class MembershipPersistenceTest {
                         )
                     )
                 ),
+                CryptoSignatureWithKey(
+                    ByteBuffer.wrap(byteArrayOf()),
+                    ByteBuffer.wrap(byteArrayOf()),
+                    KeyValuePairList(emptyList()),
+                ),
             )
         )
 
@@ -728,6 +738,11 @@ class MembershipPersistenceTest {
                             )
                         )
                     )
+                ),
+                CryptoSignatureWithKey(
+                    ByteBuffer.wrap(byteArrayOf()),
+                    ByteBuffer.wrap(byteArrayOf()),
+                    KeyValuePairList(emptyList()),
                 ),
             )
         )

@@ -3,8 +3,6 @@ package net.corda.membership.impl.registration.dynamic.mgm
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.KeyValuePairList
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.event.MembershipEvent
@@ -38,10 +36,8 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode
-import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
-import net.corda.membership.lib.toWire
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.registration.MemberRegistrationService
@@ -67,7 +63,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -91,8 +86,6 @@ class MGMRegistrationService @Activate constructor(
     private val membershipPersistenceClient: MembershipPersistenceClient,
     @Reference(service = LayeredPropertyMapFactory::class)
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
-    @Reference(service = CordaAvroSerializationFactory::class)
-    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = MembershipSchemaValidatorFactory::class)
     val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
 ) : MemberRegistrationService {
@@ -156,11 +149,6 @@ class MGMRegistrationService @Activate constructor(
      */
     private val publisher: Publisher
         get() = _publisher ?: throw IllegalArgumentException("Publisher is not initialized.")
-
-    private val keyValuePairListSerializer =
-        cordaAvroSerializationFactory.createAvroSerializer<KeyValuePairList> {
-            logger.error("Failed to serialize key value pair list.")
-        }
 
     // Component lifecycle coordinator
     private val coordinator = coordinatorFactory.createCoordinator(lifecycleCoordinatorName, ::handleEvent)
@@ -295,16 +283,10 @@ class MGMRegistrationService @Activate constructor(
                     )
                 }
 
-                val serializedMemberContext = keyValuePairListSerializer.serialize(memberContext.toWire())
-                    ?: throw IllegalArgumentException("Failed to serialize the member context for this request.")
-                val registrationRequestPersistenceResult = membershipPersistenceClient.persistRegistrationRequest(
+                val registrationRequestPersistenceResult = membershipPersistenceClient.setRegistrationRequestStatus(
                     viewOwningIdentity = member,
-                    registrationRequest = RegistrationRequest(
-                        status = RegistrationStatus.APPROVED,
-                        registrationId = registrationId.toString(),
-                        requester = member,
-                        memberContext = ByteBuffer.wrap(serializedMemberContext),
-                    )
+                    registrationId = registrationId.toString(),
+                    registrationRequestStatus = RegistrationStatus.APPROVED,
                 )
                 if (registrationRequestPersistenceResult is MembershipPersistenceResult.Failure) {
                     return MembershipRequestRegistrationResult(

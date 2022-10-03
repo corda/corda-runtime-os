@@ -8,14 +8,17 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.crypto.SignatureSpec
+import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.same
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.PublicKey
 
@@ -72,6 +75,23 @@ class VerifierTest {
 
         assertThrows<CordaRuntimeException> {
             verifier.verify(badSignature, data)
+        }
+    }
+
+    @Test
+    fun `verify fails if signature verification service fails`() {
+        val data = byteArrayOf(44, 1)
+        whenever(
+            signatureVerificationService.verify(
+                same(publicKey),
+                argThat<SignatureSpec> { this.signatureName == SPEC },
+                eq(rawSignature),
+                eq(data)
+            )
+        ).doThrow(CryptoSignatureException("Not verified"))
+
+        assertThrows<CryptoSignatureException> {
+            verifier.verify(signature, data)
         }
     }
 }
