@@ -69,8 +69,7 @@ class SerializationTests {
                 virtualNode.sandboxGroupContextComponent,
                 cpiInfoReadService,
                 virtualNodeInfoReadService,
-                BasicMocks.dbConnectionManager(),
-                BasicMocks.componentContext()
+                BasicMocks.dbConnectionManager()
             )
 
         val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity)

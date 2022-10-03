@@ -8,6 +8,7 @@ import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionI
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualTransactionBuilderImpl
 import net.corda.ledger.consensual.flow.impl.transaction.TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
 import net.corda.libs.platform.PlatformInfoProvider
+import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -24,7 +25,7 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 @Suppress("LongParameterList")
-@Component(service = [ ConsensualTransactionBuilderFactory::class, SingletonSerializeAsToken::class ], scope = PROTOTYPE)
+@Component(service = [ ConsensualTransactionBuilderFactory::class, UsedByFlow::class ], scope = PROTOTYPE)
 class ConsensualTransactionBuilderFactoryImpl @Activate constructor(
     @Reference(service = CipherSchemeMetadata::class)
     private val cipherSchemeMetadata: CipherSchemeMetadata,
@@ -44,7 +45,7 @@ class ConsensualTransactionBuilderFactoryImpl @Activate constructor(
     private val platformInfoProvider: PlatformInfoProvider,
     @Reference(service = FlowFiberService::class)
     private val flowFiberService: FlowFiberService
-) : ConsensualTransactionBuilderFactory, SingletonSerializeAsToken {
+) : ConsensualTransactionBuilderFactory, UsedByFlow, SingletonSerializeAsToken {
 
     override fun create(): ConsensualTransactionBuilder =
         ConsensualTransactionBuilderImpl(

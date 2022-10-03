@@ -11,6 +11,7 @@ import net.corda.flow.application.persistence.external.events.RemoveExternalEven
 import net.corda.flow.application.persistence.external.events.RemoveParameters
 import net.corda.flow.application.persistence.query.PagedQueryFactory
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.application.persistence.ParameterizedQuery
 import net.corda.v5.application.persistence.PersistenceService
@@ -20,10 +21,10 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ServiceScope
+import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 @Suppress("TooManyFunctions")
-@Component(service = [PersistenceService::class, SingletonSerializeAsToken::class], scope = ServiceScope.PROTOTYPE)
+@Component(service = [ PersistenceService::class, UsedByFlow::class ], scope = PROTOTYPE)
 class PersistenceServiceImpl @Activate constructor(
     @Reference(service = ExternalEventExecutor::class)
     private val externalEventExecutor: ExternalEventExecutor,
@@ -31,7 +32,7 @@ class PersistenceServiceImpl @Activate constructor(
     private val pagedQueryFactory: PagedQueryFactory,
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService
-) : PersistenceService, SingletonSerializeAsToken {
+) : PersistenceService, UsedByFlow, SingletonSerializeAsToken {
 
     @Suspendable
     override fun <R : Any> find(entityClass: Class<R>, primaryKey: Any): R? {

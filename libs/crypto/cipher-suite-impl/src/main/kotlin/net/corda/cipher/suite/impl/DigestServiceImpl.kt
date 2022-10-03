@@ -2,6 +2,9 @@ package net.corda.cipher.suite.impl
 
 import net.corda.crypto.core.DigestAlgorithmFactoryProvider
 import net.corda.crypto.impl.DoubleSHA256DigestFactory
+import net.corda.sandbox.type.UsedByFlow
+import net.corda.sandbox.type.UsedByPersistence
+import net.corda.sandbox.type.UsedByVerification
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
@@ -22,7 +25,7 @@ import java.security.Provider
 import java.util.concurrent.ConcurrentHashMap
 
 @Component(
-    service = [ DigestService::class, SingletonSerializeAsToken::class ],
+    service = [ DigestService::class, UsedByFlow::class, UsedByPersistence::class, UsedByVerification::class ],
     scope = PROTOTYPE
 )
 class DigestServiceImpl @Activate constructor(
@@ -34,7 +37,7 @@ class DigestServiceImpl @Activate constructor(
         cardinality = OPTIONAL
     )
     private val customFactoriesProvider: DigestAlgorithmFactoryProvider?
-) : DigestService, SingletonSerializeAsToken {
+) : DigestService, UsedByFlow, UsedByPersistence, UsedByVerification, SingletonSerializeAsToken {
     private val factories = ConcurrentHashMap<String, DigestAlgorithmFactory>().also {
         val factory = DoubleSHA256DigestFactory()
         it[factory.algorithm] = factory

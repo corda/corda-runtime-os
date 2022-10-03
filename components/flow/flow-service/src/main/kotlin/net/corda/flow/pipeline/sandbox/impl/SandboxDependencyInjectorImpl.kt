@@ -1,28 +1,21 @@
 package net.corda.flow.pipeline.sandbox.impl
 
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
+import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.Flow
-import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.framework.FrameworkUtil
 import java.lang.reflect.Field
 import java.util.Collections.unmodifiableMap
-import java.util.Collections.unmodifiableSet
 
 class SandboxDependencyInjectorImpl(
-    singletons: Map<SingletonSerializeAsToken, Array<String>>,
+    singletons: Map<UsedByFlow, List<String>>,
     private val closeable: AutoCloseable
 ) : SandboxDependencyInjector {
-    private companion object {
-        private val FORBIDDEN_INTERFACES: Set<String> = unmodifiableSet(setOf(
-            SingletonSerializeAsToken::class.java.name
-        ))
-    }
-
-    private val serviceTypeMap: Map<Class<*>, SingletonSerializeAsToken>
+    private val serviceTypeMap: Map<Class<*>, UsedByFlow>
 
     init {
-        val serviceTypes = mutableMapOf<Class<*>, SingletonSerializeAsToken>()
+        val serviceTypes = mutableMapOf<Class<*>, UsedByFlow>()
         singletons.forEach { singleton ->
             registerService(singleton.key, singleton.value, serviceTypes)
         }
@@ -34,7 +27,6 @@ class SandboxDependencyInjectorImpl(
     }
 
     override fun injectServices(flow: Flow) {
-
         val requiredFields = flow::class.java.getFieldsForInjection()
         val mismatchedFields = requiredFields.filterNot { serviceTypeMap.containsKey(it.type) }
         if (mismatchedFields.any()) {
@@ -55,8 +47,8 @@ class SandboxDependencyInjectorImpl(
         }
     }
 
-    override fun getRegisteredSingletons(): Set<SingletonSerializeAsToken> {
-        return serviceTypeMap.values.toSet()
+    override fun getRegisteredServices(): Collection<UsedByFlow> {
+        return serviceTypeMap.values
     }
 
     /**
@@ -82,14 +74,13 @@ class SandboxDependencyInjectorImpl(
     }
 
     private fun registerService(
-        serviceObj: SingletonSerializeAsToken,
-        serviceTypeNames: Array<String>,
-        serviceTypes: MutableMap<Class<*>, SingletonSerializeAsToken>
+        serviceObj: UsedByFlow,
+        serviceTypeNames: List<String>,
+        serviceTypes: MutableMap<Class<*>, UsedByFlow>
     ) {
         val serviceClass = serviceObj::class.java
         val serviceClassLoader = serviceClass.classLoader
-        serviceTypeNames.filterNot(FORBIDDEN_INTERFACES::contains)
-            .mapNotNull { serviceTypeName ->
+        serviceTypeNames.mapNotNull { serviceTypeName ->
                 try {
                     FrameworkUtil.getBundle(serviceClass)?.loadClass(serviceTypeName)
                         ?: Class.forName(serviceTypeName, false, serviceClassLoader)
@@ -110,9 +101,9 @@ class SandboxDependencyInjectorImpl(
     }
 
     private fun registerServiceImplementation(
-        service: SingletonSerializeAsToken,
+        service: UsedByFlow,
         implementedServiceType: Class<*>,
-        serviceTypes: MutableMap<Class<*>, SingletonSerializeAsToken>
+        serviceTypes: MutableMap<Class<*>, UsedByFlow>
     ) {
         val existingService = serviceTypes.putIfAbsent(implementedServiceType, service)
         if (existingService != null) {

@@ -4,6 +4,7 @@ import net.corda.flow.pipeline.exceptions.FlowFatalException
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector
 import net.corda.flow.pipeline.sessions.FlowProtocolStore
+import net.corda.sandboxgroupcontext.RequireSandboxAMQP.AMQP_P2P_SERIALIZATION_SERVICE
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.serialization.checkpoint.CheckpointSerializer
@@ -19,9 +20,9 @@ class FlowSandboxGroupContextImpl(
 
     companion object {
         const val DEPENDENCY_INJECTOR = "DEPENDENCY_INJECTOR"
-        const val AMQP_P2P_SERIALIZATION_SERVICE = "AMQP_SERIALIZER"
         const val CHECKPOINT_SERIALIZER = "CHECKPOINT_SERIALIZER"
         const val FLOW_PROTOCOL_STORE = "FLOW_PROTOCOL_STORE"
+        const val NON_INJECTABLE_SINGLETONS = "NON_INJECTABLE_SINGLETONS"
 
         @Suppress("ThrowsCount")
         fun fromContext(sandboxGroupContext: SandboxGroupContext): FlowSandboxGroupContext {

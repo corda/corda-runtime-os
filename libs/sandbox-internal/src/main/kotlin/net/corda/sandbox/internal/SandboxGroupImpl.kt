@@ -45,12 +45,12 @@ internal class SandboxGroupImpl(
                 try {
                     bundle.loadClass(className)
                 } catch (e: ClassNotFoundException) {
-                    logger.info("Could not load class $className from bundle $bundle: ${e.message}")
+                    logger.debug("Could not load class {} from bundle {}: {}", className, bundle, e.message)
                     null
                 }
             }.singleOrNull()
         if (clazz == null) {
-            logger.warn("Class $className was not found in any sandbox in the sandbox group.")
+            logger.warn("Class {} was not found in any sandbox in the sandbox group.", className)
         }
         return clazz
     }

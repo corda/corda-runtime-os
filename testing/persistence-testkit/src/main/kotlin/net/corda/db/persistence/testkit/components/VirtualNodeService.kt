@@ -1,79 +1,63 @@
 package net.corda.db.persistence.testkit.components
 
-import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.sandboxgroupcontext.SandboxGroupType
-import net.corda.sandboxgroupcontext.VirtualNodeContext
+import net.corda.db.admin.LiquibaseSchemaMigrator
+import net.corda.db.admin.impl.ClassloaderChangeLog
+import net.corda.db.schema.DbSchema
+import net.corda.persistence.common.EntitySandboxService
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.test.util.identity.createTestHoldingIdentity
-import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.VirtualNodeLoader
-import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.VirtualNodeInfo
-import org.junit.jupiter.api.fail
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicInteger
 
-@Component(service = [VirtualNodeService::class])
+@Component(service = [ VirtualNodeService::class ])
 class VirtualNodeService @Activate constructor(
-    @Reference
-    private val cpiLoader: CpiLoader,
-
     @Reference
     private val virtualNodeLoader: VirtualNodeLoader,
 
     @Reference
-    val sandboxGroupContextComponent: SandboxGroupContextComponent,
+    private val dataSourceAdmin: DataSourceAdmin,
+
+    @Reference
+    private val liquibaseSchemaMigrator: LiquibaseSchemaMigrator,
+
+    @Reference
+    val entitySandboxService: EntitySandboxService,
+
+    @Reference
+    val sandboxGroupContextComponent: SandboxGroupContextComponent
 ) {
-    init {
-        // Needs this since we do not have a config service running:  it will fail to start otherwise.
-        sandboxGroupContextComponent.initCache(2)
-    }
     private companion object {
         private const val X500_NAME = "CN=Testing, OU=Application, O=R3, L=London, C=GB"
 
         fun generateHoldingIdentity() = createTestHoldingIdentity(X500_NAME, UUID.randomUUID().toString())
     }
 
-    private val vnodes = mutableMapOf<SandboxGroupContext, VirtualNodeInfo>()
+    private var connectionCounter = AtomicInteger(0)
 
-    @Suppress("unused")
-    @Deactivate
-    fun done() {
-        sandboxGroupContextComponent.close()
+    init {
+        sandboxGroupContextComponent.initCache(2)
     }
 
-    private fun getOrCreateSandbox(virtualNodeInfo: VirtualNodeInfo): SandboxGroupContext {
-        val cpi = cpiLoader.getCpiMetadata(virtualNodeInfo.cpiIdentifier).get()
-            ?: fail("CPI ${virtualNodeInfo.cpiIdentifier} not found")
-        val vNodeContext = VirtualNodeContext(
-            virtualNodeInfo.holdingIdentity,
-            cpi.cpksMetadata.mapTo(LinkedHashSet()) { it.fileChecksum },
-            SandboxGroupType.FLOW,
-            SingletonSerializeAsToken::class.java,
-            null
-        )
-        return sandboxGroupContextComponent.getOrCreate(vNodeContext) { _, sandboxGroupContext ->
-            val closeables = sandboxGroupContextComponent.registerCustomCryptography(sandboxGroupContext)
-            sandboxGroupContextComponent.acceptCustomMetadata(sandboxGroupContext)
-            closeables
-        }
-    }
+    fun load(resourceName: String): VirtualNodeInfo {
+        val virtualNodeInfo = virtualNodeLoader.loadVirtualNode(resourceName, generateHoldingIdentity())
+        val dbConnectionId = virtualNodeInfo.vaultDmlConnectionId
 
-    fun load(resourceName: String) =
-        virtualNodeLoader.loadVirtualNode(resourceName, generateHoldingIdentity())
+        // migrate DB schema
+        val vaultSchema = ClassloaderChangeLog(linkedSetOf(
+            ClassloaderChangeLog.ChangeLogResourceFiles(
+                DbSchema::class.java.packageName,
+                listOf("net/corda/db/schema/vnode-vault/db.changelog-master.xml"),
+                DbSchema::class.java.classLoader
+            )
+        ))
 
-    fun loadSandbox(resourceName: String): SandboxGroupContext {
-        val vnodeInfo = virtualNodeLoader.loadVirtualNode(resourceName, generateHoldingIdentity())
-        return getOrCreateSandbox(vnodeInfo).also { ctx ->
-            vnodes[ctx] = vnodeInfo
-        }
-    }
-
-    fun unloadSandbox(sandboxGroupContext: SandboxGroupContext) {
-        (sandboxGroupContext as? AutoCloseable)?.close()
-        vnodes.remove(sandboxGroupContext)?.let(virtualNodeLoader::unloadVirtualNode)
+        val dataSource = dataSourceAdmin.getOrCreateDataSource(dbConnectionId, "connection-${connectionCounter.incrementAndGet()}")
+        liquibaseSchemaMigrator.updateDb(dataSource.connection, vaultSchema)
+        return virtualNodeInfo
     }
 }

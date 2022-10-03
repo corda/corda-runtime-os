@@ -3,6 +3,7 @@ package net.corda.ledger.consensual.flow.impl.test
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.internal.serialization.amqp.helper.TestFlowFiberServiceWithSerialization
+import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
@@ -16,10 +17,10 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.test.common.annotation.InjectService
 
-@Component(service = [FlowFiberService::class, SingletonSerializeAsToken::class])
+@Component(service = [FlowFiberService::class, UsedByFlow::class])
 class TestFlowFiberServiceWithSerializationProxy @Activate constructor(
     @Reference(service = CipherSchemeMetadata::class) private val schemeMetadata: CipherSchemeMetadata
-) : FlowFiberService, SingletonSerializeAsToken {
+) : FlowFiberService, UsedByFlow, SingletonSerializeAsToken {
     override fun getExecutingFiber(): FlowFiber {
         val testFlowFiberServiceWithSerialization = TestFlowFiberServiceWithSerialization()
         testFlowFiberServiceWithSerialization.configureSerializer({ }, schemeMetadata)
