@@ -12,5 +12,7 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
     api platform(project(':corda-api'))
+
+    api project(":crypto")
 }
 
