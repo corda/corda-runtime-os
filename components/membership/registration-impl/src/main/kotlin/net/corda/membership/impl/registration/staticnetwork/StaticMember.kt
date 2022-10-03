@@ -8,7 +8,6 @@ import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplate
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.STATIC_PLATFORM_VERSION
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.STATIC_SERIAL
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.STATIC_SOFTWARE_VERSION
-import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.v5.membership.EndpointInfo
 import net.corda.utilities.time.UTCClock
 
@@ -18,7 +17,7 @@ import net.corda.utilities.time.UTCClock
  */
 class StaticMember(
     private val staticMemberData: Map<String, Any>,
-    private val endpointInfoFactory: EndpointInfoFactory,
+    private val endpointInfoBuilder: (String, Int) -> EndpointInfo,
     ) : Map<String, Any> by staticMemberData {
 
     private companion object {
@@ -56,7 +55,7 @@ class StaticMember(
         (staticMemberData[key] as Int?)?.toString() ?: default
 
     fun getEndpoint(index: Int): EndpointInfo {
-        return endpointInfoFactory.create(
+        return endpointInfoBuilder(
             staticMemberData[String.format(ENDPOINT_URL, index)].toString(),
             Integer.parseInt(staticMemberData[String.format(ENDPOINT_PROTOCOL, index)].toString())
         )

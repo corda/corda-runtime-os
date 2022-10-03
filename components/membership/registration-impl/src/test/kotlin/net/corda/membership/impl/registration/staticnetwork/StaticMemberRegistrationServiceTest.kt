@@ -38,7 +38,6 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.lib.MemberInfoExtension.Companion.softwareVersion
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.impl.EndpointInfoImpl
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.membership.lib.registration.RegistrationRequest
@@ -197,7 +196,12 @@ class StaticMemberRegistrationServiceTest {
         on { createValidator() } doReturn membershipSchemaValidator
     }
     private val endpointInfoFactory: EndpointInfoFactory = mock {
-        on { create(any(), any()) } doReturn EndpointInfoImpl("https://corda5.r3.com:10001")
+        on { create(any(), any()) } doAnswer { invocation ->
+            mock {
+                on { this.url } doReturn invocation.getArgument(0)
+                on { this.protocolVersion } doReturn invocation.getArgument(1)
+            }
+        }
     }
 
     private val registrationService = StaticMemberRegistrationService(

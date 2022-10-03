@@ -92,7 +92,7 @@ class StaticMemberRegistrationService @Activate constructor(
     @Reference(service = MembershipSchemaValidatorFactory::class)
     val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
     @Reference(service = EndpointInfoFactory::class)
-    val endpointInfoFactory: EndpointInfoFactory,
+    private val endpointInfoFactory: EndpointInfoFactory,
 ) : MemberRegistrationService {
     companion object {
         private val logger: Logger = contextLogger()
@@ -207,7 +207,7 @@ class StaticMemberRegistrationService @Activate constructor(
 
         val staticMemberMaps = groupPolicy.protocolParameters.staticNetworkMembers
             ?: throw IllegalArgumentException("Could not find static member list in group policy file.")
-        val staticMemberList = staticMemberMaps.map { StaticMember(it, endpointInfoFactory) }
+        val staticMemberList = staticMemberMaps.map { StaticMember(it, endpointInfoFactory::create) }
         validateStaticMemberList(staticMemberList)
 
         val memberName = registeringMember.x500Name
