@@ -15,6 +15,7 @@ dependencies {
     implementation 'net.corda:corda-avro-schema'
     implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'
+    implementation 'net.corda:corda-ledger-utxo'
     implementation project(":libs:packaging:packaging")
     implementation 'net.corda:corda-topic-schema'
     implementation 'org.slf4j:slf4j-api'
