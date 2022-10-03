@@ -11,8 +11,6 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import java.io.IOException
 import java.time.Duration
 
-private data class TestJsonObject(override val escapedJson: String = "") : JsonObject
-
 fun JsonNode.sourceConfigNode(): JsonNode =
     this["sourceConfig"].textValue().toJson()
 
@@ -48,7 +46,7 @@ fun updateConfig(config: String, section: String) {
                 val currentSchemaVersion = currentConfig["schemaVersion"]
 
                 putConfig(
-                    TestJsonObject(config),
+                    config,
                     section,
                     currentConfig["version"].toString(),
                     currentSchemaVersion["major"].toString(),

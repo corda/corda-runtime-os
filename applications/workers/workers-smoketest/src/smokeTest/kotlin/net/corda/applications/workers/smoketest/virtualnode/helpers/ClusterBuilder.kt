@@ -134,14 +134,14 @@ class ClusterBuilder {
     fun getConfig(section: String) = get("/api/v1/config/$section")
 
     /** Update the cluster configuration for the specified section and versions with unescaped Json */
-    fun putConfig(config: JsonObject,
+    fun putConfig(config: String,
                   section: String,
                   configVersion: String,
                   schemaMajorVersion: String,
                   schemaMinorVersion: String) : SimpleResponse {
         val payload = """
             {
-                "config": ${config.escapedJson},
+                "config": $config,
                 "schemaVersion": {
                   "major": "$schemaMajorVersion",
                   "minor": "$schemaMinorVersion"
