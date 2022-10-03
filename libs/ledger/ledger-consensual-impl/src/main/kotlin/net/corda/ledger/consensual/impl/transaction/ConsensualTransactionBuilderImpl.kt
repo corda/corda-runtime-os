@@ -125,9 +125,10 @@ class ConsensualTransactionBuilderImpl(
 
     override fun signInitial(publicKey: PublicKey): ConsensualSignedTransaction {
         val wireTransaction = buildWireTransaction()
-        val signature = signingService.sign(wireTransaction.id.bytes, publicKey, SignatureSpec.ECDSA_SHA256)
-        val digitalSignatureMetadata = DigitalSignatureMetadata(Instant.now(), mapOf( //CORE-5091 is this populated correctly?
-        )) // TODO: change this to SortedMap ?
+        // TODO(CORE-5091 we just fake the signature for now...)
+//        val signature = signingService.sign(wireTransaction.id.bytes, publicKey, SignatureSpec.RSA_SHA256)
+        val signature = DigitalSignature.WithKey(publicKey, "0".toByteArray(), mapOf())
+        val digitalSignatureMetadata = DigitalSignatureMetadata(Instant.now(), mapOf()) //CORE-5091 populate this properly...
         val signatureWithMetaData = DigitalSignatureAndMetadata(signature, digitalSignatureMetadata)
         return ConsensualSignedTransactionImpl(serializer, wireTransaction, listOf(signatureWithMetaData))
     }

@@ -6,6 +6,7 @@ import java.security.PublicKey
 import kotlin.test.assertIs
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.flow.application.crypto.SigningServiceImpl
 import net.corda.flow.external.events.executor.ExternalEventExecutor
@@ -13,26 +14,36 @@ import net.corda.flow.external.events.impl.executor.ExternalEventExecutorImpl
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.internal.serialization.amqp.helper.TestFlowFiberServiceWithSerialization
+import net.corda.libs.packaging.core.CordappManifest
+import net.corda.libs.packaging.core.CordappType
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpiMetadata
+import net.corda.libs.packaging.core.CpkFormatVersion
+import net.corda.libs.packaging.core.CpkIdentifier
+import net.corda.libs.packaging.core.CpkManifest
+import net.corda.libs.packaging.core.CpkMetadata
+import net.corda.libs.packaging.core.CpkType
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
+import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.Party
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
-import net.corda.v5.membership.MemberInfo
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.time.Instant
 
 class TestFlowFiberServiceWithSerializationProxy constructor(
     private val schemeMetadata: CipherSchemeMetadata
@@ -125,8 +136,8 @@ class ConsensualLedgerServiceImplTest {
             flowFiberService,
             schemeMetadata,
             jsonMarshallingService,
-            mockMemberLookup(),
-            mock(),
+            ConsensualTransactionMocks.mockMemberLookup(),
+            ConsensualTransactionMocks.mockCpiInfoReadService(),
             mock()
         )
         val transactionBuilder = service.getTransactionBuilder()
@@ -135,15 +146,5 @@ class ConsensualLedgerServiceImplTest {
             .signInitial(testPublicKey)
         assertIs<ConsensualSignedTransaction>(signedTransaction)
         assertIs<SecureHash>(signedTransaction.id)
-    }
-
-    fun mockMemberLookup(): MemberLookup {
-        val memberInfo: MemberInfo = mock()
-        whenever(memberInfo.platformVersion).thenReturn(888)
-
-        val memberLookup: MemberLookup = mock()
-        whenever(memberLookup.myInfo()).thenReturn(memberInfo)
-
-        return memberLookup
     }
 }

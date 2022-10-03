@@ -12,6 +12,7 @@ import net.corda.flow.application.crypto.SigningServiceImpl
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.external.events.impl.executor.ExternalEventExecutorImpl
 import net.corda.flow.fiber.FlowFiberServiceImpl
+import net.corda.ledger.consensual.impl.ConsensualTransactionMocks
 import net.corda.ledger.consensual.impl.PartyImpl
 import net.corda.ledger.consensual.impl.helper.ConfiguredTestSerializationService
 import net.corda.v5.application.crypto.SigningService
@@ -90,8 +91,8 @@ internal class ConsensualTransactionBuilderImplTest{
             serializer,
             signingService,
             jsonMarshallingService,
-            mock(),
-            mock(),
+            ConsensualTransactionMocks.mockMemberLookup(),
+            ConsensualTransactionMocks.mockCpiInfoReadService(),
             mock()
         )
 
@@ -110,8 +111,8 @@ internal class ConsensualTransactionBuilderImplTest{
                 serializer,
                 signingService,
                 jsonMarshallingService,
-                mock(),
-                mock(),
+                ConsensualTransactionMocks.mockMemberLookup(),
+                ConsensualTransactionMocks.mockCpiInfoReadService(),
                 mock()
             )
                 .signInitial(testPublicKey)
@@ -129,8 +130,8 @@ internal class ConsensualTransactionBuilderImplTest{
                 serializer,
                 signingService,
                 jsonMarshallingService,
-                mock(),
-                mock(),
+                ConsensualTransactionMocks.mockMemberLookup(),
+                ConsensualTransactionMocks.mockCpiInfoReadService(),
                 mock()
             )
                 .withStates(testConsensualState)
