@@ -11,7 +11,7 @@ import net.corda.data.membership.command.registration.mgm.ProcessMemberVerificat
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.state.RegistrationState
-import net.corda.layeredpropertymap.LayeredPropertyMapFactory
+import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
@@ -32,7 +32,7 @@ import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 
 @Suppress("LongParameterList")
 class RegistrationProcessor(
@@ -44,8 +44,7 @@ class RegistrationProcessor(
     membershipQueryClient: MembershipQueryClient,
     cryptoOpsClient: CryptoOpsClient,
     cipherSchemeMetadata: CipherSchemeMetadata,
-    layeredPropertyMapFactory: LayeredPropertyMapFactory,
-    merkleTreeFactory: MerkleTreeFactory,
+    merkleTreeProvider: MerkleTreeProvider,
 ) : StateAndEventProcessor<String, RegistrationState, RegistrationCommand> {
 
     override val keyClass = String::class.java
@@ -56,15 +55,16 @@ class RegistrationProcessor(
         val logger = contextLogger()
     }
 
+    private val memberTypeChecker = MemberTypeChecker(membershipGroupReaderProvider)
+
     private val handlers = mapOf<Class<*>, RegistrationHandler<*>>(
         StartRegistration::class.java to StartRegistrationHandler(
             clock,
             memberInfoFactory,
-            membershipGroupReaderProvider,
+            memberTypeChecker,
             membershipPersistenceClient,
             membershipQueryClient,
             cordaAvroSerializationFactory,
-            layeredPropertyMapFactory,
         ),
         ApproveRegistration::class.java to ApproveRegistrationHandler(
             membershipPersistenceClient,
@@ -73,22 +73,37 @@ class RegistrationProcessor(
             clock,
             cryptoOpsClient,
             cordaAvroSerializationFactory,
-            merkleTreeFactory
+            merkleTreeProvider,
+            memberTypeChecker
         ),
-        DeclineRegistration::class.java to DeclineRegistrationHandler(membershipPersistenceClient, clock, cordaAvroSerializationFactory),
+        DeclineRegistration::class.java to DeclineRegistrationHandler(
+            membershipPersistenceClient,
+            clock,
+            cordaAvroSerializationFactory,
+            memberTypeChecker,
+        ),
 
         ProcessMemberVerificationRequest::class.java to ProcessMemberVerificationRequestHandler(
             clock,
             cordaAvroSerializationFactory,
-            membershipPersistenceClient
+            membershipPersistenceClient,
+            memberTypeChecker,
         ),
-        VerifyMember::class.java to VerifyMemberHandler(clock, cordaAvroSerializationFactory, membershipPersistenceClient),
+        VerifyMember::class.java to VerifyMemberHandler(
+            clock,
+            cordaAvroSerializationFactory,
+            membershipPersistenceClient,
+            memberTypeChecker,
+        ),
         ProcessMemberVerificationResponse::class.java to ProcessMemberVerificationResponseHandler(
             membershipPersistenceClient,
             clock,
-            cordaAvroSerializationFactory
+            cordaAvroSerializationFactory,
+            memberTypeChecker,
         ),
-        PersistMemberRegistrationState::class.java to PersistMemberRegistrationStateHandler(membershipPersistenceClient),
+        PersistMemberRegistrationState::class.java to PersistMemberRegistrationStateHandler(
+            membershipPersistenceClient,
+        ),
     )
 
     @Suppress("ComplexMethod")

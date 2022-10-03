@@ -1,11 +1,11 @@
 package net.corda.crypto.merkle.impl.tests
 
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.crypto.core.toByteArray
+import net.corda.v5.application.crypto.MerkleTreeFactory
+import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_ENTROPY_OPTION
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NONCE_NAME
-import net.corda.v5.crypto.merkle.MerkleTreeHashDigestProvider
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -25,11 +25,11 @@ class MerkleTreeFactoryTest {
 
     @BeforeAll
     fun setup() {
-        nonceHashDigestProvider = merkleTreeFactory.createHashDigestProvider(
+        nonceHashDigestProvider = merkleTreeFactory.createHashDigest(
             HASH_DIGEST_PROVIDER_NONCE_NAME,
             digestAlgorithm,
             mapOf(HASH_DIGEST_PROVIDER_ENTROPY_OPTION to "1".repeat(32).toByteArray())
-        )
+        ) as MerkleTreeHashDigestProvider
     }
 
     @Test
