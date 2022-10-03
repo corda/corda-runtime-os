@@ -40,10 +40,7 @@ interface UniquenessCheckErrorTimeWindowOutOfBounds : UniquenessCheckError {
     val timeWindowUpperBound: Instant
 }
 
-/**
- * Occurs when the uniqueness check encountered an error that cannot be categorised.
- * For example, unknown response, malformed request etc.
- */
-interface UniquenessCheckErrorGeneral : UniquenessCheckError {
+/** Occurs when data in the received request is invalid. */
+interface UniquenessCheckErrorMalformedRequest : UniquenessCheckError {
     val errorText: String
 }

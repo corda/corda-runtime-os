@@ -16,7 +16,8 @@
         "net.corda.data.uniqueness.UniquenessCheckResultReferenceStateConflictAvro",
         "net.corda.data.uniqueness.UniquenessCheckResultReferenceStateUnknownAvro",
         "net.corda.data.uniqueness.UniquenessCheckResultTimeWindowOutOfBoundsAvro",
-        "net.corda.data.uniqueness.UniquenessCheckResultMalformedRequestAvro"
+        "net.corda.data.uniqueness.UniquenessCheckResultMalformedRequestAvro",
+        "net.corda.data.uniqueness.UniquenessCheckResultUnhandledExceptionAvro"
       ]
     }
   ]
