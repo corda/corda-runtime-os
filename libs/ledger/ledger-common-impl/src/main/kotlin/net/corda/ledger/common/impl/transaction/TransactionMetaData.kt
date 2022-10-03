@@ -18,6 +18,7 @@ class TransactionMetaData(
         const val LEDGER_VERSION_KEY = "ledgerVersion"
         const val CPK_IDENTIFIERS_KEY = "cpkIdentifiers"
         const val DIGEST_SETTINGS_KEY = "digestSettings"
+        const val PLATFORM_VERSION_KEY = "platformVersion"
     }
 
     override fun equals(other: Any?): Boolean {
