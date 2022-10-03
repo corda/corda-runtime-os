@@ -15,6 +15,7 @@ import net.corda.flow.fiber.FlowFiberService
 import net.corda.internal.serialization.amqp.helper.TestFlowFiberServiceWithSerialization
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
@@ -26,9 +27,12 @@ import net.corda.v5.ledger.consensual.Party
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
+import net.corda.v5.membership.MemberInfo
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 
 class TestFlowFiberServiceWithSerializationProxy constructor(
     private val schemeMetadata: CipherSchemeMetadata
@@ -103,7 +107,10 @@ class ConsensualLedgerServiceImplTest {
             signingService,
             flowFiberService,
             schemeMetadata,
-            jsonMarshallingService
+            jsonMarshallingService,
+            mock(),
+            mock(),
+            mock()
         )
         val transactionBuilder = service.getTransactionBuilder()
         assertIs<ConsensualTransactionBuilder>(transactionBuilder)
@@ -117,7 +124,10 @@ class ConsensualLedgerServiceImplTest {
             signingService,
             flowFiberService,
             schemeMetadata,
-            jsonMarshallingService
+            jsonMarshallingService,
+            mockMemberLookup(),
+            mock(),
+            mock()
         )
         val transactionBuilder = service.getTransactionBuilder()
         val signedTransaction = transactionBuilder
@@ -125,5 +135,15 @@ class ConsensualLedgerServiceImplTest {
             .signInitial(testPublicKey)
         assertIs<ConsensualSignedTransaction>(signedTransaction)
         assertIs<SecureHash>(signedTransaction.id)
+    }
+
+    fun mockMemberLookup(): MemberLookup {
+        val memberInfo: MemberInfo = mock()
+        whenever(memberInfo.platformVersion).thenReturn(888)
+
+        val memberLookup: MemberLookup = mock()
+        whenever(memberLookup.myInfo()).thenReturn(memberInfo)
+
+        return memberLookup
     }
 }

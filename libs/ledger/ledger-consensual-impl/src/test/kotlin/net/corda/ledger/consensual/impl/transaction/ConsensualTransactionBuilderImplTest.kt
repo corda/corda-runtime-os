@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
 
 internal class ConsensualTransactionBuilderImplTest{
     companion object {
@@ -88,7 +89,10 @@ internal class ConsensualTransactionBuilderImplTest{
             secureRandom,
             serializer,
             signingService,
-            jsonMarshallingService
+            jsonMarshallingService,
+            mock(),
+            mock(),
+            mock()
         )
 
             .withStates(testConsensualState)
@@ -105,7 +109,10 @@ internal class ConsensualTransactionBuilderImplTest{
                 secureRandom,
                 serializer,
                 signingService,
-                jsonMarshallingService
+                jsonMarshallingService,
+                mock(),
+                mock(),
+                mock()
             )
                 .signInitial(testPublicKey)
         }
@@ -121,7 +128,10 @@ internal class ConsensualTransactionBuilderImplTest{
                 secureRandom,
                 serializer,
                 signingService,
-                jsonMarshallingService
+                jsonMarshallingService,
+                mock(),
+                mock(),
+                mock()
             )
                 .withStates(testConsensualState)
                 .withStates(TestConsensualState("test", emptyList()))
