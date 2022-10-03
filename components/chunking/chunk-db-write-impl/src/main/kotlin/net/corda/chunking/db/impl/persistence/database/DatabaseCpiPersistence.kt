@@ -25,6 +25,7 @@ import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
 import net.corda.orm.utils.transaction
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
 import java.nio.file.Files
 import javax.persistence.EntityManager
@@ -131,30 +132,54 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
     ) {
         // The incoming changelogs will not be marked deleted
         cpkDbChangeLogEntities.forEach { require(!it.isDeleted) }
-        val allChangelogs = findDbChangeLogForCpi(em, cpi.metadata.cpiId).associateBy { it.id }
+        val dbChangelogs = findDbChangeLogForCpi(em, cpi.metadata.cpiId).associateBy { it.id }
         // We first mark each existing changelog for this CPI as deleted.
         val changeLogUpdates = cpkDbChangeLogEntities.associateBy { it.id }
 
-        // Then, for the currently declared changelog, we'll save the record and clear any isDeleted flags.
+        // Mark old changelogs as deleted
+        dbChangelogs.forEach { (changelogId, changelog) ->
+            if (changeLogUpdates.containsKey(changelogId)) {
+                changelog.isDeleted = true
+            }
+        }
+
+        // Then, for the currently declared changelogs, we'll save the record and clear any isDeleted flags.
         // This all happens under one transaction so no one will see the isDeleted flags flicker.
-        (allChangelogs + changeLogUpdates)
+        (dbChangelogs + changeLogUpdates)
             .entries
             .distinctBy { it.key }
             .forEach { (changelogId, changelog) ->
                 val inDb = em.find(CpkDbChangeLogEntity::class.java, changelogId)
-                val ret = if (inDb != null) {
-                    if (allChangelogs.containsKey(changelogId)) {
-                        changelog.isDeleted = true
-                    }
+                val ret: CpkDbChangeLogEntity? = if (inDb != null) {
+                    changelog.isDeleted = false
                     changelog.entityVersion = inDb.entityVersion
+                    // Check prior to merge
+                    val hasChanged = changelog.id != inDb.id || changelog.fileChecksum != inDb.fileChecksum
                     em.merge(changelog)
+                    if (hasChanged) {
+                        log.info("There was a difference")
+                        // Simulate increase performed
+                        changelog.entityVersion += 1
+                        // Return changelog
+                        changelog
+                    } else {
+                        log.info("They're the same")
+                        // There's no new audit entry required as the two objects are the same
+                        null
+                    }
                 } else {
                     em.persist(changelog)
+                    // Return changelog
                     changelog
                 }
-                log.info("THIS IS THE NEW CHANGELOG ${ret.id.cpkName} ${ret.id.cpkName} ${ret.id.cpkName} ${ret.entityVersion}")
-                val audit = CpkDbChangeLogAuditEntity(ret)
-                em.persist(audit)
+                if (ret != null) {
+                    log.debug {
+                        "Creating new audit entry for ${ret.id.cpkName}:${ret.id.cpkVersion} with signer summary " +
+                            "hash of ${ret.id.cpkSignerSummaryHash}} at entity version ${ret.entityVersion}"
+                    }
+                    val audit = CpkDbChangeLogAuditEntity(ret)
+                    em.persist(audit)
+                }
             }
     }
 
