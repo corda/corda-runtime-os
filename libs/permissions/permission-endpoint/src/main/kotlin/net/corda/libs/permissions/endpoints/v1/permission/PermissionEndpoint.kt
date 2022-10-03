@@ -80,11 +80,11 @@ interface PermissionEndpoint : RpcOps {
         @HttpRpcQueryParameter(description = "The permission type to be returned.")
         permissionType: PermissionType,
         @HttpRpcQueryParameter(description = "Optional group visibility for a permission.", required = false)
-        groupVisibility: String?,
+        groupVisibility: String? = null,
         @HttpRpcQueryParameter(description = "Optional virtual node the permissions apply to.", required = false)
-        virtualNode: String?,
+        virtualNode: String? = null,
         @HttpRpcQueryParameter(
             description = "Optional permission string prefix for permissions to be located.", required = false)
-        permissionStringPrefix: String?
+        permissionStringPrefix: String? = null
         ): List<PermissionResponseType>
 }

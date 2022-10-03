@@ -60,9 +60,9 @@ class PermissionEntityManagerImpl(
 
         return permissionManagementCache.permissions.values.filter {
             permissionsQuery.permissionType.toAvroType() == it.permissionType &&
-                    permissionsQuery.groupVisibility == it.groupVisibility &&
-                    permissionsQuery.virtualNode == it.virtualNode &&
-                    permissionsQuery.permissionStringPrefix?.let { psp -> it.permissionString.startsWith(psp) } ?: true
+            permissionsQuery.groupVisibility == it.groupVisibility &&
+            permissionsQuery.virtualNode == it.virtualNode &&
+            permissionsQuery.permissionStringPrefix?.let { psp -> it.permissionString.startsWith(psp) } ?: true
         }.take(permissionsQuery.maxResultCount).map { it.convertToResponseDto() }.toList()
     }
 }
