@@ -6,7 +6,6 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.state.RegistrationState
-import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -33,7 +32,7 @@ import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -61,10 +60,8 @@ class RegistrationManagementServiceImpl @Activate constructor(
     private val cryptoOpsClient: CryptoOpsClient,
     @Reference(service = CipherSchemeMetadata::class)
     private val cipherSchemeMetadata: CipherSchemeMetadata,
-    @Reference(service = LayeredPropertyMapFactory::class)
-    private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
-    @Reference(service = MerkleTreeFactory::class)
-    private val merkleTreeFactory: MerkleTreeFactory,
+    @Reference(service = MerkleTreeProvider::class)
+    private val merkleTreeProvider: MerkleTreeProvider,
 ) : RegistrationManagementService {
 
     companion object {
@@ -164,8 +161,7 @@ class RegistrationManagementServiceImpl @Activate constructor(
                         membershipQueryClient,
                         cryptoOpsClient,
                         cipherSchemeMetadata,
-                        layeredPropertyMapFactory,
-                        merkleTreeFactory,
+                        merkleTreeProvider,
                     ),
                     messagingConfig
                 ).also {

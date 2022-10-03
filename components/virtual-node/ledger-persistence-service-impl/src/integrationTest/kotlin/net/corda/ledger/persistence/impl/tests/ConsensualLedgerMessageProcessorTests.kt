@@ -37,7 +37,7 @@ import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
@@ -99,7 +99,7 @@ class ConsensualLedgerMessageProcessorTests {
     @InjectService
     lateinit var digestService: DigestService
     @InjectService
-    lateinit var merkleTreeFactory: MerkleTreeFactory
+    lateinit var merkleTreeProvider: MerkleTreeProvider
     @InjectService
     lateinit var jsonMarshallingService: JsonMarshallingService
     private lateinit var wireTransactionSerializer: InternalCustomSerializer<WireTransaction>
@@ -162,7 +162,7 @@ class ConsensualLedgerMessageProcessorTests {
         Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
 
         // create ConsensualSignedTransactionImpl instance (or WireTransaction at first)
-        val tx = getWireTransaction(digestService, merkleTreeFactory, jsonMarshallingService)
+        val tx = getWireTransaction(digestService, merkleTreeProvider, jsonMarshallingService)
         logger.info("WireTransaction: ", tx)
 
         // serialise tx into bytebuffer and add to PersistTransaction payload
@@ -174,7 +174,7 @@ class ConsensualLedgerMessageProcessorTests {
         val processor = ConsensualLedgerMessageProcessor(
             ctx.entitySandboxService,
             externalEventResponseFactory,
-            merkleTreeFactory,
+            merkleTreeProvider,
             digestService,
             jsonMarshallingService,
             this::noOpPayloadCheck)

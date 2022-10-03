@@ -39,8 +39,8 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
@@ -107,8 +107,8 @@ class MgmSynchronisationServiceImpl internal constructor(
         cryptoOpsClient: CryptoOpsClient,
         @Reference(service = MembershipQueryClient::class)
         membershipQueryClient: MembershipQueryClient,
-        @Reference(service = MerkleTreeFactory::class)
-        merkleTreeFactory: MerkleTreeFactory,
+        @Reference(service = MerkleTreeProvider::class)
+        merkleTreeProvider: MerkleTreeProvider,
     ) :
             this(
                 publisherFactory,
@@ -117,7 +117,7 @@ class MgmSynchronisationServiceImpl internal constructor(
                 membershipGroupReaderProvider,
                 membershipQueryClient,
                 MerkleTreeGenerator(
-                    merkleTreeFactory,
+                    merkleTreeProvider,
                     cordaAvroSerializationFactory
                 ),
                 cordaAvroSerializationFactory,
