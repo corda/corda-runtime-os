@@ -8,6 +8,7 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.RegistrationStatus
@@ -184,6 +185,11 @@ class StaticMemberRegistrationService @Activate constructor(
                 registrationId = registrationId.toString(),
                 requester = memberInfo.holdingIdentity,
                 memberContext = ByteBuffer.wrap(memberContext),
+                signature = CryptoSignatureWithKey(
+                    ByteBuffer.wrap(byteArrayOf()),
+                    ByteBuffer.wrap(byteArrayOf()),
+                    KeyValuePairList(emptyList())
+                )
             )
         )
     }

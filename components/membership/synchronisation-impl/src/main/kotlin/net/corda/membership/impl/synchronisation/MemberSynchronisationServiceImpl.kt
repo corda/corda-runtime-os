@@ -53,7 +53,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
-import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
@@ -265,6 +264,11 @@ class MemberSynchronisationServiceImpl internal constructor(
                         update.memberSignature,
                         update.memberContext.array(),
                     )
+                    verifyMgmSignature(
+                        update.mgmSignature,
+                        update.memberContext.array(),
+                        update.mgmContext.array(),
+                    )
                     val memberContext = deserializer.deserialize(update.memberContext.array())
                         ?: throw CordaRuntimeException("Invalid member context")
                     val mgmContext = deserializer.deserialize(update.mgmContext.array())
@@ -272,9 +276,7 @@ class MemberSynchronisationServiceImpl internal constructor(
                     memberInfoFactory.create(
                         memberContext.toSortedMap(),
                         mgmContext.toSortedMap()
-                    ).also {
-                        verifyMgmSignature(it, update.mgmSignature)
-                    }
+                    )
                 }.associateBy { it.id }
 
                 val persistentMemberInfoRecords = updateMembersInfo.entries.map { (id, memberInfo) ->
@@ -330,8 +332,11 @@ class MemberSynchronisationServiceImpl internal constructor(
         }
     }
 
-    private fun verifyMgmSignature(memberInfo: MemberInfo, mgmSignature: CryptoSignatureWithKey) {
-        val data = merkleTreeGenerator.generateTree(listOf(memberInfo))
+    private fun verifyMgmSignature(
+        mgmSignature: CryptoSignatureWithKey,
+        vararg leaves: ByteArray,
+    ) {
+        val data = merkleTreeGenerator.createTree(leaves.toList())
             .root.bytes
         verifier.verify(mgmSignature, data)
     }

@@ -236,6 +236,8 @@ class DynamicMemberRegistrationService @Activate constructor(
             }
             try {
                 val memberContext = buildMemberContext(context, registrationId.toString(), member)
+                    .toSortedMap()
+                    .toWire()
                 val serializedMemberContext = keyValuePairListSerializer.serialize(memberContext)
                     ?: throw IllegalArgumentException("Failed to serialize the member context for this request.")
                 val publicKey =
@@ -281,6 +283,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                         registrationId = registrationId.toString(),
                         requester = member,
                         memberContext = ByteBuffer.wrap(serializedMemberContext),
+                        signature = memberSignature,
                     )
                 )
 
@@ -304,7 +307,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             context: Map<String, String>,
             registrationId: String,
             member: HoldingIdentity
-        ): KeyValuePairList {
+        ): Map<String, String> {
             return (
                 context.filterNot {
                     it.key.startsWith(LEDGER_KEYS) || it.key.startsWith(PARTY_SESSION_KEY)
@@ -319,7 +322,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                         SOFTWARE_VERSION to SOFTWARE_VERSION_CONST,
                         SERIAL to SERIAL_CONST,
                     )
-                ).toWire()
+                )
         }
 
         private fun validateContext(context: Map<String, String>) {
