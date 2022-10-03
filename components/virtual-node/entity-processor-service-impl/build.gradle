@@ -21,48 +21,30 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
-    implementation project(':libs:virtual-node:virtual-node-info')
     implementation project(':components:configuration:configuration-read-service')
     implementation project(':components:db:db-connection-manager')
-    implementation project(':components:db:db-connection-manager-impl')
+    implementation project(':components:persistence:persistence-service-common')
     implementation project(':components:virtual-node:cpi-info-read-service')
     implementation project(':components:virtual-node:entity-processor-service')
-    implementation project(':components:virtual-node:virtual-node-info-read-service')
     implementation project(':components:virtual-node:sandbox-group-context-service')
-    implementation project(':libs:configuration:configuration-core')
-    implementation project(':libs:configuration:configuration-datamodel')
-    implementation project(':libs:db:db-admin')
-    implementation project(':libs:db:db-admin-impl')
-    implementation project(':libs:db:db-core')
-    implementation project(':libs:db:db-orm')
+    implementation project(':components:virtual-node:virtual-node-info-read-service')
+
     implementation project(':libs:flows:external-event-responses')
-    implementation project(':libs:lifecycle:lifecycle')
     implementation project(":libs:messaging:messaging")
     implementation project(':libs:virtual-node:sandbox-group-context')
-    implementation project(':libs:serialization:serialization-amqp')
-    implementation project(':libs:serialization:serialization-internal')
-    implementation project(':libs:utilities')
 
-    implementation "com.typesafe:config:$typeSafeConfigVersion"
-    implementation 'javax.persistence:javax.persistence-api'
     implementation 'net.corda:corda-application'
-    implementation 'net.corda:corda-avro-schema'
-    implementation 'net.corda:corda-base'
     implementation 'net.corda:corda-config-schema'
-    implementation 'net.corda:corda-db-schema'
-    implementation 'net.corda:corda-membership'
     implementation 'net.corda:corda-topic-schema'
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation 'org.slf4j:slf4j-api'
 
-    testImplementation project(':libs:db:db-orm-impl')
-    testImplementation project(':libs:messaging:messaging')
     testImplementation project(':testing:db-testkit')
+    testImplementation project(':testing:persistence-testkit')
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
-    testRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
     testRuntimeOnly "org.postgresql:postgresql:$postgresDriverVersion"
 
     // Integration test resources using cpis configuration
@@ -81,14 +63,14 @@ dependencies {
 
     integrationTestImplementation project(":testing:db-message-bus-testkit")
 
+    integrationTestImplementation project(':libs:db:db-admin-impl')
+    integrationTestImplementation project(':testing:sandboxes')
+    integrationTestImplementation project(':testing:test-utilities')
+
     // needed to import serialization libs
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
 
-    integrationTestImplementation project(':testing:sandboxes')
-    integrationTestImplementation project(':components:virtual-node:cpk-read-service')
-    integrationTestImplementation project(':components:virtual-node:sandbox-group-context-service')
-    integrationTestImplementation project(':testing:test-utilities')
-
+    integrationTestRuntimeOnly project(':components:db:db-connection-manager-impl')
     integrationTestRuntimeOnly project(':libs:flows:external-event-responses-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')

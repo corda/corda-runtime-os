@@ -13,18 +13,18 @@ import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
 import java.security.PublicKey
 import java.security.SecureRandom
 import java.time.Instant
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.application.marshalling.JsonMarshallingService
 
 @Suppress("LongParameterList")
 class ConsensualTransactionBuilderImpl(
-    private val merkleTreeFactory: MerkleTreeFactory,
+    private val merkleTreeProvider: MerkleTreeProvider,
     private val digestService: DigestService,
     private val secureRandom: SecureRandom,
     private val serializer: SerializationService,
@@ -49,7 +49,7 @@ class ConsensualTransactionBuilderImpl(
         states: List<ConsensualState> = this.states
     ): ConsensualTransactionBuilderImpl {
         return ConsensualTransactionBuilderImpl(
-            merkleTreeFactory, digestService, secureRandom, serializer, signingService, jsonMarshallingService,
+            merkleTreeProvider, digestService, secureRandom, serializer, signingService, jsonMarshallingService,
             states,
         )
     }
@@ -116,7 +116,7 @@ class ConsensualTransactionBuilderImpl(
         val privacySalt = PrivacySaltImpl(entropy)
 
         return WireTransaction(
-            merkleTreeFactory,
+            merkleTreeProvider,
             digestService,
             jsonMarshallingService,
             privacySalt,

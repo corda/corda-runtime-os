@@ -12,8 +12,8 @@ import net.corda.data.persistence.FindEntities
 import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.data.persistence.MergeEntities
 import net.corda.data.persistence.PersistEntities
-import net.corda.entityprocessor.impl.internal.exceptions.InvalidPaginationException
-import net.corda.entityprocessor.impl.internal.exceptions.NullParameterException
+import net.corda.persistence.common.exceptions.InvalidPaginationException
+import net.corda.persistence.common.exceptions.NullParameterException
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.util.contextLogger

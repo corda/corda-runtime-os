@@ -12,6 +12,9 @@ import javax.persistence.spi.PersistenceUnitInfo
 import javax.persistence.spi.PersistenceUnitTransactionType
 import javax.sql.DataSource
 
+/**
+ * A JPA [PersistenceUnitInfo] for Hibernate.
+ */
 @Suppress("TooManyFunctions")
 class JpaPersistenceUnitInfo : PersistenceUnitInfo {
     override fun getPersistenceUnitName(): String = "SimulatorPersistenceUnit"
