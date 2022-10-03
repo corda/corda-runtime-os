@@ -1,6 +1,7 @@
 package net.corda.libs.permissions.endpoints.v1.permission.impl
 
 import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.response.ResponseEntity
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
@@ -8,10 +9,13 @@ import net.corda.libs.permissions.endpoints.common.PermissionEndpointEventHandle
 import net.corda.libs.permissions.endpoints.common.withPermissionManager
 import net.corda.libs.permissions.endpoints.v1.converter.convertToDto
 import net.corda.libs.permissions.endpoints.v1.converter.convertToEndpointType
+import net.corda.libs.permissions.endpoints.v1.converter.toRequestDtoType
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionResponseType
+import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import net.corda.libs.permissions.manager.request.GetPermissionRequestDto
+import net.corda.libs.permissions.manager.request.QueryPermissionsRequestDto
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
@@ -64,6 +68,31 @@ class PermissionEndpointImpl @Activate constructor(
         }
 
         return permissionResponseDto?.convertToEndpointType() ?: throw ResourceNotFoundException("Permission", id)
+    }
+
+    override fun queryPermissions(
+        maxResultCount: Int,
+        permissionType: PermissionType,
+        groupVisibility: String?,
+        virtualNode: String?,
+        permissionStringPrefix: String?
+    ): List<PermissionResponseType> {
+
+        if (maxResultCount < 1 || maxResultCount > 1000) {
+            throw InvalidInputDataException(
+                "maxResultCount supplied $maxResultCount is outside of the permitted range of [1..1000]"
+            )
+        }
+
+        val permissions = withPermissionManager(permissionManagementService.permissionManager, logger) {
+            queryPermissions(
+                QueryPermissionsRequestDto(
+                    maxResultCount, permissionType.toRequestDtoType(), groupVisibility, virtualNode, permissionStringPrefix
+                )
+            )
+        }
+
+        return permissions.map { it.convertToEndpointType() }
     }
 
     override val isRunning: Boolean
