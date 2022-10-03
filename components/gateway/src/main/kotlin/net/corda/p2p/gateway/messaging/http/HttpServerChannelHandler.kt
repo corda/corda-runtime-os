@@ -68,7 +68,13 @@ class HttpServerChannelHandler(private val serverListener: HttpServerListener,
                 try {
                     readBytesIntoBodyBuffer(content)
                 } catch (e: IndexOutOfBoundsException) {
-                    logger.error("Cannot read request body into buffer. Space not allocated")
+                    logger.error("Cannot read request body into buffer. " +
+                            "It exceeded space specified in ${HttpHeaderNames.CONTENT_LENGTH} header.")
+                    val response = createResponse(null, HttpResponseStatus.BAD_REQUEST)
+                    ctx.writeAndFlush(response).get()
+                    ctx.close().get()
+                    releaseBodyBuffer()
+                    return
                 }
             }
         }
