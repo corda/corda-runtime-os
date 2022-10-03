@@ -3,6 +3,7 @@ package net.corda.p2p.gateway.messaging.http
 import io.netty.bootstrap.ServerBootstrap
 import io.netty.channel.Channel
 import io.netty.channel.ChannelFuture
+import io.netty.channel.ChannelFutureListener
 import io.netty.channel.ChannelHandlerContext
 import io.netty.channel.ChannelInitializer
 import io.netty.channel.ChannelPipeline
@@ -29,6 +30,7 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -97,19 +99,41 @@ class HttpServerTest {
     @Test
     fun `write will write to an open channel`() {
         val response = argumentCaptor<DefaultFullHttpResponse>()
-        whenever(channel.writeAndFlush(response.capture())).doReturn(mock())
+        val writeFuture = mock<ChannelFuture>()
+        whenever(channel.writeAndFlush(response.capture())).doReturn(writeFuture)
         server.onOpen(HttpConnectionEvent(channel))
 
         server.write(
-            HttpResponseStatus.ACCEPTED,
+            HttpResponseStatus.OK,
             byteArrayOf(5, 7),
             address
         )
 
         assertSoftly {
             it.assertThat(response.firstValue.content().array()).isEqualTo(byteArrayOf(5, 7))
-            it.assertThat(response.firstValue.status()).isEqualTo(HttpResponseStatus.ACCEPTED)
+            it.assertThat(response.firstValue.status()).isEqualTo(HttpResponseStatus.OK)
         }
+        verify(writeFuture, never()).addListener(ChannelFutureListener.CLOSE)
+    }
+
+    @Test
+    fun `write will write to an open channel and close the channel if request failed`() {
+        val response = argumentCaptor<DefaultFullHttpResponse>()
+        val writeFuture = mock<ChannelFuture>()
+        whenever(channel.writeAndFlush(response.capture())).doReturn(writeFuture)
+        server.onOpen(HttpConnectionEvent(channel))
+
+        server.write(
+            HttpResponseStatus.BAD_REQUEST,
+            byteArrayOf(5, 7),
+            address
+        )
+
+        assertSoftly {
+            it.assertThat(response.firstValue.content().array()).isEqualTo(byteArrayOf(5, 7))
+            it.assertThat(response.firstValue.status()).isEqualTo(HttpResponseStatus.BAD_REQUEST)
+        }
+        verify(writeFuture).addListener(ChannelFutureListener.CLOSE)
     }
 
     @Test

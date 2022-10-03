@@ -43,7 +43,8 @@ class HttpServerChannelHandler(private val serverListener: HttpServerListener,
                 val response = createResponse(null, responseCode!!)
                 // if validation failed, we eagerly close the connection in a blocking fashion so that we do not process anything more.
                 ctx.writeAndFlush(response).get()
-                ctx.close()
+                ctx.close().get()
+                return
             } else {
                 logger.debug { "Received HTTP request from ${ctx.channel().remoteAddress()}\n" +
                         "Protocol version: ${msg.protocolVersion()}\n" +
