@@ -63,7 +63,7 @@ class CreatePermissionE2eTest {
                     // Retrieve by query
                     val firstPermission = proxy.queryPermissions(
                         1, PermissionType.ALLOW.name,
-                        permissionStringPrefix = setPermString.substring(0, 10)
+                        permissionStringPrefix = setPermString
                     ).first()
                     assertThat(firstPermission).isEqualTo(permById)
                 }
