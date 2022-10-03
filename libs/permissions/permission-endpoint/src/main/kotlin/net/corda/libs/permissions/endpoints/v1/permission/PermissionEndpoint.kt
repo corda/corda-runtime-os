@@ -10,7 +10,6 @@ import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.httprpc.response.ResponseEntity
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionResponseType
-import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 
 /**
  * Permission endpoint exposes functionality for management of Permissions in the RBAC permission system.
@@ -78,7 +77,7 @@ interface PermissionEndpoint : RpcOps {
                 "The value must be in the range [1..1000].")
         maxResultCount: Int,
         @HttpRpcQueryParameter(description = "The permission type to be returned.")
-        permissionType: PermissionType,
+        permissionType: String,
         @HttpRpcQueryParameter(description = "Optional group visibility for a permission.", required = false)
         groupVisibility: String? = null,
         @HttpRpcQueryParameter(description = "Optional virtual node the permissions apply to.", required = false)

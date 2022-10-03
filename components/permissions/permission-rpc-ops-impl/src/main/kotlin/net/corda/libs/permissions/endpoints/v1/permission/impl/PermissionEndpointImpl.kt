@@ -72,7 +72,7 @@ class PermissionEndpointImpl @Activate constructor(
 
     override fun queryPermissions(
         maxResultCount: Int,
-        permissionType: PermissionType,
+        permissionType: String,
         groupVisibility: String?,
         virtualNode: String?,
         permissionStringPrefix: String?
@@ -84,10 +84,24 @@ class PermissionEndpointImpl @Activate constructor(
             )
         }
 
+        val permissionTypeEnum = try {
+            PermissionType.valueOf(permissionType)
+        } catch (ex: Exception) {
+            throw InvalidInputDataException(
+                "permissionType: $permissionType is invalid. Supported values are: ${
+                    PermissionType.values().map { it.name }
+                }"
+            )
+        }
+
         val permissions = withPermissionManager(permissionManagementService.permissionManager, logger) {
             queryPermissions(
                 QueryPermissionsRequestDto(
-                    maxResultCount, permissionType.toRequestDtoType(), groupVisibility, virtualNode, permissionStringPrefix
+                    maxResultCount,
+                    permissionTypeEnum.toRequestDtoType(),
+                    groupVisibility,
+                    virtualNode,
+                    permissionStringPrefix
                 )
             )
         }

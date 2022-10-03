@@ -8,5 +8,4 @@ data class QueryPermissionsRequestDto(
     val groupVisibility: String?,
     val virtualNode: String?,
     val permissionStringPrefix: String?
-) {
-}
+)
