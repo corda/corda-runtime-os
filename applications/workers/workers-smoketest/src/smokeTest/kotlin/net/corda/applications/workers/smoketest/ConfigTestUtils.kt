@@ -11,7 +11,7 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import java.io.IOException
 import java.time.Duration
 
-data class TestJsonObject(override val escapedJson: String = "") : JsonObject
+private data class TestJsonObject(override val escapedJson: String = "") : JsonObject
 
 fun JsonNode.sourceConfigNode(): JsonNode =
     this["sourceConfig"].textValue().toJson()
@@ -38,7 +38,7 @@ fun getConfig(section: String): JsonNode {
  * The currently installed schema and configuration versions are automatically obtained from the running system
  * before updating.
  */
-fun updateConfig(config: String, section: String, rawConfig: Boolean = false) {
+fun updateConfig(config: String, section: String) {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
@@ -47,24 +47,13 @@ fun updateConfig(config: String, section: String, rawConfig: Boolean = false) {
                 val currentConfig = getConfig(section).body.toJson()
                 val currentSchemaVersion = currentConfig["schemaVersion"]
 
-                if(rawConfig) {
-                    putConfigRawJson(
-                        TestJsonObject(config),
-                        section,
-                        currentConfig["version"].toString(),
-                        currentSchemaVersion["major"].toString(),
-                        currentSchemaVersion["minor"].toString()
-                    )
-                } else {
-                    putConfig(
-                        StringEscapeUtils.escapeJson(config), section,
-                        currentConfig["version"].toString(),
-                        currentSchemaVersion["major"].toString(),
-                        currentSchemaVersion["minor"].toString()
-                    )
-                }
+                putConfig(
+                    TestJsonObject(config),
+                    section,
+                    currentConfig["version"].toString(),
+                    currentSchemaVersion["major"].toString(),
+                    currentSchemaVersion["minor"].toString())
             }
-
             condition { it.code == OK.statusCode }
         }
     }
@@ -89,7 +78,9 @@ fun waitForConfigurationChange(section: String, key: String, value: String, time
         assertWithRetryIgnoringExceptions {
             timeout(timeout)
             command { getConfig(section) }
-            condition { it.code == OK.statusCode && it.body.toJson().sourceConfigNode()[key].asInt().toString() == value }
+            condition {
+                it.code == OK.statusCode && it.body.toJson().sourceConfigNode()[key].asInt().toString() == value
+            }
         }
     }
 }

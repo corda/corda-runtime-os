@@ -30,7 +30,7 @@ const val HSM_CAT_SESSION = "SESSION_INIT"
 const val HSM_CAT_LEDGER = "LEDGER"
 const val HSM_CAT_TLS = "TLS"
 
-data class TestJsonObject(override val escapedJson: String = "") : JsonObject
+private data class TestJsonObject(override val escapedJson: String = "") : JsonObject
 
 fun E2eCluster.uploadCpi(
     groupPolicy: ByteArray,
