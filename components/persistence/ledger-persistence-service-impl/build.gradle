@@ -84,8 +84,6 @@ dependencies {
     integrationTestImplementation project(':libs:ledger:ledger-common-serialization')
     integrationTestImplementation project(':libs:serialization:serialization-internal')
     integrationTestImplementation project(":testing:db-message-bus-testkit")
-    // TODO this might not be needed after tests are fixed
-    integrationTestImplementation project(':testing:ledger:ledger-common-testkit')
     integrationTestImplementation project(':testing:ledger:ledger-consensual-testkit')
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation project(':testing:test-utilities')

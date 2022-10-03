@@ -6,20 +6,17 @@ import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CP
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.MerkleTreeFactory
-import java.security.KeyPairGenerator
 import java.security.MessageDigest
-import java.security.spec.ECGenParameterSpec
 import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.Tuple
@@ -33,15 +30,6 @@ class ConsensualLedgerRepository(
 ) {
     companion object {
         private val logger = contextLogger()
-        // TODO These values are used instead of missing values
-        val fakePublicKey = KeyPairGenerator.getInstance("EC")
-            .apply { initialize(ECGenParameterSpec("secp256r1")) }
-            .generateKeyPair().public
-        val fakeContext = emptyMap<String, String>()
-        val fakeSignature = DigitalSignature.WithKey(fakePublicKey, "0".toByteArray(), fakeContext)
-        val fakeDigitalSignatureMetadata =
-            DigitalSignatureMetadata(Instant.now(), mapOf()) //CORE-5091 populate this properly...
-        val fakeSignatureWithMetaData = DigitalSignatureAndMetadata(fakeSignature, fakeDigitalSignatureMetadata)
     }
 
     fun persistTransaction(entityManager: EntityManager, transaction: ConsensualSignedTransactionImpl, account :String): EntityResponse {
@@ -60,7 +48,7 @@ class ConsensualLedgerRepository(
         persistTransactionCpk(entityManager, transactionId)
 
         transaction.signatures.forEachIndexed { index, digitalSignatureAndMetadata ->
-            persistSignature(entityManager, now, transactionId, index, digitalSignatureAndMetadata.signature.bytes)
+            persistSignature(entityManager, now, transactionId, index, digitalSignatureAndMetadata)
         }
 
         return EntityResponse(emptyList())
@@ -75,14 +63,15 @@ class ConsensualLedgerRepository(
                 JOIN {h-schema}consensual_transaction_component AS txc ON tx.id = txc.transaction_id
                 WHERE tx.id = :id
                 ORDER BY txc.group_idx, txc.leaf_idx
-                """
-        )
+                """,
+            Tuple::class.java)
             .setParameter("id", id)
             .resultList
+            .map { it as Tuple }
 
         if (rows.isEmpty()) return null
 
-        val firstRowColumns = rows.first() as Array<*>
+        val firstRowColumns = rows.first()
         val privacySalt = PrivacySaltImpl(firstRowColumns[1] as ByteArray)
         val componentGroupLists = queryRowsToComponentGroupLists(rows)
         val wireTransaction = WireTransaction(merkleTreeFactory, digestService, jsonMarshallingService, privacySalt, componentGroupLists)
@@ -93,12 +82,11 @@ class ConsensualLedgerRepository(
     }
 
     @VisibleForTesting
-    internal fun queryRowsToComponentGroupLists(rows: List<Any?>): List<List<ByteArray>> {
+    internal fun queryRowsToComponentGroupLists(rows: List<Tuple>): List<List<ByteArray>> {
         val componentGroupLists: MutableList<MutableList<ByteArray>> = mutableListOf()
         var componentsList: MutableList<ByteArray> = mutableListOf()
         var expectedGroupIdx = 0
-        rows.forEach {
-            val columns = it as Array<*>
+        rows.forEach { columns ->
             val groupIdx = (columns[4] as Number).toInt()   // txc.group_idx
             val leafIdx = (columns[5] as Number).toInt()    // txc.leaf_idx
             val data = columns[6] as ByteArray              // txc.data
@@ -132,14 +120,7 @@ class ConsensualLedgerRepository(
             .setParameter("transactionId", transactionId)
             .resultList
             .map { it as Tuple }
-            .map { r ->
-                DigitalSignatureAndMetadata(
-                    // TODO where to get public key and context from (it's not in DB)?
-                    DigitalSignature.WithKey(fakePublicKey, r.get(0) as ByteArray, fakeContext),
-                    // TODO where to get digital signature metadata from?
-                    fakeDigitalSignatureMetadata)
-                    //DigitalSignatureMetadata(Instant.now(), emptyMap()))
-            }
+            .map { r -> serializationService.deserialize(r.get(0) as ByteArray) }
     }
 
     private fun persistTransaction(entityManager: EntityManager, timestamp: Instant, tx: WireTransaction, account: String) {
@@ -204,7 +185,7 @@ class ConsensualLedgerRepository(
         tx: WireTransaction
     ) {
         // TODO get values from transaction metadata
-        val cpkIdentifiers = tx.metadata.get(CPK_IDENTIFIERS_KEY)
+        val cpkIdentifiers = tx.metadata[CPK_IDENTIFIERS_KEY]
         logger.info("cpkIdentifiers = [$cpkIdentifiers]")
         val fileHash = SecureHash.parse("SHA-256:1234567890123456")
         val name = "cpk-name"
@@ -245,7 +226,7 @@ class ConsensualLedgerRepository(
         timestamp: Instant,
         transactionId: String,
         index: Int,
-        signature: ByteArray
+        signature: DigitalSignatureAndMetadata
     ) {
         entityManager.createNativeQuery(
             """
@@ -253,7 +234,7 @@ class ConsensualLedgerRepository(
                 VALUES (:transactionId, :signatureIdx, :signature, :createdAt)""")
             .setParameter("transactionId", transactionId)
             .setParameter("signatureIdx", index)
-            .setParameter("signature", signature)
+            .setParameter("signature", serializationService.serialize(signature).bytes)
             .setParameter("createdAt", timestamp)
             .executeUpdate()
     }
