@@ -115,13 +115,13 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
     }
 
     /**
-     * Update the changelogs in the db for force upload
+     * Update the changelogs in the db for cpi upload
      *
      * @property cpkDbChangeLogEntities: [List]<[CpkDbChangeLogEntity]> a list of changelogs extracted from the force
      *  uploaded cpi.
      * @property em: [EntityManager] the entity manager from the call site. We reuse this for several operations as part
      *  of CPI upload
-     * @property cpi: [Cpi] is the Cpi that has just been forceUploaded
+     * @property cpi: [Cpi] is the Cpi that has just been uploaded
      *
      * @return [Boolean] indicating whether we actually updated any changelogs
      */
@@ -133,10 +133,9 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         // The incoming changelogs will not be marked deleted
         cpkDbChangeLogEntities.forEach { require(!it.isDeleted) }
         val dbChangelogs = findDbChangeLogForCpi(em, cpi.metadata.cpiId).associateBy { it.id }
-        // We first mark each existing changelog for this CPI as deleted.
         val changeLogUpdates = cpkDbChangeLogEntities.associateBy { it.id }
 
-        // Mark old changelogs as deleted
+        // We first mark each existing changelog for this CPI as deleted.
         dbChangelogs.forEach { (changelogId, changelog) ->
             if (changeLogUpdates.containsKey(changelogId)) {
                 changelog.isDeleted = true
@@ -150,6 +149,8 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
             .distinctBy { it.key }
             .forEach { (changelogId, changelog) ->
                 val inDb = em.find(CpkDbChangeLogEntity::class.java, changelogId)
+                // Keep track of what updated version we persist.
+                //  Also simulate the bumped entity version where appropriate.
                 val ret: CpkDbChangeLogEntity? = if (inDb != null) {
                     changelog.isDeleted = false
                     changelog.entityVersion = inDb.entityVersion
@@ -158,13 +159,13 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
                     em.merge(changelog)
                     if (hasChanged) {
                         log.info("There was a difference")
-                        // Simulate increase performed
+                        // Simulate entityVersion increase
                         changelog.entityVersion += 1
                         // Return changelog
                         changelog
                     } else {
                         log.info("They're the same")
-                        // There's no new audit entry required as the two objects are the same
+                        // There's no new audit entry required as there hasn't been an update
                         null
                     }
                 } else {
@@ -175,7 +176,8 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
                 if (ret != null) {
                     log.debug {
                         "Creating new audit entry for ${ret.id.cpkName}:${ret.id.cpkVersion} with signer summary " +
-                            "hash of ${ret.id.cpkSignerSummaryHash}} at entity version ${ret.entityVersion}"
+                            "hash of ${ret.id.cpkSignerSummaryHash}} at entity version ${ret.entityVersion} " +
+                            "with checksum ${ret.fileChecksum}"
                     }
                     val audit = CpkDbChangeLogAuditEntity(ret)
                     em.persist(audit)
