@@ -12,7 +12,6 @@ import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
-import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
@@ -29,7 +28,6 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.test.util.time.TestClock
-import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MGMContext
@@ -40,7 +38,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
-import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -136,14 +133,6 @@ class StartRegistrationHandlerTest {
         on { memberProvidedContext } doReturn mgmMemberContext
         on { mgmProvidedContext } doReturn mgmContext
     }
-    private val layeredPropertyMapFactor = mock<LayeredPropertyMapFactory> {
-        on { createMap(any()) } doAnswer {
-            val argument = it.getArgument<Map<String, String?>>(0)
-            mock<LayeredPropertyMap> {
-                on { entries } doReturn argument.entries
-            }
-        }
-    }
 
     @BeforeEach
     fun setUp() {
@@ -182,7 +171,6 @@ class StartRegistrationHandlerTest {
             membershipPersistenceClient,
             membershipQueryClient,
             cordaAvroSerializationFactory,
-            layeredPropertyMapFactor,
         )
     }
 

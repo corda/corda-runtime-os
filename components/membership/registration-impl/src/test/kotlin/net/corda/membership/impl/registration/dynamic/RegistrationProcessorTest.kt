@@ -16,14 +16,12 @@ import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.p2p.VerificationRequest
 import net.corda.data.membership.p2p.VerificationResponse
 import net.corda.data.membership.state.RegistrationState
-import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoFactory
-import net.corda.membership.lib.toMap
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -34,7 +32,6 @@ import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.test.util.time.TestClock
-import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MGMContext
@@ -141,13 +138,6 @@ class RegistrationProcessorTest {
         on { mgmProvidedContext } doReturn mgmContext
     }
 
-    private val layeredPropertyMap = mock<LayeredPropertyMap> {
-        on { entries } doReturn memberContext.toMap().entries
-    }
-    private val layeredPropertyMapFactory = mock<LayeredPropertyMapFactory> {
-        on {createMap(any())} doReturn layeredPropertyMap
-    }
-
     @BeforeEach
     fun setUp() {
         memberInfoFactory = mock {
@@ -193,7 +183,6 @@ class RegistrationProcessorTest {
             membershipQueryClient,
             mock(),
             mock(),
-            layeredPropertyMapFactory,
             mock(),
         )
     }

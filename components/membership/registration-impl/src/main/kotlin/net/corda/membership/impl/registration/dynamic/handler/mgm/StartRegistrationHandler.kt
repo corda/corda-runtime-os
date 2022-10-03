@@ -9,7 +9,6 @@ import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.state.RegistrationState
-import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.toAvro
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
@@ -48,7 +47,6 @@ class StartRegistrationHandler(
     private val membershipPersistenceClient: MembershipPersistenceClient,
     private val membershipQueryClient: MembershipQueryClient,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-    private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
 ) : RegistrationHandler<StartRegistration> {
 
     private companion object {

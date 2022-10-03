@@ -11,7 +11,6 @@ import net.corda.data.membership.command.registration.mgm.ProcessMemberVerificat
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.state.RegistrationState
-import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
@@ -44,7 +43,6 @@ class RegistrationProcessor(
     membershipQueryClient: MembershipQueryClient,
     cryptoOpsClient: CryptoOpsClient,
     cipherSchemeMetadata: CipherSchemeMetadata,
-    layeredPropertyMapFactory: LayeredPropertyMapFactory,
     merkleTreeProvider: MerkleTreeProvider,
 ) : StateAndEventProcessor<String, RegistrationState, RegistrationCommand> {
 
@@ -64,7 +62,6 @@ class RegistrationProcessor(
             membershipPersistenceClient,
             membershipQueryClient,
             cordaAvroSerializationFactory,
-            layeredPropertyMapFactory,
         ),
         ApproveRegistration::class.java to ApproveRegistrationHandler(
             membershipPersistenceClient,
