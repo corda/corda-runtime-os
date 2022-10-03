@@ -208,6 +208,7 @@ class MemberSynchronisationServiceImplTest {
     }
     private val merkleTreeGenerator = mock<MerkleTreeGenerator> {
         on { generateTree(any()) } doReturn tree
+        on { createTree(any()) } doReturn tree
     }
     private val memberInfo = mock<MemberInfo>()
     private val groupReader = mock<MembershipGroupReader> {
