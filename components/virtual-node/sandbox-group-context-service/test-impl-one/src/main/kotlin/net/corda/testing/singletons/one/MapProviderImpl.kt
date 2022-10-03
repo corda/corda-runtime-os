@@ -1,6 +1,6 @@
 package net.corda.testing.singletons.one
 
-import net.corda.v5.serialization.SingletonSerializeAsToken
+import net.corda.sandbox.type.UsedByFlow
 import net.corda.v5.testing.MapProvider
 import net.corda.v5.testing.MessageProvider
 import net.corda.v5.testing.NoSuchService
@@ -13,7 +13,7 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 @Suppress("unused", "LongParameterList")
 @Component(
     name = "map.singles",
-    service = [ MapProvider::class, SingletonSerializeAsToken::class ],
+    service = [ MapProvider::class, UsedByFlow::class ],
     scope = PROTOTYPE
 )
 class MapProviderImpl @Activate constructor(
@@ -29,7 +29,7 @@ class MapProviderImpl @Activate constructor(
     private val unmatchedService: MessageProvider?,
     @Reference(cardinality = OPTIONAL)
     private val optionalService: NoSuchService?
-): MapProvider, SingletonSerializeAsToken {
+): MapProvider, UsedByFlow {
     override fun getMap(): Map<String, *> {
         return mapOf(
             "unmatchedService" to (unmatchedService ?: "NO MATCH"),

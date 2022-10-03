@@ -17,14 +17,12 @@ import net.corda.persistence.common.exceptions.NullParameterException
 import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.sandboxgroupcontext.getSandboxSingletonServices
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.virtualnode.toCorda
 import java.nio.ByteBuffer
 
@@ -37,10 +35,7 @@ import java.nio.ByteBuffer
 class ConsensualLedgerMessageProcessor(
     private val entitySandboxService: EntitySandboxService,
     externalEventResponseFactory: ExternalEventResponseFactory,
-    private val merkleTreeProvider: MerkleTreeProvider,
-    private val digestService: DigestService,
-    private val jsonMarshallingService: JsonMarshallingService,
-    private val payloadCheck: (bytes: ByteBuffer) -> ByteBuffer,
+    private val payloadCheck: (bytes: ByteBuffer) -> ByteBuffer
 ) : DurableProcessor<String, ConsensualLedgerRequest> {
     private companion object {
         val log = contextLogger()
@@ -83,9 +78,9 @@ class ConsensualLedgerMessageProcessor(
         // get the per-sandbox entity manager and serialization services
         val entityManagerFactory = sandbox.getEntityManagerFactory()
         val serializationService = sandbox.getSerializationService()
-        val repository = ConsensualLedgerRepository(
-            merkleTreeProvider, digestService, jsonMarshallingService, serializationService
-        )
+        val sandboxSingletons = sandbox.getSandboxSingletonServices()
+        val repository = sandboxSingletons.filterIsInstance<ConsensualLedgerRepository>().singleOrNull()
+            ?: throw IllegalStateException("ConsensualLedgerRepository service missing from sandbox")
 
         return entityManagerFactory.createEntityManager().transaction { em ->
             when (val req = request.request) {

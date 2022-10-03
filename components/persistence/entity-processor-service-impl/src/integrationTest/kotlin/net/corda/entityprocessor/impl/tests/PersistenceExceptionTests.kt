@@ -15,7 +15,6 @@ import net.corda.data.persistence.PersistEntities
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.persistence.testkit.fake.FakeDbConnectionManager
-import net.corda.db.persistence.testkit.helpers.BasicMocks
 import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.createDog
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getSerializer
@@ -105,8 +104,7 @@ class PersistenceExceptionTests {
                 virtualNode.sandboxGroupContextComponent,
                 brokenCpiInfoReadService,
                 virtualNodeInfoReadService,
-                dbConnectionManager,
-                BasicMocks.componentContext()
+                dbConnectionManager
             )
 
         val processor =
@@ -142,8 +140,7 @@ class PersistenceExceptionTests {
                 virtualNode.sandboxGroupContextComponent,
                 brokenCpiInfoReadService,
                 virtualNodeInfoReadService,
-                dbConnectionManager,
-                BasicMocks.componentContext()
+                dbConnectionManager
             )
 
         val processor =
@@ -178,8 +175,7 @@ class PersistenceExceptionTests {
                 virtualNode.sandboxGroupContextComponent,
                 cpiInfoReadService,
                 virtualNodeInfoReadService,
-                dbConnectionManager,
-                BasicMocks.componentContext()
+                dbConnectionManager
             )
 
         val processor =
@@ -217,8 +213,7 @@ class PersistenceExceptionTests {
                 virtualNode.sandboxGroupContextComponent,
                 cpiInfoReadService,
                 virtualNodeInfoReadService,
-                dbConnectionManager,
-                BasicMocks.componentContext()
+                dbConnectionManager
             )
 
         val sandboxOne = entitySandboxService.get(virtualNodeInfoOne.holdingIdentity)

@@ -4,9 +4,11 @@ import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.v5.application.serialization.SerializationService
+import org.junit.jupiter.api.fail
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import java.util.*
+import java.util.Calendar
+import java.util.UUID
 
 /**
  * We need to use this object because we cannot include the `Cat` and `Dog` bundles as
@@ -72,6 +74,6 @@ object SandboxHelper {
     }
 
     fun SandboxGroupContext.getSerializer(key: String): SerializationService {
-        return this.getObjectByKey(key)!!
+        return getObjectByKey(key) ?: fail("'$key' not found in SandboxGroupContext")
     }
 }
