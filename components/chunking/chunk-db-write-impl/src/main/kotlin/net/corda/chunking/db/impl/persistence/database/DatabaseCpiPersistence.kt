@@ -136,26 +136,27 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         val changeLogUpdates = cpkDbChangeLogEntities.associateBy { it.id }
 
         // We first mark each existing changelog for this CPI as deleted.
-        dbChangelogs.forEach { (changelogId, changelog) ->
-            if (changeLogUpdates.containsKey(changelogId)) {
-                changelog.isDeleted = true
-            }
+        dbChangelogs.forEach { (_, changelog) ->
+            changelog.isDeleted = true
+            em.merge(changelog)
         }
 
         // Then, for the currently declared changelogs, we'll save the record and clear any isDeleted flags.
         // This all happens under one transaction so no one will see the isDeleted flags flicker.
         (dbChangelogs + changeLogUpdates)
             .entries
-            .distinctBy { it.key }
             .forEach { (changelogId, changelog) ->
                 val inDb = em.find(CpkDbChangeLogEntity::class.java, changelogId)
                 // Keep track of what updated version we persist.
                 //  Also simulate the bumped entity version where appropriate.
                 val ret: CpkDbChangeLogEntity? = if (inDb != null) {
-                    changelog.isDeleted = false
                     changelog.entityVersion = inDb.entityVersion
                     // Check prior to merge
-                    val hasChanged = changelog.id != inDb.id || changelog.fileChecksum != inDb.fileChecksum
+                    val hasChanged = changelog.fileChecksum != inDb.fileChecksum
+                    if (changeLogUpdates.containsKey(changelogId) || hasChanged) {
+                        // Mark as not deleted if this is one of the new entries
+                        changelog.isDeleted = false
+                    }
                     em.merge(changelog)
                     if (hasChanged) {
                         log.info("There was a difference")

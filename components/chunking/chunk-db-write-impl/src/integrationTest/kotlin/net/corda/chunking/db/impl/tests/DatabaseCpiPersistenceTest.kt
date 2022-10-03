@@ -1,13 +1,6 @@
 package net.corda.chunking.db.impl.tests
 
 import com.google.common.jimfs.Jimfs
-import java.nio.file.FileSystem
-import java.nio.file.Files
-import java.nio.file.Path
-import java.time.Instant
-import java.util.Random
-import java.util.UUID
-import javax.persistence.PersistenceException
 import net.corda.chunking.datamodel.ChunkingEntities
 import net.corda.chunking.db.impl.persistence.PersistenceUtils.toCpkKey
 import net.corda.chunking.db.impl.persistence.database.DatabaseCpiPersistence
@@ -21,12 +14,11 @@ import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogAuditEntity
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
 import net.corda.libs.cpi.datamodel.CpkFileEntity
 import net.corda.libs.cpi.datamodel.CpkKey
 import net.corda.libs.cpi.datamodel.CpkMetadataEntity
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
-import net.corda.libs.cpi.datamodel.findDbChangeLogForCpi
 import net.corda.libs.cpi.datamodel.QUERY_NAME_UPDATE_CPK_FILE_DATA
 import net.corda.libs.cpi.datamodel.QUERY_PARAM_DATA
 import net.corda.libs.cpi.datamodel.QUERY_PARAM_ENTITY_VERSION
@@ -34,6 +26,7 @@ import net.corda.libs.cpi.datamodel.QUERY_PARAM_FILE_CHECKSUM
 import net.corda.libs.cpi.datamodel.QUERY_PARAM_ID
 import net.corda.libs.cpi.datamodel.QUERY_PARAM_INCREMENTED_ENTITY_VERSION
 import net.corda.libs.cpi.datamodel.findDbChangeLogAuditForCpi
+import net.corda.libs.cpi.datamodel.findDbChangeLogForCpi
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.core.CordappManifest
@@ -59,6 +52,13 @@ import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.nio.file.FileSystem
+import java.nio.file.Files
+import java.nio.file.Path
+import java.time.Instant
+import java.util.Random
+import java.util.UUID
+import javax.persistence.PersistenceException
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class DatabaseCpiPersistenceTest {
@@ -84,7 +84,7 @@ internal class DatabaseCpiPersistenceTest {
             finibus maximus enim scelerisque eu. Ut nibh lacus, semper eget cursus a, porttitor 
             eu odio. Vivamus vel placerat eros, sed convallis est. Proin tristique ut odio at 
             finibus. 
-        """.trimIndent()
+    """.trimIndent()
     private val mockChangeLogContent = "lorum ipsum"
     /**
      * Creates an in-memory database, applies the relevant migration scripts, and initialises
@@ -148,7 +148,7 @@ internal class DatabaseCpiPersistenceTest {
 
         val cordappManifest = CordappManifest(
             "", "", -1, -1,
-            CordappType.WORKFLOW, "","", 0, "",
+            CordappType.WORKFLOW, "", "", 0, "",
             emptyMap()
         )
 
@@ -371,7 +371,8 @@ internal class DatabaseCpiPersistenceTest {
         // make same assertions but after loading the entity again
         val initialLoadedCpi = entityManagerFactory.createEntityManager().transaction {
             it.find(
-                CpiMetadataEntity::class.java, CpiMetadataEntityKey(
+                CpiMetadataEntity::class.java,
+                CpiMetadataEntityKey(
                     cpi.metadata.cpiId.name,
                     cpi.metadata.cpiId.version,
                     cpi.metadata.cpiId.signerSummaryHash.toString(),
@@ -408,7 +409,8 @@ internal class DatabaseCpiPersistenceTest {
         // make same assertions but after loading the entity again
         val updatedLoadedCpi = entityManagerFactory.createEntityManager().transaction {
             it.find(
-                CpiMetadataEntity::class.java, CpiMetadataEntityKey(
+                CpiMetadataEntity::class.java,
+                CpiMetadataEntityKey(
                     updatedCpi.metadata.cpiId.name,
                     updatedCpi.metadata.cpiId.version,
                     updatedCpi.metadata.cpiId.signerSummaryHash.toString(),
@@ -443,7 +445,8 @@ internal class DatabaseCpiPersistenceTest {
 
         val loadedCpi = entityManagerFactory.createEntityManager().transaction {
             it.find(
-                CpiMetadataEntity::class.java, CpiMetadataEntityKey(
+                CpiMetadataEntity::class.java,
+                CpiMetadataEntityKey(
                     cpi.metadata.cpiId.name,
                     cpi.metadata.cpiId.version,
                     cpi.metadata.cpiId.signerSummaryHash.toString(),
@@ -468,7 +471,8 @@ internal class DatabaseCpiPersistenceTest {
 
         val updatedCpi = entityManagerFactory.createEntityManager().transaction {
             it.find(
-                CpiMetadataEntity::class.java, CpiMetadataEntityKey(
+                CpiMetadataEntity::class.java,
+                CpiMetadataEntityKey(
                     cpi.metadata.cpiId.name,
                     cpi.metadata.cpiId.version,
                     cpi.metadata.cpiId.signerSummaryHash.toString(),
@@ -770,6 +774,9 @@ internal class DatabaseCpiPersistenceTest {
             updatedCpi, "test.cpi", newRandomSecureHash(), UUID.randomUUID().toString(), "group-A", emptyList()
         )
         val changelogsWithout = findChangelogs(updateCpiEntity)
+        changelogsWithout.forEach {
+            println("${it.id} ${it.isDeleted}")
+        }
         assertThat(changelogsWithout.size).isEqualTo(0)
     }
 
@@ -900,7 +907,7 @@ internal class DatabaseCpiPersistenceTest {
                     "cpk_signer_summary_hash",
                     signerSummaryHash.toString()
                 ).first()
-            assertThat(changeLog.entityVersion).isEqualTo(i * 2)
+            assertThat(changeLog.entityVersion).isEqualTo(i)
         }
     }
 
