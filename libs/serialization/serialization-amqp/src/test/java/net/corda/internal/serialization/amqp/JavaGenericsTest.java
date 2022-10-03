@@ -33,7 +33,7 @@ public class JavaGenericsTest {
             this.v = v;
         }
 
-        Integer getV() {
+        public Integer getV() {
             return v;
         }
     }

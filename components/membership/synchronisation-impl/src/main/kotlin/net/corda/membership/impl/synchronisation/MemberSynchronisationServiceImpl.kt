@@ -48,7 +48,7 @@ import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
@@ -91,8 +91,8 @@ class MemberSynchronisationServiceImpl internal constructor(
         membershipGroupReaderProvider: MembershipGroupReaderProvider,
         @Reference(service = CordaAvroSerializationFactory::class)
         cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-        @Reference(service = MerkleTreeFactory::class)
-        merkleTreeFactory: MerkleTreeFactory,
+        @Reference(service = MerkleTreeProvider::class)
+        merkleTreeProvider: MerkleTreeProvider,
         @Reference(service = VirtualNodeInfoReadService::class)
         virtualNodeInfoReadService: VirtualNodeInfoReadService,
     ) : this(
@@ -110,7 +110,7 @@ class MemberSynchronisationServiceImpl internal constructor(
             UTCClock(),
         ),
         MerkleTreeGenerator(
-            merkleTreeFactory,
+            merkleTreeProvider,
             cordaAvroSerializationFactory,
         ),
         UTCClock(),
