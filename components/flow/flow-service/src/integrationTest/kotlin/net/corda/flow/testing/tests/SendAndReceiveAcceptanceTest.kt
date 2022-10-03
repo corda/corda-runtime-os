@@ -2,7 +2,7 @@ package net.corda.flow.testing.tests
 
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
-import net.corda.flow.testing.context.initiateFlowMessage
+import net.corda.flow.testing.context.initiateTwoFlows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -37,15 +37,11 @@ class SendAndReceiveAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `(SendAndReceive) Calling 'sendAndReceive' on an initiated session sends a session data event`() {
         given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_1))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_2))
+            initiateTwoFlows(this)
         }
 
         `when` {
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.Send(
                     mapOf(
                         FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_1,
@@ -63,13 +59,9 @@ class SendAndReceiveAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `(SendAndReceive) Given a flow resumes after receiving session data events calling 'sendAndReceive' on the sessions sends session data events and no session ack for the session that resumed the flow`() {
         given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_1))
+            initiateTwoFlows(this)
 
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_2))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.Receive(setOf(
                     FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
                     FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName)
@@ -77,9 +69,9 @@ class SendAndReceiveAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 1)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 2)
 
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_2, sequenceNum = 1, receivedSequenceNum = 1)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_2, sequenceNum = 1, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.SendAndReceive(
                     mapOf(
                         FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_3,

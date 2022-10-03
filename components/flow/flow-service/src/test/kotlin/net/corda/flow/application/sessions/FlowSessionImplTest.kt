@@ -16,7 +16,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -77,7 +76,6 @@ class FlowSessionImplTest {
     fun `calling sendAndReceive with an initiated session will not cause the flow to suspend to initiate the session`() {
         val session = createInitiatedSession()
         session.sendAndReceive(String::class.java, HI)
-        verify(flowFiber, never()).suspend(any<FlowIORequest.InitiateFlow>())
         verify(flowFiber).suspend(any<FlowIORequest.SendAndReceive>())
     }
 
@@ -113,7 +111,6 @@ class FlowSessionImplTest {
     fun `calling receive with an initiated session will not cause the flow to suspend to initiate the session`() {
         val session = createInitiatedSession()
         session.receive(String::class.java)
-        verify(flowFiber, never()).suspend(any<FlowIORequest.InitiateFlow>())
         verify(flowFiber).suspend(any<FlowIORequest.Receive>())
     }
 
@@ -149,7 +146,6 @@ class FlowSessionImplTest {
     fun `calling send with an initiated session will not cause the flow to suspend to initiate the session`() {
         val session = createInitiatedSession()
         session.send(HI)
-        verify(flowFiber, never()).suspend(any<FlowIORequest.InitiateFlow>())
         verify(flowFiber).suspend(any<FlowIORequest.Send>())
     }
 

@@ -8,7 +8,8 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.StepSetup
 import net.corda.flow.testing.context.flowResumedWithError
-import net.corda.flow.testing.context.initiateFlowMessage
+import net.corda.flow.testing.context.initiateSingleFlow
+import net.corda.flow.testing.context.initiateTwoFlows
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -70,8 +71,10 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         fun flowIORequestsThatDoNotWaitForWakeup(): Stream<Arguments> {
             return Stream.of(
                 Arguments.of(
-                    FlowIORequest.InitiateFlow::class.simpleName,
-                    initiateFlowMessage(BOB_X500_NAME, SESSION_ID_2)
+                    FlowIORequest.Send::class.simpleName,
+                    FlowIORequest.Send(mapOf(
+                        FlowIORequest.SessionInfo(SESSION_ID_2, BOB_X500_NAME) to DATA_MESSAGE_0),
+                    )
                 )
             )
         }
@@ -95,13 +98,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Receiving an out-of-order session data events does not resume the flow and sends a session ack`() {
         given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_1))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_2))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
+            initiateTwoFlows(this)
                 .suspendsWith(
                     FlowIORequest.Receive(
                         setOf(
@@ -114,9 +111,9 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = -1, receivedSequenceNum = 1)
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 5, receivedSequenceNum = 1)
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 3, receivedSequenceNum = 1)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = -1, receivedSequenceNum = 2)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 5, receivedSequenceNum = 2)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 3, receivedSequenceNum = 2)
         }
 
         then {
@@ -144,13 +141,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         parameter: (StepSetup) -> Unit
     ) {
         given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_1))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_2))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
+            initiateTwoFlows(this)
                 .suspendsWith(
                     FlowIORequest.Receive(
                         setOf(
@@ -180,13 +171,9 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         parameter: (StepSetup) -> Unit
     ) {
         given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_1))
+            initiateTwoFlows(this)
 
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_2))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
                 .suspendsWith(
                     FlowIORequest.Receive(
                         setOf(
@@ -211,10 +198,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Receiving a session close event instead of a data resumes the flow with an error`() {
         given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_1))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
+            initiateSingleFlow(this, 2)
                 .suspendsWith(
                     FlowIORequest.Receive(
                         setOf(
@@ -225,7 +209,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 2)
         }
 
         then {
@@ -238,13 +222,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Given two sessions receiving a single session data event does not resume the flow and sends a session ack`() {
         given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_1))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_2))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
+            initiateTwoFlows(this, 2)
                 .suspendsWith(FlowIORequest.Receive(setOf(
                     FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
                     FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName),
@@ -252,7 +230,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 1)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 2)
         }
 
         then {
@@ -266,13 +244,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Given two sessions receiving all session data events resumes the flow and sends session acks`() {
         given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_1))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_2))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
+            initiateTwoFlows(this, 2)
                 .suspendsWith(FlowIORequest.Receive(setOf(
                     FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
                     FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName),
@@ -280,9 +252,9 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 1)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 2)
 
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_2, sequenceNum = 1, receivedSequenceNum = 1)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_2, sequenceNum = 1, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
@@ -302,16 +274,10 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Given two sessions where one has already received a session data event calling 'receive' and then receiving a session data event for the other session resumes the flow and sends a session ack`() {
         given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_1))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_2))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
+            initiateTwoFlows(this, 2)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
 
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 1)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.Receive(setOf(
                     FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
                     FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName),
@@ -319,7 +285,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_2, sequenceNum = 1, receivedSequenceNum = 1)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_2, sequenceNum = 1, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
@@ -334,21 +300,15 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Given two sessions have already received their session data events when the flow calls 'receive' for both sessions at once the flow should schedule a wakeup event`() {
         given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_1))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_2))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
+            initiateTwoFlows(this, 2)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
 
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 1)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
         `when` {
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_2, sequenceNum = 1, receivedSequenceNum = 1)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_2, sequenceNum = 1, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.Receive(setOf(
                     FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
                     FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName),
@@ -365,21 +325,15 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Given two sessions have already received their session data events when the flow calls 'receive' for each session individually the flow should schedule a wakeup event`() {
         given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_1))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_2))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
+            initiateTwoFlows(this, 2)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
 
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 1)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
         `when` {
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_2, sequenceNum = 1, receivedSequenceNum = 1)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_2, sequenceNum = 1, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.Receive(setOf(
                     FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
                 )))
@@ -409,10 +363,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         request: FlowIORequest<*>
     ) {
         given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_1))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
+            initiateSingleFlow(this, 2)
                 .suspendsWith(request)
         }
 
@@ -431,13 +382,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Given two sessions receiving a single session error event does not resume the flow and schedules session cleanup`() {
         given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_1))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_2))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
+            initiateTwoFlows(this, 2)
                 .suspendsWith(FlowIORequest.Receive(setOf(
                     FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
                     FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName),
@@ -445,7 +390,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1)
+            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
@@ -460,13 +405,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Given two sessions receiving a session data event for one and a session error event for the other resumes the flow with an error and schedules session cleanup`() {
         given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_1))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_2))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
+            initiateTwoFlows(this, 2)
                 .suspendsWith(FlowIORequest.Receive(setOf(
                     FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
                     FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName),
@@ -474,8 +413,8 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 1)
-            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 1)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
@@ -495,13 +434,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Given two sessions receiving a session error event first for one and a session data event for the other resumes the flow with an error and schedules session cleanup`() {
         given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_1))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_2))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
+            initiateTwoFlows(this, 2)
                 .suspendsWith(FlowIORequest.Receive(setOf(
                     FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
                     FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName),
@@ -509,8 +442,8 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 1)
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 1)
+            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
@@ -530,13 +463,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Given two sessions receiving a session close event for one session and a session data event for the other resumes the flow with an error`() {
         given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_1))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_2))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
+            initiateTwoFlows(this, 2)
                 .suspendsWith(FlowIORequest.Receive(setOf(
                     FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
                     FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName),
@@ -544,8 +471,8 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 1)
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 1)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
@@ -564,13 +491,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Given two sessions receiving session close events for both sessions resumes the flow with an error`() {
         given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_1))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_2))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
+            initiateTwoFlows(this, 2)
                 .suspendsWith(FlowIORequest.Receive(setOf(
                     FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
                     FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName),
@@ -578,8 +499,8 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1)
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 1)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
@@ -597,13 +518,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Given two sessions receiving a session data and then close event for one session and a session data event for the other resumes the flow`() {
         given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_1))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_2))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
+            initiateTwoFlows(this, 2)
                 .suspendsWith(FlowIORequest.Receive(setOf(
                     FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
                     FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName),
@@ -611,9 +526,9 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 1)
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 2, receivedSequenceNum = 1)
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_2, sequenceNum = 1, receivedSequenceNum = 1)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 2, receivedSequenceNum = 2)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_2, sequenceNum = 1, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
@@ -638,10 +553,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Given a session, if it receives an out of order close and then an ordered data event, the flow resumes`() {
         given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_1))
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
+            initiateSingleFlow(this, 2)
                 .suspendsWith(FlowIORequest.Receive(setOf(
                     FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
                     FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
@@ -649,8 +561,8 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 2, receivedSequenceNum = 1)
-            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 1)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 2, receivedSequenceNum = 2)
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 

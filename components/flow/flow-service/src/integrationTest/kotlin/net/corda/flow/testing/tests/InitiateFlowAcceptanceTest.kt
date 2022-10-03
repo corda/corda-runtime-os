@@ -4,7 +4,7 @@ import net.corda.data.flow.output.FlowStates
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.testing.context.FlowServiceTestBase
 import net.corda.flow.testing.context.flowResumedWithError
-import net.corda.flow.testing.context.initiateFlowMessage
+import net.corda.flow.testing.context.initiateSingleFlow
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -34,7 +34,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
     fun `Initiating a flow with a peer sends a session init event`() {
         `when` {
             startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_1))
+                .suspendsWith(FlowIORequest.Send(mapOf(FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0)))
         }
 
         then {
@@ -47,12 +47,11 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Receiving a session ack resumes the initiating flow`() {
         given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_1))
+            initiateSingleFlow(this)
         }
 
         `when` {
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
@@ -88,8 +87,7 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Receiving a session error event resumes the flow with an error`() {
         given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_1))
+            initiateSingleFlow(this)
         }
 
         `when` {

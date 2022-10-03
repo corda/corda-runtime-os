@@ -17,7 +17,6 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -50,7 +49,6 @@ class FlowSessionFactoryImplTest {
         assertEquals(BOB_X500_NAME, session.counterparty)
         assertEquals("value", session.contextProperties["key"])
         session.send(HI)
-        verify(flowFiber, never()).suspend(any<FlowIORequest.InitiateFlow>())
         verify(flowFiber).suspend(any<FlowIORequest.Send>())
     }
 
@@ -59,7 +57,6 @@ class FlowSessionFactoryImplTest {
         val session = flowSessionFactory.createInitiatingFlowSession(SESSION_ID, BOB_X500_NAME, null)
         assertEquals(BOB_X500_NAME, session.counterparty)
         session.send(HI)
-        verify(flowFiber, never()).suspend(any<FlowIORequest.InitiateFlow>())
         verify(flowFiber).suspend(any<FlowIORequest.Send>())
     }
 
@@ -70,7 +67,6 @@ class FlowSessionFactoryImplTest {
         assertEquals(BOB_X500_NAME, session.counterparty)
         session.send(HI)
         verify(contextBuilder).apply(any())
-        verify(flowFiber, never()).suspend(any<FlowIORequest.InitiateFlow>())
         verify(flowFiber).suspend(any<FlowIORequest.Send>())
     }
 

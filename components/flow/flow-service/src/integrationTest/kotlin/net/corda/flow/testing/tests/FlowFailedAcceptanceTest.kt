@@ -5,7 +5,7 @@ import net.corda.data.flow.output.FlowStates
 import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.exceptions.FlowProcessingExceptionTypes.FLOW_FAILED
 import net.corda.flow.testing.context.FlowServiceTestBase
-import net.corda.flow.testing.context.initiateFlowMessage
+import net.corda.flow.testing.context.initiateSingleFlow
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -73,20 +73,15 @@ class FlowFailedAcceptanceTest : FlowServiceTestBase() {
     @Test
     fun `Given the flow has a WAIT_FOR_FINAL_ACK session receiving a session close event and then failing the flow schedules flow and session cleanup`() {
         given {
-            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
-                .suspendsWith(
-                    initiateFlowMessage(initiatedIdentityMemberName, SESSION_ID_1)
-                )
-
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
+            initiateSingleFlow(this, 2)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
 
-            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1)
+            sessionCloseEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.CloseSessions(setOf(SESSION_ID_1)))
         }
 
         `when` {
-            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 2)
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 3)
                 .suspendsWith(FlowIORequest.FlowFailed(EXCEPTION))
         }
 

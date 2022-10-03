@@ -52,12 +52,6 @@ interface FlowIORequest<out R> {
         override fun toString() = "SendAndReceive(${sessionToInfo.keys.joinToString { it.toString() }})"
     }
 
-    data class InitiateFlow(
-        val sessionToCounterparty: Map<String, MemberX500Name>,
-        val contextUserProperties: Map<String, String>,
-        val contextPlatformProperties: Map<String, String>
-    ) : FlowIORequest<Unit>
-
     /**
      * Closes the specified sessions.
      *
