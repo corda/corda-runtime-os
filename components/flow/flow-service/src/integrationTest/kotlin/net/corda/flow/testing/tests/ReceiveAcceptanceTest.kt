@@ -172,6 +172,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
     ) {
         given {
             initiateTwoFlows(this)
+                .suspendsWith(FlowIORequest.ForceCheckpoint)
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
                 .suspendsWith(
@@ -390,7 +391,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
@@ -414,7 +415,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
 
         `when` {
             sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 2)
-            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
@@ -442,7 +443,7 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 2)
+            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
             sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_1, sequenceNum = 1, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }

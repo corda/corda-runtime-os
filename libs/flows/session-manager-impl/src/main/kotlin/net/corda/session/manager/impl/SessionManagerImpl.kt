@@ -201,8 +201,7 @@ class SessionManagerImpl : SessionManager {
      * they have also received. Remove these events if present from the sendEvents undelivered messages.
      * If the current session state has a status of WAIT_FOR_FINAL_ACK and the ack info contains the sequence number of the session close
      * message then the session can be set to CLOSED.
-     * If the current session state has a status of CREATED and the SessionInit (seq num = 1) has been acked then the session can be set to
-     * CONFIRMED
+     * If the current session state has a status of CREATED and the SessionInit has been acked then the session can be set to CONFIRMED
      *
      * @param sessionEvent to get ack info from
      * @param sessionState to get the sent events

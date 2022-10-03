@@ -38,6 +38,7 @@ class SendAndReceiveAcceptanceTest : FlowServiceTestBase() {
     fun `(SendAndReceive) Calling 'sendAndReceive' on an initiated session sends a session data event`() {
         given {
             initiateTwoFlows(this)
+                .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
         `when` {
@@ -60,6 +61,7 @@ class SendAndReceiveAcceptanceTest : FlowServiceTestBase() {
     fun `(SendAndReceive) Given a flow resumes after receiving session data events calling 'sendAndReceive' on the sessions sends session data events and no session ack for the session that resumed the flow`() {
         given {
             initiateTwoFlows(this)
+                .suspendsWith(FlowIORequest.ForceCheckpoint)
 
             sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
                 .suspendsWith(FlowIORequest.Receive(setOf(

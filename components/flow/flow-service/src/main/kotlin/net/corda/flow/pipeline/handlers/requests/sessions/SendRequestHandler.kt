@@ -47,9 +47,7 @@ class SendRequestHandler @Activate constructor(
             initiateFlowRequestService.initiateFlowsNotInitiated(context, request.sessionPayloads.keys)
 
             val sessionIdToPayload = request.sessionPayloads.map { it.key.sessionId to it.value }.toMap()
-            flowSessionManager.sendDataMessages(checkpoint, sessionIdToPayload, Instant.now()).forEach { updatedSessionState ->
-                checkpoint.putSessionState(updatedSessionState)
-            }
+            checkpoint.putSessionStates(flowSessionManager.sendDataMessages(checkpoint, sessionIdToPayload, Instant.now()))
         } catch (e: FlowSessionStateException) {
             throw FlowPlatformException("Failed to send: ${e.message}. $PROTOCOL_MISMATCH_HINT", e)
         }

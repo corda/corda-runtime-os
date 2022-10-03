@@ -37,6 +37,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
     fun `Given a subFlow contains only initiated sessions when the subFlow fails a wakeup event is scheduled session error events are sent and session cleanup is scheduled`() {
         given {
             initiateTwoFlows(this)
+                .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
         `when` {
@@ -117,12 +118,12 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
             initiateTwoFlows(this, 2)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
 
-            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 3)
+            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 3)
                 .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
         `when` {
-            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_2, sequenceNum = 1, receivedSequenceNum = 3)
+            sessionErrorEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 3)
                 .suspendsWith(
                     FlowIORequest.SubFlowFailed(
                         RuntimeException(),
@@ -143,6 +144,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
     fun `Given a subFlow contains no sessions when the subFlow fails a wakeup event is scheduled`() {
         given {
             initiateTwoFlows(this)
+                .suspendsWith(FlowIORequest.ForceCheckpoint)
         }
 
         `when` {
@@ -223,7 +225,7 @@ class SubFlowFailedAcceptanceTest : FlowServiceTestBase() {
         }
 
         `when` {
-            sessionErrorEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1)
+            sessionErrorEventReceived(FLOW_ID1, INITIATED_SESSION_ID_1, receivedSequenceNum = 1)
                 .suspendsWith(
                     FlowIORequest.SubFlowFailed(
                         RuntimeException(),

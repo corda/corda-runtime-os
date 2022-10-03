@@ -1,5 +1,6 @@
 package net.corda.applications.workers.smoketest.flow
 
+import java.util.UUID
 import net.corda.applications.workers.smoketest.FlowStatus
 import net.corda.applications.workers.smoketest.GROUP_ID
 import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_FAILED
@@ -34,7 +35,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.TestMethodOrder
-import java.util.UUID
 
 @Suppress("Unused")
 @Order(20)
@@ -65,6 +65,7 @@ class FlowTests {
             "net.cordapp.testing.testflows.TestFlow",
             "net.cordapp.testing.testflows.BrokenProtocolFlow",
             "net.cordapp.testing.testflows.MessagingFlow",
+            "net.cordapp.testing.testflows.SendReceiveAllMessagingFlow",
             "net.cordapp.testing.testflows.PersistenceFlow",
             "net.cordapp.testing.testflows.UniquenessCheckTestFlow",
             "net.cordapp.testing.testflows.ledger.ConsensualSignedTransactionSerializationFlow",
@@ -475,6 +476,27 @@ class FlowTests {
         assertThat(flowResult.command).isEqualTo("subflow_passed_in_non_initiated_session")
         assertThat(flowResult.result)
             .isEqualTo("${X500_BOB}=echo:m1; ${X500_CHARLIE}=echo:m2")
+    }
+
+    @Test
+    fun `SubFlow - Initiate multiple sessions and exercise the flow messaging apis`() {
+
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "flow_messaging_apis"
+            data = mapOf("sessions" to X500_BOB)
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        val flowResult = result.getRpcFlowResult()
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(result.flowResult).isNotNull
+        assertThat(result.flowError).isNull()
+        assertThat(flowResult.command).isEqualTo("flow_messaging_apis")
+        assertThat(flowResult.result)
+            .isEqualTo("${X500_BOB}=Completed")
     }
 
     @Test
