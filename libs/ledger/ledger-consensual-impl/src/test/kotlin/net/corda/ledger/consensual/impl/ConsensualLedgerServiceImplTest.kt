@@ -42,55 +42,25 @@ class TestFlowFiberServiceWithSerializationProxy constructor(
     override fun getExecutingFiber(): FlowFiber {
         val testFlowFiberServiceWithSerialization = TestFlowFiberServiceWithSerialization()
         testFlowFiberServiceWithSerialization.configureSerializer({
-                                                                      it.register(PartySerializer(), it)
-                                                                  }, schemeMetadata)
+                it.register(PartySerializer(), it)
+            }, schemeMetadata)
         return testFlowFiberServiceWithSerialization.getExecutingFiber()
     }
 }
 
 class ConsensualLedgerServiceImplTest {
-    companion object {
-        private lateinit var testPublicKey: PublicKey
-        private lateinit var testConsensualState: ConsensualState
-
-        class TestConsensualState(
-            val testField: String,
-            override val participants: List<Party>
-        ) : ConsensualState {
-            override fun verify(ledgerTransaction: ConsensualLedgerTransaction) {}
-        }
-
-        @BeforeAll
-        @JvmStatic
-        fun setup() {
-            val kpg = KeyPairGenerator.getInstance("RSA")
-            kpg.initialize(512) // Shortest possible to not slow down tests.
-            testPublicKey = kpg.genKeyPair().public
-
-            val testMemberX500Name = MemberX500Name("R3", "London", "GB")
-
-            testConsensualState =
-                TestConsensualState(
-                    "test",
-                    listOf(
-                        PartyImpl(
-                            testMemberX500Name,
-                            testPublicKey
-                        )
-                    )
-                )
-        }
-    }
-
-    private val jsonMarshallingService: JsonMarshallingService = JsonMarshallingServiceImpl()
-    private val cipherSchemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
-    private val digestService: DigestService = DigestServiceImpl(cipherSchemeMetadata, null)
-    private val merkleTreeProvider: MerkleTreeProvider = MerkleTreeProviderImpl(digestService)
-    private val flowFiberService: FlowFiberService =
-        TestFlowFiberServiceWithSerializationProxy(cipherSchemeMetadata)
-    private val flowEngine: FlowEngine = FlowEngineImpl(flowFiberService)
-    private val signingService: SigningService = mock()
+    private val jsonMarshallingService = JsonMarshallingServiceImpl()
+    private val cipherSchemeMetadata = CipherSchemeMetadataImpl()
+    private val digestService = DigestServiceImpl(cipherSchemeMetadata, null)
+    private val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
+    private val flowFiberService = TestFlowFiberServiceWithSerializationProxy(cipherSchemeMetadata)
     private val serializationService: SerializationService = SerializationServiceImpl(flowFiberService)
+
+// check merge:
+        private val serializationService = TestSerializationService.getTestSerializationService({
+            it.register(PartySerializer(), it)
+        }, schemeMetadata)
+
     private val consensualTransactionBuilderFactory: ConsensualTransactionBuilderFactory =
         ConsensualTransactionBuilderFactoryImpl(
             cipherSchemeMetadata,
@@ -98,7 +68,9 @@ class ConsensualLedgerServiceImplTest {
             jsonMarshallingService,
             merkleTreeProvider,
             serializationService,
-            signingService
+            ConsensualTransactionMocks.mockSigningService(),
+            ConsensualTransactionMocks.mockMemberLookup(),
+            flowFiberService
         )
 
 
@@ -111,18 +83,11 @@ class ConsensualLedgerServiceImplTest {
 
     @Test
     fun `ConsensualLedgerServiceImpl's getTransactionBuilder() can build a SignedTransaction`() {
-        whenever(signingService.sign(any(), any(), any())).thenReturn(
-            DigitalSignature.WithKey(
-                testPublicKey,
-                byteArrayOf(1),
-                emptyMap()
-            )
-        )
         val service = ConsensualLedgerServiceImpl(consensualTransactionBuilderFactory, flowEngine)
         val transactionBuilder = service.getTransactionBuilder()
         val signedTransaction = transactionBuilder
-            .withStates(testConsensualState)
-            .signInitial(testPublicKey)
+            .withStates(ConsensualTransactionMocks.testConsensualState)
+            .signInitial(ConsensualTransactionMocks.testPublicKey)
         assertIs<ConsensualSignedTransaction>(signedTransaction)
         assertIs<SecureHash>(signedTransaction.id)
     }

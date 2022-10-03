@@ -30,58 +30,27 @@ import org.mockito.kotlin.whenever
 import kotlin.test.assertIs
 
 internal class ConsensualTransactionBuilderImplTest {
-    companion object {
-        private lateinit var testPublicKey: PublicKey
-        private lateinit var testConsensualState: ConsensualState
 
-        private val testMemberX500Name = MemberX500Name("R3", "London", "GB")
-
-        class TestConsensualState(
-            val testField: String,
-            override val participants: List<Party>
-        ) : ConsensualState {
-            override fun verify(ledgerTransaction: ConsensualLedgerTransaction) {}
-        }
-
-        @BeforeAll
-        @JvmStatic
-        fun setup() {
-            val kpg = KeyPairGenerator.getInstance("RSA")
-            kpg.initialize(512) // Shortest possible to not slow down tests.
-            testPublicKey = kpg.genKeyPair().public
-
-            testConsensualState = TestConsensualState(
-                "test",
-                listOf(PartyImpl(testMemberX500Name, testPublicKey))
-            )
-        }
-    }
 
     private val jsonMarshallingService: JsonMarshallingService = JsonMarshallingServiceImpl()
     private val cipherSchemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
     private val digestService: DigestService = DigestServiceImpl(cipherSchemeMetadata, null)
     private val merkleTreeFactory: MerkleTreeProvider = MerkleTreeProviderImpl(digestService)
-    private val signingService: SigningService = mock()
+
     private val serializationService: SerializationService =
         ConfiguredTestSerializationService.getTestSerializationService(cipherSchemeMetadata)
 
     @Test
     fun `can build a simple Transaction`() {
-        whenever(signingService.sign(any(), any(), any())).thenReturn(
-            DigitalSignature.WithKey(
-                testPublicKey,
-                byteArrayOf(1),
-                emptyMap()
-            )
-        )
-
         val tx = ConsensualTransactionBuilderImpl(
             cipherSchemeMetadata,
             digestService,
             jsonMarshallingService,
             merkleTreeFactory,
             serializationService,
-            signingService
+            ConsensualTransactionMocks.mockSigningService(),
+            ConsensualTransactionMocks.mockMemberLookup(),
+            ConsensualTransactionMocks.mockSandboxCpks()
         )
             .withStates(testConsensualState)
             .signInitial(testPublicKey)
@@ -90,14 +59,6 @@ internal class ConsensualTransactionBuilderImplTest {
 
     @Test
     fun `cannot build Transaction without Consensual States`() {
-        whenever(signingService.sign(any(), any(), any())).thenReturn(
-            DigitalSignature.WithKey(
-                testPublicKey,
-                byteArrayOf(1),
-                emptyMap()
-            )
-        )
-
         val exception = assertThrows(IllegalArgumentException::class.java) {
             ConsensualTransactionBuilderImpl(
                 cipherSchemeMetadata,
@@ -105,7 +66,9 @@ internal class ConsensualTransactionBuilderImplTest {
                 jsonMarshallingService,
                 merkleTreeFactory,
                 serializationService,
-                signingService
+		 ConsensualTransactionMocks.mockSigningService(),
+                ConsensualTransactionMocks.mockMemberLookup(),
+                ConsensualTransactionMocks.mockSandboxCpks()
             )
                 .signInitial(testPublicKey)
         }
@@ -114,14 +77,6 @@ internal class ConsensualTransactionBuilderImplTest {
 
     @Test
     fun `cannot build Transaction with Consensual States without participants`() {
-        whenever(signingService.sign(any(), any(), any())).thenReturn(
-            DigitalSignature.WithKey(
-                testPublicKey,
-                byteArrayOf(1),
-                emptyMap()
-            )
-        )
-
         val exception = assertThrows(IllegalArgumentException::class.java) {
             ConsensualTransactionBuilderImpl(
                 cipherSchemeMetadata,
@@ -129,11 +84,13 @@ internal class ConsensualTransactionBuilderImplTest {
                 jsonMarshallingService,
                 merkleTreeFactory,
                 serializationService,
-                signingService
+                ConsensualTransactionMocks.mockSigningService(),
+                ConsensualTransactionMocks.mockMemberLookup(),
+                ConsensualTransactionMocks.mockSandboxCpks()
             )
-                .withStates(testConsensualState)
+                .withStates(ConsensualTransactionMocks.testConsensualState)
                 .withStates(TestConsensualState("test", emptyList()))
-                .signInitial(testPublicKey)
+                .signInitial(ConsensualTransactionMocks.testPublicKey)
         }
         assertEquals("All consensual states needs to have participants", exception.message)
     }
