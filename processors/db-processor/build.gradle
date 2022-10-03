@@ -47,6 +47,8 @@ dependencies {
     implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-db-schema'
 
+    runtimeOnly 'net.corda:corda-ledger-consensual'
+
     runtimeOnly project(':components:chunking:chunk-read-service-impl')
     runtimeOnly project(':components:chunking:chunk-db-write-impl')
     runtimeOnly project(':components:configuration:configuration-write-service-impl')

@@ -5,11 +5,11 @@ import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 
 fun getWireTransaction(
     digestService: DigestService,
-    merkleTreeFactory: MerkleTreeFactory,
+    merkleTreeProvider: MerkleTreeProvider,
     jsonMarshallingService: JsonMarshallingService
 ): WireTransaction{
     val transactionMetaData = TransactionMetaData(
@@ -23,7 +23,7 @@ fun getWireTransaction(
         listOf("abc d efg".toByteArray()),
     )
     return WireTransaction(
-        merkleTreeFactory,
+        merkleTreeProvider,
         digestService,
         jsonMarshallingService,
         getPrivacySaltImpl(),

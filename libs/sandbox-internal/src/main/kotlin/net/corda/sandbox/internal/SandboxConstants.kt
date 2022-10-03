@@ -3,6 +3,8 @@
 package net.corda.sandbox.internal
 
 import net.corda.v5.crypto.SecureHash
+import org.osgi.framework.Bundle
+import org.osgi.framework.Constants
 
 // The index of the class tag identifier, version, tag type and class bundle name in all serialised class tags.
 internal const val CLASS_TAG_IDENTIFIER_IDX = 0
@@ -35,3 +37,7 @@ internal object ClassTagV1 {
 
 // The symbolic name of the `sandbox-hooks` bundle.
 internal const val SANDBOX_HOOKS_BUNDLE = "net.corda.sandbox-hooks"
+
+val Bundle.isFragment: Boolean get() {
+    return headers.get(Constants.FRAGMENT_HOST) != null
+}

@@ -7,18 +7,18 @@ import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.cipher.suite.DigestService
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import java.security.KeyPairGenerator
 import java.time.Instant
 
 fun getConsensualSignedTransactionImpl(
     digestService: DigestService,
-    merkleTreeFactory: MerkleTreeFactory,
+    merkleTreeProvider: MerkleTreeProvider,
     serializationService: SerializationService,
     jsonMarshallingService: JsonMarshallingService
 ): ConsensualSignedTransactionImpl {
-    val wireTransaction = getWireTransaction(digestService, merkleTreeFactory, jsonMarshallingService)
+    val wireTransaction = getWireTransaction(digestService, merkleTreeProvider, jsonMarshallingService)
 
     val kpg = KeyPairGenerator.getInstance("RSA")
     kpg.initialize(512)
