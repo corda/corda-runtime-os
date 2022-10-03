@@ -1,4 +1,4 @@
-package net.corda.v5.ledger.common.transaction
+package net.corda.v5.ledger.common
 
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.types.MemberX500Name

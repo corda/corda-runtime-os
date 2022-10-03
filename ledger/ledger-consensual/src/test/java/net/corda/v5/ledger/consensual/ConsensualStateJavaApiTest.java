@@ -1,6 +1,6 @@
 package net.corda.v5.ledger.consensual;
 
-import net.corda.v5.ledger.common.transaction.Party;
+import net.corda.v5.ledger.common.Party;
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction;
 import org.assertj.core.api.Assertions;
 import org.jetbrains.annotations.NotNull;
@@ -15,7 +15,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class ConsensualStateJavaApiTest {
-    private final net.corda.v5.ledger.common.transaction.Party Party = mock(Party.class);
+    private final net.corda.v5.ledger.common.Party Party = mock(Party.class);
     private final List<Party> participants = List.of(Party);
     private final ConsensualState consensualState = mock(ConsensualState.class);
 

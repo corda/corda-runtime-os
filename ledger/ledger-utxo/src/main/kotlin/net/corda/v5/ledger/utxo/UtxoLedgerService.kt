@@ -1,10 +1,8 @@
-package net.corda.v5.ledger.utxo.transaction
+package net.corda.v5.ledger.utxo
 
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.ledger.utxo.ContractState
-import net.corda.v5.ledger.utxo.StateAndRef
-import net.corda.v5.ledger.utxo.StateRef
+import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 
 /**
  * Defines UTXO ledger services.

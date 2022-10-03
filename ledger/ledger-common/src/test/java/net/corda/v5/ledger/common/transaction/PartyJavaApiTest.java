@@ -1,6 +1,7 @@
 package net.corda.v5.ledger.common.transaction;
 
 import net.corda.v5.base.types.MemberX500Name;
+import net.corda.v5.ledger.common.Party;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;

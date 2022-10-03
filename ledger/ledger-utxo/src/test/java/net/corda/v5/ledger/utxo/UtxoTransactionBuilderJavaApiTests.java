@@ -1,6 +1,6 @@
 package net.corda.v5.ledger.utxo;
 
-import net.corda.v5.ledger.common.transaction.Party;
+import net.corda.v5.ledger.common.Party;
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction;
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder;
 import org.junit.jupiter.api.Assertions;

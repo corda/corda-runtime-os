@@ -2,7 +2,7 @@ package net.corda.v5.ledger.utxo
 
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.DoNotImplement
-import net.corda.v5.ledger.common.transaction.Party
+import net.corda.v5.ledger.common.Party
 
 /**
  * Defines a transaction state, composed of a [ContractState] and associated transaction state information.
