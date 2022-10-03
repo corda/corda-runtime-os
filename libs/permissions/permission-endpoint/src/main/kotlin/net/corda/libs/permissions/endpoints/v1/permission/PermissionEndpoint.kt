@@ -4,11 +4,13 @@ import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPathParameter
+import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.httprpc.response.ResponseEntity
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionResponseType
+import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 
 /**
  * Permission endpoint exposes functionality for management of Permissions in the RBAC permission system.
@@ -67,4 +69,22 @@ interface PermissionEndpoint : RpcOps {
         @HttpRpcPathParameter(description = "ID of the permission to be returned.")
         id: String
     ): PermissionResponseType
+
+    @HttpRpcGET(
+        description = "This method returns permissions which satisfy supplied query criteria.",
+        responseDescription = "Permissions which satisfy supplied query criteria")
+    fun queryPermissions(
+        @HttpRpcQueryParameter(description = "The maximum number of results to return. " +
+                "The value must be in the range [1..1000].")
+        maxResultCount: Int,
+        @HttpRpcQueryParameter(description = "The permission type to be returned.")
+        permissionType: PermissionType,
+        @HttpRpcQueryParameter(description = "Optional group visibility for a permission.", required = false)
+        groupVisibility: String?,
+        @HttpRpcQueryParameter(description = "Optional virtual node the permissions apply to.", required = false)
+        virtualNode: String?,
+        @HttpRpcQueryParameter(
+            description = "Optional permission string prefix for permissions to be located.", required = false)
+        permissionStringPrefix: String?
+        ): List<PermissionResponseType>
 }
