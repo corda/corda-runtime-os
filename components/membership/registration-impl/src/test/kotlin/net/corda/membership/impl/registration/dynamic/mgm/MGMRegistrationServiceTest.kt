@@ -6,6 +6,9 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.crypto.impl.converter.PublicKeyHashConverter
+import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.CordaAvroSerializer
+import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.RegistrationStatus
@@ -181,6 +184,12 @@ class MGMRegistrationServiceTest {
             )
         } doReturn MembershipPersistenceResult.success()
     }
+    private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> = mock {
+        on { serialize(any()) } doReturn byteArrayOf(1, 2, 3)
+    }
+    private val cordaAvroSerializationFactory = mock<CordaAvroSerializationFactory> {
+        on { createAvroSerializer<KeyValuePairList>(any()) } doReturn keyValuePairListSerializer
+    }
     private val membershipSchemaValidator: MembershipSchemaValidator = mock()
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory = mock {
         on { createValidator() } doReturn membershipSchemaValidator
@@ -194,6 +203,7 @@ class MGMRegistrationServiceTest {
         memberInfoFactory,
         membershipPersistenceClient,
         layeredPropertyMapFactory,
+        cordaAvroSerializationFactory,
         membershipSchemaValidatorFactory
     )
 
