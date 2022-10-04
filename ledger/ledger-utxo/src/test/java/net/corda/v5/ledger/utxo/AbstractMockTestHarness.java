@@ -29,10 +29,6 @@ public class AbstractMockTestHarness {
     protected static class Update implements Command {
     }
 
-    // Mocked APIs
-    protected final DigestService digestService = Mockito.mock(DigestService.class);
-    protected final SerializationService serializationService = Mockito.mock(SerializationService.class);
-
     protected final PublicKey aliceKey = Mockito.mock(PublicKey.class);
     protected final PublicKey bobKey = Mockito.mock(PublicKey.class);
     protected final PublicKey notaryKey = Mockito.mock(PublicKey.class);
