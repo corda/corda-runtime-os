@@ -102,4 +102,31 @@ class InitiateFlowAcceptanceTest : FlowServiceTestBase() {
             }
         }
     }
+
+    @Test
+    fun `Open multiple sessions, receiving ack for only one session does not resume or set output events`() {
+        given {
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(
+                    FlowIORequest.Send(
+                        mapOf(
+                            FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0,
+                            FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to DATA_MESSAGE_0
+                        ),
+                    )
+                )
+
+        }
+
+        `when` {
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                noFlowEvents()
+                flowDidNotResume()
+            }
+        }
+    }
 }

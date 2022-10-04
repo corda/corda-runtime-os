@@ -185,4 +185,40 @@ class SendAcceptanceTest : FlowServiceTestBase() {
             }
         }
     }
+
+    @Test
+    fun `Calling 'send' on a session that is confirmed sets a wakeup event and data message`() {
+        given {
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(
+                    FlowIORequest.Send(
+                        mapOf(
+                            FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0,
+                            FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to DATA_MESSAGE_0
+                        ),
+                    )
+                )
+
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 2)
+        }
+
+        `when` {
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
+                .suspendsWith(
+                    FlowIORequest.Send(
+                        mapOf(
+                            FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_1
+                        )
+                    )
+                )
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                wakeUpEvent()
+                flowResumedWith(Unit)
+                sessionDataEvents(SESSION_ID_1 to DATA_MESSAGE_1)
+            }
+        }
+    }
 }
