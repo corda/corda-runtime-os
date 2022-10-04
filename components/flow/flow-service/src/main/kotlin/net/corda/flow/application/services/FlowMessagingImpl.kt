@@ -88,7 +88,7 @@ class FlowMessagingImpl @Activate constructor(
         val sessionPayload = payloadsPerSession.map {
             requireBoxedType(it.value::class.java)
             val flowSessionInternal = (it.key as FlowSessionInternal)
-            FlowIORequest.SessionInfo(flowSessionInternal.getSessionId(), flowSessionInternal.counterparty) to serialize(it.key)
+            FlowIORequest.SessionInfo(flowSessionInternal.getSessionId(), flowSessionInternal.counterparty) to serialize(it.value)
         }.toMap()
         return fiber.suspend(FlowIORequest.Send(sessionPayload))
     }
