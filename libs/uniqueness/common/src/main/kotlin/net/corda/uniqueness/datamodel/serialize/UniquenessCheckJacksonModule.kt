@@ -2,9 +2,9 @@ package net.corda.uniqueness.datamodel.serialize
 
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorGeneralImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateConflictImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateUnknownImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorMalformedRequestImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateConflictImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateUnknownImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorTimeWindowOutOfBoundsImpl
@@ -22,7 +22,7 @@ import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateRefImpl
     JsonSubTypes.Type(value = UniquenessCheckErrorReferenceStateConflictImpl::class, name = "refStateConflictImpl"),
     JsonSubTypes.Type(value = UniquenessCheckErrorReferenceStateUnknownImpl::class, name = "refStateUnknownImpl"),
     JsonSubTypes.Type(value = UniquenessCheckErrorTimeWindowOutOfBoundsImpl::class, name = "timeWindowOobImpl"),
-    JsonSubTypes.Type(value = UniquenessCheckErrorGeneralImpl::class, name = "generalErrorImpl")
+    JsonSubTypes.Type(value = UniquenessCheckErrorMalformedRequestImpl::class, name = "malformedReqImpl")
 )
 abstract class UniquenessCheckErrorTypeMixin
 

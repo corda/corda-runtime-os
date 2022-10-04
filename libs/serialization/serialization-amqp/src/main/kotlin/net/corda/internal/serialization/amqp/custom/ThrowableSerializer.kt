@@ -1,7 +1,7 @@
 package net.corda.internal.serialization.amqp.custom
 
 import net.corda.internal.serialization.amqp.LocalSerializerFactory
-import net.corda.internal.serialization.amqp.PropertyReader
+import net.corda.internal.serialization.amqp.GetterReader
 import net.corda.internal.serialization.amqp.currentSandboxGroup
 import net.corda.internal.serialization.model.LocalConstructorInformation
 import net.corda.internal.serialization.model.LocalTypeInformation
@@ -53,7 +53,7 @@ class ThrowableSerializer(
                 val typeInformation = factory.getTypeInformation(obj.javaClass)
                 extraProperties.putAll(
                     typeInformation.propertiesOrEmptyMap.mapValues { (_, property) ->
-                        PropertyReader.make(property).read(obj)
+                        GetterReader(property.observedGetter).read(obj)
                     }
                 )
             } catch (e: NotSerializableException) {

@@ -305,7 +305,6 @@ internal data class LocalTypeInformationBuilder(val lookup: LocalTypeLookup,
         val indicesAddressedByProperties = properties.values.mapNotNullTo(LinkedHashSet()) {
             when (it) {
                 is LocalPropertyInformation.ConstructorPairedProperty -> it.constructorSlot.parameterIndex
-                is LocalPropertyInformation.PrivateConstructorPairedProperty -> it.constructorSlot.parameterIndex
                 else -> null
             }
         }
@@ -324,7 +323,6 @@ internal data class LocalTypeInformationBuilder(val lookup: LocalTypeLookup,
         val indicesAddressedByProperties = properties.values.mapNotNullTo(LinkedHashSet()) {
             when (it) {
                 is LocalPropertyInformation.ConstructorPairedProperty -> it.constructorSlot.parameterIndex
-                is LocalPropertyInformation.PrivateConstructorPairedProperty -> it.constructorSlot.parameterIndex
                 else -> null
             }
         }
@@ -421,15 +419,7 @@ internal data class LocalTypeInformationBuilder(val lookup: LocalTypeLookup,
                                               constructorInformation: LocalConstructorInformation): LocalPropertyInformation? {
 
         if (descriptor.getter == null) {
-            if (descriptor.field == null) return null
-            val paramType = descriptor.field.genericType
-            val paramTypeInformation = resolveAndBuild(paramType)
-
-            return LocalPropertyInformation.PrivateConstructorPairedProperty(
-                    descriptor.field,
-                    ConstructorSlot(constructorIndex, constructorInformation),
-                    paramTypeInformation,
-                    constructorInformation.parameters[constructorIndex].isMandatory)
+            return null
         }
 
         val paramType = descriptor.getter.genericReturnType
