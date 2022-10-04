@@ -133,7 +133,7 @@ internal class DBCordaConsumerImplTest {
         val test = consumer.poll(Duration.ZERO)
         consumer.poll(Duration.ZERO)
         assertThat(test.size).isEqualTo(1)
-        assertThat(test.single()).isEqualToComparingFieldByField(expectedRecord)
+        assertThat(test.single()).usingRecursiveComparison().isEqualTo(expectedRecord)
     }
 
     @Test

@@ -1,5 +1,6 @@
 package net.corda.membership.lib.impl
 
+import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.SignedMemberInfo
@@ -23,8 +24,8 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
-import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.membership.lib.toSortedMap
+import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.ValueNotFoundException
 import net.corda.v5.base.util.parse
 import net.corda.v5.base.util.parseList
@@ -37,7 +38,7 @@ import org.apache.avro.io.DatumReader
 import org.apache.avro.io.DatumWriter
 import org.apache.avro.specific.SpecificDatumReader
 import org.apache.avro.specific.SpecificDatumWriter
-import org.assertj.core.util.Files
+import org.apache.commons.io.FileUtils
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
@@ -47,12 +48,11 @@ import org.mockito.kotlin.whenever
 import java.io.File
 import java.nio.ByteBuffer
 import java.security.PublicKey
+import java.time.Instant
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import net.corda.test.util.time.TestClock
-import java.time.Instant
 
 @Suppress("MaxLineLength")
 class MemberInfoTest {
@@ -177,7 +177,11 @@ class MemberInfoTest {
         @AfterAll
         @JvmStatic
         fun tearDown() {
-            Files.delete(avroMemberInfo)
+            try {
+                FileUtils.delete(avroMemberInfo)
+            } catch (e: Exception) {
+                // Treat file deletion at the end of this test as best effort.
+            }
         }
     }
 
