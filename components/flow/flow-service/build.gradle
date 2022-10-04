@@ -24,7 +24,6 @@ dependencies {
     implementation project(':libs:flows:session-manager')
     implementation project(":libs:flows:utils")
     implementation project(":libs:lifecycle:lifecycle")
-    implementation project(':libs:ledger:ledger-common-impl')
     implementation project(":libs:messaging:messaging")
     implementation project(":libs:sandbox")
     implementation project(":libs:serialization:serialization-checkpoint-api")
@@ -49,8 +48,6 @@ dependencies {
 
     implementation "co.paralleluniverse:quasar-core-osgi:$quasarVersion"
     implementation "com.esotericsoftware:kryo:$kryoVersion"
-
-    runtimeOnly project(':libs:crypto:merkle-impl')
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
