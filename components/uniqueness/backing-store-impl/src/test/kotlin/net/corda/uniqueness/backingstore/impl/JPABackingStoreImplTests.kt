@@ -438,21 +438,6 @@ class JPABackingStoreImplTests {
             Mockito.verify(entityTransaction, times(MAX_ATTEMPTS)).rollback()
         }
 
-        @Test
-        fun `Getting state details invokes correct query`() {
-            val hashCnt = 3
-            val secureHashes = List(hashCnt) { SecureHashUtils.randomSecureHash() }
-            val stateRefs = generateUniquenessCheckStateRef(secureHashes)
-
-            backingStoreImpl.session { session ->
-                session.getStateDetails(stateRefs)
-                Mockito.verify(entityManager, times(hashCnt))
-                    .createNamedQuery(
-                        eq("UniquenessStateDetailEntity.select"),
-                        eq(UniquenessStateDetailEntity::class.java)
-                    )
-            }
-        }
 
         @Test
         fun `Throw if no error detail is available for a failed transaction`() {
