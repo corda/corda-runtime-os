@@ -13,8 +13,5 @@ public class CordaOIDJavaApiTest {
         assertNotNull(CordaOID.OID_ALIAS_PRIVATE_KEY);
         assertNotNull(CordaOID.OID_COMPOSITE_KEY);
         assertNotNull(CordaOID.OID_COMPOSITE_SIGNATURE);
-        assertNotNull(CordaOID.OID_ALIAS_PRIVATE_KEY_IDENTIFIER);
-        assertNotNull(CordaOID.OID_COMPOSITE_KEY_IDENTIFIER);
-        assertNotNull(CordaOID.OID_COMPOSITE_SIGNATURE_IDENTIFIER);
     }
 }

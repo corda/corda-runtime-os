@@ -2,13 +2,10 @@
 
 package net.corda.v5.cipher.suite.schemes
 
-import net.corda.v5.crypto.COMPOSITE_KEY_CODE_NAME
-import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.crypto.GOST3410_GOST3411_CODE_NAME
-import net.corda.v5.crypto.OID_COMPOSITE_KEY_IDENTIFIER
 import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SM2_CODE_NAME
 import net.corda.v5.crypto.SPHINCS256_CODE_NAME
@@ -164,19 +161,6 @@ val GOST3410_GOST3411_TEMPLATE = KeySchemeTemplate(
     capabilities = setOf(KeySchemeCapability.SIGN)
 )
 
-/**
- * Template to create [KeyScheme] for Corda's Composite key, @see [OID_COMPOSITE_KEY_IDENTIFIER].
- */
-@JvmField
-val COMPOSITE_KEY_TEMPLATE = KeySchemeTemplate(
-    codeName = COMPOSITE_KEY_CODE_NAME,
-    algorithmOIDs = listOf(AlgorithmIdentifier(OID_COMPOSITE_KEY_IDENTIFIER)),
-    algorithmName = CompositeKey.KEY_ALGORITHM,
-    algSpec = null,
-    keySize = null,
-    capabilities = setOf(KeySchemeCapability.SIGN)
-)
-
 @JvmField
 val all = listOf(
     RSA_TEMPLATE,
@@ -186,6 +170,5 @@ val all = listOf(
     ECDSA_SECP256R1_TEMPLATE,
     SM2_TEMPLATE,
     GOST3410_GOST3411_TEMPLATE,
-    SPHINCS256_TEMPLATE,
-    COMPOSITE_KEY_TEMPLATE
+    SPHINCS256_TEMPLATE
 )

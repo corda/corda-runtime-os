@@ -2,10 +2,7 @@
 
 package net.corda.v5.crypto.mocks
 
-import net.corda.v5.crypto.CompositeKey
-import net.corda.v5.crypto.OID_COMPOSITE_KEY
 import org.bouncycastle.asn1.ASN1ObjectIdentifier
-import org.bouncycastle.asn1.ASN1Primitive
 import org.bouncycastle.asn1.ASN1Sequence
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers
 import org.bouncycastle.asn1.sec.SECObjectIdentifiers
@@ -23,7 +20,6 @@ import org.bouncycastle.operator.ContentSigner
 import java.io.ByteArrayOutputStream
 import java.io.OutputStream
 import java.math.BigInteger
-import java.security.KeyFactory
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.PrivateKey
@@ -32,7 +28,6 @@ import java.security.PublicKey
 import java.security.Signature
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
-import java.security.spec.X509EncodedKeySpec
 import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -75,19 +70,6 @@ fun generateKeyPair(spec: KeySpec): KeyPair {
         keyPairGenerator.initialize(spec.keyLength)
     }
     return keyPairGenerator.generateKeyPair()
-}
-
-fun decodePublicKey(encodedKey: ByteArray): PublicKey {
-    val subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(encodedKey)
-    return if (subjectPublicKeyInfo.algorithm.algorithm.id == OID_COMPOSITE_KEY) {
-        CompositeKey.getInstance(ASN1Primitive.fromByteArray(encodedKey)) {
-            decodePublicKey(it)
-        }
-    } else {
-        val mapKey = specs.keys.first { it.algorithm.id == subjectPublicKeyInfo.algorithm.algorithm.id }
-        val keyFactory = KeyFactory.getInstance(specs.getValue(mapKey).name, bouncyCastleProvider)
-        keyFactory.generatePublic(X509EncodedKeySpec(encodedKey))
-    }
 }
 
 fun createDevCertificate(
