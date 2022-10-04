@@ -96,7 +96,7 @@ class SendReceiveAllInitiatedFlow : ResponderFlow {
 
         val received = session.receive<MyClass>()
         log.info("Receive from send map from peer: $received")
-        if (received.int == 2) {
+        if (received.int == 1) {
             session.send(received.copy(string = "this is a new object 1"))
         } else {
             session.send(MyOtherClass( 1, "this is a new object 1", received.int))
