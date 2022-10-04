@@ -97,7 +97,7 @@ class SessionManagerTest {
         const val SESSIONS_PER_COUNTERPARTIES = 2
         val PROTOCOL_MODES = listOf(ProtocolMode.AUTHENTICATED_ENCRYPTION, ProtocolMode.AUTHENTICATION_ONLY)
         val RANDOM_BYTES = ByteBuffer.wrap("some-random-data".toByteArray())
-
+//TODO - change to 6.days
         private const val longPeriodMilliSec = 6*24*60*60*1000L
         private val configWithHeartbeat = SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfig(
             Duration.ofMillis(100),
@@ -1662,15 +1662,17 @@ class SessionManagerTest {
         )
     }
 
-
-
-
     @Test
-    fun `DRAFT`() {
+    fun `sessions that have been refreshed are not tracked by the heartbeat manager`() {
+        val longTimePeriodConfigWithHeartbeat = SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfig(
+            Duration.ofDays(1),
+            Duration.ofDays(10)
+        )
         val messages = Collections.synchronizedList(mutableListOf<AuthenticatedDataMessage>())
 
         fun callback(records: List<Record<*, *>>): List<CompletableFuture<Unit>> {
             val record = records.single()
+            assertEquals(LINK_OUT_TOPIC, record.topic)
             val message = (record.value as LinkOutMessage).payload as AuthenticatedDataMessage
             messages.add(message)
             return listOf(CompletableFuture.completedFuture(Unit))
@@ -1702,7 +1704,7 @@ class SessionManagerTest {
                 null,
                 mock(),
             )
-            heartbeatConfigHandler.applyNewConfiguration(configWithHeartbeat, null, mock())
+            heartbeatConfigHandler.applyNewConfiguration(longTimePeriodConfigWithHeartbeat, null, mock())
         }
         @Suppress("UNCHECKED_CAST")
         publisherWithDominoLogicByClientId[SessionManagerImpl.HeartbeatManager.HEARTBEAT_MANAGER_CLIENT_ID]!!.forEach {
@@ -1711,24 +1713,48 @@ class SessionManagerTest {
             }
         }
         sessionManager.start()
+
+        //whenever(outboundSessionPool.constructed().last().replaceSession(eq(protocolInitiator.sessionId), any())).thenReturn(true)
+        //whenever(outboundSessionPool.constructed().last().getAllSessionIds()).thenAnswer { (listOf(protocolInitiator.sessionId)) }
+        whenever(outboundSessionPool.constructed().first().getSession(protocolInitiator.sessionId)).thenReturn(
+            OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
+        )
+
+        whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), any())).thenReturn(mock())
+
+        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, protocolInitiator.sessionId, 4, Instant.now().toEpochMilli())
+        val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
+
+        sessionManager.processSessionMessage(LinkInMessage(responderHello))
+        val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
+        val session = mock<Session>()
+        whenever(session.sessionId).doAnswer{protocolInitiator.sessionId}
+        whenever(protocolInitiator.getSession()).thenReturn(session)
+        whenever(outboundSessionPool.constructed().last().replaceSession(eq(protocolInitiator.sessionId), any())).thenReturn(true)
+        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
+        assertThat(sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))).isNull()
+
+
         startSendingHeartbeats(sessionManager)
 
-        mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
-        mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.millis))
-        assertThat(messages.size).isEqualTo(2)
+        val numberOfHeartbeats = longTimePeriodConfigWithHeartbeat.let {
+            (2 * (it.sessionTimeout.toMillis() / it.heartbeatPeriod.toMillis())).toInt()
+        }
+        repeat(numberOfHeartbeats) {
+            mockTimeFacilitiesProvider.advanceTime(longTimePeriodConfigWithHeartbeat.heartbeatPeriod.plus(5.millis))
+            sessionManager.messageAcknowledged(protocolInitiator.sessionId)
+        }
+        assertThat(messages).hasSize(numberOfHeartbeats)
+        for (message in messages) {
+            val heartbeatMessage = DataMessagePayload.fromByteBuffer(message.payload)
+            assertThat(heartbeatMessage.message).isInstanceOf(HeartbeatMessage::class.java)
+        }
 
-        mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.days))
-        assertThat(messages.size).isEqualTo(3)
-
-        mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(1.days))
         loggingInterceptor.assertInfoContains("Outbound session sessionId" +
                 " (local=HoldingIdentity(x500Name=CN=Alice, O=Alice Corp, L=LDN, C=GB, groupId=myGroup)," +
                 " remote=HoldingIdentity(x500Name=CN=Bob, O=Bob Corp, L=LDN, C=GB, groupId=myGroup))" +
                 " timed out to refresh ephemeral keys and it will be cleaned up."
         )
-
-        mockTimeFacilitiesProvider.advanceTime(configWithHeartbeat.heartbeatPeriod.plus(5.days))
-        assertThat(messages.size).isEqualTo(3)
 
         sessionManager.stop()
         resourcesHolder.close()
