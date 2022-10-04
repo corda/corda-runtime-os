@@ -55,7 +55,8 @@ import kotlin.test.assertEquals
 
 /**
  * Tests the integration of the uniqueness checker with the JPA based backing store implementation
- * and an associated JPA compatible DB. This duplicates the test cases of [UniquenessCheckerImplTests].
+ * and an associated JPA compatible DB. This mostly duplicates the test cases of
+ * [UniquenessCheckerImplTests].
  */
 // TODO: Find an elegant way to avoid duplication of unit tests
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -71,6 +72,19 @@ class UniquenessCheckerImplDBIntegrationTests {
     private val defaultHoldingIdentityDbName =
         VirtualNodeDbType.UNIQUENESS.getSchemaName(defaultHoldingIdentity.shortHash)
     private val defaultHoldingIdentityDb: EntityManagerFactory
+
+    // Additional holding identites
+    private val bobHoldingIdentity = createTestHoldingIdentity(
+        "C=GB, L=London, O=Bob", "Test Group")
+    private val bobHoldingIdentityDbName =
+        VirtualNodeDbType.UNIQUENESS.getSchemaName(bobHoldingIdentity.shortHash)
+    private val bobHoldingIdentityDb: EntityManagerFactory
+
+    private val charlieHoldingIdentity = createTestHoldingIdentity(
+        "C=GB, L=London, O=Charlie", "Test Group")
+    private val charlieHoldingIdentityDbName =
+        VirtualNodeDbType.UNIQUENESS.getSchemaName(charlieHoldingIdentity.shortHash)
+    private val charlieHoldingIdentityDb: EntityManagerFactory
 
     // Holding id that has no associated uniqueness DB
     private val noDbHoldingIdentity = createTestHoldingIdentity(
@@ -144,8 +158,22 @@ class UniquenessCheckerImplDBIntegrationTests {
             LiquibaseSchemaMigratorImpl(),
             JpaEntitiesRegistryImpl())
 
+        // Each DB uses both a different db name and schema name, as HSQLDB does not appear to
+        // respect schema name
         defaultHoldingIdentityDb = databaseInstaller.setupDatabase(
-            TestDbInfo("uniq_test", defaultHoldingIdentityDbName),
+            TestDbInfo("uniq_test_default", defaultHoldingIdentityDbName),
+            "vnode-uniqueness",
+            JPABackingStoreEntities.classes
+        )
+
+        bobHoldingIdentityDb = databaseInstaller.setupDatabase(
+            TestDbInfo("uniq_test_bob", bobHoldingIdentityDbName),
+            "vnode-uniqueness",
+            JPABackingStoreEntities.classes
+        )
+
+        charlieHoldingIdentityDb = databaseInstaller.setupDatabase(
+            TestDbInfo("uniq_test_charlie", charlieHoldingIdentityDbName),
             "vnode-uniqueness",
             JPABackingStoreEntities.classes
         )
@@ -168,6 +196,10 @@ class UniquenessCheckerImplDBIntegrationTests {
             mock<DbConnectionManager>().apply {
                 whenever(getOrCreateEntityManagerFactory(
                     eq(defaultHoldingIdentityDbName), any(), any())) doReturn defaultHoldingIdentityDb
+                whenever(getOrCreateEntityManagerFactory(
+                    eq(bobHoldingIdentityDbName), any(), any())) doReturn bobHoldingIdentityDb
+                whenever(getOrCreateEntityManagerFactory(
+                    eq(charlieHoldingIdentityDbName), any(), any())) doReturn charlieHoldingIdentityDb
                 whenever(getOrCreateEntityManagerFactory(
                     eq(noDbHoldingIdentityDbName), any(), any())) doThrow DBConfigurationException("")
                 whenever(getClusterDataSource()) doReturn dbConfig.dataSource
@@ -1229,7 +1261,7 @@ class UniquenessCheckerImplDBIntegrationTests {
     }
 
     @Nested
-    inner class DbSelection {
+    inner class MultiTenancy {
         @Test
         fun `Uniqueness check for holding id with no uniqueness DB fails`() {
             processRequests(
@@ -1243,6 +1275,104 @@ class UniquenessCheckerImplDBIntegrationTests {
                     { assertUnhandledExceptionResponse(
                         responses[0],
                         "net.corda.db.connection.manager.DBConfigurationException") }
+                )
+            }
+        }
+
+        @Test
+        fun `Unhandled exception is compartmentalised within holding id`() {
+            processRequests(
+                newRequestBuilder()
+                    .setHoldingIdentity(bobHoldingIdentity.toAvro())
+                    .setNumOutputStates(1)
+                    .build(),
+                newRequestBuilder()
+                    .setHoldingIdentity(charlieHoldingIdentity.toAvro())
+                    .setNumOutputStates(1)
+                    .build(),
+                newRequestBuilder()
+                    .setHoldingIdentity(noDbHoldingIdentity.toAvro())
+                    .setNumOutputStates(1)
+                    .build(),
+                newRequestBuilder()
+                    .setHoldingIdentity(noDbHoldingIdentity.toAvro())
+                    .setNumOutputStates(1)
+                    .build(),
+                newRequestBuilder()
+                    .setHoldingIdentity(bobHoldingIdentity.toAvro())
+                    .setNumOutputStates(1)
+                    .build(),
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(5) },
+                    { assertStandardSuccessResponse(responses[0]) },
+                    { assertStandardSuccessResponse(responses[1]) },
+                    { assertUnhandledExceptionResponse(
+                        responses[2],
+                        "net.corda.db.connection.manager.DBConfigurationException") },
+                    { assertUnhandledExceptionResponse(
+                        responses[3],
+                        "net.corda.db.connection.manager.DBConfigurationException") },
+                    { assertStandardSuccessResponse(responses[4]) }
+                )
+            }
+        }
+
+        @Test
+        fun `Spending the same state across different holding identities is accepted`() {
+            val issueTxId = SecureHashUtils.randomSecureHash()
+
+            processRequests(
+                newRequestBuilder(issueTxId)
+                    .setHoldingIdentity(bobHoldingIdentity.toAvro())
+                    .setNumOutputStates(1)
+                    .build(),
+                newRequestBuilder(issueTxId)
+                    .setHoldingIdentity(charlieHoldingIdentity.toAvro())
+                    .setNumOutputStates(1)
+                    .build()
+            ).let { responses ->
+                org.junit.jupiter.api.assertAll(
+                    { assertThat(responses).hasSize(2) },
+                    { assertStandardSuccessResponse(responses[0]) },
+                    { assertStandardSuccessResponse(responses[1]) }
+                )
+            }
+
+            val unspentStateRef = "${issueTxId}:0"
+
+            processRequests(
+                newRequestBuilder()
+                    .setHoldingIdentity(bobHoldingIdentity.toAvro())
+                    .setInputStates(listOf(unspentStateRef))
+                    .build(),
+                newRequestBuilder()
+                    .setHoldingIdentity(charlieHoldingIdentity.toAvro())
+                    .setInputStates(listOf(unspentStateRef))
+                    .build()
+            ).let { responses ->
+                org.junit.jupiter.api.assertAll(
+                    { assertThat(responses).hasSize(2) },
+                    { assertStandardSuccessResponse(responses[0]) },
+                    { assertStandardSuccessResponse(responses[1]) }
+                )
+            }
+        }
+
+        @Test
+        fun `Spending a state that was issued against a different holding id is rejected`() {
+            // Generate against default holding id
+            val unspentStateRefs = generateUnspentStates(1)
+
+            processRequests(
+                newRequestBuilder()
+                    .setHoldingIdentity(bobHoldingIdentity.toAvro())
+                    .setInputStates(unspentStateRefs)
+                    .build()
+            ).let { responses ->
+                org.junit.jupiter.api.assertAll(
+                    { assertThat(responses).hasSize(1) },
+                    { assertUnknownInputStateResponse(responses[0], unspentStateRefs) }
                 )
             }
         }

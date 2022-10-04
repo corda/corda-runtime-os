@@ -6,7 +6,6 @@ import net.corda.data.ExceptionEnvelope
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.data.uniqueness.UniquenessCheckResponseAvro
 import net.corda.data.uniqueness.UniquenessCheckResultMalformedRequestAvro
-import net.corda.data.uniqueness.UniquenessCheckResultSuccessAvro
 import net.corda.data.uniqueness.UniquenessCheckResultUnhandledExceptionAvro
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.libs.configuration.SmartConfig
@@ -26,7 +25,7 @@ import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.uniqueness.backingstore.BackingStore
 import net.corda.uniqueness.checker.UniquenessChecker
-import net.corda.uniqueness.datamodel.common.toExternalError
+import net.corda.uniqueness.datamodel.common.toAvro
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateConflictImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateUnknownImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateConflictImpl
@@ -42,7 +41,6 @@ import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.application.uniqueness.model.UniquenessCheckError
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
-import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
@@ -54,7 +52,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.lang.IllegalStateException
 import java.time.Instant
 import java.util.*
 import kotlin.collections.HashMap
@@ -171,47 +168,46 @@ class BatchedUniquenessCheckerImpl(
 
         // TODO - Re-instate batch processing logic based on number of states if needed - need to
         // establish what batching there is in the message bus layer first
-        try {
-            processBatch(
-                requests.first().holdingIdentity.toCorda(),
-                requestsToProcess.map { it.first }
-            ).forEachIndexed { idx, (internalRequest, internalResult) ->
-                results[requestsToProcess[idx].second] =
-                    UniquenessCheckResponseAvro(
-                        internalRequest.rawTxId,
-                        when (internalResult) {
-                            is UniquenessCheckResultSuccess -> {
-                                UniquenessCheckResultSuccessAvro(internalResult.resultTimestamp)
-                            }
-                            is UniquenessCheckResultFailure -> {
-                                internalResult.toExternalError()
-                            }
-                            else -> {
-                                throw IllegalStateException(
-                                    "Unknown result type: ${internalResult.javaClass.typeName}"
-                                )
-                            }
-                        }
-                    )
-                }
-        } catch (e: Exception) {
-            // In practice, if we've received an unhandled exception then this will be before we
-            // managed to commit to the DB, so raise an exception against all requests in the batch
-            log.warn("Unhandled exception was thrown for transaction(s) " +
-                    "${requests.map { it.txId }}: $e")
+        requestsToProcess
+            // Partition the data based on holding identity, as each should be processed separately
+            // so the requests cannot interact with each other and the backing store also requires a
+            // separate session per holding identity.
+            .groupBy { it.second.holdingIdentity }
+            // Converting to a list and then shuffling ensures a random order based on holding id to
+            // avoid always prioritising one holding id over another when there is contention, e.g.
+            // we don't want holding id 0xFFFF... to always be the last batch processed. Longer term
+            // this should probably be replaced with a proper QoS algorithm.
+            .toList()
+            .shuffled()
+            .forEach { (holdingIdentity, partitionedRequests) ->
+                try {
+                    processBatch(
+                        holdingIdentity.toCorda(),
+                        partitionedRequests.map { it.first }
+                    ).forEachIndexed { idx, (internalRequest, internalResult) ->
+                        results[partitionedRequests[idx].second] = UniquenessCheckResponseAvro(
+                            internalRequest.rawTxId, internalResult.toAvro())
+                    }
+                } catch (e: Exception) {
+                    // In practice, if we've received an unhandled exception then this will be before we
+                    // managed to commit to the DB, so raise an exception against all requests in the
+                    // batch
+                    log.warn("Unhandled exception was thrown for transaction(s) " +
+                            "${requests.map { it.txId }}: $e")
 
-            requestsToProcess.map{it.second}.forEach { avroRequest ->
-                results[avroRequest] = UniquenessCheckResponseAvro(
-                    avroRequest.txId,
-                    UniquenessCheckResultUnhandledExceptionAvro(
-                        ExceptionEnvelope().apply {
-                            errorType = e::class.java.name
-                            errorMessage = e.message
-                        }
-                    )
-                )
+                    requestsToProcess.map{it.second}.forEach { avroRequest ->
+                        results[avroRequest] = UniquenessCheckResponseAvro(
+                            avroRequest.txId,
+                            UniquenessCheckResultUnhandledExceptionAvro(
+                                ExceptionEnvelope().apply {
+                                    errorType = e::class.java.name
+                                    errorMessage = e.message
+                                }
+                            )
+                        )
+                    }
+                }
             }
-        }
 
         return results
     }
