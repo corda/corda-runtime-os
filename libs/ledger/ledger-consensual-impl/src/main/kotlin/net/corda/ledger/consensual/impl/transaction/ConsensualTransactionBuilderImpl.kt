@@ -95,7 +95,7 @@ class ConsensualTransactionBuilderImpl(
         val cpiIdentifier = getCpiIdentifier()
         val cpks = cpiInfoService.get(cpiIdentifier)?.cpksMetadata
             ?: throw CordaRuntimeException("Could not get list of CPKs for $cpiIdentifier")
-        return cpks.filter { it.isContractCpk()}
+        return cpks.filter { it.isContractCpk() }
     }
 
     private fun calculateComponentGroupLists(serializer: SerializationService): List<List<ByteArray>>

@@ -102,7 +102,7 @@ internal class ConsensualLedgerTransactionImplTest{
             jsonMarshallingService,
             ConsensualTransactionMocks.mockMemberLookup(),
             ConsensualTransactionMocks.mockCpiInfoReadService(),
-            mock()
+            ConsensualTransactionMocks.mockVirtualNodeInfoService()
         )
             .withStates(testConsensualState)
             .signInitial(testPublicKey)

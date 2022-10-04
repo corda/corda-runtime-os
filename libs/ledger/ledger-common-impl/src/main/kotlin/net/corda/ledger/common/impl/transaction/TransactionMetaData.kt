@@ -5,9 +5,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 
 //TODO(CORE-5940: guarantee its serialization is deterministic)
 @CordaSerializable
-class TransactionMetaData(
-    private val properties: Map<String, Any>
-    ) {
+class TransactionMetaData(private val properties: Map<String, Any>) {
 
     operator fun get(key: String): Any? = properties[key]
 
@@ -35,12 +33,13 @@ class TransactionMetaData(
     fun getLedgerVersion(): String = this[LEDGER_VERSION_KEY].toString()
 
     fun getCpkIdentifiers(): List<String> {
-        val data = this[CPK_IDENTIFIERS_KEY]
-        if (data is List<*>) {
-            return data.map { it.toString() }
-        } else {
-            throw CordaRuntimeException("Transaction metadata representation error: CPK identifiers must be " +
-                    "List<String> but found [$data]")
+        return when (val data = this[CPK_IDENTIFIERS_KEY]) {
+            null -> emptyList()
+            is List<*> -> data.map { it.toString() }
+            else -> throw CordaRuntimeException(
+                "Transaction metadata representation error: CPK identifiers must be " +
+                        "List<String> but found [$data]"
+            )
         }
     }
 
