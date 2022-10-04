@@ -1843,6 +1843,91 @@
       }
     },
     "/permission" : {
+      "get" : {
+        "tags" : [ "RBAC Permission API" ],
+        "description" : "This method returns permissions which satisfy supplied query criteria.",
+        "operationId" : "get_permission",
+        "parameters" : [ {
+          "name" : "limit",
+          "in" : "query",
+          "description" : "The maximum number of results to return. The value must be in the range [1..1000].",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "description" : "The maximum number of results to return. The value must be in the range [1..1000].",
+            "format" : "int32",
+            "nullable" : false,
+            "example" : 0
+          }
+        }, {
+          "name" : "permissiontype",
+          "in" : "query",
+          "description" : "The permission type to be returned.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The permission type to be returned.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "groupvisibility",
+          "in" : "query",
+          "description" : "Optional group visibility for a permission.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "description" : "Optional group visibility for a permission.",
+            "nullable" : true,
+            "example" : "string"
+          }
+        }, {
+          "name" : "virtualnode",
+          "in" : "query",
+          "description" : "Optional virtual node the permissions apply to.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "description" : "Optional virtual node the permissions apply to.",
+            "nullable" : true,
+            "example" : "string"
+          }
+        }, {
+          "name" : "permissionstringprefix",
+          "in" : "query",
+          "description" : "Optional permission string prefix for permissions to be located.",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "description" : "Optional permission string prefix for permissions to be located.",
+            "nullable" : true,
+            "example" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Permissions which satisfy supplied query criteria",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "uniqueItems" : false,
+                  "type" : "array",
+                  "nullable" : false,
+                  "items" : {
+                    "$ref" : "#/components/schemas/PermissionResponseType"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      },
       "post" : {
         "tags" : [ "RBAC Permission API" ],
         "description" : "This method creates a new permission.",
@@ -2699,7 +2784,6 @@
             "example" : "string"
           },
           "permissionType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -2839,7 +2923,6 @@
       },
       "GenerateCsrWrapperRequest" : {
         "required" : [ "x500Name" ],
-        "type" : "object",
         "properties" : {
           "contextMap" : {
             "type" : "object",
@@ -3120,7 +3203,6 @@
             "example" : "string"
           },
           "permissionType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -3164,7 +3246,6 @@
             "example" : "string"
           },
           "permissionType" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "DENY",
             "enum" : [ "ALLOW", "DENY" ]
@@ -3242,7 +3323,6 @@
             "example" : "2022-06-24T10:15:30Z"
           },
           "registrationStatus" : {
-            "type" : "object",
             "nullable" : false,
             "example" : "PENDING_MEMBER_VERIFICATION",
             "enum" : [ "NEW", "PENDING_MEMBER_VERIFICATION", "PENDING_APPROVAL_FLOW", "PENDING_MANUAL_APPROVAL", "PENDING_AUTO_APPROVAL", "DECLINED", "APPROVED" ]
