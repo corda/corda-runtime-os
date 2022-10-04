@@ -196,7 +196,8 @@ class JPABackingStoreImplIntegrationTests {
             backingStoreImpl.session { session ->
                 val result = session.getTransactionDetails(txIds)
                 assertEquals(1, result.size)
-                result.forEach { secureHashTxnDetails ->
+                result.firstNotNullOf {
+                    secureHashTxnDetails ->
                     assertTrue(secureHashTxnDetails.key in txIds.toSet())
                     assertEquals(
                         secureHashTxnDetails.value.result.toCharacterRepresentation(),
@@ -268,7 +269,7 @@ class JPABackingStoreImplIntegrationTests {
             }
 
             // Consume one of unconsumed states in DB.
-            val consumingTxId: SecureHash = secureHashes[0]
+            val consumingTxId: SecureHash = SecureHashUtils.randomSecureHash()
             val consumingStateRef = stateRefs[0]
             backingStoreImpl.session { session ->
                 session.executeTransaction { _, txnOps ->
