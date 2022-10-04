@@ -1,9 +1,6 @@
 package net.corda.applications.workers.smoketest.flow
 
-import java.util.UUID
-import net.corda.applications.workers.smoketest.FlowStatus
 import net.corda.applications.workers.smoketest.GROUP_ID
-import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_FAILED
 import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_SUCCESS
 import net.corda.applications.workers.smoketest.RpcSmokeTestInput
 import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
@@ -13,21 +10,12 @@ import net.corda.applications.workers.smoketest.X500_CHARLIE
 import net.corda.applications.workers.smoketest.X500_DAVID
 import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
 import net.corda.applications.workers.smoketest.conditionallyUploadCordaPackage
-import net.corda.applications.workers.smoketest.configWithDefaultsNode
-import net.corda.applications.workers.smoketest.getConfig
-import net.corda.applications.workers.smoketest.getFlowClasses
 import net.corda.applications.workers.smoketest.getHoldingIdShortHash
 import net.corda.applications.workers.smoketest.getOrCreateVirtualNodeFor
 import net.corda.applications.workers.smoketest.getRpcFlowResult
 import net.corda.applications.workers.smoketest.registerMember
 import net.corda.applications.workers.smoketest.startRpcFlow
-import net.corda.applications.workers.smoketest.toJsonString
-import net.corda.applications.workers.smoketest.updateConfig
-import net.corda.applications.workers.smoketest.waitForConfigurationChange
-import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
-import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
@@ -92,6 +80,7 @@ class FlowTests {
         }
     }
 
+/*
     @Test
     fun `start RPC flow`() {
         val requestBody = RpcSmokeTestInput().apply {
@@ -535,6 +524,7 @@ class FlowTests {
         assertThat(flowResult.command).isEqualTo("crypto_verify_invalid_signature")
         assertThat(flowResult.result).isEqualTo(true.toString())
     }
+*/
 
     @Test
     fun `Context is propagated to initiated and sub flows`() {
@@ -592,7 +582,7 @@ class FlowTests {
             .isEqualTo(CONTEXT_JSON)
     }
 
-    @Test
+ /*   @Test
     fun `flows can use inheritance and platform dependencies are correctly injected`() {
         dependencyInjectionFlowNames.forEach {
             val requestId = startRpcFlow(bobHoldingId, mapOf("id" to X500_CHARLIE), it)
@@ -683,5 +673,5 @@ class FlowTests {
             updateConfig(mapOf(MAX_ALLOWED_MSG_SIZE to currentConfigValue).toJsonString(), MESSAGING_CONFIG)
             waitForConfigurationChange(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, currentConfigValue.toString())
         }
-    }
+    }*/
 }
