@@ -56,7 +56,7 @@ object CpiLoader {
             val cpiPath = tempDirectory.resolve("cpi")
             CreateCpiV2().apply {
                 cpbFileName = cpbPath.toString()
-                cpiName = "flow-worker-dev"
+                cpiName = "test-cordapp"
                 cpiVersion = "1.0.0.0-SNAPSHOT"
                 cpiUpgrade = false
                 groupPolicyFileName = groupPolicyPath.toString()
