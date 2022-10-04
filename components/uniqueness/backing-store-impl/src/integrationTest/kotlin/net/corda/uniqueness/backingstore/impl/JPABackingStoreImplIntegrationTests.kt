@@ -52,7 +52,6 @@ import javax.persistence.OptimisticLockException
 import javax.persistence.PersistenceException
 import javax.persistence.QueryTimeoutException
 import javax.persistence.RollbackException
-import kotlin.reflect.KClass
 import kotlin.reflect.full.createInstance
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
