@@ -25,15 +25,18 @@ import net.corda.v5.cipher.suite.KeyMaterialSpec
 import net.corda.v5.cipher.suite.SharedSecretAliasSpec
 import net.corda.v5.cipher.suite.SharedSecretWrappedSpec
 import net.corda.v5.cipher.suite.SignatureVerificationService
-import net.corda.v5.cipher.suite.schemes.COMPOSITE_KEY_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
+import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.cipher.suite.schemes.KeySchemeCapability
-import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
+import net.corda.v5.cipher.suite.schemes.KeySchemeTemplate
+import net.corda.v5.crypto.COMPOSITE_KEY_CODE_NAME
 import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
+import net.corda.v5.crypto.OID_COMPOSITE_KEY
 import net.corda.v5.crypto.SignatureSpec
 import org.bouncycastle.asn1.ASN1Encoding
+import org.bouncycastle.asn1.ASN1ObjectIdentifier
 import org.bouncycastle.asn1.ASN1Sequence
 import org.bouncycastle.asn1.x500.X500Name
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
@@ -71,6 +74,18 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.Date
 import java.util.concurrent.ConcurrentLinkedQueue
+
+val OID_COMPOSITE_KEY_IDENTIFIER = ASN1ObjectIdentifier(OID_COMPOSITE_KEY)
+
+// we are only going to use in a negative sense
+val FAKE_COMPOSITE_KEY_TEMPLATE = KeySchemeTemplate(
+    codeName = COMPOSITE_KEY_CODE_NAME,
+    algorithmOIDs = listOf(AlgorithmIdentifier(OID_COMPOSITE_KEY_IDENTIFIER)),
+    algorithmName = "COMPOSITE",
+    algSpec = null,
+    keySize = null,
+    capabilities = setOf(KeySchemeCapability.SIGN)
+)
 
 @ExtendWith(ServiceExtension::class, ComplianceSpecExtension::class)
 @Suppress("TooManyFunctions")
@@ -287,7 +302,7 @@ class CryptoServiceCompliance : AbstractCompliance() {
         assertThrows<IllegalArgumentException> {
             service.generateKeyPair(
                 KeyGenerationSpec(
-                    keyScheme = COMPOSITE_KEY_TEMPLATE.makeScheme("BC"),
+                    keyScheme = FAKE_COMPOSITE_KEY_TEMPLATE.makeScheme("BC"),
                     alias = compliance.generateRandomIdentifier(),
                     masterKeyAlias = masterKeyAlias
                 ),
@@ -300,7 +315,7 @@ class CryptoServiceCompliance : AbstractCompliance() {
         assertThrows<IllegalArgumentException> {
             service.generateKeyPair(
                 KeyGenerationSpec(
-                    keyScheme = COMPOSITE_KEY_TEMPLATE.makeScheme("BC"),
+                    keyScheme = FAKE_COMPOSITE_KEY_TEMPLATE.makeScheme("BC"),
                     alias = null,
                     masterKeyAlias = masterKeyAlias
                 ),
