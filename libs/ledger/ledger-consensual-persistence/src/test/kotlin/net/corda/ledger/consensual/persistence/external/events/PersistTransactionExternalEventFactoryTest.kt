@@ -1,7 +1,6 @@
 package net.corda.ledger.consensual.persistence.external.events
 
 import net.corda.data.KeyValuePairList
-import java.nio.ByteBuffer
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.ledger.consensual.PersistTransaction
 import net.corda.data.persistence.ConsensualLedgerRequest
@@ -13,6 +12,7 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
@@ -34,7 +34,7 @@ class PersistTransactionExternalEventFactoryTest {
             externalEventContext,
             PersistTransactionParameters(transaction)
         )
-        assertEquals(Schemas.VirtualNode.LEDGER_PERSISTENCE_TOPIC, externalEventRecord.topic)
+        assertEquals(Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC, externalEventRecord.topic)
         assertNull(externalEventRecord.key)
         assertEquals(
             ConsensualLedgerRequest(

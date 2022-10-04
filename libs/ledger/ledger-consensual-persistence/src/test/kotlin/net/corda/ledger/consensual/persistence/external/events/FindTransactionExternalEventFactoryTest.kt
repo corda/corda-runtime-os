@@ -33,7 +33,7 @@ class FindTransactionExternalEventFactoryTest {
             FindTransactionParameters(transactionId)
         )
 
-        assertEquals(Schemas.VirtualNode.LEDGER_PERSISTENCE_TOPIC, externalEventRecord.topic)
+        assertEquals(Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC, externalEventRecord.topic)
         assertNull(externalEventRecord.key)
         assertEquals(
             ConsensualLedgerRequest(
