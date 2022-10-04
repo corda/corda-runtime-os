@@ -85,6 +85,7 @@ class JPABackingStoreImplTests {
     private lateinit var dbConnectionManager: DbConnectionManager
 
     companion object {
+        val TEST_IDENTITY = createTestHoldingIdentity("C=GB, L=London, O=Alice", "Test Group").toAvro()
         val UPPER_BOUND: Instant =
             LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
     }
@@ -171,24 +172,12 @@ class JPABackingStoreImplTests {
         )
     }
 
-    private fun generateUniquenessCheckStateRef(hashes: List<SecureHash>): MutableList<UniquenessCheckStateRef> {
-        val uniquenessCheckInternalStateRefs = hashes.let {
-            val tmpUniquenessCheckInternalStateRefs = mutableListOf<UniquenessCheckStateRef>()
-            it.forEachIndexed { i, hash ->
-                tmpUniquenessCheckInternalStateRefs.add(UniquenessCheckStateRefImpl(hash, i))
-            }
-            tmpUniquenessCheckInternalStateRefs
-        }
-
-        return uniquenessCheckInternalStateRefs
-    }
-
     private fun generateExternalRequest(txId: SecureHash): UniquenessCheckRequestAvro {
         val inputStateRef = "${SecureHashUtils.randomSecureHash()}:0"
 
         return UniquenessCheckRequestAvro.newBuilder(
             UniquenessCheckRequestAvro(
-                createTestHoldingIdentity("C=GB, L=London, O=Alice", "Test Group").toAvro(),
+                TEST_IDENTITY,
                 ExternalEventContext(
                     UUID.randomUUID().toString(),
                     UUID.randomUUID().toString(),
@@ -324,7 +313,7 @@ class JPABackingStoreImplTests {
         fun `Creating unconsumed states persist correct fields`() {
             val hashCnt = 1
             val secureHashes = List(hashCnt) { SecureHashUtils.randomSecureHash() }
-            val stateRefs = generateUniquenessCheckStateRef(secureHashes)
+            val stateRefs = secureHashes.map { UniquenessCheckStateRefImpl(it, 0)}
 
             backingStoreImpl.session { session ->
                 session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
@@ -345,10 +334,9 @@ class JPABackingStoreImplTests {
         fun `Commiting a failed transaction persists error data`() {
             backingStoreImpl.session { session ->
                 val txId = SecureHashUtils.randomSecureHash()
-                val txns = mutableListOf<Pair<UniquenessCheckRequestInternal, UniquenessCheckResult>>()
                 val externalRequest = generateExternalRequest(txId)
                 val internalRequest = UniquenessCheckRequestInternal.create(externalRequest)
-                txns.add(
+                val txns = listOf(
                     Pair(
                         internalRequest,
                         UniquenessCheckResultFailureImpl(

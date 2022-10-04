@@ -73,6 +73,7 @@ class JPABackingStoreImplIntegrationTests {
 
     companion object {
         private val UPPER_BOUND = LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
+        private val TEST_IDENTITY = createTestHoldingIdentity("C=GB, L=London, O=Alice", "Test Group").toAvro()
         private val MAX_ATTEMPTS = 10 // Set it same as "MAX_ATTEMPTS" in JPABackingStoreImpl.kt
         private val DB_NAME = "uniqueness_default"
         private val dbConfig = DbUtils.getEntityManagerConfiguration(DB_NAME)
@@ -113,7 +114,7 @@ class JPABackingStoreImplIntegrationTests {
 
         return UniquenessCheckRequestAvro.newBuilder(
             UniquenessCheckRequestAvro(
-                createTestHoldingIdentity("C=GB, L=London, O=Alice", "Test Group").toAvro(),
+                TEST_IDENTITY,
                 ExternalEventContext(
                     UUID.randomUUID().toString(),
                     UUID.randomUUID().toString(),
@@ -207,13 +208,11 @@ class JPABackingStoreImplIntegrationTests {
 
         @Test
         fun `Persisting rejected transaction details succeeds`() {
-            val txns = mutableListOf<Pair<UniquenessCheckRequestInternal, UniquenessCheckResult>>()
             val txId = SecureHashUtils.randomSecureHash()
-            val externalRequest = generateExternalRequest(txId)
             val txIds = listOf(txId)
-
+            val externalRequest = generateExternalRequest(txId)
             val internalRequest = UniquenessCheckRequestInternal.create(externalRequest)
-            txns.add(
+            val txns = listOf(
                 Pair(
                     internalRequest, UniquenessCheckResultFailureImpl(
                         Clock.systemUTC().instant(), UniquenessCheckErrorGeneralImpl("some error")
