@@ -1,6 +1,7 @@
 package net.corda.cli.plugin.initialRbac.commands
 
 import net.corda.cli.plugins.common.HttpRpcClientUtils.createHttpRpcClient
+import net.corda.cli.plugins.common.HttpRpcClientUtils.executeWithRetry
 import net.corda.cli.plugins.common.HttpRpcCommand
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
@@ -10,6 +11,8 @@ import net.corda.libs.permissions.endpoints.v1.role.types.CreateRoleType
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import picocli.CommandLine
+import java.time.Duration
+import java.time.temporal.ChronoUnit.SECONDS
 import java.util.concurrent.Callable
 
 private const val USER_ADMIN_ROLE = "UserAdminRole"
@@ -41,6 +44,7 @@ class UserAdminSubcommand : HttpRpcCommand(), Callable<Int> {
 
         // Permission manipulation permissions ;-)
         "CreatePermission" to "POST:/api/v1/permission",
+        "QueryPermissions" to "GET:/api/v1/permission",
         "GetPermission" to "GET:/api/v1/permission/.*",
 
         // Role manipulation permissions
@@ -56,8 +60,13 @@ class UserAdminSubcommand : HttpRpcCommand(), Callable<Int> {
         logger.info("Running UserAdminSubcommand")
 
         createHttpRpcClient(RoleEndpoint::class).use { roleEndpointClient ->
-            val roleEndpoint = roleEndpointClient.start().proxy
-            val allRoles = roleEndpoint.getRoles()
+            val waitDuration = Duration.of(waitDurationSeconds.toLong(), SECONDS)
+            val roleEndpoint = executeWithRetry(waitDuration, "Start of role HTTP endpoint") {
+                roleEndpointClient.start().proxy
+            }
+            val allRoles = executeWithRetry(waitDuration, "Obtain list of available roles") {
+                roleEndpoint.getRoles()
+            }
             if (allRoles.any { it.roleName == USER_ADMIN_ROLE }) {
                 errOut.error("$USER_ADMIN_ROLE already exists - nothing to do.")
                 return 5
@@ -65,23 +74,30 @@ class UserAdminSubcommand : HttpRpcCommand(), Callable<Int> {
 
             val permissionIds = createHttpRpcClient(PermissionEndpoint::class).use { permissionEndpointClient ->
                 val permissionEndpoint = permissionEndpointClient.start().proxy
-                 permissionsToCreate.map { entry ->
-                    permissionEndpoint.createPermission(
-                        CreatePermissionType(
-                            PermissionType.ALLOW,
-                            entry.value,
-                            null,
-                            null
+                permissionsToCreate.toSortedMap().map { entry ->
+                    executeWithRetry(waitDuration, "Creating permission: ${entry.key}") {
+                        permissionEndpoint.createPermission(
+                            CreatePermissionType(
+                                PermissionType.ALLOW,
+                                entry.value,
+                                null,
+                                null
+                            )
                         )
-                    ).responseBody.id.also {
+                    }
+                    .responseBody.id.also {
                         logger.info("Created permission: ${entry.key} with id: $it")
                     }
                 }
             }
 
-            val roleId = roleEndpoint.createRole(CreateRoleType(USER_ADMIN_ROLE, null)).responseBody.id
+            val roleId = executeWithRetry(waitDuration, "Creating role: $USER_ADMIN_ROLE") {
+                roleEndpoint.createRole(CreateRoleType(USER_ADMIN_ROLE, null)).responseBody.id
+            }
             permissionIds.forEach { permId ->
-                roleEndpoint.addPermission(roleId, permId)
+                executeWithRetry(waitDuration, "Adding permission: $permId") {
+                    roleEndpoint.addPermission(roleId, permId)
+                }
             }
             sysOut.info("Successfully created $USER_ADMIN_ROLE with id: $roleId and assigned permissions")
         }

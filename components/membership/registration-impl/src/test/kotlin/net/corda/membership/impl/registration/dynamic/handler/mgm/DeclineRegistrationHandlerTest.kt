@@ -63,7 +63,7 @@ class DeclineRegistrationHandlerTest {
         } doReturn record
     }
 
-    private val handler = DeclineRegistrationHandler(membershipPersistenceClient, mock(), mock(), p2pRecordsFactory)
+    private val handler = DeclineRegistrationHandler(membershipPersistenceClient, mock(), mock(), mock(), p2pRecordsFactory)
 
     @Test
     fun `handler calls persistence client and returns no output states`() {

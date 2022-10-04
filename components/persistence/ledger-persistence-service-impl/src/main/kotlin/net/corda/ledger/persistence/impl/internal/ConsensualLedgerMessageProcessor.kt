@@ -24,7 +24,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.virtualnode.toCorda
 
 /**
@@ -36,7 +36,7 @@ import net.corda.virtualnode.toCorda
 class ConsensualLedgerMessageProcessor(
     private val entitySandboxService: EntitySandboxService,
     externalEventResponseFactory: ExternalEventResponseFactory,
-    private val merkleTreeFactory: MerkleTreeFactory,
+    private val merkleTreeProvider: MerkleTreeProvider,
     private val digestService: DigestService,
     private val jsonMarshallingService: JsonMarshallingService,
     private val payloadCheck: (bytes: ByteBuffer) -> ByteBuffer,
@@ -83,7 +83,7 @@ class ConsensualLedgerMessageProcessor(
         val entityManagerFactory = sandbox.getEntityManagerFactory()
         val serializationService = sandbox.getSerializationService()
         val consensualLedgerRepository = ConsensualLedgerRepository(
-            merkleTreeFactory, digestService, jsonMarshallingService, serializationService)
+            merkleTreeProvider, digestService, jsonMarshallingService, serializationService)
 
         return entityManagerFactory.createEntityManager().transaction { em ->
             when (val req = request.request) {

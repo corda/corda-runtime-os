@@ -21,7 +21,7 @@ import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.ledger.consensual.Party
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
@@ -35,9 +35,6 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.api.io.TempDir
 import org.osgi.framework.BundleContext
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
 import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
@@ -46,20 +43,6 @@ import java.io.NotSerializableException
 import java.nio.file.Path
 import java.security.PublicKey
 import java.util.concurrent.TimeUnit
-
-@Component(service = [ SandboxFactory::class ])
-class SandboxFactory @Activate constructor(
-    @Reference
-    private val sandboxCreationService: SandboxCreationService
-) {
-    fun loadSandboxGroup(): SandboxGroup {
-        return sandboxCreationService.createSandboxGroup(emptyList())
-    }
-
-    fun unloadSandboxGroup(sandboxGroup: SandboxGroup) {
-        sandboxCreationService.unloadSandboxGroup(sandboxGroup)
-    }
-}
 
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
@@ -77,12 +60,12 @@ class ConsensualSignedTransactionImplAMQPSerializationTest {
     lateinit var schemeMetadata: CipherSchemeMetadata
 
     @InjectService(timeout = 1000)
-    lateinit var merkleTreeFactory: MerkleTreeFactory
+    lateinit var merkleTreeProvider: MerkleTreeProvider
 
     @InjectService(timeout = 1000)
     lateinit var jsonMarshallingService: JsonMarshallingService
 
-    private lateinit var sandboxFactory: SandboxFactory
+    private lateinit var emptySandboxGroup: SandboxGroup
 
     private lateinit var partySerializer: InternalCustomSerializer<Party>
     private lateinit var publickeySerializer: InternalCustomSerializer<PublicKey>
@@ -101,7 +84,11 @@ class ConsensualSignedTransactionImplAMQPSerializationTest {
     ) {
         sandboxSetup.configure(bundleContext, testDirectory)
         lifecycle.accept(sandboxSetup) { setup ->
-            sandboxFactory = setup.fetchService(timeout = 1500)
+            val sandboxCreationService = setup.fetchService<SandboxCreationService>(timeout = 1500)
+            emptySandboxGroup = sandboxCreationService.createSandboxGroup(emptyList())
+            setup.withCleanup {
+                sandboxCreationService.unloadSandboxGroup(emptySandboxGroup)
+            }
             partySerializer = setup.fetchService(
                 "(component.name=net.corda.ledger.consensual.impl.PartySerializer)",
                 1500
@@ -140,7 +127,6 @@ class ConsensualSignedTransactionImplAMQPSerializationTest {
     @Suppress("FunctionName")
     fun `successfully serialize and deserialize a Consensual Signed Transaction`() {
         // Create sandbox group
-        val sandboxGroup = sandboxFactory.loadSandboxGroup()
 
         val serializationService = TestSerializationService.getTestSerializationService({
             it.register(partySerializer, it)
@@ -148,39 +134,34 @@ class ConsensualSignedTransactionImplAMQPSerializationTest {
             it.register(consensualSignedTransactionImplSerializer, it)
         } , schemeMetadata)
 
-        try {
-            // Initialised two serialisation factories to avoid having successful tests due to caching
-            val factory1 = testDefaultFactory(sandboxGroup)
-            val factory2 = testDefaultFactory(sandboxGroup)
+        // Initialised two serialisation factories to avoid having successful tests due to caching
+        val factory1 = testDefaultFactory(emptySandboxGroup)
+        val factory2 = testDefaultFactory(emptySandboxGroup)
 
-            // Initialise the serialisation context
-            val testSerializationContext = testSerializationContext.withSandboxGroup(sandboxGroup)
+        // Initialise the serialisation context
+        val testSerializationContext = testSerializationContext.withSandboxGroup(emptySandboxGroup)
 
-            val signedTransaction = getConsensualSignedTransactionImpl(
-                digestService,
-                merkleTreeFactory,
-                serializationService,
-                jsonMarshallingService
-            )
-            val serialised = SerializationOutput(factory1).serialize(signedTransaction, testSerializationContext)
+        val signedTransaction = getConsensualSignedTransactionImpl(
+            digestService,
+            merkleTreeProvider,
+            serializationService,
+            jsonMarshallingService
+        )
+        val serialised = SerializationOutput(factory1).serialize(signedTransaction, testSerializationContext)
 
 
-            // Perform deserialization and check if the correct class is deserialized
-            val deserialized =
-                DeserializationInput(factory2).deserializeAndReturnEnvelope(serialised, testSerializationContext)
+        // Perform deserialization and check if the correct class is deserialized
+        val deserialized =
+            DeserializationInput(factory2).deserializeAndReturnEnvelope(serialised, testSerializationContext)
 
-            assertThat(deserialized.obj.javaClass.name).isEqualTo(
-                "net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl"
-            )
+        assertThat(deserialized.obj.javaClass.name).isEqualTo(
+            "net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl"
+        )
 
-            assertThat(deserialized.obj).isEqualTo(signedTransaction)
-            Assertions.assertDoesNotThrow {
-                deserialized.obj.id
-            }
-            assertThat(deserialized.obj.id).isEqualTo(signedTransaction.id)
-
-        } finally {
-            sandboxFactory.unloadSandboxGroup(sandboxGroup)
+        assertThat(deserialized.obj).isEqualTo(signedTransaction)
+        Assertions.assertDoesNotThrow {
+            deserialized.obj.id
         }
+        assertThat(deserialized.obj.id).isEqualTo(signedTransaction.id)
     }
 }

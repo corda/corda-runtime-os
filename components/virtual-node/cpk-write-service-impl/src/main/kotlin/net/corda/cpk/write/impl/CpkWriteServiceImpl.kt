@@ -38,7 +38,7 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RECONCILIATION_CONFIG
 import net.corda.schema.configuration.MessagingConfig
 import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_CPK_WRITE_INTERVAL_MS
-import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug

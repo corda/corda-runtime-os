@@ -9,6 +9,7 @@ import net.corda.data.uniqueness.UniquenessCheckResponseAvro
 import net.corda.data.uniqueness.UniquenessCheckResultSuccessAvro
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.AutoTickTestClock
+import net.corda.uniqueness.backingstore.BackingStore
 import net.corda.uniqueness.backingstore.impl.fake.BackingStoreImplFake
 import net.corda.uniqueness.checker.UniquenessChecker
 import net.corda.uniqueness.utils.UniquenessAssertions.assertInputStateConflictResponse
@@ -16,6 +17,7 @@ import net.corda.uniqueness.utils.UniquenessAssertions.assertMalformedRequestRes
 import net.corda.uniqueness.utils.UniquenessAssertions.assertReferenceStateConflictResponse
 import net.corda.uniqueness.utils.UniquenessAssertions.assertStandardSuccessResponse
 import net.corda.uniqueness.utils.UniquenessAssertions.assertTimeWindowOutOfBoundsResponse
+import net.corda.uniqueness.utils.UniquenessAssertions.assertUnhandledExceptionResponse
 import net.corda.uniqueness.utils.UniquenessAssertions.assertUniqueCommitTimestamps
 import net.corda.uniqueness.utils.UniquenessAssertions.assertUnknownInputStateResponse
 import net.corda.uniqueness.utils.UniquenessAssertions.assertUnknownReferenceStateResponse
@@ -29,7 +31,11 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertAll
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
+import java.lang.UnsupportedOperationException
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
@@ -1239,6 +1245,37 @@ class UniquenessCheckerImplTests {
                 assertAll(
                     { assertThat(responses).hasSize(1) },
                     { assertReferenceStateConflictResponse(responses[0], state) }
+                )
+            }
+        }
+
+        @Test
+        fun `Unhandled exception raised in the uniqueness checker returns the appropriate error`() {
+            val exceptionThrowingBackingStore = mock<BackingStore>()
+
+            whenever(exceptionThrowingBackingStore.transactionSession(any()))
+                .doThrow(UnsupportedOperationException())
+
+            val exceptionThrowingUniquenessChecker = BatchedUniquenessCheckerImpl(
+                mock(),
+                mock(),
+                mock(),
+                mock(),
+                testClock,
+                exceptionThrowingBackingStore)
+
+            exceptionThrowingUniquenessChecker.processRequests(
+                listOf(
+                    newRequestBuilder()
+                        .setNumOutputStates(1)
+                        .build()
+                )
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(1) },
+                    { assertUnhandledExceptionResponse(
+                        responses[0],
+                        UnsupportedOperationException::class.java.typeName) }
                 )
             }
         }

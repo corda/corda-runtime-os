@@ -16,7 +16,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.VersionedRecord
-import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.utilities.VisibleForTesting
 import org.slf4j.LoggerFactory
 
 /**

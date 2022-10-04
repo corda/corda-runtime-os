@@ -148,7 +148,6 @@ def importTask = tasks.register("importOSGiJUnitXml", ImportJUnitXmlReports) {
 tasks.named('integrationTest') {
     // By default this is expected to run against the in-memory db, effectively
     // running an in-mem version of the message pattern tests
-    finalizedBy importTask
     dependsOn dbIntegrationTest
 
     enabled = false

@@ -5,17 +5,17 @@ import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPK_IDENTIFIERS_KEY
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl
+import net.corda.utilities.VisibleForTesting
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
-import net.corda.v5.base.annotations.VisibleForTesting
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.DigestService
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import java.security.MessageDigest
 import java.time.Instant
 import javax.persistence.EntityManager
@@ -23,7 +23,7 @@ import javax.persistence.Tuple
 
 
 class ConsensualLedgerRepository(
-    private val merkleTreeFactory: MerkleTreeFactory,
+    private val merkleTreeProvider: MerkleTreeProvider,
     private val digestService: DigestService,
     private val jsonMarshallingService: JsonMarshallingService,
     private val serializationService: SerializationService
@@ -74,7 +74,7 @@ class ConsensualLedgerRepository(
         val firstRowColumns = rows.first()
         val privacySalt = PrivacySaltImpl(firstRowColumns[1] as ByteArray)
         val componentGroupLists = queryRowsToComponentGroupLists(rows)
-        val wireTransaction = WireTransaction(merkleTreeFactory, digestService, jsonMarshallingService, privacySalt, componentGroupLists)
+        val wireTransaction = WireTransaction(merkleTreeProvider, digestService, jsonMarshallingService, privacySalt, componentGroupLists)
         return ConsensualSignedTransactionImpl(
             serializationService,
             wireTransaction,

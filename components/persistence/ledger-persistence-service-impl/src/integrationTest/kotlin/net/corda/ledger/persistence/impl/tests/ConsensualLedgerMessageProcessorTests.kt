@@ -39,7 +39,7 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
@@ -101,7 +101,7 @@ class ConsensualLedgerMessageProcessorTests {
     @InjectService
     lateinit var digestService: DigestService
     @InjectService
-    lateinit var merkleTreeFactory: MerkleTreeFactory
+    lateinit var merkleTreeProvider: MerkleTreeProvider
     @InjectService
     lateinit var serializationService: SerializationService
     @InjectService
@@ -168,7 +168,7 @@ class ConsensualLedgerMessageProcessorTests {
     fun `persistTransaction for consensual ledger deserialises the tx and persists`() {
         // Native SQL is used that is specific to Postgres and won't work with in-memory DB
         Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
-        val tx = getConsensualSignedTransactionImpl(digestService, merkleTreeFactory, serializationService, jsonMarshallingService)
+        val tx = getConsensualSignedTransactionImpl(digestService, merkleTreeProvider, serializationService, jsonMarshallingService)
 
         // serialise tx into bytebuffer and add to PersistTransaction payload
         val serializedTransaction = ctx.serialize(tx)
@@ -179,7 +179,7 @@ class ConsensualLedgerMessageProcessorTests {
         val processor = ConsensualLedgerMessageProcessor(
             ctx.entitySandboxService,
             externalEventResponseFactory,
-            merkleTreeFactory,
+            merkleTreeProvider,
             digestService,
             jsonMarshallingService,
             this::noOpPayloadCheck)

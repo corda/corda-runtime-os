@@ -12,7 +12,7 @@ import net.corda.persistence.common.PayloadChecker
 import net.corda.schema.Schemas
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -26,8 +26,8 @@ class ConsensualLedgerProcessorFactoryImpl @Activate constructor(
     private val entitySandboxService: EntitySandboxService,
     @Reference(service = ExternalEventResponseFactory::class)
     private val externalEventResponseFactory: ExternalEventResponseFactory,
-    @Reference(service = MerkleTreeFactory::class)
-    private val merkleTreeFactory: MerkleTreeFactory,
+    @Reference(service = MerkleTreeProvider::class)
+    private val merkleTreeProvider: MerkleTreeProvider,
     @Reference(service = DigestService::class)
     private val digestService: DigestService,
     @Reference(service = JsonMarshallingService::class)
@@ -44,7 +44,7 @@ class ConsensualLedgerProcessorFactoryImpl @Activate constructor(
         val processor = ConsensualLedgerMessageProcessor(
             entitySandboxService,
             externalEventResponseFactory,
-            merkleTreeFactory,
+            merkleTreeProvider,
             digestService,
             jsonMarshallingService,
             PayloadChecker(config)::checkSize

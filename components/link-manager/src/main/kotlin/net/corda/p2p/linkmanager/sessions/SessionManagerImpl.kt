@@ -56,7 +56,7 @@ import net.corda.schema.Schemas.P2P.Companion.LINK_OUT_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.time.Clock
-import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import net.corda.virtualnode.HoldingIdentity

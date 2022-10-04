@@ -2,7 +2,7 @@ package net.corda.httprpc.ssl.impl
 
 import net.corda.httprpc.ssl.KeyStoreInfo
 import net.corda.httprpc.ssl.SslCertReadService
-import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.io.File
 import java.nio.file.Files

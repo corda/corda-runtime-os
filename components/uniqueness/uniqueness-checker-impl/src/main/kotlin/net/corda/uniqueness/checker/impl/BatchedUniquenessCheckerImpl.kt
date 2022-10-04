@@ -2,10 +2,12 @@ package net.corda.uniqueness.checker.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.data.uniqueness.UniquenessCheckResponseAvro
 import net.corda.data.uniqueness.UniquenessCheckResultMalformedRequestAvro
 import net.corda.data.uniqueness.UniquenessCheckResultSuccessAvro
+import net.corda.data.uniqueness.UniquenessCheckResultUnhandledExceptionAvro
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
@@ -50,6 +52,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
+import java.lang.IllegalStateException
 import java.time.Instant
 import java.util.*
 import kotlin.collections.HashMap
@@ -153,24 +156,39 @@ class BatchedUniquenessCheckerImpl(
 
         // TODO - Re-instate batch processing logic if needed - need to establish what batching
         // there is in the message bus layer first
-        results += processBatch(requestsToProcess).map { (request, result) ->
-            UniquenessCheckResponseAvro(
-                request.rawTxId,
-                when (result) {
-                    is UniquenessCheckResultSuccess -> {
-                        UniquenessCheckResultSuccessAvro(result.resultTimestamp)
+        try {
+            results += processBatch(requestsToProcess).map { (request, result) ->
+                UniquenessCheckResponseAvro(
+                    request.rawTxId,
+                    when (result) {
+                        is UniquenessCheckResultSuccess -> {
+                            UniquenessCheckResultSuccessAvro(result.resultTimestamp)
+                        }
+                        is UniquenessCheckResultFailure -> {
+                            result.toExternalError()
+                        }
+                        else -> {
+                            throw IllegalStateException(
+                                "Unknown result type: ${result.javaClass.typeName}"
+                            )
+                        }
                     }
-                    is UniquenessCheckResultFailure -> {
-                        result.toExternalError()
-                    }
-                    else -> {
-                        // TODO Should we add a general avro error?
-                        UniquenessCheckResultMalformedRequestAvro(
-                            "Unknown result type: ${result.javaClass.typeName}"
-                        )
-                    }
-                }
-            )
+                )
+            }
+        } catch (e: Exception) {
+            // In practice, if we've received an unhandled exception then this will be before we
+            // managed to commit to the DB, so raise an exception against all requests in the batch
+            results += requestsToProcess.map { request ->
+                UniquenessCheckResponseAvro(
+                    request.rawTxId,
+                    UniquenessCheckResultUnhandledExceptionAvro(
+                        ExceptionEnvelope().apply {
+                            errorType = e::class.java.name
+                            errorMessage = e.message
+                        }
+                    )
+                )
+            }
         }
 
         return results
