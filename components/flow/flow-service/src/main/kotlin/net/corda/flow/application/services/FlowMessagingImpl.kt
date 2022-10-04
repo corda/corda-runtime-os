@@ -66,7 +66,7 @@ class FlowMessagingImpl @Activate constructor(
             (it.key as FlowSessionInternal)
         }
         val request = FlowIORequest.Receive(sessions = sessions.map {
-            val flowSession = (it as FlowSessionInternal)
+            val flowSession = (it.key as FlowSessionInternal)
             FlowIORequest.SessionInfo(flowSession.getSessionId(), flowSession.counterparty)
         }.toSet())
         val received = fiber.suspend(request)
