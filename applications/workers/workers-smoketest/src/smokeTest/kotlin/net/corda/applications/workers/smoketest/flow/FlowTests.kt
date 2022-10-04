@@ -65,7 +65,6 @@ class FlowTests {
             "net.cordapp.testing.testflows.TestFlow",
             "net.cordapp.testing.testflows.BrokenProtocolFlow",
             "net.cordapp.testing.testflows.MessagingFlow",
-            "net.cordapp.testing.testflows.SendReceiveAllMessagingFlow",
             "net.cordapp.testing.testflows.PersistenceFlow",
             "net.cordapp.testing.testflows.UniquenessCheckTestFlow",
             "net.cordapp.testing.testflows.ledger.ConsensualSignedTransactionSerializationFlow",
