@@ -143,6 +143,11 @@ appSimulators:
       enabled: false
       # -- if debug is enabled, suspend the receiver app simulator worker until the debugger is attached
       suspend: false
+    topicCreation:
+      # - the number of partitions for the p2p.app.received_msg topic
+      numPartitions: 10
+      # - the replicationFactor for the p2p.app.received_msg topic
+      replicationFactor: 1
   dbSink:
     enabled: false
     # -- database sink app simulator replica count

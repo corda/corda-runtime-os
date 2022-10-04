@@ -68,12 +68,17 @@ In the receiver mode, the configuration file should have the following form:
 {
     parallelClients: 1
     simulatorMode: "RECEIVER"
+    topicCreationParams {
+        numPartitions: 10
+	    replicationFactor: 3
+    }
 }
 ```
 
 The following configuration options are optional:
 * `parallelClients`: the number of parallel clients/threads consuming messages from Kafka. Default: 1.
-
+* `numPartitions`: the number of partitions for the app.received_msg topic. Default: 10.
+* `replicationFactor`: the replication factor for the app.received_msg topic. Default: 1.
 ### Database Sink mode
 
 In this mode, the tool will copy all the metadata from the Kafka topic (`app.received_msg`) into the specified database for further analysis.
