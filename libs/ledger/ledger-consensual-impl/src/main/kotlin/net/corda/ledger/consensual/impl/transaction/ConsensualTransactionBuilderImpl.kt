@@ -3,6 +3,7 @@ package net.corda.ledger.consensual.impl.transaction
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.TransactionMetaData
+import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPK_IDENTIFIERS_KEY
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.DIGEST_SETTINGS_KEY
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.LEDGER_MODEL_KEY
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.LEDGER_VERSION_KEY
@@ -77,8 +78,8 @@ class ConsensualTransactionBuilderImpl(
                 LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
                 LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
                 DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
-                PLATFORM_VERSION_KEY to memberLookup.myInfo().platformVersion
-                // TODO(CORE-5940 set CPK identifier/etc)
+                PLATFORM_VERSION_KEY to memberLookup.myInfo().platformVersion,
+                CPK_IDENTIFIERS_KEY to getCpks().map { "${it.cpkId.name}:${it.fileChecksum.toHexString()}" }
             )
         )
     }

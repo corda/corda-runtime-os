@@ -1,6 +1,7 @@
 package net.corda.ledger.common.impl.transaction
 
 import net.corda.v5.base.annotations.CordaSerializable
+import net.corda.v5.base.exceptions.CordaRuntimeException
 
 //TODO(CORE-5940: guarantee its serialization is deterministic)
 @CordaSerializable
@@ -29,16 +30,21 @@ class TransactionMetaData(
 
     override fun hashCode(): Int = properties.hashCode()
 
-    fun getLedgerModel(): String{
-        return this[LEDGER_MODEL_KEY].toString()
+    fun getLedgerModel(): String = this[LEDGER_MODEL_KEY].toString()
+
+    fun getLedgerVersion(): String = this[LEDGER_VERSION_KEY].toString()
+
+    fun getCpkIdentifiers(): List<String> {
+        val data = this[CPK_IDENTIFIERS_KEY]
+        if (data is List<*>) {
+            return data.map { it.toString() }
+        } else {
+            throw CordaRuntimeException("Transaction metadata representation error: CPK identifiers must be " +
+                    "List<String> but found [$data]")
+        }
     }
-    fun getLedgerVersion(){
-        this[LEDGER_VERSION_KEY]
-    }
-    fun cpkIdentifiers(){
-        this[CPK_IDENTIFIERS_KEY]
-    }
-    fun getDigestSettings(): Map<String, Any>{
+
+    fun getDigestSettings(): Map<String, Any> {
         @Suppress("UNCHECKED_CAST")
         return this[DIGEST_SETTINGS_KEY] as Map<String, Any>
     }

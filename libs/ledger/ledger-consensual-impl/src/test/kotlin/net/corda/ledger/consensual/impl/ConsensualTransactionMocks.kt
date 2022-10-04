@@ -10,27 +10,45 @@ import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkManifest
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
+import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.v5.application.membership.MemberLookup
+import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.base.util.parse
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.VirtualNodeInfo
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Instant
+import java.util.UUID
 
 class ConsensualTransactionMocks {
 
     companion object {
         fun mockMemberLookup(): MemberLookup {
             val memberInfo: MemberInfo = mock()
-            whenever(memberInfo.platformVersion).thenReturn(888)
-
             val memberLookup: MemberLookup = mock()
+            val memberContext: MemberContext = mock()
+            val id = makeHoldingIdentity()
+
+            whenever(memberContext.parse<String>("corda.groupId")).thenReturn(id.groupId)
+            whenever(memberInfo.platformVersion).thenReturn(888)
+            whenever(memberInfo.memberProvidedContext).thenReturn(memberContext)
+            whenever(memberInfo.groupId).thenReturn(id.groupId)
+            whenever(memberInfo.name).thenReturn(id.x500Name)
             whenever(memberLookup.myInfo()).thenReturn(memberInfo)
 
             return memberLookup
         }
+
+        private fun makeHoldingIdentity() = HoldingIdentity(
+            MemberX500Name("mock-member", "r3", "CX"),
+            "mock-group")
 
         fun mockCpiInfoReadService(): CpiInfoReadService {
             val service = mock<CpiInfoReadService>()
@@ -53,7 +71,23 @@ class ConsensualTransactionMocks {
             return service
         }
 
-        fun makeCpkMetadata(i: Int, cordappType: CordappType) = CpkMetadata(
+        fun mockVirtualNodeInfoService(): VirtualNodeInfoReadService {
+            val service: VirtualNodeInfoReadService = mock()
+            val dummyUUID = UUID.randomUUID()
+            val nodeInfo = VirtualNodeInfo(
+                makeHoldingIdentity(),
+                CpiIdentifier("MockCpi", "1", null),
+                vaultDmlConnectionId = dummyUUID,
+                cryptoDmlConnectionId = dummyUUID,
+                uniquenessDmlConnectionId = dummyUUID,
+                timestamp = Instant.now()
+            )
+            whenever(service.get(any())).thenReturn(nodeInfo)
+
+            return service
+        }
+
+        private fun makeCpkMetadata(i: Int, cordappType: CordappType) = CpkMetadata(
             CpkIdentifier("MockCpk", "$i", null),
             CpkManifest(CpkFormatVersion(1, 1)),
             "mock-bundle-$i",
@@ -76,6 +110,5 @@ class ConsensualTransactionMocks {
             emptySet(),
             Instant.now()
         )
-
     }
 }
