@@ -1,13 +1,13 @@
 package net.corda.ledger.persistence.impl
 
-import net.corda.ledger.persistence.impl.internal.ConsensualLedgerMessageProcessor
-import net.corda.persistence.common.EntitySandboxService
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.persistence.ConsensualLedgerProcessor
 import net.corda.ledger.persistence.ConsensualLedgerProcessorFactory
+import net.corda.ledger.persistence.impl.internal.ConsensualLedgerMessageProcessor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
+import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.PayloadChecker
 import net.corda.schema.Schemas
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -34,12 +34,12 @@ class ConsensualLedgerProcessorFactoryImpl @Activate constructor(
     private val jsonMarshallingService: JsonMarshallingService
 ) : ConsensualLedgerProcessorFactory {
     companion object {
-        internal const val GROUP_NAME = "virtual.node.ledger.persistence"
+        internal const val GROUP_NAME = "persistence.ledger.processor"
 
     }
 
     override fun create(config: SmartConfig): ConsensualLedgerProcessor {
-        val subscriptionConfig = SubscriptionConfig(GROUP_NAME, Schemas.VirtualNode.LEDGER_PERSISTENCE_TOPIC)
+        val subscriptionConfig = SubscriptionConfig(GROUP_NAME, Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC)
 
         val processor = ConsensualLedgerMessageProcessor(
             entitySandboxService,
