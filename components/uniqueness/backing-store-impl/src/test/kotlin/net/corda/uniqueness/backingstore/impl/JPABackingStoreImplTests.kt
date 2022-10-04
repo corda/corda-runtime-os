@@ -84,6 +84,11 @@ class JPABackingStoreImplTests {
     private lateinit var schemaMigrator: LiquibaseSchemaMigratorImpl
     private lateinit var dbConnectionManager: DbConnectionManager
 
+    companion object {
+        val UPPER_BOUND: Instant =
+            LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
+    }
+
     inner class DummyLifecycle : LifecycleEvent
 
     class DummyException(message: String) : Exception(message)
@@ -194,7 +199,7 @@ class JPABackingStoreImplTests {
                 emptyList(),
                 0,
                 null,
-                LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
+                UPPER_BOUND
             )
         ).setInputStates(listOf(inputStateRef)).build()
     }

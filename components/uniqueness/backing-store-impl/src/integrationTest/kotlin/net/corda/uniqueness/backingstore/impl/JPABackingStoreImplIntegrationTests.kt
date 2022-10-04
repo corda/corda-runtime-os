@@ -67,20 +67,20 @@ import kotlin.test.assertTrue
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class JPABackingStoreImplIntegrationTests {
-    private val MAX_ATTEMPTS = 10 // Set it same as "MAX_ATTEMPTS" in JPABackingStoreImpl.kt
     private lateinit var backingStoreImpl: JPABackingStoreImpl
-
-    private val entityManagerFactory: EntityManagerFactory
-    private val dbConfig = DbUtils.getEntityManagerConfiguration("uniqueness_default")
-
     private lateinit var lifecycleCoordinator: LifecycleCoordinator
     private lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 
-    class DummyException(message: String) : Exception(message)
-
-    init {
-        entityManagerFactory = createEntityManagerFactory("uniqueness_default")
+    companion object {
+        private val UPPER_BOUND = LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
+        private val MAX_ATTEMPTS = 10 // Set it same as "MAX_ATTEMPTS" in JPABackingStoreImpl.kt
+        private val DB_NAME = "uniqueness_default"
+        private val dbConfig = DbUtils.getEntityManagerConfiguration(DB_NAME)
+        private val entityManagerFactory: EntityManagerFactory = EntityManagerFactoryFactoryImpl().create(
+            DB_NAME, JPABackingStoreEntities.classes.toList(), dbConfig)
     }
+
+    class DummyException(message: String) : Exception(message)
 
     @BeforeEach
     fun init() {
@@ -124,7 +124,7 @@ class JPABackingStoreImplIntegrationTests {
                 emptyList(),
                 0,
                 null,
-                LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
+                UPPER_BOUND
             )
         ).setInputStates(listOf(inputStateRef)).build()
     }
