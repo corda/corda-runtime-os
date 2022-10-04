@@ -145,9 +145,6 @@ class ConsensualLedgerRepository(
         leafIndex: Int,
         data: ByteArray
     ) {
-        val dataDigest = MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name)
-        val hash = dataDigest.digest(data).toHexString()
-
         entityManager.createNativeQuery(
             """
                 INSERT INTO {h-schema}consensual_transaction_component(transaction_id, group_idx, leaf_idx, data, hash, created)
@@ -157,7 +154,7 @@ class ConsensualLedgerRepository(
             .setParameter("groupIndex", groupIndex)
             .setParameter("leafIndex", leafIndex)
             .setParameter("data", data)
-            .setParameter("hash", hash)
+            .setParameter("hash", data.hashAsHexString())
             .setParameter("createdAt", timestamp)
             .executeUpdate()
     }
@@ -230,13 +227,16 @@ class ConsensualLedgerRepository(
     ) {
         entityManager.createNativeQuery(
             """
-                INSERT INTO {h-schema}consensual_transaction_signature(transaction_id, signature_idx, signature, created)
-                VALUES (:transactionId, :signatureIdx, :signature, :createdAt)""")
+                INSERT INTO {h-schema}consensual_transaction_signature(transaction_id, signature_idx, signature, pub_key_hash, created)
+                VALUES (:transactionId, :signatureIdx, :signature, :publicKeyHash, :createdAt)""")
             .setParameter("transactionId", transactionId)
             .setParameter("signatureIdx", index)
             .setParameter("signature", serializationService.serialize(signature).bytes)
+            .setParameter("publicKeyHash", signature.by.encoded.hashAsHexString())
             .setParameter("createdAt", timestamp)
             .executeUpdate()
     }
 
+    private fun ByteArray.hashAsHexString() =
+        MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name).digest(this).toHexString()
 }
