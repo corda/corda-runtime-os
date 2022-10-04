@@ -52,12 +52,8 @@ import javax.persistence.OptimisticLockException
 import javax.persistence.PersistenceException
 import javax.persistence.QueryTimeoutException
 import javax.persistence.RollbackException
-import javax.persistence.EntityNotFoundException
-import javax.persistence.LockTimeoutException
-import javax.persistence.NoResultException
-import javax.persistence.NonUniqueResultException
-import javax.persistence.TransactionRequiredException
-import javax.persistence.PessimisticLockException
+import kotlin.reflect.KClass
+import kotlin.reflect.full.createInstance
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -296,7 +292,7 @@ class JPABackingStoreImplIntegrationTests {
                 session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
             }
 
-            val consumingTxId = secureHashes[0]
+            val consumingTxId = SecureHashUtils.randomSecureHash()
             val consumingStateRefs = listOf<UniquenessCheckStateRef>(stateRefs[0])
 
             assertDoesNotThrow {
@@ -343,22 +339,6 @@ class JPABackingStoreImplIntegrationTests {
 
     @Nested
     inner class FlakyConnectionTests {
-        // Below is the complete list of PersistenceException and other exceptions that extend it.
-        // We may want to reduce this list that only relevant to us.
-        val persistenceExceptions = mapOf(
-            "PersistenceException" to PersistenceException(),
-            "EntityExistsException" to EntityExistsException(),
-            "RollbackException" to RollbackException(),
-            "OptimisticLockException" to OptimisticLockException(),
-            "EntityNotFoundException" to EntityNotFoundException(),
-            "LockTimeoutException" to LockTimeoutException(),
-            "NoResultException" to NoResultException(),
-            "NonUniqueResultException" to NonUniqueResultException(),
-            "PessimisticLockException" to PessimisticLockException(),
-            "QueryTimeoutException" to QueryTimeoutException(),
-            "TransactionRequiredException" to TransactionRequiredException()
-        )
-
         @Disabled(
             "Re-iterate the test after reviewing the expected behaviour." +
                     "This test fails because QueryTimeoutException is not caught nor retried when querying."
@@ -396,17 +376,17 @@ class JPABackingStoreImplIntegrationTests {
         )
         @ParameterizedTest
         @ValueSource(
-            strings = ["PersistenceException",
-                "EntityExistsException",
-                "RollbackException",
-                "OptimisticLockException"]
+            classes = [PersistenceException::class,
+                EntityExistsException::class,
+                RollbackException::class,
+                OptimisticLockException::class]
         )
-        fun `Persistence errors raised while persisting trigger retry`(persistenceException: String) {
+        fun `Persistence errors raised while persisting trigger retry`(e: java.lang.Class<Exception>) {
             val emFactory = createEntityManagerFactory("uniqueness")
             val spyEmFactory = Mockito.spy(emFactory)
             val em = spyEmFactory.createEntityManager()
             val spyEm = Mockito.spy(em)
-            Mockito.doThrow(persistenceExceptions[persistenceException]).whenever(spyEm).persist(any())
+            Mockito.doThrow(e.kotlin.createInstance()).whenever(spyEm).persist(any())
             Mockito.doReturn(spyEm).whenever(spyEmFactory).createEntityManager()
 
             val storeImpl = createBackingStoreImpl(spyEmFactory)
