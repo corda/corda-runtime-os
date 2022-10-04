@@ -22,7 +22,6 @@ import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessRejectedTransac
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessStateDetailEntity
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTransactionDetailEntity
 import net.corda.uniqueness.datamodel.common.UniquenessConstants
-import net.corda.uniqueness.datamodel.common.toCharacterRepresentation
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorGeneralImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateRefImpl
@@ -52,7 +51,6 @@ import java.sql.Connection
 import java.time.Clock
 import java.time.LocalDate
 import java.time.ZoneOffset
-import java.util.LinkedList
 import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
@@ -61,8 +59,6 @@ import javax.persistence.TypedQuery
 import javax.persistence.EntityExistsException
 import javax.persistence.RollbackException
 import javax.persistence.OptimisticLockException
-import kotlin.test.assertEquals
-
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class JPABackingStoreImplTests {
@@ -170,9 +166,9 @@ class JPABackingStoreImplTests {
         )
     }
 
-    private fun generateUniquenessCheckStateRef(hashes: List<SecureHash>): LinkedList<UniquenessCheckStateRef> {
+    private fun generateUniquenessCheckStateRef(hashes: List<SecureHash>): MutableList<UniquenessCheckStateRef> {
         val uniquenessCheckInternalStateRefs = hashes.let {
-            val tmpUniquenessCheckInternalStateRefs = LinkedList<UniquenessCheckStateRef>()
+            val tmpUniquenessCheckInternalStateRefs = mutableListOf<UniquenessCheckStateRef>()
             it.forEachIndexed { i, hash ->
                 tmpUniquenessCheckInternalStateRefs.add(UniquenessCheckStateRefImpl(hash, i))
             }
@@ -344,7 +340,7 @@ class JPABackingStoreImplTests {
         fun `Commiting a failed transaction persists error data`() {
             backingStoreImpl.session { session ->
                 val txId = SecureHashUtils.randomSecureHash()
-                val txns = LinkedList<Pair<UniquenessCheckRequestInternal, UniquenessCheckResult>>()
+                val txns = mutableListOf<Pair<UniquenessCheckRequestInternal, UniquenessCheckResult>>()
                 val externalRequest = generateExternalRequest(txId)
                 val internalRequest = UniquenessCheckRequestInternal.create(externalRequest)
                 txns.add(
