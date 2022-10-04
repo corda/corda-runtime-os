@@ -1,6 +1,5 @@
 package net.corda.ledger.consensual.persistence.external.events
 
-import java.nio.ByteBuffer
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.persistence.ConsensualLedgerRequest
 import net.corda.data.persistence.EntityResponse
@@ -9,6 +8,7 @@ import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.schema.Schemas
 import net.corda.virtualnode.toAvro
+import java.nio.ByteBuffer
 import java.time.Clock
 
 abstract class AbstractLedgerExternalEventFactory<PARAMETERS : Any>(
@@ -27,7 +27,7 @@ abstract class AbstractLedgerExternalEventFactory<PARAMETERS : Any>(
         parameters: PARAMETERS
     ): ExternalEventRecord {
         return ExternalEventRecord(
-            topic = Schemas.VirtualNode.LEDGER_PERSISTENCE_TOPIC,
+            topic = Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC,
             payload = ConsensualLedgerRequest.newBuilder()
                 .setTimestamp(clock.instant())
                 .setHoldingIdentity(checkpoint.holdingIdentity.toAvro())
