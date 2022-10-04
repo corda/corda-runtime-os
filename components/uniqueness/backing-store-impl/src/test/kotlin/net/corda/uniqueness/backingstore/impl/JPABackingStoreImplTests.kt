@@ -86,8 +86,7 @@ class JPABackingStoreImplTests {
 
     companion object {
         val TEST_IDENTITY = createTestHoldingIdentity("C=GB, L=London, O=Alice", "Test Group").toAvro()
-        val UPPER_BOUND: Instant =
-            LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
+        val UPPER_BOUND = LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
     }
 
     inner class DummyLifecycle : LifecycleEvent

@@ -269,11 +269,10 @@ class JPABackingStoreImplIntegrationTests {
 
             // Consume one of unconsumed states in DB.
             val consumingTxId: SecureHash = secureHashes[0]
-            val consumingStateRef = UniquenessCheckStateRefImpl(consumingTxId, 0)
-            val consumingStateRefs = listOf<UniquenessCheckStateRef>(consumingStateRef)
+            val consumingStateRef = stateRefs[0]
             backingStoreImpl.session { session ->
                 session.executeTransaction { _, txnOps ->
-                    txnOps.consumeStates(consumingTxId = consumingTxId, stateRefs = consumingStateRefs)
+                    txnOps.consumeStates(consumingTxId = consumingTxId, stateRefs = listOf(consumingStateRef))
                 }
             }
 
@@ -297,8 +296,7 @@ class JPABackingStoreImplIntegrationTests {
             }
 
             val consumingTxId = secureHashes[0]
-            val consumingStateRef = UniquenessCheckStateRefImpl(consumingTxId, 0)
-            val consumingStateRefs = listOf<UniquenessCheckStateRef>(consumingStateRef)
+            val consumingStateRefs = listOf<UniquenessCheckStateRef>(stateRefs[0])
 
             assertDoesNotThrow {
                 backingStoreImpl.session { session ->
@@ -330,8 +328,7 @@ class JPABackingStoreImplIntegrationTests {
             }
 
             val consumingTxId: SecureHash = SecureHashUtils.randomSecureHash()
-            val consumingStateRef = UniquenessCheckStateRefImpl(consumingTxId, 0)
-            val consumingStateRefs = listOf<UniquenessCheckStateRef>(consumingStateRef)
+            val consumingStateRefs = listOf<UniquenessCheckStateRef>(UniquenessCheckStateRefImpl(consumingTxId, 0))
 
             assertThrows<IllegalStateException> {
                 backingStoreImpl.session { session ->
