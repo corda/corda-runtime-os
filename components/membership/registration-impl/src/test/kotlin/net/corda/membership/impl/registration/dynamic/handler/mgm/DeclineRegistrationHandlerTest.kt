@@ -17,7 +17,9 @@ import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -52,13 +54,16 @@ class DeclineRegistrationHandlerTest {
     private val p2pRecordsFactory = mock<P2pRecordsFactory> {
         on {
             createAuthenticatedMessageRecord(
-                mgm,
-                member,
-                SetOwnRegistrationStatus(
-                    REGISTRATION_ID,
-                    RegistrationStatus.DECLINED,
+                eq(mgm),
+                eq(member),
+                eq(
+                    SetOwnRegistrationStatus(
+                        REGISTRATION_ID,
+                        RegistrationStatus.DECLINED,
+                    )
                 ),
-                8,
+                any(),
+                any(),
             )
         } doReturn record
     }

@@ -237,7 +237,8 @@ class MgmSynchronisationServiceImplTest {
                 any(),
                 any(),
                 eq(membershipPackage1),
-                eq(null)
+                any(),
+                any(),
             )
         } doReturn record1
         on {
@@ -245,7 +246,8 @@ class MgmSynchronisationServiceImplTest {
                 any(),
                 any(),
                 eq(membershipPackage2),
-                eq(null)
+                any(),
+                any(),
             )
         } doReturn record2
     }

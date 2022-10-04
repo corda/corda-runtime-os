@@ -69,6 +69,7 @@ internal class ApproveRegistrationHandler(
 ) : RegistrationHandler<ApproveRegistration> {
     private companion object {
         val logger = contextLogger()
+        const val MEMBERS_PACKAGE_UPDATE_TTL_IN_MINUTES = 10L
     }
 
     override val commandType = ApproveRegistration::class.java
@@ -132,6 +133,7 @@ internal class ApproveRegistrationHandler(
                     source = approvedBy,
                     destination = memberToSendUpdateTo.holdingIdentity.toAvro(),
                     content = memberPackage,
+                    minutesToWait = MEMBERS_PACKAGE_UPDATE_TTL_IN_MINUTES,
                 )
             }
 

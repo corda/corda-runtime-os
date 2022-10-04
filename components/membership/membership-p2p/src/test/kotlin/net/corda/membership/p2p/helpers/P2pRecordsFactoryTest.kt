@@ -9,6 +9,7 @@ import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -84,10 +85,26 @@ class P2pRecordsFactoryTest {
 
         val record = factory.createAuthenticatedMessageRecord(holdingIdentity1, holdingIdentity2, data)
 
-        assertSoftly {
-            val value = record.value?.message as? AuthenticatedMessage
-            val header = value?.header
-            it.assertThat(header?.ttl).isNull()
-        }
+        val value = record.value?.message as? AuthenticatedMessage
+        val header = value?.header
+        assertThat(header?.ttl).isNull()
+    }
+
+    @Test
+    fun `createRecords with explicit ID use the ID`() {
+        val id = "Test-ID"
+        val data = mock<KeyValuePairList>()
+        whenever(serializer.serialize(eq(data))).doReturn(dataBytes)
+
+        val record = factory.createAuthenticatedMessageRecord(
+            holdingIdentity1,
+            holdingIdentity2,
+            data,
+            id = id
+        )
+
+        val value = record.value?.message as? AuthenticatedMessage
+        val header = value?.header
+        assertThat(header?.messageId).isEqualTo(id)
     }
 }

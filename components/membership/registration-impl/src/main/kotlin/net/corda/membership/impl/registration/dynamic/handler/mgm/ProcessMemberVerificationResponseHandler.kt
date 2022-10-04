@@ -35,6 +35,7 @@ internal class ProcessMemberVerificationResponseHandler(
 ) : RegistrationHandler<ProcessMemberVerificationResponse> {
     private companion object {
         val logger = contextLogger()
+        const val TTL_IN_MINUTES = 3L
     }
 
     override val commandType = ProcessMemberVerificationResponse::class.java
@@ -72,7 +73,8 @@ internal class ProcessMemberVerificationResponseHandler(
                 content = SetOwnRegistrationStatus(
                     registrationId,
                     RegistrationStatus.PENDING_AUTO_APPROVAL
-                )
+                ),
+                minutesToWait = TTL_IN_MINUTES
             )
             listOf(
                 persistStatusMessage,

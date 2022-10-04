@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
@@ -70,13 +71,16 @@ class ProcessMemberVerificationResponseHandlerTest {
     private val p2pRecordsFactory = mock<P2pRecordsFactory> {
         on {
             createAuthenticatedMessageRecord(
-                mgm,
-                member,
-                SetOwnRegistrationStatus(
-                    REGISTRATION_ID,
-                    RegistrationStatus.PENDING_AUTO_APPROVAL
+                eq(mgm),
+                eq(member),
+                eq(
+                    SetOwnRegistrationStatus(
+                        REGISTRATION_ID,
+                        RegistrationStatus.PENDING_AUTO_APPROVAL
+                    )
                 ),
-                null
+                any(),
+                any()
             )
         } doReturn record
     }

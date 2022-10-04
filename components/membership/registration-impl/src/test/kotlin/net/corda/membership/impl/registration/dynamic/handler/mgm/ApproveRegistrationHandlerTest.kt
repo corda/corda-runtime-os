@@ -49,6 +49,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -128,7 +129,8 @@ class ApproveRegistrationHandlerTest {
                 any(),
                 any(),
                 any(),
-                eq(null)
+                anyOrNull(),
+                any(),
             )
         } doReturn record
     }
@@ -213,9 +215,11 @@ class ApproveRegistrationHandlerTest {
         val allMemberPackage = mock<Record<String, AppMessage>>()
         whenever(
             p2pRecordsFactory.createAuthenticatedMessageRecord(
-                owner.toAvro(),
-                member.toAvro(),
-                allMembershipPackage
+                eq(owner.toAvro()),
+                eq(member.toAvro()),
+                eq(allMembershipPackage),
+                anyOrNull(),
+                any(),
             )
         ).doReturn(allMemberPackage)
 
@@ -239,11 +243,15 @@ class ApproveRegistrationHandlerTest {
         ).doReturn(memberPackage)
         val membersRecord = (activeMembersWithoutMgm - memberInfo).map {
             val record = mock<Record<String, AppMessage>>()
+            val ownerAvro = owner.toAvro()
+            val memberAvro = it.holdingIdentity.toAvro()
             whenever(
                 p2pRecordsFactory.createAuthenticatedMessageRecord(
-                    owner.toAvro(),
-                    it.holdingIdentity.toAvro(),
-                    memberPackage,
+                    eq(ownerAvro),
+                    eq(memberAvro),
+                    eq(memberPackage),
+                    anyOrNull(),
+                    any(),
                 )
             ).doReturn(record)
             record
@@ -259,12 +267,16 @@ class ApproveRegistrationHandlerTest {
         val record = mock<Record<String, AppMessage>>()
         whenever(
             p2pRecordsFactory.createAuthenticatedMessageRecord(
-                owner.toAvro(),
-                member.toAvro(),
-                SetOwnRegistrationStatus(
-                    registrationId,
-                    RegistrationStatus.APPROVED
-                )
+                eq(owner.toAvro()),
+                eq(member.toAvro()),
+                eq(
+                    SetOwnRegistrationStatus(
+                        registrationId,
+                        RegistrationStatus.APPROVED
+                    )
+                ),
+                anyOrNull(),
+                any(),
             )
         ).doReturn(record)
 

@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
@@ -63,12 +64,16 @@ class VerifyMemberHandlerTest {
     private val p2pRecordsFactory = mock<P2pRecordsFactory> {
         on {
             createAuthenticatedMessageRecord(
-                mgm,
-                member,
-                VerificationRequest(
-                    REGISTRATION_ID,
-                    KeyValuePairList(emptyList<KeyValuePair>())
-                )
+                eq(mgm),
+                eq(member),
+                eq(
+                    VerificationRequest(
+                        REGISTRATION_ID,
+                        KeyValuePairList(emptyList<KeyValuePair>())
+                    )
+                ),
+                any(),
+                any(),
             )
         } doReturn verificationRequestRecord
     }

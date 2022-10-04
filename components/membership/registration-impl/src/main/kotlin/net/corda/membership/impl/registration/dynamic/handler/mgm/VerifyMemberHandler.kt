@@ -14,6 +14,7 @@ import net.corda.membership.impl.registration.dynamic.handler.MissingRegistratio
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandlerResult
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
+import net.corda.membership.p2p.helpers.TtlIdsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
@@ -22,6 +23,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.toCorda
 
+@Suppress("LongParameterList")
 internal class VerifyMemberHandler(
     clock: Clock,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
@@ -30,10 +32,12 @@ internal class VerifyMemberHandler(
     private val p2pRecordsFactory: P2pRecordsFactory = P2pRecordsFactory(
         cordaAvroSerializationFactory,
         clock,
-    )
+    ),
+    private val ttlIdsFactory: TtlIdsFactory = TtlIdsFactory(),
 ) : RegistrationHandler<VerifyMember> {
     private companion object {
         val logger = contextLogger()
+        const val CHANNEL_CREATION_TTL_IN_MINUTES = 20L
     }
 
     override val commandType = VerifyMember::class.java
@@ -64,7 +68,9 @@ internal class VerifyMemberHandler(
                     VerificationRequest(
                         registrationId,
                         KeyValuePairList(emptyList<KeyValuePair>())
-                    )
+                    ),
+                    CHANNEL_CREATION_TTL_IN_MINUTES,
+                    id = ttlIdsFactory.createId(key),
                 )
             )
         } catch (e: Exception) {

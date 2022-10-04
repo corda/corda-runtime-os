@@ -134,6 +134,7 @@ class MgmSynchronisationServiceImpl internal constructor(
         const val SERVICE = "MgmSynchronisationService"
         private val clock: Clock = UTCClock()
         const val IDENTITY_EX_MESSAGE = "is not part of the membership group!"
+        const val PACKAGE_MESSAGE_TTL_IN_MINUTES = 10L
     }
 
     // Component lifecycle coordinator
@@ -236,7 +237,8 @@ class MgmSynchronisationServiceImpl internal constructor(
                     p2pRecordsFactory.createAuthenticatedMessageRecord(
                         source = source,
                         destination = dest,
-                        content = data
+                        content = data,
+                        minutesToWait = PACKAGE_MESSAGE_TTL_IN_MINUTES,
                     )
                 )
             )

@@ -40,7 +40,8 @@ class P2pRecordsFactory(
         source: HoldingIdentity,
         destination: HoldingIdentity,
         content: T,
-        minutesToWait: Long? = null
+        minutesToWait: Long? = null,
+        id: String = UUID.randomUUID().toString(),
     ): Record<String, AppMessage> {
         val data = cordaAvroSerializationFactory.createAvroSerializer<T> {
             logger.warn("Serialization failed")
@@ -50,7 +51,7 @@ class P2pRecordsFactory(
             .setDestination(destination)
             .setSource(source)
             .setTtl(minutesToWait?.let { clock.instant().plus(it, ChronoUnit.MINUTES) })
-            .setMessageId(UUID.randomUUID().toString())
+            .setMessageId(id)
             .setTraceId(null)
             .setSubsystem(MEMBERSHIP_P2P_SUBSYSTEM)
             .build()
