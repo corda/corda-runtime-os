@@ -63,6 +63,6 @@ class PermissionEntityManagerImpl(
             permissionsQuery.groupVisibility == it.groupVisibility &&
             permissionsQuery.virtualNode == it.virtualNode &&
             permissionsQuery.permissionStringPrefix?.let { psp -> it.permissionString.startsWith(psp) } ?: true
-        }.take(permissionsQuery.maxResultCount).map { it.convertToResponseDto() }.toList()
+        }.take(permissionsQuery.limit).map { it.convertToResponseDto() }.toList()
     }
 }

@@ -75,7 +75,7 @@ interface PermissionEndpoint : RpcOps {
     fun queryPermissions(
         @HttpRpcQueryParameter(description = "The maximum number of results to return. " +
                 "The value must be in the range [1..1000].")
-        maxResultCount: Int,
+        limit: Int,
         @HttpRpcQueryParameter(description = "The permission type to be returned.")
         permissionType: String,
         @HttpRpcQueryParameter(description = "Optional group visibility for a permission.", required = false)

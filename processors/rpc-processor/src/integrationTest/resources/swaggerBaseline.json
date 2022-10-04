@@ -1848,7 +1848,7 @@
         "description" : "This method returns permissions which satisfy supplied query criteria.",
         "operationId" : "get_permission",
         "parameters" : [ {
-          "name" : "maxresultcount",
+          "name" : "limit",
           "in" : "query",
           "description" : "The maximum number of results to return. The value must be in the range [1..1000].",
           "required" : true,

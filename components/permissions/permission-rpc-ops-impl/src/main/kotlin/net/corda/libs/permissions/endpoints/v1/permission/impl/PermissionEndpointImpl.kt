@@ -71,16 +71,16 @@ class PermissionEndpointImpl @Activate constructor(
     }
 
     override fun queryPermissions(
-        maxResultCount: Int,
+        limit: Int,
         permissionType: String,
         groupVisibility: String?,
         virtualNode: String?,
         permissionStringPrefix: String?
     ): List<PermissionResponseType> {
 
-        if (maxResultCount < 1 || maxResultCount > 1000) {
+        if (limit < 1 || limit > 1000) {
             throw InvalidInputDataException(
-                "maxResultCount supplied $maxResultCount is outside of the permitted range of [1..1000]"
+                "limit supplied $limit is outside of the permitted range of [1..1000]"
             )
         }
 
@@ -97,7 +97,7 @@ class PermissionEndpointImpl @Activate constructor(
         val permissions = withPermissionManager(permissionManagementService.permissionManager, logger) {
             queryPermissions(
                 QueryPermissionsRequestDto(
-                    maxResultCount,
+                    limit,
                     permissionTypeEnum.toRequestDtoType(),
                     groupVisibility,
                     virtualNode,
