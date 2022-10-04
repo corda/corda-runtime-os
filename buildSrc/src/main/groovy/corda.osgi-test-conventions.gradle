@@ -108,7 +108,6 @@ def importTask = tasks.register("importOSGiJUnitXml", ImportJUnitXmlReports) {
 }
 
 tasks.named('integrationTest') {
-    finalizedBy importTask
     dependsOn testOSGi
     enabled = false
 }
