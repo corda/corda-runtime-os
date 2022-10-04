@@ -19,11 +19,8 @@ import org.slf4j.Logger
 import java.lang.IndexOutOfBoundsException
 
 class HttpServerChannelHandler(private val serverListener: HttpServerListener,
+                               private val maxRequestSize: Long,
                                private val logger: Logger): BaseHttpChannelHandler(serverListener, logger) {
-
-    companion object {
-        const val MAX_CONTENT_LENGTH = 500_000_000
-    }
 
     private var responseCode: HttpResponseStatus? = null
 
@@ -33,7 +30,7 @@ class HttpServerChannelHandler(private val serverListener: HttpServerListener,
     @Suppress("ComplexMethod")
     override fun channelRead0(ctx: ChannelHandlerContext, msg: HttpObject) {
         if (msg is HttpRequest) {
-            responseCode = msg.validate()
+            responseCode = msg.validate(maxRequestSize)
             if (responseCode != HttpResponseStatus.OK) {
                 logger.warn ("Received invalid HTTP request from ${ctx.channel().remoteAddress()}\n" +
                         "Protocol version: ${msg.protocolVersion()}\n" +

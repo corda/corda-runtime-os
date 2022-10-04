@@ -10,7 +10,6 @@ import io.netty.handler.codec.http.HttpResponseStatus
 import io.netty.handler.codec.http.HttpRequest
 import io.netty.handler.codec.http.HttpResponse
 import io.netty.handler.codec.http.DefaultFullHttpResponse
-import net.corda.p2p.gateway.messaging.http.HttpServerChannelHandler.Companion.MAX_CONTENT_LENGTH
 import java.lang.IllegalArgumentException
 import java.net.URI
 import java.net.URL
@@ -71,7 +70,7 @@ class HttpHelper {
          * Extension function which validates an incoming request.
          * @return an [HttpResponseStatus] containing the status code
          */
-        fun HttpRequest.validate(): HttpResponseStatus {
+        fun HttpRequest.validate(maxRequestSize: Long): HttpResponseStatus {
             try {
                 val uri = URI.create(this.uri()).normalize()
 
@@ -96,7 +95,7 @@ class HttpHelper {
                 return HttpResponseStatus.LENGTH_REQUIRED
             }
 
-            if (this.headers()[HttpHeaderNames.CONTENT_LENGTH].toLong() > MAX_CONTENT_LENGTH) {
+            if (this.headers()[HttpHeaderNames.CONTENT_LENGTH].toLong() > maxRequestSize) {
                 return HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE
             }
 

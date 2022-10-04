@@ -28,6 +28,9 @@ import java.net.InetSocketAddress
 import io.netty.handler.codec.http.HttpRequest as NettyHttpRequest
 
 class HttpServerChannelHandlerTest {
+    companion object {
+        private const val MAX_REQUEST_SIZE = 500_000_000L
+    }
 
     @Test
     fun `when request is invalid, a response with the right status code is returned and connection is closed eagerly`() {
@@ -36,7 +39,7 @@ class HttpServerChannelHandlerTest {
 
         val mockServerListener = mock<HttpServerListener>()
         val mockLogger = mock<Logger>()
-        val httpServerChannelHandler = HttpServerChannelHandler(mockServerListener, mockLogger)
+        val httpServerChannelHandler = HttpServerChannelHandler(mockServerListener, MAX_REQUEST_SIZE, mockLogger)
 
         val socketAddress = InetSocketAddress("www.alice.net", 91)
         val mockCtxChannel = mock<Channel> {
@@ -81,7 +84,7 @@ class HttpServerChannelHandlerTest {
     fun `when request is valid, data are sent to the http server listener for processing`() {
         val mockServerListener = mock<HttpServerListener>()
         val mockLogger = mock<Logger>()
-        val httpServerChannelHandler = HttpServerChannelHandler(mockServerListener, mockLogger)
+        val httpServerChannelHandler = HttpServerChannelHandler(mockServerListener, MAX_REQUEST_SIZE, mockLogger)
 
         val uri = "https://www.alice.net:8080/gateway/send"
         val payload = mock<ByteBuf> {
@@ -122,7 +125,7 @@ class HttpServerChannelHandlerTest {
         var waitOnClose = false
         val mockServerListener = mock<HttpServerListener>()
         val mockLogger = mock<Logger>()
-        val httpServerChannelHandler = HttpServerChannelHandler(mockServerListener, mockLogger)
+        val httpServerChannelHandler = HttpServerChannelHandler(mockServerListener, MAX_REQUEST_SIZE, mockLogger)
 
         val uri = "https://www.alice.net:8080/gateway/send"
         val payload = mock<ByteBuf> {

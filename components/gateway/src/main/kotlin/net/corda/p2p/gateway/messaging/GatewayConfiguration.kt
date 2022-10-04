@@ -17,6 +17,10 @@ data class GatewayConfiguration(
      */
     val sslConfig: SslConfiguration,
     /**
+     * Max request size acceptable by the gateway (in bytes).
+     */
+    val maxRequestSize: Long,
+    /**
      * Configuration properties used when initiating connections to other Gateways
      */
     val connectionConfig: ConnectionConfiguration = ConnectionConfiguration(),
@@ -67,6 +71,7 @@ internal fun Config.toGatewayConfiguration(): GatewayConfiguration {
         hostAddress = this.getString("hostAddress"),
         hostPort = this.getInt("hostPort"),
         sslConfig = this.getConfig("sslConfig").toSslConfiguration(),
+        maxRequestSize = this.getLong("maxRequestSize"),
         connectionConfig = connectionConfig
     )
 }

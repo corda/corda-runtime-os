@@ -105,7 +105,7 @@ class HttpServer(
             pipeline.addLast("sslHandler", createServerSslHandler(keyStore))
             pipeline.addLast("idleStateHandler", IdleStateHandler(0, 0, SERVER_IDLE_TIME_SECONDS))
             pipeline.addLast(HttpServerCodec())
-            pipeline.addLast(HttpServerChannelHandler(this@HttpServer, logger))
+            pipeline.addLast(HttpServerChannelHandler(this@HttpServer, configuration.maxRequestSize, logger))
         }
     }
 
