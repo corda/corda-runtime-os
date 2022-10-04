@@ -135,12 +135,6 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         val dbChangelogs = findDbChangeLogForCpi(em, cpi.metadata.cpiId).associateBy { it.id }
         val changeLogUpdates = cpkDbChangeLogEntities.associateBy { it.id }
 
-        // We first mark each existing changelog for this CPI as deleted.
-        dbChangelogs.forEach { (_, changelog) ->
-            changelog.isDeleted = true
-            em.merge(changelog)
-        }
-
         // Then, for the currently declared changelogs, we'll save the record and clear any isDeleted flags.
         // This all happens under one transaction so no one will see the isDeleted flags flicker.
         (dbChangelogs + changeLogUpdates)
@@ -156,16 +150,17 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
                     if (changeLogUpdates.containsKey(changelogId) || hasChanged) {
                         // Mark as not deleted if this is one of the new entries
                         changelog.isDeleted = false
+                    } else {
+                        // Otherwise we assume that it's out of date and should be marked as deleted
+                        changelog.isDeleted = true
                     }
                     em.merge(changelog)
                     if (hasChanged) {
-                        log.info("There was a difference")
                         // Simulate entityVersion increase
                         changelog.entityVersion += 1
                         // Return changelog
                         changelog
                     } else {
-                        log.info("They're the same")
                         // There's no new audit entry required as there hasn't been an update
                         null
                     }

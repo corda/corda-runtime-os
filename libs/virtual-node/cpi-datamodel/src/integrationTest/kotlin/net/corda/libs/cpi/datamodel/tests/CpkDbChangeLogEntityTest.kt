@@ -175,7 +175,7 @@ class CpkDbChangeLogEntityTest {
                 CpkDbChangeLogKey(cpk.metadata.id.cpkName, cpk.metadata.id.cpkVersion,
                     cpk.metadata.id.cpkSignerSummaryHash, "master")
             )
-            loadedDbLogEntity.content = "something else"
+            loadedDbLogEntity.isDeleted = true
             merge(loadedDbLogEntity)
             flush()
             val updatedDbLogEntity = find(
