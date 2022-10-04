@@ -1,7 +1,6 @@
 package net.corda.ledger.utxo.impl
 
 import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.ledger.utxo.CpkConstraintContext
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
@@ -14,7 +13,7 @@ class AutomaticPlaceholderCpkConstraintTests {
     @Test
     fun `AutomaticPlaceholderCpkConstraint isSatisfiedBy should throw the expected exception`() {
         val exception = assertThrows(java.lang.UnsupportedOperationException::class.java) {
-            AutomaticPlaceholderCpkConstraint.isSatisfiedBy(digestService, constraintContext)
+            CpkConstraint.Companion.AutomaticPlaceholderCpkConstraint.isSatisfiedBy(digestService, constraintContext)
         }
 
         assertEquals("Contracts cannot be satisfied by AutomaticPlaceholderCpkConstraint.", exception.message)

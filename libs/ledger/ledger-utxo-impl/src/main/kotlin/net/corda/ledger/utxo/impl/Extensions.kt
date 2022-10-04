@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.impl
 
+import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.ledger.utxo.*
 
 /**
@@ -66,9 +67,8 @@ fun ContractState.getContractClass(): Class<out Contract>? {
     val enclosingClass = javaClass.enclosingClass
 
     if (enclosingClass != null && Contract::class.java.isAssignableFrom(enclosingClass)) {
-        return enclosingClass as Class<out Contract>
+        return  uncheckedCast(enclosingClass)
     }
-
     return null
 }
 
