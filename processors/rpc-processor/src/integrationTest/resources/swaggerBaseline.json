@@ -3487,9 +3487,23 @@
         "type" : "object",
         "properties" : {
           "config" : {
-            "type" : "string",
+            "description" : "Can be any value - string, number, boolean, array or object.",
             "nullable" : false,
-            "example" : "string"
+            "example" : "{\"command\":\"echo\", \"data\":{\"value\": \"hello-world\"}}",
+            "anyOf" : [ {
+              "type" : "string"
+            }, {
+              "type" : "number"
+            }, {
+              "type" : "integer",
+              "format" : "int32"
+            }, {
+              "type" : "boolean"
+            }, {
+              "type" : "array"
+            }, {
+              "type" : "object"
+            } ]
           },
           "schemaVersion" : {
             "$ref" : "#/components/schemas/ConfigSchemaVersion"
