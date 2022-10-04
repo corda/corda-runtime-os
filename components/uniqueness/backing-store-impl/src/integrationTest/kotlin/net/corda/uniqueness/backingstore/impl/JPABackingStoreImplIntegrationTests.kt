@@ -373,7 +373,7 @@ class JPABackingStoreImplIntegrationTests {
             val queryName = "UniquenessTransactionDetailEntity.select"
             val resultClass = UniquenessTransactionDetailEntity::class.java
             // Actual execution of the query happens at invoking resultList of the query.
-            // Find a way to mock a TypedQuery while make the logic JPA implementation agnostic.
+            // Find a way to mock a TypedQuery while make the logic JPA implementation agnostic (e.g. Hibernate).
             Mockito.doThrow(QueryTimeoutException("Executing a query timed out"))
                 .whenever(spyEm).createNamedQuery(queryName, resultClass)
 
