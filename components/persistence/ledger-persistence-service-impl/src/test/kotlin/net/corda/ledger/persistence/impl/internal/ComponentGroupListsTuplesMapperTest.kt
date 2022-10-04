@@ -11,7 +11,7 @@ import org.mockito.kotlin.whenever
 import java.sql.Timestamp
 import javax.persistence.Tuple
 
-class ConsensualLedgerRepositoryTest {
+class ComponentGroupListsTuplesMapperTest {
     companion object {
         private const val id = "id1"
         private val privacySalt = ByteArray(32)
@@ -33,7 +33,7 @@ class ConsensualLedgerRepositoryTest {
             listOf(id, privacySalt, accountId, createdTs, groupIdx, leafIdx + 2, ByteArray(16), "hash")
         ).map { mockTuple(it) }
         val exception = assertThrows<IllegalStateException> {
-            ConsensualLedgerRepository(mock(), mock(), mock(), mock()).queryRowsToComponentGroupLists(rows)
+            rows.mapTuples(ComponentGroupListsTuplesMapper())
         }
         assertEquals("Missing data for transaction with ID: id1, groupIdx: 1, leafIdx: 1", exception.message)
     }
@@ -50,7 +50,7 @@ class ConsensualLedgerRepositoryTest {
             listOf(id, privacySalt, accountId, createdTs, groupIdx + 2, leafIdx + 2, "data22".toByteArray(), "hash22"),
         ).map { mockTuple(it) }
 
-        val componentGroupLists = ConsensualLedgerRepository(mock(), mock(), mock(), mock()).queryRowsToComponentGroupLists(rows)
+        val componentGroupLists = rows.mapTuples(ComponentGroupListsTuplesMapper())
 
         val expectedLists = listOf(
             listOf("data00", "data01").toBytes(),

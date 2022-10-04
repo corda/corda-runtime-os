@@ -5,7 +5,6 @@ import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPK_IDENTIFIERS_KEY
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl
-import net.corda.utilities.VisibleForTesting
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
@@ -21,7 +20,9 @@ import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.Tuple
 
-
+/**
+ * Reads and writes ledger transaction data to and from the virtual node vault database.
+ */
 class ConsensualLedgerRepository(
     private val merkleTreeProvider: MerkleTreeProvider,
     private val digestService: DigestService,
@@ -30,30 +31,10 @@ class ConsensualLedgerRepository(
 ) {
     companion object {
         private val logger = contextLogger()
+        private val componentGroupListsTuplesMapper = ComponentGroupListsTuplesMapper()
     }
 
-    fun persistTransaction(entityManager: EntityManager, transaction: ConsensualSignedTransactionImpl, account :String): EntityResponse {
-        val transactionId = transaction.id.toHexString()
-        val wireTransaction = transaction.wireTransaction
-        val now = Instant.now()
-        persistTransaction(entityManager, now, wireTransaction, account)
-        wireTransaction.componentGroupLists.mapIndexed { groupIndex, leaves ->
-            leaves.mapIndexed { leafIndex, bytes ->
-                persistComponentLeaf(entityManager, now, transactionId, groupIndex, leafIndex, bytes)
-            }
-        }
-        persistTransactionStatus(entityManager, now, transactionId, "Faked") // TODO where to get the status from
-        // TODO when and what do we write to the CPKs table?
-        persistCpk(entityManager, now, wireTransaction)
-        persistTransactionCpk(entityManager, transactionId)
-
-        transaction.signatures.forEachIndexed { index, digitalSignatureAndMetadata ->
-            persistSignature(entityManager, now, transactionId, index, digitalSignatureAndMetadata)
-        }
-
-        return EntityResponse(emptyList())
-    }
-
+    /** Reads [ConsensualSignedTransactionImpl] with given [id] from database. */
     fun findTransaction(entityManager: EntityManager, id: String): ConsensualSignedTransactionImpl? {
 
         val rows = entityManager.createNativeQuery(
@@ -73,7 +54,7 @@ class ConsensualLedgerRepository(
 
         val firstRowColumns = rows.first()
         val privacySalt = PrivacySaltImpl(firstRowColumns[1] as ByteArray)
-        val componentGroupLists = queryRowsToComponentGroupLists(rows)
+        val componentGroupLists = rows.mapTuples(componentGroupListsTuplesMapper)
         val wireTransaction = WireTransaction(merkleTreeProvider, digestService, jsonMarshallingService, privacySalt, componentGroupLists)
         return ConsensualSignedTransactionImpl(
             serializationService,
@@ -81,31 +62,7 @@ class ConsensualLedgerRepository(
             findSignatures(entityManager, id))
     }
 
-    @VisibleForTesting
-    internal fun queryRowsToComponentGroupLists(rows: List<Tuple>): List<List<ByteArray>> {
-        val componentGroupLists: MutableList<MutableList<ByteArray>> = mutableListOf()
-        var componentsList: MutableList<ByteArray> = mutableListOf()
-        var expectedGroupIdx = 0
-        rows.forEach { columns ->
-            val groupIdx = (columns[4] as Number).toInt()   // txc.group_idx
-            val leafIdx = (columns[5] as Number).toInt()    // txc.leaf_idx
-            val data = columns[6] as ByteArray              // txc.data
-            while (groupIdx > expectedGroupIdx) {
-                // add empty lists for skipped group indices
-                componentGroupLists.add(componentsList)
-                componentsList = mutableListOf()
-                expectedGroupIdx++
-            }
-            check(componentsList.size == leafIdx) {
-                val id = columns[0] as String   // tx.id
-                "Missing data for transaction with ID: $id, groupIdx: $groupIdx, leafIdx: ${componentsList.size}"
-            }
-            componentsList.add(data)
-        }
-        componentGroupLists.add(componentsList)
-        return componentGroupLists
-    }
-
+    /** Reads [DigitalSignatureAndMetadata] for signed transaction with given [transactionId] from database. */
     private fun findSignatures(
         entityManager: EntityManager,
         transactionId: String
@@ -123,19 +80,53 @@ class ConsensualLedgerRepository(
             .map { r -> serializationService.deserialize(r.get(0) as ByteArray) }
     }
 
-    private fun persistTransaction(entityManager: EntityManager, timestamp: Instant, tx: WireTransaction, account: String) {
+    /** Persists [signedTransaction] data to database. */
+    fun persistTransaction(
+        entityManager: EntityManager,
+        signedTransaction: ConsensualSignedTransactionImpl,
+        account :String
+    ): EntityResponse{
+        val transactionId = signedTransaction.id.toHexString()
+        val wireTransaction = signedTransaction.wireTransaction
+        val now = Instant.now()
+        persistTransaction(entityManager, now, wireTransaction, account)
+        wireTransaction.componentGroupLists.mapIndexed { groupIndex, leaves ->
+            leaves.mapIndexed { leafIndex, bytes ->
+                persistComponentLeaf(entityManager, now, transactionId, groupIndex, leafIndex, bytes)
+            }
+        }
+        persistTransactionStatus(entityManager, now, transactionId, "Faked") // TODO where to get the status from
+        // TODO when and what do we write to the CPKs table?
+        persistCpk(entityManager, now, wireTransaction)
+        persistTransactionCpk(entityManager, transactionId)
+
+        signedTransaction.signatures.forEachIndexed { index, digitalSignatureAndMetadata ->
+            persistSignature(entityManager, now, transactionId, index, digitalSignatureAndMetadata)
+        }
+
+        return EntityResponse(emptyList())
+    }
+
+    /** Persists [wireTransaction] data to database. */
+    private fun persistTransaction(
+        entityManager: EntityManager,
+        timestamp: Instant,
+        wireTransaction: WireTransaction,
+        account: String
+    ) {
         entityManager.createNativeQuery(
             """
                 INSERT INTO {h-schema}consensual_transaction(id, privacy_salt, account_id, created)
                 VALUES (:id, :privacySalt, :accountId, :createdAt)"""
         )
-            .setParameter("id", tx.id.toHexString())
-            .setParameter("privacySalt", tx.privacySalt.bytes)
+            .setParameter("id", wireTransaction.id.toHexString())
+            .setParameter("privacySalt", wireTransaction.privacySalt.bytes)
             .setParameter("accountId", account)
             .setParameter("createdAt", timestamp)
             .executeUpdate()
     }
 
+    /** Persists component's leaf [data] to database. */
     @Suppress("LongParameterList")
     private fun persistComponentLeaf(
         entityManager: EntityManager,
@@ -159,6 +150,7 @@ class ConsensualLedgerRepository(
             .executeUpdate()
     }
 
+    /** Persists transaction's [status] to database. */
     private fun persistTransactionStatus(
         entityManager: EntityManager,
         timestamp: Instant,
@@ -176,13 +168,14 @@ class ConsensualLedgerRepository(
             .executeUpdate()
     }
 
+    /** Persists CPK data to database. */
     private fun persistCpk(
         entityManager: EntityManager,
         timestamp: Instant,
-        tx: WireTransaction
+        wireTransaction: WireTransaction
     ) {
         // TODO get values from transaction metadata
-        val cpkIdentifiers = tx.metadata[CPK_IDENTIFIERS_KEY]
+        val cpkIdentifiers = wireTransaction.metadata[CPK_IDENTIFIERS_KEY]
         logger.info("cpkIdentifiers = [$cpkIdentifiers]")
         val fileHash = SecureHash.parse("SHA-256:1234567890123456")
         val name = "cpk-name"
@@ -203,6 +196,7 @@ class ConsensualLedgerRepository(
             .executeUpdate()
     }
 
+    /** Persists link between transaction with ID [transactionId] and it's CPK data to database. */
     private fun persistTransactionCpk(
         entityManager: EntityManager,
         transactionId: String
@@ -218,6 +212,7 @@ class ConsensualLedgerRepository(
             .executeUpdate()
     }
 
+    /** Persists transaction's [signature] to database. */
     private fun persistSignature(
         entityManager: EntityManager,
         timestamp: Instant,
