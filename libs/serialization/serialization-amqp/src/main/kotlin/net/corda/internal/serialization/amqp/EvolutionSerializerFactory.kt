@@ -151,7 +151,6 @@ class DefaultEvolutionSerializerFactory(
 
     private val LocalPropertyInformation.mustBeProvided: Boolean get() = when(this) {
         is LocalPropertyInformation.ConstructorPairedProperty -> isMandatory
-        is LocalPropertyInformation.PrivateConstructorPairedProperty -> isMandatory
         else -> false
     }
 

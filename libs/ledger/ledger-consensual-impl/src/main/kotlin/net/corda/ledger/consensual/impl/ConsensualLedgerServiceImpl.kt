@@ -6,7 +6,7 @@ import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -18,7 +18,7 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 @Suppress("LongParameterList")
 @Component(service = [ConsensualLedgerService::class, SingletonSerializeAsToken::class], scope = PROTOTYPE)
 class ConsensualLedgerServiceImpl @Activate constructor(
-    @Reference(service = MerkleTreeFactory::class) private val merkleTreeFactory: MerkleTreeFactory,
+    @Reference(service = MerkleTreeProvider::class) private val merkleTreeProvider: MerkleTreeProvider,
     @Reference(service = DigestService::class) private val digestService: DigestService,
     @Reference(service = SigningService::class) private val signingService: SigningService,
     @Reference(service = FlowFiberService::class) private val flowFiberService: FlowFiberService,
@@ -30,7 +30,7 @@ class ConsensualLedgerServiceImpl @Activate constructor(
         val secureRandom = schemeMetadata.secureRandom
         val serializer = flowFiberService.getExecutingFiber().getExecutionContext().sandboxGroupContext.amqpSerializer
         return ConsensualTransactionBuilderImpl(
-            merkleTreeFactory,
+            merkleTreeProvider,
             digestService,
             secureRandom,
             serializer,

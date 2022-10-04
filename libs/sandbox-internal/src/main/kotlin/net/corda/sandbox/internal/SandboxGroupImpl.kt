@@ -40,11 +40,12 @@ internal class SandboxGroupImpl(
     override fun loadClassFromPublicBundles(className: String): Class<*>? {
         val clazz = publicSandboxes
             .flatMap(Sandbox::publicBundles)
-            .mapNotNullTo(HashSet()) { sandbox ->
+            .filterNot(Bundle::isFragment)
+            .mapNotNullTo(LinkedHashSet()) { bundle ->
                 try {
-                    sandbox.loadClass(className)
+                    bundle.loadClass(className)
                 } catch (e: ClassNotFoundException) {
-                    logger.info("Could not load class $className from sandbox ${sandbox}: ${e.message}")
+                    logger.info("Could not load class $className from bundle $bundle: ${e.message}")
                     null
                 }
             }.singleOrNull()
@@ -53,7 +54,6 @@ internal class SandboxGroupImpl(
         }
         return clazz
     }
-
 
     override fun loadClassFromMainBundles(className: String): Class<*> {
         return cpkSandboxes.mapNotNullTo(HashSet()) { sandbox ->

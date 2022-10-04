@@ -21,7 +21,7 @@ import net.corda.httprpc.server.impl.context.ContextUtils.invokeHttpMethod
 import net.corda.utilities.classload.executeWithThreadContextClassLoader
 import net.corda.utilities.classload.OsgiClassLoader
 import net.corda.utilities.executeWithStdErrSuppressed
-import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace

@@ -3,10 +3,12 @@ package net.corda.membership.impl.registration.dynamic.handler.mgm
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.command.registration.RegistrationCommand
+import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.VerificationRequest
 import net.corda.data.membership.state.RegistrationState
+import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
@@ -19,10 +21,13 @@ import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 
 class VerifyMemberHandlerTest {
     private companion object {
@@ -34,6 +39,10 @@ class VerifyMemberHandlerTest {
     private val mgm = createTestHoldingIdentity("C=GB, L=London, O=MGM", GROUP_ID).toAvro()
     private val member = createTestHoldingIdentity("C=GB, L=London, O=Alice", GROUP_ID).toAvro()
     private val command = VerifyMember()
+    private val memberTypeChecker = mock<MemberTypeChecker> {
+        on { isMgm(mgm) } doReturn true
+        on { isMgm(member) } doReturn false
+    }
 
     private val state = RegistrationState(
         REGISTRATION_ID,
@@ -63,7 +72,7 @@ class VerifyMemberHandlerTest {
             )
         } doReturn verificationRequestRecord
     }
-    private val verifyMemberHandler = VerifyMemberHandler(mock(), mock(), membershipPersistenceClient, p2pRecordsFactory)
+    private val verifyMemberHandler = VerifyMemberHandler(mock(), mock(), membershipPersistenceClient, memberTypeChecker, p2pRecordsFactory)
 
     @Test
     fun `handler returns request message`() {
@@ -77,6 +86,40 @@ class VerifyMemberHandlerTest {
 
         assertThat(result.outputStates).hasSize(1)
             .contains(verificationRequestRecord)
+    }
+
+    @Test
+    fun `handler decline if the member is an MGM`() {
+        whenever(memberTypeChecker.isMgm(member)).doReturn(true)
+        val result = verifyMemberHandler.invoke(state, Record(TOPIC, member.toString(), RegistrationCommand(command)))
+
+        verify(membershipPersistenceClient, never()).setRegistrationRequestStatus(
+            any(),
+            any(),
+            any(),
+        )
+
+        assertThat(result.outputStates).hasSize(1)
+            .anyMatch {
+                ((it.value as? RegistrationCommand)?.command as? DeclineRegistration)?.reason?.isNotBlank() == true
+            }
+    }
+
+    @Test
+    fun `handler decline if the mgm is not an MGM`() {
+        whenever(memberTypeChecker.isMgm(mgm)).doReturn(false)
+        val result = verifyMemberHandler.invoke(state, Record(TOPIC, member.toString(), RegistrationCommand(command)))
+
+        verify(membershipPersistenceClient, never()).setRegistrationRequestStatus(
+            any(),
+            any(),
+            any(),
+        )
+
+        assertThat(result.outputStates).hasSize(1)
+            .anyMatch {
+                ((it.value as? RegistrationCommand)?.command as? DeclineRegistration)?.reason?.isNotBlank() == true
+            }
     }
 
     @Test
