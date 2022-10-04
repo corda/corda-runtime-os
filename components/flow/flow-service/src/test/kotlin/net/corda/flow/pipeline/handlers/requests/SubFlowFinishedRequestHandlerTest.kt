@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.handlers.requests
 
+import java.util.stream.Stream
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.checkpoint.FlowStackItem
@@ -26,7 +27,6 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.util.stream.Stream
 
 @Suppress("MaxLineLength")
 class SubFlowFinishedRequestHandlerTest {
@@ -224,8 +224,7 @@ class SubFlowFinishedRequestHandlerTest {
         )
 
         verify(testContext.flowCheckpoint, never()).putSessionState(sessionState1)
-        verify(testContext.flowCheckpoint).putSessionState(sessionState2)
-        verify(testContext.flowCheckpoint).putSessionState(sessionState3)
+        verify(testContext.flowCheckpoint).putSessionStates(listOf(sessionState2, sessionState3))
         verify(testContext.flowSessionManager).sendCloseMessages(
             eq(testContext.flowCheckpoint),
             eq(nonErroredSessions),
@@ -302,9 +301,7 @@ class SubFlowFinishedRequestHandlerTest {
             FlowIORequest.SubFlowFinished(createFlowStackItem(isInitiatingFlow).sessionIds)
         )
 
-        verify(testContext.flowCheckpoint).putSessionState(sessionState1)
-        verify(testContext.flowCheckpoint).putSessionState(sessionState2)
-        verify(testContext.flowCheckpoint).putSessionState(sessionState3)
+        verify(testContext.flowCheckpoint).putSessionStates(listOf(sessionState1, sessionState2, sessionState3))
         verify(testContext.flowSessionManager).sendCloseMessages(eq(testContext.flowCheckpoint), eq(SESSIONS), any())
         verify(testContext.flowRecordFactory).createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())
         assertThat(outputContext.outputRecords).containsOnly(record)
