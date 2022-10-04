@@ -9,6 +9,7 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHash
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.data.membership.command.synchronisation.SynchronisationMetaData
@@ -36,6 +37,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
+import net.corda.membership.p2p.helpers.Verifier
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.Publisher
@@ -47,6 +49,7 @@ import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.MembershipConfig
 import net.corda.test.util.time.TestClock
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.minutes
 import net.corda.v5.crypto.merkle.MerkleTree
@@ -164,9 +167,13 @@ class MemberSynchronisationServiceImplTest {
     private val mgmContext: ByteBuffer = mock {
         on { array() } doReturn MGM_CONTEXT_BYTES
     }
+    private val memberSignature = mock<CryptoSignatureWithKey>()
+    private val mgmSignature = mock<CryptoSignatureWithKey>()
     private val signedMemberInfo: SignedMemberInfo = mock {
         on { memberContext } doReturn memberContext
         on { mgmContext } doReturn mgmContext
+        on { memberSignature } doReturn memberSignature
+        on { mgmSignature } doReturn mgmSignature
     }
     private val hash = SecureHash("algo", ByteBuffer.wrap(byteArrayOf(1, 2, 3)))
     private val signedMemberships: SignedMemberships = mock {
@@ -201,6 +208,7 @@ class MemberSynchronisationServiceImplTest {
     }
     private val merkleTreeGenerator = mock<MerkleTreeGenerator> {
         on { generateTree(any()) } doReturn tree
+        on { createTree(any()) } doReturn tree
     }
     private val memberInfo = mock<MemberInfo>()
     private val groupReader = mock<MembershipGroupReader> {
@@ -214,6 +222,7 @@ class MemberSynchronisationServiceImplTest {
         on { readAllLocalMembers() } doReturn emptyList()
     }
     private val clock = TestClock(Instant.ofEpochSecond(100))
+    private val verifier = mock<Verifier>()
     private val synchronisationService = MemberSynchronisationServiceImpl(
         publisherFactory,
         configurationReadService,
@@ -221,6 +230,7 @@ class MemberSynchronisationServiceImplTest {
         serializationFactory,
         memberInfoFactory,
         groupReaderProvider,
+        verifier,
         locallyHostedMembersReader,
         p2pRecordsFactory,
         merkleTreeGenerator,
@@ -299,6 +309,39 @@ class MemberSynchronisationServiceImplTest {
             it.assertThat(name).isEqualTo(participantName.toString())
             it.assertThat(value?.mgmContext?.items).isEmpty()
         }
+    }
+
+    @Test
+    fun `failed member signature verification will not persist the member`() {
+        whenever(verifier.verify(eq(memberSignature), any())).thenThrow(CordaRuntimeException("Nop"))
+        postConfigChangedEvent()
+        synchronisationService.start()
+
+        synchronisationService.processMembershipUpdates(updates)
+
+        verify(mockPublisher, never()).publish(any())
+    }
+
+    @Test
+    fun `failed MGM signature verification will not persist the member`() {
+        whenever(verifier.verify(eq(mgmSignature), any())).thenThrow(CordaRuntimeException("Nop"))
+        postConfigChangedEvent()
+        synchronisationService.start()
+
+        synchronisationService.processMembershipUpdates(updates)
+
+        verify(mockPublisher, never()).publish(any())
+    }
+
+    @Test
+    fun `verification is called with the correct data on receiving membership package from MGM`() {
+        postConfigChangedEvent()
+        synchronisationService.start()
+
+        synchronisationService.processMembershipUpdates(updates)
+
+        verify(verifier).verify(memberSignature, MEMBER_CONTEXT_BYTES)
+        verify(verifier).verify(mgmSignature, byteArrayOf(1, 2, 3))
     }
 
     @Test
