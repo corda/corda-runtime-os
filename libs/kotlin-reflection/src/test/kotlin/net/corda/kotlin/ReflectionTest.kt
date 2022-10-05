@@ -2,6 +2,7 @@ package net.corda.kotlin
 
 import net.corda.kotlin.reflect.kotlinClass
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatIterable
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Timeout
@@ -97,7 +98,7 @@ class ReflectionTest {
     fun testDeclaredMemberProperties(klazz: KClass<*>) {
         val kotlinProperties = klazz.declaredMemberProperties
         val cordaProperties = klazz.kotlinClass.declaredMemberProperties
-        assertThat(cordaProperties)
+        assertThatIterable(cordaProperties)
             .usingElementComparator(::compareKotlinProperties)
             .containsExactlyInAnyOrderElementsOf(kotlinProperties)
             .isNotEmpty
@@ -109,7 +110,7 @@ class ReflectionTest {
     fun testKotlinDeclaredMemberExtensionProperties(klazz: KClass<*>) {
         val kotlinProperties = klazz.declaredMemberExtensionProperties
         val cordaProperties = klazz.kotlinClass.declaredMemberExtensionProperties
-        assertThat(cordaProperties)
+        assertThatIterable(cordaProperties)
             .usingElementComparator(::compareKotlinProperties)
             .containsExactlyInAnyOrderElementsOf(kotlinProperties)
             .isNotEmpty
@@ -129,7 +130,7 @@ class ReflectionTest {
     fun testDeclaredMemberFunctions(klazz: KClass<*>) {
         val kotlinFunctions = klazz.declaredMemberFunctions
         val cordaFunctions = klazz.kotlinClass.declaredMemberFunctions
-        assertThat(cordaFunctions)
+        assertThatIterable(cordaFunctions)
             .usingElementComparator(::compareKotlinFunctions)
             .containsExactlyInAnyOrderElementsOf(kotlinFunctions)
             .isNotEmpty
@@ -141,7 +142,7 @@ class ReflectionTest {
     fun testKotlinDeclaredMemberExtensionFunctions(klazz: KClass<*>) {
         val kotlinFunctions = klazz.declaredMemberExtensionFunctions
         val cordaFunctions = klazz.kotlinClass.declaredMemberExtensionFunctions
-        assertThat(cordaFunctions)
+        assertThatIterable(cordaFunctions)
             .usingElementComparator(::compareKotlinFunctions)
             .containsExactlyInAnyOrderElementsOf(kotlinFunctions)
             .isNotEmpty
@@ -161,7 +162,7 @@ class ReflectionTest {
     fun testJavaStaticProperties(klazz: KClass<*>) {
         val kotlinProperties = klazz.staticProperties
         val cordaProperties = klazz.kotlinClass.staticProperties
-        assertThat(cordaProperties)
+        assertThatIterable(cordaProperties)
             .usingElementComparator(::compareKotlinProperties)
             .containsExactlyInAnyOrderElementsOf(kotlinProperties)
             .isNotEmpty
@@ -173,7 +174,7 @@ class ReflectionTest {
     fun testJavaStaticFunctions(klazz: KClass<*>) {
         val kotlinFunctions = klazz.staticFunctions
         val cordaFunctions = klazz.kotlinClass.staticFunctions
-        assertThat(cordaFunctions)
+        assertThatIterable(cordaFunctions)
             .usingElementComparator(::compareKotlinFunctions)
             .containsExactlyInAnyOrderElementsOf(kotlinFunctions)
             .isNotEmpty
@@ -185,7 +186,7 @@ class ReflectionTest {
     fun testDeclaredMembers(klazz: KClass<*>) {
         val kotlinMembers = klazz.declaredMembers
         val cordaMembers = klazz.kotlinClass.declaredMembers
-        assertThat(cordaMembers)
+        assertThatIterable(cordaMembers)
             .usingElementComparator(::compareKotlinCallables)
             .containsExactlyInAnyOrderElementsOf(kotlinMembers)
             .isNotEmpty
@@ -197,7 +198,7 @@ class ReflectionTest {
     fun testMemberProperties(klazz: KClass<*>) {
         val kotlinProperties = klazz.memberProperties
         val cordaProperties = klazz.kotlinClass.memberProperties
-        assertThat(cordaProperties)
+        assertThatIterable(cordaProperties)
             .usingElementComparator(::compareKotlinProperties)
             .containsExactlyInAnyOrderElementsOf(kotlinProperties)
             .isNotEmpty
@@ -209,7 +210,7 @@ class ReflectionTest {
     fun testMemberFunctions(klazz: KClass<*>) {
         val kotlinFunctions = klazz.memberFunctions
         val cordaFunctions = klazz.kotlinClass.memberFunctions
-        assertThat(cordaFunctions)
+        assertThatIterable(cordaFunctions)
             .usingElementComparator(::compareKotlinFunctions)
             .containsExactlyInAnyOrderElementsOf(kotlinFunctions)
             .isNotEmpty
@@ -221,7 +222,7 @@ class ReflectionTest {
     fun testKotlinMemberExtensionProperties(klazz: KClass<*>) {
         val kotlinProperties = klazz.memberExtensionProperties
         val cordaProperties = klazz.kotlinClass.memberExtensionProperties
-        assertThat(cordaProperties)
+        assertThatIterable(cordaProperties)
             .usingElementComparator(::compareKotlinProperties)
             .containsExactlyInAnyOrderElementsOf(kotlinProperties)
             .isNotEmpty
@@ -233,7 +234,7 @@ class ReflectionTest {
     fun testKotlinMemberExtensionFunctions(klazz: KClass<*>) {
         val kotlinFunctions = klazz.memberExtensionFunctions
         val cordaFunctions = klazz.kotlinClass.memberExtensionFunctions
-        assertThat(cordaFunctions)
+        assertThatIterable(cordaFunctions)
             .usingElementComparator(::compareKotlinFunctions)
             .containsExactlyInAnyOrderElementsOf(kotlinFunctions)
             .isNotEmpty
@@ -245,7 +246,7 @@ class ReflectionTest {
     fun testJavaMemberExtensionProperties(klazz: KClass<*>) {
         val kotlinProperties = klazz.memberExtensionProperties
         val cordaProperties = klazz.kotlinClass.memberExtensionProperties
-        assertThat(cordaProperties)
+        assertThatIterable(cordaProperties)
             .usingElementComparator(::compareKotlinProperties)
             .containsExactlyInAnyOrderElementsOf(kotlinProperties)
             .isNotEmpty
@@ -257,7 +258,7 @@ class ReflectionTest {
     fun testJavaMemberExtensionFunctions(klazz: KClass<*>) {
         val kotlinFunctions = klazz.memberExtensionFunctions
         val cordaFunctions = klazz.kotlinClass.memberExtensionFunctions
-        assertThat(cordaFunctions)
+        assertThatIterable(cordaFunctions)
             .usingElementComparator(::compareKotlinFunctions)
             .containsExactlyInAnyOrderElementsOf(kotlinFunctions)
             .isNotEmpty
@@ -269,7 +270,7 @@ class ReflectionTest {
     fun testMembers(klazz: KClass<*>) {
         val kotlinMembers = klazz.members
         val cordaMembers = klazz.kotlinClass.members
-        assertThat(cordaMembers)
+        assertThatIterable(cordaMembers)
             .usingElementComparator(::compareKotlinCallables)
             .containsExactlyInAnyOrderElementsOf(kotlinMembers)
             .isNotEmpty
@@ -281,7 +282,7 @@ class ReflectionTest {
     fun testFunctions(klazz: KClass<*>) {
         val kotlinFunctions = klazz.functions
         val cordaFunctions = klazz.kotlinClass.functions
-        assertThat(cordaFunctions)
+        assertThatIterable(cordaFunctions)
             .usingElementComparator(::compareKotlinFunctions)
             .containsExactlyInAnyOrderElementsOf(kotlinFunctions)
             .isNotEmpty

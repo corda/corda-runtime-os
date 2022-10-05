@@ -1,7 +1,7 @@
 package net.corda.kotlin
 
 import net.corda.kotlin.reflect.kotlinClass
-import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatIterable
 import org.junit.jupiter.api.Assumptions.assumeTrue
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Timeout
@@ -42,7 +42,7 @@ class SplitApiTest {
     fun testDeclaredMemberProperties(klazz: KClass<*>) {
         val kotlinProperties = klazz.declaredMemberProperties
         val cordaProperties = klazz.kotlinClass.declaredMemberProperties
-        assertThat(cordaProperties)
+        assertThatIterable(cordaProperties)
             .usingElementComparator(::compareKotlinProperties)
             .containsExactlyInAnyOrderElementsOf(kotlinProperties)
             .hasSameSizeAs(kotlinProperties)
@@ -54,7 +54,7 @@ class SplitApiTest {
     fun testDeclaredMemberFunctions(klazz: KClass<*>) {
         val kotlinFunctions = klazz.declaredMemberFunctions
         val cordaFunctions = klazz.kotlinClass.declaredMemberFunctions
-        assertThat(cordaFunctions)
+        assertThatIterable(cordaFunctions)
             .usingElementComparator(::compareKotlinFunctions)
             .containsExactlyInAnyOrderElementsOf(kotlinFunctions)
             .hasSameSizeAs(kotlinFunctions)
@@ -66,7 +66,7 @@ class SplitApiTest {
     fun testMemberProperties(klazz: KClass<*>) {
         val kotlinProperties = klazz.memberProperties
         val cordaProperties = klazz.kotlinClass.memberProperties
-        assertThat(cordaProperties)
+        assertThatIterable(cordaProperties)
             .usingElementComparator(::compareKotlinProperties)
             .containsExactlyInAnyOrderElementsOf(kotlinProperties)
             .hasSameSizeAs(kotlinProperties)
@@ -80,7 +80,7 @@ class SplitApiTest {
             "Kotlin Reflection includes spurious member function JavaSplitChild.getThirdApi()")
         val kotlinFunctions = klazz.memberFunctions
         val cordaFunctions = klazz.kotlinClass.memberFunctions
-        assertThat(cordaFunctions)
+        assertThatIterable(cordaFunctions)
             .usingElementComparator(::compareKotlinFunctions)
             .containsExactlyInAnyOrderElementsOf(kotlinFunctions)
             .isNotEmpty
