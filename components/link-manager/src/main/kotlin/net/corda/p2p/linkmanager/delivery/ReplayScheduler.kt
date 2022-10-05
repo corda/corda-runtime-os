@@ -17,7 +17,7 @@ import net.corda.lifecycle.domino.logic.util.ResourcesHolder
 import net.corda.p2p.linkmanager.sessions.SessionManager
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.time.Clock
-import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import java.time.Duration
 import java.util.concurrent.*

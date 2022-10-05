@@ -6,6 +6,7 @@ import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.layeredpropertymap.toAvro
+import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
@@ -42,6 +43,10 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.io.File
 import java.nio.ByteBuffer
@@ -62,9 +67,17 @@ class MemberInfoTest {
 
         private val clock = TestClock(Instant.ofEpochSecond(100))
         private val modifiedTime = clock.instant()
+        private val endpointInfoFactory: EndpointInfoFactory = mock {
+            on { create(any(), any()) } doAnswer { invocation ->
+                mock {
+                    on { this.url } doReturn invocation.getArgument(0)
+                    on { this.protocolVersion } doReturn invocation.getArgument(1)
+                }
+            }
+        }
         private val endpoints = listOf(
-            EndpointInfoImpl("https://localhost:10000"),
-            EndpointInfoImpl("https://google.com", 10)
+            endpointInfoFactory.create("https://localhost:10000"),
+            endpointInfoFactory.create("https://google.com", 10)
         )
         private val ledgerKeys = listOf(key, key)
         private val testObjects = listOf(

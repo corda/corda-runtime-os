@@ -13,7 +13,7 @@ public class DummyOptional<T> {
         return item != null;
     }
 
-    public T get() {
+    public T getItem() {
         return item;
     }
 

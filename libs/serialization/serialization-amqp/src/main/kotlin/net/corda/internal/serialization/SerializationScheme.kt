@@ -7,7 +7,7 @@ import net.corda.serialization.SerializationContext
 import net.corda.serialization.SerializationEncoding
 import net.corda.serialization.SerializationFactory
 import net.corda.serialization.SerializationMagic
-import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.types.ByteSequence
 import net.corda.v5.serialization.SerializationCustomSerializer
 import net.corda.v5.serialization.SerializedBytes

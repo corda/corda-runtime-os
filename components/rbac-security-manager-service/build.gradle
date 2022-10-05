@@ -14,6 +14,7 @@ dependencies {
     implementation "net.corda:corda-base"
     implementation project(':components:permissions:permission-management-service')
     implementation project(':libs:http-rpc:rbac-security-manager')
+    implementation project(":libs:utilities")
 
     api project(":libs:lifecycle:lifecycle")
     api project(':libs:http-rpc:http-rpc-security-read')

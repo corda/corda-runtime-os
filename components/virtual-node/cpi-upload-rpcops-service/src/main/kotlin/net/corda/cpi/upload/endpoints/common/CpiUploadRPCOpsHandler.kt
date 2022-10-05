@@ -12,7 +12,7 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.StopEvent
-import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 
 /**

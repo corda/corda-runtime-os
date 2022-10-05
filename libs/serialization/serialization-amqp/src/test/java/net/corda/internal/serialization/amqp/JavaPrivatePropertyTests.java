@@ -20,6 +20,10 @@ public class JavaPrivatePropertyTests {
         private String a;
 
         C(String a) { this.a = a; }
+
+        public String getA() {
+            return a;
+        }
     }
 
     @CordaSerializable

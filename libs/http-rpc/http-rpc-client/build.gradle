@@ -20,6 +20,7 @@ dependencies {
     implementation project(":libs:http-rpc:http-rpc-common")
     implementation project(":libs:http-rpc:http-rpc-tools")
     implementation project(":libs:http-rpc:json-serialization")
+    implementation project(":libs:utilities")
 
     implementation "com.konghq:unirest-java:$unirestVersion"
     implementation "com.konghq:unirest-objectmapper-jackson:$unirestVersion"

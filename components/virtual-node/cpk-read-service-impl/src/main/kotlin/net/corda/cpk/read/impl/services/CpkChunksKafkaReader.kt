@@ -9,7 +9,7 @@ import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.CpkReader
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.records.Record
-import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
 import java.nio.file.Files

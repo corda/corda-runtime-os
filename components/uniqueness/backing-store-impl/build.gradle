@@ -23,6 +23,7 @@ dependencies {
     implementation project(':libs:db:db-admin-impl')
     implementation project(":libs:uniqueness:jpa-backing-store-datamodel")
     implementation project(":libs:uniqueness:common")
+    implementation project(":libs:utilities")
 
     // For JSON serialization to DB
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"

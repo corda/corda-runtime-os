@@ -5,7 +5,7 @@ import net.corda.httprpc.client.config.HttpRpcClientConfig
 import net.corda.httprpc.client.connect.HttpRpcClientProxyHandler
 import net.corda.httprpc.client.connect.HttpRpcConnectionListenerDistributor
 import net.corda.httprpc.client.connect.remote.RemoteUnirestClient
-import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace

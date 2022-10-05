@@ -44,6 +44,7 @@ class UserAdminSubcommand : HttpRpcCommand(), Callable<Int> {
 
         // Permission manipulation permissions ;-)
         "CreatePermission" to "POST:/api/v1/permission",
+        "QueryPermissions" to "GET:/api/v1/permission",
         "GetPermission" to "GET:/api/v1/permission/.*",
 
         // Role manipulation permissions

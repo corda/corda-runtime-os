@@ -7,6 +7,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.command.synchronisation.member.ProcessMembershipUpdates
 import net.corda.data.membership.p2p.DistributionMetaData
@@ -30,6 +31,7 @@ import net.corda.membership.lib.toSortedMap
 import net.corda.membership.lib.toWire
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
+import net.corda.membership.p2p.helpers.Verifier
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.membership.synchronisation.MemberSynchronisationService
@@ -48,6 +50,8 @@ import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -69,6 +73,7 @@ class MemberSynchronisationServiceImpl internal constructor(
     private val serializationFactory: CordaAvroSerializationFactory,
     private val memberInfoFactory: MemberInfoFactory,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    private val verifier: Verifier,
     private val membersReader: LocallyHostedMembersReader,
     private val p2pRecordsFactory: P2pRecordsFactory,
     private val merkleTreeGenerator: MerkleTreeGenerator,
@@ -95,6 +100,10 @@ class MemberSynchronisationServiceImpl internal constructor(
         merkleTreeProvider: MerkleTreeProvider,
         @Reference(service = VirtualNodeInfoReadService::class)
         virtualNodeInfoReadService: VirtualNodeInfoReadService,
+        @Reference(service = SignatureVerificationService::class)
+        signatureVerificationService: SignatureVerificationService,
+        @Reference(service = KeyEncodingService::class)
+        keyEncodingService: KeyEncodingService,
     ) : this(
         publisherFactory,
         configurationReadService,
@@ -102,8 +111,13 @@ class MemberSynchronisationServiceImpl internal constructor(
         serializationFactory,
         memberInfoFactory,
         membershipGroupReaderProvider,
+        Verifier(
+            signatureVerificationService,
+            keyEncodingService,
+        ),
         LocallyHostedMembersReader(
-            virtualNodeInfoReadService, membershipGroupReaderProvider
+            virtualNodeInfoReadService,
+            membershipGroupReaderProvider,
         ),
         P2pRecordsFactory(
             cordaAvroSerializationFactory,
@@ -246,6 +260,15 @@ class MemberSynchronisationServiceImpl internal constructor(
             try {
                 cancelCurrentRequestAndScheduleNewOne(viewOwningMember, mgm)
                 val updateMembersInfo = updates.membershipPackage.memberships.memberships.map { update ->
+                    verifier.verify(
+                        update.memberSignature,
+                        update.memberContext.array(),
+                    )
+                    verifyMgmSignature(
+                        update.mgmSignature,
+                        update.memberContext.array(),
+                        update.mgmContext.array(),
+                    )
                     val memberContext = deserializer.deserialize(update.memberContext.array())
                         ?: throw CordaRuntimeException("Invalid member context")
                     val mgmContext = deserializer.deserialize(update.mgmContext.array())
@@ -307,6 +330,15 @@ class MemberSynchronisationServiceImpl internal constructor(
         override fun close() {
             publisher.close()
         }
+    }
+
+    private fun verifyMgmSignature(
+        mgmSignature: CryptoSignatureWithKey,
+        vararg leaves: ByteArray,
+    ) {
+        val data = merkleTreeGenerator.createTree(leaves.toList())
+            .root.bytes
+        verifier.verify(mgmSignature, data)
     }
 
     private fun createSynchronisationRequestMessage(
