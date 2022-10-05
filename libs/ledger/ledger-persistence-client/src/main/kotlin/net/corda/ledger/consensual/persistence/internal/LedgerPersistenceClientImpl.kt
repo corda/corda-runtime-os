@@ -1,9 +1,8 @@
 package net.corda.ledger.consensual.persistence.internal
 
-import java.nio.ByteBuffer
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.ledger.common.impl.transaction.WireTransaction
-import net.corda.ledger.consensual.persistence.LedgerPersistenceService
+import net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl
+import net.corda.ledger.consensual.persistence.LedgerPersistenceClient
 import net.corda.ledger.consensual.persistence.external.events.FindTransactionExternalEventFactory
 import net.corda.ledger.consensual.persistence.external.events.FindTransactionParameters
 import net.corda.ledger.consensual.persistence.external.events.PersistTransactionExternalEventFactory
@@ -16,16 +15,17 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope
+import java.nio.ByteBuffer
 
-@Component(service = [LedgerPersistenceService::class, SingletonSerializeAsToken::class], scope = ServiceScope.PROTOTYPE)
-class LedgerPersistenceServiceImpl @Activate constructor(
+@Component(service = [LedgerPersistenceClient::class, SingletonSerializeAsToken::class], scope = ServiceScope.PROTOTYPE)
+class LedgerPersistenceClientImpl @Activate constructor(
     @Reference(service = ExternalEventExecutor::class)
     private val externalEventExecutor: ExternalEventExecutor,
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService
-) : LedgerPersistenceService, SingletonSerializeAsToken {
+) : LedgerPersistenceClient, SingletonSerializeAsToken {
 
-    override fun find(id: SecureHash): WireTransaction? {
+    override fun find(id: SecureHash): ConsensualSignedTransactionImpl? {
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
                 FindTransactionExternalEventFactory::class.java,
@@ -34,7 +34,7 @@ class LedgerPersistenceServiceImpl @Activate constructor(
         }.firstOrNull()?.let { serializationService.deserialize(it.array()) }
     }
 
-    override fun persist(transaction: WireTransaction) {
+    override fun persist(transaction: ConsensualSignedTransactionImpl) {
         wrapWithPersistenceException {
             externalEventExecutor.execute(
                 PersistTransactionExternalEventFactory::class.java,
