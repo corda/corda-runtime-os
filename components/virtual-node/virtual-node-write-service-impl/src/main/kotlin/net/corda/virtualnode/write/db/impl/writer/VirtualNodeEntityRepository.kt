@@ -205,15 +205,17 @@ internal class VirtualNodeEntityRepository(private val entityManagerFactory: Ent
         }
     }
 
-    internal fun setVirtualNodeState(entityManager: EntityManager, holdingIdentityShortHash: String, newState: String): VirtualNodeEntity {
-        entityManager.transaction {
-            // Lookup virtual node and grab the latest one based on the cpi Version.
-            val latestVirtualNodeInstance = it.findVirtualNode(holdingIdentityShortHash)
-                ?: throw VirtualNodeNotFoundException(holdingIdentityShortHash)
-            val updatedVirtualNodeInstance = latestVirtualNodeInstance.apply {
-                update(newState)
+    internal fun setVirtualNodeState(holdingIdentityShortHash: String, newState: String): VirtualNodeEntity {
+        return entityManagerFactory.use { em ->
+            em.transaction {
+                // Lookup virtual node and grab the latest one based on the cpi Version.
+                val latestVirtualNodeInstance = it.findVirtualNode(holdingIdentityShortHash)
+                    ?: throw VirtualNodeNotFoundException(holdingIdentityShortHash)
+                val updatedVirtualNodeInstance = latestVirtualNodeInstance.apply {
+                    update(newState)
+                }
+                it.merge(updatedVirtualNodeInstance)
             }
-            return it.merge(updatedVirtualNodeInstance)
         }
     }
 
