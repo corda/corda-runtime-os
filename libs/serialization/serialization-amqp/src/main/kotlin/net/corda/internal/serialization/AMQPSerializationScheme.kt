@@ -43,7 +43,7 @@ import net.corda.internal.serialization.amqp.custom.ZonedDateTimeSerializer
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
 import net.corda.utilities.toSynchronised
-import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.types.ByteSequence
 import net.corda.v5.serialization.SerializationCustomSerializer
 import net.corda.v5.serialization.SerializedBytes

@@ -1,6 +1,6 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.utilities.VisibleForTesting
 import org.slf4j.Logger
 import java.io.NotSerializableException
 import java.lang.reflect.Type

@@ -5,19 +5,19 @@ import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPK_IDENTIFIERS_KEY
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.DigestService
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import java.security.MessageDigest
 import java.time.Instant
 import javax.persistence.EntityManager
 
 class ConsensualLedgerRepository(
-    private val merkleTreeFactory: MerkleTreeFactory,
+    private val merkleTreeProvider: MerkleTreeProvider,
     private val digestService: DigestService,
     private val jsonMarshallingService: JsonMarshallingService
 ) {
@@ -63,7 +63,7 @@ class ConsensualLedgerRepository(
         val firstRowColumns = rows.first() as Array<*>
         val privacySalt = PrivacySaltImpl(firstRowColumns[1] as ByteArray)
         val componentGroupLists = queryRowsToComponentGroupLists(rows)
-        return WireTransaction(merkleTreeFactory, digestService, jsonMarshallingService, privacySalt, componentGroupLists)
+        return WireTransaction(merkleTreeProvider, digestService, jsonMarshallingService, privacySalt, componentGroupLists)
     }
 
     @VisibleForTesting

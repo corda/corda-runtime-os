@@ -12,6 +12,7 @@ import net.corda.libs.permissions.manager.impl.converter.convertToResponseDto
 import net.corda.libs.permissions.manager.impl.converter.toAvroType
 import net.corda.libs.permissions.manager.request.CreatePermissionRequestDto
 import net.corda.libs.permissions.manager.request.GetPermissionRequestDto
+import net.corda.libs.permissions.manager.request.QueryPermissionsRequestDto
 import net.corda.libs.permissions.manager.response.PermissionResponseDto
 import net.corda.messaging.api.publisher.RPCSender
 import java.util.concurrent.atomic.AtomicReference
@@ -50,5 +51,18 @@ class PermissionEntityManagerImpl(
         val cachedPermission: Permission =
             permissionManagementCache.getPermission(permissionRequestDto.permissionId) ?: return null
         return cachedPermission.convertToResponseDto()
+    }
+
+    override fun queryPermissions(permissionsQuery: QueryPermissionsRequestDto): List<PermissionResponseDto> {
+        val permissionManagementCache = checkNotNull(permissionManagementCacheRef.get()) {
+            "Permission management cache is null."
+        }
+
+        return permissionManagementCache.permissions.values.filter {
+            permissionsQuery.permissionType.toAvroType() == it.permissionType &&
+            permissionsQuery.groupVisibility == it.groupVisibility &&
+            permissionsQuery.virtualNode == it.virtualNode &&
+            permissionsQuery.permissionStringPrefix?.let { psp -> it.permissionString.startsWith(psp) } ?: true
+        }.take(permissionsQuery.limit).map { it.convertToResponseDto() }.toList()
     }
 }

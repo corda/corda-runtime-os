@@ -1,8 +1,8 @@
 package net.corda.uniqueness.datamodel.impl
 
-import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorGeneral
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorInputStateConflict
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorInputStateUnknown
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorMalformedRequest
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateConflict
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateUnknown
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorTimeWindowOutOfBounds
@@ -32,7 +32,6 @@ data class UniquenessCheckErrorTimeWindowOutOfBoundsImpl(
     override val timeWindowUpperBound: Instant
 ) : UniquenessCheckErrorTimeWindowOutOfBounds
 
-data class UniquenessCheckErrorGeneralImpl(
+data class UniquenessCheckErrorMalformedRequestImpl(
     override val errorText: String
-) : UniquenessCheckErrorGeneral
-
+) : UniquenessCheckErrorMalformedRequest

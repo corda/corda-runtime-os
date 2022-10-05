@@ -5,6 +5,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.event.MembershipEvent
@@ -214,6 +215,7 @@ class MGMRegistrationService @Activate constructor(
     }
 
     private inner class ActiveImpl : InnerRegistrationService {
+        @Suppress("LongMethod")
         override fun register(
             registrationId: UUID,
             member: HoldingIdentity,
@@ -304,8 +306,11 @@ class MGMRegistrationService @Activate constructor(
                         registrationId = registrationId.toString(),
                         requester = member,
                         memberContext = ByteBuffer.wrap(serializedMemberContext),
-                        publicKey = ByteBuffer.wrap(byteArrayOf()),
-                        signature = ByteBuffer.wrap(byteArrayOf()),
+                        signature = CryptoSignatureWithKey(
+                            ByteBuffer.wrap(byteArrayOf()),
+                            ByteBuffer.wrap(byteArrayOf()),
+                            KeyValuePairList(emptyList())
+                        )
                     )
                 )
                 if (registrationRequestPersistenceResult is MembershipPersistenceResult.Failure) {

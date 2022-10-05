@@ -8,14 +8,14 @@ import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 @Component(service = [InternalCustomSerializer::class])
 class WireTransactionSerializer @Activate constructor(
-    @Reference(service = MerkleTreeFactory::class) private val merkleTreeFactory: MerkleTreeFactory,
+    @Reference(service = MerkleTreeProvider::class) private val merkleTreeProvider: MerkleTreeProvider,
     @Reference(service = DigestService::class) private val digestService: DigestService,
     @Reference(service = JsonMarshallingService::class) private val jsonMarshallingService: JsonMarshallingService
 ) : BaseProxySerializer<WireTransaction, WireTransactionContainer>() {
@@ -30,7 +30,7 @@ class WireTransactionSerializer @Activate constructor(
     override fun fromProxy(proxy: WireTransactionContainer): WireTransaction {
         if (proxy.version == WireTransactionVersion.VERSION_1) {
             return WireTransaction(
-                merkleTreeFactory,
+                merkleTreeProvider,
                 digestService,
                 jsonMarshallingService,
                 proxy.privacySalt,

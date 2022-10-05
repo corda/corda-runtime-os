@@ -1,6 +1,7 @@
 package net.corda.membership.p2p.helpers
 
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.membership.p2p.helpers.Verifier.Companion.SIGNATURE_SPEC
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.GOST3410_GOST3411_TEMPLATE
@@ -45,5 +46,6 @@ class Signer(
             publicKey = publicKey,
             data = data,
             signatureSpec = spec,
+            context = mapOf(SIGNATURE_SPEC to spec.signatureName),
         )
 }

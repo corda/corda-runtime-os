@@ -3,6 +3,7 @@ package net.corda.applications.workers.smoketest
 import com.fasterxml.jackson.databind.JsonNode
 import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetryIgnoringExceptions
 import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
+import net.corda.httprpc.JsonObject
 import net.corda.httprpc.ResponseCode.OK
 import net.corda.test.util.eventually
 import org.apache.commons.text.StringEscapeUtils
@@ -45,13 +46,12 @@ fun updateConfig(config: String, section: String) {
                 val currentSchemaVersion = currentConfig["schemaVersion"]
 
                 putConfig(
-                    StringEscapeUtils.escapeJson(config), section,
+                    config,
+                    section,
                     currentConfig["version"].toString(),
                     currentSchemaVersion["major"].toString(),
-                    currentSchemaVersion["minor"].toString()
-                )
+                    currentSchemaVersion["minor"].toString())
             }
-
             condition { it.code == OK.statusCode }
         }
     }
@@ -76,7 +76,9 @@ fun waitForConfigurationChange(section: String, key: String, value: String, time
         assertWithRetryIgnoringExceptions {
             timeout(timeout)
             command { getConfig(section) }
-            condition { it.code == OK.statusCode && it.body.toJson().sourceConfigNode()[key].asInt().toString() == value }
+            condition {
+                it.code == OK.statusCode && it.body.toJson().sourceConfigNode()[key].asInt().toString() == value
+            }
         }
     }
 }
