@@ -288,13 +288,13 @@ class JPABackingStoreImplIntegrationTests {
                     { assertThat(consumedStates.count()).isEqualTo(1) },
                     { assertThat(consumedStates[consumingStateRef]?.consumingTxId).isEqualTo(consumingTxId) },
                     { assertThat(unconsumedStates.count()).isEqualTo(1) },
-                    { assertThat(stateRefs[1].txHash).isEqualTo(unconsumedStates[stateRefs[1]]!!.stateRef.txHash)}
+                    { assertThat(stateRefs[1].txHash).isEqualTo(unconsumedStates[stateRefs[1]]!!.stateRef.txHash) }
                 )
             }
         }
 
         @Test
-        fun `Double spend is prevented`() {
+        fun `Double spend is prevented in separate sessions`() {
             val secureHashes = listOf(SecureHashUtils.randomSecureHash())
             val stateRefs = secureHashes.map { UniquenessCheckStateRefImpl(it, 0) }
 
@@ -306,19 +306,37 @@ class JPABackingStoreImplIntegrationTests {
             val consumingTxId = SecureHashUtils.randomSecureHash()
             val consumingStateRefs = listOf<UniquenessCheckStateRef>(stateRefs[0])
 
-            assertDoesNotThrow {
-                backingStoreImpl.session { session ->
-                    session.executeTransaction { _, txnOps ->
-                        txnOps.consumeStates(consumingTxId = consumingTxId, stateRefs = consumingStateRefs)
-                    }
-                }
+            backingStoreImpl.session { session ->
+                session.executeTransaction { _, txnOps -> txnOps.consumeStates(consumingTxId, consumingStateRefs) }
             }
 
             // An attempt to spend an already spent state should fail.
             assertThrows<IllegalStateException> {
                 backingStoreImpl.session { session ->
+                    session.executeTransaction { _, txnOps -> txnOps.consumeStates(consumingTxId, consumingStateRefs) }
+                }
+            }
+        }
+
+        @Test
+        fun `Double spend is prevented in one session`() {
+            val secureHashes = listOf(SecureHashUtils.randomSecureHash())
+            val stateRefs = secureHashes.map { UniquenessCheckStateRefImpl(it, 0) }
+
+            // Generate an unconsumed state in DB.
+            backingStoreImpl.session { session ->
+                session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
+            }
+
+            val consumingTxId = SecureHashUtils.randomSecureHash()
+            val consumingStateRefs = listOf<UniquenessCheckStateRef>(stateRefs[0])
+
+            assertThrows<IllegalStateException> {
+                backingStoreImpl.session { session ->
                     session.executeTransaction { _, txnOps ->
-                        txnOps.consumeStates(consumingTxId = consumingTxId, stateRefs = consumingStateRefs)
+                        // Attempt a double-spend.
+                        txnOps.consumeStates(consumingTxId, consumingStateRefs)
+                        txnOps.consumeStates(consumingTxId, consumingStateRefs)
                     }
                 }
             }
