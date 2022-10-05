@@ -195,10 +195,11 @@ class MemberOpsClientImpl @Activate constructor(
         val rpcSender: RPCSender<MembershipRpcRequest, MembershipRpcResponse>
     ) : InnerMemberOpsClient {
         override fun startRegistration(memberRegistrationRequest: MemberRegistrationRequestDto): RegistrationRequestProgressDto {
+            val requestId = UUID.randomUUID().toString()
             try {
                 val request = MembershipRpcRequest(
                     MembershipRpcRequestContext(
-                        UUID.randomUUID().toString(),
+                        requestId,
                         clock.instant()
                     ),
                     RegistrationRpcRequest(
@@ -215,7 +216,7 @@ class MemberOpsClientImpl @Activate constructor(
                 logger.warn("Could not submit registration request for holding identity ID" +
                         " [${memberRegistrationRequest.holdingIdentityShortHash}].", e)
                 return RegistrationRequestProgressDto(
-                    UUID.randomUUID().toString(),
+                    requestId,
                     null,
                     RegistrationRpcStatus.NOT_SUBMITTED.toString(),
                     MemberInfoSubmittedDto(emptyMap())
