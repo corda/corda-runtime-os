@@ -201,8 +201,7 @@ internal class StartRegistrationHandler(
             memberRegistrationRequest.registrationId,
             source.toCorda(),
             memberRegistrationRequest.memberContext,
-            memberRegistrationRequest.memberSignature.publicKey,
-            memberRegistrationRequest.memberSignature.bytes
+            memberRegistrationRequest.memberSignature,
         )
     }
 }

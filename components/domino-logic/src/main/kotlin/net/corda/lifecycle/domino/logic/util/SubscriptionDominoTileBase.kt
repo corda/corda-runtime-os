@@ -21,7 +21,7 @@ import net.corda.lifecycle.domino.logic.DominoTileState.StoppedDueToError
 import net.corda.lifecycle.domino.logic.NamedLifecycle
 import net.corda.messaging.api.subscription.SubscriptionBase
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
-import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap

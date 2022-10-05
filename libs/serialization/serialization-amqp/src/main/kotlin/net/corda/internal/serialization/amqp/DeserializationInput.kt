@@ -8,7 +8,7 @@ import net.corda.internal.serialization.encodingNotPermittedFormat
 import net.corda.internal.serialization.model.TypeIdentifier
 import net.corda.serialization.EncodingAllowList
 import net.corda.serialization.SerializationContext
-import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.types.ByteSequence
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.base.util.trace

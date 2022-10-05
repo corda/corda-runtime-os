@@ -42,7 +42,7 @@ import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas.Config.Companion.CONFIG_MGMT_REQUEST_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.concurrent.getOrThrow
-import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.versioning.Version
@@ -65,7 +65,7 @@ internal class ConfigRPCOpsImpl @Activate constructor(
     private val configurationValidatorFactory: ConfigurationValidatorFactory,
     @Reference(service = ConfigurationGetService::class)
     private val configurationGetService: ConfigurationGetService
-    ) : ConfigRPCOps, PluggableRPCOps<ConfigRPCOps>, Lifecycle {
+) : ConfigRPCOps, PluggableRPCOps<ConfigRPCOps>, Lifecycle {
     private companion object {
         // The configuration used for the RPC sender.
         val RPC_CONFIG = RPCConfig(
@@ -166,7 +166,7 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         val rpcRequest = request.run {
             ConfigurationManagementRequest(
                 section,
-                config,
+                config.escapedJson,
                 ConfigurationSchemaVersion(schemaVersion.major, schemaVersion.minor),
                 actor,
                 version
@@ -216,7 +216,7 @@ internal class ConfigRPCOpsImpl @Activate constructor(
      * schema for this request.
      */
     private fun validateRequestedConfig(request: UpdateConfigParameters) = try {
-        val config = request.config
+        val config = request.config.escapedJson
         val smartConfig = SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.parseString(config))
         val updatedConfig = validator.validate(
             request.section,
@@ -225,7 +225,9 @@ internal class ConfigRPCOpsImpl @Activate constructor(
         )
         logger.debug { "UpdatedConfig: $updatedConfig" }
     } catch (e: Exception) {
-        val message = "Configuration \"${request.config}\" could not be validated. Valid JSON or HOCON expected. Cause: ${e.message}"
+        val message =
+            "Configuration \"${request.config.escapedJson}\" could not be validated. " +
+                    "Valid JSON or HOCON expected. Cause: ${e.message}"
         throw BadRequestException(message)
     }
 

@@ -4,6 +4,7 @@ import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPathParameter
+import net.corda.httprpc.annotations.HttpRpcQueryParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.httprpc.response.ResponseEntity
@@ -67,4 +68,22 @@ interface PermissionEndpoint : RpcOps {
         @HttpRpcPathParameter(description = "ID of the permission to be returned.")
         id: String
     ): PermissionResponseType
+
+    @HttpRpcGET(
+        description = "This method returns permissions which satisfy supplied query criteria.",
+        responseDescription = "Permissions which satisfy supplied query criteria")
+    fun queryPermissions(
+        @HttpRpcQueryParameter(description = "The maximum number of results to return. " +
+                "The value must be in the range [1..1000].")
+        limit: Int,
+        @HttpRpcQueryParameter(description = "The permission type to be returned.")
+        permissionType: String,
+        @HttpRpcQueryParameter(description = "Optional group visibility for a permission.", required = false)
+        groupVisibility: String? = null,
+        @HttpRpcQueryParameter(description = "Optional virtual node the permissions apply to.", required = false)
+        virtualNode: String? = null,
+        @HttpRpcQueryParameter(
+            description = "Optional permission string prefix for permissions to be located.", required = false)
+        permissionStringPrefix: String? = null
+        ): List<PermissionResponseType>
 }

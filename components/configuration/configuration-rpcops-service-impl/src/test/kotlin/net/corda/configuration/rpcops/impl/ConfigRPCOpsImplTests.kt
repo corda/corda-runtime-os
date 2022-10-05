@@ -9,6 +9,7 @@ import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
 import net.corda.data.config.ConfigurationSchemaVersion
+import net.corda.httprpc.JsonObject
 import net.corda.httprpc.ResponseCode
 import net.corda.httprpc.exception.HttpApiException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
@@ -35,6 +36,8 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
+data class TestJsonObject(override val escapedJson: String = "") : JsonObject
+
 /**
  * Tests of [ConfigRPCOpsImpl].
  */
@@ -54,16 +57,16 @@ class ConfigRPCOpsImplTests {
         }
     }
 
-    private val req = UpdateConfigParameters("section", 999, "a=b", ConfigSchemaVersion(888, 0))
+    private val req = UpdateConfigParameters("section", 999, TestJsonObject("a=b"), ConfigSchemaVersion(888, 0))
     private val successFuture = CompletableFuture.supplyAsync {
         ConfigurationManagementResponse(
-            true, null, req.section, req.config, ConfigurationSchemaVersion(
+            true, null, req.section, req.config.escapedJson, ConfigurationSchemaVersion(
                 req.schemaVersion.major, req.schemaVersion.minor
             ), req.version
         )
     }
     private val successResponse = UpdateConfigResponse(
-        req.section, req.config, ConfigSchemaVersion(
+        req.section, req.config.escapedJson, ConfigSchemaVersion(
             req.schemaVersion.major,
             req.schemaVersion.minor
         ), req.version
@@ -98,7 +101,7 @@ class ConfigRPCOpsImplTests {
     fun `updateConfig sends the correct request to the RPC sender`() {
         val rpcRequest = req.run {
             ConfigurationManagementRequest(
-                section, config, ConfigurationSchemaVersion(
+                section, config.escapedJson, ConfigurationSchemaVersion(
                     schemaVersion.major,
                     schemaVersion.minor
                 ), actor, version
@@ -126,8 +129,9 @@ class ConfigRPCOpsImplTests {
 
     @Test
     fun `updateConfig throws if config is not valid JSON or HOCON`() {
-        val invalidConfig = "a=b\nc"
-        val expectedMessage = "Configuration \"$invalidConfig\" could not be validated. Valid JSON or HOCON expected. " +
+        val invalidConfig = TestJsonObject("a=b\nc")
+        val expectedMessage =
+            "Configuration \"${invalidConfig.escapedJson}\" could not be validated. Valid JSON or HOCON expected. " +
                 "Cause: String: 2: Key 'c' may not be followed by token: end of file"
 
         val (_, configRPCOps) = getConfigRPCOps(mock())
@@ -161,7 +165,7 @@ class ConfigRPCOpsImplTests {
                 false,
                 exception,
                 section,
-                config,
+                config.escapedJson,
                 ConfigurationSchemaVersion(schemaVersion.major, schemaVersion.minor),
                 version
             )
