@@ -91,11 +91,8 @@ class HttpHelper {
                 return HttpResponseStatus.NOT_IMPLEMENTED
             }
 
-            if (this.headers()[HttpHeaderNames.CONTENT_LENGTH] == null) {
-                return HttpResponseStatus.LENGTH_REQUIRED
-            }
-
-            if (this.headers()[HttpHeaderNames.CONTENT_LENGTH].toLong() > maxRequestSize) {
+            val contentLength = this.headers()[HttpHeaderNames.CONTENT_LENGTH].toLongOrNull() ?: return HttpResponseStatus.LENGTH_REQUIRED
+            if (contentLength > maxRequestSize) {
                 return HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE
             }
 

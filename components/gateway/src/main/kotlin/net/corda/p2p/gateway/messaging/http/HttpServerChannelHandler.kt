@@ -42,19 +42,19 @@ class HttpServerChannelHandler(private val serverListener: HttpServerListener,
                 ctx.writeAndFlush(response).get()
                 ctx.close().get()
                 return
-            } else {
-                logger.debug { "Received HTTP request from ${ctx.channel().remoteAddress()}\n" +
-                        "Protocol version: ${msg.protocolVersion()}\n" +
-                        "Hostname: ${msg.headers()[HttpHeaderNames.HOST]?:"unknown"}\n" +
-                        "Request URI: ${msg.uri()}\n" +
-                        "Content length: ${msg.headers()[HttpHeaderNames.CONTENT_LENGTH]}\n" }
+            }
 
-                // initialise byte array to read the request into
-                allocateBodyBuffer(ctx, msg.headers()[HttpHeaderNames.CONTENT_LENGTH].toInt())
+            logger.debug { "Received HTTP request from ${ctx.channel().remoteAddress()}\n" +
+                    "Protocol version: ${msg.protocolVersion()}\n" +
+                    "Hostname: ${msg.headers()[HttpHeaderNames.HOST]?:"unknown"}\n" +
+                    "Request URI: ${msg.uri()}\n" +
+                    "Content length: ${msg.headers()[HttpHeaderNames.CONTENT_LENGTH]}\n" }
 
-                if (HttpUtil.is100ContinueExpected(msg)) {
-                    send100Continue(ctx)
-                }
+            // initialise byte array to read the request into
+            allocateBodyBuffer(ctx, msg.headers()[HttpHeaderNames.CONTENT_LENGTH].toInt())
+
+            if (HttpUtil.is100ContinueExpected(msg)) {
+                send100Continue(ctx)
             }
         }
 
