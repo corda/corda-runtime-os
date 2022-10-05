@@ -41,8 +41,8 @@ spec:
           args:
             - "--mode RECEIVER"
             - "--clients {{ .Values.appSimulators.receiver.parallelClientsPerReplica }}"
-            - "--tnumPartitions={{ .Values.appSimulators.receiver.topicCreation.numPartitions }}"
-            - "--treplicationFactor={{ .Values.appSimulators.receiver.topicCreation.replicationFactor }}"
+            - "-tnumPartitions={{ .Values.appSimulators.receiver.topicCreation.numPartitions }}"
+            - "-treplicationFactor={{ .Values.appSimulators.receiver.topicCreation.replicationFactor }}"
             {{- include "appSimulator.kafkaArgs" . | nindent 12 }}
           env:
             - name: JAVA_TOOL_OPTIONS
