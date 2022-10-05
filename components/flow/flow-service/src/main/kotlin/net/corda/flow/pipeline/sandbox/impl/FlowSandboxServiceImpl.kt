@@ -37,7 +37,6 @@ import net.corda.v5.base.util.loggerFor
 import net.corda.v5.serialization.SerializationCustomSerializer
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
-import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.VirtualNodeState
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.framework.Constants.SCOPE_PROTOTYPE
@@ -120,31 +119,23 @@ class FlowSandboxServiceImpl @Activate constructor(
             CHECKPOINT_INTERNAL_CUSTOM_SERIALIZERS
         )
 
-    override fun getWithVNodeMaintenanceValidation(holdingIdentity: HoldingIdentity): FlowSandboxGroupContext {
-        val vNodeInfo = getVnodeFromInfoService(holdingIdentity)
+    override fun validateVirtualNodeMaintenance(holdingIdentity: HoldingIdentity) {
+        val vNodeInfo = virtualNodeInfoReadService.get(holdingIdentity)
+        checkNotNull(vNodeInfo) { "Failed to find the virtual node info for holder '${holdingIdentity}'" }
 
-        // Inactive virtual nodes are treated as active.
         if(vNodeInfo.state == VirtualNodeState.IN_MAINTENANCE) {
             throw VirtualNodeStateException(holdingIdentity.shortHash.value, VirtualNodeState.IN_MAINTENANCE)
         }
         if(vNodeInfo.state == VirtualNodeState.DRAINING) {
             throw VirtualNodeStateException(holdingIdentity.shortHash.value, VirtualNodeState.DRAINING)
         }
-        return getContextFromCpi(vNodeInfo, holdingIdentity)
     }
 
     override fun get(holdingIdentity: HoldingIdentity): FlowSandboxGroupContext {
-        val vNodeInfo = getVnodeFromInfoService(holdingIdentity)
-        return getContextFromCpi(vNodeInfo, holdingIdentity)
-    }
 
-    private fun getVnodeFromInfoService(holdingIdentity: HoldingIdentity): VirtualNodeInfo {
-        return checkNotNull(virtualNodeInfoReadService.get(holdingIdentity)) {
-            "Failed to find the virtual node info for holder '${holdingIdentity}'"
-        }
-    }
+        val vNodeInfo = virtualNodeInfoReadService.get(holdingIdentity)
+        checkNotNull(vNodeInfo) { "Failed to find the virtual node info for holder '${holdingIdentity}'" }
 
-    private fun getContextFromCpi(vNodeInfo: VirtualNodeInfo, holdingIdentity: HoldingIdentity): FlowSandboxGroupContext {
         val cpiMetadata = cpiInfoReadService.get(vNodeInfo.cpiIdentifier)
         checkNotNull(cpiMetadata) { "Failed to find the CPI meta data for '${vNodeInfo.cpiIdentifier}}'" }
         check(cpiMetadata.cpksMetadata.isNotEmpty()) { "No CPKs defined for CPI Meta data id='${cpiMetadata.cpiId}'" }

@@ -14,7 +14,7 @@ interface DbConnectionsRepository {
      * @param connectionId the ID of the connection
      * @return lightweight representation of the connection
      */
-    fun get(connectionId: UUID): DbConnectionLite
+    fun get(connectionId: UUID): DbConnectionLite?
 
     /**
      * Persist a new or updated DB connection with given [name], [privilege] and [config].

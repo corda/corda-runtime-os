@@ -5,11 +5,11 @@ import net.corda.virtualnode.HoldingIdentity
 interface FlowSandboxService {
 
     /**
-     * Get a virtual node's sandbox context ensuring the virtual node is not in any maintenance states.
+     * Validate a virtual node is not in a maintenance state.
      *
-     * @throws IllegalStateException if the virtual node is not in an active state.
+     * @throws IllegalStateException if the virtual node is in a maintenance state.
      */
-    fun getWithVNodeMaintenanceValidation(holdingIdentity: HoldingIdentity): FlowSandboxGroupContext
+    fun validateVirtualNodeMaintenance(holdingIdentity: HoldingIdentity)
 
     /**
      * Get a virtual node's sandbox context.

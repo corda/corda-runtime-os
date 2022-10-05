@@ -142,7 +142,7 @@ internal class UpgradeVirtualNodeCpiHandler(
         val vaultDDLConnection = vnodeDbConnections.vaultDdlConnectionId?.let {
             dbConnectionsRepository.get(it)
         }
-        val vaultDMLConnection = vnodeDbConnections.vaultDmlConnectionId?.let {
+        val vaultDMLConnection = vnodeDbConnections.vaultDmlConnectionId.let {
             dbConnectionsRepository.get(it)
         }
         return Pair(vaultDDLConnection, vaultDMLConnection)
