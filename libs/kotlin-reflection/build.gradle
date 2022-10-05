@@ -96,7 +96,6 @@ def testOSGi = tasks.register('testOSGi', TestOSGi) {
         testingBundle
     )
     bndrun = resolve.flatMap { it.outputBndrun }
-    finalizedBy importOSGiJunitXml
 }
 
 tasks.named('integrationTest') {

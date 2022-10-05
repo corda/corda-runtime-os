@@ -1,5 +1,6 @@
 package net.corda.applications.workers.smoketest.virtualnode.helpers
 
+import net.corda.httprpc.JsonObject
 import java.io.FileNotFoundException
 import java.net.URI
 import java.nio.file.Paths
@@ -132,7 +133,7 @@ class ClusterBuilder {
     /** Get cluster configuration for the specified section */
     fun getConfig(section: String) = get("/api/v1/config/$section")
 
-    /** Update the cluster configuration for the specified section and versions */
+    /** Update the cluster configuration for the specified section and versions with unescaped Json */
     fun putConfig(config: String,
                   section: String,
                   configVersion: String,
@@ -140,7 +141,7 @@ class ClusterBuilder {
                   schemaMinorVersion: String) : SimpleResponse {
         val payload = """
             {
-                "config": "$config",
+                "config": $config,
                 "schemaVersion": {
                   "major": "$schemaMajorVersion",
                   "minor": "$schemaMinorVersion"
