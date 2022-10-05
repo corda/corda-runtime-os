@@ -1,4 +1,5 @@
 This directory contains scripts to simplify deploying the app simulator.
+Prerequisites for running the scripts: kubectl connected to a K8s cluster and a K8s secret, docker-registry-cred, containing the docker registry credentials. 
 
 deploy.sh deploys 3 worker clusters (a, b and mgm) into K8s. After which it sets up a dynamic network.
 
