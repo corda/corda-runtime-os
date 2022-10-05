@@ -3,6 +3,7 @@ package net.corda.crypto.softhsm.impl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.component.test.utils.generateKeyPair
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.impl.CipherSchemeMetadataProvider
 import net.corda.crypto.softhsm.PRIVATE_KEY_ENCODING_VERSION
 import net.corda.crypto.softhsm.SoftWrappingKeyMap
 import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
@@ -12,13 +13,14 @@ import net.corda.v5.cipher.suite.KeyGenerationSpec
 import net.corda.v5.cipher.suite.KeyMaterialSpec
 import net.corda.v5.cipher.suite.SharedSecretWrappedSpec
 import net.corda.v5.cipher.suite.SigningWrappedSpec
-import net.corda.v5.cipher.suite.schemes.COMPOSITE_KEY_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.KeyScheme
-import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.X25519_CODE_NAME
+import net.corda.v5.crypto.OID_COMPOSITE_KEY
+import org.bouncycastle.asn1.ASN1ObjectIdentifier
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -29,6 +31,8 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import java.util.UUID
 
+val OID_COMPOSITE_KEY_IDENTIFIER = ASN1ObjectIdentifier(OID_COMPOSITE_KEY)
+
 class SoftCryptoServiceGeneralTests {
     companion object {
         private lateinit var schemeMetadata: CipherSchemeMetadata
@@ -38,7 +42,7 @@ class SoftCryptoServiceGeneralTests {
         @JvmStatic
         fun setup() {
             schemeMetadata = CipherSchemeMetadataImpl()
-            UNSUPPORTED_SIGNATURE_SCHEME = COMPOSITE_KEY_TEMPLATE.makeScheme("BC")
+            UNSUPPORTED_SIGNATURE_SCHEME = CipherSchemeMetadataProvider().COMPOSITE_KEY_TEMPLATE.makeScheme("BC")
         }
     }
 

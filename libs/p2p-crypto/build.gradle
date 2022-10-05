@@ -13,6 +13,9 @@ dependencies {
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-crypto"
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    
+    api "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion"
+    api "org.bouncycastle:bcpkix-jdk15on:$bouncycastleVersion"
 
     testImplementation "net.corda:corda-cipher-suite"
 }

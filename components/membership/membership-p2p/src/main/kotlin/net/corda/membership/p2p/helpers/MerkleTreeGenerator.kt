@@ -46,6 +46,8 @@ class MerkleTreeGenerator(
                     serializer.serialize(member.mgmProvidedContext.toAvro()),
                 )
             }.filterNotNull()
-        return merkleTreeProvider.createTree(leaves, hashDigestProvider)
+        return createTree(leaves)
     }
+
+    fun createTree(leaves: List<ByteArray>): MerkleTree = merkleTreeProvider.createTree(leaves, hashDigestProvider)
 }

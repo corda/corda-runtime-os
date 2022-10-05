@@ -93,6 +93,20 @@ class MerkleTreeGeneratorTest {
         assertThat(generatedTree).isEqualTo(tree)
     }
 
+    @Test
+    fun `createTree returns the correct data`() {
+        val generatedTree = generator.createTree(
+            listOf(
+                aliceMemberSerialized,
+                aliceContextSerialized,
+                bobMemberSerialized,
+                bobContextSerialized,
+            )
+        )
+
+        assertThat(generatedTree).isEqualTo(tree)
+    }
+
     private inline fun <reified T : LayeredPropertyMap> mockLayeredPropertyMap(
         key: String,
         value: String

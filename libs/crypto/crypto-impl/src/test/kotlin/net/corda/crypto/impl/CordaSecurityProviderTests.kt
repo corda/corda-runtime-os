@@ -1,7 +1,7 @@
 package net.corda.crypto.impl
 
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.crypto.CompositeKey
+import net.corda.crypto.impl.CompositeKeyImpl.Companion.KEY_ALGORITHM
+import net.corda.v5.cipher.suite.KeyEncodingService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -9,12 +9,11 @@ import org.mockito.kotlin.mock
 
 class CordaSecurityProviderTests {
     companion object {
-        lateinit var schemeMetadata: CipherSchemeMetadata
-
+        lateinit var keyEncodingService: KeyEncodingService
         @BeforeAll
         @JvmStatic
         fun setup() {
-            schemeMetadata = mock()
+            keyEncodingService = mock()
         }
     }
 
@@ -22,13 +21,13 @@ class CordaSecurityProviderTests {
     fun `get security provider algorithm services`() {
         val keyFactoryType = "KeyFactory"
         val signatureType = "Signature"
-        val cordaSecurityProvider = CordaSecurityProvider(schemeMetadata)
+        val cordaSecurityProvider = CordaSecurityProvider(keyEncodingService)
 
-        val keyFactoryService = cordaSecurityProvider.getService(keyFactoryType, CompositeKey.KEY_ALGORITHM)
+        val keyFactoryService = cordaSecurityProvider.getService(keyFactoryType, CompositeKeyImpl.KEY_ALGORITHM)
         val signatureService = cordaSecurityProvider.getService(signatureType, CompositeSignature.SIGNATURE_ALGORITHM)
 
         assertEquals(keyFactoryType, keyFactoryService!!.type)
-        assertEquals(CompositeKey.KEY_ALGORITHM, keyFactoryService.algorithm)
+        assertEquals(KEY_ALGORITHM, keyFactoryService.algorithm)
         assertEquals(CompositeKeyFactory::class.java.name, keyFactoryService.className)
 
         assertEquals(signatureType, signatureService!!.type)
