@@ -59,18 +59,19 @@ fun publicKeyOnCurve(scheme: KeyScheme, publicKey: PublicKey) {
 
 fun encryptWithEphemeralKeyPair(
     schemeMetadata: CipherSchemeMetadata,
-    salt: ByteArray,
     otherPublicKey: PublicKey,
     plainText: ByteArray,
-    aad: ByteArray?
+    aad: ByteArray?,
+    salt: (PublicKey, PublicKey)  -> ByteArray
 ): EncryptedDataWithKey {
     val scheme = schemeMetadata.findKeyScheme(otherPublicKey)
     val provider = schemeMetadata.providers.getValue(scheme.providerName)
     val keyPair = generateEphemeralKeyPair(schemeMetadata, provider, scheme)
     publicKeyOnCurve(scheme, keyPair.public)
     publicKeyOnCurve(scheme, otherPublicKey)
+    val saltValue = salt(keyPair.public, otherPublicKey)
     val cipherText = SharedSecretOps.encrypt(
-        salt = salt,
+        salt = saltValue,
         publicKey = keyPair.public,
         otherPublicKey = otherPublicKey,
         plainText = plainText,
@@ -80,6 +81,7 @@ fun encryptWithEphemeralKeyPair(
     }
     return EncryptedDataWithKey(
         publicKey = keyPair.public,
+        salt = saltValue,
         cipherText = cipherText
     )
 }

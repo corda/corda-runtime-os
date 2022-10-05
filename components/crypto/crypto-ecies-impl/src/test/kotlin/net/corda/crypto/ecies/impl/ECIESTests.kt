@@ -89,17 +89,15 @@ class ECIESTests {
     fun `Should run through handshake using same shared key to send and receive without aad for all supported key schemes`(
         stablePublicKey: PublicKey
     ) {
-        val salt = generateSalt()
         val plainText = "Hello MGM!".toByteArray()
         val cipherText = ephemeralEncryptor.encrypt(
-            salt = salt,
             otherPublicKey = stablePublicKey,
             plainText = plainText,
             aad = null
-        )
+        ) { ek, sk -> generateSalt() + ek.encoded + sk.encoded }
         val decryptedPlainTex = stableDecryptor.decrypt(
             tenantId = tenantId,
-            salt = salt,
+            salt = cipherText.salt,
             publicKey = stablePublicKey,
             otherPublicKey = cipherText.publicKey,
             cipherText = cipherText.cipherText,
@@ -114,18 +112,16 @@ class ECIESTests {
     fun `Should run through handshake using same shared key to send and receive with aad for all supported key schemes`(
         stablePublicKey: PublicKey
     ) {
-        val salt = generateSalt()
         val aad = "Something New".toByteArray()
         val plainText = "Hello MGM!".toByteArray()
         val cipherText = ephemeralEncryptor.encrypt(
-            salt = salt,
             otherPublicKey = stablePublicKey,
             plainText = plainText,
             aad = aad
-        )
+        ) { ek, sk -> generateSalt() + ek.encoded + sk.encoded }
         val decryptedPlainTex = stableDecryptor.decrypt(
             tenantId = tenantId,
-            salt = salt,
+            salt = cipherText.salt,
             publicKey = stablePublicKey,
             otherPublicKey = cipherText.publicKey,
             cipherText = cipherText.cipherText,

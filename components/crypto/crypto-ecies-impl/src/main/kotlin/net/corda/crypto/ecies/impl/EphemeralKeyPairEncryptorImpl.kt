@@ -15,10 +15,10 @@ class EphemeralKeyPairEncryptorImpl @Activate constructor(
     private val schemeMetadata: CipherSchemeMetadata
 ) : EphemeralKeyPairEncryptor {
     override fun encrypt(
-        salt: ByteArray,
         otherPublicKey: PublicKey,
         plainText: ByteArray,
-        aad: ByteArray?
+        aad: ByteArray?,
+        salt: (PublicKey, PublicKey)  -> ByteArray
     ): EncryptedDataWithKey =
-        encryptWithEphemeralKeyPair(schemeMetadata, salt, otherPublicKey, plainText, aad)
+        encryptWithEphemeralKeyPair(schemeMetadata, otherPublicKey, plainText, aad, salt)
 }

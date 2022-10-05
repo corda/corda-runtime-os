@@ -8,10 +8,12 @@ import java.security.PublicKey
  *
  * @param publicKey the public key of the generated ephemeral pair, note that the lifetime of the private key of the pair
  * and the shared secret generated using that key does not exceed the scope of the encrypting function.
+ * @param salt the salt which was used for deriving the shared secret
  * @param cipherText the resulting cipher text where the first 8 bytes are the current epoch timestamp in mills when
  * the encryption was done.
  */
 class EncryptedDataWithKey(
     val publicKey: PublicKey,
+    val salt: ByteArray,
     val cipherText: ByteArray
 )

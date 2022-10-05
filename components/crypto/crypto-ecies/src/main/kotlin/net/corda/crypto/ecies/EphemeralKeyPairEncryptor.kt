@@ -24,7 +24,8 @@ interface EphemeralKeyPairEncryptor {
      *
      * @param salt used by the HKDF function and provides source of additional entropy, according to that spec
      * https://datatracker.ietf.org/doc/html/rfc5869#section-3.1 it can be exchanged between
-     * communicating parties
+     * communicating parties, the function receives two public keys - the first one is the ephemeral public key
+     * generated for this specific operation, and the second is the [otherPublicKey].
      * @param otherPublicKey the public key of the other party with which the consumer wants to establish secure
      * communication, the ephemeral key pair will be generated using the same key scheme. The key scheme of the
      * public key must support Diffie–Hellman key agreement, see [net.corda.v5.cipher.suite.schemes.KeyScheme] and
@@ -36,14 +37,9 @@ interface EphemeralKeyPairEncryptor {
      * @return the result of the encryption, including the public key of the generated ephemeral key pair.
      */
     fun encrypt(
-        salt: ByteArray,
         otherPublicKey: PublicKey,
         plainText: ByteArray,
-        aad: ByteArray?
-    ): EncryptedDataWithKey = encrypt(
-        salt = salt,
-        otherPublicKey = otherPublicKey,
-        plainText = plainText,
-        aad = aad
-    )
+        aad: ByteArray?,
+        salt: (PublicKey, PublicKey) -> ByteArray
+    ): EncryptedDataWithKey
 }

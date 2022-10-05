@@ -49,12 +49,5 @@ interface StableKeyPairDecryptor : Lifecycle {
         otherPublicKey: PublicKey,
         cipherText: ByteArray,
         aad: ByteArray?
-    ): ByteArray = decrypt(
-        tenantId = tenantId,
-        salt = salt,
-        publicKey = publicKey,
-        otherPublicKey = otherPublicKey,
-        cipherText = cipherText,
-        aad = aad
-    )
+    ): ByteArray
 }
