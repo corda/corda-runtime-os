@@ -1,0 +1,10 @@
+db:
+  appSimulator:
+    user: postgres
+
+appSimulators:
+   sender:
+      totalNumberOfMessages: 100
+      interBatchDelay: "PT0.1S"
+      batchSize: 100
+      enabled: true
