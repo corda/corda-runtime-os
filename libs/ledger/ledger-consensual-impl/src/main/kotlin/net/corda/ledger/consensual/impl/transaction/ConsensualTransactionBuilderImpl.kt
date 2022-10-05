@@ -79,7 +79,11 @@ class ConsensualTransactionBuilderImpl(
                 LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
                 DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
                 PLATFORM_VERSION_KEY to memberLookup.myInfo().platformVersion,
-                CPK_IDENTIFIERS_KEY to getCpks().map { "${it.cpkId.name}:${it.fileChecksum.toHexString()}" }
+                CPK_IDENTIFIERS_KEY to getCpks().map {
+                    "${it.cpkId.name}:" +
+                    "${it.cpkId.version}:" +
+                    "${it.cpkId.signerSummaryHash?.toHexString() ?: ""}:" +
+                    "${it.fileChecksum.toHexString()}" }
             )
         )
     }

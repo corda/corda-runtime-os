@@ -117,8 +117,8 @@ internal class ConsensualTransactionBuilderImplTest{
         val metadata = tx.wireTransaction.metadata
         assertEquals("0.001", metadata.getLedgerVersion())
         assertEquals(listOf(
-            "MockCpk:0101010101010101010101010101010101010101010101010101010101010101",
-            "MockCpk:0303030303030303030303030303030303030303030303030303030303030303"),
+            "MockCpk:1::0101010101010101010101010101010101010101010101010101010101010101",
+            "MockCpk:3::0303030303030303030303030303030303030303030303030303030303030303"),
             metadata.getCpkIdentifiers())
     }
 
