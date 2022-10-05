@@ -19,8 +19,10 @@ import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import java.security.PublicKey
 import java.util.IdentityHashMap
 
+    // TODO- expose to users?
 val PublicKey.keys: Set<PublicKey> get() = (this as? CompositeKey)?.leafKeys ?: setOf(this)
 
+// TODO- make private
 fun CompositeKeyNodeAndWeight.toASN1Primitive(): ASN1Primitive {
     val vector = ASN1EncodableVector()
     vector.add(DERBitString(node.encoded))

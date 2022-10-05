@@ -698,7 +698,7 @@ class PersistenceTests {
 
     @ParameterizedTest
     @MethodSource("signingTenants")
-    fun `Should looup existing signing keys by ids`(tenantId: String) {
+    fun `Should lookup existing signing keys by ids`(tenantId: String) {
         val hsmId = UUID.randomUUID().toString()
         val p0 = generateKeyPair(EDDSA_ED25519_CODE_NAME).public
         val p1 = createSigningKeySaveContext(hsmId, CryptoConsts.Categories.LEDGER, EDDSA_ED25519_CODE_NAME)

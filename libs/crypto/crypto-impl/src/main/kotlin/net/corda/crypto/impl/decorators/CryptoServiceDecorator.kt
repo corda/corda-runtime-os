@@ -15,6 +15,8 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoException
 import java.time.Duration
 
+/** CryptoService wrapper with retry logic */
+
 class CryptoServiceDecorator(
     private val cryptoService: CryptoService,
     private val attemptTimeout: Duration,
@@ -75,7 +77,7 @@ class CryptoServiceDecorator(
             cryptoService.createWrappingKey(masterKeyAlias, failIfExists, context)
         }
     } catch (e: RuntimeException) {
-        if(e.isRecoverable()) {
+        if (e.isRecoverable()) {
             throw CryptoException(
                 "Calling createWrappingKey failed (masterKeyAlias=$masterKeyAlias,failIfExists=$failIfExists)",
                 e

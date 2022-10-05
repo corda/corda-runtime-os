@@ -88,6 +88,8 @@ class RpcSmokeTestFlow : RPCStartableFlow {
     @CordaInject
     lateinit var memberLookupService: MemberLookup
 
+    // TODO: instantiate CompositeKeyGenerator and use it
+
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
         val request = requestBody.getRequestBodyAs<RpcSmokeTestInput>(jsonMarshallingService)

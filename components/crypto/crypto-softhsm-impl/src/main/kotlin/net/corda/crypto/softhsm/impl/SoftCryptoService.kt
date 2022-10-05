@@ -121,8 +121,13 @@ class SoftCryptoService(
 
     override val extensions = listOf(CryptoServiceExtensions.REQUIRE_WRAPPING_KEY)
 
+    /**
+     * Create a wrapping key for a specific tenant
+     *
+     *
+     */
     override fun createWrappingKey(masterKeyAlias: String, failIfExists: Boolean, context: Map<String, String>) {
-        logger.info("createWrappingKey(masterKeyAlias={}, failIfExists={})", masterKeyAlias, failIfExists)
+        logger.info("createWrappingKey(masterKeyAlias=$masterKeyAlias, failIfExists=$failIfExists)")
         val wrappingKey = WrappingKey.generateWrappingKey(schemeMetadata)
         if (wrappingKeyMap.exists(masterKeyAlias)) {
             if (failIfExists) {
