@@ -62,7 +62,7 @@ import kotlin.test.assertEquals
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class UniquenessCheckerImplDBIntegrationTests {
 
-    private val dbConfig = DbUtils.getEntityManagerConfiguration("testdb")
+    private val clusterDbConfig = DbUtils.getEntityManagerConfiguration("clusterdb")
 
     private val baseTime: Instant = Instant.EPOCH
 
@@ -202,7 +202,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                     eq(charlieHoldingIdentityDbName), any(), any())) doReturn charlieHoldingIdentityDb
                 whenever(getOrCreateEntityManagerFactory(
                     eq(noDbHoldingIdentityDbName), any(), any())) doThrow DBConfigurationException("")
-                whenever(getClusterDataSource()) doReturn dbConfig.dataSource
+                whenever(getClusterDataSource()) doReturn clusterDbConfig.dataSource
             }
         )
 

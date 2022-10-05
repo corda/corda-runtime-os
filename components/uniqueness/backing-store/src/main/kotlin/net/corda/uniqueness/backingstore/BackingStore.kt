@@ -50,7 +50,8 @@ interface BackingStore : Lifecycle {
 
     /**
      * Opens a new session with the backing store and runs the supplied block of code in the
-     * context of the session.
+     * context of the session. A session is tied to a specific [holdingIdentity], which must be
+     * specified when opening the session.
      */
     fun session(holdingIdentity: HoldingIdentity, block: (Session) -> Unit)
 
