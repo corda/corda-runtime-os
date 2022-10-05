@@ -1,7 +1,7 @@
 package net.corda.ledger.consensual.impl.transaction
 
 import net.corda.ledger.common.impl.transaction.WireTransaction
-import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
+import net.corda.v5.ledger.common.transaction.TransactionSignature
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.isFulfilledBy
@@ -12,7 +12,7 @@ import java.security.PublicKey
 class ConsensualSignedTransactionImpl(
     private val serializer: SerializationService,
     val wireTransaction: WireTransaction,
-    override val signatures: List<DigitalSignatureAndMetadata>
+    override val signatures: List<TransactionSignature>
     ): ConsensualSignedTransaction
 {
 

@@ -2,7 +2,7 @@ package net.corda.ledger.consensual.testkit
 
 import net.corda.ledger.common.testkit.getWireTransaction
 import net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl
-import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
+import net.corda.v5.ledger.common.transaction.TransactionSignature
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
@@ -27,7 +27,7 @@ fun getConsensualSignedTransactionImpl(
     val signature = DigitalSignature.WithKey(testPublicKey, "0".toByteArray(), mapOf())
     val digitalSignatureMetadata =
         DigitalSignatureMetadata(Instant.now(), mapOf()) //CORE-5091 populate this properly...
-    val signatureWithMetaData = DigitalSignatureAndMetadata(signature, digitalSignatureMetadata)
-    return ConsensualSignedTransactionImpl(serializationService, wireTransaction, listOf(signatureWithMetaData))
+    val transactionSignature = TransactionSignature(signature, digitalSignatureMetadata)
+    return ConsensualSignedTransactionImpl(serializationService, wireTransaction, listOf(transactionSignature))
 }
 

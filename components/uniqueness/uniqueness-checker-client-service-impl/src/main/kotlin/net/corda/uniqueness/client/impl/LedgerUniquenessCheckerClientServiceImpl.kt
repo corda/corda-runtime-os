@@ -2,7 +2,7 @@ package net.corda.uniqueness.client.impl
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResponseImpl
-import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
+import net.corda.v5.ledger.common.transaction.TransactionSignature
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.MerkleTreeFactory
 import net.corda.v5.application.crypto.SigningService
@@ -124,7 +124,7 @@ class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
         )
 
         return BatchSignature(
-            DigitalSignatureAndMetadata(
+            TransactionSignature(
                 sig,
                 DigitalSignatureMetadata(
                     Instant.now(),
@@ -138,7 +138,7 @@ class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
 }
 
 data class BatchSignature(
-    val rootSignature: DigitalSignatureAndMetadata,
+    val rootSignature: TransactionSignature,
     val fullMerkleTree: MerkleTree
 ) {
 

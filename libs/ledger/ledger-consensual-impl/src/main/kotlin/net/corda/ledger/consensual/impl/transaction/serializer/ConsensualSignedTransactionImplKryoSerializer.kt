@@ -5,7 +5,7 @@ import net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionI
 import net.corda.serialization.checkpoint.CheckpointInput
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import net.corda.serialization.checkpoint.CheckpointOutput
-import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
+import net.corda.v5.ledger.common.transaction.TransactionSignature
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.util.uncheckedCast
 import org.osgi.service.component.annotations.Activate
@@ -25,7 +25,7 @@ class ConsensualSignedTransactionImplKryoSerializer @Activate constructor(
 
     override fun read(input: CheckpointInput, type: Class<ConsensualSignedTransactionImpl>): ConsensualSignedTransactionImpl {
         val wireTransaction = input.readClassAndObject() as WireTransaction
-        val signatures: List<DigitalSignatureAndMetadata> = uncheckedCast(input.readClassAndObject())
+        val signatures: List<TransactionSignature> = uncheckedCast(input.readClassAndObject())
         return ConsensualSignedTransactionImpl(
             serialisationService,
             wireTransaction,

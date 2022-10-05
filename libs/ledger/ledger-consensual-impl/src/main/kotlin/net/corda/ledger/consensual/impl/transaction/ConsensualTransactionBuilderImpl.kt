@@ -7,7 +7,7 @@ import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.LE
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.LEDGER_VERSION_KEY
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
-import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
+import net.corda.v5.ledger.common.transaction.TransactionSignature
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
@@ -100,8 +100,8 @@ class ConsensualTransactionBuilderImpl(
 //        val signature = signingService.sign(wireTransaction.id.bytes, publicKey, SignatureSpec.RSA_SHA256)
         val signature = DigitalSignature.WithKey(publicKey, "0".toByteArray(), mapOf())
         val digitalSignatureMetadata = DigitalSignatureMetadata(Instant.now(), mapOf()) //CORE-5091 populate this properly...
-        val signatureWithMetaData = DigitalSignatureAndMetadata(signature, digitalSignatureMetadata)
-        return ConsensualSignedTransactionImpl(serializer, wireTransaction, listOf(signatureWithMetaData))
+        val transactionSignature = TransactionSignature(signature, digitalSignatureMetadata)
+        return ConsensualSignedTransactionImpl(serializer, wireTransaction, listOf(transactionSignature))
     }
 
     private fun buildWireTransaction() : WireTransaction{

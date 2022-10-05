@@ -13,7 +13,7 @@ import net.corda.ledger.common.transaction.serialization.internal.WireTransactio
 import net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.ledger.consensual.impl.transaction.serializer.ConsensualSignedTransactionImplKryoSerializer
 import net.corda.ledger.consensual.testkit.getConsensualSignedTransactionImpl
-import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
+import net.corda.v5.ledger.common.transaction.TransactionSignature
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.cipher.suite.DigestService
@@ -70,7 +70,7 @@ class ConsensualSignedTransactionImplKryoSerializerTest {
             emptyList(),
             setOf(
                 PrivacySaltImpl::class.java,
-                DigitalSignatureAndMetadata::class.java,
+                TransactionSignature::class.java,
                 signedTransaction.signatures[0].by::class.java,
                 emptyMap<String, String>()::class.java,
                 DigitalSignature.WithKey::class.java
