@@ -27,7 +27,6 @@ dependencies {
     implementation project(":libs:virtual-node:sandbox-group-context")
     implementation project(":libs:serialization:serialization-internal")
     implementation project(':components:virtual-node:cpi-info-read-service')
-//    implementation project(':components:virtual-node:sandbox-group-context-service')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
@@ -57,4 +56,5 @@ dependencies {
     integrationTestRuntimeOnly project(":libs:crypto:crypto-serialization-impl")
     integrationTestRuntimeOnly project(':testing:test-serialization')
     integrationTestRuntimeOnly project(":libs:application:application-impl")
+    integrationTestRuntimeOnly project(':testing:cpi-info-read-service-fake')
 }
