@@ -59,17 +59,17 @@ class SendReceiveAllMessagingFlow(
         log.info("received Map")
 
         receivedMap.forEach { (_, received) ->
-            log.info("Session received map data: ${(received as MyClass).int} ")
+            if (received is MyClass) {
+                log.info("Session received map data (type: MyClass): ${received.int} ")
+            } else if (received is MyOtherClass) {
+                log.info("Session received map data (type: MyOtherClass): ${received.int} ")
+            }
         }
 
         val receivedAll = flowMessaging.receiveAll(MyClass::class.java, setOf(sessionOne, sessionTwo))
         log.info("received all")
-        receivedMap.forEach { (_, received) ->
-            if (received is MyClass) {
-                log.info("Session received map data (type: MyClass): ${received.int} ")
-            } else if (received is net.cordapp.testing.testflows.MyOtherClass) {
-                log.info("Session received map data (type: MyOtherClass): ${received.int} ")
-            }
+        receivedAll.forEach {
+            log.info("Session received all data: ${it.int} ")
         }
 
         log.info("Closing session1")
