@@ -52,7 +52,7 @@ class FlowSessionImpl(
     @Suspendable
     override fun <R : Any> sendAndReceive(receiveType: Class<R>, payload: Any): R {
         requireBoxedType(receiveType)
-        val request = FlowIORequest.SendAndReceive(mapOf(FlowIORequest.SessionInfo(sourceSessionId, counterparty) to serialize(payload)))
+        val request = FlowIORequest.SendAndReceive(mapOf(getSessionInfo() to serialize(payload)))
         val received = fiber.suspend(request)
         return deserializeReceivedPayload(received, receiveType)
     }
@@ -60,7 +60,7 @@ class FlowSessionImpl(
     @Suspendable
     override fun <R : Any> receive(receiveType: Class<R>): R {
         requireBoxedType(receiveType)
-        val request = FlowIORequest.Receive(setOf(FlowIORequest.SessionInfo(sourceSessionId, counterparty)))
+        val request = FlowIORequest.Receive(setOf(getSessionInfo()))
         val received = fiber.suspend(request)
         return deserializeReceivedPayload(received, receiveType)
     }
@@ -68,7 +68,7 @@ class FlowSessionImpl(
     @Suspendable
     override fun send(payload: Any) {
         val request =
-            FlowIORequest.Send(mapOf(FlowIORequest.SessionInfo(sourceSessionId, counterparty) to serialize(payload)))
+            FlowIORequest.Send(mapOf(getSessionInfo() to serialize(payload)))
         return fiber.suspend(request)
     }
 
@@ -108,6 +108,15 @@ class FlowSessionImpl(
             }
         }
             ?: throw CordaRuntimeException("The session [${sourceSessionId}] did not receive a payload when trying to receive one")
+    }
+    
+    private fun getSessionInfo(): FlowIORequest.SessionInfo {
+        return FlowIORequest.SessionInfo(
+            sourceSessionId,
+            counterparty,
+            contextUserProperties = flowContext.flattenUserProperties(),
+            contextPlatformProperties = flowContext.flattenPlatformProperties()
+        )
     }
 
     override fun equals(other: Any?): Boolean =
