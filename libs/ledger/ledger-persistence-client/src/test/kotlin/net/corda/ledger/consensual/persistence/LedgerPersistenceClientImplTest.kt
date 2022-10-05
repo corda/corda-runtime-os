@@ -1,12 +1,11 @@
 package net.corda.ledger.consensual.persistence
 
-import java.nio.ByteBuffer
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.ledger.common.impl.transaction.WireTransaction
+import net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.ledger.consensual.persistence.external.events.AbstractLedgerExternalEventFactory
 import net.corda.ledger.consensual.persistence.external.events.FindTransactionExternalEventFactory
 import net.corda.ledger.consensual.persistence.external.events.PersistTransactionExternalEventFactory
-import net.corda.ledger.consensual.persistence.internal.LedgerPersistenceServiceImpl
+import net.corda.ledger.consensual.persistence.internal.LedgerPersistenceClientImpl
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SerializedBytes
@@ -18,14 +17,15 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 
-class LedgerPersistenceServiceImplTest {
+class LedgerPersistenceClientImplTest {
 
     private val serializationService = mock<SerializationService>()
     private val serializedBytes = mock<SerializedBytes<Any>>()
     private val externalEventExecutor = mock<ExternalEventExecutor>()
 
-    private lateinit var ledgerPersistenceService: LedgerPersistenceService
+    private lateinit var ledgerPersistenceClient: LedgerPersistenceClient
 
     private val byteBuffer = ByteBuffer.wrap("bytes".toByteArray())
 
@@ -33,8 +33,8 @@ class LedgerPersistenceServiceImplTest {
 
     @BeforeEach
     fun setup() {
-        ledgerPersistenceService =
-            LedgerPersistenceServiceImpl(externalEventExecutor, serializationService)
+        ledgerPersistenceClient =
+            LedgerPersistenceClientImpl(externalEventExecutor, serializationService)
 
         whenever(serializationService.serialize(any())).thenReturn(serializedBytes)
         whenever(serializedBytes.bytes).thenReturn(byteBuffer.array())
@@ -48,7 +48,7 @@ class LedgerPersistenceServiceImplTest {
 
     @Test
     fun `persist executes successfully`() {
-        ledgerPersistenceService.persist(mock<WireTransaction>())
+        ledgerPersistenceClient.persist(mock<ConsensualSignedTransactionImpl>())
 
         verify(serializationService).serialize(any())
         assertThat(argumentCaptor.firstValue).isEqualTo(PersistTransactionExternalEventFactory::class.java)
@@ -56,13 +56,13 @@ class LedgerPersistenceServiceImplTest {
 
     @Test
     fun `find executes successfully`() {
-        val expectedObj = mock<WireTransaction>()
+        val expectedObj = mock<ConsensualSignedTransactionImpl>()
         val testId = SecureHash.parse("SHA256:1234567890123456")
-        whenever(serializationService.deserialize<WireTransaction>(any<ByteArray>(), any())).thenReturn(expectedObj)
+        whenever(serializationService.deserialize<ConsensualSignedTransactionImpl>(any<ByteArray>(), any())).thenReturn(expectedObj)
 
-        assertThat(ledgerPersistenceService.find(testId)).isEqualTo(expectedObj)
+        assertThat(ledgerPersistenceClient.find(testId)).isEqualTo(expectedObj)
 
-        verify(serializationService).deserialize<WireTransaction>(any<ByteArray>(), any())
+        verify(serializationService).deserialize<ConsensualSignedTransactionImpl>(any<ByteArray>(), any())
         assertThat(argumentCaptor.firstValue).isEqualTo(FindTransactionExternalEventFactory::class.java)
     }
 }
