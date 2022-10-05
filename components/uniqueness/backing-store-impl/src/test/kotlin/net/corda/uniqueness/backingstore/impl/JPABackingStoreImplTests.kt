@@ -57,6 +57,7 @@ import javax.persistence.TypedQuery
 import javax.persistence.EntityExistsException
 import javax.persistence.RollbackException
 import javax.persistence.OptimisticLockException
+import kotlin.reflect.full.createInstance
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class JPABackingStoreImplTests {
@@ -370,11 +371,6 @@ class JPABackingStoreImplTests {
     @Nested
     inner class TransactionTests {
         private val MAX_ATTEMPTS = 10
-        private val expectedTxnExceptions = mapOf(
-            "EntityExistsException" to EntityExistsException(),
-            "RollbackException" to RollbackException(),
-            "OptimisticLockException" to OptimisticLockException()
-        )
 
         @BeforeEach
         fun init() {
@@ -395,11 +391,11 @@ class JPABackingStoreImplTests {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = ["EntityExistsException", "RollbackException", "OptimisticLockException"])
-        fun `Executing transaction retries upon expected exceptions`(exception: String) {
+        @ValueSource(classes = [EntityExistsException::class, RollbackException::class, OptimisticLockException::class])
+        fun `Executing transaction retries upon expected exceptions`(exception: Class<Exception>) {
             assertThrows<IllegalStateException> {
                 backingStoreImpl.session { session ->
-                    session.executeTransaction { _, _ -> throw expectedTxnExceptions[exception]!! }
+                    session.executeTransaction { _, _ -> throw exception.kotlin.createInstance() }
                 }
             }
 

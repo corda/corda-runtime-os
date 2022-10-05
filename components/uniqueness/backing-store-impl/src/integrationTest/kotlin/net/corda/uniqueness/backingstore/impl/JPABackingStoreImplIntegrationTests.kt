@@ -389,7 +389,7 @@ class JPABackingStoreImplIntegrationTests {
                 RollbackException::class,
                 OptimisticLockException::class]
         )
-        fun `Persistence errors raised while persisting trigger retry`(e: java.lang.Class<Exception>) {
+        fun `Persistence errors raised while persisting trigger retry`(e: Class<Exception>) {
             val emFactory = createEntityManagerFactory("uniqueness")
             val spyEmFactory = Mockito.spy(emFactory)
             val em = spyEmFactory.createEntityManager()
