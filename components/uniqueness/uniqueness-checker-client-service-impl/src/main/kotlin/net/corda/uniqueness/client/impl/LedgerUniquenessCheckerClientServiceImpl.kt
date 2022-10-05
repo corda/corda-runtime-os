@@ -1,13 +1,12 @@
 package net.corda.uniqueness.client.impl
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckResponseImpl
+import net.corda.uniqueness.datamodel.impl.LedgerUniquenessCheckResponseImpl
 import net.corda.v5.ledger.common.transaction.TransactionSignature
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.MerkleTreeFactory
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.membership.MemberLookup
-import net.corda.v5.application.uniqueness.model.UniquenessCheckResponse
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
@@ -17,6 +16,7 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_DEFAULT_NAME
 import net.corda.v5.crypto.merkle.MerkleTree
+import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckResponse
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckerClientService
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -58,7 +58,7 @@ class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
         numOutputStates: Int,
         timeWindowLowerBound: Instant?,
         timeWindowUpperBound: Instant
-    ): UniquenessCheckResponse {
+    ): LedgerUniquenessCheckResponse {
         log.info("Received request with id: $txId, sending it to Uniqueness Checker")
 
         val result = externalEventExecutor.execute(
@@ -77,7 +77,7 @@ class LedgerUniquenessCheckerClientServiceImpl @Activate constructor(
             signBatch(listOf(SecureHash.parse(txId))).rootSignature
         } else null
 
-        return UniquenessCheckResponseImpl(
+        return LedgerUniquenessCheckResponseImpl(
             result,
             signature
         )
