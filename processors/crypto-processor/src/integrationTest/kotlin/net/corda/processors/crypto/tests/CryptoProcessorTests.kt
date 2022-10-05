@@ -16,7 +16,6 @@ import net.corda.crypto.ecies.EphemeralKeyPairEncryptor
 import net.corda.crypto.ecies.StableKeyPairDecryptor
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.flow.factory.CryptoFlowOpsTransformerFactory
-import net.corda.crypto.impl.emptyKeyValuePairList
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
@@ -624,19 +623,17 @@ class CryptoProcessorTests {
     }
 
     private fun `Should be able to derive secret and encrypt`(tenantId: String, publicKey: PublicKey) {
-        val salt = ByteArray(DigestFactory.getDigest("SHA-256").digestSize).apply {
-            schemeMetadata.secureRandom.nextBytes(this)
-        }
         val plainText = "Hello World!".toByteArray()
         val cipherText = ephemeralEncryptor.encrypt(
-            salt = salt,
             otherPublicKey = publicKey,
             plainText = plainText,
             aad = null
-        )
+        ) { _, _ -> ByteArray(DigestFactory.getDigest("SHA-256").digestSize).apply {
+            schemeMetadata.secureRandom.nextBytes(this)
+        }}
         val decryptedPlainTex = stableDecryptor.decrypt(
             tenantId = tenantId,
-            salt = salt,
+            salt = cipherText.salt,
             publicKey = publicKey,
             otherPublicKey = cipherText.publicKey,
             cipherText = cipherText.cipherText,
