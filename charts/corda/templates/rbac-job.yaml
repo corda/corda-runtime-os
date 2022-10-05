@@ -15,13 +15,31 @@ spec:
     spec:
       {{- include "corda.imagePullSecrets" . | nindent 6 }}
       containers:
-        - name: create-rbac-roles
+        - name: create-rbac-role-user-admin
           image: {{ include "corda.bootstrapImage" . }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           {{- include "corda.bootstrapResources" . | nindent 10 }}
-          args: ['initial-rbac', 'user-admin', 'vnode-creator', '--yield', '300',
-                 '--user', "$(INITIAL_ADMIN_USER_USERNAME)", '--password', "$(INITIAL_ADMIN_USER_PASSWORD)",
-                 '--target', "https://{{ include "corda.fullname" . }}-rpc-worker:443"]
+          args: ['initial-rbac', 'user-admin', '--yield', '300', '--user', "$(INITIAL_ADMIN_USER_USERNAME)",
+            '--password', "$(INITIAL_ADMIN_USER_PASSWORD)",
+            '--target', "https://{{ include "corda.fullname" . }}-rpc-worker:443"]
+          env:
+            - name: INITIAL_ADMIN_USER_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "corda.initialAdminUserSecretName" . }}
+                  key: {{ include "corda.initialAdminUserSecretUsernameKey" . }}
+            - name: INITIAL_ADMIN_USER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "corda.initialAdminUserSecretName" . }}
+                  key: {{ include "corda.initialAdminUserSecretPasswordKey" . }}
+        - name: create-rbac-role-vnode-creator
+          image: {{ include "corda.bootstrapImage" . }}
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          {{- include "corda.bootstrapResources" . | nindent 10 }}
+          args: ['initial-rbac', 'vnode-creator', '--yield', '300', '--user', "$(INITIAL_ADMIN_USER_USERNAME)",
+            '--password', "$(INITIAL_ADMIN_USER_PASSWORD)",
+            '--target', "https://{{ include "corda.fullname" . }}-rpc-worker:443"]
           env:
             - name: INITIAL_ADMIN_USER_USERNAME
               valueFrom:
