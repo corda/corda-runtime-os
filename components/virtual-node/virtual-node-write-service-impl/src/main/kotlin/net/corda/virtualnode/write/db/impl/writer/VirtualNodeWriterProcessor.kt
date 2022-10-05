@@ -229,23 +229,26 @@ internal class VirtualNodeWriterProcessor(
         val shortHashes = dbResetRequest.holdingIdentityShortHashes.map { shortHashString ->
             val shortHash = ShortHash.Companion.of(shortHashString)
             em.transaction {
-                val holdingIdentity = virtualNodeEntityRepository.getHoldingIdentity(shortHash)!!
                 val dbConfig = ConfigFactory.parseString(
                     it.findDbConnectionByNameAndPrivilege(VAULT.getConnectionName(shortHash), DDL)!!.config
                 )
                 val connectionConfig = SmartConfigFactory.create(dbConfig).create(dbConfig)
-                val holdingId = HoldingIdentity(holdingIdentity.x500Name, holdingIdentity.groupId)
                 val virtualNodeInfo = virtualNodeEntityRepository.getVirtualNode(shortHashString)
+                val cpiMetadata = virtualNodeEntityRepository.getCPIMetadataByNameAndVersion(
+                    virtualNodeInfo.cpiIdentifier.name,
+                    virtualNodeInfo.cpiIdentifier.version
+                )!!
                 val migrations = findDbChangeLogAuditForCpi(em, virtualNodeInfo.cpiIdentifier)
-                val lastVersion: Int = migrations.maxOf { it.id.entityVersion }
+                // Second last migration will be the one before the last force upload
+                val lastVersion: Int = migrations.maxOf { it.id.entityVersion } - 1
                 val migrationSet = migrations.filter { migration -> migration.id.entityVersion == lastVersion }
-                migrationSet.forEach {
-                    logger.info(
-                        "Migration $holdingId ${it.id.cpkName} ${it.id.cpkVersion} ${it.id.cpkSignerSummaryHash} " +
-                            "${it.id.filePath} ${it.id.entityVersion} $connectionConfig"
-                    )
+                rollbackVirtualNodeDb(connectionConfig, migrationSet, "${VAULT.name}-system-final")
+                val changelogs = getChangelogs(it, cpiMetadata.id)
+                dbConnectionManager.getDataSource(connectionConfig).use { dataSource ->
+                    dataSource.connection.use { connection ->
+                        LiquibaseSchemaMigratorImpl().updateDb(connection, VirtualNodeDbChangeLog(changelogs), null)
+                    }
                 }
-                rollbackVirtualNodeDb(connectionConfig, migrations, "${VAULT.name}-system-final")
             }
             shortHash.value
         }

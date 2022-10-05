@@ -89,20 +89,13 @@ class LiquibaseSchemaMigratorImpl(
             StreamResourceAccessor(masterChangeLogFileName, dbChange),
             database
         )
-
-        if (tag != null) {
-            if (null == sql) {
-                lb.update(Contexts())
-            } else {
-                lb.update(Contexts(), sql)
-            }
-            lb.tag(tag)
+        if (null == sql) {
+            lb.update(Contexts())
         } else {
-            if (null == sql) {
-                lb.update(Contexts())
-            } else {
-                lb.update(Contexts(), sql)
-            }
+            lb.update(Contexts(), sql)
+        }
+        if (tag != null) {
+            lb.tag(tag)
         }
         log.info("${database.connection.catalog} DB schema update complete")
     }

@@ -279,7 +279,7 @@ class VirtualNodeWriterProcessorTests {
                 assertEquals(liquibaseSchemaMigratorImpl.constructed().size, 1)
                 verify(liquibaseSchemaMigratorImpl.constructed().first()).updateDb(any(), argThat { dbChange ->
                     dbChange.masterChangeLogFiles.isEmpty()
-                })
+                }, eq(null))
             }
         }
     }

@@ -313,10 +313,10 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
                     CpiCpkKey(
                         cpi.metadata.cpiId.name,
                         cpi.metadata.cpiId.version,
-                        cpi.metadata.cpiId.signerSummaryHash.toString(),
+                        cpi.metadata.cpiId.signerSummaryHashForDbQuery,
                         cpk.metadata.cpkId.name,
                         cpk.metadata.cpkId.version,
-                        cpk.metadata.cpkId.signerSummaryHash.toString()
+                        cpk.metadata.cpkId.signerSummaryHashForDbQuery
                     ),
                     cpk.originalFileName!!,
                     cpk.metadata.fileChecksum.toString(),
