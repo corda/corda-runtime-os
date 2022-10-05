@@ -26,12 +26,14 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.toAvro
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.assertAll
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
@@ -54,7 +56,6 @@ import javax.persistence.QueryTimeoutException
 import javax.persistence.RollbackException
 import kotlin.reflect.full.createInstance
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 /**
  * Hint: To run tests against PostgreSQL, follow the steps in the link below.
@@ -73,7 +74,8 @@ class JPABackingStoreImplIntegrationTests {
         private val DB_NAME = "uniqueness_default"
         private val dbConfig = DbUtils.getEntityManagerConfiguration(DB_NAME)
         private val entityManagerFactory: EntityManagerFactory = EntityManagerFactoryFactoryImpl().create(
-            DB_NAME, JPABackingStoreEntities.classes.toList(), dbConfig)
+            DB_NAME, JPABackingStoreEntities.classes.toList(), dbConfig
+        )
     }
 
     class DummyException(message: String) : Exception(message)
@@ -138,7 +140,7 @@ class JPABackingStoreImplIntegrationTests {
                     }
                 }
             }
-            assertEquals(MAX_ATTEMPTS, execCounter)
+            assertThat(execCounter).isEqualTo(MAX_ATTEMPTS)
         }
 
         @Test
@@ -152,7 +154,7 @@ class JPABackingStoreImplIntegrationTests {
                     }
                 }
             }
-            assertEquals(1, execCounter)
+            assertThat(execCounter).isEqualTo(1)
         }
 
         @Test
@@ -167,7 +169,7 @@ class JPABackingStoreImplIntegrationTests {
                     }
                 }
             }
-            assertEquals(3, execCounter)
+            assertThat(execCounter).isEqualTo(3)
         }
     }
 
@@ -191,12 +193,14 @@ class JPABackingStoreImplIntegrationTests {
             backingStoreImpl.session { session ->
                 val result = session.getTransactionDetails(txIds)
                 assertEquals(1, result.size)
-                result.firstNotNullOf {
-                    secureHashTxnDetails ->
-                    assertTrue(secureHashTxnDetails.key in txIds.toSet())
-                    assertEquals(
-                        secureHashTxnDetails.value.result.toCharacterRepresentation(),
-                        UniquenessConstants.RESULT_ACCEPTED_REPRESENTATION
+                result.firstNotNullOf { secureHashTxnDetails ->
+                    assertAll(
+                        { assertThat(secureHashTxnDetails.key in txIds.toSet()) },
+                        {
+                            assertThat(secureHashTxnDetails.value.result.toCharacterRepresentation()).isEqualTo(
+                                UniquenessConstants.RESULT_ACCEPTED_REPRESENTATION
+                            )
+                        }
                     )
                 }
             }
@@ -224,10 +228,13 @@ class JPABackingStoreImplIntegrationTests {
                 val result = session.getTransactionDetails(txIds)
                 assertEquals(1, result.size)
                 result.forEach { secureHashTxnDetails ->
-                    assertTrue(secureHashTxnDetails.key in txIds.toSet())
-                    assertEquals(
-                        secureHashTxnDetails.value.result.toCharacterRepresentation(),
-                        UniquenessConstants.RESULT_REJECTED_REPRESENTATION
+                    assertAll(
+                        { assertThat(secureHashTxnDetails.key in txIds.toSet()) },
+                        {
+                            assertThat(secureHashTxnDetails.value.result.toCharacterRepresentation()).isEqualTo(
+                                UniquenessConstants.RESULT_REJECTED_REPRESENTATION
+                            )
+                        }
                     )
                 }
             }
@@ -237,7 +244,7 @@ class JPABackingStoreImplIntegrationTests {
         fun `Persisting unconsumed states succeeds`() {
             val hashCnt = 5
             val secureHashes = List(hashCnt) { SecureHashUtils.randomSecureHash() }
-            val stateRefs = secureHashes.map { UniquenessCheckStateRefImpl(it, 0)}
+            val stateRefs = secureHashes.map { UniquenessCheckStateRefImpl(it, 0) }
 
             backingStoreImpl.session { session ->
                 session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
@@ -247,7 +254,7 @@ class JPABackingStoreImplIntegrationTests {
                 val result = session.getStateDetails(stateRefs).toList()
                 assertEquals(hashCnt, result.size)
                 result.forEach { stateRefAndStateDetailPair ->
-                    assertTrue(stateRefAndStateDetailPair.first.txHash in secureHashes.toSet())
+                    assertThat(stateRefAndStateDetailPair.first.txHash in secureHashes.toSet())
                 }
             }
         }
@@ -276,8 +283,10 @@ class JPABackingStoreImplIntegrationTests {
             backingStoreImpl.session { session ->
                 val stateDetails = session.getStateDetails(stateRefs)
                 val filteredStates = stateDetails.filterValues { it.consumingTxId != null }
-                assertEquals(1, filteredStates.count())
-                assertEquals(consumingTxId, filteredStates[consumingStateRef]?.consumingTxId)
+                assertAll(
+                    { assertThat(filteredStates.count()).isEqualTo(1)},
+                    { assertThat(filteredStates[consumingStateRef]?.consumingTxId).isEqualTo(consumingTxId)}
+                )
             }
         }
 
