@@ -51,46 +51,58 @@ class FlowMessagingImpl @Activate constructor(
     @Suspendable
     override fun <R: Any> receiveAll(receiveType: Class<out R>, sessions: Set<FlowSession>): List<R> {
         requireBoxedType(receiveType)
-        val request = FlowIORequest.Receive(sessions = sessions.map {
-            val flowSession = (it as FlowSessionInternal)
-            FlowIORequest.SessionInfo(flowSession.getSessionId(), flowSession.counterparty)
+        val flowSessionInternals = sessions as List<FlowSessionInternal>
+        val request = FlowIORequest.Receive(sessions = flowSessionInternals.map {
+            FlowIORequest.SessionInfo(it.getSessionId(), it.counterparty)
         }.toSet())
         val received = fiber.suspend(request)
+        setSessionsAsConfirmed(flowSessionInternals)
         return deserializeReceivedPayload(received, receiveType)
     }
 
     @Suspendable
     override fun receiveAllMap(sessions: Map<FlowSession, Class<out Any>>): Map<FlowSession, Any> {
-        val flowSessionImpls = sessions.mapKeys {
+        val flowSessionInternals = sessions.mapKeys {
             requireBoxedType(it.value)
-            (it.key as FlowSessionInternal)
+            it.key as FlowSessionInternal
         }
-        val request = FlowIORequest.Receive(sessions = sessions.map {
-            val flowSession = (it.key as FlowSessionInternal)
-            FlowIORequest.SessionInfo(flowSession.getSessionId(), flowSession.counterparty)
+        val request = FlowIORequest.Receive(sessions = flowSessionInternals.map {
+            val flowSessionInternal = it.key
+            FlowIORequest.SessionInfo(flowSessionInternal.getSessionId(), flowSessionInternal.counterparty)
         }.toSet())
         val received = fiber.suspend(request)
-        return deserializeReceivedPayload(received, flowSessionImpls)
+        setSessionsAsConfirmed(flowSessionInternals.keys)
+        return deserializeReceivedPayload(received, flowSessionInternals)
     }
 
     @Suspendable
     override fun sendAll(payload: Any, sessions: Set<FlowSession>) {
         requireBoxedType(payload::class.java)
-        val flowSessions = sessions.map { it as FlowSessionInternal }
+        val flowSessionInternals = sessions as List<FlowSessionInternal>
         val serializedPayload = serialize(payload)
         val sessionToPayload =
-            flowSessions.associate { FlowIORequest.SessionInfo(it.getSessionId(), it.counterparty) to serializedPayload }
-        return fiber.suspend(FlowIORequest.Send(sessionToPayload))
+            flowSessionInternals.associate { FlowIORequest.SessionInfo(it.getSessionId(), it.counterparty) to serializedPayload }
+        fiber.suspend(FlowIORequest.Send(sessionToPayload))
+        setSessionsAsConfirmed(flowSessionInternals)
     }
 
     @Suspendable
     override fun sendAllMap(payloadsPerSession: Map<FlowSession, Any>) {
-        val sessionPayload = payloadsPerSession.map {
+        val flowSessionInternals = payloadsPerSession.map {
             requireBoxedType(it.value::class.java)
-            val flowSessionInternal = (it.key as FlowSessionInternal)
-            FlowIORequest.SessionInfo(flowSessionInternal.getSessionId(), flowSessionInternal.counterparty) to serialize(it.value)
+            (it.key as FlowSessionInternal) to serialize(it.value)
         }.toMap()
-        return fiber.suspend(FlowIORequest.Send(sessionPayload))
+
+        val sessionPayload = flowSessionInternals.mapKeys {
+            val flowSessionInternal = it.key
+            FlowIORequest.SessionInfo(flowSessionInternal.getSessionId(), flowSessionInternal.counterparty)
+        }
+        fiber.suspend(FlowIORequest.Send(sessionPayload))
+        setSessionsAsConfirmed(flowSessionInternals.keys)
+    }
+
+    private fun setSessionsAsConfirmed(flowSessionInternals: Collection<FlowSessionInternal>) {
+        flowSessionInternals.onEach { it.setSessionConfirmed() }
     }
 
     @Suspendable

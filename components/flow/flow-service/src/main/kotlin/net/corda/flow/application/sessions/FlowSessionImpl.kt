@@ -54,6 +54,7 @@ class FlowSessionImpl(
         requireBoxedType(receiveType)
         val request = FlowIORequest.SendAndReceive(mapOf(getSessionInfo() to serialize(payload)))
         val received = fiber.suspend(request)
+        setSessionConfirmed()
         return deserializeReceivedPayload(received, receiveType)
     }
 
@@ -62,6 +63,7 @@ class FlowSessionImpl(
         requireBoxedType(receiveType)
         val request = FlowIORequest.Receive(setOf(getSessionInfo()))
         val received = fiber.suspend(request)
+        setSessionConfirmed()
         return deserializeReceivedPayload(received, receiveType)
     }
 
@@ -69,7 +71,8 @@ class FlowSessionImpl(
     override fun send(payload: Any) {
         val request =
             FlowIORequest.Send(mapOf(getSessionInfo() to serialize(payload)))
-        return fiber.suspend(request)
+        fiber.suspend(request)
+        setSessionConfirmed()
     }
 
     @Suspendable

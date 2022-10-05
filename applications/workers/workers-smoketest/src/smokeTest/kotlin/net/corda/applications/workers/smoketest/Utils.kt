@@ -11,15 +11,15 @@ import java.util.concurrent.TimeoutException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-const val X500_BOB = "CN=Bob, OU=Application, O=R3, L=London, C=GB"
-const val X500_ALICE = "CN=Alice, OU=Application, O=R3, L=London, C=GB"
+const val X500_BOB = "C=GB, L=London, O=Bob"
+const val X500_ALICE = "C=GB, L=London, O=Alice"
 //Charlie and David for use in multiple flow status endpoints. Number of flows they start is asserted. Do not start flows using these names
 const val X500_CHARLIE = "CN=Charlie, OU=Application, O=R3, L=Dublin, C=IE"
 const val X500_DAVID = "CN=David, OU=Application, O=R3, L=Dublin, C=IE"
 
 const val USERNAME = "admin"
 const val PASSWORD = "admin"
-const val GROUP_ID = "7c5d6948-e17b-44e7-9d1c-fa4a3f667cad"
+const val GROUP_ID = "92d9f6bf-2a95-4fa6-a390-15b19dab7659"
 
 // The CPB and CPI used in smoke tests
 const val TEST_CPI_NAME = "test-cordapp"
