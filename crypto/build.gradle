@@ -12,12 +12,11 @@ dependencies {
 
     compileOnly 'org.osgi:osgi.annotation'
 
-    api "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion"
-    api "org.bouncycastle:bcpkix-jdk15on:$bouncycastleVersion"
-
     api platform(project(':corda-api'))
     api project(':base')
 
+    testImplementation "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion"
+    testImplementation "org.bouncycastle:bcpkix-jdk15on:$bouncycastleVersion"
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junitVersion"
 }
