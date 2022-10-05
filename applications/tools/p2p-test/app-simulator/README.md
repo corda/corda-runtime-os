@@ -70,7 +70,7 @@ In the receiver mode, the configuration file should have the following form:
     simulatorMode: "RECEIVER"
     topicCreationParams {
         numPartitions: 10
-	    replicationFactor: 3
+	replicationFactor: 3
     }
 }
 ```
