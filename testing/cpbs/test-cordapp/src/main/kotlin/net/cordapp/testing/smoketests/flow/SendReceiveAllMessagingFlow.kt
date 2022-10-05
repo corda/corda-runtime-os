@@ -58,10 +58,13 @@ class SendReceiveAllMessagingFlow(
         val receivedMap = flowMessaging.receiveAllMap(mapOf(sessionOne to MyClass::class.java, sessionTwo to MyOtherClass::class.java))
         log.info("received Map")
 
+        var receivedNumSum = 0
         receivedMap.forEach { (_, received) ->
             if (received is MyClass) {
+                receivedNumSum+=received.int
                 log.info("Session received map data (type: MyClass): ${received.int} ")
             } else if (received is MyOtherClass) {
+                receivedNumSum+=received.int
                 log.info("Session received map data (type: MyOtherClass): ${received.int} ")
             }
         }
@@ -69,6 +72,7 @@ class SendReceiveAllMessagingFlow(
         val receivedAll = flowMessaging.receiveAll(MyClass::class.java, setOf(sessionOne, sessionTwo))
         log.info("received all")
         receivedAll.forEach {
+            receivedNumSum+=it.int
             log.info("Session received all data: ${it.int} ")
         }
 
@@ -80,7 +84,7 @@ class SendReceiveAllMessagingFlow(
         log.info("Closed session")
         log.info("Hello world completed.")
 
-        return "Completed"
+        return "Completed. Sum: $receivedNumSum"
     }
 }
 

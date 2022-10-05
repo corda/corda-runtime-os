@@ -478,7 +478,7 @@ class FlowTests {
     }
 
     @Test
-    fun `SubFlow - Initiate multiple sessions and exercise the flow messaging apis`() {
+    fun `Flow Session - Initiate multiple sessions and exercise the flow messaging apis`() {
 
         val requestBody = RpcSmokeTestInput().apply {
             command = "flow_messaging_apis"
@@ -495,7 +495,7 @@ class FlowTests {
         assertThat(result.flowError).isNull()
         assertThat(flowResult.command).isEqualTo("flow_messaging_apis")
         assertThat(flowResult.result)
-            .isEqualTo("${X500_BOB}=Completed")
+            .isEqualTo("${X500_BOB}=Completed. Sum:18")
     }
 
     @Test
