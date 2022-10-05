@@ -51,7 +51,7 @@ class FlowMessagingImpl @Activate constructor(
     @Suspendable
     override fun <R: Any> receiveAll(receiveType: Class<out R>, sessions: Set<FlowSession>): List<R> {
         requireBoxedType(receiveType)
-        val flowSessionInternals = sessions as List<FlowSessionInternal>
+        val flowSessionInternals: List<FlowSessionInternal> = uncheckedCast(sessions)
         val request = FlowIORequest.Receive(sessions = flowSessionInternals.map {
             FlowIORequest.SessionInfo(it.getSessionId(), it.counterparty)
         }.toSet())
@@ -78,7 +78,7 @@ class FlowMessagingImpl @Activate constructor(
     @Suspendable
     override fun sendAll(payload: Any, sessions: Set<FlowSession>) {
         requireBoxedType(payload::class.java)
-        val flowSessionInternals = sessions as List<FlowSessionInternal>
+        val flowSessionInternals: List<FlowSessionInternal> = uncheckedCast(sessions)
         val serializedPayload = serialize(payload)
         val sessionToPayload =
             flowSessionInternals.associate { FlowIORequest.SessionInfo(it.getSessionId(), it.counterparty) to serializedPayload }
