@@ -24,6 +24,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.crypto.impl.converter.PublicKeyConverter
+import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.toSortedMap
 import net.corda.v5.base.exceptions.ValueNotFoundException
 import net.corda.v5.base.util.parse
@@ -52,6 +53,10 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import net.corda.test.util.time.TestClock
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import java.time.Instant
 
 @Suppress("MaxLineLength")
@@ -64,9 +69,17 @@ class MemberInfoTest {
 
         private val clock = TestClock(Instant.ofEpochSecond(100))
         private val modifiedTime = clock.instant()
+        private val endpointInfoFactory: EndpointInfoFactory = mock {
+            on { create(any(), any()) } doAnswer { invocation ->
+                mock {
+                    on { this.url } doReturn invocation.getArgument(0)
+                    on { this.protocolVersion } doReturn invocation.getArgument(1)
+                }
+            }
+        }
         private val endpoints = listOf(
-            EndpointInfoImpl("https://localhost:10000"),
-            EndpointInfoImpl("https://google.com", 10)
+            endpointInfoFactory.create("https://localhost:10000"),
+            endpointInfoFactory.create("https://google.com", 10)
         )
         private val ledgerKeys = listOf(key, key)
         private val testObjects = listOf(
