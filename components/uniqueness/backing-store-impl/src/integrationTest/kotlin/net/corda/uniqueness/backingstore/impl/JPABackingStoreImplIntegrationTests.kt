@@ -252,7 +252,7 @@ class JPABackingStoreImplIntegrationTests {
 
             backingStoreImpl.session { session ->
                 val result = session.getStateDetails(stateRefs).toList()
-                assertEquals(hashCnt, result.size)
+                assertThat(result.size).isEqualTo(hashCnt)
                 result.forEach { stateRefAndStateDetailPair ->
                     assertThat(stateRefAndStateDetailPair.first.txHash in secureHashes.toSet())
                 }
@@ -272,7 +272,7 @@ class JPABackingStoreImplIntegrationTests {
 
             // Consume one of unconsumed states in DB.
             val consumingTxId: SecureHash = SecureHashUtils.randomSecureHash()
-            val consumingStateRef = stateRefs[0]
+            val consumingStateRef = stateRefs[0] // Consume the first out of two items.
             backingStoreImpl.session { session ->
                 session.executeTransaction { _, txnOps ->
                     txnOps.consumeStates(consumingTxId = consumingTxId, stateRefs = listOf(consumingStateRef))
@@ -282,10 +282,13 @@ class JPABackingStoreImplIntegrationTests {
             // Verify if the target state has been correctly updated.
             backingStoreImpl.session { session ->
                 val stateDetails = session.getStateDetails(stateRefs)
-                val filteredStates = stateDetails.filterValues { it.consumingTxId != null }
+                val consumedStates = stateDetails.filterValues { it.consumingTxId != null }
+                val unconsumedStates = stateDetails.filterValues { it.consumingTxId == null }
                 assertAll(
-                    { assertThat(filteredStates.count()).isEqualTo(1)},
-                    { assertThat(filteredStates[consumingStateRef]?.consumingTxId).isEqualTo(consumingTxId)}
+                    { assertThat(consumedStates.count()).isEqualTo(1) },
+                    { assertThat(consumedStates[consumingStateRef]?.consumingTxId).isEqualTo(consumingTxId) },
+                    { assertThat(unconsumedStates.count()).isEqualTo(1) },
+                    { assertThat(stateRefs[1].txHash).isEqualTo(unconsumedStates[stateRefs[1]]!!.stateRef.txHash)}
                 )
             }
         }
