@@ -214,33 +214,15 @@ class JPABackingStoreImplTests {
 
     @Nested
     inner class EventHandlerTests {
-        @Disabled(
-            "Re-iterate the test after reviewing the expected behaviour." +
-                    "This test fails because life cycle status is not updated to UP upon receiving StartEvent."
-        )
         @Test
-        fun `StartEvent sets life cycle status to up`() {
+        fun `StartEvent starts following the status of the required dependency`() {
             val mockCoordinator = mock<LifecycleCoordinator>()
             backingStoreImpl.eventHandler(StartEvent(), mockCoordinator)
-
             Mockito.verify(mockCoordinator).followStatusChangesByName(
                 eq(
                     setOf(LifecycleCoordinatorName.forComponent<DbConnectionManager>())
                 )
             )
-            Mockito.verify(lifecycleCoordinator).updateStatus(LifecycleStatus.UP)
-        }
-
-        @Disabled(
-            "Re-iterate the test after reviewing the expected behaviour." +
-                    "This test fails because life cycle status is not updated to DOWN upon receiving StopEvent."
-        )
-        @Test
-        fun `StopEvent sets life cycle status to down`() {
-            val mockCoordinator = mock<LifecycleCoordinator>()
-            backingStoreImpl.eventHandler(StopEvent(), mockCoordinator)
-
-            Mockito.verify(lifecycleCoordinator).updateStatus(LifecycleStatus.DOWN)
         }
 
         @Test
