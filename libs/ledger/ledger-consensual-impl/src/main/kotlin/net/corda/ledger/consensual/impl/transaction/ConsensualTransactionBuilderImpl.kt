@@ -29,9 +29,7 @@ import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import org.osgi.service.component.annotations.Reference
 
 @Suppress("LongParameterList")
 class ConsensualTransactionBuilderImpl(

@@ -33,7 +33,6 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.mock
 
 // TODO(deduplicate boilerplate with ConsensualTransactionBuilderImplTest)
 internal class ConsensualLedgerTransactionImplTest{
