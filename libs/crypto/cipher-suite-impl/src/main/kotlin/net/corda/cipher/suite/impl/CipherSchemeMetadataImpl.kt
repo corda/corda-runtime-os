@@ -1,7 +1,5 @@
 package net.corda.cipher.suite.impl
 
-import java.io.StringReader
-import java.io.StringWriter
 import java.security.KeyFactory
 import java.security.MessageDigest
 import java.security.Provider
@@ -9,9 +7,8 @@ import java.security.PublicKey
 import java.security.SecureRandom
 import java.security.spec.AlgorithmParameterSpec
 import java.security.spec.PSSParameterSpec
-import java.security.spec.X509EncodedKeySpec
 import net.corda.crypto.impl.PSSParameterSpecSerializer
-import net.corda.crypto.impl.ProviderMap
+import net.corda.crypto.impl.CipherSchemeMetadataProvider
 import net.corda.v5.cipher.suite.AlgorithmParameterSpecEncodingService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.KeyEncodingService
@@ -19,18 +16,11 @@ import net.corda.v5.cipher.suite.schemes.AlgorithmParameterSpecSerializer
 import net.corda.v5.cipher.suite.schemes.DigestScheme
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.cipher.suite.schemes.SerializedAlgorithmParameterSpec
-import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.exceptions.CryptoException
 import net.corda.v5.serialization.SingletonSerializeAsToken
-import org.bouncycastle.asn1.DERNull
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
-import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey
-import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
-import org.bouncycastle.openssl.jcajce.JcaPEMWriter
-import org.bouncycastle.util.io.pem.PemReader
 import org.osgi.service.component.annotations.Component
 
 @Component(
@@ -86,29 +76,15 @@ class CipherSchemeMetadataImpl : CipherSchemeMetadata, SingletonSerializeAsToken
         )
     }
 
+    private val metadataProvider = CipherSchemeMetadataProvider()
+
     private val paramSpecSerializers = mapOf<String, AlgorithmParameterSpecSerializer<out AlgorithmParameterSpec>>(
         PSSParameterSpec::class.java.name to PSSParameterSpecSerializer()
     )
 
-    private val providerMap by lazy(LazyThreadSafetyMode.PUBLICATION) { ProviderMap(this) }
+    override val schemes: List<KeyScheme> = metadataProvider.schemes
 
-    override val schemes: List<KeyScheme> = listOf(
-        providerMap.RSA.scheme,
-        providerMap.ECDSA_SECP256K1.scheme,
-        providerMap.ECDSA_SECP256R1.scheme,
-        providerMap.EDDSA_ED25519.scheme,
-        providerMap.X25519.scheme,
-        providerMap.SPHINCS256.scheme,
-        providerMap.SM2.scheme,
-        providerMap.GOST3410_GOST3411.scheme,
-        providerMap.COMPOSITE_KEY
-    )
-
-    private val algorithmMap: Map<AlgorithmIdentifier, KeyScheme> = schemes.flatMap { scheme ->
-        scheme.algorithmOIDs.map { identifier -> identifier to scheme }
-    }.toMap()
-
-    override val digests: List<DigestScheme> = providerMap.providers.values
+    override val digests: List<DigestScheme> = metadataProvider.providers.values
         .flatMap { it.services }
         .filter {
             it.type.equals(MESSAGE_DIGEST_TYPE, true)
@@ -118,22 +94,40 @@ class CipherSchemeMetadataImpl : CipherSchemeMetadata, SingletonSerializeAsToken
         .map { DigestScheme(algorithmName = it.algorithm, providerName = it.provider.name) }
         .distinctBy { it.algorithmName }
 
-    override val providers: Map<String, Provider> get() = providerMap.providers
+    override val providers: Map<String, Provider> get() = metadataProvider.providers
 
-    override val secureRandom: SecureRandom get() = providerMap.secureRandom
-
-    override fun findKeyScheme(algorithm: AlgorithmIdentifier): KeyScheme =
-        algorithmMap[normaliseAlgorithmIdentifier(algorithm)]
-            ?: throw IllegalArgumentException("Unrecognised algorithm: ${algorithm.algorithm.id}")
+    override val secureRandom: SecureRandom get() = metadataProvider.secureRandom
 
     override fun inferSignatureSpec(publicKey: PublicKey, digest: DigestAlgorithmName): SignatureSpec? =
-        providerMap.keySchemeInfoMap[findKeyScheme(publicKey)]?.getSignatureSpec(digest)
+        metadataProvider.keySchemeInfoMap[findKeyScheme(publicKey)]?.getSignatureSpec(digest)
 
     override fun supportedSignatureSpec(scheme: KeyScheme): List<SignatureSpec> =
-        providerMap.keySchemeInfoMap[scheme]?.digestToSignatureSpecMap?.values?.toList() ?: emptyList()
+        metadataProvider.keySchemeInfoMap[scheme]?.digestToSignatureSpecMap?.values?.toList() ?: emptyList()
 
     override fun inferableDigestNames(scheme: KeyScheme): List<DigestAlgorithmName> =
-        providerMap.keySchemeInfoMap[scheme]?.digestToSignatureSpecMap?.keys?.toList() ?: emptyList()
+        metadataProvider.keySchemeInfoMap[scheme]?.digestToSignatureSpecMap?.keys?.toList() ?: emptyList()
+
+    override fun findKeyScheme(algorithm: AlgorithmIdentifier): KeyScheme =
+        metadataProvider.findKeyScheme(algorithm)
+
+    override fun findKeyScheme(key: PublicKey): KeyScheme {
+        val keyInfo = SubjectPublicKeyInfo.getInstance(key.encoded)
+        return findKeyScheme(keyInfo.algorithm)
+    }
+
+    override fun findKeyScheme(codeName: String): KeyScheme =
+        schemes.firstOrNull { it.codeName == codeName }
+            ?: throw IllegalArgumentException("Unrecognised scheme code name: $codeName")
+
+    override fun findKeyFactory(scheme: KeyScheme): KeyFactory = metadataProvider.keyFactories[scheme]
+
+    override fun decodePublicKey(encodedKey: ByteArray): PublicKey = metadataProvider.decodePublicKey(encodedKey)
+
+    override fun decodePublicKey(encodedKey: String): PublicKey = metadataProvider.decodePublicKey(encodedKey)
+
+    override fun encodeAsString(publicKey: PublicKey): String = metadataProvider.encodeAsString(publicKey)
+
+    override fun toSupportedPublicKey(key: PublicKey): PublicKey = metadataProvider.toSupportedPublicKey(key)
 
     @Suppress("UNCHECKED_CAST")
     override fun serialize(params: AlgorithmParameterSpec): SerializedAlgorithmParameterSpec {
@@ -146,88 +140,9 @@ class CipherSchemeMetadataImpl : CipherSchemeMetadata, SingletonSerializeAsToken
         )
     }
 
-    override fun findKeyScheme(key: PublicKey): KeyScheme {
-        val keyInfo = SubjectPublicKeyInfo.getInstance(key.encoded)
-        return findKeyScheme(keyInfo.algorithm)
-    }
-
-    override fun findKeyScheme(codeName: String): KeyScheme =
-        schemes.firstOrNull { it.codeName == codeName }
-            ?: throw IllegalArgumentException("Unrecognised scheme code name: $codeName")
-
-    override fun findKeyFactory(scheme: KeyScheme): KeyFactory = providerMap.keyFactories[scheme]
-
-    override fun decodePublicKey(encodedKey: ByteArray): PublicKey = try {
-        val subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(encodedKey)
-        val scheme = findKeyScheme(subjectPublicKeyInfo.algorithm)
-        val keyFactory = providerMap.keyFactories[scheme]
-        keyFactory.generatePublic(X509EncodedKeySpec(encodedKey))
-    } catch (e: RuntimeException) {
-        throw e
-    } catch (e: Throwable) {
-        throw CryptoException("Failed to decode public key", e)
-    }
-
-    override fun decodePublicKey(encodedKey: String): PublicKey = try {
-        val pemContent = parsePemContent(encodedKey)
-        val publicKeyInfo = SubjectPublicKeyInfo.getInstance(pemContent)
-        val converter = getJcaPEMKeyConverter(publicKeyInfo)
-        val publicKey = converter.getPublicKey(publicKeyInfo)
-        toSupportedPublicKey(publicKey)
-    } catch (e: RuntimeException) {
-        throw e
-    } catch (e: Throwable) {
-        throw CryptoException("Failed to decode public key", e)
-    }
-
     override fun deserialize(params: SerializedAlgorithmParameterSpec): AlgorithmParameterSpec {
         val serializer = paramSpecSerializers[params.clazz]
             ?: throw IllegalArgumentException("${params.clazz} is not supported.")
         return serializer.deserialize(params.bytes)
     }
-
-    override fun encodeAsString(publicKey: PublicKey): String = try {
-        objectToPem(publicKey)
-    } catch (e: RuntimeException) {
-        throw e
-    } catch (e: Throwable) {
-        throw CryptoException("Failed to encode public key in PEM format", e)
-    }
-
-    override fun toSupportedPublicKey(key: PublicKey): PublicKey {
-        return when {
-            key::class.java.`package` == BCECPublicKey::class.java.`package` -> key
-            key is CompositeKey -> key
-            else -> decodePublicKey(key.encoded)
-        }
-    }
-
-    private fun getJcaPEMKeyConverter(publicKeyInfo: SubjectPublicKeyInfo): JcaPEMKeyConverter {
-        val scheme = findKeyScheme(publicKeyInfo.algorithm)
-        val converter = JcaPEMKeyConverter()
-        converter.setProvider(providers[scheme.providerName])
-        return converter
-    }
-
-    private fun objectToPem(obj: Any): String =
-        StringWriter().use { strWriter ->
-            JcaPEMWriter(strWriter).use { pemWriter ->
-                pemWriter.writeObject(obj)
-            }
-            return strWriter.toString()
-        }
-
-    private fun parsePemContent(pem: String): ByteArray =
-        StringReader(pem).use { strReader ->
-            return PemReader(strReader).use { pemReader ->
-                pemReader.readPemObject().content
-            }
-        }
-
-    private fun normaliseAlgorithmIdentifier(id: AlgorithmIdentifier): AlgorithmIdentifier =
-        if (id.parameters is DERNull) {
-            AlgorithmIdentifier(id.algorithm, null)
-        } else {
-            id
-        }
 }

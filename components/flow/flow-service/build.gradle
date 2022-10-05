@@ -19,6 +19,7 @@ dependencies {
     implementation project(":components:virtual-node:sandbox-group-context-service")
 
     implementation project(":libs:configuration:configuration-core")
+    implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:crypto:crypto-flow")
     implementation project(':libs:flows:flow-api')
     implementation project(':libs:flows:session-manager')

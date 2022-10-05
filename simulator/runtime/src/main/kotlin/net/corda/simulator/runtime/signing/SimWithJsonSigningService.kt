@@ -49,4 +49,5 @@ class SimWithJsonSigningService(
         ).toByteArray()
         return DigitalSignature.WithKey(publicKey, opaqueBytes, mapOf())
     }
+
 }
