@@ -29,5 +29,4 @@ dependencies {
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation "commons-io:commons-io:$commonsIoVersion"
 }
