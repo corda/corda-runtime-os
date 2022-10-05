@@ -22,7 +22,6 @@ import org.bouncycastle.openssl.jcajce.JcaPEMWriter
 import java.io.StringWriter
 import java.security.InvalidKeyException
 import java.security.cert.CertificateFactory
-import kotlin.math.log
 
 internal class HostedIdentityEntryFactory(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
