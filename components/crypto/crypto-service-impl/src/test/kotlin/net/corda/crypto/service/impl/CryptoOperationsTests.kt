@@ -606,19 +606,17 @@ class CryptoOperationsTests {
         eventually {
             assertEquals(LifecycleStatus.UP, stableDecryptor.lifecycleCoordinator.status)
         }
-        val salt = ByteArray(DigestFactory.getDigest("SHA-256").digestSize).apply {
-            schemeMetadata.secureRandom.nextBytes(this)
-        }
         val plainText = "Hello MGM!".toByteArray()
         val cipherText = ephemeralEncryptor.encrypt(
-            salt = salt,
             otherPublicKey = stableKeyPair.publicKey,
             plainText = plainText,
             aad = null
-        )
+        ) { _, _ -> ByteArray(DigestFactory.getDigest("SHA-256").digestSize).apply {
+            schemeMetadata.secureRandom.nextBytes(this)
+        }}
         val decryptedPlainTex = stableDecryptor.decrypt(
             tenantId = tenantId,
-            salt = salt,
+            salt = cipherText.salt,
             publicKey = stableKeyPair.publicKey,
             otherPublicKey = cipherText.publicKey,
             cipherText = cipherText.cipherText,
