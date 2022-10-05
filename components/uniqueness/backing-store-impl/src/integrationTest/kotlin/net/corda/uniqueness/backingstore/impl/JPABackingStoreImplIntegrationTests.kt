@@ -45,6 +45,7 @@ import org.mockito.kotlin.whenever
 import org.mockito.kotlin.times
 import org.mockito.kotlin.never
 import java.time.Clock
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.UUID
@@ -191,13 +192,17 @@ class JPABackingStoreImplIntegrationTests {
             }
 
             backingStoreImpl.session { session ->
-                val result = session.getTransactionDetails(txIds)
-                assertEquals(1, result.size)
-                result.firstNotNullOf { secureHashTxnDetails ->
+                val txnDetails = session.getTransactionDetails(txIds)
+                assertThat(txnDetails.size).isEqualTo(1)
+
+                txnDetails.firstNotNullOf { secureHashTxnDetails ->
+                    val uniquenessCheckResult = secureHashTxnDetails.value.result
                     assertAll(
-                        { assertThat(secureHashTxnDetails.key in txIds.toSet()) },
-                        { assertThat(secureHashTxnDetails.value.result.toCharacterRepresentation()).isEqualTo(
-                                UniquenessConstants.RESULT_ACCEPTED_REPRESENTATION) })
+                        { assertThat(txIds).contains(secureHashTxnDetails.key)},
+                        { assertThat(uniquenessCheckResult).isInstanceOf(UniquenessCheckResultSuccessImpl::class.java)},
+                        { assertThat(uniquenessCheckResult.resultTimestamp).isAfter(Instant.MIN)},
+                        { assertThat(uniquenessCheckResult.toCharacterRepresentation())
+                            .isEqualTo(UniquenessConstants.RESULT_ACCEPTED_REPRESENTATION) })
                 }
             }
         }
