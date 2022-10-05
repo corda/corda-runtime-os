@@ -1,4 +1,5 @@
 @file:JvmName("MarshallingUtils")
+
 package net.corda.v5.application.marshalling
 
 import net.corda.v5.application.flows.RPCStartableFlow
@@ -7,7 +8,7 @@ import net.corda.v5.base.annotations.DoNotImplement
 /**
  * [MarshallingService] is an abstract interface for marshalling to and from formatted string data.
  * Corda provides specialized implementations of the marshalling services for converting data in different string
- * formats. Only JSON is supported in the current version ([JsonMarshallingService]).
+ * formats.
  *
  * Example usage:
  * @see RPCStartableFlow
@@ -35,7 +36,7 @@ interface MarshallingService {
      *
      * @return An instance of the required type containing the input data.
      */
-    fun <T> parse(input: String, clazz: Class<T>) : T
+    fun <T> parse(input: String, clazz: Class<T>): T
 
     /**
      * Deserializes the [input] into a list of instances of [T].
@@ -57,7 +58,7 @@ interface MarshallingService {
  *
  * @return An instance of the required type containing the input data.
  */
-inline fun <reified T> MarshallingService.parse(input: String) : T {
+inline fun <reified T> MarshallingService.parse(input: String): T {
     return this.parse(input, T::class.java)
 }
 
