@@ -1,9 +1,11 @@
 package net.corda.membership.impl.read.subscription
 
+import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.layeredpropertymap.toAvro
-import net.corda.membership.lib.impl.EndpointInfoImpl
+import net.corda.membership.impl.read.cache.MembershipGroupReadCache
+import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
@@ -19,12 +21,11 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
+import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
-import net.corda.crypto.impl.converter.PublicKeyConverter
-import net.corda.membership.impl.read.cache.MembershipGroupReadCache
-import net.corda.membership.lib.MemberInfoFactory
 import net.corda.messaging.api.records.Record
+import net.corda.test.util.time.TestClock
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -32,10 +33,12 @@ import net.corda.virtualnode.toAvro
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
-import net.corda.test.util.time.TestClock
 import java.time.Instant
 
 class MemberListProcessorTest {
@@ -45,9 +48,17 @@ class MemberListProcessorTest {
         private val knownKey: PublicKey = mock()
         private const val knownKeyAsString = "12345"
         private val modifiedTime = clock.instant()
+        private val endpointInfoFactory: EndpointInfoFactory = mock {
+            on { create(any(), any()) } doAnswer { invocation ->
+                mock {
+                    on { this.url } doReturn invocation.getArgument(0)
+                    on { this.protocolVersion } doReturn invocation.getArgument(1)
+                }
+            }
+        }
         private val endpoints = listOf(
-            EndpointInfoImpl("https://corda5.r3.com:10000"),
-            EndpointInfoImpl("https://corda5.r3.com:10001", 10)
+            endpointInfoFactory.create("https://corda5.r3.com:10000"),
+            endpointInfoFactory.create("https://corda5.r3.com:10001", 10)
         )
         private val ledgerKeys = listOf(knownKey, knownKey)
         private lateinit var memberInfoFactory: MemberInfoFactory
