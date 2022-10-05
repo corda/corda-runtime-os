@@ -51,7 +51,7 @@ class FlowMessagingImpl @Activate constructor(
     @Suspendable
     override fun <R: Any> receiveAll(receiveType: Class<out R>, sessions: Set<FlowSession>): List<R> {
         requireBoxedType(receiveType)
-        val flowSessionInternals: List<FlowSessionInternal> = uncheckedCast(sessions)
+        val flowSessionInternals: Set<FlowSessionInternal> = uncheckedCast(sessions)
         val request = FlowIORequest.Receive(sessions = flowSessionInternals.map {
             FlowIORequest.SessionInfo(it.getSessionId(), it.counterparty)
         }.toSet())
@@ -78,7 +78,7 @@ class FlowMessagingImpl @Activate constructor(
     @Suspendable
     override fun sendAll(payload: Any, sessions: Set<FlowSession>) {
         requireBoxedType(payload::class.java)
-        val flowSessionInternals: List<FlowSessionInternal> = uncheckedCast(sessions)
+        val flowSessionInternals: Set<FlowSessionInternal> = uncheckedCast(sessions)
         val serializedPayload = serialize(payload)
         val sessionToPayload =
             flowSessionInternals.associate { FlowIORequest.SessionInfo(it.getSessionId(), it.counterparty) to serializedPayload }
@@ -88,20 +88,16 @@ class FlowMessagingImpl @Activate constructor(
 
     @Suspendable
     override fun sendAllMap(payloadsPerSession: Map<FlowSession, Any>) {
-        val flowSessionInternals = payloadsPerSession.map {
+        val sessionPayload = payloadsPerSession.map {
             requireBoxedType(it.value::class.java)
-            (it.key as FlowSessionInternal) to serialize(it.value)
+            val flowSessionInternal = (it.key as FlowSessionInternal)
+            FlowIORequest.SessionInfo(flowSessionInternal.getSessionId(), flowSessionInternal.counterparty) to serialize(it.value)
         }.toMap()
-
-        val sessionPayload = flowSessionInternals.mapKeys {
-            val flowSessionInternal = it.key
-            FlowIORequest.SessionInfo(flowSessionInternal.getSessionId(), flowSessionInternal.counterparty)
-        }
         fiber.suspend(FlowIORequest.Send(sessionPayload))
-        setSessionsAsConfirmed(flowSessionInternals.keys)
+        setSessionsAsConfirmed(uncheckedCast(payloadsPerSession.keys))
     }
 
-    private fun setSessionsAsConfirmed(flowSessionInternals: Collection<FlowSessionInternal>) {
+    private fun setSessionsAsConfirmed(flowSessionInternals: Set<FlowSessionInternal>) {
         flowSessionInternals.onEach { it.setSessionConfirmed() }
     }
 
