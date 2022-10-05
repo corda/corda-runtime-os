@@ -38,8 +38,6 @@ import org.apache.avro.io.DatumReader
 import org.apache.avro.io.DatumWriter
 import org.apache.avro.specific.SpecificDatumReader
 import org.apache.avro.specific.SpecificDatumWriter
-import org.apache.commons.io.FileUtils
-import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -153,7 +151,9 @@ class MemberInfoTest {
 
         private var memberInfo: MemberInfo? = null
 
-        private val avroMemberInfo = File.createTempFile("avro-member-info", "avro")
+        private val avroMemberInfo = File.createTempFile("avro-member-info", "avro").also {
+            it.deleteOnExit()
+        }
 
         private val signature = CryptoSignatureWithKey(
             ByteBuffer.wrap(byteArrayOf()),
@@ -172,16 +172,6 @@ class MemberInfoTest {
             ).thenReturn(KEY)
 
             memberInfo = createDummyMemberInfo()
-        }
-
-        @AfterAll
-        @JvmStatic
-        fun tearDown() {
-            try {
-                FileUtils.delete(avroMemberInfo)
-            } catch (e: Exception) {
-                // Treat file deletion at the end of this test as best effort.
-            }
         }
     }
 
