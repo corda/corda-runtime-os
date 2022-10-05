@@ -64,8 +64,12 @@ class SendReceiveAllMessagingFlow(
 
         val receivedAll = flowMessaging.receiveAll(MyClass::class.java, setOf(sessionOne, sessionTwo))
         log.info("received all")
-        receivedAll.forEach {
-            log.info("Session received all data: ${it.int} ")
+        receivedMap.forEach { (_, received) ->
+            if (received is MyClass) {
+                log.info("Session received map data (type: MyClass): ${received.int} ")
+            } else if (received is net.cordapp.testing.testflows.MyOtherClass) {
+                log.info("Session received map data (type: MyOtherClass): ${received.int} ")
+            }
         }
 
         log.info("Closing session1")
@@ -96,10 +100,10 @@ class SendReceiveAllInitiatedFlow : ResponderFlow {
 
         val received = session.receive<MyClass>()
         log.info("Receive from send map from peer: $received")
-        if (received.int == 1) {
-            session.send(received.copy(string = "this is a new object 1"))
-        } else {
+        if (received.int == 2) {
             session.send(MyOtherClass( 1, "this is a new object 1", received.int))
+        } else {
+            session.send(received.copy(string = "this is a new object 1"))
         }
 
         val received2 = session.receive<MyClass>()
