@@ -1,6 +1,7 @@
 package net.corda.crypto.ecies.core.impl
 
 import net.corda.crypto.ecies.CryptoUnsafeECIESKeyException
+import net.corda.crypto.ecies.EciesParamsProvider
 import net.corda.crypto.ecies.EncryptedDataWithKey
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.schemes.KeyScheme
@@ -61,27 +62,26 @@ fun encryptWithEphemeralKeyPair(
     schemeMetadata: CipherSchemeMetadata,
     otherPublicKey: PublicKey,
     plainText: ByteArray,
-    aad: ByteArray?,
-    salt: (PublicKey, PublicKey)  -> ByteArray
+    params: EciesParamsProvider
 ): EncryptedDataWithKey {
     val scheme = schemeMetadata.findKeyScheme(otherPublicKey)
     val provider = schemeMetadata.providers.getValue(scheme.providerName)
     val keyPair = generateEphemeralKeyPair(schemeMetadata, provider, scheme)
     publicKeyOnCurve(scheme, keyPair.public)
     publicKeyOnCurve(scheme, otherPublicKey)
-    val saltValue = salt(keyPair.public, otherPublicKey)
+    val paramValues = params.get(keyPair.public, otherPublicKey)
     val cipherText = SharedSecretOps.encrypt(
-        salt = saltValue,
+        salt = paramValues.salt,
         publicKey = keyPair.public,
         otherPublicKey = otherPublicKey,
         plainText = plainText,
-        aad = aad
+        aad = paramValues.aad
     ) {
         deriveDHSharedSecret(provider, keyPair.private, otherPublicKey)
     }
     return EncryptedDataWithKey(
         publicKey = keyPair.public,
-        salt = saltValue,
+        params = paramValues,
         cipherText = cipherText
     )
 }

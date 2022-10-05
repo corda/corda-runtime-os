@@ -3,6 +3,7 @@ package net.corda.crypto.tck.impl.compliance
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.DefaultSignatureOIDMap
+import net.corda.crypto.ecies.EciesParams
 import net.corda.crypto.ecies.core.impl.decryptWithStableKeyPair
 import net.corda.crypto.ecies.core.impl.encryptWithEphemeralKeyPair
 import net.corda.crypto.impl.decorators.requiresWrappingKey
@@ -339,12 +340,11 @@ class CryptoServiceCompliance : AbstractCompliance() {
         val encryptedData = encryptWithEphemeralKeyPair(
             schemeMetadata = schemeMetadata,
             otherPublicKey = key.publicKey,
-            plainText = plainText,
-            aad = null
+            plainText = plainText
         ) { _, _ ->
-            ByteArray(DigestFactory.getDigest("SHA-256").digestSize).apply {
+            EciesParams(ByteArray(DigestFactory.getDigest("SHA-256").digestSize).apply {
                 schemeMetadata.secureRandom.nextBytes(this)
-            }
+            }, null)
         }
         val spec = if (key is GeneratedWrappedKey) {
             SharedSecretWrappedSpec(
@@ -382,7 +382,7 @@ class CryptoServiceCompliance : AbstractCompliance() {
         }
         val result = decryptWithStableKeyPair(
             schemeMetadata = schemeMetadata,
-            salt = encryptedData.salt,
+            salt = encryptedData.params.salt,
             publicKey = key.publicKey,
             otherPublicKey = encryptedData.publicKey,
             cipherText = encryptedData.cipherText,

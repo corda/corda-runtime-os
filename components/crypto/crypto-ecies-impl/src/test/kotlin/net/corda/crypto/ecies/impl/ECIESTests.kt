@@ -2,6 +2,7 @@ package net.corda.crypto.ecies.impl
 
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.crypto.component.test.utils.generateKeyPair
+import net.corda.crypto.ecies.EciesParams
 import net.corda.crypto.ecies.core.impl.deriveDHSharedSecret
 import net.corda.crypto.ecies.impl.infra.TestCryptoOpsClient
 import net.corda.lifecycle.LifecycleStatus
@@ -93,11 +94,10 @@ class ECIESTests {
         val cipherText = ephemeralEncryptor.encrypt(
             otherPublicKey = stablePublicKey,
             plainText = plainText,
-            aad = null
-        ) { ek, sk -> generateSalt() + ek.encoded + sk.encoded }
+        ) { ek, sk -> EciesParams( generateSalt() + ek.encoded + sk.encoded, null) }
         val decryptedPlainTex = stableDecryptor.decrypt(
             tenantId = tenantId,
-            salt = cipherText.salt,
+            salt = cipherText.params.salt,
             publicKey = stablePublicKey,
             otherPublicKey = cipherText.publicKey,
             cipherText = cipherText.cipherText,
@@ -112,20 +112,18 @@ class ECIESTests {
     fun `Should run through handshake using same shared key to send and receive with aad for all supported key schemes`(
         stablePublicKey: PublicKey
     ) {
-        val aad = "Something New".toByteArray()
         val plainText = "Hello MGM!".toByteArray()
         val cipherText = ephemeralEncryptor.encrypt(
             otherPublicKey = stablePublicKey,
-            plainText = plainText,
-            aad = aad
-        ) { ek, sk -> generateSalt() + ek.encoded + sk.encoded }
+            plainText = plainText
+        ) { ek, sk -> EciesParams( generateSalt() + ek.encoded + sk.encoded, "Something New".toByteArray()) }
         val decryptedPlainTex = stableDecryptor.decrypt(
             tenantId = tenantId,
-            salt = cipherText.salt,
+            salt = cipherText.params.salt,
             publicKey = stablePublicKey,
             otherPublicKey = cipherText.publicKey,
             cipherText = cipherText.cipherText,
-            aad = aad
+            aad =  cipherText.params.aad
         )
         assertArrayEquals(plainText, decryptedPlainTex)
     }
