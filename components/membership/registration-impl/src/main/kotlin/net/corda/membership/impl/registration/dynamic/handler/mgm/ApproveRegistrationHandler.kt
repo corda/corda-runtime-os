@@ -12,6 +12,7 @@ import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
 import net.corda.layeredpropertymap.toAvro
+import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
@@ -23,12 +24,14 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
+import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.getTtlMinutes
 import net.corda.membership.p2p.helpers.SignerFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
+import net.corda.schema.configuration.MembershipConfig.TtlsConfig.MEMBERS_PACKAGE_UPDATE
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
@@ -50,6 +53,7 @@ internal class ApproveRegistrationHandler(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     merkleTreeProvider: MerkleTreeProvider,
     private val memberTypeChecker: MemberTypeChecker,
+    private val membershipConfig: SmartConfig,
     private val signerFactory: SignerFactory = SignerFactory(cryptoOpsClient),
     private val merkleTreeGenerator: MerkleTreeGenerator = MerkleTreeGenerator(
         merkleTreeProvider,
@@ -69,7 +73,6 @@ internal class ApproveRegistrationHandler(
 ) : RegistrationHandler<ApproveRegistration> {
     private companion object {
         val logger = contextLogger()
-        const val MEMBERS_PACKAGE_UPDATE_TTL_IN_MINUTES = 10L
     }
 
     override val commandType = ApproveRegistration::class.java
@@ -133,7 +136,7 @@ internal class ApproveRegistrationHandler(
                     source = approvedBy,
                     destination = memberToSendUpdateTo.holdingIdentity.toAvro(),
                     content = memberPackage,
-                    minutesToWait = MEMBERS_PACKAGE_UPDATE_TTL_IN_MINUTES,
+                    minutesToWait = membershipConfig.getTtlMinutes(MEMBERS_PACKAGE_UPDATE),
                 )
             }
 

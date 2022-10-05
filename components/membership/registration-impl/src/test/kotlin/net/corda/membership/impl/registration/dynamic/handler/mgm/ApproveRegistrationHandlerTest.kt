@@ -13,6 +13,7 @@ import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
+import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.lib.MemberInfoExtension
@@ -34,6 +35,8 @@ import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
+import net.corda.schema.configuration.MembershipConfig.TtlsConfig.MEMBERS_PACKAGE_UPDATE
+import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -51,6 +54,7 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argThat
+import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -153,6 +157,7 @@ class ApproveRegistrationHandlerTest {
             )
         } doReturn membershipPackage
     }
+    private val config = mock<SmartConfig>()
     private val memberTypeChecker = mock<MemberTypeChecker> {
         on { isMgm(member.toAvro()) } doReturn false
         on { getMgmMemberInfo(owner) } doReturn mgm
@@ -167,6 +172,7 @@ class ApproveRegistrationHandlerTest {
         cordaAvroSerializationFactory,
         merkleTreeProvider,
         memberTypeChecker,
+        config,
         signerFactory,
         merkleTreeGenerator,
         p2pRecordsFactory,
@@ -260,6 +266,13 @@ class ApproveRegistrationHandlerTest {
         val reply = handler.invoke(state, key, command)
 
         assertThat(reply.outputStates).containsAll(membersRecord)
+    }
+
+    @Test
+    fun `invoke uses the correct TTL configuration`() {
+        handler.invoke(state, key, command)
+
+        verify(config, atLeastOnce()).getIsNull("$TTLS.$MEMBERS_PACKAGE_UPDATE")
     }
 
     @Test

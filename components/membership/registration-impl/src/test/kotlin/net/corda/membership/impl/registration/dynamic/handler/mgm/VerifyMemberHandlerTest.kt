@@ -8,6 +8,7 @@ import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.VerificationRequest
 import net.corda.data.membership.state.RegistrationState
+import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
@@ -15,6 +16,8 @@ import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
+import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
+import net.corda.schema.configuration.MembershipConfig.TtlsConfig.VERIFY_MEMBER_REQUEST
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
@@ -72,12 +75,23 @@ class VerifyMemberHandlerTest {
                         KeyValuePairList(emptyList<KeyValuePair>())
                     )
                 ),
-                any(),
+                eq(10),
                 any(),
             )
         } doReturn verificationRequestRecord
     }
-    private val verifyMemberHandler = VerifyMemberHandler(mock(), mock(), membershipPersistenceClient, memberTypeChecker, p2pRecordsFactory)
+    private val config = mock<SmartConfig> {
+        on { getIsNull("$TTLS.$VERIFY_MEMBER_REQUEST") } doReturn false
+        on { getLong("$TTLS.$VERIFY_MEMBER_REQUEST") } doReturn 10
+    }
+    private val verifyMemberHandler = VerifyMemberHandler(
+        mock(),
+        mock(),
+        membershipPersistenceClient,
+        memberTypeChecker,
+        config,
+        p2pRecordsFactory
+    )
 
     @Test
     fun `handler returns request message`() {

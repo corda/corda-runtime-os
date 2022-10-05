@@ -11,6 +11,7 @@ import net.corda.data.membership.command.registration.mgm.ProcessMemberVerificat
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.state.RegistrationState
+import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
@@ -45,6 +46,7 @@ class RegistrationProcessor(
     cryptoOpsClient: CryptoOpsClient,
     cipherSchemeMetadata: CipherSchemeMetadata,
     merkleTreeProvider: MerkleTreeProvider,
+    membershipConfig: SmartConfig,
 ) : StateAndEventProcessor<String, RegistrationState, RegistrationCommand> {
 
     override val keyClass = String::class.java
@@ -74,13 +76,15 @@ class RegistrationProcessor(
             cryptoOpsClient,
             cordaAvroSerializationFactory,
             merkleTreeProvider,
-            memberTypeChecker
+            memberTypeChecker,
+            membershipConfig,
         ),
         DeclineRegistration::class.java to DeclineRegistrationHandler(
             membershipPersistenceClient,
             clock,
             cordaAvroSerializationFactory,
             memberTypeChecker,
+            membershipConfig,
         ),
 
         ProcessMemberVerificationRequest::class.java to ProcessMemberVerificationRequestHandler(
@@ -94,12 +98,14 @@ class RegistrationProcessor(
             cordaAvroSerializationFactory,
             membershipPersistenceClient,
             memberTypeChecker,
+            membershipConfig,
         ),
         ProcessMemberVerificationResponse::class.java to ProcessMemberVerificationResponseHandler(
             membershipPersistenceClient,
             clock,
             cordaAvroSerializationFactory,
             memberTypeChecker,
+            membershipConfig,
         ),
         PersistMemberRegistrationState::class.java to PersistMemberRegistrationStateHandler(
             membershipPersistenceClient,
