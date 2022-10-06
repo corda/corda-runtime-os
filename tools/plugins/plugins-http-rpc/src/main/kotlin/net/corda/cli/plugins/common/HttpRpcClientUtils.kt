@@ -34,7 +34,7 @@ object HttpRpcClientUtils {
 
     fun <T> executeWithRetry(
         waitDuration: Duration, operationName: String,
-        onAlreadyExists: (ResourceAlreadyExistsException) -> T = { throw it },
+        onAlreadyExists: (ResourceAlreadyExistsException) -> T = ::reThrow,
         block: () -> T
     ): T {
         logger.info("Performing $operationName")
@@ -57,6 +57,11 @@ object HttpRpcClientUtils {
 
         errOut.error("Unable to perform $operationName", lastException)
         throw lastException!!
+    }
+
+    fun reThrow(ex: ResourceAlreadyExistsException): Nothing {
+        logger.info("Re-throwing", ex)
+        throw ex
     }
 
     fun ignore(ex: ResourceAlreadyExistsException) {
