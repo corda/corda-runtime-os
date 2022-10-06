@@ -5,6 +5,7 @@ import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
@@ -24,7 +25,11 @@ class FlowFiberExecutionContextFactoryImpl @Activate constructor(
     ): FlowFiberExecutionContext {
         val checkpoint = context.checkpoint
         val sandbox = try {
-            flowSandboxService.get(checkpoint.flowStartContext.identity.toCorda())
+//            flowSandboxService.get(checkpoint.flowStartContext.identity.toCorda())
+            flowSandboxService.get(
+                checkpoint.flowStartContext.identity.toCorda(),
+                CpiIdentifier.fromAvro(checkpoint.flowStartContext.cpiId)
+            )
         } catch (e: Exception) {
             throw FlowTransientException("Failed to create the sandbox: ${e.message}", e)
         }

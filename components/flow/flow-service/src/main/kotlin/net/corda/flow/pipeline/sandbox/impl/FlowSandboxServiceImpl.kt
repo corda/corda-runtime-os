@@ -15,6 +15,7 @@ import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.registerCustomSerializers
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX_FILTER
@@ -132,12 +133,19 @@ class FlowSandboxServiceImpl @Activate constructor(
     }
 
     override fun get(holdingIdentity: HoldingIdentity): FlowSandboxGroupContext {
-
         val vNodeInfo = virtualNodeInfoReadService.get(holdingIdentity)
         checkNotNull(vNodeInfo) { "Failed to find the virtual node info for holder '${holdingIdentity}'" }
 
-        val cpiMetadata = cpiInfoReadService.get(vNodeInfo.cpiIdentifier)
-        checkNotNull(cpiMetadata) { "Failed to find the CPI meta data for '${vNodeInfo.cpiIdentifier}}'" }
+        return get(holdingIdentity, vNodeInfo.cpiIdentifier)
+    }
+
+    override fun get(holdingIdentity: HoldingIdentity, cpiId: CpiIdentifier): FlowSandboxGroupContext {
+        checkNotNull(virtualNodeInfoReadService.get(holdingIdentity)) {
+            "Failed to find the virtual node info for holder '${holdingIdentity}'"
+        }
+
+        val cpiMetadata = cpiInfoReadService.get(cpiId)
+        checkNotNull(cpiMetadata) { "Failed to find the CPI meta data for '${cpiId}}'" }
         check(cpiMetadata.cpksMetadata.isNotEmpty()) { "No CPKs defined for CPI Meta data id='${cpiMetadata.cpiId}'" }
 
         val vNodeContext = VirtualNodeContext(

@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.sandbox
 
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.virtualnode.HoldingIdentity
 
 interface FlowSandboxService {
@@ -15,4 +16,9 @@ interface FlowSandboxService {
      * Get a virtual node's sandbox context.
      */
     fun get(holdingIdentity: HoldingIdentity): FlowSandboxGroupContext
+
+    /**
+     * Get a sandbox for a holding identity with a given CPI.
+     */
+    fun get(holdingIdentity: HoldingIdentity, cpiId: CpiIdentifier): FlowSandboxGroupContext
 }
