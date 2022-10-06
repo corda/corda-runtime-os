@@ -29,6 +29,7 @@ import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithInvalidStaticNetworkTemplate
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithStaticNetwork
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithoutStaticNetwork
+import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
@@ -194,6 +195,14 @@ class StaticMemberRegistrationServiceTest {
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory = mock {
         on { createValidator() } doReturn membershipSchemaValidator
     }
+    private val endpointInfoFactory: EndpointInfoFactory = mock {
+        on { create(any(), any()) } doAnswer { invocation ->
+            mock {
+                on { this.url } doReturn invocation.getArgument(0)
+                on { this.protocolVersion } doReturn invocation.getArgument(1)
+            }
+        }
+    }
 
     private val registrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
@@ -206,7 +215,8 @@ class StaticMemberRegistrationServiceTest {
         memberInfoFactory,
         persistenceClient,
         cordaAvroSerializationFactory,
-        membershipSchemaValidatorFactory
+        membershipSchemaValidatorFactory,
+        endpointInfoFactory,
     )
 
     private fun setUpPublisher() {

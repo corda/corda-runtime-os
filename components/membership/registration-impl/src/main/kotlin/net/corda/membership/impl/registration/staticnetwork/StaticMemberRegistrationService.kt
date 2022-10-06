@@ -18,6 +18,7 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_PROTOCOL
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_URL
+import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_KEY
@@ -91,6 +92,8 @@ class StaticMemberRegistrationService @Activate constructor(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = MembershipSchemaValidatorFactory::class)
     val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
+    @Reference(service = EndpointInfoFactory::class)
+    private val endpointInfoFactory: EndpointInfoFactory,
 ) : MemberRegistrationService {
     companion object {
         private val logger: Logger = contextLogger()
@@ -208,7 +211,7 @@ class StaticMemberRegistrationService @Activate constructor(
 
         val staticMemberMaps = groupPolicy.protocolParameters.staticNetworkMembers
             ?: throw IllegalArgumentException("Could not find static member list in group policy file.")
-        val staticMemberList = staticMemberMaps.map { StaticMember(it) }
+        val staticMemberList = staticMemberMaps.map { StaticMember(it, endpointInfoFactory::create) }
         validateStaticMemberList(staticMemberList)
 
         val memberName = registeringMember.x500Name
