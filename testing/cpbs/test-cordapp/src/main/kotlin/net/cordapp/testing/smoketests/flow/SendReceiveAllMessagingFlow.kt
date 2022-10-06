@@ -76,6 +76,14 @@ class SendReceiveAllMessagingFlow(
             log.info("Session received all data: ${it.int} ")
         }
 
+        sessionOne.receive<MyClass>().let {
+            receivedNumSum+=it.int
+        }
+
+        sessionTwo.receive<MyClass>().let {
+            receivedNumSum+=it.int
+        }
+
         log.info("Closing session1")
         sessionOne.close()
         log.info("Closing session2")
