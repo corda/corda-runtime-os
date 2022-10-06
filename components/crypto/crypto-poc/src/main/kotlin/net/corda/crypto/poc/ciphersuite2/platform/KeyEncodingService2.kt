@@ -1,4 +1,4 @@
-package net.corda.crypto.service.ciphersuite2.publicapi
+package net.corda.crypto.poc.ciphersuite2.platform
 
 import java.security.PublicKey
 

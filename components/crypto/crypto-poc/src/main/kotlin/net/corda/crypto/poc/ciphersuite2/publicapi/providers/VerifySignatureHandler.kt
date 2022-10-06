@@ -1,4 +1,4 @@
-package net.corda.crypto.service.ciphersuite2.publicapi.providers
+package net.corda.crypto.poc.ciphersuite2.publicapi.providers
 
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.SignatureSpec

@@ -1,4 +1,4 @@
-package net.corda.crypto.service.ciphersuite2.publicapi
+package net.corda.crypto.poc.ciphersuite2.platform
 
 import net.corda.v5.cipher.suite.AlgorithmParameterSpecEncodingService
 import net.corda.v5.cipher.suite.schemes.DigestScheme
@@ -6,7 +6,6 @@ import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SignatureSpec
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
-import java.security.KeyFactory
 import java.security.Provider
 import java.security.PublicKey
 import java.security.SecureRandom
@@ -61,13 +60,6 @@ interface CipherSchemeMetadata2 : KeyEncodingService2, AlgorithmParameterSpecEnc
      * @throws IllegalArgumentException if the key type is not supported.
      */
     fun findKeyScheme(key: PublicKey): KeyScheme
-
-    /**
-     * Finds the corresponding [KeyFactory] based on the [KeyScheme].
-     *
-     * @throws IllegalArgumentException if the scheme is not supported.
-     */
-    fun findKeyFactory(scheme: KeyScheme): KeyFactory
 
     /**
      * Infers the signature spec from the [PublicKey] and [DigestAlgorithmName]. The [digest] may be ignored for some
