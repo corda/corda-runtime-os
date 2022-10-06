@@ -22,6 +22,7 @@ import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateRefImpl
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
+import net.corda.uniqueness.utils.UniquenessAssertions
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.crypto.SecureHash
@@ -45,7 +46,6 @@ import org.mockito.kotlin.whenever
 import org.mockito.kotlin.times
 import org.mockito.kotlin.never
 import java.time.Clock
-import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.UUID
@@ -197,12 +197,8 @@ class JPABackingStoreImplIntegrationTests {
 
                 txnDetails.firstNotNullOf { secureHashTxnDetails ->
                     val uniquenessCheckResult = secureHashTxnDetails.value.result
-                    assertAll(
-                        { assertThat(txIds).contains(secureHashTxnDetails.key)},
-                        { assertThat(uniquenessCheckResult).isInstanceOf(UniquenessCheckResultSuccessImpl::class.java)},
-                        { assertThat(uniquenessCheckResult.resultTimestamp).isAfter(Instant.MIN)},
-                        { assertThat(uniquenessCheckResult.toCharacterRepresentation())
-                            .isEqualTo(UniquenessConstants.RESULT_ACCEPTED_REPRESENTATION) })
+                    assertThat(txIds).contains(secureHashTxnDetails.key)
+                    UniquenessAssertions.assertAcceptedUniquenessCheckResult(uniquenessCheckResult)
                 }
             }
         }
@@ -226,10 +222,8 @@ class JPABackingStoreImplIntegrationTests {
                 val result = session.getTransactionDetails(txIds)
                 assertEquals(1, result.size)
                 result.forEach { secureHashTxnDetails ->
-                    assertAll(
-                        { assertThat(secureHashTxnDetails.key in txIds.toSet()) },
-                        { assertThat(secureHashTxnDetails.value.result.toCharacterRepresentation()).isEqualTo(
-                                UniquenessConstants.RESULT_REJECTED_REPRESENTATION) })
+                    assertThat(txIds.contains(secureHashTxnDetails.key))
+                    UniquenessAssertions.assertRejectedUniquenessCheckResult(secureHashTxnDetails.value.result)
                 }
             }
         }
