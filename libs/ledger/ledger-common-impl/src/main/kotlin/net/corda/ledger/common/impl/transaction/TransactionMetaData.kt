@@ -18,16 +18,6 @@ class TransactionMetaData(private val properties: Map<String, Any>) {
         const val DIGEST_SETTINGS_KEY = "digestSettings"
         const val PLATFORM_VERSION_KEY = "platformVersion"
         const val CPI_METADATA_KEY = "cpiMetadata"
-
-        const val CPI_NAME_KEY = "cpiName"
-        const val CPI_VERSION_KEY = "cpiVersion"
-        const val CPI_CHECKSUM_KEY = "cpiChecksum"
-        const val CPI_SIGNER_SUMMARY_HASH_KEY = "cpiSignerSummaryHash"
-        const val CPK_METADATA_KEY = "cpkMetadata"
-        const val CPK_NAME_KEY = "cpkName"
-        const val CPK_VERSION_KEY = "cpkVersion"
-        const val CPK_CHECKSUM_KEY = "cpkChecksum"
-        const val CPK_SIGNER_SUMMARY_HASH_KEY = "cpkSignerSummaryHash"
     }
 
     override fun equals(other: Any?): Boolean {
@@ -42,14 +32,14 @@ class TransactionMetaData(private val properties: Map<String, Any>) {
 
     fun getLedgerVersion(): String = this[LEDGER_VERSION_KEY].toString()
 
-    fun getCpiMetadata(): Map<String, Any> {
-        val data = this[CPI_METADATA_KEY] ?: return emptyMap()
+    fun getCpiMetadata(): CpiMetadata {
+        val data = this[CPI_METADATA_KEY]
         try {
             @Suppress("UNCHECKED_CAST")
-            return data as Map<String, Any>
+            return data as CpiMetadata
         } catch (e: Exception) {
             throw CordaRuntimeException(
-                "Transaction metadata representation error: CPI metadata must be a map but found ${data.javaClass}")
+                "Transaction metadata representation error: expected CpiMetadata but found ${data?.javaClass} ($data)")
         }
     }
 

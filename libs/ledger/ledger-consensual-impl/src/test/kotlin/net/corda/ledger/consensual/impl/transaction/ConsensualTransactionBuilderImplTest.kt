@@ -12,7 +12,8 @@ import net.corda.flow.application.crypto.SigningServiceImpl
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.external.events.impl.executor.ExternalEventExecutorImpl
 import net.corda.flow.fiber.FlowFiberServiceImpl
-import net.corda.ledger.common.impl.transaction.TransactionMetaData
+import net.corda.ledger.common.impl.transaction.CpiMetadata
+import net.corda.ledger.common.impl.transaction.CpkMetadata
 import net.corda.ledger.consensual.impl.ConsensualTransactionMocks
 import net.corda.ledger.consensual.impl.PartyImpl
 import net.corda.ledger.consensual.impl.helper.ConfiguredTestSerializationService
@@ -118,22 +119,22 @@ internal class ConsensualTransactionBuilderImplTest{
         val metadata = tx.wireTransaction.metadata
         assertEquals("0.001", metadata.getLedgerVersion())
 
-        val expectedCpiMetadata = linkedMapOf(
-            TransactionMetaData.CPI_NAME_KEY to "MockCpi",
-            TransactionMetaData.CPI_VERSION_KEY to "3.1415-fake",
-            TransactionMetaData.CPI_CHECKSUM_KEY to "4141414141414141414141414141414141414141414141414141414141414141",
-            TransactionMetaData.CPI_SIGNER_SUMMARY_HASH_KEY to "",
-            TransactionMetaData.CPK_METADATA_KEY to listOf(
-                linkedMapOf(
-                    TransactionMetaData.CPK_NAME_KEY to "MockCpk",
-                    TransactionMetaData.CPK_VERSION_KEY to "1",
-                    TransactionMetaData.CPK_CHECKSUM_KEY to "0101010101010101010101010101010101010101010101010101010101010101",
-                    TransactionMetaData.CPK_SIGNER_SUMMARY_HASH_KEY to ""),
-                linkedMapOf(
-                    TransactionMetaData.CPK_NAME_KEY to "MockCpk",
-                    TransactionMetaData.CPK_VERSION_KEY to "3",
-                    TransactionMetaData.CPK_CHECKSUM_KEY to "0303030303030303030303030303030303030303030303030303030303030303",
-                    TransactionMetaData.CPK_SIGNER_SUMMARY_HASH_KEY to "")))
+        val expectedCpiMetadata = CpiMetadata(
+            "MockCpi",
+            "3.1415-fake",
+            "",
+            "4141414141414141414141414141414141414141414141414141414141414141",
+            listOf(
+                CpkMetadata(
+                    "MockCpk",
+                    "1",
+                    "",
+                "0101010101010101010101010101010101010101010101010101010101010101"),
+                CpkMetadata(
+                    "MockCpk",
+                    "3",
+                    "",
+                    "0303030303030303030303030303030303030303030303030303030303030303")))
 
         assertEquals(expectedCpiMetadata, metadata.getCpiMetadata())
     }

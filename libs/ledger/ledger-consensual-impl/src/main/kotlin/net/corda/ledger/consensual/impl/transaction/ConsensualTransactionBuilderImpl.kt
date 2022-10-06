@@ -1,18 +1,11 @@
 package net.corda.ledger.consensual.impl.transaction
 
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.ledger.common.impl.transaction.CpiMetadata
+import net.corda.ledger.common.impl.transaction.CpkMetadata
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.TransactionMetaData
-import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPI_CHECKSUM_KEY
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPI_METADATA_KEY
-import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPI_NAME_KEY
-import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPI_SIGNER_SUMMARY_HASH_KEY
-import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPI_VERSION_KEY
-import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPK_CHECKSUM_KEY
-import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPK_METADATA_KEY
-import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPK_NAME_KEY
-import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPK_SIGNER_SUMMARY_HASH_KEY
-import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPK_VERSION_KEY
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.DIGEST_SETTINGS_KEY
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.LEDGER_MODEL_KEY
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.LEDGER_VERSION_KEY
@@ -85,7 +78,7 @@ class ConsensualTransactionBuilderImpl(
                 LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
                 DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
                 PLATFORM_VERSION_KEY to memberLookup.myInfo().platformVersion,
-                CPI_METADATA_KEY to getCpiAndCpkMetadata()
+                CPI_METADATA_KEY to getCpiMetadata()
             )
         )
     }
@@ -97,26 +90,24 @@ class ConsensualTransactionBuilderImpl(
         return virtualNode.cpiIdentifier
     }
 
-    private fun getCpiAndCpkMetadata(): LinkedHashMap<String, Any> {
+    private fun getCpiMetadata(): CpiMetadata {
         val cpiIdentifier = getCpiIdentifier()
         val cpi = cpiInfoService.get(cpiIdentifier)
             ?: throw CordaRuntimeException("Could not get list of CPKs for $cpiIdentifier")
 
-        val cpkMetadata = cpi.cpksMetadata.filter { it.isContractCpk() }.map { cpk ->
-            linkedMapOf(
-                CPK_NAME_KEY to cpk.cpkId.name,
-                CPK_VERSION_KEY to cpk.cpkId.version,
-                CPK_CHECKSUM_KEY to cpk.fileChecksum.toHexString(),
-                CPK_SIGNER_SUMMARY_HASH_KEY to (cpk.cpkId.signerSummaryHash?.toHexString() ?: ""),
-            )
-        }
-
-        return linkedMapOf(
-            CPI_NAME_KEY to cpi.cpiId.name,
-            CPI_VERSION_KEY to cpi.cpiId.version,
-            CPI_CHECKSUM_KEY to cpi.fileChecksum.toHexString(),
-            CPI_SIGNER_SUMMARY_HASH_KEY to (cpi.cpiId.signerSummaryHash?.toHexString() ?: ""),
-            CPK_METADATA_KEY to cpkMetadata
+        return CpiMetadata(
+            name = cpi.cpiId.name,
+            version = cpi.cpiId.version,
+            signerSummaryHash = cpi.cpiId.signerSummaryHash?.toHexString() ?: "",
+            fileChecksum = cpi.fileChecksum.toHexString(),
+            cpks = cpi.cpksMetadata.filter { it.isContractCpk() }.map { cpk ->
+                CpkMetadata(
+                    name = cpk.cpkId.name,
+                    version = cpk.cpkId.version,
+                    signerSummaryHash = cpk.cpkId.signerSummaryHash?.toHexString() ?: "",
+                    fileChecksum = cpk.fileChecksum.toHexString()
+                )
+            }
         )
     }
 
