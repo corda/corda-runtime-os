@@ -12,6 +12,47 @@
       "minimum": 10,
       "maximum": 2880,
       "default": 480
+    },
+    "TTLs": {
+      "description": "Maximum duration in minutes between to wait for a message to be sent (null to wait forever).",
+      "type": "object",
+      "default": {},
+      "properties": {
+        "membersPackageUpdate": {
+          "description": "Maximum duration in minutes between to wait for a members package update message.",
+          "$ref": "#/$defs/ttl",
+          "default": 10
+        },
+        "declineRegistration": {
+          "description": "Maximum duration in minutes between to wait for a decline registration message.",
+          "$ref": "#/$defs/ttl",
+          "default": 8
+        },
+        "updateToPendingAutoApproval": {
+          "description": "Maximum duration in minutes between to wait for an update registration status to pending auto approval.",
+          "$ref": "#/$defs/ttl",
+          "default": 3
+        },
+        "verifyMemberRequest": {
+          "description": "Maximum duration in minutes between to wait for a verify member request.",
+          "$ref": "#/$defs/ttl",
+          "default": 20
+        }
+      }
+    }
+  },
+  "$defs": {
+    "ttl": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1440
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   }
 }
