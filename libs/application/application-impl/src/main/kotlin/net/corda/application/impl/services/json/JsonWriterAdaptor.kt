@@ -12,6 +12,7 @@ import java.math.BigInteger
  * Adaptor between the Jackson [JsonGenerator] and Corda's own [JsonWriter]. Provides the public api with the means of
  * writing Json without exposing Jackson to the public api.
  */
+@Suppress("TooManyFunctions")
 class JsonWriterAdaptor(private val jsonGenerator: JsonGenerator) : JsonWriter {
 
     private fun jacksonConfigFor(config: JsonSerializedBase64Config) = when (config) {

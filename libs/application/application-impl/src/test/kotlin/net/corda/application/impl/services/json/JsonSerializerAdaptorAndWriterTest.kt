@@ -17,10 +17,11 @@ class JsonSerializerAdaptorAndWriterTest {
      * We have no requirement to serialize actual properties of a class, that doesn't prove anything, so our test class
      * can be completely empty. The serializer will generate mock data itself.
      */
-    private class TestClass() {}
+    @Suppress("EmptyClassBlock")
+    private class TestClass {}
 
     companion object {
-        // Create a static instance of TestClass only so we can assert the reference in the custom serializer
+        // Create a static instance of TestClass only so we can assert the reference is the same in the custom serializer
         private val testClassInstance = TestClass()
 
         private val EXPECTED_JSON = """
@@ -93,7 +94,8 @@ class JsonSerializerAdaptorAndWriterTest {
     private data class DefaultSerializable(val contents: String = "contents")
 
     /**
-     * A test serializer we use to check the custom serialization scheme is working.
+     * A test serializer we use to check the custom serialization scheme is working. This calls every method in the
+     * [JsonWriter] and therefore acts as a test of both the serializer adaptor and [JsonWriter].
      */
     private class TestSerializer : JsonSerializer<TestClass> {
         override fun serialize(item: TestClass, jsonWriter: JsonWriter) {
