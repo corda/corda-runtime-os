@@ -326,7 +326,6 @@ class SessionManagerTest {
         val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
         whenever(authenticatedSession.sessionId).doAnswer { protocolInitiator.sessionId }
         whenever(protocolInitiator.getSession()).thenReturn(authenticatedSession)
-        whenever(authenticatedSession.sessionId).doAnswer { protocolInitiator.sessionId }
         sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))
     }
 
