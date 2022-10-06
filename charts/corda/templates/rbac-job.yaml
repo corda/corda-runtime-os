@@ -58,17 +58,17 @@ spec:
           args: ['initial-rbac', 'corda-developer', '--yield', '300', '--user', "$(INITIAL_ADMIN_USER_USERNAME)",
             '--password', "$(INITIAL_ADMIN_USER_PASSWORD)",
             '--target', "https://{{ include "corda.fullname" . }}-rpc-worker:443"]
-            env:
-                - name: INITIAL_ADMIN_USER_USERNAME
-                  valueFrom:
-                    secretKeyRef:
-                      name: {{ include "corda.initialAdminUserSecretName" . }}
-                      key: {{ include "corda.initialAdminUserSecretUsernameKey" . }}
-                  - name: INITIAL_ADMIN_USER_PASSWORD
-                    valueFrom:
-                      secretKeyRef:
-                        name: {{ include "corda.initialAdminUserSecretName" . }}
-                        key: {{ include "corda.initialAdminUserSecretPasswordKey" . }}
+          env:
+            - name: INITIAL_ADMIN_USER_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "corda.initialAdminUserSecretName" . }}
+                  key: {{ include "corda.initialAdminUserSecretUsernameKey" . }}
+            - name: INITIAL_ADMIN_USER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "corda.initialAdminUserSecretName" . }}
+                  key: {{ include "corda.initialAdminUserSecretPasswordKey" . }}
       {{- include "corda.bootstrapNodeSelector" . | nindent 6 }}
       restartPolicy: Never
   backoffLimit: 0
