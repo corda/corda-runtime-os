@@ -3,7 +3,16 @@ package net.corda.ledger.consensual.impl.transaction
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.TransactionMetaData
-import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPK_IDENTIFIERS_KEY
+import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPI_CHECKSUM_KEY
+import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPI_METADATA_KEY
+import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPI_NAME_KEY
+import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPI_SIGNER_SUMMARY_HASH_KEY
+import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPI_VERSION_KEY
+import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPK_CHECKSUM_KEY
+import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPK_METADATA_KEY
+import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPK_NAME_KEY
+import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPK_SIGNER_SUMMARY_HASH_KEY
+import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPK_VERSION_KEY
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.DIGEST_SETTINGS_KEY
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.LEDGER_MODEL_KEY
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.LEDGER_VERSION_KEY
@@ -11,7 +20,6 @@ import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.PL
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
 import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
@@ -77,11 +85,7 @@ class ConsensualTransactionBuilderImpl(
                 LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
                 DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
                 PLATFORM_VERSION_KEY to memberLookup.myInfo().platformVersion,
-                CPK_IDENTIFIERS_KEY to getCpks().map {
-                    "${it.cpkId.name}:" +
-                    "${it.cpkId.version}:" +
-                    "${it.cpkId.signerSummaryHash?.toHexString() ?: ""}:" +
-                    "${it.fileChecksum.toHexString()}" }
+                CPI_METADATA_KEY to getCpiAndCpkMetadata()
             )
         )
     }
@@ -93,11 +97,27 @@ class ConsensualTransactionBuilderImpl(
         return virtualNode.cpiIdentifier
     }
 
-    private fun getCpks():List<CpkMetadata>{
+    private fun getCpiAndCpkMetadata(): LinkedHashMap<String, Any> {
         val cpiIdentifier = getCpiIdentifier()
-        val cpks = cpiInfoService.get(cpiIdentifier)?.cpksMetadata
+        val cpi = cpiInfoService.get(cpiIdentifier)
             ?: throw CordaRuntimeException("Could not get list of CPKs for $cpiIdentifier")
-        return cpks.filter { it.isContractCpk() }
+
+        val cpkMetadata = cpi.cpksMetadata.filter { it.isContractCpk() }.map { cpk ->
+            linkedMapOf(
+                CPK_NAME_KEY to cpk.cpkId.name,
+                CPK_VERSION_KEY to cpk.cpkId.version,
+                CPK_CHECKSUM_KEY to cpk.fileChecksum.toHexString(),
+                CPK_SIGNER_SUMMARY_HASH_KEY to (cpk.cpkId.signerSummaryHash?.toHexString() ?: ""),
+            )
+        }
+
+        return linkedMapOf(
+            CPI_NAME_KEY to cpi.cpiId.name,
+            CPI_VERSION_KEY to cpi.cpiId.version,
+            CPI_CHECKSUM_KEY to cpi.fileChecksum.toHexString(),
+            CPI_SIGNER_SUMMARY_HASH_KEY to (cpi.cpiId.signerSummaryHash?.toHexString() ?: ""),
+            CPK_METADATA_KEY to cpkMetadata
+        )
     }
 
     private fun calculateComponentGroupLists(serializer: SerializationService): List<List<ByteArray>>

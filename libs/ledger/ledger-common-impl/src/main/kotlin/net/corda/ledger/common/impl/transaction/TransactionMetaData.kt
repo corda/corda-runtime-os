@@ -15,9 +15,19 @@ class TransactionMetaData(private val properties: Map<String, Any>) {
     companion object {
         const val LEDGER_MODEL_KEY = "ledgerModel"
         const val LEDGER_VERSION_KEY = "ledgerVersion"
-        const val CPK_IDENTIFIERS_KEY = "cpkIdentifiers"
         const val DIGEST_SETTINGS_KEY = "digestSettings"
         const val PLATFORM_VERSION_KEY = "platformVersion"
+        const val CPI_METADATA_KEY = "cpiMetadata"
+
+        const val CPI_NAME_KEY = "cpiName"
+        const val CPI_VERSION_KEY = "cpiVersion"
+        const val CPI_CHECKSUM_KEY = "cpiChecksum"
+        const val CPI_SIGNER_SUMMARY_HASH_KEY = "cpiSignerSummaryHash"
+        const val CPK_METADATA_KEY = "cpkMetadata"
+        const val CPK_NAME_KEY = "cpkName"
+        const val CPK_VERSION_KEY = "cpkVersion"
+        const val CPK_CHECKSUM_KEY = "cpkChecksum"
+        const val CPK_SIGNER_SUMMARY_HASH_KEY = "cpkSignerSummaryHash"
     }
 
     override fun equals(other: Any?): Boolean {
@@ -32,14 +42,14 @@ class TransactionMetaData(private val properties: Map<String, Any>) {
 
     fun getLedgerVersion(): String = this[LEDGER_VERSION_KEY].toString()
 
-    fun getCpkIdentifiers(): List<String> {
-        return when (val data = this[CPK_IDENTIFIERS_KEY]) {
-            null -> emptyList()
-            is List<*> -> data.map { it.toString() }
-            else -> throw CordaRuntimeException(
-                "Transaction metadata representation error: CPK identifiers must be " +
-                        "List<String> but found [$data]"
-            )
+    fun getCpiMetadata(): Map<String, Any> {
+        val data = this[CPI_METADATA_KEY] ?: return emptyMap()
+        try {
+            @Suppress("UNCHECKED_CAST")
+            return data as Map<String, Any>
+        } catch (e: Exception) {
+            throw CordaRuntimeException(
+                "Transaction metadata representation error: CPI metadata must be a map but found ${data.javaClass}")
         }
     }
 
