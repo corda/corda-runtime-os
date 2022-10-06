@@ -200,6 +200,7 @@ class MemberSynchronisationServiceImplTest {
                 eq(HoldingIdentity(participantName, GROUP_NAME).toAvro()),
                 synchRequest.capture(),
                 isNull(),
+                any(),
             )
         } doReturn synchronisationRequest
     }
