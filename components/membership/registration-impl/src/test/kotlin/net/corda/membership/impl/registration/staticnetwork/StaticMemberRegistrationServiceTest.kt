@@ -397,6 +397,20 @@ class StaticMemberRegistrationServiceTest {
     }
 
     @Test
+    fun `registration fails when context has invalid roles`() {
+        setUpPublisher()
+        registrationService.start()
+        val context = mapOf(
+            KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+            "corda.roles.0" to "notary",
+        )
+
+        val registrationResult = registrationService.register(registrationId, alice, context)
+
+        assertThat(registrationResult.outcome).isEqualTo(NOT_SUBMITTED)
+    }
+
+    @Test
     fun `registration fails if the registration context doesn't match the schema`() {
         setUpPublisher()
         val err = "ERROR-MESSAGE"
