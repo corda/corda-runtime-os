@@ -12,6 +12,7 @@ import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import java.net.URL
+import java.security.PublicKey
 import java.time.Instant
 
 class MemberInfoExtension {
@@ -175,5 +176,9 @@ class MemberInfoExtension {
         @JvmStatic
         val MemberInfo.isMgm: Boolean
             get() = mgmProvidedContext.parseOrNull(IS_MGM) ?: false
+
+        @JvmStatic
+        val MemberInfo.ecdhKey: PublicKey?
+            get() = memberProvidedContext.parseOrNull(ECDH_KEY)
     }
 }

@@ -3,6 +3,8 @@ package net.corda.membership.impl.registration.dynamic.member
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.toByteArray
+import net.corda.crypto.ecies.EphemeralKeyPairEncryptor
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
@@ -10,6 +12,8 @@ import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
+import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequest
+import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequestHeader
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -33,6 +37,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.ecdhKey
 import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.registration.RegistrationRequest
@@ -56,6 +61,8 @@ import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.membership.MembershipSchema.RegistrationContextSchema
+import net.corda.utilities.time.Clock
+import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.versioning.Version
 import net.corda.v5.cipher.suite.KeyEncodingService
@@ -75,6 +82,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import java.nio.ByteBuffer
+import java.security.PublicKey
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
@@ -99,6 +107,8 @@ class DynamicMemberRegistrationService @Activate constructor(
     private val membershipPersistenceClient: MembershipPersistenceClient,
     @Reference(service = MembershipSchemaValidatorFactory::class)
     val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
+    @Reference(service = EphemeralKeyPairEncryptor::class)
+    private val ephemeralKeyPairEncryptor: EphemeralKeyPairEncryptor,
 ) : MemberRegistrationService {
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
@@ -113,6 +123,7 @@ class DynamicMemberRegistrationService @Activate constructor(
 
     private companion object {
         val logger: Logger = contextLogger()
+        val clock: Clock = UTCClock()
 
         const val PUBLICATION_TIMEOUT_SECONDS = 30L
         const val SESSION_KEY_ID = "$PARTY_SESSION_KEY.id"
@@ -158,7 +169,14 @@ class DynamicMemberRegistrationService @Activate constructor(
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
         cordaAvroSerializationFactory.createAvroSerializer { logger.error("Failed to serialize key value pair list.") }
 
+    private val headerSerializer: CordaAvroSerializer<UnauthenticatedRegistrationRequestHeader> =
+        cordaAvroSerializationFactory.createAvroSerializer { logger.error("Failed to serialize header.") }
+
+    private val unauthenticatedRegistrationRequestSerializer: CordaAvroSerializer<UnauthenticatedRegistrationRequest> =
+        cordaAvroSerializationFactory.createAvroSerializer { logger.error("Failed to serialize registration request.") }
+
     private var impl: InnerRegistrationService = InactiveImpl
+    private var latestHeader: UnauthenticatedRegistrationRequestHeader? = null
 
     override val isRunning: Boolean
         get() = coordinator.isRunning
@@ -258,19 +276,42 @@ class DynamicMemberRegistrationService @Activate constructor(
                 }
                 val mgm = membershipGroupReaderProvider.getGroupReader(member).lookup().firstOrNull { it.isMgm }
                     ?: throw IllegalArgumentException("Failed to look up MGM information.")
-                val messageHeader = UnauthenticatedMessageHeader(
-                    mgm.holdingIdentity.toAvro(),
-                    member.toAvro(),
-                    MEMBERSHIP_P2P_SUBSYSTEM
-                )
+
                 val message = MembershipRegistrationRequest(
                     registrationId.toString(),
                     ByteBuffer.wrap(serializedMemberContext),
                     memberSignature
                 )
+
+                val mgmKey = mgm.ecdhKey ?: throw IllegalArgumentException("MGM's ECDH key is missing.")
+
+                val header = UnauthenticatedRegistrationRequestHeader(1, clock.instant())
+                latestHeader = header
+
+                val data = ephemeralKeyPairEncryptor.encrypt(
+                    mgmKey,
+                    registrationRequestSerializer.serialize(message)!!,
+                    headerSerializer.serialize(header),
+                    ::generateSalt
+                )
+
+                val memberECKey = data.publicKey
+
+                val messageHeader = UnauthenticatedMessageHeader(
+                    mgm.holdingIdentity.toAvro(),
+                    member.toAvro(),
+                    MEMBERSHIP_P2P_SUBSYSTEM
+                )
+                val request = UnauthenticatedRegistrationRequest(
+                    header,
+                    keyEncodingService.encodeAsString(memberECKey),
+                    ByteBuffer.wrap(registrationRequestSerializer.serialize(message))
+                )
                 val record = buildUnauthenticatedP2PRequest(
                     messageHeader,
-                    ByteBuffer.wrap(registrationRequestSerializer.serialize(message)),
+                    ByteBuffer.wrap(
+                        unauthenticatedRegistrationRequestSerializer.serialize(request)
+                    ),
                     // holding identity ID is used as topic key to be able to ensure serial processing of registration
                     // for the same member.
                     member.shortHash.value
@@ -297,6 +338,13 @@ class DynamicMemberRegistrationService @Activate constructor(
             }
 
             return MembershipRequestRegistrationResult(MembershipRequestRegistrationOutcome.SUBMITTED)
+        }
+
+        private fun generateSalt(ephemeralKey: PublicKey, otherKey: PublicKey): ByteArray {
+            return latestHeader!!.protocolVersion.toByteArray() +
+                    latestHeader!!.timestamp.toEpochMilli().toByteArray() +
+                    ephemeralKey.encoded +
+                    otherKey.encoded
         }
 
         override fun close() {

@@ -1,5 +1,6 @@
 package net.corda.membership.impl.p2p
 
+import net.corda.crypto.ecies.StableKeyPairDecryptor
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.p2p.MembershipSyncRequest
@@ -21,10 +22,14 @@ import net.corda.p2p.app.UnauthenticatedMessage
 import net.corda.schema.registry.AvroSchemaRegistry
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.cipher.suite.KeyEncodingService
+import org.osgi.service.component.annotations.Reference
 import java.nio.ByteBuffer
 
 class MembershipP2PProcessor(
-    private val avroSchemaRegistry: AvroSchemaRegistry
+    private val avroSchemaRegistry: AvroSchemaRegistry,
+    private val stableKeyPairDecryptor: StableKeyPairDecryptor,
+    private val keyEncodingService: KeyEncodingService,
 ) : DurableProcessor<String, AppMessage> {
     override val keyClass = String::class.java
     override val valueClass = AppMessage::class.java
@@ -36,7 +41,7 @@ class MembershipP2PProcessor(
     }
 
     private val messageProcessorFactories: Map<Class<*>, () -> MessageHandler> = mapOf(
-        MembershipRegistrationRequest::class.java to { RegistrationRequestHandler(avroSchemaRegistry) },
+        MembershipRegistrationRequest::class.java to { RegistrationRequestHandler(avroSchemaRegistry, stableKeyPairDecryptor, keyEncodingService) },
         VerificationRequest::class.java to { VerificationRequestHandler(avroSchemaRegistry) },
         VerificationResponse::class.java to { VerificationResponseHandler(avroSchemaRegistry) },
         MembershipPackage::class.java to { MembershipPackageHandler(avroSchemaRegistry) },
