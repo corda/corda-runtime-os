@@ -19,8 +19,8 @@ private const val CORDA_DEV_ROLE = "CordaDeveloperRole"
 
 @CommandLine.Command(
     name = "corda-developer",
-    description = ["Creates a role ('$CORDA_DEV_ROLE') which will permit:",
-        "- vNode reset"]
+    description = ["""Creates a role ('$CORDA_DEV_ROLE') which will permit:
+        - vNode reset"""]
 )
 class CordaDeveloperSubcommand : HttpRpcCommand(), Callable<Int> {
 
