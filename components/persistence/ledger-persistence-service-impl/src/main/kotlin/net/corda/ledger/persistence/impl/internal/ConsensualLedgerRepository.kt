@@ -18,6 +18,7 @@ import net.corda.v5.crypto.SecureHash
 import java.security.MessageDigest
 import java.time.Instant
 import javax.persistence.EntityManager
+import javax.persistence.Query
 import javax.persistence.Tuple
 
 /**
@@ -47,8 +48,7 @@ class ConsensualLedgerRepository(
                 """,
             Tuple::class.java)
             .setParameter("id", id)
-            .resultList
-            .map { it as Tuple }
+            .resultListAsTuples()
 
         if (rows.isEmpty()) return null
 
@@ -75,8 +75,7 @@ class ConsensualLedgerRepository(
                 ORDER BY signature_idx""",
             Tuple::class.java)
             .setParameter("transactionId", transactionId)
-            .resultList
-            .map { it as Tuple }
+            .resultListAsTuples()
             .map { r -> serializationService.deserialize(r.get(0) as ByteArray) }
     }
 
@@ -97,7 +96,7 @@ class ConsensualLedgerRepository(
         }
         persistTransactionStatus(entityManager, now, transactionId, "Faked") // TODO where to get the status from
         // TODO when and what do we write to the CPKs table?
-        persistCpk(entityManager, now, wireTransaction)
+        persistCpkIfNotExists(entityManager, now, wireTransaction)
         persistTransactionCpk(entityManager, transactionId)
 
         signedTransaction.signatures.forEachIndexed { index, digitalSignatureAndMetadata ->
@@ -168,8 +167,8 @@ class ConsensualLedgerRepository(
             .executeUpdate()
     }
 
-    /** Persists CPK data to database. */
-    private fun persistCpk(
+    /** Persists CPK data to database if it doesn't already exist. */
+    private fun persistCpkIfNotExists(
         entityManager: EntityManager,
         timestamp: Instant,
         wireTransaction: WireTransaction
@@ -183,6 +182,7 @@ class ConsensualLedgerRepository(
         val version = 1
         val data = ByteArray(10000)
 
+        // TODO This could be optimized by caching file hashes of existing CPKs
         entityManager.createNativeQuery(
             """
                 INSERT INTO {h-schema}consensual_cpk(file_hash, name, signer_hash, version, data, created)
@@ -234,4 +234,7 @@ class ConsensualLedgerRepository(
 
     private fun ByteArray.hashAsHexString() =
         MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name).digest(this).toHexString()
+
+    @Suppress("UNCHECKED_CAST")
+    private fun Query.resultListAsTuples() = resultList as List<Tuple>
 }
