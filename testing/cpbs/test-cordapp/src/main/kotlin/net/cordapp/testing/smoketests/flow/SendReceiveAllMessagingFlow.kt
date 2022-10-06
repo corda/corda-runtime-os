@@ -92,7 +92,7 @@ class SendReceiveAllMessagingFlow(
         log.info("Closed session")
         log.info("Hello world completed.")
 
-        return "Completed. Sum: $receivedNumSum"
+        return "Completed. Sum:$receivedNumSum"
     }
 }
 
