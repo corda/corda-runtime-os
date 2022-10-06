@@ -150,20 +150,18 @@ class AMQPwithOSGiSerializationTests {
             val factory11 = testDefaultFactory(sandboxGroup1)
             val factory2 = testDefaultFactory(sandboxGroup2)
 
-            // Initialise the serialisation context
+            // Initialise two different serialization contexts one per sandbox group
             val testSerializationContext1 = testSerializationContext.withSandboxGroup(sandboxGroup1)
             val testSerializationContext2 = testSerializationContext.withSandboxGroup(sandboxGroup2)
 
-            // Serialise our object
+            // Serialise our object using `sandboxGroup1` context
             val cashClass = sandboxGroup1.loadClassFromMainBundles("net.cordapp.bundle1.Cash")
             val cashInstance = cashClass.getConstructor(Int::class.java).newInstance(100)
-
             val serialised = SerializationOutput(factory1).serialize(cashInstance, testSerializationContext1)
 
-            // Perform deserialisation and check if the correct class is deserialised
+            // Perform deserialisations and check if the correct classes are deserialised
             val deserialised1 =
                 DeserializationInput(factory11).deserializeAndReturnEnvelope(serialised, testSerializationContext1)
-
             val deserialised2 =
                 DeserializationInput(factory2).deserializeAndReturnEnvelope(serialised, testSerializationContext2)
 
@@ -176,8 +174,6 @@ class AMQPwithOSGiSerializationTests {
             assertThat(expectedClass2).isEqualTo(deserialisedClass2)
             assertThat(deserialisedClass1).isNotEqualTo(deserialisedClass2)
             assertThat(classLoader1).isNotEqualTo(classLoader2)
-        } catch (e: Exception) {
-            println(e)
         } finally {
             sandboxFactory.unloadSandboxGroup(sandboxGroup1)
             sandboxFactory.unloadSandboxGroup(sandboxGroup2)
