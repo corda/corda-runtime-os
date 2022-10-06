@@ -1712,39 +1712,22 @@ class SessionManagerTest {
                 callback(invocation.arguments.first() as List<Record<*, *>>)
             }
         }
-        sessionManager.start()
-
-        //whenever(outboundSessionPool.constructed().last().replaceSession(eq(protocolInitiator.sessionId), any())).thenReturn(true)
-        //whenever(outboundSessionPool.constructed().last().getAllSessionIds()).thenAnswer { (listOf(protocolInitiator.sessionId)) }
-        whenever(outboundSessionPool.constructed().first().getSession(protocolInitiator.sessionId)).thenReturn(
-            OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
-        )
-
-        whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), any())).thenReturn(mock())
 
         val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, protocolInitiator.sessionId, 4, Instant.now().toEpochMilli())
         val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
 
         sessionManager.processSessionMessage(LinkInMessage(responderHello))
-        val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
-        val session = mock<Session>()
-        whenever(session.sessionId).doAnswer{protocolInitiator.sessionId}
-        whenever(protocolInitiator.getSession()).thenReturn(session)
-        whenever(outboundSessionPool.constructed().last().replaceSession(eq(protocolInitiator.sessionId), any())).thenReturn(true)
-        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
-        assertThat(sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))).isNull()
-
-
         startSendingHeartbeats(sessionManager)
 
-        val numberOfHeartbeats = longTimePeriodConfigWithHeartbeat.let {
-            (2 * (it.sessionTimeout.toMillis() / it.heartbeatPeriod.toMillis())).toInt()
-        }
-        repeat(numberOfHeartbeats) {
+        val heartbeatsExpected = 5
+
+        repeat(heartbeatsExpected) {
             mockTimeFacilitiesProvider.advanceTime(longTimePeriodConfigWithHeartbeat.heartbeatPeriod.plus(5.millis))
             sessionManager.messageAcknowledged(protocolInitiator.sessionId)
         }
-        assertThat(messages).hasSize(numberOfHeartbeats)
+
+        assertThat(heartbeatsExpected - messages.size).isEqualTo(1)
+
         for (message in messages) {
             val heartbeatMessage = DataMessagePayload.fromByteBuffer(message.payload)
             assertThat(heartbeatMessage.message).isInstanceOf(HeartbeatMessage::class.java)
