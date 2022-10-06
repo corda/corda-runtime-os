@@ -1,6 +1,6 @@
 package net.corda.cipher.suite.impl.platform
 
-import net.corda.cipher.suite.impl.platform.handling.PlatformCipherSchemeMetadata
+import net.corda.cipher.suite.impl.platform.handling.PlatformCipherSuiteMetadata
 import net.corda.utilities.LazyPool
 import net.corda.v5.cipher.suite.scheme.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap
  * and we want to be able to optimise them en masse.
  */
 class SignatureInstances(
-    private val metadata: PlatformCipherSchemeMetadata
+    private val metadata: PlatformCipherSuiteMetadata
 ) {
     private val signatureFactory: SignatureFactory = CachingSignatureFactory()
 

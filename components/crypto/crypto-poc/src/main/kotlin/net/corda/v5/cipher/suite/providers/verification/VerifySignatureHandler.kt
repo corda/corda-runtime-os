@@ -1,9 +1,12 @@
-package net.corda.v5.cipher.suite.providers.signing
+package net.corda.v5.cipher.suite.providers.verification
 
+import net.corda.v5.cipher.suite.scheme.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
 import java.security.PublicKey
 
 interface VerifySignatureHandler {
+    val rank: Int
+
     /**
      * Verifies a digital signature by using [signatureSpec].
      * It returns true if it succeeds and false if not. Normally you should use the function which throws an exception,
@@ -20,6 +23,7 @@ interface VerifySignatureHandler {
      * the signature scheme is not supported or in general arguments are wrong
      */
     fun isValid(
+        scheme: KeyScheme,
         publicKey: PublicKey,
         signatureSpec: SignatureSpec,
         signatureData: ByteArray,

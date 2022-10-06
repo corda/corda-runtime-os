@@ -16,5 +16,6 @@ import java.security.PublicKey
 interface SigningSpec {
     val publicKey: PublicKey
     val keyScheme: KeyScheme
+    val tenantId: String
     val signatureSpec: SignatureSpec
 }

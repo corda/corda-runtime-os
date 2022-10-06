@@ -19,7 +19,8 @@ class SigningWrappedSpec(
     val keyMaterialSpec: KeyMaterialSpec,
     override val publicKey: PublicKey,
     override val keyScheme: KeyScheme,
-    override val signatureSpec: SignatureSpec
+    override val signatureSpec: SignatureSpec,
+    override val tenantId: String
 ) : SigningSpec {
 
     /**

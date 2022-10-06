@@ -1,7 +1,13 @@
-package net.corda.cipher.suite
+package net.corda.crypto.service
 
 import java.security.PublicKey
 
+/**
+ * Encoding service which can encode and decode keys to or from byte arrays or strings using PEM encoding format.
+ *
+ * Decoding would be slow in case of the several handlers as it'll try to use each sequentially until one succeed or all
+ * fail.
+ */
 interface KeyEncodingService {
     /**
      * Decodes public key from byte array.

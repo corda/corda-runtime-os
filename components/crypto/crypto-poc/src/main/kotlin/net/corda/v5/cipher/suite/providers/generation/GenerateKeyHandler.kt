@@ -1,9 +1,8 @@
 package net.corda.v5.cipher.suite.providers.generation
 
-import net.corda.v5.cipher.suite.providers.generation.GeneratedKey
-import net.corda.v5.cipher.suite.providers.generation.KeyGenerationSpec
-
 interface GenerateKeyHandler {
+    val rank: Int
+
     /**
      * Generates and optionally stores a key pair. The implementation is free to decide how the generated key
      * is stored - either in the corresponding HSM or wrapped and exported. The rule of thumb would be in the [spec]

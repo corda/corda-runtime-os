@@ -20,11 +20,11 @@ import net.corda.v5.cipher.suite.scheme.KeyScheme
  */
 class KeyGenerationSpec(
     val keyScheme: KeyScheme,
-    val alias: String?,
-    val masterKeyAlias: String?
+    val tenantId: String,
+    val alias: String?
 ) {
     override fun toString(): String {
-        return "$keyScheme,alias=$alias,masterKeyAlias=$masterKeyAlias"
+        return "$keyScheme,alias=$alias"
     }
 }
 

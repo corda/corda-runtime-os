@@ -8,21 +8,22 @@ import net.corda.v5.cipher.suite.providers.generation.KeyGenerationSpec
 import java.security.KeyPairGenerator
 
 class PlatformGenerateKeyHandler(
-    val metadata: PlatformCipherSchemeMetadata,
+    private val metadata: PlatformCipherSuiteMetadata,
     private val keyMap: SoftKeyMap,
 ) : GenerateKeyHandler {
     companion object {
         private val logger = contextLogger()
     }
 
+    override val rank: Int = 0
+
     override fun generateKeyPair(spec: KeyGenerationSpec, context: Map<String, String>): GeneratedKey {
         require(metadata.supportedSigningSchemes.containsKey(spec.keyScheme)) {
             "Unsupported key scheme: ${spec.keyScheme.codeName}"
         }
         logger.info(
-            "generateKeyPair(alias={},masterKeyAlias={},scheme={})",
+            "generateKeyPair(alias={},scheme={})",
             spec.alias,
-            spec.masterKeyAlias,
             spec.keyScheme.codeName
         )
         val keyPairGenerator = KeyPairGenerator.getInstance(
@@ -32,14 +33,15 @@ class PlatformGenerateKeyHandler(
         if (spec.keyScheme.algSpec != null) {
             keyPairGenerator.initialize(spec.keyScheme.algSpec, metadata.secureRandom)
         } else if (spec.keyScheme.keySize != null) {
-            keyPairGenerator.initialize(spec.keyScheme.keySize!!, metadata.secureRandom)
+            keyPairGenerator.initialize(spec.keyScheme.keySize, metadata.secureRandom)
         }
         val keyPair = keyPairGenerator.generateKeyPair()
-        val privateKeyMaterial = keyMap.wrapPrivateKey(keyPair, spec.masterKeyAlias)
+        val privateKeyMaterial = keyMap.wrapPrivateKey(keyPair)
         return GeneratedWrappedKey(
             publicKey = keyPair.public,
             keyMaterial = privateKeyMaterial.keyMaterial,
-            encodingVersion = privateKeyMaterial.encodingVersion
+            encodingVersion = privateKeyMaterial.encodingVersion,
+            masterKeyAlias = privateKeyMaterial.masterKeyAlias
         )
     }
 }

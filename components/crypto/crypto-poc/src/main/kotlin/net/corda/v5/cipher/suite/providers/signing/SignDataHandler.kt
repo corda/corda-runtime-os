@@ -1,6 +1,8 @@
 package net.corda.v5.cipher.suite.providers.signing
 
 interface SignDataHandler {
+    val rank: Int
+
     /**
      * Signs a byte array using the private key identified by the input arguments.
      *

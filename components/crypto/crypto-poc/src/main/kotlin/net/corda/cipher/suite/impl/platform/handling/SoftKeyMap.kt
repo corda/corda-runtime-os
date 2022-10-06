@@ -7,5 +7,5 @@ import java.security.PublicKey
 
 interface SoftKeyMap {
     fun getPrivateKey(publicKey: PublicKey, spec: KeyMaterialSpec): PrivateKey
-    fun wrapPrivateKey(keyPair: KeyPair, masterKeyAlias: String?): PrivateKeyMaterial
+    fun wrapPrivateKey(keyPair: KeyPair): PrivateKeyMaterial
 }

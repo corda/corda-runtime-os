@@ -10,7 +10,7 @@ import net.corda.v5.cipher.suite.scheme.KeySchemeCapability
 import java.security.PrivateKey
 
 class PlatformSignDataHandler(
-    val metadata: PlatformCipherSchemeMetadata,
+    private val metadata: PlatformCipherSuiteMetadata,
     private val keyMap: SoftKeyMap,
 ) : SignDataHandler {
     companion object {
@@ -18,6 +18,8 @@ class PlatformSignDataHandler(
     }
 
     private val signatureInstances = SignatureInstances(metadata)
+
+    override val rank: Int = 0
 
     override fun sign(spec: SigningSpec, data: ByteArray, context: Map<String, String>): ByteArray {
         require(spec is SigningWrappedSpec) {

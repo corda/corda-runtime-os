@@ -1,6 +1,5 @@
 package net.corda.cipher.suite.impl.platform.handling
 
-import net.corda.cipher.suite.CipherSchemeMetadata
 import net.corda.cipher.suite.OID_COMPOSITE_KEY_IDENTIFIER
 import net.corda.cipher.suite.impl.platform.CordaSecureRandomService
 import net.corda.cipher.suite.impl.platform.CordaSecurityProvider
@@ -37,7 +36,7 @@ import java.security.PublicKey
 import java.security.SecureRandom
 import java.security.spec.X509EncodedKeySpec
 
-class PlatformCipherSchemeMetadata : KeyEncodingHandler {
+class PlatformCipherSuiteMetadata : KeyEncodingHandler {
     companion object {
         val MESSAGE_DIGEST_TYPE: String = MessageDigest::class.java.simpleName
 
@@ -87,7 +86,7 @@ class PlatformCipherSchemeMetadata : KeyEncodingHandler {
 
     private val bouncyCastlePQCProvider = BouncyCastlePQCProvider()
 
-    private val providers: Map<String, Provider> = listOf(
+    val providers: Map<String, Provider> = listOf(
         cordaBouncyCastleProvider,
         cordaSecurityProvider,
         bouncyCastlePQCProvider
@@ -241,7 +240,6 @@ class PlatformCipherSchemeMetadata : KeyEncodingHandler {
         .flatMap { it.services }
         .filter {
             it.type.equals(MESSAGE_DIGEST_TYPE, true)
-                    && !CipherSchemeMetadata.BANNED_DIGESTS.contains(it.algorithm)
                     && DIGEST_CANDIDATES.contains(it.algorithm)
         }
         .map { DigestScheme(algorithmName = it.algorithm, providerName = it.provider.name) }
@@ -258,7 +256,9 @@ class PlatformCipherSchemeMetadata : KeyEncodingHandler {
         algorithmMap[normaliseAlgorithmIdentifier(algorithm)]
             ?: throw IllegalArgumentException("Unrecognised algorithm: ${algorithm.algorithm.id}")
 
-    override fun decodePublicKey(encodedKey: ByteArray): PublicKey = try {
+    override val rank: Int = 0
+
+    override fun decodePublicKey(encodedKey: ByteArray): PublicKey? = try {
         val subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(encodedKey)
         val scheme = findKeyScheme(subjectPublicKeyInfo.algorithm)
         val keyFactory = keyFactories[scheme]
@@ -269,7 +269,7 @@ class PlatformCipherSchemeMetadata : KeyEncodingHandler {
         throw CryptoException("Failed to decode public key", e)
     }
 
-    override fun decodePublicKey(encodedKey: String): PublicKey = try {
+    override fun decodePublicKey(encodedKey: String): PublicKey? = try {
         val pemContent = parsePemContent(encodedKey)
         val publicKeyInfo = SubjectPublicKeyInfo.getInstance(pemContent)
         val converter = getJcaPEMKeyConverter(publicKeyInfo)
@@ -280,7 +280,7 @@ class PlatformCipherSchemeMetadata : KeyEncodingHandler {
         throw CryptoException("Failed to decode public key", e)
     }
 
-    override fun encodeAsString(publicKey: PublicKey): String = try {
+    override fun encodeAsString(scheme: KeyScheme, publicKey: PublicKey): String = try {
         objectToPem(publicKey)
     } catch (e: RuntimeException) {
         throw e

@@ -12,5 +12,6 @@ import java.security.PublicKey
 class GeneratedWrappedKey(
     override val publicKey: PublicKey,
     val keyMaterial: ByteArray,
-    val encodingVersion: Int
+    val encodingVersion: Int,
+    val masterKeyAlias: String?
 ) : GeneratedKey
