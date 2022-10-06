@@ -120,12 +120,12 @@ class SendReceiveAllInitiatedFlow : ResponderFlow {
 
         val received2 = session.receive<MyClass>()
         log.info("Receive from send all from peer: $received2")
-        session.send(received.copy(string = "this is a new object 2"))
+        session.send(received2.copy(string = "this is a new object 2"))
 
 
         val received3 = session.receive<MyClass>()
         log.info("Receive from send from peer: $received3")
-        session.send(received.copy(string = "this is a new object 3"))
+        session.send(received3.copy(string = "this is a new object 3"))
         log.info("Closing session")
 
         session.close()
