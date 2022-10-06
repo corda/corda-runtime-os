@@ -95,7 +95,7 @@ class PathUtilsTest {
             assertThat(result)
                     .isRegularFile()
                     .hasParent(dir)
-                    .hasSameContentAs(source)
+                    .hasSameBinaryContentAs(source)
         }
     }
 }

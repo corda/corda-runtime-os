@@ -15,6 +15,8 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.TimeUnit
 
 @Suppress("ClassNaming")
 class CordaPublisherTest {
@@ -59,8 +61,9 @@ class CordaPublisherTest {
             val futures = publisher.publish(listOf(record, record, record))
             assertThat(futures).hasSize(1).allSatisfy {
                 assertThat(it)
-                    .hasFailedWithThrowableThat()
-                    .isInstanceOf(CordaMessageAPIFatalException::class.java)
+                    .failsWithin(1, TimeUnit.MINUTES)
+                    .withThrowableOfType(ExecutionException::class.java)
+                    .withCauseInstanceOf(CordaMessageAPIFatalException::class.java)
             }
         }
 
@@ -70,8 +73,9 @@ class CordaPublisherTest {
             val futures = cordaPublisher.publish(listOf(record, record, record))
             assertThat(futures).hasSize(3).allSatisfy {
                 assertThat(it)
-                    .hasFailedWithThrowableThat()
-                    .isInstanceOf(CordaMessageAPIFatalException::class.java)
+                    .failsWithin(1, TimeUnit.MINUTES)
+                    .withThrowableOfType(ExecutionException::class.java)
+                    .withCauseInstanceOf(CordaMessageAPIFatalException::class.java)
             }
         }
     }
@@ -112,8 +116,9 @@ class CordaPublisherTest {
             val futures = publisher.publishToPartition(listOf(1 to record, 2 to record, 1 to record))
             assertThat(futures).hasSize(1).allSatisfy {
                 assertThat(it)
-                    .hasFailedWithThrowableThat()
-                    .isInstanceOf(CordaMessageAPIFatalException::class.java)
+                    .failsWithin(1, TimeUnit.MINUTES)
+                    .withThrowableOfType(ExecutionException::class.java)
+                    .withCauseInstanceOf(CordaMessageAPIFatalException::class.java)
             }
         }
 
@@ -123,8 +128,9 @@ class CordaPublisherTest {
             val futures = cordaPublisher.publishToPartition(listOf(1 to record, 2 to record, 1 to record))
             assertThat(futures).hasSize(3).allSatisfy {
                 assertThat(it)
-                    .hasFailedWithThrowableThat()
-                    .isInstanceOf(CordaMessageAPIFatalException::class.java)
+                    .failsWithin(1, TimeUnit.MINUTES)
+                    .withThrowableOfType(ExecutionException::class.java)
+                    .withCauseInstanceOf(CordaMessageAPIFatalException::class.java)
             }
         }
     }
