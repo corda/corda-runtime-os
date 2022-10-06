@@ -1,4 +1,4 @@
-package net.corda.cipher.suite.impl.platform.digest
+package net.corda.crypto.service.impl.digest
 
 import net.corda.v5.crypto.extensions.DigestAlgorithm
 import net.corda.v5.crypto.extensions.DigestAlgorithmFactory

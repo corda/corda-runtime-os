@@ -1,42 +1,21 @@
 package net.corda.cipher.suite.impl.platform.digest
 
 import net.corda.cipher.suite.impl.platform.handling.PlatformCipherSuiteMetadata
-import net.corda.crypto.service.DigestAlgorithmFactoryProvider
-import net.corda.crypto.service.DigestService
-import net.corda.v5.cipher.suite.AbstractCipherSuite
+import net.corda.v5.cipher.suite.providers.digest.DigestHandler
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.extensions.DigestAlgorithm
 import net.corda.v5.crypto.extensions.DigestAlgorithmFactory
-import org.osgi.service.component.annotations.Activate
-import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ReferenceCardinality.OPTIONAL
-import org.osgi.service.component.annotations.ReferenceScope.PROTOTYPE_REQUIRED
-import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.io.InputStream
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.security.Provider
 import java.util.concurrent.ConcurrentHashMap
 
-@Component(service = [ DigestService::class ], scope = PROTOTYPE, property=["corda.system=true"])
-class DigestServiceImpl @Activate constructor(
-    @Reference(service = AbstractCipherSuite::class)
-    private val suite: AbstractCipherSuite,
-    @Reference(service = PlatformCipherSuiteMetadata::class)
+class PlatformDigestHandler(
     private val metadata: PlatformCipherSuiteMetadata,
-    @Reference(
-        service = DigestAlgorithmFactoryProvider::class,
-        scope = PROTOTYPE_REQUIRED,
-        cardinality = OPTIONAL
-    )
-    private val customFactoriesProvider: DigestAlgorithmFactoryProvider?
-) : DigestService {
-    private val factories = ConcurrentHashMap<String, DigestAlgorithmFactory>().also {
-        val factory = DoubleSHA256DigestFactory()
-        it[factory.algorithm] = factory
-    }
+) : DigestHandler {
+    private val factories = ConcurrentHashMap<String, DigestAlgorithmFactory>()
     private val lengths = ConcurrentHashMap<String, Int>()
 
     override fun hash(bytes: ByteArray, digestAlgorithmName: DigestAlgorithmName): SecureHash {
@@ -54,24 +33,10 @@ class DigestServiceImpl @Activate constructor(
             return digestFor(digestAlgorithmName).digestLength
         }
 
-    private fun digestFor(digestAlgorithmName: DigestAlgorithmName): DigestAlgorithm {
-        return try {
+    private fun digestFor(digestAlgorithmName: DigestAlgorithmName): DigestAlgorithm =
             factories.getOrPut(digestAlgorithmName.name) {
                 SpiDigestAlgorithmFactory(metadata, digestAlgorithmName.name)
             }.getInstance()
-        } catch (e: IllegalArgumentException) {
-            try {
-                suite.findDigestAlgorithmFactory(digestAlgorithmName.name)
-                    ?.getInstance()
-                    ?: throw e
-            } catch (e: IllegalArgumentException) {
-                // Check any custom registered versions.
-                customFactoriesProvider?.get(digestAlgorithmName.name)
-                    ?.getInstance()
-                    ?: throw e
-            }
-        }
-    }
 
     private class SpiDigestAlgorithmFactory(
         metadata: PlatformCipherSuiteMetadata,
