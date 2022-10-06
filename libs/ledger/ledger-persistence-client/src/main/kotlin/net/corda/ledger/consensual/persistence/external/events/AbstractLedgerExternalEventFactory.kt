@@ -11,11 +11,8 @@ import net.corda.virtualnode.toAvro
 import java.nio.ByteBuffer
 import java.time.Clock
 
-abstract class AbstractLedgerExternalEventFactory<PARAMETERS : Any>(
-    private val clock: Clock = Clock.systemUTC()
-) :
-    ExternalEventFactory<PARAMETERS, EntityResponse, List<ByteBuffer>>
-{
+abstract class AbstractLedgerExternalEventFactory<PARAMETERS : Any>(private val clock: Clock = Clock.systemUTC()) :
+    ExternalEventFactory<PARAMETERS, EntityResponse, List<ByteBuffer>> {
 
     abstract fun createRequest(parameters: PARAMETERS): Any
 
