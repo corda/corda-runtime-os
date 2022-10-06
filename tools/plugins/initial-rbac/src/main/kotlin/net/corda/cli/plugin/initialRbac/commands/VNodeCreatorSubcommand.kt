@@ -2,6 +2,7 @@ package net.corda.cli.plugin.initialRbac.commands
 
 import net.corda.cli.plugins.common.HttpRpcClientUtils.createHttpRpcClient
 import net.corda.cli.plugins.common.HttpRpcClientUtils.executeWithRetry
+import net.corda.cli.plugins.common.HttpRpcClientUtils.ignore
 import net.corda.cli.plugins.common.HttpRpcCommand
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
@@ -84,7 +85,7 @@ class VNodeCreatorSubcommand : HttpRpcCommand(), Callable<Int> {
                 roleEndpoint.createRole(CreateRoleType(VNODE_CREATOR_ROLE, null)).responseBody.id
             }
             permissionIds.forEach { permId ->
-                executeWithRetry(waitDuration, "Adding permission: $permId") {
+                executeWithRetry(waitDuration, "Adding permission: $permId", onAlreadyExists = ::ignore) {
                     roleEndpoint.addPermission(roleId, permId)
                 }
             }
