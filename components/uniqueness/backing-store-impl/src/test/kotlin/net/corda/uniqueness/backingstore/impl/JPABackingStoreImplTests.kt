@@ -214,7 +214,7 @@ class JPABackingStoreImplTests {
     @Nested
     inner class EventHandlerTests {
         @Test
-        fun `StartEvent sets life cycle status to up`() {
+        fun `Start event starts following the statuses of the required dependencies`() {
             val mockCoordinator = mock<LifecycleCoordinator>()
             backingStoreImpl.eventHandler(StartEvent(), mockCoordinator)
             Mockito.verify(mockCoordinator).followStatusChangesByName(
@@ -222,6 +222,13 @@ class JPABackingStoreImplTests {
                     setOf(LifecycleCoordinatorName.forComponent<DbConnectionManager>())
                 )
             )
+        }
+
+        @Test
+        fun `Stop event TODO`() {
+            val mockCoordinator = mock<LifecycleCoordinator>()
+            backingStoreImpl.eventHandler(StopEvent(), mockCoordinator)
+            // TODO: add tests
         }
 
         @Test
