@@ -1,6 +1,5 @@
 package net.corda.membership.impl.registration.staticnetwork
 
-import net.corda.membership.lib.impl.EndpointInfoImpl
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_PROTOCOL
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_URL
@@ -16,7 +15,10 @@ import net.corda.utilities.time.UTCClock
  * Class which represents a static member. Static members are Map<String, Any> which we need
  * to map to Map<String, String>. This class provides access to properties always as strings.
  */
-class StaticMember(private val staticMemberData: Map<String, Any>) : Map<String, Any> by staticMemberData {
+class StaticMember(
+    private val staticMemberData: Map<String, Any>,
+    private val endpointInfoBuilder: (String, Int) -> EndpointInfo,
+    ) : Map<String, Any> by staticMemberData {
 
     private companion object {
         const val DEFAULT_SOFTWARE_VERSION = "5.0.0"
@@ -53,7 +55,7 @@ class StaticMember(private val staticMemberData: Map<String, Any>) : Map<String,
         (staticMemberData[key] as Int?)?.toString() ?: default
 
     fun getEndpoint(index: Int): EndpointInfo {
-        return EndpointInfoImpl(
+        return endpointInfoBuilder(
             staticMemberData[String.format(ENDPOINT_URL, index)].toString(),
             Integer.parseInt(staticMemberData[String.format(ENDPOINT_PROTOCOL, index)].toString())
         )

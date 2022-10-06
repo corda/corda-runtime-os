@@ -17,6 +17,7 @@ import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.MembershipSyncRequest
 import net.corda.data.sync.BloomFilter
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -54,7 +55,9 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
-import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
@@ -132,6 +135,10 @@ class MgmSynchronisationServiceImplTest {
 
     private val testConfig =
         SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.parseString("instanceId=1"))
+    private val membershipConfig = mock<SmartConfig> {
+        on { getIsNull(any()) } doReturn false
+        on { getLong(any()) } doReturn 3
+    }
 
     private val aliceName = "C=GB, L=London, O=Alice"
     private val alice = HoldingIdentity(aliceName, GROUP)
@@ -237,7 +244,8 @@ class MgmSynchronisationServiceImplTest {
                 any(),
                 any(),
                 eq(membershipPackage1),
-                eq(null)
+                any(),
+                any(),
             )
         } doReturn record1
         on {
@@ -245,7 +253,8 @@ class MgmSynchronisationServiceImplTest {
                 any(),
                 any(),
                 eq(membershipPackage2),
-                eq(null)
+                any(),
+                any(),
             )
         } doReturn record2
     }
@@ -331,10 +340,11 @@ class MgmSynchronisationServiceImplTest {
     private fun postConfigChangedEvent() {
         lifecycleHandlerCaptor.firstValue.processEvent(
             ConfigChangedEvent(
-                setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG),
+                setOf(BOOT_CONFIG, MESSAGING_CONFIG, MEMBERSHIP_CONFIG),
                 mapOf(
-                    ConfigKeys.BOOT_CONFIG to testConfig,
-                    ConfigKeys.MESSAGING_CONFIG to testConfig
+                    BOOT_CONFIG to testConfig,
+                    MESSAGING_CONFIG to testConfig,
+                    MEMBERSHIP_CONFIG to membershipConfig,
                 )
             ), coordinator
         )
@@ -393,7 +403,7 @@ class MgmSynchronisationServiceImplTest {
             configArgs.capture()
         )
         assertThat(configArgs.firstValue)
-            .isEqualTo(setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG))
+            .isEqualTo(setOf(BOOT_CONFIG, MESSAGING_CONFIG, MEMBERSHIP_CONFIG))
 
         postRegistrationStatusChangeEvent(LifecycleStatus.UP)
         verify(configHandle).close()
