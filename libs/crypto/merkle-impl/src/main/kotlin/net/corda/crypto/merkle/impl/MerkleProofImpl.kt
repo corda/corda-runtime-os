@@ -1,14 +1,11 @@
 package net.corda.crypto.merkle.impl
 
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
 import net.corda.v5.crypto.merkle.IndexedMerkleLeaf
 import net.corda.v5.crypto.merkle.MerkleProof
 import net.corda.v5.crypto.merkle.MerkleTreeHashDigest
-import java.security.PublicKey
 
 class MerkleProofImpl(
     override val treeSize: Int,
@@ -121,14 +118,5 @@ class MerkleProofImpl(
         result = 31 * result + leaves.hashCode()
         result = 31 * result + hashes.hashCode()
         return result
-    }
-
-    override fun verify(
-        signature: DigitalSignature,
-        publicKey: PublicKey,
-        signatureSpec: SignatureSpec,
-        digest: MerkleTreeHashDigest
-    ): Boolean {
-        return true
     }
 }
