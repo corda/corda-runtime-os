@@ -97,15 +97,15 @@ class SessionManagerTest {
         const val SESSIONS_PER_COUNTERPARTIES = 2
         val PROTOCOL_MODES = listOf(ProtocolMode.AUTHENTICATED_ENCRYPTION, ProtocolMode.AUTHENTICATION_ONLY)
         val RANDOM_BYTES = ByteBuffer.wrap("some-random-data".toByteArray())
-//TODO - change to 6.days
-        private const val longPeriodMilliSec = 6*24*60*60*1000L
+
+        private val sixDaysInMillis = 6.days.toMillis()
         private val configWithHeartbeat = SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfig(
             Duration.ofMillis(100),
             Duration.ofMillis(500)
         )
         private val configNoHeartbeat = SessionManagerImpl.HeartbeatManager.HeartbeatManagerConfig(
-            Duration.ofMillis(longPeriodMilliSec),
-            Duration.ofMillis(longPeriodMilliSec)
+            Duration.ofMillis(sixDaysInMillis),
+            Duration.ofMillis(sixDaysInMillis)
         )
 
         private val keyGenerator = KeyPairGenerator.getInstance("EC", BouncyCastleProvider())
