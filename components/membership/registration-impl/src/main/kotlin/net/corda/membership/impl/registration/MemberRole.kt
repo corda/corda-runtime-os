@@ -10,30 +10,26 @@ internal sealed class MemberRole {
             }.map {
                 it.value
             }.toSet()
-            return if (roleNames.isEmpty()) {
-                listOf(Member)
-            } else {
-                roleNames.map { roleName ->
-                    when (roleName) {
-                        "member" -> Member
-                        "notary" -> {
-                            readNotary(context)
-                        }
-                        else -> {
-                            throw IllegalArgumentException("Invalid role: $roleName")
-                        }
+            val roles: Collection<MemberRole> = roleNames.map { roleName ->
+                when (roleName) {
+                    "notary" -> {
+                        readNotary(context)
                     }
-                }
-            }.also { roles ->
-                if (!roles.any { it is Notary }) {
-                    val notaryKeys = context.keys.filter {
-                        it.startsWith("corda.notary")
-                    }
-                    if (notaryKeys.isNotEmpty()) {
-                        throw IllegalArgumentException("The keys $notaryKeys are only valid with notary role.")
+
+                    else -> {
+                        throw IllegalArgumentException("Invalid role: $roleName")
                     }
                 }
             }
+            if (!roles.any { it is Notary }) {
+                val notaryKeys = context.keys.filter {
+                    it.startsWith("corda.notary")
+                }
+                if (notaryKeys.isNotEmpty()) {
+                    throw IllegalArgumentException("The keys $notaryKeys are only valid with notary role.")
+                }
+            }
+            return roles
         }
 
         private fun readNotary(context: Map<String, String>): Notary {
@@ -45,7 +41,6 @@ internal sealed class MemberRole {
             )
         }
     }
-    object Member : MemberRole()
     data class Notary(
         val serviceName: MemberX500Name,
         val plugin: String,

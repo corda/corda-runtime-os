@@ -8,21 +8,9 @@ import org.junit.jupiter.api.assertThrows
 
 class MemberRoleTest {
     @Test
-    fun `no roles return Member`() {
+    fun `no roles return empty collection`() {
         assertThat(extractRolesFromContext(emptyMap()))
-            .hasSize(1)
-            .allMatch {
-                it is MemberRole.Member
-            }
-    }
-
-    @Test
-    fun `member roles returns Member`() {
-        assertThat(extractRolesFromContext(mapOf("corda.roles.0" to "member")))
-            .hasSize(1)
-            .allMatch {
-                it is MemberRole.Member
-            }
+            .isEmpty()
     }
 
     @Test
@@ -53,14 +41,12 @@ class MemberRoleTest {
                     "corda.roles.0" to "notary",
                     "corda.roles.1" to "notary",
                     "corda.roles.2" to "notary",
-                    "corda.roles.3" to "member",
-                    "corda.roles.4" to "member",
                     "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
                     "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
                 )
             )
         )
-            .hasSize(2)
+            .hasSize(1)
     }
 
     @Test
@@ -116,7 +102,6 @@ class MemberRoleTest {
         assertThrows<IllegalArgumentException> {
             extractRolesFromContext(
                 mapOf(
-                    "corda.roles.0" to "member",
                     "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
                 )
             )
