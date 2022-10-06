@@ -1,6 +1,6 @@
-package net.corda.crypto.poc.ciphersuite2.publicapi.providers
+package net.corda.v5.cipher.suite.providers
 
-import net.corda.crypto.poc.ciphersuite2.publicapi.CryptoWorkerCipherSuite
+import net.corda.v5.cipher.suite.CryptoWorkerCipherSuite
 
 /**
  * Registers kee scheme and handlers for crypto worker handlers.

@@ -1,6 +1,6 @@
-package net.corda.crypto.poc.ciphersuite2.publicapi.providers
+package net.corda.v5.cipher.suite.providers
 
-import net.corda.crypto.poc.ciphersuite2.publicapi.CipherSuite
+import net.corda.v5.cipher.suite.CipherSuite
 
 /**
  * Registers kee scheme and handlers for in-process handlers.

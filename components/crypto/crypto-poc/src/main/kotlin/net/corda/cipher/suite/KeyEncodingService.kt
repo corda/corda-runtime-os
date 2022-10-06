@@ -1,8 +1,8 @@
-package net.corda.crypto.poc.ciphersuite2.platform
+package net.corda.cipher.suite
 
 import java.security.PublicKey
 
-interface KeyEncodingService2 {
+interface KeyEncodingService {
     /**
      * Decodes public key from byte array.
      *

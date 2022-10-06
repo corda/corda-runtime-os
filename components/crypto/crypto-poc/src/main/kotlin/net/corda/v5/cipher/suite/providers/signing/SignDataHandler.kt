@@ -1,16 +1,4 @@
-package net.corda.crypto.poc.ciphersuite2.publicapi.providers
-
-import net.corda.v5.cipher.suite.SigningAliasSpec
-import net.corda.v5.cipher.suite.SigningSpec
-import net.corda.v5.cipher.suite.SigningWrappedSpec
-import net.corda.v5.cipher.suite.schemes.KeyScheme
-import net.corda.v5.crypto.SignatureSpec
-
-interface SignDataHandlerProvider {
-    val supportedKeyScheme: KeyScheme
-    val supportedSignatureSpec: List<SignatureSpec>
-    fun getInstance(): SignDataHandler
-}
+package net.corda.v5.cipher.suite.providers.signing
 
 interface SignDataHandler {
     /**

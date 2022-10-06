@@ -1,14 +1,7 @@
-package net.corda.crypto.poc.ciphersuite2.publicapi.providers
+package net.corda.v5.cipher.suite.providers.signing
 
-import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
 import java.security.PublicKey
-
-interface VerifySignatureHandlerProvider {
-    val supportedKeyScheme: KeyScheme
-    val supportedSignatureSpec: List<SignatureSpec>
-    fun getInstance(): VerifySignatureHandler
-}
 
 interface VerifySignatureHandler {
     /**

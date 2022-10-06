@@ -1,17 +1,15 @@
-package net.corda.crypto.poc.ciphersuite2.platform
+package net.corda.cipher.suite
 
-import net.corda.v5.cipher.suite.AlgorithmParameterSpecEncodingService
-import net.corda.v5.cipher.suite.schemes.DigestScheme
-import net.corda.v5.cipher.suite.schemes.KeyScheme
+import net.corda.v5.cipher.suite.scheme.DigestScheme
+import net.corda.v5.cipher.suite.scheme.KeyScheme
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SignatureSpec
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
-import java.security.Provider
 import java.security.PublicKey
 import java.security.SecureRandom
 import java.util.Collections
 
-interface CipherSchemeMetadata2 : KeyEncodingService2, AlgorithmParameterSpecEncodingService {
+interface CipherSchemeMetadata : KeyEncodingService, AlgorithmParameterSpecEncodingService {
     companion object {
         /**
          * List of digest algorithms that must not be used nor implemented due their vulnerabilities.
@@ -26,11 +24,6 @@ interface CipherSchemeMetadata2 : KeyEncodingService2, AlgorithmParameterSpecEnc
             "HARAKA-512"
         ))
     }
-
-    /**
-     * The map of initialized security providers used by the cipher suite where the key is the provider name.
-     */
-    val providers: Map<String, Provider>
 
     /**
      * The list of all available key schemes for the cipher suite.

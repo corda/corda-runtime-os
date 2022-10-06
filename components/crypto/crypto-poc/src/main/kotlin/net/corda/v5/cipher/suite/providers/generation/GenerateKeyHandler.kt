@@ -1,15 +1,7 @@
-package net.corda.crypto.poc.ciphersuite2.publicapi.providers
+package net.corda.v5.cipher.suite.providers.generation
 
-import net.corda.v5.cipher.suite.GeneratedKey
-import net.corda.v5.cipher.suite.GeneratedPublicKey
-import net.corda.v5.cipher.suite.GeneratedWrappedKey
-import net.corda.v5.cipher.suite.KeyGenerationSpec
-import net.corda.v5.cipher.suite.schemes.KeyScheme
-
-interface GenerateKeyHandlerProvider {
-    val supportedKeyScheme: KeyScheme
-    fun getInstance(): GenerateKeyHandler
-}
+import net.corda.v5.cipher.suite.providers.generation.GeneratedKey
+import net.corda.v5.cipher.suite.providers.generation.KeyGenerationSpec
 
 interface GenerateKeyHandler {
     /**
