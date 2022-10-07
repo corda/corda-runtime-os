@@ -7,6 +7,7 @@ import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.membership.read.MembershipGroupReader
+import net.corda.sandbox.SandboxGroup
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -23,6 +24,9 @@ class TestFlowFiberServiceWithSerialization : FlowFiberService, SingletonSeriali
         val bobX500 = "CN=Bob, O=Bob Corp, L=LDN, C=GB"
         val bobX500Name = MemberX500Name.parse(bobX500)
         val holdingIdentity =  HoldingIdentity(bobX500Name,"group1")
+        val mockSandboxGroup = mock(SandboxGroup::class.java)
+        Mockito.`when`(mockSandboxGroup.metadata).thenReturn(emptyMap())
+        Mockito.`when`(mockFlowSandboxGroupContext.sandboxGroup).thenReturn(mockSandboxGroup)
         val flowFiberExecutionContext = FlowFiberExecutionContext(
             mock(FlowCheckpoint::class.java),
             mockFlowSandboxGroupContext,

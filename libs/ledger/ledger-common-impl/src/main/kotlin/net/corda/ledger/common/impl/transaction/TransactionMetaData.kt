@@ -32,9 +32,9 @@ class TransactionMetaData(private val properties: Map<String, Any>) {
 
     fun getLedgerVersion(): String = this[LEDGER_VERSION_KEY].toString()
 
-    fun getCpiMetadata(): CpiMetadata? {
+    fun getCpiMetadata(): CpiSummary? {
         return when (val data = this[CPI_METADATA_KEY]) {
-            is CpiMetadata -> data
+            is CpiSummary -> data
             is Map<*, *> -> {
                 try {
                     @Suppress("UNCHECKED_CAST")
@@ -42,13 +42,13 @@ class TransactionMetaData(private val properties: Map<String, Any>) {
 
                     @Suppress("UNCHECKED_CAST")
                     val cpks = cpi["cpks"] as List<Map<String, Any?>>
-                    CpiMetadata(
+                    CpiSummary(
                         cpi["name"].toString(),
                         cpi["version"].toString(),
                         cpi["signerSummaryHash"]?.toString(),
                         cpi["fileChecksum"].toString(),
                         cpks.map { cpk ->
-                            CpkMetadata(
+                            CpkSummary(
                                 cpk["name"].toString(),
                                 cpk["version"].toString(),
                                 cpk["signerSummaryHash"]?.toString(),

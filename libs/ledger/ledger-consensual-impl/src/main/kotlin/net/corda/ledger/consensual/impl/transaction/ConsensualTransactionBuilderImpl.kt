@@ -1,8 +1,7 @@
 package net.corda.ledger.consensual.impl.transaction
 
-import net.corda.cpiinfo.read.CpiInfoReadService
-import net.corda.ledger.common.impl.transaction.CpiMetadata
-import net.corda.ledger.common.impl.transaction.CpkMetadata
+import net.corda.ledger.common.impl.transaction.CpiSummary
+import net.corda.ledger.common.impl.transaction.CpkSummary
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.TransactionMetaData
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPI_METADATA_KEY
@@ -13,24 +12,23 @@ import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.PL
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
 import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
+import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SigningService
+import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.cipher.suite.DigestService
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
 import java.security.PublicKey
 import java.security.SecureRandom
 import java.time.Instant
-import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
-import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.application.membership.MemberLookup
-import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 
 @Suppress("LongParameterList")
 class ConsensualTransactionBuilderImpl(
@@ -41,8 +39,7 @@ class ConsensualTransactionBuilderImpl(
     private val signingService: SigningService,
     private val jsonMarshallingService: JsonMarshallingService,
     private val memberLookup: MemberLookup,
-    private val cpiInfoService: CpiInfoReadService,
-    private val virtualNodeInfoService: VirtualNodeInfoReadService,
+    private val sandboxCpks: Collection<CpkMetadata>,
     override val states: List<ConsensualState> = emptyList(),
 ) : ConsensualTransactionBuilder {
 
@@ -63,7 +60,7 @@ class ConsensualTransactionBuilderImpl(
     ): ConsensualTransactionBuilderImpl {
         return ConsensualTransactionBuilderImpl(
             merkleTreeProvider, digestService, secureRandom, serializer, signingService, jsonMarshallingService,
-            memberLookup, cpiInfoService, virtualNodeInfoService,
+            memberLookup, sandboxCpks,
             states,
         )
     }
@@ -83,25 +80,26 @@ class ConsensualTransactionBuilderImpl(
         )
     }
 
+    /**
+     * TODO(Fake values until we can get CPI information properly)
+     */
     private fun getCpiIdentifier(): CpiIdentifier {
-        val holdingIdentity = memberLookup.myInfo().holdingIdentity
-        val virtualNode = virtualNodeInfoService.get(holdingIdentity)
-            ?: throw CordaRuntimeException("Could not get virtual node for $holdingIdentity")
-        return virtualNode.cpiIdentifier
+        return CpiIdentifier(
+            "CPI name",
+            "CPI version",
+            SecureHash("SHA-256", "Fake-value".toByteArray()))
     }
 
-    private fun getCpiMetadata(): CpiMetadata {
+    private fun getCpiMetadata(): CpiSummary {
         val cpiIdentifier = getCpiIdentifier()
-        val cpi = cpiInfoService.get(cpiIdentifier)
-            ?: throw CordaRuntimeException("Could not get list of CPKs for $cpiIdentifier")
 
-        return CpiMetadata(
-            name = cpi.cpiId.name,
-            version = cpi.cpiId.version,
-            signerSummaryHash = cpi.cpiId.signerSummaryHash?.toHexString() ?: "",
-            fileChecksum = cpi.fileChecksum.toHexString(),
-            cpks = cpi.cpksMetadata.filter { it.isContractCpk() }.map { cpk ->
-                CpkMetadata(
+        return CpiSummary(
+            name = cpiIdentifier.name,
+            version = cpiIdentifier.version,
+            signerSummaryHash = cpiIdentifier.signerSummaryHash?.toHexString(),
+            fileChecksum = "00000000000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",  // TODO: where do we get this?
+            cpks = sandboxCpks.filter { it.isContractCpk() }.map { cpk ->
+                CpkSummary(
                     name = cpk.cpkId.name,
                     version = cpk.cpkId.version,
                     signerSummaryHash = cpk.cpkId.signerSummaryHash?.toHexString() ?: "",

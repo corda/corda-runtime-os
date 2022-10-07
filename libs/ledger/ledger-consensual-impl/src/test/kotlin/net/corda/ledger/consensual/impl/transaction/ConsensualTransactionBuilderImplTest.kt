@@ -12,8 +12,8 @@ import net.corda.flow.application.crypto.SigningServiceImpl
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.external.events.impl.executor.ExternalEventExecutorImpl
 import net.corda.flow.fiber.FlowFiberServiceImpl
-import net.corda.ledger.common.impl.transaction.CpiMetadata
-import net.corda.ledger.common.impl.transaction.CpkMetadata
+import net.corda.ledger.common.impl.transaction.CpiSummary
+import net.corda.ledger.common.impl.transaction.CpkSummary
 import net.corda.ledger.consensual.impl.ConsensualTransactionMocks
 import net.corda.ledger.consensual.impl.PartyImpl
 import net.corda.ledger.consensual.impl.helper.ConfiguredTestSerializationService
@@ -103,7 +103,7 @@ internal class ConsensualTransactionBuilderImplTest{
     fun `cannot build Transaction with Consensual States without participants`() {
         val exception = assertThrows(IllegalArgumentException::class.java) {
             makeTransactionBuilder()
-                .withStates(testConsensualState)
+                .withStates(ConsensualTransactionMocks.testConsensualState)
                 .withStates(TestConsensualState("test", emptyList()))
                 .signInitial(testPublicKey)
         }
@@ -119,18 +119,18 @@ internal class ConsensualTransactionBuilderImplTest{
         val metadata = tx.wireTransaction.metadata
         assertEquals("0.001", metadata.getLedgerVersion())
 
-        val expectedCpiMetadata = CpiMetadata(
-            "MockCpi",
-            "3.1415-fake",
-            "",
-            "4141414141414141414141414141414141414141414141414141414141414141",
+        val expectedCpiMetadata = CpiSummary(
+            "CPI name",
+            "CPI version",
+            "46616B652D76616C7565",
+            "00000000000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
             listOf(
-                CpkMetadata(
+                CpkSummary(
                     "MockCpk",
                     "1",
                     "",
                 "0101010101010101010101010101010101010101010101010101010101010101"),
-                CpkMetadata(
+                CpkSummary(
                     "MockCpk",
                     "3",
                     "",
@@ -147,7 +147,6 @@ internal class ConsensualTransactionBuilderImplTest{
         signingService,
         jsonMarshallingService,
         ConsensualTransactionMocks.mockMemberLookup(),
-        ConsensualTransactionMocks.mockCpiInfoReadService(),
-        ConsensualTransactionMocks.mockVirtualNodeInfoService()
+        ConsensualTransactionMocks.mockSandboxCpks()
     )
 }

@@ -2,17 +2,17 @@ package net.corda.ledger.common.impl.transaction
 
 import net.corda.crypto.core.concatByteArrays
 import net.corda.crypto.core.toByteArray
+import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.DigestService
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.common.transaction.PrivacySalt
-import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
+import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_ENTROPY_OPTION
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION
-import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_ENTROPY_OPTION
 import net.corda.v5.crypto.merkle.MerkleTree
+import net.corda.v5.ledger.common.transaction.PrivacySalt
 import java.util.Base64
 
 const val ALL_LEDGER_METADATA_COMPONENT_GROUP_ID = 0

@@ -100,8 +100,7 @@ internal class ConsensualLedgerTransactionImplTest{
             signingService,
             jsonMarshallingService,
             ConsensualTransactionMocks.mockMemberLookup(),
-            ConsensualTransactionMocks.mockCpiInfoReadService(),
-            ConsensualTransactionMocks.mockVirtualNodeInfoService()
+            ConsensualTransactionMocks.mockSandboxCpks(),
         )
             .withStates(testConsensualState)
             .signInitial(testPublicKey)
