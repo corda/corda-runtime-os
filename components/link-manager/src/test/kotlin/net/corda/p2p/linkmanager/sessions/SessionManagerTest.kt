@@ -94,6 +94,7 @@ class SessionManagerTest {
         const val KEY = "KEY"
         const val GROUP_ID = "myGroup"
         const val MAX_MESSAGE_SIZE = 1024 * 1024
+        const val SESSION_REFRESH_THRESHOLD_KEY = 432000000
         const val SESSIONS_PER_COUNTERPARTIES = 2
         val PROTOCOL_MODES = listOf(ProtocolMode.AUTHENTICATED_ENCRYPTION, ProtocolMode.AUTHENTICATION_ONLY)
         val RANDOM_BYTES = ByteBuffer.wrap("some-random-data".toByteArray())
@@ -268,7 +269,8 @@ class SessionManagerTest {
         configHandler.applyNewConfiguration(
             SessionManagerImpl.SessionManagerConfig(
                 MAX_MESSAGE_SIZE,
-                SESSIONS_PER_COUNTERPARTIES
+                SESSIONS_PER_COUNTERPARTIES,
+                SESSION_REFRESH_THRESHOLD_KEY
             ),
             null,
             mock(),
@@ -449,11 +451,13 @@ class SessionManagerTest {
         configHandler.applyNewConfiguration(
             SessionManagerImpl.SessionManagerConfig(
                 MAX_MESSAGE_SIZE,
-                SESSIONS_PER_COUNTERPARTIES
+                SESSIONS_PER_COUNTERPARTIES,
+                SESSION_REFRESH_THRESHOLD_KEY
             ),
             SessionManagerImpl.SessionManagerConfig(
                 MAX_MESSAGE_SIZE,
-                SESSIONS_PER_COUNTERPARTIES
+                SESSIONS_PER_COUNTERPARTIES,
+                SESSION_REFRESH_THRESHOLD_KEY
             ),
             mock(),
         )
@@ -846,7 +850,7 @@ class SessionManagerTest {
         sessionManager.inboundSessionEstablished(sessionId)
 
         configHandler.applyNewConfiguration(
-            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, SESSIONS_PER_COUNTERPARTIES),
+            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, SESSIONS_PER_COUNTERPARTIES, SESSION_REFRESH_THRESHOLD_KEY),
             mock(),
             mock(),
         )
@@ -1195,7 +1199,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, SESSION_REFRESH_THRESHOLD_KEY),
                 null,
                 mock(),
             )
@@ -1248,7 +1252,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, SESSION_REFRESH_THRESHOLD_KEY),
                 null,
                 mock(),
             )
@@ -1322,7 +1326,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, SESSION_REFRESH_THRESHOLD_KEY),
                 null,
                 mock(),
             )
@@ -1386,7 +1390,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, SESSION_REFRESH_THRESHOLD_KEY),
                 null,
                 mock(),
             )
@@ -1449,7 +1453,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, SESSION_REFRESH_THRESHOLD_KEY),
                 null,
                 mock(),
             )
@@ -1471,8 +1475,8 @@ class SessionManagerTest {
         assertThat(linkOutMessages).isEqualTo(2)
 
         configHandler.applyNewConfiguration(
-            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1),
-            SessionManagerImpl.SessionManagerConfig(2 * MAX_MESSAGE_SIZE, 1),
+            SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, SESSION_REFRESH_THRESHOLD_KEY),
+            SessionManagerImpl.SessionManagerConfig(2 * MAX_MESSAGE_SIZE, 1, SESSION_REFRESH_THRESHOLD_KEY),
             resourcesHolder,
         )
 
@@ -1519,7 +1523,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, SESSION_REFRESH_THRESHOLD_KEY),
                 null,
                 mock(),
             )
@@ -1590,7 +1594,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, SESSION_REFRESH_THRESHOLD_KEY),
                 null,
                 mock(),
             )
@@ -1695,7 +1699,7 @@ class SessionManagerTest {
         ) { mockTimeFacilitiesProvider.mockScheduledExecutor }.apply {
             setRunning()
             configHandler.applyNewConfiguration(
-                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1),
+                SessionManagerImpl.SessionManagerConfig(MAX_MESSAGE_SIZE, 1, SESSION_REFRESH_THRESHOLD_KEY),
                 null,
                 mock(),
             )

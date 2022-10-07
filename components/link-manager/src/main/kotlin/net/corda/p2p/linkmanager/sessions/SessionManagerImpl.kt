@@ -136,8 +136,6 @@ internal class SessionManagerImpl(
     )
     private val outboundSessionPool = OutboundSessionPool(heartbeatManager::calculateWeightForSession)
 
-    private val sessionRefreshThresholdInDays = 5L
-
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
         coordinatorFactory,
@@ -556,9 +554,10 @@ internal class SessionManagerImpl(
             "Outbound session ${authenticatedSession.sessionId} established " +
                 "(local=${sessionCounterparties.ourId}, remote=${sessionCounterparties.counterpartyId})."
         )
+        val sessionManagerConfig = config.get()
         executorService.schedule(
             { refreshSessionAndLog(sessionCounterparties, message.header.sessionId) },
-            sessionRefreshThresholdInDays,
+            sessionManagerConfig.sessionRefreshThreshold.toLong(),
             TimeUnit.DAYS
         )
         return null
