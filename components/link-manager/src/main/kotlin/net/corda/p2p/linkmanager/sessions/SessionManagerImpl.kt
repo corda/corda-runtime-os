@@ -120,7 +120,7 @@ internal class SessionManagerImpl(
     // This default needs to be removed and the lifecycle dependency graph adjusted to ensure the inbound subscription starts only after
     // the configuration has been received and the session manager has started (see CORE-6730).
     private val config = AtomicReference(
-        SessionManagerConfig(1000000, 4)
+        SessionManagerConfig(1000000, 4, 432000000)
     )
 
     private val heartbeatManager: HeartbeatManager = HeartbeatManager(
@@ -167,6 +167,7 @@ internal class SessionManagerImpl(
     internal data class SessionManagerConfig(
         val maxMessageSize: Int,
         val sessionsPerCounterparties: Int,
+        val sessionRefreshThreshold: Int,
     )
 
     internal inner class SessionManagerConfigChangeHandler : ConfigurationChangeHandler<SessionManagerConfig>(
@@ -208,7 +209,8 @@ internal class SessionManagerImpl(
     private fun fromConfig(config: Config): SessionManagerConfig {
         return SessionManagerConfig(
             config.getInt(LinkManagerConfiguration.MAX_MESSAGE_SIZE_KEY),
-            config.getInt(LinkManagerConfiguration.SESSIONS_PER_PEER_KEY)
+            config.getInt(LinkManagerConfiguration.SESSIONS_PER_PEER_KEY),
+            config.getInt(LinkManagerConfiguration.SESSION_REFRESH_THRESHOLD_KEY)
         )
     }
 

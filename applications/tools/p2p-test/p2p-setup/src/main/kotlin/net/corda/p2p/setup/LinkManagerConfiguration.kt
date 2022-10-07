@@ -83,6 +83,12 @@ class LinkManagerConfiguration : Callable<Collection<Record<String, Configuratio
     )
     var sessionsPerPeer = 4L
 
+    @Option(
+        names = ["--sessionRefreshThreshold"],
+        description = ["Session refresh threshold in milliseconds - *important* do not change"]
+    )
+    var sessionRefreshThreshold = 432000000L
+
     override fun call(): Collection<Record<String, Configuration>> {
         val baseConfiguration = ConfigFactory.empty()
             .withValue(
@@ -104,6 +110,10 @@ class LinkManagerConfiguration : Callable<Collection<Record<String, Configuratio
             .withValue(
                 LinkManagerConfiguration.SESSIONS_PER_PEER_KEY,
                 ConfigValueFactory.fromAnyRef(sessionsPerPeer)
+            )
+            .withValue(
+                LinkManagerConfiguration.SESSION_REFRESH_THRESHOLD_KEY,
+                ConfigValueFactory.fromAnyRef(sessionRefreshThreshold)
             )
 
         val replayAlgorithmInnerConfig = when (replayAlgorithm) {
