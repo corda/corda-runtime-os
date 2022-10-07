@@ -1,5 +1,6 @@
 package net.corda.cipher.suite.impl.platform.handling
 
+import net.corda.cipher.suite.impl.platform.PlatformCipherSuiteMetadata
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.providers.generation.GenerateKeyHandler
 import net.corda.v5.cipher.suite.providers.generation.GeneratedKey
@@ -8,7 +9,7 @@ import net.corda.v5.cipher.suite.providers.generation.KeyGenerationSpec
 import java.security.KeyPairGenerator
 
 class PlatformGenerateKeyHandler(
-    private val metadata: PlatformCipherSuiteMetadata,
+    private val suiteMetadata: PlatformCipherSuiteMetadata,
     private val keyMap: SoftKeyMap,
 ) : GenerateKeyHandler {
     companion object {
@@ -18,7 +19,7 @@ class PlatformGenerateKeyHandler(
     override val rank: Int = 0
 
     override fun generateKeyPair(spec: KeyGenerationSpec, context: Map<String, String>): GeneratedKey {
-        require(metadata.supportedSigningSchemes.containsKey(spec.keyScheme)) {
+        require(suiteMetadata.supportedSigningSchemes.containsKey(spec.keyScheme)) {
             "Unsupported key scheme: ${spec.keyScheme.codeName}"
         }
         logger.info(
@@ -28,12 +29,12 @@ class PlatformGenerateKeyHandler(
         )
         val keyPairGenerator = KeyPairGenerator.getInstance(
             spec.keyScheme.algorithmName,
-            metadata.providerFor(spec.keyScheme)
+            suiteMetadata.providerFor(spec.keyScheme)
         )
         if (spec.keyScheme.algSpec != null) {
-            keyPairGenerator.initialize(spec.keyScheme.algSpec, metadata.secureRandom)
+            keyPairGenerator.initialize(spec.keyScheme.algSpec, suiteMetadata.secureRandom)
         } else if (spec.keyScheme.keySize != null) {
-            keyPairGenerator.initialize(spec.keyScheme.keySize, metadata.secureRandom)
+            keyPairGenerator.initialize(spec.keyScheme.keySize, suiteMetadata.secureRandom)
         }
         val keyPair = keyPairGenerator.generateKeyPair()
         val privateKeyMaterial = keyMap.wrapPrivateKey(keyPair)

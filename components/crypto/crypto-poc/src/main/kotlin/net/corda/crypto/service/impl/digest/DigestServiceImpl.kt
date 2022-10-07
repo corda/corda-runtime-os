@@ -2,11 +2,10 @@ package net.corda.crypto.service.impl.digest
 
 import net.corda.crypto.service.DigestAlgorithmFactoryProvider
 import net.corda.crypto.service.DigestService
-import net.corda.v5.cipher.suite.AbstractCipherSuite
+import net.corda.v5.cipher.suite.CipherSuiteBase
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.extensions.DigestAlgorithm
-import org.bouncycastle.crypto.CryptoException
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -18,8 +17,8 @@ import java.util.concurrent.ConcurrentHashMap
 
 @Component(service = [ DigestService::class ], scope = PROTOTYPE, property=["corda.system=true"])
 class DigestServiceImpl @Activate constructor(
-    @Reference(service = AbstractCipherSuite::class)
-    private val suite: AbstractCipherSuite,
+    @Reference(service = CipherSuiteBase::class)
+    private val suite: CipherSuiteBase,
     @Reference(
         service = DigestAlgorithmFactoryProvider::class,
         scope = PROTOTYPE_REQUIRED,
@@ -47,11 +46,15 @@ class DigestServiceImpl @Activate constructor(
     private fun digestFor(digestAlgorithmName: DigestAlgorithmName): DigestAlgorithm =
         try {
             suite.findDigestAlgorithmFactory(digestAlgorithmName.name)
-                ?.getInstance() ?: throw CryptoException("$digestAlgorithmName not found")
+                ?.getInstance() ?: throw IllegalArgumentException("$digestAlgorithmName not found")
         } catch (e: IllegalArgumentException) {
             // Check any custom registered versions.
             customFactoriesProvider?.get(digestAlgorithmName.name)
                 ?.getInstance()
                 ?: throw e
+        } catch (e: RuntimeException) {
+            throw e
+        } catch (e: Throwable) {
+            throw RuntimeException(e.message, e)
         }
 }

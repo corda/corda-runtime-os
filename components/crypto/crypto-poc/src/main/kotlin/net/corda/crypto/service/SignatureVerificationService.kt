@@ -8,6 +8,7 @@ interface SignatureVerificationService {
         publicKey: PublicKey,
         signatureSpec: SignatureSpec,
         signatureData: ByteArray,
-        clearData: ByteArray
+        clearData: ByteArray,
+        metadata: ByteArray
     ): Boolean
 }

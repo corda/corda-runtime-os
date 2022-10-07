@@ -6,7 +6,7 @@ import net.corda.v5.cipher.suite.scheme.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.extensions.DigestAlgorithmFactory
 
-interface CipherSuite : AbstractCipherSuite {
+interface CipherSuite : CipherSuiteBase {
     fun register(
         keyScheme: KeyScheme,
         signatureSpecs: List<SignatureSpec>,

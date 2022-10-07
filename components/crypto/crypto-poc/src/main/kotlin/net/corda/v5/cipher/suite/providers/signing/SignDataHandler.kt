@@ -20,6 +20,7 @@ interface SignDataHandler {
     fun sign(
         spec: SigningSpec,
         data: ByteArray,
+        metadata: ByteArray,
         context: Map<String, String>
     ): ByteArray
 }

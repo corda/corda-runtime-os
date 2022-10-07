@@ -1,25 +1,12 @@
-package net.corda.cipher.suite.impl.platform.handling
+package net.corda.cipher.suite.impl.platform
 
 import net.corda.cipher.suite.OID_COMPOSITE_KEY_IDENTIFIER
-import net.corda.cipher.suite.impl.platform.CordaSecureRandomService
-import net.corda.cipher.suite.impl.platform.CordaSecurityProvider
-import net.corda.cipher.suite.impl.platform.ECDSAK1KeySchemeInfo
-import net.corda.cipher.suite.impl.platform.ECDSAR1KeySchemeInfo
-import net.corda.cipher.suite.impl.platform.EDDSAKeySchemeInfo
-import net.corda.cipher.suite.impl.platform.GOST3410GOST3411KeySchemeInfo
-import net.corda.cipher.suite.impl.platform.KeyFactoryProvider
-import net.corda.cipher.suite.impl.platform.KeySchemeInfo
-import net.corda.cipher.suite.impl.platform.RSAKeySchemeInfo
-import net.corda.cipher.suite.impl.platform.SM2KeySchemeInfo
-import net.corda.cipher.suite.impl.platform.SPHINCS256KeySchemeInfo
-import net.corda.cipher.suite.impl.platform.X25519KeySchemeInfo
 import net.corda.v5.cipher.suite.providers.encoding.KeyEncodingHandler
 import net.corda.v5.cipher.suite.scheme.DigestScheme
 import net.corda.v5.cipher.suite.scheme.KeyScheme
 import net.corda.v5.cipher.suite.scheme.KeySchemeCapability
 import net.corda.v5.crypto.COMPOSITE_KEY_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
-import net.corda.v5.crypto.exceptions.CryptoException
 import org.bouncycastle.asn1.DERNull
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
@@ -201,39 +188,13 @@ class PlatformCipherSuiteMetadata : KeyEncodingHandler {
     }.toMap()
 
     val supportedSigningSchemes: Map<KeyScheme, List<SignatureSpec>> = mapOf(
-        RSA.scheme to listOf(
-            SignatureSpec.RSA_SHA256,
-            SignatureSpec.RSA_SHA384,
-            SignatureSpec.RSA_SHA512,
-            SignatureSpec.RSASSA_PSS_SHA256,
-            SignatureSpec.RSASSA_PSS_SHA384,
-            SignatureSpec.RSASSA_PSS_SHA512,
-            SignatureSpec.RSA_SHA256_WITH_MGF1,
-            SignatureSpec.RSA_SHA384_WITH_MGF1,
-            SignatureSpec.RSA_SHA512_WITH_MGF1
-        ),
-        ECDSA_SECP256K1.scheme to listOf(
-            SignatureSpec.ECDSA_SHA256,
-            SignatureSpec.ECDSA_SHA384,
-            SignatureSpec.ECDSA_SHA512
-        ),
-        ECDSA_SECP256R1.scheme to listOf(
-            SignatureSpec.ECDSA_SHA256,
-            SignatureSpec.ECDSA_SHA384,
-            SignatureSpec.ECDSA_SHA512
-        ),
-        EDDSA_ED25519.scheme to listOf(
-            SignatureSpec.EDDSA_ED25519
-        ),
-        SPHINCS256.scheme to listOf(
-            SignatureSpec.SPHINCS256_SHA512
-        ),
-        SM2.scheme to listOf(
-            SignatureSpec.SM2_SM3
-        ),
-        GOST3410_GOST3411.scheme to listOf(
-            SignatureSpec.GOST3410_GOST3411
-        )
+        RSA.scheme to RSA.supportedSignatureSpecs,
+        ECDSA_SECP256R1.scheme to ECDSA_SECP256R1.supportedSignatureSpecs,
+        ECDSA_SECP256K1.scheme to ECDSA_SECP256K1.supportedSignatureSpecs,
+        EDDSA_ED25519.scheme to EDDSA_ED25519.supportedSignatureSpecs,
+        SPHINCS256.scheme to SPHINCS256.supportedSignatureSpecs,
+        SM2.scheme to SM2.supportedSignatureSpecs,
+        GOST3410_GOST3411.scheme to GOST3410_GOST3411.supportedSignatureSpecs
     )
 
     val digests: List<DigestScheme> = providers.values
@@ -258,35 +219,37 @@ class PlatformCipherSuiteMetadata : KeyEncodingHandler {
 
     override val rank: Int = 0
 
-    override fun decodePublicKey(encodedKey: ByteArray): PublicKey? = try {
+    override fun decode(encodedKey: ByteArray): PublicKey? {
         val subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(encodedKey)
         val scheme = findKeyScheme(subjectPublicKeyInfo.algorithm)
         val keyFactory = keyFactories[scheme]
-        keyFactory.generatePublic(X509EncodedKeySpec(encodedKey))
-    } catch (e: RuntimeException) {
-        throw e
-    } catch (e: Throwable) {
-        throw CryptoException("Failed to decode public key", e)
+        return keyFactory.generatePublic(X509EncodedKeySpec(encodedKey))
     }
 
-    override fun decodePublicKey(encodedKey: String): PublicKey? = try {
+    override fun decode(scheme: KeyScheme, publicKeyInfo: SubjectPublicKeyInfo, encodedKey: ByteArray): PublicKey {
+        val keyFactory = keyFactories[scheme]
+        return keyFactory.generatePublic(X509EncodedKeySpec(encodedKey))
+    }
+
+    override fun decodePem(encodedKey: String): PublicKey? {
         val pemContent = parsePemContent(encodedKey)
         val publicKeyInfo = SubjectPublicKeyInfo.getInstance(pemContent)
         val converter = getJcaPEMKeyConverter(publicKeyInfo)
-        converter.getPublicKey(publicKeyInfo)
-    } catch (e: RuntimeException) {
-        throw e
-    } catch (e: Throwable) {
-        throw CryptoException("Failed to decode public key", e)
+        return converter.getPublicKey(publicKeyInfo)
     }
 
-    override fun encodeAsString(scheme: KeyScheme, publicKey: PublicKey): String = try {
-        objectToPem(publicKey)
-    } catch (e: RuntimeException) {
-        throw e
-    } catch (e: Throwable) {
-        throw CryptoException("Failed to encode public key in PEM format", e)
+    override fun decodePem(scheme: KeyScheme, publicKeyInfo: SubjectPublicKeyInfo, pemContent: ByteArray): PublicKey {
+        val converter = getJcaPEMKeyConverter(publicKeyInfo)
+        return converter.getPublicKey(publicKeyInfo)
     }
+
+    override fun encodeAsPem(scheme: KeyScheme, publicKey: PublicKey): String =
+        StringWriter().use { strWriter ->
+            JcaPEMWriter(strWriter).use { pemWriter ->
+                pemWriter.writeObject(publicKey)
+            }
+            return strWriter.toString()
+        }
 
     private fun getJcaPEMKeyConverter(publicKeyInfo: SubjectPublicKeyInfo): JcaPEMKeyConverter {
         val scheme = findKeyScheme(publicKeyInfo.algorithm)
@@ -294,14 +257,6 @@ class PlatformCipherSuiteMetadata : KeyEncodingHandler {
         converter.setProvider(schemeProviderMap[scheme])
         return converter
     }
-
-    private fun objectToPem(obj: Any): String =
-        StringWriter().use { strWriter ->
-            JcaPEMWriter(strWriter).use { pemWriter ->
-                pemWriter.writeObject(obj)
-            }
-            return strWriter.toString()
-        }
 
     private fun parsePemContent(pem: String): ByteArray =
         StringReader(pem).use { strReader ->

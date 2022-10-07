@@ -15,7 +15,7 @@ interface KeyEncodingService {
      * @throws IllegalArgumentException if the key scheme is not supported.
      * @throws net.corda.v5.crypto.exceptions.CryptoException for general cryptographic exceptions.
      */
-    fun decodePublicKey(encodedKey: ByteArray): PublicKey
+    fun decode(encodedKey: ByteArray): PublicKey
 
     /**
      * Decodes public key from PEM encoded string.
@@ -23,7 +23,7 @@ interface KeyEncodingService {
      * @throws IllegalArgumentException if the key scheme is not supported.
      * @throws net.corda.v5.crypto.exceptions.CryptoException for general cryptographic exceptions.
      */
-    fun decodePublicKey(encodedKey: String): PublicKey
+    fun decodePem(encodedKey: String): PublicKey
 
     /**
      * Encodes public key to byte array.
@@ -40,5 +40,5 @@ interface KeyEncodingService {
      * @throws IllegalArgumentException if the key scheme is not supported.
      * @throws net.corda.v5.crypto.exceptions.CryptoException for general cryptographic exceptions.
      */
-    fun encodeAsString(publicKey: PublicKey): String
+    fun encodeAsPem(publicKey: PublicKey): String
 }

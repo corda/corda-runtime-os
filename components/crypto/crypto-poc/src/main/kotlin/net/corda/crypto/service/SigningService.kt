@@ -18,6 +18,7 @@ interface SigningService {
         publicKey: PublicKey,
         signatureSpec: SignatureSpec,
         data: ByteArray,
+        metadata: ByteArray,
         context: Map<String, String>
     ): DigitalSignature.WithKey
 }

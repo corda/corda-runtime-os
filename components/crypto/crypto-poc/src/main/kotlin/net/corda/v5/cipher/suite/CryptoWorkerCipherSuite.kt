@@ -8,7 +8,7 @@ import net.corda.v5.cipher.suite.scheme.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.extensions.DigestAlgorithmFactory
 
-interface CryptoWorkerCipherSuite : AbstractCipherSuite {
+interface CryptoWorkerCipherSuite : CipherSuiteBase {
     fun register(
         keyScheme: KeyScheme,
         signatureSpecs: List<SignatureSpec>,
@@ -23,7 +23,7 @@ interface CryptoWorkerCipherSuite : AbstractCipherSuite {
      */
     fun register(digests: List<DigestAlgorithmFactory>)
 
-    fun findGenerateKeyHandler(schemeCodeName: String): GenerateKeyHandler
+    fun findGenerateKeyHandler(schemeCodeName: String): GenerateKeyHandler?
 
-    fun findSignDataHandler(schemeCodeName: String): SignDataHandler
+    fun findSignDataHandler(schemeCodeName: String): SignDataHandler?
 }

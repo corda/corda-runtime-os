@@ -1,6 +1,6 @@
-package net.corda.cipher.suite.impl.platform.digest
+package net.corda.cipher.suite.impl.platform.handling
 
-import net.corda.cipher.suite.impl.platform.handling.PlatformCipherSuiteMetadata
+import net.corda.cipher.suite.impl.platform.PlatformCipherSuiteMetadata
 import net.corda.v5.cipher.suite.providers.digest.DigestHandler
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
@@ -13,7 +13,7 @@ import java.security.Provider
 import java.util.concurrent.ConcurrentHashMap
 
 class PlatformDigestHandler(
-    private val metadata: PlatformCipherSuiteMetadata,
+    private val suiteMetadata: PlatformCipherSuiteMetadata,
 ) : DigestHandler {
     private val factories = ConcurrentHashMap<String, DigestAlgorithmFactory>()
     private val lengths = ConcurrentHashMap<String, Int>()
@@ -35,19 +35,19 @@ class PlatformDigestHandler(
 
     private fun digestFor(digestAlgorithmName: DigestAlgorithmName): DigestAlgorithm =
             factories.getOrPut(digestAlgorithmName.name) {
-                SpiDigestAlgorithmFactory(metadata, digestAlgorithmName.name)
+                SpiDigestAlgorithmFactory(suiteMetadata, digestAlgorithmName.name)
             }.getInstance()
 
     private class SpiDigestAlgorithmFactory(
-        metadata: PlatformCipherSuiteMetadata,
+        suiteMetadata: PlatformCipherSuiteMetadata,
         override val algorithm: String,
     ) : DigestAlgorithmFactory {
         companion object {
             const val STREAM_BUFFER_SIZE = DEFAULT_BUFFER_SIZE
         }
 
-        private val provider: Provider = metadata.providers.getValue(
-            metadata.digests.firstOrNull { it.algorithmName == algorithm }?.providerName
+        private val provider: Provider = suiteMetadata.providers.getValue(
+            suiteMetadata.digests.firstOrNull { it.algorithmName == algorithm }?.providerName
                 ?: throw IllegalArgumentException("Unknown hash algorithm $algorithm")
         )
 

@@ -38,19 +38,26 @@ class SigningServiceImpl(
     ): PublicKey {
         logger.info("generateKeyPair(tenant={}, alias={}))", tenantId, alias)
         val handler = suite.findGenerateKeyHandler(scheme.codeName)
+            ?: throw IllegalArgumentException("There is no key generation handler for the scheme $scheme.")
         if (alias != null && store.find(tenantId, alias) != null) {
             throw IllegalStateException("The key with alias $alias already exist for tenant $tenantId")
         }
-        val generatedKey = handler.generateKeyPair(
-            KeyGenerationSpec(
-                keyScheme = scheme,
-                tenantId = tenantId,
-                alias = alias
-            ),
-            context
-        )
-        store.save(tenantId, toSaveKeyContext(generatedKey, alias, scheme, externalId))
-        return generatedKey.publicKey
+        return try {
+            val generatedKey = handler.generateKeyPair(
+                KeyGenerationSpec(
+                    keyScheme = scheme,
+                    tenantId = tenantId,
+                    alias = alias
+                ),
+                context
+            )
+            store.save(tenantId, toSaveKeyContext(generatedKey, alias, scheme, externalId))
+            generatedKey.publicKey
+        }  catch (e: RuntimeException) {
+            throw e
+        } catch (e: Throwable) {
+            throw RuntimeException(e.message, e)
+        }
     }
 
     override fun sign(
@@ -58,18 +65,21 @@ class SigningServiceImpl(
         publicKey: PublicKey,
         signatureSpec: SignatureSpec,
         data: ByteArray,
+        metadata: ByteArray,
         context: Map<String, String>
     ): DigitalSignature.WithKey {
         val record = getOwnedKeyRecord(tenantId, publicKey)
         logger.debug { "sign(tenant=$tenantId, publicKey=${record.data.id})" }
         val scheme = suite.findKeyScheme(record.data.schemeCodeName)
+            ?: throw IllegalArgumentException("The scheme ${record.data.schemeCodeName} is not supported.")
         val handler = suite.findSignDataHandler(scheme.codeName)
+            ?: throw IllegalArgumentException("There is no signing handler for the scheme $scheme.")
         val spec = if (record.data.keyMaterial != null) {
             SigningWrappedSpec(
                 tenantId = tenantId,
                 publicKey = record.publicKey,
                 keyMaterialSpec = KeyMaterialSpec(
-                    keyMaterial = record.data.keyMaterial!!,
+                    keyMaterial = record.data.keyMaterial,
                     masterKeyAlias = record.data.masterKeyAlias,
                     encodingVersion = record.data.encodingVersion!!
                 ),
@@ -85,12 +95,18 @@ class SigningServiceImpl(
                 signatureSpec = signatureSpec
             )
         }
-        val signedBytes = handler.sign(spec, data, context)
-        return DigitalSignature.WithKey(
-            by = record.publicKey,
-            bytes = signedBytes,
-            context = context
-        )
+        return try {
+            val signedBytes = handler.sign(spec, data, metadata, context)
+            DigitalSignature.WithKey(
+                by = record.publicKey,
+                bytes = signedBytes,
+                context = context
+            )
+        } catch (e: RuntimeException) {
+            throw e
+        } catch (e: Throwable) {
+            throw RuntimeException(e.message, e)
+        }
     }
 
     private fun toSaveKeyContext(
