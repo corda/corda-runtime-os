@@ -246,9 +246,10 @@ class KeysRpcOpsImplTest {
             }
             whenever(cryptoOpsClient.generateKeyPair("tenantId", "CATEGORY", "alias", "scheme")).doReturn(publicKey)
 
-            assertThrows<InvalidInputDataException> {
+            val exceptionDetails = assertThrows<InvalidInputDataException> {
                 keysOps.generateKeyPair(tenantId = "tenantId", alias = "", hsmCategory = "category", scheme = "scheme")
-            }
+            }.details
+            assertThat(exceptionDetails).containsKey("alias")
         }
 
         @Test
