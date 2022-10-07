@@ -10,6 +10,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.math.BigDecimal
 import java.math.BigInteger
 
+@Suppress("TooManyFunctions")
 class JsonNodeReaderAdaptor(
     private val jsonNode: JsonNode,
     private val deserializationContext: DeserializationContext
@@ -73,8 +74,6 @@ class JsonNodeReaderAdaptor(
 
     override fun asDouble(defaultValue: Double) = jsonNode.asDouble(defaultValue)
 
-    override fun isFloat() = jsonNode.isFloat
-
     override fun floatValue() = jsonNode.floatValue()
 
     override fun isInt() = jsonNode.isInt
@@ -85,23 +84,15 @@ class JsonNodeReaderAdaptor(
 
     override fun asInt(defaultValue: Int) = jsonNode.asInt(defaultValue)
 
-    override fun isLong() = jsonNode.isLong
-
     override fun canConvertToLong() = jsonNode.canConvertToLong()
 
     override fun asLong() = jsonNode.asLong()
 
-    override fun asLong(defaultValue: Long) = jsonNode.asLong()
-
-    override fun isShort() = jsonNode.isShort
+    override fun asLong(defaultValue: Long) = jsonNode.asLong(defaultValue)
 
     override fun shortValue() = jsonNode.shortValue()
 
-    override fun isBigInteger() = jsonNode.isBigInteger
-
     override fun bigIntegerValue(): BigInteger = jsonNode.bigIntegerValue()
-
-    override fun isBigDecimnal() = jsonNode.isBigDecimal
 
     override fun bigDecimalValue(): BigDecimal = jsonNode.decimalValue()
 
@@ -111,9 +102,11 @@ class JsonNodeReaderAdaptor(
 
     override fun asText(defaultValue: String): String = jsonNode.asText(defaultValue)
 
-    override fun isBinary() = jsonNode.isBinary
-
-    override fun binaryValue(): ByteArray? = jsonNode.binaryValue()
+    override fun binaryValue(): ByteArray? = try {
+        jsonNode.binaryValue()
+    } catch (e: Exception) {
+        null
+    }
 
     override fun isNull() = jsonNode.isNull
 
