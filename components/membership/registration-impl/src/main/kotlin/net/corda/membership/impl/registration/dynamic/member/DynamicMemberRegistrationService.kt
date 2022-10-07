@@ -3,7 +3,7 @@ package net.corda.membership.impl.registration.dynamic.member
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
-import net.corda.crypto.core.toByteArray
+import net.corda.crypto.ecies.EciesParams
 import net.corda.crypto.ecies.EphemeralKeyPairEncryptor
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
@@ -82,7 +82,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import java.nio.ByteBuffer
-import java.security.PublicKey
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
@@ -285,17 +284,18 @@ class DynamicMemberRegistrationService @Activate constructor(
 
                 val mgmKey = mgm.ecdhKey ?: throw IllegalArgumentException("MGM's ECDH key is missing.")
 
-                val header = UnauthenticatedRegistrationRequestHeader(1, clock.instant())
-                latestHeader = header
-
                 val data = ephemeralKeyPairEncryptor.encrypt(
                     mgmKey,
-                    registrationRequestSerializer.serialize(message)!!,
-                    headerSerializer.serialize(header),
-                    ::generateSalt
-                )
-
-                val memberECKey = data.publicKey
+                    registrationRequestSerializer.serialize(message)!!
+                ) { ek, sk ->
+                    val timestamp = clock.instant().toEpochMilli()
+                    val header = UnauthenticatedRegistrationRequestHeader(1, timestamp, keyEncodingService.encodeAsString(ek))
+                    val serializedHeader = headerSerializer.serialize(header)
+                        ?: throw IllegalArgumentException("Serialized header cannot be null.")
+                    val salt = serializedHeader + keyEncodingService.encodeAsByteArray(sk)
+                    latestHeader = header
+                    EciesParams( salt, serializedHeader )
+                }
 
                 val messageHeader = UnauthenticatedMessageHeader(
                     mgm.holdingIdentity.toAvro(),
@@ -303,9 +303,8 @@ class DynamicMemberRegistrationService @Activate constructor(
                     MEMBERSHIP_P2P_SUBSYSTEM
                 )
                 val request = UnauthenticatedRegistrationRequest(
-                    header,
-                    keyEncodingService.encodeAsString(memberECKey),
-                    ByteBuffer.wrap(registrationRequestSerializer.serialize(message))
+                    latestHeader,
+                    ByteBuffer.wrap(data.cipherText)
                 )
                 val record = buildUnauthenticatedP2PRequest(
                     messageHeader,
@@ -338,13 +337,6 @@ class DynamicMemberRegistrationService @Activate constructor(
             }
 
             return MembershipRequestRegistrationResult(MembershipRequestRegistrationOutcome.SUBMITTED)
-        }
-
-        private fun generateSalt(ephemeralKey: PublicKey, otherKey: PublicKey): ByteArray {
-            return latestHeader!!.protocolVersion.toByteArray() +
-                    latestHeader!!.timestamp.toEpochMilli().toByteArray() +
-                    ephemeralKey.encoded +
-                    otherKey.encoded
         }
 
         override fun close() {

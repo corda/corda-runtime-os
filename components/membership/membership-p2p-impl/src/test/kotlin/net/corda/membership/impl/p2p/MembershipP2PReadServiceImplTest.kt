@@ -3,6 +3,8 @@ package net.corda.membership.impl.p2p
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.ecies.StableKeyPairDecryptor
+import net.corda.data.CordaAvroSerializationFactory
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -14,6 +16,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -21,6 +24,7 @@ import net.corda.p2p.app.AppMessage
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.registry.AvroSchemaRegistry
+import net.corda.v5.cipher.suite.KeyEncodingService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -41,14 +45,15 @@ class MembershipP2PReadServiceImplTest {
     private val subRegistrationHandle: RegistrationHandle = mock()
     private val configHandle: Resource = mock()
     private val subscription: Subscription<String, AppMessage> = mock()
+    private val dependencies = setOf(
+        LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
+        LifecycleCoordinatorName.forComponent<StableKeyPairDecryptor>(),
+        LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
+    )
 
     private val coordinator: LifecycleCoordinator = mock {
         on { followStatusChangesByName(any()) } doReturn subRegistrationHandle
-        on {
-            followStatusChangesByName(
-                eq(setOf(LifecycleCoordinatorName.forComponent<ConfigurationReadService>()))
-            )
-        } doReturn registrationHandle
+        on { followStatusChangesByName(eq(dependencies)) } doReturn registrationHandle
     }
 
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory = mock {
@@ -68,6 +73,10 @@ class MembershipP2PReadServiceImplTest {
         } doReturn subscription
     }
     private val avroSchemaRegistry: AvroSchemaRegistry = mock()
+    private val stableKeyPairDecryptor: StableKeyPairDecryptor = mock()
+    private val keyEncodingService: KeyEncodingService = mock()
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock()
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider = mock()
 
     private val testConfig =
         SmartConfigFactory.create(ConfigFactory.empty()).create(ConfigFactory.parseString("instanceId=1"))
@@ -78,7 +87,11 @@ class MembershipP2PReadServiceImplTest {
             lifecycleCoordinatorFactory,
             configurationReadService,
             subscriptionFactory,
-            avroSchemaRegistry
+            avroSchemaRegistry,
+            stableKeyPairDecryptor,
+            keyEncodingService,
+            cordaAvroSerializationFactory,
+            membershipGroupReaderProvider,
         )
     }
 
@@ -109,13 +122,7 @@ class MembershipP2PReadServiceImplTest {
         postStartEvent()
 
         verify(registrationHandle, never()).close()
-        verify(coordinator).followStatusChangesByName(
-            eq(
-                setOf(
-                    LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
-                )
-            )
-        )
+        verify(coordinator).followStatusChangesByName(eq(dependencies))
     }
 
     @Test
@@ -124,13 +131,7 @@ class MembershipP2PReadServiceImplTest {
         postStartEvent()
 
         verify(registrationHandle).close()
-        verify(coordinator, times(2)).followStatusChangesByName(
-            eq(
-                setOf(
-                    LifecycleCoordinatorName.forComponent<ConfigurationReadService>()
-                )
-            )
-        )
+        verify(coordinator, times(2)).followStatusChangesByName(eq(dependencies))
     }
 
     @Test

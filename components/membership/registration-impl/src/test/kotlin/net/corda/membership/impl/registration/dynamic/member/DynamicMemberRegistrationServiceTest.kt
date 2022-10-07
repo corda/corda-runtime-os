@@ -4,6 +4,8 @@ import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.ecies.EncryptedDataWithKey
+import net.corda.crypto.ecies.EphemeralKeyPairEncryptor
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.crypto.wire.CryptoSigningKey
@@ -19,6 +21,8 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.ecdhKey
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.registration.RegistrationRequest
@@ -50,7 +54,6 @@ import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
-import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.Test
@@ -69,7 +72,7 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.PublicKey
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
 class DynamicMemberRegistrationServiceTest {
@@ -83,9 +86,13 @@ class DynamicMemberRegistrationServiceTest {
 
         private val MEMBER_CONTEXT_BYTES = "2222".toByteArray()
         private val REQUEST_BYTES = "3333".toByteArray()
+        private val UNAUTH_REQUEST_BYTES = "4444".toByteArray()
     }
 
-    private val memberProvidedContext: MemberContext = mock()
+    private val ecdhKey: PublicKey = mock()
+    private val memberProvidedContext: MemberContext = mock {
+        on { parseOrNull(ECDH_KEY, PublicKey::class.java) } doReturn ecdhKey
+    }
     private val registrationResultId = UUID(3, 4)
     private val mgmProvidedContext: MGMContext = mock()
     private val mgmName = MemberX500Name("Corda MGM", "London", "GB")
@@ -194,10 +201,15 @@ class DynamicMemberRegistrationServiceTest {
         on { serialize(any()) } doReturn MEMBER_CONTEXT_BYTES
     }
     private val registrationRequestSerializer: CordaAvroSerializer<Any> = mock {
-        on { serialize(any()) } doReturn "3333".toByteArray()
+        on { serialize(any()) } doReturn REQUEST_BYTES
+    }
+    private val unauthenticatedRegistrationRequestSerializer: CordaAvroSerializer<Any> = mock {
+        on { serialize(any()) } doReturn UNAUTH_REQUEST_BYTES
     }
     private val serializationFactory: CordaAvroSerializationFactory = mock {
-        on { createAvroSerializer<Any>(any()) }.thenReturn(registrationRequestSerializer, keyValuePairListSerializer)
+        on { createAvroSerializer<Any>(any()) }.thenReturn(
+            registrationRequestSerializer, keyValuePairListSerializer, unauthenticatedRegistrationRequestSerializer
+        )
     }
     private val groupReader: MembershipGroupReader = mock {
         on { lookup() } doReturn listOf(mgmInfo)
@@ -210,6 +222,12 @@ class DynamicMemberRegistrationServiceTest {
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory = mock {
         on { createValidator() } doReturn membershipSchemaValidator
     }
+    private val datawithKey: EncryptedDataWithKey = mock {
+        on { cipherText } doReturn "1234".toByteArray()
+    }
+    private val ephemeralKeyPairEncryptor: EphemeralKeyPairEncryptor = mock {
+        on { encrypt(eq(ecdhKey), any(), any()) } doReturn datawithKey
+    }
     private val registrationService = DynamicMemberRegistrationService(
         publisherFactory,
         configurationReadService,
@@ -219,7 +237,8 @@ class DynamicMemberRegistrationServiceTest {
         serializationFactory,
         membershipGroupReaderProvider,
         membershipPersistenceClient,
-        membershipSchemaValidatorFactory
+        membershipSchemaValidatorFactory,
+        ephemeralKeyPairEncryptor
     )
 
     private val context = mapOf(
@@ -267,7 +286,7 @@ class DynamicMemberRegistrationServiceTest {
     @Test
     fun `starting the service succeeds`() {
         registrationService.start()
-        Assertions.assertThat(registrationService.isRunning).isTrue
+        assertThat(registrationService.isRunning).isTrue
         verify(coordinator).start()
     }
 
@@ -275,7 +294,7 @@ class DynamicMemberRegistrationServiceTest {
     fun `stopping the service succeeds`() {
         registrationService.start()
         registrationService.stop()
-        Assertions.assertThat(registrationService.isRunning).isFalse
+        assertThat(registrationService.isRunning).isFalse
         verify(coordinator).stop()
     }
 
@@ -297,7 +316,7 @@ class DynamicMemberRegistrationServiceTest {
                 (publishedMessage.value as AppMessage).message as UnauthenticatedMessage
             it.assertThat(unauthenticatedMessagePublished.header.source).isEqualTo(member.toAvro())
             it.assertThat(unauthenticatedMessagePublished.header.destination).isEqualTo(mgm.toAvro())
-            it.assertThat(unauthenticatedMessagePublished.payload).isEqualTo(ByteBuffer.wrap(REQUEST_BYTES))
+            it.assertThat(unauthenticatedMessagePublished.payload).isEqualTo(ByteBuffer.wrap(UNAUTH_REQUEST_BYTES))
         }
         registrationService.stop()
     }
@@ -324,7 +343,7 @@ class DynamicMemberRegistrationServiceTest {
     @Test
     fun `registration fails when coordinator is not running`() {
         val registrationResult = registrationService.register(registrationResultId, member, mock())
-        Assertions.assertThat(registrationResult).isEqualTo(
+        assertThat(registrationResult).isEqualTo(
             MembershipRequestRegistrationResult(
                 MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
                 "Registration failed. Reason: DynamicMemberRegistrationService is not running."
@@ -400,6 +419,22 @@ class DynamicMemberRegistrationServiceTest {
     }
 
     @Test
+    fun `registration fails if mgm's ecdh key is missing`() {
+        postConfigChangedEvent()
+        whenever(mgmInfo.ecdhKey).thenReturn(null)
+        registrationService.start()
+        val result = registrationService.register(registrationResultId, member, context)
+        SoftAssertions.assertSoftly {
+            it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+            it.assertThat(result.message)
+                .isEqualTo(
+                    "Registration failed. Reason: MGM's ECDH key is missing."
+                )
+        }
+        registrationService.stop()
+    }
+
+    @Test
     fun `component handle created on start and closed on stop`() {
         postStartEvent()
 
@@ -436,7 +471,7 @@ class DynamicMemberRegistrationServiceTest {
             eq(coordinator),
             configArgs.capture()
         )
-        Assertions.assertThat(configArgs.firstValue)
+        assertThat(configArgs.firstValue)
             .isEqualTo(setOf(ConfigKeys.BOOT_CONFIG, ConfigKeys.MESSAGING_CONFIG))
 
         postRegistrationStatusChangeEvent(LifecycleStatus.UP)
@@ -475,7 +510,7 @@ class DynamicMemberRegistrationServiceTest {
         verify(coordinator).updateStatus(eq(LifecycleStatus.UP), any())
 
         with(configCaptor.firstValue) {
-            Assertions.assertThat(clientId).isEqualTo(PUBLISHER_CLIENT_ID)
+            assertThat(clientId).isEqualTo(PUBLISHER_CLIENT_ID)
         }
 
         postConfigChangedEvent()

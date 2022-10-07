@@ -3,6 +3,7 @@ package net.corda.membership.impl.p2p
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.ecies.StableKeyPairDecryptor
+import net.corda.data.CordaAvroSerializationFactory
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -15,6 +16,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.p2p.MembershipP2PReadService
+import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
@@ -43,6 +45,10 @@ class MembershipP2PReadServiceImpl @Activate constructor(
     private val stableKeyPairDecryptor: StableKeyPairDecryptor,
     @Reference(service = KeyEncodingService::class)
     private val keyEncodingService: KeyEncodingService,
+    @Reference(service = CordaAvroSerializationFactory::class)
+    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
+    @Reference(service = MembershipGroupReaderProvider::class)
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
 ) : MembershipP2PReadService {
 
     companion object {
@@ -83,7 +89,7 @@ class MembershipP2PReadServiceImpl @Activate constructor(
                     setOf(
                         LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
                         LifecycleCoordinatorName.forComponent<StableKeyPairDecryptor>(),
-                        // TODO crypto ops client
+                        LifecycleCoordinatorName.forComponent<MembershipGroupReaderProvider>(),
                     )
                 )
             }
@@ -130,7 +136,13 @@ class MembershipP2PReadServiceImpl @Activate constructor(
                         CONSUMER_GROUP,
                         P2P_IN_TOPIC
                     ),
-                    MembershipP2PProcessor(avroSchemaRegistry, stableKeyPairDecryptor, keyEncodingService),
+                    MembershipP2PProcessor(
+                        avroSchemaRegistry,
+                        stableKeyPairDecryptor,
+                        keyEncodingService,
+                        cordaAvroSerializationFactory,
+                        membershipGroupReaderProvider
+                    ),
                     messagingConfig,
                     null
                 ).also {
