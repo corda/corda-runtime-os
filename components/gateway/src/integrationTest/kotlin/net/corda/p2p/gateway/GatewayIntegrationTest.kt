@@ -57,12 +57,14 @@ import net.corda.schema.Schemas.P2P.Companion.SESSION_OUT_PARTITIONS
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.BootConfig.TOPIC_PREFIX
 import net.corda.test.util.eventually
+import net.corda.test.util.lifecycle.usingLifecycle
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatIterable
 import org.bouncycastle.jce.PrincipalUtil
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Nested
@@ -83,7 +85,7 @@ import java.security.KeyStore
 import java.security.cert.X509Certificate
 import java.time.Duration
 import java.time.Instant
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
@@ -201,7 +203,7 @@ class GatewayIntegrationTest : TestBase() {
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 SigningMode.STUB,
                 mock()
-            ).use {
+            ).usingLifecycle {
                 publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
                 it.startAndWaitForStarted()
                 val httpClient = JavaHttpClient.newBuilder()
@@ -241,7 +243,7 @@ class GatewayIntegrationTest : TestBase() {
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 SigningMode.STUB,
                 mock()
-            ).use {
+            ).usingLifecycle {
                 publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
                 it.startAndWaitForStarted()
                 val serverInfo = DestinationInfo(serverAddress, aliceSNI[0], null, truststoreKeyStore)
@@ -263,7 +265,7 @@ class GatewayIntegrationTest : TestBase() {
 
             // Verify Gateway has successfully forwarded the message to the P2P_IN topic
             val publishedRecords = alice.getRecords(LINK_IN_TOPIC, 1)
-            assertThat(publishedRecords)
+            assertThatIterable(publishedRecords)
                 .hasSize(1).allSatisfy {
                     assertThat(it.value).isInstanceOfSatisfying(LinkInMessage::class.java) {
                         assertThat(it.payload).isInstanceOfSatisfying(AuthenticatedDataMessage::class.java) {
@@ -338,7 +340,7 @@ class GatewayIntegrationTest : TestBase() {
                     messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                     SigningMode.STUB,
                     mock()
-                ).use { gateway ->
+                ).usingLifecycle { gateway ->
                     gateway.start()
 
                     (1..configurationCount).map {
@@ -415,7 +417,7 @@ class GatewayIntegrationTest : TestBase() {
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 SigningMode.STUB,
                 mock()
-            ).use {
+            ).usingLifecycle {
                 it.startAndWaitForStarted()
                 (1..clientNumber).map { index ->
                     val serverInfo = DestinationInfo(serverAddress, aliceSNI[1], null, truststoreKeyStore)
@@ -431,7 +433,7 @@ class GatewayIntegrationTest : TestBase() {
                     assertThat(httpResponse.payload).isNotNull
                     val gatewayResponse = GatewayResponse.fromByteBuffer(ByteBuffer.wrap(httpResponse.payload))
                     assertThat(gatewayResponse.id).isEqualTo(gatewayMessage.id)
-                    client.stop()
+                    client.close()
                 }
             }
 
@@ -496,8 +498,8 @@ class GatewayIntegrationTest : TestBase() {
                 it.startAndWaitForStarted()
             }
 
-            var startTime: Long
-            var endTime: Long
+            var startTime: Long = 0
+            var endTime: Long = 0
             val gatewayAddress = Pair("localhost", getOpenPort())
             Gateway(
                 createConfigurationServiceFor(
@@ -513,7 +515,7 @@ class GatewayIntegrationTest : TestBase() {
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 SigningMode.STUB,
                 mock()
-            ).use {
+            ).usingLifecycle {
                 publishKeyStoreCertificatesAndKeys(alice.publisher, aliceKeyStore)
                 startTime = Instant.now().toEpochMilli()
                 it.startAndWaitForStarted()
@@ -683,7 +685,7 @@ class GatewayIntegrationTest : TestBase() {
             receivedLatch.await()
             gateways.map {
                 thread {
-                    it.close()
+                    it.stop()
                 }
             }.forEach {
                 it.join()
@@ -712,7 +714,7 @@ class GatewayIntegrationTest : TestBase() {
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 SigningMode.STUB,
                 mock()
-            ).use { gateway ->
+            ).usingLifecycle { gateway ->
                 val port = getOpenPort()
                 logger.info("Publishing good config")
                 configPublisher.publishConfig(
@@ -842,7 +844,7 @@ class GatewayIntegrationTest : TestBase() {
                 messagingConfig.withValue(INSTANCE_ID, ConfigValueFactory.fromAnyRef(instanceId.incrementAndGet())),
                 SigningMode.STUB,
                 mock()
-            ).use { gateway ->
+            ).usingLifecycle { gateway ->
                 gateway.startAndWaitForStarted()
                 val firstCertificatesAuthority = CertificateAuthorityFactory
                     .createMemoryAuthority(RSA_TEMPLATE.toFactoryDefinitions())

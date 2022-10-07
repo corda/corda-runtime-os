@@ -4,10 +4,10 @@ package net.corda.uniqueness.utils
 import net.corda.data.uniqueness.*
 import net.corda.test.util.time.AutoTickTestClock
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.assertAll
 import java.time.Instant
-import kotlin.test.assertEquals
 
 /**
  * Uniqueness check related assertions for use in tests
@@ -39,6 +39,18 @@ object UniquenessAssertions {
     ) {
         getResultOfType<UniquenessCheckResultMalformedRequestAvro>(response).run {
             assertThat(errorText).isEqualTo(expectedErrorText)
+        }
+    }
+
+    /**
+     * Checks for an unhandled exception response with the specified exception type
+     */
+    fun assertUnhandledExceptionResponse(
+        response: UniquenessCheckResponseAvro,
+        expectedExceptionType: String
+    ) {
+        getResultOfType<UniquenessCheckResultUnhandledExceptionAvro>(response).run {
+            assertThat(exception.errorType).isEqualTo(expectedExceptionType)
         }
     }
 
@@ -118,7 +130,7 @@ object UniquenessAssertions {
     /**
      * Checks that all commit timestamps within a list of responses are unique
      */
-    fun assertUniqueCommitTimestamps(responses: List<UniquenessCheckResponseAvro>) {
+    fun assertUniqueCommitTimestamps(responses: Collection<UniquenessCheckResponseAvro>) {
         assertEquals(
             responses.size,
             responses.distinctBy {

@@ -27,7 +27,10 @@ class SubFlowFinishedRequestHandler @Activate constructor(
 
     override val type = FlowIORequest.SubFlowFinished::class.java
 
-    override fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: FlowIORequest.SubFlowFinished): WaitingFor {
+    override fun getUpdatedWaitingFor(
+        context: FlowEventContext<Any>,
+        request: FlowIORequest.SubFlowFinished
+    ): WaitingFor {
         val sessionsToClose = try {
             getSessionsToClose(context.checkpoint, request)
         } catch (e: FlowSessionStateException) {
@@ -46,14 +49,17 @@ class SubFlowFinishedRequestHandler @Activate constructor(
         request: FlowIORequest.SubFlowFinished
     ): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
-
         val hasNoSessionsOrAllClosed = try {
             val sessionsToClose = getSessionsToClose(checkpoint, request)
 
             flowSessionManager.sendCloseMessages(checkpoint, sessionsToClose, Instant.now())
                 .forEach { updatedSessionState -> checkpoint.putSessionState(updatedSessionState) }
 
-            sessionsToClose.isEmpty() || flowSessionManager.doAllSessionsHaveStatus(checkpoint, sessionsToClose, SessionStateType.CLOSED)
+            sessionsToClose.isEmpty() || flowSessionManager.doAllSessionsHaveStatus(
+                checkpoint,
+                sessionsToClose,
+                SessionStateType.CLOSED
+            )
         } catch (e: FlowSessionStateException) {
             // TODO CORE-4850 Wakeup with error when session does not exist
             throw FlowFatalException(e.message, e)
@@ -68,7 +74,8 @@ class SubFlowFinishedRequestHandler @Activate constructor(
     }
 
     private fun getSessionsToClose(checkpoint: FlowCheckpoint, request: FlowIORequest.SubFlowFinished): List<String> {
-        val erroredSessions = flowSessionManager.getSessionsWithStatus(checkpoint, request.sessionIds, SessionStateType.ERROR)
+        val erroredSessions =
+            flowSessionManager.getSessionsWithStatus(checkpoint, request.sessionIds, SessionStateType.ERROR)
 
         return request.sessionIds - erroredSessions.map { it.sessionId }
     }

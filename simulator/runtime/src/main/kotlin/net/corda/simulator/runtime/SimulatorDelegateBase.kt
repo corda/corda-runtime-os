@@ -17,8 +17,19 @@ import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.base.util.contextLogger
 
 
+/**
+ * The base class to which Simulator delegates.
+ *
+ * @param configuration The configuration for this instance of Simulator.
+ * @param flowChecker A flow checker for checking flows.
+ * @param fiber The simulated fiber / Kafka bus on which all shared state is stored.
+ * @param injector The injector for services on flows.
+ *
+ * @see [net.corda.simulator.Simulator] for details.
+ */
 class SimulatorDelegateBase  (
     private val configuration: SimulatorConfiguration,
     private val flowChecker: FlowChecker = CordaFlowChecker(),
@@ -26,12 +37,17 @@ class SimulatorDelegateBase  (
     private val injector: FlowServicesInjector = DefaultServicesInjector(configuration)
 ) : SimulatedCordaNetwork {
 
+    companion object {
+        val log = contextLogger()
+    }
+
     private val flowFactory: FlowFactory = BaseFlowFactory()
 
     override fun createVirtualNode(
         holdingIdentity: HoldingIdentity,
         vararg flowClasses: Class<out Flow>
     ): SimulatedVirtualNode {
+        log.info("Creating virtual node for \"${holdingIdentity.member}\", flow classes: ${flowClasses.map{it.name}}")
         require(flowClasses.isNotEmpty()) { "No flow classes provided" }
         flowClasses.forEach {
             flowChecker.check(it)
@@ -68,11 +84,13 @@ class SimulatorDelegateBase  (
         protocol: String,
         responderFlow: ResponderFlow
     ): SimulatedVirtualNode {
+        log.info("Creating virtual node for \"${responder.member}\", flow instance provided for protocol $protocol")
         fiber.registerResponderInstance(responder.member, protocol, responderFlow)
         return SimulatedVirtualNodeBase(responder, fiber, injector, flowFactory, BaseSimKeyStore())
     }
 
     override fun close() {
+        log.info("Closing Simulator")
         fiber.close()
     }
 }

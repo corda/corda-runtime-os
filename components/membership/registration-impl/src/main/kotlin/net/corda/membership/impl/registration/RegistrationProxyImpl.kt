@@ -156,6 +156,9 @@ class RegistrationProxyImpl @Activate constructor(
                     "Failed to select correct registration protocol due to problems retrieving the group policy."
                 logger.error(err, e)
                 throw RegistrationProtocolSelectionException(err, e)
+            } catch (e: IllegalStateException) {
+                logger.warn("Failed to select correct registration protocol due to problems retrieving the group policy.", e)
+                null
             } ?: throw RegistrationProtocolSelectionException("Could not find group policy file for holding identity: [$member]")
 
             return getRegistrationService(protocol).register(registrationId, member, context)

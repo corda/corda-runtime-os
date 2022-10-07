@@ -9,110 +9,166 @@ import net.corda.httprpc.annotations.HttpRpcResource
 import net.corda.membership.httprpc.v1.types.response.KeyMetaData
 import net.corda.membership.httprpc.v1.types.response.KeyPairIdentifier
 
+/**
+ * The Keys Management API consists of endpoints used to manage public and private key pairs. The API
+ * allows you to list scheme codes which are supported by the associated HSM integration, retrieve information about
+ * key pairs owned by a tenant, generate a key pair for a tenant, and retrieve a tenant's public key in PEM format.
+ */
 @HttpRpcResource(
     name = "Keys Management API",
-    description = "Endpoints for public/private keys management.",
+    description = "The Keys Management API consists of endpoints used to manage public and private key pairs. The API" +
+            " allows you to list scheme codes which are supported by the associated HSM integration, retrieve" +
+            " information about key pairs owned by a tenant, generate a key pair for a tenant, and retrieve a tenant's" +
+            " public key in PEM format.",
     path = "keys"
 )
 interface KeysRpcOps : RpcOps {
     /**
-     * GET endpoint which returns the list of the schemes in the cluster.
+     * The [listSchemes] method enables you to retrieve a list of supported key schemes for a specified tenant and HSM
+     * category. Some examples of schemes are 'CORDA.RSA', 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA_SECP256R1', 'CORDA.EDDSA.ED25519',
+     * 'CORDA.SPHINCS-256'.
      *
-     * @param tenantId The tenant ID.
-     * @param hsmCategory The HSM category.
-     * @return A list of scheme names.
+     * Example usage:
+     * ```
+     * keysOps.listSchemes(tenantId = "58B6030FABDD", hsmCategory = "SESSION_INIT")
+     *
+     * keysOps.listSchemes(tenantId = "rpc-api", hsmCategory = "SESSION_INIT")
+     * ```
+     *
+     * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
+     * services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.
+     * @param hsmCategory Can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY', 'SESSION_INIT', 'TLS', or 'JWT_KEY'.
+     *
+     * @return The list of scheme codes which are supported by the associated HSM integration.
      */
     @HttpRpcGET(
         path = "{tenantId}/schemes/{hsmCategory}",
-        description = "Get list of schemes for the cluster.",
-        responseDescription = "The list of schemes codes which are supported by the associated HSM integration."
+        description = "This method retrieves a list of supported key schemes for a specified tenant and HSM category.",
+        responseDescription = "The list of scheme codes which are supported by the associated HSM integration"
     )
     fun listSchemes(
-        @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity ID.")
+        @HttpRpcPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
+                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API")
         tenantId: String,
-        @HttpRpcPathParameter(description = "The HSM Category")
+        @HttpRpcPathParameter(description = "The category of the HSM. Can be the value 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY'," +
+                " 'SESSION_INIT', 'TLS', or 'JWT_KEY'")
         hsmCategory: String,
     ): Collection<String>
 
     /**
-     * GET endpoint which returns the list of a tenant's keys.
+     * The [listKeys] method enables you to retrieve information about a list of key pairs belonging to a tenant.
+     * The returned list may be filtered and/or ordered as required by passing a list of key IDs, or specifying one or
+     * more of the optional parameters.
      *
-     * @param tenantId The tenant ID.
-     * @param skip How many keys to skip.
-     * @param take The maximal number of keys to take.
-     * @param orderBy How to order the results.
-     * @param category The keys categories.
-     * @param schemeCodeName The keys' schema code name.
-     * @param alias The keys alias.
-     * @param masterKeyAlias The keys master key alias.
-     * @param createdAfter Return only keys that had been created after...
-     * @param createdBefore Return only keys that had been created before...
-     * @param ids The list of key IDs (will ignore other parameters)
+     * Example usage:
      *
-     * @return A map from a tenant key ID to its metadata.
+     * 1. Retrieve information about key pairs belonging to the tenant with holding identity ID '58B6030FABDD'.
+     * Only return information about key pairs under the 'CI' HSM category, skip the first 4 key pair records and
+     * return up to 400 key pair records, ordered according to their aliases.
+     * ```
+     * keysOps.listKeys(tenantId = "58B6030FABDD", skip = 4, take = 400, orderBy = "ALIAS", category = CI, alias = null,
+     * masterKeyAlias = null, createdAfter = null, createdBefore = null, schemeCodeName = null, ids = emptyList())
+     * ```
+     * 2. Retrieve information about key pairs belonging to the 'p2p' tenant associated with the key IDs
+     * '3B9A266F96E2' and '4A9A266F96E2'.
+     * ```
+     * keysOps.listKeys(tenantId = "p2p", skip = null, take = null, orderBy = null, category = null,
+     * alias = null, masterKeyAlias = null, createdAfter = null, createdBefore = null, schemeCodeName = null,
+     * ids = ["3B9A266F96E2", "4A9A266F96E2"])
+     * ```
+     *
+     * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
+     * services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.
+     * @param skip Optional. The response paging information, number of records to skip.
+     * @param take Optional. The response paging information, that is, the number of records to return. The actual
+     * number returned may be less than requested.
+     * @param orderBy Optional. Specifies how to order the results. Can be one of 'NONE', 'TIMESTAMP', 'CATEGORY', 'SCHEME_CODE_NAME',
+     * 'ALIAS', 'MASTER_KEY_ALIAS', 'EXTERNAL_ID', 'ID', 'TIMESTAMP_DESC', 'CATEGORY_DESC', 'SCHEME_CODE_NAME_DESC', 'ALIAS_DESC',
+     * 'MASTER_KEY_ALIAS_DESC', 'EXTERNAL_ID_DESC', 'ID_DESC'.
+     * @param category Optional. Category of the HSM which handles the key pairs. Can be one of 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY',
+     * 'SESSION_INIT', 'TLS', 'JWT_KEY'.
+     * @param schemeCodeName Optional. The key pairs' signature scheme name. For example, 'CORDA.RSA', 'CORDA.ECDSA.SECP256K1',
+     * 'CORDA.ECDSA_SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'.
+     * @param alias Optional. The alias under which the key pair is stored.
+     * @param masterKeyAlias Optional. The alias of the wrapping key.
+     * @param createdAfter Optional. Only include key pairs which were created on or after the specified time. Must be a
+     * valid instant in UTC, such as 2022-12-03T10:15:30.00Z.
+     * @param createdBefore Optional. Only include key pairs which were created on or before the specified time. Must be a
+     * valid instant in UTC, such as 2022-12-03T10:15:30.00Z.
+     * @param ids Optional. Only include key pairs associated with the specified list of key IDs. If specified, other filter
+     * parameters will be ignored.
+     *
+     * @return A map of key IDs to the respective key pair information ([KeyMetaData]).
      */
     @HttpRpcGET(
         path = "{tenantId}",
-        description = "Get list of keys for members.",
-        responseDescription = "A map from a tenant key ID to its metadata."
+        description = "This method retrieves information about a list of key pairs belonging to a tenant.",
+        responseDescription = "A map of key IDs to the respective key pair information"
     )
     @Suppress("LongParameterList")
     fun listKeys(
-        @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity ID.")
+        @HttpRpcPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
+                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API")
         tenantId: String,
         @HttpRpcQueryParameter(
-            description = "Index of the first key",
+            description = "The response paging information, number of records to skip",
             default = "0",
             required = false,
         )
         skip: Int,
         @HttpRpcQueryParameter(
-            description = "Page size",
+            description = "The response paging information, that is, the number of records to return. The actual number" +
+                    " returned may be less than requested.",
             default = "20",
             required = false,
         )
         take: Int,
         @HttpRpcQueryParameter(
-            description = "How to order the results (one of: none, timestamp, category, scheme_code_name, alias, " +
-                "master_key_alias, external_id, id, " +
-                "timestamp_desc, category_desc, scheme_code_name_desc, " +
-                "alias_desc, master_key_alias_desc, external_id_desc or id_desc)",
+            description = "Specifies how to order the results. Can be one of 'NONE', 'TIMESTAMP', 'CATEGORY'," +
+                    " 'SCHEME_CODE_NAME', 'ALIAS', 'MASTER_KEY_ALIAS', 'EXTERNAL_ID', 'ID', 'TIMESTAMP_DESC'," +
+                    " 'CATEGORY_DESC', 'SCHEME_CODE_NAME_DESC', 'ALIAS_DESC', 'MASTER_KEY_ALIAS_DESC', 'EXTERNAL_ID_DESC'," +
+                    " 'ID_DESC'.",
             default = "none",
             required = false,
         )
         orderBy: String,
         @HttpRpcQueryParameter(
-            description = "The key category",
+            description = "Category of the HSM which handles the key pairs. Can be one of 'ACCOUNTS', 'CI', 'LEDGER'," +
+                    " 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY'.",
             required = false,
         )
         category: String?,
         @HttpRpcQueryParameter(
-            description = "The key schema code name",
+            description = "The key pairs' signature scheme name. For example, 'CORDA.RSA', 'CORDA.ECDSA.SECP256K1'," +
+                    " 'CORDA.ECDSA_SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'.",
             required = false,
         )
         schemeCodeName: String?,
         @HttpRpcQueryParameter(
-            description = "The key alias",
+            description = "The alias under which the key pair is stored",
             required = false,
         )
         alias: String?,
         @HttpRpcQueryParameter(
-            description = "The key master key alias",
+            description = "The alias of the wrapping key",
             required = false,
         )
         masterKeyAlias: String?,
         @HttpRpcQueryParameter(
-            description = "Only keys that had been created after (for example: 2007-12-03T10:15:30.00Z)",
+            description = "Only include key pairs which were created on or after the specified time. Must be a valid instant" +
+                    " in UTC, such as 2022-12-03T10:15:30.00Z.",
             required = false,
         )
         createdAfter: String?,
         @HttpRpcQueryParameter(
-            description = "Only keys that had been created before (for example: 2007-12-03T10:15:30.00Z)",
+            description = "Only include key pairs which were created on or before the specified time. Must be a valid instant" +
+                    " in UTC, such as 2022-12-03T10:15:30.00Z.",
             required = false,
         )
         createdBefore: String?,
         @HttpRpcQueryParameter(
-            description = "ID's of the keys (Will ignore any other parameter)",
+            description = "Only include key pairs associated with the specified list of key IDs. If specified, other filter" +
+                    " parameters will be ignored.",
             required = false,
             name = "id",
         )
@@ -120,54 +176,78 @@ interface KeysRpcOps : RpcOps {
     ): Map<String, KeyMetaData>
 
     /**
-     * POST endpoint which Generate a key pair.
+     * The [generateKeyPair] method enables you to generate a new key pair for a tenant. The key pair is generated for
+     * the specified HSM category under the given alias. The type of the new key pair is determined by the [scheme] value.
      *
-     * @param tenantId The tenant ID.
-     * @param alias The key alias.
-     * @param hsmCategory The HSM category.
-     * @param scheme The scheme.
+     * Example usage:
+     * ```
+     * keysOps.generateKeyPair(tenantId = "58B6030FABDD", alias = "alias", hsmCategory = "TLS", scheme = "CORDA.RSA")
      *
-     * @return The ID of the newly generated key pair.
+     * keysOps.generateKeyPair(tenantId = "p2p", alias = "alias", hsmCategory = "TLS", scheme = "CORDA.RSA")
+     * ```
+     *
+     * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
+     * services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.
+     * @param alias The alias under which the new key pair will be stored.
+     * @param hsmCategory Category of the HSM which handles the key pairs. Can be one of 'ACCOUNTS', 'CI', 'LEDGER', 'NOTARY',
+     * 'SESSION_INIT', 'TLS', 'JWT_KEY'.
+     * @param scheme The key's scheme describing which type of the key pair to generate. For example, 'CORDA.RSA',
+     * 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA_SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'.
+     *
+     * @return The ID of the newly generated key pair in the form of [KeyPairIdentifier].
      */
     @HttpRpcPOST(
         path = "{tenantId}/alias/{alias}/category/{hsmCategory}/scheme/{scheme}",
-        description = "Generate key pair.",
-        responseDescription = "The ID of the newly generated key pair."
+        description = "This method generates a new key pair for a tenant.",
+        responseDescription = "The ID of the newly generated key pair"
     )
     fun generateKeyPair(
-        @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity ID.")
+        @HttpRpcPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
+                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API")
         tenantId: String,
         @HttpRpcPathParameter(
-            description = "The key alias"
+            description = "The alias under which the new key pair will be stored"
         )
         alias: String,
         @HttpRpcPathParameter(
-            description = "The HSM Category"
+            description = "Category of the HSM which handles the key pairs. Can be one of 'ACCOUNTS', 'CI', 'LEDGER'," +
+                    " 'NOTARY', 'SESSION_INIT', 'TLS', 'JWT_KEY'."
         )
         hsmCategory: String,
         @HttpRpcPathParameter(
-            description = "The scheme"
+            description = "The key's scheme describing which type of the key pair to generate. For example, 'CORDA.RSA'," +
+                    " 'CORDA.ECDSA.SECP256K1', 'CORDA.ECDSA_SECP256R1', 'CORDA.EDDSA.ED25519', 'CORDA.SPHINCS-256'."
         )
         scheme: String
     ): KeyPairIdentifier
 
     /**
-     * GET endpoint which returns a PEM string from a key.
+     * The [generateKeyPem] method enables you to retrieve a tenant's public key in PEM format. This method assumes that
+     * a key pair associated with the specified [keyId] already exists.
      *
-     * @param tenantId The tenant ID.
-     * @param keyId The ID of the key.
+     * Example usage:
+     * ```
+     * keysOps.generateKeyPem(tenantId = "58B6030FABDD", keyId = "3B9A266F96E2")
+     *
+     * keysOps.generateKeyPem(tenantId = "rpc-api", keyId = "3B9A266F96E2")
+     * ```
+     *
+     * @param tenantId Can either be a holding identity ID, the value 'p2p' for a cluster-level tenant of the P2P
+     * services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API.
+     * @param keyId Identifier of the public key to be retrieved.
      *
      * @return The public key in PEM format.
      */
     @HttpRpcGET(
         path = "{tenantId}/{keyId}",
-        description = "GET key in PEM format.",
-        responseDescription = "The public key in PEM format."
+        description = "This method retrieves a tenant's public key in PEM format.",
+        responseDescription = "The public key in PEM format"
     )
     fun generateKeyPem(
-        @HttpRpcPathParameter(description = "'p2p', 'rpc-api', or holding identity ID.")
+        @HttpRpcPathParameter(description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level" +
+                " tenant of the P2P services, or the value 'rpc-api' for a cluster-level tenant of the HTTP RPC API")
         tenantId: String,
-        @HttpRpcPathParameter(description = "The Key ID. Or an error code if not found.")
+        @HttpRpcPathParameter(description = "Identifier of the public key to be retrieved")
         keyId: String,
     ): String
 }

@@ -6,11 +6,15 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
+import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.ApproveRegistration
+import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
+import net.corda.libs.configuration.SmartConfig
+import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
@@ -30,12 +34,15 @@ import net.corda.membership.persistence.client.MembershipQueryResult
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
+import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
+import net.corda.schema.configuration.MembershipConfig.TtlsConfig.MEMBERS_PACKAGE_UPDATE
+import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.merkle.MerkleTree
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
@@ -45,7 +52,9 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argThat
+import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -124,7 +133,8 @@ class ApproveRegistrationHandlerTest {
                 any(),
                 any(),
                 any(),
-                eq(null)
+                anyOrNull(),
+                any(),
             )
         } doReturn record
     }
@@ -132,7 +142,7 @@ class ApproveRegistrationHandlerTest {
     private val merkleTree = mock<MerkleTree> {
         on { root } doReturn checkHash
     }
-    private val merkleTreeFactory = mock<MerkleTreeFactory>()
+    private val merkleTreeProvider = mock<MerkleTreeProvider>()
     private val merkleTreeGenerator = mock<MerkleTreeGenerator> {
         on { generateTree(any()) } doReturn merkleTree
     }
@@ -147,6 +157,11 @@ class ApproveRegistrationHandlerTest {
             )
         } doReturn membershipPackage
     }
+    private val config = mock<SmartConfig>()
+    private val memberTypeChecker = mock<MemberTypeChecker> {
+        on { isMgm(member.toAvro()) } doReturn false
+        on { getMgmMemberInfo(owner) } doReturn mgm
+    }
 
     private val handler = ApproveRegistrationHandler(
         membershipPersistenceClient,
@@ -155,7 +170,9 @@ class ApproveRegistrationHandlerTest {
         clock,
         cryptoOpsClient,
         cordaAvroSerializationFactory,
-        merkleTreeFactory,
+        merkleTreeProvider,
+        memberTypeChecker,
+        config,
         signerFactory,
         merkleTreeGenerator,
         p2pRecordsFactory,
@@ -204,9 +221,11 @@ class ApproveRegistrationHandlerTest {
         val allMemberPackage = mock<Record<String, AppMessage>>()
         whenever(
             p2pRecordsFactory.createAuthenticatedMessageRecord(
-                owner.toAvro(),
-                member.toAvro(),
-                allMembershipPackage
+                eq(owner.toAvro()),
+                eq(member.toAvro()),
+                eq(allMembershipPackage),
+                anyOrNull(),
+                any(),
             )
         ).doReturn(allMemberPackage)
 
@@ -230,11 +249,15 @@ class ApproveRegistrationHandlerTest {
         ).doReturn(memberPackage)
         val membersRecord = (activeMembersWithoutMgm - memberInfo).map {
             val record = mock<Record<String, AppMessage>>()
+            val ownerAvro = owner.toAvro()
+            val memberAvro = it.holdingIdentity.toAvro()
             whenever(
                 p2pRecordsFactory.createAuthenticatedMessageRecord(
-                    owner.toAvro(),
-                    it.holdingIdentity.toAvro(),
-                    memberPackage,
+                    eq(ownerAvro),
+                    eq(memberAvro),
+                    eq(memberPackage),
+                    anyOrNull(),
+                    any(),
                 )
             ).doReturn(record)
             record
@@ -245,18 +268,28 @@ class ApproveRegistrationHandlerTest {
         assertThat(reply.outputStates).containsAll(membersRecord)
     }
 
+    @Test
+    fun `invoke uses the correct TTL configuration`() {
+        handler.invoke(state, key, command)
+
+        verify(config, atLeastOnce()).getIsNull("$TTLS.$MEMBERS_PACKAGE_UPDATE")
+    }
 
     @Test
     fun `invoke sends the approved state to the member over P2P`() {
         val record = mock<Record<String, AppMessage>>()
         whenever(
             p2pRecordsFactory.createAuthenticatedMessageRecord(
-                owner.toAvro(),
-                member.toAvro(),
-                SetOwnRegistrationStatus(
-                    registrationId,
-                    RegistrationStatus.APPROVED
-                )
+                eq(owner.toAvro()),
+                eq(member.toAvro()),
+                eq(
+                    SetOwnRegistrationStatus(
+                        registrationId,
+                        RegistrationStatus.APPROVED
+                    )
+                ),
+                anyOrNull(),
+                any(),
             )
         ).doReturn(record)
 
@@ -278,11 +311,42 @@ class ApproveRegistrationHandlerTest {
 
     @Test
     fun `Error is thrown when there is no MGM`() {
-        whenever(membershipQueryClient.queryMemberInfo(owner)).doReturn(MembershipQueryResult.Success(activeMembersWithoutMgm))
+        whenever(
+            memberTypeChecker.getMgmMemberInfo(owner)
+        ).doReturn(null)
 
-        assertThrows<ApproveRegistrationHandler.FailToFindMgm> {
-            handler.invoke(state, key, command)
-        }
+        val results = handler.invoke(state, key, command)
+
+        assertThat(results.outputStates)
+            .hasSize(1)
+            .allSatisfy {
+                assertThat(it.topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
+                val value = (it.value as? RegistrationCommand)?.command
+                assertThat(value)
+                    .isNotNull
+                    .isInstanceOf(DeclineRegistration::class.java)
+                assertThat((value as? DeclineRegistration)?.reason).isNotBlank()
+            }
+    }
+
+    @Test
+    fun `Error is thrown when the member is not a member`() {
+        whenever(
+            memberTypeChecker.isMgm(member.toAvro())
+        ).doReturn(true)
+
+        val results = handler.invoke(state, key, command)
+
+        assertThat(results.outputStates)
+            .hasSize(1)
+            .allSatisfy {
+                assertThat(it.topic).isEqualTo(REGISTRATION_COMMAND_TOPIC)
+                val value = (it.value as? RegistrationCommand)?.command
+                assertThat(value)
+                    .isNotNull
+                    .isInstanceOf(DeclineRegistration::class.java)
+                assertThat((value as? DeclineRegistration)?.reason).isNotBlank()
+            }
     }
 
     @Test

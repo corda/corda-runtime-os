@@ -8,6 +8,7 @@ import net.corda.v5.application.flows.FlowContextProperties
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.base.util.contextLogger
 import java.util.UUID
 
 /**
@@ -16,12 +17,13 @@ import java.util.UUID
  * subflow (so if you're using the BaseSimFiber, it should be the same instance that was provided to
  * Simulator).
  *
- * @virtualNodeName the name of the virtual node owner
- * @fiber a simulated fiber through which responders should be registered
- * @injector an injector which will initialize the services in the subFlow
- * @flowChecker a flow checker
+ * @param configuration The configuration of the instance of Simulator.
+ * @param virtualNodeName The name of the virtual node owner.
+ * @param fiber A simulated fiber through which responders should be registered.
+ * @param injector An injector which will initialize the services in the subFlow.
+ * @param flowChecker A flow checker.
  *
- * @return the value returned by the subflow when called
+ * @return The value returned by the subflow when called.
  */
 class InjectingFlowEngine(
     private val configuration: SimulatorConfiguration,
@@ -30,6 +32,10 @@ class InjectingFlowEngine(
     private val injector: FlowServicesInjector = DefaultServicesInjector(configuration),
     private val flowChecker: FlowChecker = CordaFlowChecker()
 ) : FlowEngine {
+    companion object {
+        val log = contextLogger()
+    }
+
     override val flowId: UUID
         get() = TODO("Not yet implemented")
 
@@ -37,8 +43,11 @@ class InjectingFlowEngine(
         get() = TODO("Not yet implemented")
 
     override fun <R> subFlow(subFlow: SubFlow<R>): R {
+        log.info("Running subflow ${SubFlow::class.java} for \"$virtualNodeName\"")
         flowChecker.check(subFlow.javaClass)
         injector.injectServices(subFlow, virtualNodeName, fiber)
-        return subFlow.call()
+        val result = subFlow.call()
+        log.info("Finished subflow ${SubFlow::class.java} for \"$virtualNodeName\"")
+        return result
     }
 }

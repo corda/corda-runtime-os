@@ -1,5 +1,11 @@
 @Library('corda-shared-build-pipeline-steps@5.0') _
 
+
+import groovy.transform.Field
+
+@Field
+String k8sNamespace = "run-${UUID.randomUUID().toString()}"
+
 /*
  * Jenkins agent label to build on
  */
@@ -39,6 +45,7 @@ switch (params.BUILD_ARCH) {
         break
 }
 
+
 pipeline {
     agent {
         docker {
@@ -61,6 +68,7 @@ pipeline {
 
     environment {
         ARTIFACTORY_CREDENTIALS = credentials('artifactory-credentials')
+        BASE_IMAGE = getBaseImage(params.BUILD_REV, architectureTag)
         BUILD_CACHE_CREDENTIALS = credentials('gradle-ent-cache-credentials')
         BUILD_CACHE_USERNAME = "${env.BUILD_CACHE_CREDENTIALS_USR}"
         BUILD_CACHE_PASSWORD = "${env.BUILD_CACHE_CREDENTIALS_PSW}"
@@ -72,11 +80,17 @@ pipeline {
         CORDA_GRADLE_SCAN_KEY = credentials('gradle-build-scans-key')
         GRADLE_USER_HOME = "/host_tmp/gradle"
         CORDA_REVISION = "${env.GIT_COMMIT}"
-        NAMESPACE = "run-${UUID.randomUUID().toString()}"
+        NAMESPACE = "$k8sNamespace"
         CLUSTER_NAME = "eks-e2e.e2e.awsdev.r3.com"
         HELM_CONFIG_HOME = "/tmp/helm"
         HELM_REPOSITORY_CACHE = "/host_tmp/helm/repository"
         GRADLE_PERFORMANCE_TUNING = "--parallel -Dscan.tag.E2E -Dscan.tag.${env.NAMESPACE} --build-cache"
+        E2E_CLUSTER_A_RPC_PORT=8887
+        E2E_CLUSTER_B_RPC_PORT=8888
+        E2E_CLUSTER_C_RPC_PORT=8889
+        E2E_CLUSTER_A_P2P_HOST="corda-alice-p2p-gateway-worker.${NAMESPACE}.svc.cluster.local"
+        E2E_CLUSTER_B_P2P_HOST="corda-bob-p2p-gateway-worker.${NAMESPACE}.svc.cluster.local"
+        E2E_CLUSTER_C_P2P_HOST="corda-caroline-p2p-gateway-worker.${NAMESPACE}.svc.cluster.local"
         E2E_BRANCH_LABEL = "${sanitizedBranchName()}"
         E2E_WORKER_ARCH = "${e2eArchitecture}"
     }
@@ -98,14 +112,14 @@ pipeline {
                 '''.stripIndent()
             }
         }
-        stage('Install prereqs') {
+        stage('Install kafka as prereqs') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'artifactory-credentials', passwordVariable: 'PASSWORD', usernameVariable: 'USER')]) {
-                    sh '''\
+                    sh '''
                         echo "${PASSWORD}" | helm registry login corda-os-docker.software.r3.com -u "${USER}" --password-stdin
                         helm install prereqs oci://corda-os-docker.software.r3.com/helm-charts/corda-dev \
-                            -f .ci/e2eTests/prereqs.yaml -n "${NAMESPACE}" --wait --timeout 600s
-                    '''.stripIndent()
+                            -f .ci/e2eTests/prereqs.yaml --set postgresql.enabled=false -n "${NAMESPACE}" --wait --timeout 600s
+                    '''
                 }
             }
             post {
@@ -119,65 +133,71 @@ pipeline {
                 }
             }
         }
-        stage('Deploy cluster') {
-            steps {
-               script {
-                  env.BASE_IMAGE = params.BUILD_REV ? "preTest-${architectureTag}${params.BUILD_REV}" : "${architectureTag}unstable"
+        stage('Deploy clusters') {
+           parallel {
+               stage("Deploy Alice cluster") {
+                  steps {
+                      deployCorda("alice", "${NAMESPACE}", "${BASE_IMAGE}")
+                  }
                }
-                sh '''\
-                    SASL_SECRET=$(kubectl get secret \
-                        --namespace "${NAMESPACE}" prereqs-kafka-jaas \
-                        --output=jsonpath='{.data.client-passwords}' | base64 --decode)
-                    helm install corda ./charts/corda \
-                        -f .ci/e2eTests/corda.yaml \
-                        --set kafka.sasl.password="${SASL_SECRET}" \
-                        --set image.tag="${BASE_IMAGE}"  \
-                        --set nodeSelector.kubernetes\\\\.io/os=linux \
-                        --set nodeSelector.kubernetes\\\\.io/arch="${E2E_WORKER_ARCH}" \
-                        --namespace "${NAMESPACE}" --wait --timeout 600s
-                '''.stripIndent()
-            }
+               stage("Deploy Bob cluster") {
+                  steps {
+                      deployCorda("bob", "${NAMESPACE}", "${BASE_IMAGE}")
+                  }
+               }
+               stage("Deploy Caroline cluster") {
+                  steps {
+                      deployCorda("caroline", "${NAMESPACE}", "${BASE_IMAGE}")
+                  }
+               }
+           }
             post {
                 unsuccessful {
                     sh '''\
-                        kubectl logs -lapp.kubernetes.io/instance=corda -n "${NAMESPACE}" --all-containers=true --prefix=true --tail=-1 > logs.txt
-                        kubectl describe all -n "${NAMESPACE}" > describe.txt
+                        kubectl logs -lapp.kubernetes.io/instance=corda-alice -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs-alice.txt
+                        kubectl logs -lapp.kubernetes.io/instance=corda-bob -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs-bob.txt
+                        kubectl logs -lapp.kubernetes.io/instance=corda-caroline -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs-caroline.txt
+                        kubectl describe all -n ${NAMESPACE} > describe.txt
                     '''.stripIndent()
-                    archiveArtifacts artifacts: 'logs.txt, describe.txt', allowEmptyArchive: true
-                    sh 'rm -f logs.txt describe.txt'
+                    archiveArtifacts artifacts: 'logs-alice.txt, logs-bob.txt, logs-caroline.txt, describe.txt', allowEmptyArchive: true
+                    sh 'rm -f logs-alice.txt logs-bob.txt logs-caroline.txt describe.txt'
                 }
             }
         }
         stage('Forward port and run tests') {
             steps {
+                script {
+                    def workers = ['crypto-worker', 'rpc-worker', 'flow-worker','db-worker']
+                    def clusters = ['alice','bob','caroline']
 
-                //for details see
-                // https://github.com/corda/corda-runtime-os/blob/release/ent/5.0/applications/http-rpc-gateway/src/e2e-test/README.md
+                    portForwarding("prereqs-kafka-0", 9092,9092)
 
-
+                    clusters.eachWithIndex {c, index  ->
+                       portForwarding("deployment/corda-$c-rpc-worker", 8887 + index, 8888)
+                    }
+                    workers.eachWithIndex {w, index  ->
+                       portForwarding("deployment/corda-bob-$w", 7001 + index, 7000)
+                    }
+                }
                 sh '''\
-                    # Forward ports for testing
-                    nohup kubectl port-forward -n "${NAMESPACE}" prereqs-kafka-0 9092 > forward.txt 2>&1 &
-                    nohup kubectl port-forward -n "${NAMESPACE}" deploy/corda-rpc-worker 8888 >> forward.txt 2>&1 &
-                    nohup kubectl port-forward -n "${NAMESPACE}" deploy/corda-crypto-worker 7001:7000 >> forward.txt 2>&1 &
-                    nohup kubectl port-forward -n "${NAMESPACE}" deploy/corda-db-worker 7002:7000 >> forward.txt 2>&1 &
-                    nohup kubectl port-forward -n "${NAMESPACE}" deploy/corda-flow-worker 7003:7000 >> forward.txt 2>&1 &
-                    nohup kubectl port-forward -n "${NAMESPACE}" deploy/corda-rpc-worker 7004:7000 >> forward.txt 2>&1 &
                     procno=$! # remember process number started in background
                     trap "kill -9 ${procno}" EXIT
-
-                    ./gradlew cleanE2eTest smokeTest e2eTest ${GRADLE_PERFORMANCE_TUNING}
+                    ./gradlew smokeTest ${GRADLE_PERFORMANCE_TUNING}
+                    ./gradlew e2eTest ${GRADLE_PERFORMANCE_TUNING}
                 '''.stripIndent()
             }
             post {
                 always {
                     junit allowEmptyResults: true, testResults: '**/test-results/**/TEST-*.xml'
                     sh '''\
-                        kubectl logs -lapp.kubernetes.io/instance=corda -n "${NAMESPACE}" --all-containers=true --prefix=true --tail=-1 > logs.txt
-                        kubectl describe all -n "${NAMESPACE}" > describe.txt
+                        kubectl logs -lapp.kubernetes.io/instance=corda-alice -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs-alice.txt
+                        kubectl logs -lapp.kubernetes.io/instance=corda-bob -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs-bob.txt
+                        kubectl logs -lapp.kubernetes.io/instance=corda-caroline -n ${NAMESPACE} --all-containers=true --prefix=true --tail=-1 > logs-caroline.txt
+                        kubectl describe all -n ${NAMESPACE} > describe.txt
+                        pgrep kubectl | xargs kill -9
                     '''.stripIndent()
-                    archiveArtifacts artifacts: 'forward.txt, logs.txt, describe.txt', allowEmptyArchive: true
-                    sh 'rm -f forward.txt logs.txt describe.txt'
+                    archiveArtifacts artifacts: 'forward.txt, logs-alice.txt, logs-bob.txt, logs-caroline.txt, describe.txt', allowEmptyArchive: true
+                    sh 'rm -f forward.txt logs-alice.txt logs-bob.txt logs-caroline.txt describe.txt'
                 }
             }
         }
@@ -203,4 +223,34 @@ pipeline {
 // Helper method to sanitize edge cases of very long branch names
 def sanitizedBranchName(){
     return (env.BRANCH_NAME.length() > 60 ? env.BRANCH_NAME.substring(0,60).replace('/','-') : env.BRANCH_NAME.replace('/','-')).replaceFirst(/-+$/,'')
+}
+
+// Helper to expose ports prior to test execution
+def portForwarding(def name, def port, def portMapping = null){
+    sh "nohup .ci/e2eTests/utils/kubectl-port-forward-with-reconnect.sh ${NAMESPACE} $name $port $portMapping >> forward.txt 2>&1 &"
+}
+
+def deployCorda(def name, def namespace, def base_image){
+    sh """\
+       helm install $name-db oci://corda-os-docker.software.r3.com/helm-charts/corda-dev \
+           -f .ci/e2eTests/prereqs.yaml --set kafka.enabled=false -n $namespace --wait --timeout 600s
+       export SASL_SECRET=\$(kubectl get secret \
+                  --namespace $namespace prereqs-kafka-jaas \
+                  --output=jsonpath='{.data.client-passwords}' | base64 --decode)
+       helm install corda-$name ./charts/corda \
+           -f .ci/e2eTests/corda.yaml \
+           --set kafka.sasl.password=\$SASL_SECRET \
+           --set image.tag=$base_image \
+           --set nodeSelector.kubernetes\\\\.io/os=linux \
+           --set nodeSelector.kubernetes\\\\.io/arch=${E2E_WORKER_ARCH} \
+           --set nameOverride=$name \
+           --set kafka.topicPrefix=$name \
+           --set db.cluster.host=$name-db-postgresql \
+           --set db.cluster.existingSecret=$name-db-postgresql \
+           -n $namespace --wait --timeout 600s
+    """.stripIndent()
+}
+
+def getBaseImage(def buildRev, def architectureTag) {
+    return buildRev ? "preTest-${architectureTag}${buildRev}" : "${architectureTag}unstable"
 }

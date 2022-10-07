@@ -7,6 +7,7 @@ import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.application.persistence.ParameterizedQuery
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.base.util.contextLogger
 import org.hibernate.Session
 import org.hibernate.cfg.AvailableSettings.DIALECT
 import org.hibernate.cfg.AvailableSettings.JPA_JDBC_DRIVER
@@ -19,12 +20,21 @@ import java.sql.Connection
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 
+/**
+ * An implementation of PersistenceService that uses JPA, Hibernate and HSQLDB.
+ *
+ * @param member The member for whom the PersistenceService is being created.
+ *
+ * @see [net.corda.v5.application.persistence.PersistenceService] for details of methods.
+ */
 class DbPersistenceService(member : MemberX500Name) : CloseablePersistenceService {
 
     private val emf = createEntityManagerFactory(member)
 
     companion object {
+        val log = contextLogger()
         fun createEntityManagerFactory(member: MemberX500Name): EntityManagerFactory {
+            log.info("Creating EntityManagerFactory")
             val emf = HibernatePersistenceProvider()
                 .createContainerEntityManagerFactory(
                     JpaPersistenceUnitInfo(),
@@ -43,7 +53,9 @@ class DbPersistenceService(member : MemberX500Name) : CloseablePersistenceServic
             //  alternative option would be to create a connection manually here.
             emf.createEntityManager().use { em ->
                 em.unwrap(Session::class.java).doWork {
-                    runMigrations(it)
+
+                    log.info("Running migrations")
+                     runMigrations(it)
                 }
             }
             return emf

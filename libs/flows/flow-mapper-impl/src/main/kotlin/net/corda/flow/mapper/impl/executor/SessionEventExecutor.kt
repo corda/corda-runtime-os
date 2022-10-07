@@ -43,26 +43,37 @@ class SessionEventExecutor(
     }
 
     private fun handleNullState(): FlowMapperResult {
-        log.error("Flow mapper processed session event for expired closed session. Key: $eventKey, Event: $sessionEvent")
-        val sessionId = sessionEvent.sessionId
-        val record = Record(
-            Schemas.P2P.P2P_OUT_TOPIC, sessionId, appMessageFactory(
-                SessionEvent(
-                    MessageDirection.OUTBOUND, instant, sessionEvent.sessionId, null, sessionEvent.initiatingIdentity,
-                    sessionEvent.initiatedIdentity, 0, emptyList(),
-                    SessionError(
-                        ExceptionEnvelope(
-                            "FlowMapper-SessionExpired",
-                            "Tried to process session event for expired session with sessionId $sessionId"
+        val eventPayload = sessionEvent.payload
+
+        return if (eventPayload !is SessionError) {
+            log.error("Flow mapper received session event for session which does not exist. Session may have expired. Returning error to " +
+                    "counterparty. Key: $eventKey, Event: $sessionEvent")
+            val sessionId = sessionEvent.sessionId
+            FlowMapperResult(
+                null, listOf(
+                    Record(
+                        Schemas.P2P.P2P_OUT_TOPIC, sessionId, appMessageFactory(
+                            SessionEvent(
+                                MessageDirection.OUTBOUND, instant, sessionEvent.sessionId, null, sessionEvent.initiatingIdentity,
+                                sessionEvent.initiatedIdentity, 0, emptyList(),
+                                SessionError(
+                                    ExceptionEnvelope(
+                                        "FlowMapper-SessionExpired",
+                                        "Tried to process session event for expired session with sessionId $sessionId"
+                                    )
+                                )
+                            ),
+                            sessionEventSerializer,
+                            flowConfig
                         )
                     )
-                ),
-                sessionEventSerializer,
-                flowConfig
+                )
             )
-        )
-
-        return FlowMapperResult(null, listOf(record))
+        } else {
+            log.warn("Flow mapper received error event from counterparty for session which does not exist. Session may have expired. " +
+                    "Ignoring event. Key: $eventKey, Event: $sessionEvent")
+            FlowMapperResult(null, listOf())
+        }
     }
 
     /**

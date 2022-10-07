@@ -23,6 +23,7 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
+import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -47,11 +48,16 @@ open class BackingStoreImplFake @Activate constructor(
     override val isRunning: Boolean
         get() = lifecycleCoordinator.isRunning
 
-    // Data persisted across different transactions
+    // Holding id for the current session
+    private lateinit var activeHoldingIdentity: HoldingIdentity
+
+    // Data persisted across different transactions, partitioned on holding id
     private val persistedStateData =
-        HashMap<UniquenessCheckStateRef, UniquenessCheckStateDetails>()
+        HashMap<HoldingIdentity,
+                HashMap<UniquenessCheckStateRef, UniquenessCheckStateDetails>>()
     private val persistedTxnData =
-        HashMap<SecureHash, UniquenessCheckTransactionDetailsInternal>()
+        HashMap<HoldingIdentity,
+                HashMap<SecureHash, UniquenessCheckTransactionDetailsInternal>>()
 
     // Temporary cache of data created / updated during the current session
     private val sessionStateData =
@@ -60,7 +66,13 @@ open class BackingStoreImplFake @Activate constructor(
         HashMap<SecureHash, UniquenessCheckTransactionDetailsInternal>()
 
     @Synchronized
-    override fun session(block: (BackingStore.Session) -> Unit) = block(SessionImpl())
+    override fun session(
+        holdingIdentity: HoldingIdentity,
+        block: (BackingStore.Session) -> Unit
+    ) {
+        activeHoldingIdentity = holdingIdentity
+        block(SessionImpl())
+    }
 
     override fun start() {
         log.info("Backing store starting.")
@@ -72,13 +84,6 @@ open class BackingStoreImplFake @Activate constructor(
         lifecycleCoordinator.stop()
     }
 
-    @Synchronized
-    override fun close() {
-        sessionStateData.clear()
-        sessionTxnData.clear()
-        stop()
-    }
-
     protected open inner class SessionImpl : BackingStore.Session {
 
         @Synchronized
@@ -87,18 +92,24 @@ open class BackingStoreImplFake @Activate constructor(
         ) {
             block(this, TransactionOpsImpl())
 
-            persistedStateData.putAll(sessionStateData)
-            persistedTxnData.putAll(sessionTxnData)
+            persistedStateData
+                .getOrPut(activeHoldingIdentity) { HashMap() }
+                .putAll(sessionStateData)
+            persistedTxnData
+                .getOrPut(activeHoldingIdentity) { HashMap() }
+                .putAll(sessionTxnData)
 
             sessionStateData.clear()
             sessionTxnData.clear()
         }
 
         override fun getStateDetails(states: Collection<UniquenessCheckStateRef>) =
-            persistedStateData.filterKeys { states.contains(it) }
+            persistedStateData[activeHoldingIdentity]
+                ?.filterKeys { states.contains(it) } ?: emptyMap()
 
         override fun getTransactionDetails(txIds: Collection<SecureHash>) =
-            persistedTxnData.filterKeys { txIds.contains(it) }
+            persistedTxnData[activeHoldingIdentity]
+                ?.filterKeys { txIds.contains(it) } ?: emptyMap()
 
         protected open inner class TransactionOpsImpl : BackingStore.Session.TransactionOps {
 
@@ -118,11 +129,12 @@ open class BackingStoreImplFake @Activate constructor(
                 consumingTxId: SecureHash,
                 stateRefs: Collection<UniquenessCheckStateRef>
             ) {
-
                 sessionStateData.putAll(
                     stateRefs.map {
                         // Check session data first in case this has already been updated in this batch
-                        val existingState = sessionStateData[it] ?: persistedStateData[it]
+                        val existingState =
+                            sessionStateData[it] ?:
+                            persistedStateData[activeHoldingIdentity]?.get(it)
 
                         if (existingState == null) {
                             throw NoSuchElementException(

@@ -1,22 +1,16 @@
 package net.corda.processors.crypto.tests
 
 import com.typesafe.config.ConfigRenderOptions
-import java.security.PublicKey
-import java.time.Duration
-import java.time.Instant
-import java.util.*
-import java.util.stream.Stream
-import javax.persistence.EntityManagerFactory
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.publicKeyIdFromBytes
+import net.corda.crypto.ecies.EciesParams
 import net.corda.crypto.ecies.EphemeralKeyPairEncryptor
 import net.corda.crypto.ecies.StableKeyPairDecryptor
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.flow.factory.CryptoFlowOpsTransformerFactory
-import net.corda.crypto.impl.emptyKeyValuePairList
 import net.corda.crypto.persistence.db.model.CryptoEntities
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
@@ -48,9 +42,9 @@ import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.utils.transaction
 import net.corda.processors.crypto.CryptoProcessor
-import net.corda.processors.crypto.tests.infra.TestDependenciesTracker
 import net.corda.processors.crypto.tests.infra.FlowOpsResponses
 import net.corda.processors.crypto.tests.infra.RESPONSE_TOPIC
+import net.corda.processors.crypto.tests.infra.TestDependenciesTracker
 import net.corda.processors.crypto.tests.infra.makeBootstrapConfig
 import net.corda.processors.crypto.tests.infra.makeClientId
 import net.corda.processors.crypto.tests.infra.makeCryptoConfig
@@ -89,6 +83,12 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import java.security.PublicKey
+import java.time.Duration
+import java.time.Instant
+import java.util.UUID
+import java.util.stream.Stream
+import javax.persistence.EntityManagerFactory
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
 class CryptoProcessorTests {
@@ -624,19 +624,18 @@ class CryptoProcessorTests {
     }
 
     private fun `Should be able to derive secret and encrypt`(tenantId: String, publicKey: PublicKey) {
-        val salt = ByteArray(DigestFactory.getDigest("SHA-256").digestSize).apply {
-            schemeMetadata.secureRandom.nextBytes(this)
-        }
         val plainText = "Hello World!".toByteArray()
         val cipherText = ephemeralEncryptor.encrypt(
-            salt = salt,
             otherPublicKey = publicKey,
-            plainText = plainText,
-            aad = null
-        )
+            plainText = plainText
+        ) { _, _ ->
+            EciesParams(ByteArray(DigestFactory.getDigest("SHA-256").digestSize).apply {
+                schemeMetadata.secureRandom.nextBytes(this)
+            }, null)
+        }
         val decryptedPlainTex = stableDecryptor.decrypt(
             tenantId = tenantId,
-            salt = salt,
+            salt = cipherText.params.salt,
             publicKey = publicKey,
             otherPublicKey = cipherText.publicKey,
             cipherText = cipherText.cipherText,
@@ -705,7 +704,7 @@ class CryptoProcessorTests {
             val event = transformer.createSign(
                 requestId = requestId,
                 tenantId = tenantId,
-                publicKey = publicKey,
+                encodedPublicKeyBytes = publicKey.encoded,
                 signatureSpec = spec,
                 data = data,
                 flowExternalEventContext = ExternalEventContext(requestId, key, KeyValuePairList(emptyList()))
@@ -751,7 +750,7 @@ class CryptoProcessorTests {
             val event = transformer.createSign(
                 requestId = requestId,
                 tenantId = tenantId,
-                publicKey = publicKey,
+                encodedPublicKeyBytes = publicKey.encoded,
                 signatureSpec = spec,
                 data = data,
                 flowExternalEventContext = ExternalEventContext(requestId, key, KeyValuePairList(emptyList()))

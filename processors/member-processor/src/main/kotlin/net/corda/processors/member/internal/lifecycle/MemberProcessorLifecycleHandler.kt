@@ -14,8 +14,8 @@ import net.corda.v5.base.util.debug
 class MemberProcessorLifecycleHandler(
     private val configurationReadService: ConfigurationReadService
 ) : LifecycleEventHandler {
-    companion object {
-        val logger = contextLogger()
+    private companion object {
+        private val logger = contextLogger()
     }
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {

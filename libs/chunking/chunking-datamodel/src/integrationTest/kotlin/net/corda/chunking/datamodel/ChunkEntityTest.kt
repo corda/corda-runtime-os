@@ -99,6 +99,6 @@ internal class ChunkEntityTest {
                 .singleResult as ChunkEntity
         }
 
-        assertThat(actual).isEqualToComparingFieldByField(entity)
+        assertThat(actual).usingRecursiveComparison().isEqualTo(entity)
     }
 }

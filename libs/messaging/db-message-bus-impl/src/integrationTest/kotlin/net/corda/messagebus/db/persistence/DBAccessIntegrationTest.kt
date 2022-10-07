@@ -118,7 +118,7 @@ class DBAccessIntegrationTest {
         )
         assertThat(results).size().isEqualTo(records.size)
         results.forEachIndexed { index, topicRecordEntry ->
-            assertThat(topicRecordEntry).isEqualToComparingFieldByField(records[index])
+            assertThat(topicRecordEntry).usingRecursiveComparison().isEqualTo(records[index])
         }
     }
 
@@ -159,14 +159,14 @@ class DBAccessIntegrationTest {
         dbAccess.readRecords(-1, CordaTopicPartition(topic, 5)).apply {
             assertThat(this).size().isEqualTo(partition5.size)
             forEachIndexed { index, topicRecordEntry ->
-                assertThat(topicRecordEntry).isEqualToComparingFieldByField(partition5[index])
+                assertThat(topicRecordEntry).usingRecursiveComparison().isEqualTo(partition5[index])
             }
         }
 
         dbAccess.readRecords(-1, CordaTopicPartition(topic, 6), 2).apply {
             assertThat(this).size().isEqualTo(2)
             forEachIndexed { index, topicRecordEntry ->
-                assertThat(topicRecordEntry).isEqualToComparingFieldByField(partition6[index])
+                assertThat(topicRecordEntry).usingRecursiveComparison().isEqualTo(partition6[index])
             }
         }
     }
@@ -219,7 +219,7 @@ class DBAccessIntegrationTest {
             query(CommittedPositionEntry::class.java, "from topic_consumer_offset where topic='$topic' order by partition, record_offset")
         assertThat(results).size().isEqualTo(offsets.size)
         results.forEachIndexed { index, topicRecordEntry ->
-            assertThat(topicRecordEntry).isEqualToComparingFieldByField(offsets[index])
+            assertThat(topicRecordEntry).usingRecursiveComparison().isEqualTo(offsets[index])
         }
     }
 

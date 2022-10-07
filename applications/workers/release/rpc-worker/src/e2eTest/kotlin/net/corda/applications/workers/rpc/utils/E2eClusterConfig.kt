@@ -13,10 +13,10 @@ abstract class E2eClusterConfig {
         private const val DEFAULT_P2P_PORT = 8080
     }
 
-    val rpcHost: String get() = System.getProperty(rpcHostPropertyName) ?: DEFAULT_RPC_HOST
-    val rpcPort: Int get() = System.getProperty(rpcPortPropertyName)?.toInt() ?: DEFAULT_RPC_PORT
-    val p2pHost: String get() = System.getProperty(p2pHostPropertyName) ?: DEFAULT_P2P_HOST
-    val p2pPort: Int get() = System.getProperty(p2pPortPropertyName)?.toInt() ?: DEFAULT_P2P_PORT
+    val rpcHost: String get() = System.getenv(rpcHostPropertyName) ?: DEFAULT_RPC_HOST
+    val rpcPort: Int get() = System.getenv(rpcPortPropertyName)?.toInt() ?: DEFAULT_RPC_PORT
+    val p2pHost: String get() = System.getenv(p2pHostPropertyName) ?: DEFAULT_P2P_HOST
+    val p2pPort: Int get() = System.getenv(p2pPortPropertyName)?.toInt() ?: DEFAULT_P2P_PORT
 }
 
 internal object E2eClusterAConfig : E2eClusterConfig() {

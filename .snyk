@@ -1,0 +1,15 @@
+# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.
+version: v1.25.0
+# ignores vulnerabilities until expiry date; change duration by modifying expiry date
+ignore:
+  SNYK-JAVA-IONETTY-1042268:
+    - '*':
+        reason: >-
+          Corda 5 does not make use of the default SSLEngine configuration when
+          using Netty. It explicitly configures the SSLEngine with the endpoint
+          identification algorithm set to “HTTPS”, which means a Corda gateway
+          will always validate server certificate hostnames when establishing
+          HTTPS connections with other gateways.
+        expires: 2022-10-20T15:45:03.904Z
+        created: 2022-09-20T15:45:03.911Z
+patch: {}

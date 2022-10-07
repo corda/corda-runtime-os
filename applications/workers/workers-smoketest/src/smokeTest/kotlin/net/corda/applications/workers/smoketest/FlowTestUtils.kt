@@ -7,11 +7,11 @@ import java.time.Duration
 import java.util.UUID
 import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetry
 import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
-import net.corda.applications.workers.smoketest.virtualnode.toJson
+import net.corda.httprpc.ResponseCode.OK
 import org.apache.commons.text.StringEscapeUtils.escapeJson
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 
-const val SMOKE_TEST_CLASS_NAME = "net.cordapp.flowworker.development.smoketests.flow.RpcSmokeTestFlow"
+const val SMOKE_TEST_CLASS_NAME = "net.cordapp.testing.smoketests.flow.RpcSmokeTestFlow"
 const val RPC_FLOW_STATUS_SUCCESS = "COMPLETED"
 const val RPC_FLOW_STATUS_FAILED = "FAILED"
 
@@ -123,7 +123,7 @@ fun getOrCreateVirtualNodeFor(x500: String): String {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
         val cpis = cpiList().toJson()["cpis"]
-        val json = cpis.toList().first { it["id"]["cpiName"].textValue() == CPI_NAME }
+        val json = cpis.toList().first { it["id"]["cpiName"].textValue() == TEST_CPI_NAME }
         val hash = truncateLongHash(json["cpiFileChecksum"].textValue())
 
         val vNodesJson = assertWithRetry {
@@ -143,7 +143,7 @@ fun getOrCreateVirtualNodeFor(x500: String): String {
         }
 
         val holdingId = vNodeJson["holdingIdentity"]["shortHash"].textValue()
-        Assertions.assertThat(holdingId).isNotNull.isNotEmpty
+        assertThat(holdingId).isNotNull.isNotEmpty
         holdingId
     }
 }
@@ -159,7 +159,7 @@ fun registerMember(holdingIdentityId: String) {
         }.toJson()
 
         val registrationStatus = membershipJson["registrationStatus"].textValue()
-        Assertions.assertThat(registrationStatus).isEqualTo("SUBMITTED")
+        assertThat(registrationStatus).isEqualTo("SUBMITTED")
     }
 }
 
@@ -201,6 +201,31 @@ fun getHoldingIdShortHash(x500Name: String, groupId: String): String {
     return digest.digest(s.toByteArray())
         .joinToString("") { byte -> "%02x".format(byte).uppercase() }
         .substring(0, 12)
+}
+
+/**
+ * Transform a Corda Package Bundle (CPB) into a Corda Package Installer (CPI) by adding the default group policy
+ * used by smoke tests and upload the resulting CPI to the system if it doesn't already exist.
+ */
+fun conditionallyUploadCordaPackage(name: String, cpb: String, groupId: String) {
+    return cluster {
+        endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+        val cpis = cpiList().toJson()["cpis"]
+        val existingCpi = cpis.toList().firstOrNull { it["id"]["cpiName"].textValue() == name }
+
+        if (existingCpi == null) {
+            val uploadResponse = cpiUpload(cpb, groupId)
+            assertThat(uploadResponse.code).isEqualTo(OK.statusCode)
+            assertThat(uploadResponse.toJson()["id"].textValue()).isNotEmpty
+            val responseStatusId = uploadResponse.toJson()["id"].textValue()
+
+            assertWithRetry {
+                command { cpiStatus(responseStatusId) }
+                condition { it.code == OK.statusCode && it.toJson()["status"].textValue() == OK.toString() }
+            }
+        }
+    }
 }
 
 class RpcSmokeTestInput {

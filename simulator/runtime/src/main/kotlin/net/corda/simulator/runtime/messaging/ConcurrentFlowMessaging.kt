@@ -7,6 +7,7 @@ import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.base.util.contextLogger
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.thread
 
@@ -21,6 +22,8 @@ import kotlin.concurrent.thread
  * Note that the "fiber" must be the same instance for all nodes; it acts as the equivalent of the message bus,
  * allowing nodes to communicate with each other.
  *
+ * @see [FlowMessaging] for method docs.
+ *
  * @flowContext The context of the flow in which the messaging is taking place
  * @fiber The "fiber" in which Simulator registered responder flow classes or instances and persistence
  * @injector The injector for @CordaInject flow services
@@ -33,13 +36,32 @@ class ConcurrentFlowMessaging(
     private val flowFactory: FlowFactory
 ) : FlowMessaging {
 
+    companion object {
+        val log = contextLogger()
+    }
+
+    /**
+     * @see [FlowMessaging] for more details.
+     *
+     * This implementation matches the context protocol for this instance with a matching responder instance or
+     * class previously registered in the fiber (through the [FlowServicesInjector]), constructs [FlowSession]s
+     * for both initiator and responder, and calls the responder flow on a new thread. If it detects an error
+     * being thrown in that thread, it sets an error condition property on the initiating flow's session.
+     *
+     * @throws NoRegisteredResponderException if no responder has been registered.
+     */
     override fun initiateFlow(x500Name: MemberX500Name): FlowSession {
         val protocol = flowContext.protocol
+
+        log.info("Initiating flow for protocol \"$protocol\" from \"${flowContext.member}\" to \"$x500Name\"")
+
         val responderClass = fiber.lookUpResponderClass(x500Name, protocol)
         val responderFlow = if (responderClass == null) {
+            log.info("Matched protocol with responder instance")
             fiber.lookUpResponderInstance(x500Name, protocol)
                 ?: throw NoRegisteredResponderException(x500Name, protocol)
         } else {
+            log.info("Matched protocol with responder class $responderClass")
             flowFactory.createResponderFlow(x500Name, responderClass)
         }
 
@@ -49,15 +71,16 @@ class ConcurrentFlowMessaging(
         val fromResponderToInitiator = LinkedBlockingQueue<Any>()
         val initiatorSession = BlockingQueueFlowSession(
             flowContext.copy(member = x500Name),
-            fromInitiatorToResponder,
-            fromResponderToInitiator
+            fromResponderToInitiator,
+            fromInitiatorToResponder
         )
         val recipientSession = BlockingQueueFlowSession(
             flowContext,
-            fromResponderToInitiator,
             fromInitiatorToResponder,
+            fromResponderToInitiator,
         )
 
+        log.info("Starting responder thread")
         thread {
             try {
                 responderFlow.call(recipientSession)
@@ -68,6 +91,9 @@ class ConcurrentFlowMessaging(
         return initiatorSession
     }
 
+    /**
+     * Not yet implemented.
+     */
     override fun initiateFlow(
         x500Name: MemberX500Name,
         flowContextPropertiesBuilder: FlowContextPropertiesBuilder
