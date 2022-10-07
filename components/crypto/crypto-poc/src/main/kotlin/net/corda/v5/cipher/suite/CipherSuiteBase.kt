@@ -1,16 +1,17 @@
 package net.corda.v5.cipher.suite
 
 import net.corda.v5.base.annotations.DoNotImplement
-import net.corda.v5.cipher.suite.providers.digest.DigestHandler
-import net.corda.v5.cipher.suite.providers.encoding.KeyEncodingHandler
-import net.corda.v5.cipher.suite.providers.verification.VerifySignatureHandler
-import net.corda.v5.cipher.suite.scheme.KeyScheme
-import net.corda.v5.crypto.extensions.DigestAlgorithmFactory
+import net.corda.v5.cipher.suite.handlers.digest.DigestHandler
+import net.corda.v5.cipher.suite.handlers.encoding.KeyEncodingHandler
+import net.corda.v5.cipher.suite.handlers.verification.VerifySignatureHandler
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import java.security.PublicKey
+import java.security.SecureRandom
 
 @DoNotImplement
-interface CipherSuiteBase {
+interface CipherSuiteBase : SecureRandomProvider {
+
+    fun register(secureRandom: SecureRandom)
 
     /**
      * The digests can be extended by the CPI developers as well as by extending the cipher suite.

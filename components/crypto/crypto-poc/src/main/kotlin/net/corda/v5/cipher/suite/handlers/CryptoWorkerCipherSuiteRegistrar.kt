@@ -1,4 +1,4 @@
-package net.corda.v5.cipher.suite.providers
+package net.corda.v5.cipher.suite.handlers
 
 import net.corda.v5.cipher.suite.CryptoWorkerCipherSuite
 

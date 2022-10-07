@@ -2,13 +2,14 @@ package net.corda.crypto.platform.impl
 
 import net.corda.v5.cipher.suite.CipherSuiteBase
 import net.corda.v5.cipher.suite.KeySchemeInfo
-import net.corda.v5.cipher.suite.providers.digest.DigestHandler
-import net.corda.v5.cipher.suite.providers.encoding.KeyEncodingHandler
-import net.corda.v5.cipher.suite.providers.verification.VerifySignatureHandler
-import net.corda.v5.cipher.suite.scheme.KeyScheme
+import net.corda.v5.cipher.suite.handlers.digest.DigestHandler
+import net.corda.v5.cipher.suite.handlers.encoding.KeyEncodingHandler
+import net.corda.v5.cipher.suite.handlers.verification.VerifySignatureHandler
+import net.corda.v5.cipher.suite.KeyScheme
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.slf4j.LoggerFactory
 import java.security.PublicKey
+import java.security.SecureRandom
 
 abstract class CipherSuiteBaseImpl : CipherSuiteBase {
 
@@ -21,6 +22,12 @@ abstract class CipherSuiteBaseImpl : CipherSuiteBase {
     private val verifyHandlers = ReadWriteLockMap<String, VerifySignatureHandler>()
 
     private val digestHandlers = ReadWriteLockMap<String, DigestHandler>()
+
+    @Volatile
+    private var _secureRandom: SecureRandom = SecureRandom()
+
+    override val secureRandom: SecureRandom
+        get() = _secureRandom
 
     protected fun add(keyScheme: KeySchemeInfo) =
         keySchemeMap.add(keyScheme)
@@ -51,6 +58,10 @@ abstract class CipherSuiteBaseImpl : CipherSuiteBase {
                 verifyHandler.rank
             )
         }
+    }
+
+    override fun register(secureRandom: SecureRandom) {
+        _secureRandom = secureRandom
     }
 
     override fun register(algorithmName: String, digest: DigestHandler) = digestHandlers.withWriteLock {

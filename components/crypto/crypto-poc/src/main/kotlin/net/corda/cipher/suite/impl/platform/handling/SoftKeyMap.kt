@@ -1,6 +1,6 @@
 package net.corda.cipher.suite.impl.platform.handling
 
-import net.corda.v5.cipher.suite.providers.signing.KeyMaterialSpec
+import net.corda.v5.cipher.suite.handlers.signing.KeyMaterialSpec
 import java.security.KeyPair
 import java.security.PrivateKey
 import java.security.PublicKey

@@ -2,7 +2,7 @@ package net.corda.cipher.suite.impl.platform
 
 import net.corda.cipher.suite.OID_COMPOSITE_KEY_IDENTIFIER
 import net.corda.cipher.suite.OID_COMPOSITE_SIGNATURE_IDENTIFIER
-import net.corda.v5.cipher.suite.providers.encoding.KeyEncodingHandler
+import net.corda.v5.cipher.suite.handlers.encoding.KeyEncodingHandler
 import java.security.Provider
 import java.util.Optional
 import java.util.concurrent.ConcurrentHashMap

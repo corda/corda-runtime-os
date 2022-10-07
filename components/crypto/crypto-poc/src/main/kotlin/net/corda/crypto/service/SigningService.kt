@@ -1,6 +1,6 @@
 package net.corda.crypto.service
 
-import net.corda.v5.cipher.suite.scheme.KeyScheme
+import net.corda.v5.cipher.suite.KeyScheme
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import java.security.PublicKey

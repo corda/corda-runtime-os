@@ -1,6 +1,6 @@
-package net.corda.v5.cipher.suite.providers.generation
+package net.corda.v5.cipher.suite.handlers.generation
 
-import net.corda.v5.cipher.suite.scheme.KeyScheme
+import net.corda.v5.cipher.suite.KeyScheme
 
 /**
  * Parameters to generate a key pair.

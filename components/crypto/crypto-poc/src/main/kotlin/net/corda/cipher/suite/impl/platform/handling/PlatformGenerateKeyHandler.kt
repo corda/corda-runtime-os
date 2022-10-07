@@ -2,10 +2,10 @@ package net.corda.cipher.suite.impl.platform.handling
 
 import net.corda.cipher.suite.impl.platform.PlatformCipherSuiteMetadata
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.cipher.suite.providers.generation.GenerateKeyHandler
-import net.corda.v5.cipher.suite.providers.generation.GeneratedKey
-import net.corda.v5.cipher.suite.providers.generation.GeneratedWrappedKey
-import net.corda.v5.cipher.suite.providers.generation.KeyGenerationSpec
+import net.corda.v5.cipher.suite.handlers.generation.GenerateKeyHandler
+import net.corda.v5.cipher.suite.handlers.generation.GeneratedKey
+import net.corda.v5.cipher.suite.handlers.generation.GeneratedWrappedKey
+import net.corda.v5.cipher.suite.handlers.generation.KeyGenerationSpec
 import java.security.KeyPairGenerator
 
 class PlatformGenerateKeyHandler(

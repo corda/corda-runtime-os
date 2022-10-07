@@ -1,4 +1,4 @@
-package net.corda.v5.cipher.suite.scheme
+package net.corda.v5.cipher.suite
 
 /**
  * Defines which operations the key scheme can be used for, such as for signing or/and deriving a shared secret.

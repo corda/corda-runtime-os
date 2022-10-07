@@ -1,7 +1,7 @@
 package net.corda.cipher.suite.impl.platform.handling
 
 import net.corda.cipher.suite.impl.platform.PlatformCipherSuiteMetadata
-import net.corda.v5.cipher.suite.providers.digest.DigestHandler
+import net.corda.v5.cipher.suite.handlers.digest.DigestHandler
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.extensions.DigestAlgorithm
@@ -48,10 +48,7 @@ class PlatformDigestHandler(
             const val STREAM_BUFFER_SIZE = DEFAULT_BUFFER_SIZE
         }
 
-        private val provider: Provider = suiteMetadata.providers.getValue(
-            suiteMetadata.digests.firstOrNull { it.algorithmName == algorithm }?.providerName
-                ?: throw IllegalArgumentException("Unknown hash algorithm $algorithm")
-        )
+        private val provider: Provider = suiteMetadata.providerForDigest(algorithm)
 
         override fun getInstance(): DigestAlgorithm {
             try {

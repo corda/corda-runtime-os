@@ -1,7 +1,7 @@
 package net.corda.cipher.suite.impl.platform
 
-import net.corda.v5.cipher.suite.scheme.KeyScheme
-import net.corda.v5.cipher.suite.scheme.KeySchemeCapability
+import net.corda.v5.cipher.suite.KeyScheme
+import net.corda.v5.cipher.suite.KeySchemeCapability
 import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME

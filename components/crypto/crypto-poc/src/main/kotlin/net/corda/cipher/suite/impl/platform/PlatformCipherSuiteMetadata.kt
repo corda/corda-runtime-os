@@ -2,12 +2,10 @@ package net.corda.cipher.suite.impl.platform
 
 import net.corda.cipher.suite.OID_COMPOSITE_KEY_IDENTIFIER
 import net.corda.v5.cipher.suite.KeySchemeInfo
-import net.corda.v5.cipher.suite.providers.encoding.KeyEncodingHandler
-import net.corda.v5.cipher.suite.scheme.DigestScheme
-import net.corda.v5.cipher.suite.scheme.KeyScheme
-import net.corda.v5.cipher.suite.scheme.KeySchemeCapability
+import net.corda.v5.cipher.suite.handlers.encoding.KeyEncodingHandler
+import net.corda.v5.cipher.suite.KeyScheme
+import net.corda.v5.cipher.suite.KeySchemeCapability
 import net.corda.v5.crypto.COMPOSITE_KEY_CODE_NAME
-import net.corda.v5.crypto.SignatureSpec
 import org.bouncycastle.asn1.DERNull
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
@@ -74,18 +72,18 @@ class PlatformCipherSuiteMetadata : KeyEncodingHandler {
 
     private val bouncyCastlePQCProvider = BouncyCastlePQCProvider()
 
-    val providers: Map<String, Provider> = listOf(
+    val secureRandom: SecureRandom = SecureRandom.getInstance(
+        CordaSecureRandomService.algorithm,
+        cordaSecurityProvider
+    )
+
+    private val providers: Map<String, Provider> = listOf(
         cordaBouncyCastleProvider,
         cordaSecurityProvider,
         bouncyCastlePQCProvider
     ).associateBy(Provider::getName)
 
     private val schemeProviderMap: MutableMap<KeyScheme, Provider> = mutableMapOf()
-
-    val secureRandom: SecureRandom = SecureRandom.getInstance(
-        CordaSecureRandomService.algorithm,
-        cordaSecurityProvider
-    )
 
     private val keyFactories = KeyFactoryProvider(schemeProviderMap)
 
@@ -162,7 +160,7 @@ class PlatformCipherSuiteMetadata : KeyEncodingHandler {
         schemeProviderMap[it] = cordaSecurityProvider
     }
 
-    val schemes: List<KeyScheme> = listOf(
+    private val schemes: List<KeyScheme> = listOf(
         RSA.scheme,
         ECDSA_SECP256K1.scheme,
         ECDSA_SECP256R1.scheme,
@@ -174,7 +172,7 @@ class PlatformCipherSuiteMetadata : KeyEncodingHandler {
         COMPOSITE_KEY
     )
 
-    val algorithmMap: Map<AlgorithmIdentifier, KeyScheme> = schemes.flatMap { scheme ->
+    private val algorithmMap: Map<AlgorithmIdentifier, KeyScheme> = schemes.flatMap { scheme ->
         scheme.algorithmOIDs.map { identifier -> identifier to scheme }
     }.toMap()
 
@@ -199,16 +197,15 @@ class PlatformCipherSuiteMetadata : KeyEncodingHandler {
 
     override val rank: Int = 0
 
-    fun providerFor(scheme: KeyScheme): Provider = schemeProviderMap.getValue(scheme)
-
-    fun findKeyScheme(publicKey: PublicKey): KeyScheme {
-        val keyInfo = SubjectPublicKeyInfo.getInstance(publicKey.encoded)
-        return findKeyScheme(keyInfo.algorithm)
-    }
-
-    fun findKeyScheme(algorithm: AlgorithmIdentifier): KeyScheme =
+    private fun findKeyScheme(algorithm: AlgorithmIdentifier): KeyScheme =
         algorithmMap[normaliseAlgorithmIdentifier(algorithm)]
             ?: throw IllegalArgumentException("Unrecognised algorithm: ${algorithm.algorithm.id}")
+
+    fun providerFor(scheme: KeyScheme): Provider = schemeProviderMap.getValue(scheme)
+
+    fun providerForDigest(algorithmName: String): Provider = providers.getValue(
+        digests.firstOrNull { it.algorithmName == algorithmName }?.providerName
+            ?: throw IllegalArgumentException("Unknown hash algorithm $algorithmName"))
 
     override fun getAlgorithmIdentifier(publicKey: PublicKey): AlgorithmIdentifier? = try {
         SubjectPublicKeyInfo.getInstance(publicKey.encoded).algorithm

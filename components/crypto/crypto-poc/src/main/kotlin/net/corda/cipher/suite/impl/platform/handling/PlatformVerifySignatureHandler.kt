@@ -4,8 +4,8 @@ import net.corda.cipher.suite.impl.platform.PlatformCipherSuiteMetadata
 import net.corda.cipher.suite.impl.platform.SignatureInstances
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.v5.cipher.suite.providers.verification.VerifySignatureHandler
-import net.corda.v5.cipher.suite.scheme.KeyScheme
+import net.corda.v5.cipher.suite.handlers.verification.VerifySignatureHandler
+import net.corda.v5.cipher.suite.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.publicKeyId
 import java.security.PublicKey

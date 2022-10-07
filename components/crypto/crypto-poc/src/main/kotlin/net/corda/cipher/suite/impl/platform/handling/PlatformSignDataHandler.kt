@@ -4,10 +4,10 @@ import net.corda.cipher.suite.impl.platform.PlatformCipherSuiteMetadata
 import net.corda.cipher.suite.impl.platform.SignatureInstances
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.v5.cipher.suite.providers.signing.SignDataHandler
-import net.corda.v5.cipher.suite.providers.signing.SigningSpec
-import net.corda.v5.cipher.suite.providers.signing.SigningWrappedSpec
-import net.corda.v5.cipher.suite.scheme.KeySchemeCapability
+import net.corda.v5.cipher.suite.handlers.signing.SignDataHandler
+import net.corda.v5.cipher.suite.handlers.signing.SigningSpec
+import net.corda.v5.cipher.suite.handlers.signing.SigningWrappedSpec
+import net.corda.v5.cipher.suite.KeySchemeCapability
 
 class PlatformSignDataHandler(
     private val suiteMetadata: PlatformCipherSuiteMetadata,

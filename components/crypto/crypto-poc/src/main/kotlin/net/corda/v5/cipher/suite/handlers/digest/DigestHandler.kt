@@ -1,4 +1,4 @@
-package net.corda.v5.cipher.suite.providers.digest
+package net.corda.v5.cipher.suite.handlers.digest
 
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash

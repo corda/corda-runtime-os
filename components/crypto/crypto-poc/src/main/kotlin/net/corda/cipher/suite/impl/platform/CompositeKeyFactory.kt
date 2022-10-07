@@ -1,7 +1,7 @@
 package net.corda.cipher.suite.impl.platform
 
 import net.corda.cipher.suite.OID_COMPOSITE_KEY_IDENTIFIER
-import net.corda.v5.cipher.suite.providers.encoding.KeyEncodingHandler
+import net.corda.v5.cipher.suite.handlers.encoding.KeyEncodingHandler
 import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import org.bouncycastle.asn1.ASN1Integer
 import org.bouncycastle.asn1.ASN1Primitive

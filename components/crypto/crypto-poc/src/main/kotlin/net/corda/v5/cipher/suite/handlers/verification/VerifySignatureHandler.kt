@@ -1,6 +1,6 @@
-package net.corda.v5.cipher.suite.providers.verification
+package net.corda.v5.cipher.suite.handlers.verification
 
-import net.corda.v5.cipher.suite.scheme.KeyScheme
+import net.corda.v5.cipher.suite.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
 import java.security.PublicKey
 

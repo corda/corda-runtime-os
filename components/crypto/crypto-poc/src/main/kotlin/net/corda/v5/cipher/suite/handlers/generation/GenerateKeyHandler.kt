@@ -1,4 +1,4 @@
-package net.corda.v5.cipher.suite.providers.generation
+package net.corda.v5.cipher.suite.handlers.generation
 
 interface GenerateKeyHandler {
     val rank: Int

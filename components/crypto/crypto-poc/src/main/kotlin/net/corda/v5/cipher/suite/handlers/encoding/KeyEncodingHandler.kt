@@ -1,6 +1,6 @@
-package net.corda.v5.cipher.suite.providers.encoding
+package net.corda.v5.cipher.suite.handlers.encoding
 
-import net.corda.v5.cipher.suite.scheme.KeyScheme
+import net.corda.v5.cipher.suite.KeyScheme
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import java.security.PublicKey

@@ -1,22 +1,22 @@
-package net.corda.v5.cipher.suite.providers.signing
+package net.corda.v5.cipher.suite.handlers.signing
 
-import net.corda.v5.cipher.suite.scheme.KeyScheme
+import net.corda.v5.cipher.suite.KeyScheme
 import net.corda.v5.crypto.SignatureSpec
 import java.security.PublicKey
 
 /**
- * Parameters for signing operation when using the key stored in the HSM.
+ * Parameters for signing operation when using the wrapped key.
  *
  * @param publicKey The public key of the pair.
- * @param hsmAlias The key pair alias assigned by the implementation when the key was generated.
+ * @param keyMaterialSpec The spec for the wrapped key.
  * @param keyScheme The scheme for the key used for signing operation.
  * @param signatureSpec The signature spec to use for signing, such as SHA256withECDSA, etc.
  */
-class SigningAliasSpec(
+class SigningWrappedSpec(
     /**
-     * The key pair alias assigned by the implementation when the key was generated.
+     * The spec for the wrapped key.
      */
-    val hsmAlias: String,
+    val keyMaterialSpec: KeyMaterialSpec,
     override val publicKey: PublicKey,
     override val keyScheme: KeyScheme,
     override val signatureSpec: SignatureSpec,
@@ -24,8 +24,8 @@ class SigningAliasSpec(
 ) : SigningSpec {
 
     /**
-     * Converts a [SigningAliasSpec] object to a string representation.
+     * Converts a [SigningWrappedSpec] object to a string representation.
      */
     override fun toString(): String =
-        "$keyScheme,hsmAlias=$hsmAlias,sig=$signatureSpec"
+        "$keyScheme,sig=$signatureSpec,spec=$keyMaterialSpec"
 }

@@ -1,6 +1,5 @@
 package net.corda.v5.cipher.suite
 
-import net.corda.v5.cipher.suite.scheme.KeyScheme
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SignatureSpec
 

@@ -1,4 +1,4 @@
-package net.corda.v5.cipher.suite.scheme
+package net.corda.cipher.suite.impl.platform
 
 /**
  * This class is used to define a digital digest scheme.

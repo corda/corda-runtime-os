@@ -4,7 +4,7 @@ import net.corda.cipher.suite.impl.platform.PlatformCipherSuiteMetadata
 import net.corda.cipher.suite.impl.platform.handling.PlatformDigestHandler
 import net.corda.cipher.suite.impl.platform.handling.PlatformVerifySignatureHandler
 import net.corda.v5.cipher.suite.CipherSuite
-import net.corda.v5.cipher.suite.providers.CipherSuiteRegistrar
+import net.corda.v5.cipher.suite.handlers.CipherSuiteRegistrar
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.propertytypes.ServiceRanking
 
@@ -16,6 +16,7 @@ class PlatformCipherSuiteRegistrar : CipherSuiteRegistrar {
     private val digestHandler = PlatformDigestHandler(suiteMetadata)
 
     override fun registerWith(suite: CipherSuite) {
+        suite.register(suiteMetadata.secureRandom)
         suiteMetadata.digests.forEach {
             suite.register(it.algorithmName, digestHandler)
         }

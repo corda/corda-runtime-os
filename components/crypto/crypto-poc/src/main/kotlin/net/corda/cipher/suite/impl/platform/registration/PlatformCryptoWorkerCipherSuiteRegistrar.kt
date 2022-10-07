@@ -7,8 +7,8 @@ import net.corda.cipher.suite.impl.platform.handling.PlatformSignDataHandler
 import net.corda.cipher.suite.impl.platform.handling.PlatformVerifySignatureHandler
 import net.corda.cipher.suite.impl.platform.handling.SoftKeyMap
 import net.corda.v5.cipher.suite.CryptoWorkerCipherSuite
-import net.corda.v5.cipher.suite.providers.CipherSuiteRegistrar
-import net.corda.v5.cipher.suite.providers.CryptoWorkerCipherSuiteRegistrar
+import net.corda.v5.cipher.suite.handlers.CipherSuiteRegistrar
+import net.corda.v5.cipher.suite.handlers.CryptoWorkerCipherSuiteRegistrar
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -29,6 +29,7 @@ class PlatformCryptoWorkerCipherSuiteRegistrar @Activate constructor(
     private val signDataHandler = PlatformSignDataHandler(suiteMetadata, softKeyMap)
 
     override fun registerWith(suite: CryptoWorkerCipherSuite) {
+        suite.register(suiteMetadata.secureRandom)
         suiteMetadata.digests.forEach {
             suite.register(it.algorithmName, digestHandler)
         }

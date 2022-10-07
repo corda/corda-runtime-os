@@ -1,7 +1,7 @@
 package net.corda.crypto.service.impl.signing
 
-import net.corda.v5.cipher.suite.providers.generation.GeneratedWrappedKey
-import net.corda.v5.cipher.suite.scheme.KeyScheme
+import net.corda.v5.cipher.suite.handlers.generation.GeneratedWrappedKey
+import net.corda.v5.cipher.suite.KeyScheme
 
 @Suppress("LongParameterList")
 class SigningWrappedKeySaveContext(

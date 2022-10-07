@@ -3,9 +3,9 @@ package net.corda.crypto.platform.impl
 import net.corda.v5.cipher.suite.CipherSuite
 import net.corda.v5.cipher.suite.CipherSuiteBase
 import net.corda.v5.cipher.suite.KeySchemeInfo
-import net.corda.v5.cipher.suite.providers.CipherSuiteRegistrar
-import net.corda.v5.cipher.suite.providers.encoding.KeyEncodingHandler
-import net.corda.v5.cipher.suite.providers.verification.VerifySignatureHandler
+import net.corda.v5.cipher.suite.handlers.CipherSuiteRegistrar
+import net.corda.v5.cipher.suite.handlers.encoding.KeyEncodingHandler
+import net.corda.v5.cipher.suite.handlers.verification.VerifySignatureHandler
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

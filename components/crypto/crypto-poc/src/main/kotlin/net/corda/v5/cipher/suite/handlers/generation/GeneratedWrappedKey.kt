@@ -1,4 +1,4 @@
-package net.corda.v5.cipher.suite.providers.generation
+package net.corda.v5.cipher.suite.handlers.generation
 
 import java.security.PublicKey
 

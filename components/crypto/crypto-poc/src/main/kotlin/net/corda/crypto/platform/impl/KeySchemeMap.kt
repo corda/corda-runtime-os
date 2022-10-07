@@ -1,8 +1,8 @@
 package net.corda.crypto.platform.impl
 
 import net.corda.v5.cipher.suite.KeySchemeInfo
-import net.corda.v5.cipher.suite.providers.encoding.KeyEncodingHandler
-import net.corda.v5.cipher.suite.scheme.KeyScheme
+import net.corda.v5.cipher.suite.handlers.encoding.KeyEncodingHandler
+import net.corda.v5.cipher.suite.KeyScheme
 import org.bouncycastle.asn1.DERNull
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo

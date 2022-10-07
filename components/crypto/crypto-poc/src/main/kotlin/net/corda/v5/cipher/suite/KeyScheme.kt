@@ -1,4 +1,4 @@
-package net.corda.v5.cipher.suite.scheme
+package net.corda.v5.cipher.suite
 
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import java.security.spec.AlgorithmParameterSpec

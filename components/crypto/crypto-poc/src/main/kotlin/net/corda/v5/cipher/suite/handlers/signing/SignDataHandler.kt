@@ -1,4 +1,4 @@
-package net.corda.v5.cipher.suite.providers.signing
+package net.corda.v5.cipher.suite.handlers.signing
 
 interface SignDataHandler {
     val rank: Int
