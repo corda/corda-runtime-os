@@ -137,7 +137,7 @@ internal class SessionManagerImpl(
     )
     private val outboundSessionPool = OutboundSessionPool(heartbeatManager::calculateWeightForSession)
 
-    private val fiveDays = 5.days.inWholeDays
+    private val sessionRefreshThresholdInDays = 5L
 
     private val publisher = PublisherWithDominoLogic(
         publisherFactory,
@@ -557,7 +557,7 @@ internal class SessionManagerImpl(
         )
         executorService.schedule(
             { refreshSessionAndLog(sessionCounterparties, message.header.sessionId) },
-            fiveDays,
+            sessionRefreshThresholdInDays,
             TimeUnit.DAYS
         )
         return null
