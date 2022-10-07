@@ -1655,10 +1655,6 @@ class SessionManagerTest {
         verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
             .publish(listOf(Record(SESSION_OUT_PARTITIONS, protocolInitiator.sessionId, null))
         )
-
-        loggingInterceptor.assertSingleWarningContains("No partitions from topic link.in are currently assigned " +
-                "to the inbound message processor. Sessions: [sessionId] will not be initiated."
-        )
     }
 
     @Test
