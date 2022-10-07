@@ -32,14 +32,40 @@ class TransactionMetaData(private val properties: Map<String, Any>) {
 
     fun getLedgerVersion(): String = this[LEDGER_VERSION_KEY].toString()
 
-    fun getCpiMetadata(): CpiMetadata {
-        val data = this[CPI_METADATA_KEY]
-        try {
-            @Suppress("UNCHECKED_CAST")
-            return data as CpiMetadata
-        } catch (e: Exception) {
-            throw CordaRuntimeException(
-                "Transaction metadata representation error: expected CpiMetadata but found ${data?.javaClass} ($data)")
+    fun getCpiMetadata(): CpiMetadata? {
+        return when (val data = this[CPI_METADATA_KEY]) {
+            is CpiMetadata -> data
+            is Map<*, *> -> {
+                try {
+                    @Suppress("UNCHECKED_CAST")
+                    val cpi = data as Map<String, Any?>
+
+                    @Suppress("UNCHECKED_CAST")
+                    val cpks = cpi["cpks"] as List<Map<String, Any?>>
+                    CpiMetadata(
+                        cpi["name"].toString(),
+                        cpi["version"].toString(),
+                        cpi["signerSummaryHash"]?.toString(),
+                        cpi["fileChecksum"].toString(),
+                        cpks.map { cpk ->
+                            CpkMetadata(
+                                cpk["name"].toString(),
+                                cpk["version"].toString(),
+                                cpk["signerSummaryHash"]?.toString(),
+                                cpk["fileChecksum"].toString()
+                            )
+                        })
+                } catch (e: Exception) {
+                    throw CordaRuntimeException(
+                        "Transaction metadata representation error: expected CPI metadata but found [$data]"
+                    )
+                }
+            }
+            null -> null
+            else ->
+                throw CordaRuntimeException(
+                    "Transaction metadata representation error: expected CPI metadata but found [$data]"
+                )
         }
     }
 
