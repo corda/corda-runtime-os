@@ -1,7 +1,7 @@
-package net.corda.flow.application.persistence.external.events
+package net.corda.ledger.consensual.persistence.external.events
 
 import net.corda.data.flow.event.external.ExternalEventContext
-import net.corda.data.persistence.EntityRequest
+import net.corda.data.persistence.ConsensualLedgerRequest
 import net.corda.data.persistence.EntityResponse
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.external.events.factory.ExternalEventRecord
@@ -9,8 +9,9 @@ import net.corda.flow.state.FlowCheckpoint
 import net.corda.schema.Schemas
 import net.corda.virtualnode.toAvro
 import java.nio.ByteBuffer
+import java.time.Clock
 
-abstract class AbstractPersistenceExternalEventFactory<PARAMETERS : Any> :
+abstract class AbstractLedgerExternalEventFactory<PARAMETERS : Any>(private val clock: Clock = Clock.systemUTC()) :
     ExternalEventFactory<PARAMETERS, EntityResponse, List<ByteBuffer>> {
 
     abstract fun createRequest(parameters: PARAMETERS): Any
@@ -23,8 +24,9 @@ abstract class AbstractPersistenceExternalEventFactory<PARAMETERS : Any> :
         parameters: PARAMETERS
     ): ExternalEventRecord {
         return ExternalEventRecord(
-            topic = Schemas.Persistence.PERSISTENCE_ENTITY_PROCESSOR_TOPIC,
-            payload = EntityRequest.newBuilder()
+            topic = Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC,
+            payload = ConsensualLedgerRequest.newBuilder()
+                .setTimestamp(clock.instant())
                 .setHoldingIdentity(checkpoint.holdingIdentity.toAvro())
                 .setRequest(createRequest(parameters))
                 .setFlowExternalEventContext(flowExternalEventContext)

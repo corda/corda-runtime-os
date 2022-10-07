@@ -12,7 +12,7 @@ import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.Companion.FLOW_STATUS_TOPIC
-import net.corda.schema.Schemas.VirtualNode.Companion.ENTITY_PROCESSOR
+import net.corda.schema.Schemas.Persistence.Companion.PERSISTENCE_ENTITY_PROCESSOR_TOPIC
 import org.osgi.service.component.annotations.Component
 
 @Component(service = [FlowRecordFactory::class])
@@ -36,7 +36,7 @@ class FlowRecordFactoryImpl : FlowRecordFactory {
 
     override fun createEntityRequestRecord(requestId: String, payload: EntityRequest): Record<String, EntityRequest> {
         return Record(
-            topic = ENTITY_PROCESSOR,
+            topic = PERSISTENCE_ENTITY_PROCESSOR_TOPIC,
             key = requestId,
             value = payload
         )

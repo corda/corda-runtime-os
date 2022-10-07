@@ -28,7 +28,7 @@ class FindAllExternalEventFactoryTest {
             externalEventContext,
             FindAllParameters(String::class.java, 0, 0)
         )
-        assertEquals(Schemas.VirtualNode.ENTITY_PROCESSOR, externalEventRecord.topic)
+        assertEquals(Schemas.Persistence.PERSISTENCE_ENTITY_PROCESSOR_TOPIC, externalEventRecord.topic)
         assertNull(externalEventRecord.key)
         assertEquals(
             EntityRequest(
