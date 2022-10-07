@@ -20,6 +20,8 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.impl.registration.dynamic.verifiers.OrderVerifier
+import net.corda.membership.impl.registration.dynamic.verifiers.P2pEndpointVerifier
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
@@ -157,6 +159,9 @@ class DynamicMemberRegistrationService @Activate constructor(
 
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
         cordaAvroSerializationFactory.createAvroSerializer { logger.error("Failed to serialize key value pair list.") }
+
+    private val orderVerifier = OrderVerifier()
+    private val p2pEndpointVerifier = P2pEndpointVerifier(orderVerifier)
 
     private var impl: InnerRegistrationService = InactiveImpl
 
@@ -327,36 +332,13 @@ class DynamicMemberRegistrationService @Activate constructor(
 
         private fun validateContext(context: Map<String, String>) {
             context[SESSION_KEY_ID] ?: throw IllegalArgumentException("No session key ID was provided.")
-            context.keys.filter { URL_KEY.format("[0-9]+").toRegex().matches(it) }.apply {
-                require(isNotEmpty()) { "No endpoint URL was provided." }
-                require(isOrdered(this, 2)) { "Provided endpoint URLs are incorrectly numbered." }
-            }
-            context.keys.filter { PROTOCOL_VERSION.format("[0-9]+").toRegex().matches(it) }.apply {
-                require(isNotEmpty()) { "No endpoint protocol was provided." }
-                require(isOrdered(this, 2)) { "Provided endpoint protocols are incorrectly numbered." }
-            }
+            p2pEndpointVerifier.verifyContext(context)
             context.keys.filter { LEDGER_KEY_ID.format("[0-9]+").toRegex().matches(it) }.apply {
                 require(isNotEmpty()) { "No ledger key ID was provided." }
-                require(isOrdered(this, 3)) { "Provided ledger key IDs are incorrectly numbered." }
+                require(orderVerifier.isOrdered(this, 3)) { "Provided ledger key IDs are incorrectly numbered." }
             }
         }
 
-        /**
-         * Checks if [keys] are numbered correctly (0, 1, ..., n).
-         *
-         * @param keys List of property keys to validate.
-         * @param position Position of numbering in each of the provided [keys]. For example, [position] is 2 in
-         * "corda.endpoints.0.connectionURL".
-         */
-        private fun isOrdered(keys: List<String>, position: Int): Boolean =
-            keys.map { it.split(".")[position].toInt() }
-                .sorted()
-                .run {
-                    indices.forEach { index ->
-                        if (this[index] != index) return false
-                    }
-                    true
-                }
 
         @Suppress("NestedBlockDepth")
         private fun getKeysFromIds(keyIds: List<String>, tenantId: String): List<CryptoSigningKey> =
