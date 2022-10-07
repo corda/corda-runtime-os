@@ -20,6 +20,7 @@ import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
@@ -56,7 +57,8 @@ class ProcessMemberVerificationRequestHandlerTest {
                 eq(member),
                 eq(mgm),
                 response.capture(),
-                isNull()
+                isNull(),
+                anyOrNull(),
             )
         } doReturn p2pMessage
     }
