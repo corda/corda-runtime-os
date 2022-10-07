@@ -127,7 +127,7 @@ class BatchedUniquenessCheckerImpl(
         lifecycleCoordinator.stop()
     }
 
-    @Synchronized
+
     /**
      * Performs uniqueness checking against a list of requests and returns a map of requests and
      * their corresponding responses. This implementation will process valid (i.e. non-malformed)
@@ -141,6 +141,7 @@ class BatchedUniquenessCheckerImpl(
      * See [UniquenessCheckRequestAvro] and [UniquenessCheckResponseAvro] for details of message
      * formats.
      */
+    @Synchronized
     override fun processRequests(
         requests: List<UniquenessCheckRequestAvro>
     ): Map<UniquenessCheckRequestAvro, UniquenessCheckResponseAvro> {
