@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test;
 
 import java.security.PublicKey;
 import java.util.List;
-import java.util.Set;
 
 public final class UtxoLedgerTransactionJavaApiTests extends AbstractMockTestHarness {
 
@@ -29,7 +28,7 @@ public final class UtxoLedgerTransactionJavaApiTests extends AbstractMockTestHar
 
     @Test
     public void getSignatoriesShouldReturnTheExpectedValue() {
-        Set<PublicKey> value = utxoLedgerTransaction.getSignatories();
+        List<PublicKey> value = utxoLedgerTransaction.getSignatories();
         Assertions.assertEquals(keys, value);
     }
 

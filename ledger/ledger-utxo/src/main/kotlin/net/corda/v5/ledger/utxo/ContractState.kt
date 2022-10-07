@@ -17,5 +17,5 @@ import java.security.PublicKey
  */
 @CordaSerializable
 interface ContractState {
-    val participants: Set<PublicKey>
+    val participants: List<PublicKey>
 }

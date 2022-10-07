@@ -7,7 +7,7 @@ import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.security.PublicKey
-import java.util.jar.JarInputStream
+import java.util.zip.ZipInputStream
 
 /**
  * Defines a data attachment that can be referenced within a transaction.
@@ -31,7 +31,7 @@ interface Attachment {
 
     val id: SecureHash
     val size: Int
-    val signatories: Set<PublicKey>
+    val signatories: List<PublicKey>
 
     /**
      * Finds the specified file (case insensitively) within the attachment and copies it to the specified output stream.
@@ -50,14 +50,14 @@ interface Attachment {
     fun open(): InputStream
 
     /**
-     * Opens the current [Attachment] as a JAR (Java Archive).
+     * Opens the current [Attachment] as a ZIP
      *
-     * @return Returns the [JarInputStream] for the current [Attachment].
+     * @return Returns the [ZipInputStream] for the current [Attachment].
      */
-    fun openAsJar(): JarInputStream {
+    fun openAsZip(): ZipInputStream {
         val stream = open()
         return try {
-            JarInputStream(stream)
+            ZipInputStream(stream)
         } catch (ex: IOException) {
             stream.use { throw ex }
         }

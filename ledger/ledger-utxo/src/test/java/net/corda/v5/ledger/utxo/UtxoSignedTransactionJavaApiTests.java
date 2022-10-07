@@ -21,7 +21,7 @@ public final class UtxoSignedTransactionJavaApiTests extends AbstractMockTestHar
 
     @Test
     public void getSignaturesShouldReturnTheExpectedValue() {
-        Set<DigitalSignatureAndMetadata> value = utxoSignedTransaction.getSignatures();
+        List<DigitalSignatureAndMetadata> value = utxoSignedTransaction.getSignatures();
         Assertions.assertEquals(signatures, value);
     }
 
@@ -39,7 +39,7 @@ public final class UtxoSignedTransactionJavaApiTests extends AbstractMockTestHar
 
     @Test
     public void getMissingSignatoriesShouldReturnTheExpectedValue() {
-        Set<PublicKey> value = utxoSignedTransaction.getMissingSignatories();
+        List<PublicKey> value = utxoSignedTransaction.getMissingSignatories();
         Assertions.assertEquals(keys, value);
     }
 

@@ -17,7 +17,7 @@ import java.security.PublicKey
 interface UtxoSignedTransaction {
 
     val transactionId: SecureHash
-    val signatures: Set<DigitalSignatureAndMetadata>
+    val signatures: List<DigitalSignatureAndMetadata>
 
     /**
      * Adds the specified signatures to the current [UtxoSignedTransaction].
@@ -38,9 +38,9 @@ interface UtxoSignedTransaction {
     /**
      * Gets the missing signatories from the current [UtxoSignedTransaction].
      *
-     * @return Returns a [Set] of [PublicKey] representing the missing signatories from the current [UtxoSignedTransaction].
+     * @return Returns a [List] of [PublicKey] representing the missing signatories from the current [UtxoSignedTransaction].
      */
-    fun getMissingSignatories(): Set<PublicKey>
+    fun getMissingSignatories(): List<PublicKey>
 
     /**
      * Converts the current [UtxoSignedTransaction] into a [UtxoLedgerTransaction].

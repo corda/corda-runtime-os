@@ -5,12 +5,9 @@ import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.Command
-import net.corda.v5.ledger.utxo.StateAndRef
-import net.corda.v5.ledger.utxo.TimeWindow
-import net.corda.v5.ledger.utxo.TransactionState
 import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.StateAndRef
 import java.security.PublicKey
-import java.time.Duration
 import java.time.Instant
 
 /**
@@ -30,13 +27,6 @@ import java.time.Instant
 interface UtxoTransactionBuilder {
 
     val notary: Party
-    val timeWindow: TimeWindow
-    val attachments: List<SecureHash>
-    val commands: List<Command>
-    val signatories: Set<PublicKey>
-    val inputStateAndRefs: List<StateAndRef<*>>
-    val referenceInputStateAndRefs: List<StateAndRef<*>>
-    val outputTransactionStates: List<TransactionState<*>>
 
     /**
      * Adds an [Attachment] to the current [UtxoTransactionBuilder].
@@ -116,14 +106,6 @@ interface UtxoTransactionBuilder {
     fun addOutputState(contractState: ContractState, encumbrance: Int?): UtxoTransactionBuilder
 
     /**
-     * Sets the transaction time window to be valid from the specified [Instant], tending towards positive infinity.
-     *
-     * @param from The [Instant] from which the transaction time window is valid.
-     * @return Returns a [UtxoTransactionBuilder] including the specified time window.
-     */
-    fun setTimeWindowFrom(from: Instant): UtxoTransactionBuilder
-
-    /**
      * Sets the transaction time window to be valid until the specified [Instant], tending towards negative infinity.
      *
      * @param until The [Instant] until which the transaction time window is valid.
@@ -139,15 +121,6 @@ interface UtxoTransactionBuilder {
      * @return Returns a [UtxoTransactionBuilder] including the specified time window.
      */
     fun setTimeWindowBetween(from: Instant, until: Instant): UtxoTransactionBuilder
-
-    /**
-     * Sets the transaction time window to be valid at the specified [Instant] with the specified tolerance.
-     *
-     * @param midpoint The [Instant] representing the midpoint of the time window.
-     * @param tolerance The [Duration] representing the tolerance of the time window, which is applied before and after the midpoint.
-     * @return Returns a [UtxoTransactionBuilder] including the specified time window.
-     */
-    fun setTimeWindowBetween(midpoint: Instant, tolerance: Duration): UtxoTransactionBuilder
 
     /**
      * Signs the transaction with any required signatories that belong to the current node.
@@ -176,27 +149,4 @@ interface UtxoTransactionBuilder {
      * Verifies the current transaction.
      */
     fun verify()
-
-    /**
-     * Verifies and signs the transaction with any required signatories that belong to the current node.
-     *
-     * @return Returns a [UtxoSignedTransaction] with signatures for any required signatories that belong to the current node.
-     */
-    fun verifyAndSign(): UtxoSignedTransaction
-
-    /**
-     * Verifies and signs the transaction with the specified signatory keys.
-     *
-     * @param signatories The signatories expected to sign the current transaction.
-     * @return Returns a [UtxoSignedTransaction] with signatures for the specified signatory keys.
-     */
-    fun verifyAndSign(signatories: Iterable<PublicKey>): UtxoSignedTransaction
-
-    /**
-     * Verifies and signs the transaction with the specified signatory keys.
-     *
-     * @param signatories The signatories expected to sign the current transaction.
-     * @return Returns a [UtxoSignedTransaction] with signatures for the specified signatory keys.
-     */
-    fun verifyAndSign(vararg signatories: PublicKey): UtxoSignedTransaction
 }

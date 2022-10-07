@@ -19,42 +19,6 @@ public final class UtxoTransactionBuilderJavaApiTests extends AbstractMockTestHa
     }
 
     @Test
-    public void getTimeWindowShouldReturnTheExpectedValue() {
-        TimeWindow value = utxoTransactionBuilder.getTimeWindow();
-        Assertions.assertEquals(timeWindow, value);
-    }
-
-    @Test
-    public void getCommandsShouldReturnTheExpectedValue() {
-        List<Command> value = utxoTransactionBuilder.getCommands();
-        Assertions.assertEquals(commands, value);
-    }
-
-    @Test
-    public void getSignatoriesShouldReturnTheExpectedValue() {
-        Set<PublicKey> value = utxoTransactionBuilder.getSignatories();
-        Assertions.assertEquals(keys, value);
-    }
-
-    @Test
-    public void getInputStateAndRefsShouldReturnTheExpectedValue() {
-        List<StateAndRef<?>> value = utxoTransactionBuilder.getInputStateAndRefs();
-        Assertions.assertEquals(List.of(contractStateAndRef), value);
-    }
-
-    @Test
-    public void getReferenceInputStateAndRefsShouldReturnTheExpectedValue() {
-        List<StateAndRef<?>> value = utxoTransactionBuilder.getReferenceInputStateAndRefs();
-        Assertions.assertEquals(List.of(contractStateAndRef), value);
-    }
-
-    @Test
-    public void getOutputTransactionStatesShouldReturnTheExpectedValue() {
-        List<TransactionState<?>> value = utxoTransactionBuilder.getOutputTransactionStates();
-        Assertions.assertEquals(List.of(contractTransactionState), value);
-    }
-
-    @Test
     public void addAttachmentShouldReturnTheExpectedValue() {
         UtxoTransactionBuilder value = utxoTransactionBuilder.addAttachment(hash);
         Assertions.assertEquals(utxoTransactionBuilder, value);
@@ -127,12 +91,6 @@ public final class UtxoTransactionBuilderJavaApiTests extends AbstractMockTestHa
     }
 
     @Test
-    public void setTimeWindowFromShouldReturnTheExpectedValue() {
-        UtxoTransactionBuilder value = utxoTransactionBuilder.setTimeWindowFrom(minInstant);
-        Assertions.assertEquals(utxoTransactionBuilder, value);
-    }
-
-    @Test
     public void setTimeWindowUntilShouldReturnTheExpectedValue() {
         UtxoTransactionBuilder value = utxoTransactionBuilder.setTimeWindowUntil(maxInstant);
         Assertions.assertEquals(utxoTransactionBuilder, value);
@@ -141,12 +99,6 @@ public final class UtxoTransactionBuilderJavaApiTests extends AbstractMockTestHa
     @Test
     public void setTimeWindowBetweenOfInstantAndInstantShouldReturnTheExpectedValue() {
         UtxoTransactionBuilder value = utxoTransactionBuilder.setTimeWindowBetween(minInstant, maxInstant);
-        Assertions.assertEquals(utxoTransactionBuilder, value);
-    }
-
-    @Test
-    public void setTimeWindowBetweenOfInstantAndDurationShouldReturnTheExpectedValue() {
-        UtxoTransactionBuilder value = utxoTransactionBuilder.setTimeWindowBetween(midpoint, duration);
         Assertions.assertEquals(utxoTransactionBuilder, value);
     }
 
@@ -171,23 +123,5 @@ public final class UtxoTransactionBuilderJavaApiTests extends AbstractMockTestHa
     @Test
     public void verifyShouldBeCallable() {
         utxoTransactionBuilder.verify();
-    }
-
-    @Test
-    public void verifyAndSignShouldReturnTheExpectedValue() {
-        UtxoSignedTransaction value = utxoTransactionBuilder.verifyAndSign();
-        Assertions.assertEquals(utxoSignedTransaction, value);
-    }
-
-    @Test
-    public void verifyAndSignWithKeysShouldReturnTheExpectedValue() {
-        UtxoSignedTransaction value = utxoTransactionBuilder.verifyAndSign(keys);
-        Assertions.assertEquals(utxoSignedTransaction, value);
-    }
-
-    @Test
-    public void verifyAndSignWithVarargKeysShouldReturnTheExpectedValue() {
-        UtxoSignedTransaction value = utxoTransactionBuilder.verifyAndSign(aliceKey, bobKey);
-        Assertions.assertEquals(utxoSignedTransaction, value);
     }
 }

@@ -34,7 +34,7 @@ interface UtxoLedgerTransaction {
     val timeWindow: TimeWindow?
     val attachments: List<Attachment>
     val commands: List<Command>
-    val signatories: Set<PublicKey>
+    val signatories: List<PublicKey>
 
     val inputStateAndRefs: List<StateAndRef<*>>
     val inputTransactionStates: List<TransactionState<*>> get() = inputStateAndRefs.map { it.state }

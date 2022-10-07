@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.InputStream;
 import java.security.PublicKey;
-import java.util.Set;
-import java.util.jar.JarInputStream;
+import java.util.List;
+import java.util.zip.ZipInputStream;
 
 public final class AttachmentJavaApiTests extends AbstractMockTestHarness {
 
@@ -25,7 +25,7 @@ public final class AttachmentJavaApiTests extends AbstractMockTestHarness {
 
     @Test
     public void getSignatoriesShouldReturnTheExpectedValue() {
-        Set<PublicKey> value = attachment.getSignatories();
+        List<PublicKey> value = attachment.getSignatories();
         Assertions.assertEquals(keys, value);
     }
 
@@ -42,7 +42,7 @@ public final class AttachmentJavaApiTests extends AbstractMockTestHarness {
 
     @Test
     public void openAsJarShouldReturnTheExpectedValue() {
-        JarInputStream value = attachment.openAsJar();
-        Assertions.assertEquals(jarInputStream, value);
+        ZipInputStream value = attachment.openAsZip();
+        Assertions.assertEquals(zipInputStream, value);
     }
 }

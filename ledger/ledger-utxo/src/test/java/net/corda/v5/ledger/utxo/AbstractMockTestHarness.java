@@ -18,8 +18,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.jar.JarInputStream;
+import java.util.zip.ZipInputStream;
 
 public class AbstractMockTestHarness {
 
@@ -37,7 +36,7 @@ public class AbstractMockTestHarness {
     protected final Party notaryParty = Mockito.mock(Party.class);
 
     protected final Attachment attachment = Mockito.mock(Attachment.class);
-    protected final JarInputStream jarInputStream = Mockito.mock(JarInputStream.class);
+    protected final ZipInputStream zipInputStream = Mockito.mock(ZipInputStream.class);
     protected final OutputStream outputStream = Mockito.mock(OutputStream.class);
     protected final InputStream inputStream = Mockito.mock(InputStream.class);
     protected final Contract contract = Mockito.mock(Contract.class);
@@ -60,13 +59,13 @@ public class AbstractMockTestHarness {
     protected final Instant midpoint = Instant.EPOCH;
     protected final Duration duration = Duration.between(minInstant, maxInstant);
     protected final SecureHash hash = SecureHash.parse("SHA256:0000000000000000000000000000000000000000000000000000000000000000");
-    protected final Set<PublicKey> keys = Set.of(aliceKey, bobKey);
+    protected final List<PublicKey> keys = List.of(aliceKey, bobKey);
     protected final MemberX500Name aliceName = new MemberX500Name("Alice", "London", "GB");
     protected final MemberX500Name bobName = new MemberX500Name("Bob", "New York", "US");
     protected final MemberX500Name notaryName = new MemberX500Name("Notary", "Zurich", "CH");
     protected final DigitalSignatureAndMetadata aliceSignature = createDigitalSignature(aliceKey);
     protected final DigitalSignatureAndMetadata bobSignature = createDigitalSignature(bobKey);
-    protected final Set<DigitalSignatureAndMetadata> signatures = Set.of(aliceSignature);
+    protected final List<DigitalSignatureAndMetadata> signatures = List.of(aliceSignature);
     protected final Command createCommand = new Create();
     protected final Command updateCommand = new Update();
     protected final List<Command> commands = List.of(command, createCommand, updateCommand);
@@ -139,14 +138,12 @@ public class AbstractMockTestHarness {
         Mockito.when(attachment.getSize()).thenReturn(0);
         Mockito.when(attachment.getSignatories()).thenReturn(keys);
         Mockito.when(attachment.open()).thenReturn(inputStream);
-        Mockito.when(attachment.openAsJar()).thenReturn(jarInputStream);
+        Mockito.when(attachment.openAsZip()).thenReturn(zipInputStream);
     }
 
     private void initializeTimeWindow() {
         Mockito.when(timeWindow.getFrom()).thenReturn(minInstant);
         Mockito.when(timeWindow.getUntil()).thenReturn(maxInstant);
-        Mockito.when(timeWindow.getMidpoint()).thenReturn(midpoint);
-        Mockito.when(timeWindow.getDuration()).thenReturn(duration);
         Mockito.when(timeWindow.contains(midpoint)).thenReturn(true);
     }
 
@@ -195,12 +192,6 @@ public class AbstractMockTestHarness {
 
     private void initializeUtxoTransactionBuilder() {
         Mockito.when(utxoTransactionBuilder.getNotary()).thenReturn(notaryParty);
-        Mockito.when(utxoTransactionBuilder.getTimeWindow()).thenReturn(timeWindow);
-        Mockito.when(utxoTransactionBuilder.getCommands()).thenReturn(commands);
-        Mockito.when(utxoTransactionBuilder.getSignatories()).thenReturn(keys);
-        Mockito.when(utxoTransactionBuilder.getInputStateAndRefs()).thenReturn(List.of(contractStateAndRef));
-        Mockito.when(utxoTransactionBuilder.getReferenceInputStateAndRefs()).thenReturn(List.of(contractStateAndRef));
-        Mockito.when(utxoTransactionBuilder.getOutputTransactionStates()).thenReturn(List.of(contractTransactionState));
         Mockito.when(utxoTransactionBuilder.addAttachment(hash)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.addCommand(createCommand)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.addCommand(updateCommand)).thenReturn(utxoTransactionBuilder);
@@ -213,16 +204,11 @@ public class AbstractMockTestHarness {
         Mockito.when(utxoTransactionBuilder.addReferenceInputState(contractStateAndRef)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.addOutputState(contractState)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.addOutputState(contractState, 0)).thenReturn(utxoTransactionBuilder);
-        Mockito.when(utxoTransactionBuilder.setTimeWindowFrom(minInstant)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.setTimeWindowUntil(maxInstant)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.setTimeWindowBetween(minInstant, maxInstant)).thenReturn(utxoTransactionBuilder);
-        Mockito.when(utxoTransactionBuilder.setTimeWindowBetween(midpoint, duration)).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoTransactionBuilder.sign()).thenReturn(utxoSignedTransaction);
         Mockito.when(utxoTransactionBuilder.sign(keys)).thenReturn(utxoSignedTransaction);
         Mockito.when(utxoTransactionBuilder.sign(aliceKey, bobKey)).thenReturn(utxoSignedTransaction);
         Mockito.doNothing().when(utxoTransactionBuilder).verify();
-        Mockito.when(utxoTransactionBuilder.verifyAndSign()).thenReturn(utxoSignedTransaction);
-        Mockito.when(utxoTransactionBuilder.verifyAndSign(keys)).thenReturn(utxoSignedTransaction);
-        Mockito.when(utxoTransactionBuilder.verifyAndSign(aliceKey, bobKey)).thenReturn(utxoSignedTransaction);
     }
 }

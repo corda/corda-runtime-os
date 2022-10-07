@@ -21,18 +21,6 @@ public final class TimeWindowJavaApiTests extends AbstractMockTestHarness {
     }
 
     @Test
-    public void getMidpointShouldReturnTheExpectedValue() {
-        Instant value = timeWindow.getMidpoint();
-        Assertions.assertEquals(midpoint, value);
-    }
-
-    @Test
-    public void getDurationShouldReturnTheExpectedValue() {
-        Duration value = timeWindow.getDuration();
-        Assertions.assertEquals(duration, value);
-    }
-
-    @Test
     public void containsShouldReturnTheExpectedValue() {
         boolean value = timeWindow.contains(midpoint);
         Assertions.assertTrue(value);

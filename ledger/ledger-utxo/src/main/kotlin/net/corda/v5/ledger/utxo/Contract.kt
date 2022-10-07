@@ -2,7 +2,6 @@ package net.corda.v5.ledger.utxo
 
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
-import java.security.PublicKey
 
 /**
  * Defines a mechanism for implementing contracts, which perform transaction verification.
