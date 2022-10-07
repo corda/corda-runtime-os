@@ -73,7 +73,6 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
-import kotlin.time.Duration.Companion.days
 
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class SessionManagerImpl(
