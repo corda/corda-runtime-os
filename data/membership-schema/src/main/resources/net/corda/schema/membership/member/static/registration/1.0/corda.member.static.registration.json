@@ -4,12 +4,38 @@
   "title": "Corda static member registration context schema",
   "description": "Definition of the registration context required for registering a member in a static group.",
   "type": "object",
+  "patternProperties": {
+    "^corda.roles.[0-9]+$": {
+      "description": "The member roles. Can be multiple specified by index.",
+      "type": "string",
+      "enum": ["notary"],
+      "examples": [
+        "notary"
+      ]
+    }
+  },
   "properties": {
     "corda.key.scheme": {
       "description": "The key scheme to use when generating keys for a static member. Available key schemes are obtainable through the Keys HTTP API.",
       "type": "string",
       "examples": [
         "CORDA.ECDSA.SECP256R1"
+      ]
+    },
+    "corda.notary.service.name": {
+      "description": "The notary service X500 name. Valid only when one of the roles is notary.",
+      "type": "string",
+      "minLength": 3,
+      "examples": [
+        "O=NotaryService, L=London, C=GB"
+      ]
+    },
+    "corda.notary.service.plugin": {
+      "description": "The notary plugin type (FQN of notary service plugin class). Valid only when one of the roles is notary.",
+      "type": "string",
+      "pattern": "^(([a-zA-Z][a-zA-Z_$0-9]*(\\.[a-zA-Z][a-zA-Z_$0-9]*)*)\\.)?([a-zA-Z][a-zA-Z_$0-9]*)$",
+      "examples": [
+        "net.corda.notary.MyNotaryService"
       ]
     }
   },
