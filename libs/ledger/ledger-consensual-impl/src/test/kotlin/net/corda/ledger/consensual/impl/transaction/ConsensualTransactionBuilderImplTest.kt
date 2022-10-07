@@ -12,6 +12,9 @@ import net.corda.flow.application.crypto.SigningServiceImpl
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.external.events.impl.executor.ExternalEventExecutorImpl
 import net.corda.flow.fiber.FlowFiberServiceImpl
+import net.corda.ledger.common.impl.transaction.CpiMetadata
+import net.corda.ledger.common.impl.transaction.CpkMetadata
+import net.corda.ledger.consensual.impl.ConsensualTransactionMocks
 import net.corda.ledger.consensual.impl.PartyImpl
 import net.corda.ledger.consensual.impl.helper.ConfiguredTestSerializationService
 import net.corda.v5.application.crypto.SigningService
@@ -82,15 +85,7 @@ internal class ConsensualTransactionBuilderImplTest{
 
     @Test
     fun `can build a simple Transaction`() {
-        val tx = ConsensualTransactionBuilderImpl(
-            merkleTreeProvider,
-            digestService,
-            secureRandom,
-            serializer,
-            signingService,
-            jsonMarshallingService
-        )
-
+        val tx = makeTransactionBuilder()
             .withStates(testConsensualState)
             .signInitial(testPublicKey)
         assertIs<SecureHash>(tx.id)
@@ -99,15 +94,7 @@ internal class ConsensualTransactionBuilderImplTest{
     @Test
     fun `cannot build Transaction without Consensual States`() {
         val exception = assertThrows(IllegalArgumentException::class.java) {
-            ConsensualTransactionBuilderImpl(
-                merkleTreeProvider,
-                digestService,
-                secureRandom,
-                serializer,
-                signingService,
-                jsonMarshallingService
-            )
-                .signInitial(testPublicKey)
+            makeTransactionBuilder().signInitial(testPublicKey)
         }
         assertEquals("At least one Consensual State is required", exception.message)
     }
@@ -115,18 +102,52 @@ internal class ConsensualTransactionBuilderImplTest{
     @Test
     fun `cannot build Transaction with Consensual States without participants`() {
         val exception = assertThrows(IllegalArgumentException::class.java) {
-            ConsensualTransactionBuilderImpl(
-                merkleTreeProvider,
-                digestService,
-                secureRandom,
-                serializer,
-                signingService,
-                jsonMarshallingService
-            )
+            makeTransactionBuilder()
                 .withStates(testConsensualState)
                 .withStates(TestConsensualState("test", emptyList()))
                 .signInitial(testPublicKey)
         }
         assertEquals("All consensual states needs to have participants", exception.message)
     }
+
+    @Test
+    fun `includes CPI and CPK information in metadata`() {
+        val tx = makeTransactionBuilder()
+            .withStates(testConsensualState)
+            .signInitial(testPublicKey) as ConsensualSignedTransactionImpl
+
+        val metadata = tx.wireTransaction.metadata
+        assertEquals("0.001", metadata.getLedgerVersion())
+
+        val expectedCpiMetadata = CpiMetadata(
+            "MockCpi",
+            "3.1415-fake",
+            "",
+            "4141414141414141414141414141414141414141414141414141414141414141",
+            listOf(
+                CpkMetadata(
+                    "MockCpk",
+                    "1",
+                    "",
+                "0101010101010101010101010101010101010101010101010101010101010101"),
+                CpkMetadata(
+                    "MockCpk",
+                    "3",
+                    "",
+                    "0303030303030303030303030303030303030303030303030303030303030303")))
+
+        assertEquals(expectedCpiMetadata, metadata.getCpiMetadata())
+    }
+
+    private fun makeTransactionBuilder() = ConsensualTransactionBuilderImpl(
+        merkleTreeProvider,
+        digestService,
+        secureRandom,
+        serializer,
+        signingService,
+        jsonMarshallingService,
+        ConsensualTransactionMocks.mockMemberLookup(),
+        ConsensualTransactionMocks.mockCpiInfoReadService(),
+        ConsensualTransactionMocks.mockVirtualNodeInfoService()
+    )
 }

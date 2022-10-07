@@ -103,7 +103,10 @@ class ConsensualLedgerServiceImplTest {
             signingService,
             flowFiberService,
             schemeMetadata,
-            jsonMarshallingService
+            jsonMarshallingService,
+            ConsensualTransactionMocks.mockMemberLookup(),
+            ConsensualTransactionMocks.mockCpiInfoReadService(),
+            ConsensualTransactionMocks.mockVirtualNodeInfoService()
         )
         val transactionBuilder = service.getTransactionBuilder()
         assertIs<ConsensualTransactionBuilder>(transactionBuilder)
@@ -117,7 +120,10 @@ class ConsensualLedgerServiceImplTest {
             signingService,
             flowFiberService,
             schemeMetadata,
-            jsonMarshallingService
+            jsonMarshallingService,
+            ConsensualTransactionMocks.mockMemberLookup(),
+            ConsensualTransactionMocks.mockCpiInfoReadService(),
+            ConsensualTransactionMocks.mockVirtualNodeInfoService()
         )
         val transactionBuilder = service.getTransactionBuilder()
         val signedTransaction = transactionBuilder

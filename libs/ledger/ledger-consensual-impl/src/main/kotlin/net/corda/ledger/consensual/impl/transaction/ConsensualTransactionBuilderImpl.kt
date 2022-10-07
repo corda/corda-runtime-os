@@ -1,12 +1,19 @@
 package net.corda.ledger.consensual.impl.transaction
 
+import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.ledger.common.impl.transaction.CpiMetadata
+import net.corda.ledger.common.impl.transaction.CpkMetadata
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.TransactionMetaData
+import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPI_METADATA_KEY
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.DIGEST_SETTINGS_KEY
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.LEDGER_MODEL_KEY
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.LEDGER_VERSION_KEY
+import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.PLATFORM_VERSION_KEY
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SigningService
@@ -21,6 +28,9 @@ import java.security.SecureRandom
 import java.time.Instant
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.membership.MemberLookup
+import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 
 @Suppress("LongParameterList")
 class ConsensualTransactionBuilderImpl(
@@ -30,6 +40,9 @@ class ConsensualTransactionBuilderImpl(
     private val serializer: SerializationService,
     private val signingService: SigningService,
     private val jsonMarshallingService: JsonMarshallingService,
+    private val memberLookup: MemberLookup,
+    private val cpiInfoService: CpiInfoReadService,
+    private val virtualNodeInfoService: VirtualNodeInfoReadService,
     override val states: List<ConsensualState> = emptyList(),
 ) : ConsensualTransactionBuilder {
 
@@ -50,6 +63,7 @@ class ConsensualTransactionBuilderImpl(
     ): ConsensualTransactionBuilderImpl {
         return ConsensualTransactionBuilderImpl(
             merkleTreeProvider, digestService, secureRandom, serializer, signingService, jsonMarshallingService,
+            memberLookup, cpiInfoService, virtualNodeInfoService,
             states,
         )
     }
@@ -62,9 +76,38 @@ class ConsensualTransactionBuilderImpl(
             mapOf(
                 LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
                 LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
-                DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues
-                // TODO(CORE-5940 set CPK identifier/etc)
+                DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
+                PLATFORM_VERSION_KEY to memberLookup.myInfo().platformVersion,
+                CPI_METADATA_KEY to getCpiMetadata()
             )
+        )
+    }
+
+    private fun getCpiIdentifier(): CpiIdentifier {
+        val holdingIdentity = memberLookup.myInfo().holdingIdentity
+        val virtualNode = virtualNodeInfoService.get(holdingIdentity)
+            ?: throw CordaRuntimeException("Could not get virtual node for $holdingIdentity")
+        return virtualNode.cpiIdentifier
+    }
+
+    private fun getCpiMetadata(): CpiMetadata {
+        val cpiIdentifier = getCpiIdentifier()
+        val cpi = cpiInfoService.get(cpiIdentifier)
+            ?: throw CordaRuntimeException("Could not get list of CPKs for $cpiIdentifier")
+
+        return CpiMetadata(
+            name = cpi.cpiId.name,
+            version = cpi.cpiId.version,
+            signerSummaryHash = cpi.cpiId.signerSummaryHash?.toHexString() ?: "",
+            fileChecksum = cpi.fileChecksum.toHexString(),
+            cpks = cpi.cpksMetadata.filter { it.isContractCpk() }.map { cpk ->
+                CpkMetadata(
+                    name = cpk.cpkId.name,
+                    version = cpk.cpkId.version,
+                    signerSummaryHash = cpk.cpkId.signerSummaryHash?.toHexString() ?: "",
+                    fileChecksum = cpk.fileChecksum.toHexString()
+                )
+            }
         )
     }
 
