@@ -194,11 +194,11 @@ class BatchedUniquenessCheckerImpl(
                     // managed to commit to the DB, so raise an exception against all requests in the
                     // batch
                     log.warn("Unhandled exception was thrown for transaction(s) " +
-                            "${requests.map { it.txId }}: $e")
+                            "${partitionedRequests.map { it.second.txId }}: $e")
 
-                    requestsToProcess.map{it.second}.forEach { avroRequest ->
-                        results[avroRequest] = UniquenessCheckResponseAvro(
-                            avroRequest.txId,
+                    partitionedRequests.forEachIndexed { idx, (internalRequest, _) ->
+                        results[partitionedRequests[idx].second] = UniquenessCheckResponseAvro(
+                            internalRequest.rawTxId,
                             UniquenessCheckResultUnhandledExceptionAvro(
                                 ExceptionEnvelope().apply {
                                     errorType = e::class.java.name

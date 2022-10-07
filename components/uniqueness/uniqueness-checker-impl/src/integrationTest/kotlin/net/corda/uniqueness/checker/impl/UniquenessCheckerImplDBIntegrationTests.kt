@@ -1332,7 +1332,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                     .setNumOutputStates(1)
                     .build()
             ).let { responses ->
-                org.junit.jupiter.api.assertAll(
+                assertAll(
                     { assertThat(responses).hasSize(2) },
                     { assertStandardSuccessResponse(responses[0]) },
                     { assertStandardSuccessResponse(responses[1]) }
@@ -1351,7 +1351,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                     .setInputStates(listOf(unspentStateRef))
                     .build()
             ).let { responses ->
-                org.junit.jupiter.api.assertAll(
+                assertAll(
                     { assertThat(responses).hasSize(2) },
                     { assertStandardSuccessResponse(responses[0]) },
                     { assertStandardSuccessResponse(responses[1]) }
@@ -1370,7 +1370,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                     .setInputStates(unspentStateRefs)
                     .build()
             ).let { responses ->
-                org.junit.jupiter.api.assertAll(
+                assertAll(
                     { assertThat(responses).hasSize(1) },
                     { assertUnknownInputStateResponse(responses[0], unspentStateRefs) }
                 )
