@@ -16,16 +16,14 @@ import java.time.Duration
 import java.time.temporal.ChronoUnit.SECONDS
 import java.util.concurrent.Callable
 
-private const val VNODE_CREATOR_ROLE = "VNodeCreatorRole"
+private const val CORDA_DEV_ROLE = "CordaDeveloperRole"
 
 @CommandLine.Command(
-    name = "vnode-creator",
-    description = ["""Creates a role ('$VNODE_CREATOR_ROLE') which will permit: 
-        - CPI upload
-        - vNode creation
-        - vNode update"""]
+    name = "corda-developer",
+    description = ["""Creates a role ('$CORDA_DEV_ROLE') which will permit:
+        - vNode reset"""]
 )
-class VNodeCreatorSubcommand : HttpRpcCommand(), Callable<Int> {
+class CordaDeveloperSubcommand : HttpRpcCommand(), Callable<Int> {
 
     private companion object {
         val logger: Logger = LoggerFactory.getLogger(this::class.java)
@@ -34,15 +32,7 @@ class VNodeCreatorSubcommand : HttpRpcCommand(), Callable<Int> {
     }
 
     private val permissionsToCreate: Map<String, String> = listOf(
-        // CPI related
-        "Get all CPIs" to "GET:/api/v1/cpi",
-        "CPI upload" to "POST:/api/v1/cpi",
-        "CPI upload status" to "GET:/api/v1/cpi/status/.*",
-
-        // vNode related
-        "Create vNode" to "POST:/api/v1/virtualnode",
-        "Get all vNodes" to "GET:/api/v1/virtualnode",
-        "Update vNode" to "PUT:/api/v1/virtualnode.*" // TBC
+        "Force CPI upload" to "POST:/api/v1/maintenance/virtualnode"
     ).toMap()
 
     override fun call(): Int {
@@ -57,8 +47,8 @@ class VNodeCreatorSubcommand : HttpRpcCommand(), Callable<Int> {
             val allRoles = executeWithRetry(waitDuration, "Obtain list of available roles") {
                 roleEndpoint.getRoles()
             }
-            if (allRoles.any { it.roleName == VNODE_CREATOR_ROLE }) {
-                errOut.error("$VNODE_CREATOR_ROLE already exists - nothing to do.")
+            if (allRoles.any { it.roleName == CORDA_DEV_ROLE }) {
+                errOut.error("$CORDA_DEV_ROLE already exists - nothing to do.")
                 return 5
             }
 
@@ -81,15 +71,15 @@ class VNodeCreatorSubcommand : HttpRpcCommand(), Callable<Int> {
                 }
             }
 
-            val roleId = executeWithRetry(waitDuration, "Creating role: $VNODE_CREATOR_ROLE") {
-                roleEndpoint.createRole(CreateRoleType(VNODE_CREATOR_ROLE, null)).responseBody.id
+            val roleId = executeWithRetry(waitDuration, "Creating role: $CORDA_DEV_ROLE") {
+                roleEndpoint.createRole(CreateRoleType(CORDA_DEV_ROLE, null)).responseBody.id
             }
             permissionIds.forEach { permId ->
                 executeWithRetry(waitDuration, "Adding permission: $permId", onAlreadyExists = ::ignore) {
                     roleEndpoint.addPermission(roleId, permId)
                 }
             }
-            sysOut.info("Successfully created $VNODE_CREATOR_ROLE with id: $roleId and assigned permissions")
+            sysOut.info("Successfully created $CORDA_DEV_ROLE with id: $roleId and assigned permissions")
         }
 
         return 0

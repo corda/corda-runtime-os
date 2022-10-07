@@ -70,6 +70,8 @@ import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MembershipConfig.MAX_DURATION_BETWEEN_SYNC_REQUESTS_MINUTES
+import net.corda.schema.configuration.MembershipConfig.TtlsConfig.MEMBERS_PACKAGE_UPDATE
+import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
 import net.corda.test.util.time.TestClock
@@ -205,6 +207,9 @@ class SynchronisationIntegrationTest {
             .withValue(
                 MAX_DURATION_BETWEEN_SYNC_REQUESTS_MINUTES,
                 ConfigValueFactory.fromAnyRef(100L)
+            ).withValue(
+                "$TTLS.$MEMBERS_PACKAGE_UPDATE",
+                ConfigValueFactory.fromAnyRef(1L)
             ).root()
             .render(ConfigRenderOptions.concise())
         const val MEMBERSHIP_P2P_SUBSYSTEM = "membership"

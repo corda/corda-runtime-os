@@ -10,6 +10,7 @@ import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.p2p.VerificationResponse
 import net.corda.data.membership.state.RegistrationState
+import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.impl.registration.VerificationResponseKeys
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
@@ -18,6 +19,8 @@ import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
+import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
+import net.corda.schema.configuration.MembershipConfig.TtlsConfig.UPDATE_TO_PENDING_AUTO_APPROVAL
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
@@ -26,6 +29,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
@@ -70,13 +74,16 @@ class ProcessMemberVerificationResponseHandlerTest {
     private val p2pRecordsFactory = mock<P2pRecordsFactory> {
         on {
             createAuthenticatedMessageRecord(
-                mgm,
-                member,
-                SetOwnRegistrationStatus(
-                    REGISTRATION_ID,
-                    RegistrationStatus.PENDING_AUTO_APPROVAL
+                eq(mgm),
+                eq(member),
+                eq(
+                    SetOwnRegistrationStatus(
+                        REGISTRATION_ID,
+                        RegistrationStatus.PENDING_AUTO_APPROVAL
+                    )
                 ),
-                null
+                any(),
+                any()
             )
         } doReturn record
     }
@@ -84,12 +91,14 @@ class ProcessMemberVerificationResponseHandlerTest {
         on { isMgm(mgm) } doReturn true
         on { isMgm(member) } doReturn false
     }
+    private val config = mock<SmartConfig>()
 
     private val processMemberVerificationResponseHandler = ProcessMemberVerificationResponseHandler(
         membershipPersistenceClient,
         mock(),
         mock(),
         memberTypeChecker,
+        config,
         p2pRecordsFactory,
     )
 
@@ -179,6 +188,16 @@ class ProcessMemberVerificationResponseHandlerTest {
             .anyMatch {
                 ((it.value as? RegistrationCommand)?.command as? DeclineRegistration)?.reason?.isNotBlank() == true
             }
+    }
+
+    @Test
+    fun `handler use the correct TTL configuration`() {
+        processMemberVerificationResponseHandler.invoke(
+            state,
+            Record(TOPIC, member.toString(), RegistrationCommand(command))
+        )
+
+        verify(config).getIsNull("$TTLS.$UPDATE_TO_PENDING_AUTO_APPROVAL")
     }
 
     @Test

@@ -5,8 +5,13 @@ import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.data.uniqueness.UniquenessCheckResponseAvro
 import net.corda.data.uniqueness.UniquenessCheckResultSuccessAvro
+import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
+import net.corda.db.connection.manager.DBConfigurationException
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.connection.manager.VirtualNodeDbType
+import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.DbUtils
+import net.corda.db.testkit.TestDbInfo
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
@@ -16,7 +21,15 @@ import net.corda.test.util.time.AutoTickTestClock
 import net.corda.uniqueness.backingstore.impl.JPABackingStoreImpl
 import net.corda.uniqueness.backingstore.jpa.datamodel.JPABackingStoreEntities
 import net.corda.uniqueness.checker.UniquenessChecker
-import net.corda.uniqueness.utils.UniquenessAssertions
+import net.corda.uniqueness.utils.UniquenessAssertions.assertInputStateConflictResponse
+import net.corda.uniqueness.utils.UniquenessAssertions.assertMalformedRequestResponse
+import net.corda.uniqueness.utils.UniquenessAssertions.assertReferenceStateConflictResponse
+import net.corda.uniqueness.utils.UniquenessAssertions.assertStandardSuccessResponse
+import net.corda.uniqueness.utils.UniquenessAssertions.assertTimeWindowOutOfBoundsResponse
+import net.corda.uniqueness.utils.UniquenessAssertions.assertUnhandledExceptionResponse
+import net.corda.uniqueness.utils.UniquenessAssertions.assertUniqueCommitTimestamps
+import net.corda.uniqueness.utils.UniquenessAssertions.assertUnknownInputStateResponse
+import net.corda.uniqueness.utils.UniquenessAssertions.assertUnknownReferenceStateResponse
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.toAvro
 import org.apache.avro.AvroRuntimeException
@@ -28,6 +41,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.time.Duration
@@ -36,22 +51,46 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.*
 import javax.persistence.EntityManagerFactory
+import kotlin.test.assertEquals
 
 /**
  * Tests the integration of the uniqueness checker with the JPA based backing store implementation
- * and an associated JPA compatible DB. This duplicates the test cases of [UniquenessCheckerImplTests].
+ * and an associated JPA compatible DB. This mostly duplicates the test cases of
+ * [UniquenessCheckerImplTests].
  */
 // TODO: Find an elegant way to avoid duplication of unit tests
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class UniquenessCheckerImplDBIntegrationTests {
 
-    private val entityManagerFactory: EntityManagerFactory
-    private val dbConfig = DbUtils.getEntityManagerConfiguration("uniqueness_default")
+    private val clusterDbConfig = DbUtils.getEntityManagerConfiguration("clusterdb")
 
     private val baseTime: Instant = Instant.EPOCH
 
+    // Default holding id used in most tests
     private val defaultHoldingIdentity = createTestHoldingIdentity(
-        "C=GB, L=London, O=Alice", "Test Group").toAvro()
+        "C=GB, L=London, O=Alice", "Test Group")
+    private val defaultHoldingIdentityDbName =
+        VirtualNodeDbType.UNIQUENESS.getSchemaName(defaultHoldingIdentity.shortHash)
+    private val defaultHoldingIdentityDb: EntityManagerFactory
+
+    // Additional holding identites
+    private val bobHoldingIdentity = createTestHoldingIdentity(
+        "C=GB, L=London, O=Bob", "Test Group")
+    private val bobHoldingIdentityDbName =
+        VirtualNodeDbType.UNIQUENESS.getSchemaName(bobHoldingIdentity.shortHash)
+    private val bobHoldingIdentityDb: EntityManagerFactory
+
+    private val charlieHoldingIdentity = createTestHoldingIdentity(
+        "C=GB, L=London, O=Charlie", "Test Group")
+    private val charlieHoldingIdentityDbName =
+        VirtualNodeDbType.UNIQUENESS.getSchemaName(charlieHoldingIdentity.shortHash)
+    private val charlieHoldingIdentityDb: EntityManagerFactory
+
+    // Holding id that has no associated uniqueness DB
+    private val noDbHoldingIdentity = createTestHoldingIdentity(
+        "C=GB, L=London, O=Nobody", "Test Group")
+    private val noDbHoldingIdentityDbName =
+        VirtualNodeDbType.UNIQUENESS.getSchemaName(noDbHoldingIdentity.shortHash)
 
     // We don't use Instant.MAX because this appears to cause a long overflow in Avro
     private val defaultTimeWindowUpperBound: Instant =
@@ -67,7 +106,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             : UniquenessCheckRequestAvro.Builder =
         UniquenessCheckRequestAvro.newBuilder(
             UniquenessCheckRequestAvro(
-                defaultHoldingIdentity,
+                defaultHoldingIdentity.toAvro(),
                 ExternalEventContext(),
                 txId.toString(),
                 emptyList(),
@@ -78,8 +117,15 @@ class UniquenessCheckerImplDBIntegrationTests {
             )
         )
 
-    private fun processRequests(vararg requests: UniquenessCheckRequestAvro) =
-        uniquenessChecker.processRequests(requests.asList())
+    private fun processRequests(
+        vararg requests: UniquenessCheckRequestAvro
+    ) : List<UniquenessCheckResponseAvro> {
+        val requestsList = requests.asList()
+
+        val responses = uniquenessChecker.processRequests(requests.asList())
+
+        return requestsList.map { responses[it]!! }
+    }
 
     private fun generateUnspentStates(numOutputStates: Int): List<String> {
         val issueTxId = SecureHashUtils.randomSecureHash()
@@ -96,7 +142,7 @@ class UniquenessCheckerImplDBIntegrationTests {
         ).let { responses ->
             assertAll(
                 { assertThat(responses).hasSize(1) },
-                { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) }
+                { assertStandardSuccessResponse(responses[0], testClock) }
             )
         }
 
@@ -104,14 +150,32 @@ class UniquenessCheckerImplDBIntegrationTests {
     }
 
     /**
-     * Creates an in-memory database, applies the relevant migration scripts, and initialises
-     * [entityManagerFactory].
+     * Creates an in-memory database and applies the relevant migration scripts
      */
     init {
-        entityManagerFactory = EntityManagerFactoryFactoryImpl().create(
-            "uniqueness_default",
-            JPABackingStoreEntities.classes.toList(),
-            dbConfig
+        val databaseInstaller = DatabaseInstaller(
+            EntityManagerFactoryFactoryImpl(),
+            LiquibaseSchemaMigratorImpl(),
+            JpaEntitiesRegistryImpl())
+
+        // Each DB uses both a different db name and schema name, as HSQLDB does not appear to
+        // respect schema name
+        defaultHoldingIdentityDb = databaseInstaller.setupDatabase(
+            TestDbInfo("uniq_test_default", defaultHoldingIdentityDbName),
+            "vnode-uniqueness",
+            JPABackingStoreEntities.classes
+        )
+
+        bobHoldingIdentityDb = databaseInstaller.setupDatabase(
+            TestDbInfo("uniq_test_bob", bobHoldingIdentityDbName),
+            "vnode-uniqueness",
+            JPABackingStoreEntities.classes
+        )
+
+        charlieHoldingIdentityDb = databaseInstaller.setupDatabase(
+            TestDbInfo("uniq_test_charlie", charlieHoldingIdentityDbName),
+            "vnode-uniqueness",
+            JPABackingStoreEntities.classes
         )
     }
 
@@ -130,8 +194,15 @@ class UniquenessCheckerImplDBIntegrationTests {
             mock(),
             JpaEntitiesRegistryImpl(),
             mock<DbConnectionManager>().apply {
-                whenever(getOrCreateEntityManagerFactory(any(),any(),any())) doReturn entityManagerFactory
-                whenever(getClusterDataSource()) doReturn dbConfig.dataSource
+                whenever(getOrCreateEntityManagerFactory(
+                    eq(defaultHoldingIdentityDbName), any(), any())) doReturn defaultHoldingIdentityDb
+                whenever(getOrCreateEntityManagerFactory(
+                    eq(bobHoldingIdentityDbName), any(), any())) doReturn bobHoldingIdentityDb
+                whenever(getOrCreateEntityManagerFactory(
+                    eq(charlieHoldingIdentityDbName), any(), any())) doReturn charlieHoldingIdentityDb
+                whenever(getOrCreateEntityManagerFactory(
+                    eq(noDbHoldingIdentityDbName), any(), any())) doThrow DBConfigurationException("")
+                whenever(getClusterDataSource()) doReturn clusterDbConfig.dataSource
             }
         )
 
@@ -167,7 +238,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                 assertAll(
                     { assertThat(responses).hasSize(1) },
                     {
-                        UniquenessAssertions.assertMalformedRequestResponse(
+                        assertMalformedRequestResponse(
                             responses[0], "Number of output states cannot be less than 0."
                         )
                     }
@@ -190,7 +261,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                 assertAll(
                     { assertThat(responses).hasSize(1) },
                     {
-                        UniquenessAssertions.assertUnknownInputStateResponse(
+                        assertUnknownInputStateResponse(
                             responses[0],
                             listOf(inputStateRef)
                         )
@@ -208,7 +279,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }
         }
@@ -223,7 +294,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }
         }
@@ -240,8 +311,8 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(2) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[1], testClock) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertStandardSuccessResponse(responses[1], testClock) },
                     // Responses equal (idempotency)
                     { assertEquals(responses[0], responses[1]) }
                 )
@@ -261,7 +332,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
                 initialResponse = responses[0]
             }
@@ -271,7 +342,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
                     // Responses equal (idempotency)
                     { assertEquals(initialResponse, responses[0]) }
                 )
@@ -289,19 +360,19 @@ class UniquenessCheckerImplDBIntegrationTests {
             uniquenessChecker.processRequests(requests).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(5) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[1], testClock) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[2], testClock) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[3], testClock) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[4], testClock) },
+                    { assertStandardSuccessResponse(responses[requests[0]]!!, testClock) },
+                    { assertStandardSuccessResponse(responses[requests[1]]!!, testClock) },
+                    { assertStandardSuccessResponse(responses[requests[2]]!!, testClock) },
+                    { assertStandardSuccessResponse(responses[requests[3]]!!, testClock) },
+                    { assertStandardSuccessResponse(responses[requests[4]]!!, testClock) },
                     // Check all tx ids match up to corresponding requests and commit timestamps
                     // are unique
                     {
                         assertIterableEquals(
-                            requests.map { it.txId },
-                            responses.map { it.txId })
+                            responses.keys.map { it.txId },
+                            responses.values.map { it.txId })
                     },
-                    { UniquenessAssertions.assertUniqueCommitTimestamps(responses) }
+                    { assertUniqueCommitTimestamps(responses.values) }
                 )
             }
         }
@@ -321,7 +392,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                     assertAll(
                         { assertThat(responses).hasSize(1) },
                         {
-                            UniquenessAssertions.assertStandardSuccessResponse(
+                            assertStandardSuccessResponse(
                                 responses[0],
                                 testClock
                             )
@@ -338,7 +409,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                 }
             }
 
-            UniquenessAssertions.assertUniqueCommitTimestamps(allResponses)
+            assertUniqueCommitTimestamps(allResponses)
         }
 
         @Test
@@ -358,17 +429,17 @@ class UniquenessCheckerImplDBIntegrationTests {
             uniquenessChecker.processRequests(requests).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(3) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[1], testClock) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[2], testClock) },
+                    { assertStandardSuccessResponse(responses[requests[0]]!!, testClock) },
+                    { assertStandardSuccessResponse(responses[requests[1]]!!, testClock) },
+                    { assertStandardSuccessResponse(responses[requests[2]]!!, testClock) },
                     // Check all tx ids match up to corresponding requests and commit timestamps
                     // are unique
                     {
                         assertIterableEquals(
-                            requests.map { it.txId },
-                            responses.map { it.txId })
+                            responses.keys.map { it.txId },
+                            responses.values.map { it.txId })
                     },
-                    { UniquenessAssertions.assertUniqueCommitTimestamps(responses) }
+                    { assertUniqueCommitTimestamps(responses.values) }
                 )
             }
         }
@@ -394,7 +465,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                     assertAll(
                         { assertThat(responses).hasSize(1) },
                         {
-                            UniquenessAssertions.assertStandardSuccessResponse(
+                            assertStandardSuccessResponse(
                                 responses[0],
                                 testClock
                             )
@@ -411,7 +482,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                 }
             }
 
-            UniquenessAssertions.assertUniqueCommitTimestamps(allResponses)
+            assertUniqueCommitTimestamps(allResponses)
         }
 
         @Test
@@ -429,9 +500,9 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(2) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
                     {
-                        UniquenessAssertions.assertInputStateConflictResponse(
+                        assertInputStateConflictResponse(
                             responses[1],
                             listOf(sharedState.single())
                         )
@@ -451,7 +522,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }
 
@@ -463,7 +534,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                 assertAll(
                     { assertThat(responses).hasSize(1) },
                     {
-                        UniquenessAssertions.assertInputStateConflictResponse(
+                        assertInputStateConflictResponse(
                             responses[0],
                             listOf(sharedState.single())
                         )
@@ -506,15 +577,15 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(3) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
                     {
-                        UniquenessAssertions.assertInputStateConflictResponse(
+                        assertInputStateConflictResponse(
                             responses[1],
                             listOf(sharedState[0])
                         )
                     },
                     {
-                        UniquenessAssertions.assertInputStateConflictResponse(
+                        assertInputStateConflictResponse(
                             responses[2],
                             listOf(sharedState[0], sharedState[1])
                         )
@@ -540,7 +611,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }
 
@@ -557,7 +628,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                 assertAll(
                     { assertThat(responses).hasSize(1) },
                     {
-                        UniquenessAssertions.assertInputStateConflictResponse(
+                        assertInputStateConflictResponse(
                             responses[0],
                             listOf(sharedState[0])
                         )
@@ -579,7 +650,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                 assertAll(
                     { assertThat(responses).hasSize(1) },
                     {
-                        UniquenessAssertions.assertInputStateConflictResponse(
+                        assertInputStateConflictResponse(
                             responses[0],
                             listOf(sharedState[0], sharedState[1])
                         )
@@ -603,7 +674,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                 assertAll(
                     { assertThat(responses).hasSize(1) },
                     {
-                        UniquenessAssertions.assertUnknownReferenceStateResponse(
+                        assertUnknownReferenceStateResponse(
                             responses[0],
                             listOf(referenceStateRef)
                         )
@@ -621,7 +692,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }
         }
@@ -638,8 +709,8 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(2) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[1], testClock) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertStandardSuccessResponse(responses[1], testClock) },
                     // Responses equal (idempotency)
                     { assertEquals(responses[0], responses[1]) }
                 )
@@ -657,7 +728,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             processRequests(request).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
 
                 initialResponse = responses[0]
@@ -666,7 +737,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             processRequests(request).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
                     // Responses equal (idempotency)
                     { assertEquals(initialResponse, responses[0]) }
                 )
@@ -687,9 +758,9 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(2) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[1], testClock) },
-                    { UniquenessAssertions.assertUniqueCommitTimestamps(responses) }
+                    { assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertStandardSuccessResponse(responses[1], testClock) },
+                    { assertUniqueCommitTimestamps(responses) }
                 )
             }
         }
@@ -707,7 +778,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).also { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }.also { responses ->
                 allResponses.add(responses[0])
@@ -720,13 +791,13 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).also { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }.also { responses ->
                 allResponses.add(responses[0])
             }
 
-            UniquenessAssertions.assertUniqueCommitTimestamps(allResponses)
+            assertUniqueCommitTimestamps(allResponses)
         }
 
         @Test
@@ -744,10 +815,10 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(3) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[1], testClock) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[2], testClock) },
-                    { UniquenessAssertions.assertUniqueCommitTimestamps(responses) }
+                    { assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertStandardSuccessResponse(responses[1], testClock) },
+                    { assertStandardSuccessResponse(responses[2], testClock) },
+                    { assertUniqueCommitTimestamps(responses) }
                 )
             }
         }
@@ -763,7 +834,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).also { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }.also { responses ->
                 allResponses.add(responses[0])
@@ -776,7 +847,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).also { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }.also { responses ->
                 allResponses.add(responses[0])
@@ -789,13 +860,13 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).also { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }.also { responses ->
                 allResponses.add(responses[0])
             }
 
-            UniquenessAssertions.assertUniqueCommitTimestamps(allResponses)
+            assertUniqueCommitTimestamps(allResponses)
         }
 
         @Test
@@ -808,7 +879,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }
         }
@@ -825,7 +896,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }
         }
@@ -841,7 +912,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }
 
@@ -854,7 +925,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                 assertAll(
                     { assertThat(responses).hasSize(1) },
                     {
-                        UniquenessAssertions.assertReferenceStateConflictResponse(
+                        assertReferenceStateConflictResponse(
                             responses[0],
                             spentState
                         )
@@ -875,7 +946,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             processRequests(replayableRequest).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
                 initialResponse = responses[0]
             }
@@ -887,14 +958,14 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }
 
             processRequests(replayableRequest).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
                     // Responses equal (idempotency)
                     { assertEquals(initialResponse, responses[0]) }
                 )
@@ -917,9 +988,9 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(2) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
                     {
-                        UniquenessAssertions.assertReferenceStateConflictResponse(
+                        assertReferenceStateConflictResponse(
                             responses[1],
                             states[0]
                         )
@@ -940,7 +1011,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }
 
@@ -953,7 +1024,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                 assertAll(
                     { assertThat(responses).hasSize(1) },
                     {
-                        UniquenessAssertions.assertReferenceStateConflictResponse(
+                        assertReferenceStateConflictResponse(
                             responses[0],
                             states[0]
                         )
@@ -979,8 +1050,8 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(2) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[1], testClock) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertStandardSuccessResponse(responses[1], testClock) },
                     // Responses equal (idempotency)
                     { assertEquals(responses[0], responses[1]) }
                 )
@@ -1000,7 +1071,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                 ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
 
                 initialResponse = responses[0]
@@ -1013,7 +1084,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
                     // Responses equal (idempotency)
                     { assertEquals(responses[0], initialResponse) }
                 )
@@ -1032,7 +1103,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }
 
@@ -1046,9 +1117,9 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(2) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
                     {
-                        UniquenessAssertions.assertUnknownInputStateResponse(
+                        assertUnknownInputStateResponse(
                             responses[1], listOf("${issueTxId}:${Short.MAX_VALUE}")
                         )
                     }
@@ -1069,7 +1140,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }
         }
@@ -1086,7 +1157,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             processRequests(request).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
                 initialResponse = responses[0]
             }
@@ -1097,7 +1168,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             processRequests(request).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
                     // Responses equal (idempotency)
                     { assertEquals(initialResponse, responses[0]) }
                 )
@@ -1116,7 +1187,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                 assertAll(
                     { assertThat(responses).hasSize(1) },
                     {
-                        UniquenessAssertions.assertTimeWindowOutOfBoundsResponse(
+                        assertTimeWindowOutOfBoundsResponse(
                             responses[0],
                             expectedLowerBound = lowerBound,
                             expectedUpperBound = defaultTimeWindowUpperBound
@@ -1138,7 +1209,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                 assertAll(
                     { assertThat(responses).hasSize(1) },
                     {
-                        UniquenessAssertions.assertTimeWindowOutOfBoundsResponse(
+                        assertTimeWindowOutOfBoundsResponse(
                             responses[0],
                             expectedLowerBound = lowerBound,
                             expectedUpperBound = defaultTimeWindowUpperBound
@@ -1155,7 +1226,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                 assertAll(
                     { assertThat(responses).hasSize(1) },
                     {
-                        UniquenessAssertions.assertTimeWindowOutOfBoundsResponse(
+                        assertTimeWindowOutOfBoundsResponse(
                             responses[0],
                             expectedLowerBound = lowerBound,
                             expectedUpperBound = defaultTimeWindowUpperBound
@@ -1180,10 +1251,128 @@ class UniquenessCheckerImplDBIntegrationTests {
                 assertAll(
                     { assertThat(responses).hasSize(1) },
                     {
-                        UniquenessAssertions.assertTimeWindowOutOfBoundsResponse(
+                        assertTimeWindowOutOfBoundsResponse(
                             responses[0], expectedUpperBound = upperBound
                         )
                     }
+                )
+            }
+        }
+    }
+
+    @Nested
+    inner class MultiTenancy {
+        @Test
+        fun `Uniqueness check for holding id with no uniqueness DB fails`() {
+            processRequests(
+                newRequestBuilder()
+                    .setHoldingIdentity(noDbHoldingIdentity.toAvro())
+                    .setNumOutputStates(1)
+                    .build()
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(1) },
+                    { assertUnhandledExceptionResponse(
+                        responses[0],
+                        "net.corda.db.connection.manager.DBConfigurationException") }
+                )
+            }
+        }
+
+        @Test
+        fun `Unhandled exception is compartmentalised within holding id`() {
+            processRequests(
+                newRequestBuilder()
+                    .setHoldingIdentity(bobHoldingIdentity.toAvro())
+                    .setNumOutputStates(1)
+                    .build(),
+                newRequestBuilder()
+                    .setHoldingIdentity(charlieHoldingIdentity.toAvro())
+                    .setNumOutputStates(1)
+                    .build(),
+                newRequestBuilder()
+                    .setHoldingIdentity(noDbHoldingIdentity.toAvro())
+                    .setNumOutputStates(1)
+                    .build(),
+                newRequestBuilder()
+                    .setHoldingIdentity(noDbHoldingIdentity.toAvro())
+                    .setNumOutputStates(1)
+                    .build(),
+                newRequestBuilder()
+                    .setHoldingIdentity(bobHoldingIdentity.toAvro())
+                    .setNumOutputStates(1)
+                    .build(),
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(5) },
+                    { assertStandardSuccessResponse(responses[0]) },
+                    { assertStandardSuccessResponse(responses[1]) },
+                    { assertUnhandledExceptionResponse(
+                        responses[2],
+                        "net.corda.db.connection.manager.DBConfigurationException") },
+                    { assertUnhandledExceptionResponse(
+                        responses[3],
+                        "net.corda.db.connection.manager.DBConfigurationException") },
+                    { assertStandardSuccessResponse(responses[4]) }
+                )
+            }
+        }
+
+        @Test
+        fun `Spending the same state across different holding identities is accepted`() {
+            val issueTxId = SecureHashUtils.randomSecureHash()
+
+            processRequests(
+                newRequestBuilder(issueTxId)
+                    .setHoldingIdentity(bobHoldingIdentity.toAvro())
+                    .setNumOutputStates(1)
+                    .build(),
+                newRequestBuilder(issueTxId)
+                    .setHoldingIdentity(charlieHoldingIdentity.toAvro())
+                    .setNumOutputStates(1)
+                    .build()
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(2) },
+                    { assertStandardSuccessResponse(responses[0]) },
+                    { assertStandardSuccessResponse(responses[1]) }
+                )
+            }
+
+            val unspentStateRef = "${issueTxId}:0"
+
+            processRequests(
+                newRequestBuilder()
+                    .setHoldingIdentity(bobHoldingIdentity.toAvro())
+                    .setInputStates(listOf(unspentStateRef))
+                    .build(),
+                newRequestBuilder()
+                    .setHoldingIdentity(charlieHoldingIdentity.toAvro())
+                    .setInputStates(listOf(unspentStateRef))
+                    .build()
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(2) },
+                    { assertStandardSuccessResponse(responses[0]) },
+                    { assertStandardSuccessResponse(responses[1]) }
+                )
+            }
+        }
+
+        @Test
+        fun `Spending a state that was issued against a different holding id is rejected`() {
+            // Generate against default holding id
+            val unspentStateRefs = generateUnspentStates(1)
+
+            processRequests(
+                newRequestBuilder()
+                    .setHoldingIdentity(bobHoldingIdentity.toAvro())
+                    .setInputStates(unspentStateRefs)
+                    .build()
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(1) },
+                    { assertUnknownInputStateResponse(responses[0], unspentStateRefs) }
                 )
             }
         }
@@ -1194,7 +1383,7 @@ class UniquenessCheckerImplDBIntegrationTests {
         @Test
         fun `Empty request list returns no results`() {
             assertEquals(
-                emptyList<UniquenessCheckResponseAvro>(),
+                emptyMap(),
                 uniquenessChecker.processRequests(emptyList())
             )
         }
@@ -1216,9 +1405,9 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(2) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[1], testClock) },
-                    { UniquenessAssertions.assertUniqueCommitTimestamps(responses) }
+                    { assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertStandardSuccessResponse(responses[1], testClock) },
+                    { assertUniqueCommitTimestamps(responses) }
                 )
             }
 
@@ -1235,16 +1424,16 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(3) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[1], testClock) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertStandardSuccessResponse(responses[1], testClock) },
                     {
-                        UniquenessAssertions.assertUnknownInputStateResponse(
+                        assertUnknownInputStateResponse(
                             responses[2],
                             listOf("${hash3}:0")
                         )
                     },
                     {
-                        UniquenessAssertions.assertUniqueCommitTimestamps(
+                        assertUniqueCommitTimestamps(
                             listOf(
                                 responses[0],
                                 responses[1]
@@ -1269,9 +1458,9 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(2) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[1], testClock) },
-                    { UniquenessAssertions.assertUniqueCommitTimestamps(responses) }
+                    { assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertStandardSuccessResponse(responses[1], testClock) },
+                    { assertUniqueCommitTimestamps(responses) }
                 )
             }
         }
@@ -1291,12 +1480,12 @@ class UniquenessCheckerImplDBIntegrationTests {
                 assertAll(
                     { assertThat(responses).hasSize(2) },
                     {
-                        UniquenessAssertions.assertUnknownInputStateResponse(
+                        assertUnknownInputStateResponse(
                             responses[0],
                             listOf("${issueTxId}:0")
                         )
                     },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[1], testClock) }
+                    { assertStandardSuccessResponse(responses[1], testClock) }
                 )
             }
         }
@@ -1313,7 +1502,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }
 
@@ -1327,7 +1516,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                 assertAll(
                     { assertThat(responses).hasSize(1) },
                     {
-                        UniquenessAssertions.assertInputStateConflictResponse(
+                        assertInputStateConflictResponse(
                             responses[0],
                             listOf(states[0])
                         )
@@ -1348,7 +1537,7 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(1) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) }
+                    { assertStandardSuccessResponse(responses[0], testClock) }
                 )
             }
 
@@ -1362,7 +1551,7 @@ class UniquenessCheckerImplDBIntegrationTests {
                 assertAll(
                     { assertThat(responses).hasSize(1) },
                     {
-                        UniquenessAssertions.assertReferenceStateConflictResponse(
+                        assertReferenceStateConflictResponse(
                             responses[0],
                             state
                         )
@@ -1384,9 +1573,9 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(2) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[1], testClock) },
-                    { UniquenessAssertions.assertUniqueCommitTimestamps(responses) }
+                    { assertStandardSuccessResponse(responses.values.elementAt(0), testClock) },
+                    { assertStandardSuccessResponse(responses.values.elementAt(1), testClock) },
+                    { assertUniqueCommitTimestamps(responses.values) }
                 )
             }
 
@@ -1410,9 +1599,9 @@ class UniquenessCheckerImplDBIntegrationTests {
             processRequests(retryableSuccessfulRequest, retryableFailedRequest).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(2) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
                     {
-                        UniquenessAssertions.assertReferenceStateConflictResponse(
+                        assertReferenceStateConflictResponse(
                             responses[1], listOf(priorSpentStates[0])
                         )
                     }
@@ -1475,21 +1664,21 @@ class UniquenessCheckerImplDBIntegrationTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(10) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
                     {
-                        UniquenessAssertions.assertInputStateConflictResponse(
+                        assertInputStateConflictResponse(
                             responses[1],
                             listOf(doubleSpendAttemptStates[0], doubleSpendAttemptStates[1])
                         )
                     },
                     {
-                        UniquenessAssertions.assertReferenceStateConflictResponse(
+                        assertReferenceStateConflictResponse(
                             responses[2],
                             listOf(doubleSpendAttemptStates[2])
                         )
                     },
                     {
-                        UniquenessAssertions.assertInputStateConflictResponse(
+                        assertInputStateConflictResponse(
                             responses[3],
                             listOf(priorSpentStates[0], priorSpentStates[1])
                         )
@@ -1507,15 +1696,15 @@ class UniquenessCheckerImplDBIntegrationTests {
                         )
                     },
                     {
-                        UniquenessAssertions.assertTimeWindowOutOfBoundsResponse(
+                        assertTimeWindowOutOfBoundsResponse(
                             responses[6], expectedUpperBound = timeWindowUpperBound
                         )
                     },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[7], testClock) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[8], testClock) },
-                    { UniquenessAssertions.assertStandardSuccessResponse(responses[9], testClock) },
+                    { assertStandardSuccessResponse(responses[7], testClock) },
+                    { assertStandardSuccessResponse(responses[8], testClock) },
+                    { assertStandardSuccessResponse(responses[9], testClock) },
                     {
-                        UniquenessAssertions.assertUniqueCommitTimestamps(responses.filter {
+                        assertUniqueCommitTimestamps(responses.filter {
                             it.result is UniquenessCheckResultSuccessAvro
                         })
                     }
