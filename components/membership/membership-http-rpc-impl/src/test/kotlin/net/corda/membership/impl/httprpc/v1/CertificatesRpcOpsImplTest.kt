@@ -309,10 +309,23 @@ class CertificatesRpcOpsImplTest {
 
             verify(certificatesClient).importCertificates("tenant", "alias", certificateText)
         }
+
         @Test
         fun `no certificates throw an exception`() {
             assertThrows<InvalidInputDataException> {
                 certificatesOps.importCertificateChain("tenant", "alias", emptyList())
+            }
+        }
+
+        @Test
+        fun `empty alias throw an exception`() {
+            val certificateText = ClassLoader.getSystemResource("r3.pem").readText()
+            val certificate = mock<HttpFileUpload> {
+                on { content } doReturn certificateText.byteInputStream()
+            }
+
+            assertThrows<InvalidInputDataException> {
+                certificatesOps.importCertificateChain("tenant", "", listOf(certificate))
             }
         }
 
