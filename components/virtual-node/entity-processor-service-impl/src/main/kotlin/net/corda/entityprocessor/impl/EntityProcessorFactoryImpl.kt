@@ -1,7 +1,7 @@
 package net.corda.entityprocessor.impl
 
-import net.corda.entityprocessor.EntityProcessorFactory
 import net.corda.entityprocessor.EntityProcessor
+import net.corda.entityprocessor.EntityProcessorFactory
 import net.corda.entityprocessor.impl.internal.EntityMessageProcessor
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.libs.configuration.SmartConfig
@@ -28,12 +28,12 @@ class EntityProcessorFactoryImpl @Activate constructor(
     private val externalEventResponseFactory: ExternalEventResponseFactory
 ) : EntityProcessorFactory {
     companion object {
-        internal const val GROUP_NAME = "virtual.node.entity.processor"
+        internal const val GROUP_NAME = "persistence.entity.processor"
         private const val CORDA_MESSAGE_OVERHEAD = 1024
     }
 
     override fun create(config: SmartConfig): EntityProcessor {
-        val subscriptionConfig = SubscriptionConfig(GROUP_NAME, Schemas.VirtualNode.ENTITY_PROCESSOR)
+        val subscriptionConfig = SubscriptionConfig(GROUP_NAME, Schemas.Persistence.PERSISTENCE_ENTITY_PROCESSOR_TOPIC)
 
         val processor = EntityMessageProcessor(
             entitySandboxService,
