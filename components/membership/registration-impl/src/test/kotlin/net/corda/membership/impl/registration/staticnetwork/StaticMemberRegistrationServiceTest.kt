@@ -397,12 +397,42 @@ class StaticMemberRegistrationServiceTest {
     }
 
     @Test
-    fun `registration fails when context has invalid roles`() {
+    fun `registration fails when notary role has missing information`() {
         setUpPublisher()
         registrationService.start()
         val context = mapOf(
             KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
             "corda.roles.0" to "notary",
+        )
+
+        val registrationResult = registrationService.register(registrationId, alice, context)
+
+        assertThat(registrationResult.outcome).isEqualTo(NOT_SUBMITTED)
+    }
+
+    @Test
+    fun `registration submitted when context has notary role`() {
+        setUpPublisher()
+        registrationService.start()
+        val context = mapOf(
+            KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+            "corda.roles.0" to "notary",
+            "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
+            "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+        )
+
+        val registrationResult = registrationService.register(registrationId, alice, context)
+
+        assertThat(registrationResult.outcome).isEqualTo(SUBMITTED)
+    }
+
+    @Test
+    fun `registration not submitted when context has un known role`() {
+        setUpPublisher()
+        registrationService.start()
+        val context = mapOf(
+            KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+            "corda.roles.0" to "nop",
         )
 
         val registrationResult = registrationService.register(registrationId, alice, context)
