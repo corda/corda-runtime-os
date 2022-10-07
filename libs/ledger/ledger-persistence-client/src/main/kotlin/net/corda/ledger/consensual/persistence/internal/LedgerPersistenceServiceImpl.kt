@@ -17,7 +17,11 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope
 import java.nio.ByteBuffer
 
-@Component(service = [LedgerPersistenceService::class, SingletonSerializeAsToken::class], scope = ServiceScope.PROTOTYPE)
+@Component(
+    service = [ LedgerPersistenceService::class, SingletonSerializeAsToken::class ],
+    property = [ "corda.system=true" ],
+    scope = ServiceScope.PROTOTYPE
+)
 class LedgerPersistenceServiceImpl @Activate constructor(
     @Reference(service = ExternalEventExecutor::class)
     private val externalEventExecutor: ExternalEventExecutor,
