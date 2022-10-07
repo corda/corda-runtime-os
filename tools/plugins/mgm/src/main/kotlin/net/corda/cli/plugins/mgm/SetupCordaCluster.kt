@@ -64,6 +64,12 @@ class SetupCordaCluster : Runnable {
     )
     var zooKeeperReplicas: Int = 3
 
+    @Option(
+        names = ["--namespace-type", "--type"],
+        description = ["The name space type (will add namespace-type label with that name to the cluster). Default to corda-e2e"]
+    )
+    var namespaceType: String = "corda-e2e"
+
     private fun execute(command: String, vararg arguments: String) {
         val process = ProcessBuilder()
             .command(listOf(command) + arguments)
@@ -84,7 +90,7 @@ class SetupCordaCluster : Runnable {
     private fun deploy(clusterName: String) {
         kubectl("delete", "ns", clusterName, "--ignore-not-found=true")
         kubectl("create", "ns", clusterName)
-        kubectl("label", "ns", clusterName, "namespace-type=corda-e2e", "--overwrite=true")
+        kubectl("label", "ns", clusterName, "namespace-type=$namespaceType", "--overwrite=true")
 
         try {
             kubectl(
@@ -124,7 +130,7 @@ class SetupCordaCluster : Runnable {
     private val actualBaseImage by lazy {
         if (baseImage == null) {
             val tagsReply = Unirest.get(
-                "https://software.r3.com:443/v2/corda-os-docker-unstable/corda-os-p2p-link-manager-worker/tags/list"
+                "https://corda-os-docker-unstable.software.r3.com:443/v2/corda-os-p2p-link-manager-worker/tags/list"
             )
                 .basicAuth(
                     System.getenv("CORDA_ARTIFACTORY_USERNAME"),
