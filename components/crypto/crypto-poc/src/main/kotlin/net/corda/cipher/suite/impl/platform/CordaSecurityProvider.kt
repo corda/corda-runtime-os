@@ -1,6 +1,5 @@
 package net.corda.cipher.suite.impl.platform
 
-import net.corda.cipher.suite.KeyEncodingService
 import net.corda.cipher.suite.OID_COMPOSITE_KEY_IDENTIFIER
 import net.corda.cipher.suite.OID_COMPOSITE_SIGNATURE_IDENTIFIER
 import net.corda.v5.cipher.suite.providers.encoding.KeyEncodingHandler

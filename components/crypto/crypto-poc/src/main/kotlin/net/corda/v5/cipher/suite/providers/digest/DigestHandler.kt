@@ -5,7 +5,7 @@ import net.corda.v5.crypto.SecureHash
 import java.io.InputStream
 
 interface DigestHandler {
-
+    val rank: Int
     /**
      * Computes the digest of the [ByteArray].
      *

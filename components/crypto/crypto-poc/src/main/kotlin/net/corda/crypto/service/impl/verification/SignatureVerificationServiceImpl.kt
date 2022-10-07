@@ -6,10 +6,14 @@ import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CipherSuiteBase
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.publicKeyId
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
 import java.security.PublicKey
 
-
-class SignatureVerificationServiceImpl(
+@Component(service = [SignatureVerificationService::class])
+class SignatureVerificationServiceImpl @Activate constructor(
+    @Reference(service = CipherSuiteBase::class)
     private val suite: CipherSuiteBase
 ) : SignatureVerificationService {
     companion object {

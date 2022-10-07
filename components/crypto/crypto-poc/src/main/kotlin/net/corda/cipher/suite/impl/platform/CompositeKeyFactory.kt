@@ -69,7 +69,8 @@ class CompositeKeyFactory(
         val keys = listOfChildren.map {
             require(it is ASN1Sequence) { "Child key is not in ASN1 format" }
             CompositeKeyNodeAndWeight(
-                keyEncoder.decode((it.getObjectAt(0) as DERBitString).bytes),
+                keyEncoder.decode((it.getObjectAt(0) as DERBitString).bytes)
+                    ?: throw IllegalArgumentException("Cannot decode teh child key."),
                 ASN1Integer.getInstance(it.getObjectAt(1)).positiveValue.toInt()
             )
         }

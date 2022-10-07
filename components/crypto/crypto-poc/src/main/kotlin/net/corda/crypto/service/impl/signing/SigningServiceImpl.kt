@@ -17,10 +17,16 @@ import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.publicKeyId
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
 import java.security.PublicKey
 
-class SigningServiceImpl(
+@Component(service = [SigningService::class])
+class SigningServiceImpl @Activate constructor(
+    @Reference(service = CryptoWorkerCipherSuite::class)
     private val suite: CryptoWorkerCipherSuite,
+    @Reference(service = SigningKeyStore::class)
     private val store: SigningKeyStore
 ) : SigningService {
     companion object {

@@ -6,10 +6,15 @@ import net.corda.v5.cipher.suite.CipherSuiteBase
 import net.corda.v5.crypto.publicKeyId
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.util.io.pem.PemReader
+import org.osgi.service.component.annotations.Activate
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.Reference
 import java.io.StringReader
 import java.security.PublicKey
 
-class KeyEncodingServiceImpl(
+@Component(service = [KeyEncodingService::class])
+class KeyEncodingServiceImpl @Activate constructor(
+    @Reference(service = CipherSuiteBase::class)
     private val suite: CipherSuiteBase
 ) : KeyEncodingService {
     companion object {

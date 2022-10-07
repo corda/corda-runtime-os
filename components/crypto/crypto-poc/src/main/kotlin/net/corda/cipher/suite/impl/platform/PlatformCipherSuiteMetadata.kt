@@ -1,6 +1,7 @@
 package net.corda.cipher.suite.impl.platform
 
 import net.corda.cipher.suite.OID_COMPOSITE_KEY_IDENTIFIER
+import net.corda.v5.cipher.suite.KeySchemeInfo
 import net.corda.v5.cipher.suite.providers.encoding.KeyEncodingHandler
 import net.corda.v5.cipher.suite.scheme.DigestScheme
 import net.corda.v5.cipher.suite.scheme.KeyScheme
@@ -161,16 +162,6 @@ class PlatformCipherSuiteMetadata : KeyEncodingHandler {
         schemeProviderMap[it] = cordaSecurityProvider
     }
 
-    val keySchemeInfoMap = mapOf(
-        RSA.scheme to RSA,
-        ECDSA_SECP256R1.scheme to ECDSA_SECP256R1,
-        ECDSA_SECP256K1.scheme to ECDSA_SECP256K1,
-        EDDSA_ED25519.scheme to EDDSA_ED25519,
-        SM2.scheme to SM2,
-        GOST3410_GOST3411.scheme to GOST3410_GOST3411,
-        SPHINCS256.scheme to SPHINCS256
-    )
-
     val schemes: List<KeyScheme> = listOf(
         RSA.scheme,
         ECDSA_SECP256K1.scheme,
@@ -187,14 +178,14 @@ class PlatformCipherSuiteMetadata : KeyEncodingHandler {
         scheme.algorithmOIDs.map { identifier -> identifier to scheme }
     }.toMap()
 
-    val supportedSigningSchemes: Map<KeyScheme, List<SignatureSpec>> = mapOf(
-        RSA.scheme to RSA.supportedSignatureSpecs,
-        ECDSA_SECP256R1.scheme to ECDSA_SECP256R1.supportedSignatureSpecs,
-        ECDSA_SECP256K1.scheme to ECDSA_SECP256K1.supportedSignatureSpecs,
-        EDDSA_ED25519.scheme to EDDSA_ED25519.supportedSignatureSpecs,
-        SPHINCS256.scheme to SPHINCS256.supportedSignatureSpecs,
-        SM2.scheme to SM2.supportedSignatureSpecs,
-        GOST3410_GOST3411.scheme to GOST3410_GOST3411.supportedSignatureSpecs
+    val supportedSigningSchemes: Map<KeyScheme, KeySchemeInfo> = mapOf(
+        RSA.scheme to RSA,
+        ECDSA_SECP256R1.scheme to ECDSA_SECP256R1,
+        ECDSA_SECP256K1.scheme to ECDSA_SECP256K1,
+        EDDSA_ED25519.scheme to EDDSA_ED25519,
+        SPHINCS256.scheme to SPHINCS256,
+        SM2.scheme to SM2,
+        GOST3410_GOST3411.scheme to GOST3410_GOST3411
     )
 
     val digests: List<DigestScheme> = providers.values
@@ -206,10 +197,12 @@ class PlatformCipherSuiteMetadata : KeyEncodingHandler {
         .map { DigestScheme(algorithmName = it.algorithm, providerName = it.provider.name) }
         .distinctBy { it.algorithmName }
 
+    override val rank: Int = 0
+
     fun providerFor(scheme: KeyScheme): Provider = schemeProviderMap.getValue(scheme)
 
-    fun findKeyScheme(key: PublicKey): KeyScheme {
-        val keyInfo = SubjectPublicKeyInfo.getInstance(key.encoded)
+    fun findKeyScheme(publicKey: PublicKey): KeyScheme {
+        val keyInfo = SubjectPublicKeyInfo.getInstance(publicKey.encoded)
         return findKeyScheme(keyInfo.algorithm)
     }
 
@@ -217,31 +210,45 @@ class PlatformCipherSuiteMetadata : KeyEncodingHandler {
         algorithmMap[normaliseAlgorithmIdentifier(algorithm)]
             ?: throw IllegalArgumentException("Unrecognised algorithm: ${algorithm.algorithm.id}")
 
-    override val rank: Int = 0
+    override fun getAlgorithmIdentifier(publicKey: PublicKey): AlgorithmIdentifier? = try {
+        SubjectPublicKeyInfo.getInstance(publicKey.encoded).algorithm
+    } catch (e: Throwable) {
+        null
+    }
 
-    override fun decode(encodedKey: ByteArray): PublicKey? {
+    override fun decode(encodedKey: ByteArray): PublicKey? = try {
         val subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(encodedKey)
         val scheme = findKeyScheme(subjectPublicKeyInfo.algorithm)
         val keyFactory = keyFactories[scheme]
-        return keyFactory.generatePublic(X509EncodedKeySpec(encodedKey))
+        keyFactory.generatePublic(X509EncodedKeySpec(encodedKey))
+    } catch (e: Throwable) {
+        null
     }
 
-    override fun decode(scheme: KeyScheme, publicKeyInfo: SubjectPublicKeyInfo, encodedKey: ByteArray): PublicKey {
-        val keyFactory = keyFactories[scheme]
-        return keyFactory.generatePublic(X509EncodedKeySpec(encodedKey))
-    }
+    override fun decode(scheme: KeyScheme, publicKeyInfo: SubjectPublicKeyInfo, encodedKey: ByteArray): PublicKey? =
+        try {
+            val keyFactory = keyFactories[scheme]
+            keyFactory.generatePublic(X509EncodedKeySpec(encodedKey))
+        } catch (e: Throwable) {
+            null
+        }
 
-    override fun decodePem(encodedKey: String): PublicKey? {
+    override fun decodePem(encodedKey: String): PublicKey? = try {
         val pemContent = parsePemContent(encodedKey)
         val publicKeyInfo = SubjectPublicKeyInfo.getInstance(pemContent)
         val converter = getJcaPEMKeyConverter(publicKeyInfo)
-        return converter.getPublicKey(publicKeyInfo)
+        converter.getPublicKey(publicKeyInfo)
+    } catch (e: Throwable) {
+        null
     }
 
-    override fun decodePem(scheme: KeyScheme, publicKeyInfo: SubjectPublicKeyInfo, pemContent: ByteArray): PublicKey {
-        val converter = getJcaPEMKeyConverter(publicKeyInfo)
-        return converter.getPublicKey(publicKeyInfo)
-    }
+    override fun decodePem(scheme: KeyScheme, publicKeyInfo: SubjectPublicKeyInfo, pemContent: ByteArray): PublicKey? =
+        try {
+            val converter = getJcaPEMKeyConverter(publicKeyInfo)
+            converter.getPublicKey(publicKeyInfo)
+        } catch (e: Throwable) {
+            null
+        }
 
     override fun encodeAsPem(scheme: KeyScheme, publicKey: PublicKey): String =
         StringWriter().use { strWriter ->

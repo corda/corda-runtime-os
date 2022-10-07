@@ -18,6 +18,8 @@ class PlatformDigestHandler(
     private val factories = ConcurrentHashMap<String, DigestAlgorithmFactory>()
     private val lengths = ConcurrentHashMap<String, Int>()
 
+    override val rank: Int = 0
+
     override fun hash(bytes: ByteArray, digestAlgorithmName: DigestAlgorithmName): SecureHash {
         val hashBytes = digestFor(digestAlgorithmName).digest(bytes)
         return SecureHash(digestAlgorithmName.name, hashBytes)
