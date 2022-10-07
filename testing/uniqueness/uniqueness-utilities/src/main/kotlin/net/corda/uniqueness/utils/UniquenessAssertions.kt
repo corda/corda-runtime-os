@@ -5,6 +5,7 @@ import net.corda.data.uniqueness.*
 import net.corda.test.util.time.AutoTickTestClock
 import net.corda.uniqueness.datamodel.common.UniquenessConstants
 import net.corda.uniqueness.datamodel.common.toCharacterRepresentation
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
@@ -148,6 +149,17 @@ object UniquenessAssertions {
                 (it.result as UniquenessCheckResultSuccessAvro).commitTimestamp
             }.size
         )
+    }
+
+    /**
+     * Casts to a specific uniqueness check error type.
+     */
+    inline fun <reified T> toErrorType(result: UniquenessCheckResult): T {
+        val failureImpl = result as UniquenessCheckResultFailureImpl
+        @Suppress("UNCHECKED_CAST")
+        val errorImpl = failureImpl.error as T
+        assertInstanceOf(T::class.java, errorImpl)
+        return errorImpl
     }
 
     private inline fun<reified T> getResultOfType(response: UniquenessCheckResponseAvro): T {

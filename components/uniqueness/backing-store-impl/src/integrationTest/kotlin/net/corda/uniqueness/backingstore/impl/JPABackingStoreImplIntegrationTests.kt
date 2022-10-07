@@ -15,19 +15,31 @@ import net.corda.orm.impl.JpaEntitiesRegistryImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.uniqueness.backingstore.jpa.datamodel.JPABackingStoreEntities
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTransactionDetailEntity
-import net.corda.uniqueness.datamodel.common.UniquenessConstants
-import net.corda.uniqueness.datamodel.common.toCharacterRepresentation
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorGeneralImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateConflictImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateRefImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateUnknownImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateConflictImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorTimeWindowOutOfBoundsImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateUnknownImpl
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.uniqueness.utils.UniquenessAssertions
+import net.corda.uniqueness.utils.UniquenessAssertions.toErrorType
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorInputStateConflict
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorInputStateUnknown
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateConflict
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateUnknown
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorGeneral
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorTimeWindowOutOfBounds
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -48,6 +60,8 @@ import org.mockito.kotlin.never
 import java.time.Clock
 import java.time.LocalDate
 import java.time.ZoneOffset
+import java.time.Instant
+import java.time.LocalDateTime
 import java.util.UUID
 import javax.persistence.EntityExistsException
 import javax.persistence.EntityManagerFactory
@@ -160,17 +174,18 @@ class JPABackingStoreImplIntegrationTests {
 
         @Test
         fun `Executing transaction succeeds after transient failures`() {
+            val RETRY_CNT = 3
             var execCounter = 0
             assertDoesNotThrow {
                 backingStoreImpl.session { session ->
                     session.executeTransaction { _, _ ->
                         execCounter++
-                        if (execCounter < 3)
+                        if (execCounter < RETRY_CNT)
                             throw OptimisticLockException()
                     }
                 }
             }
-            assertThat(execCounter).isEqualTo(3)
+            assertThat(execCounter).isEqualTo(RETRY_CNT)
         }
     }
 
@@ -195,23 +210,58 @@ class JPABackingStoreImplIntegrationTests {
                 val txnDetails = session.getTransactionDetails(txIds)
                 assertThat(txnDetails.size).isEqualTo(1)
 
-                txnDetails.firstNotNullOf { secureHashTxnDetails ->
-                    val uniquenessCheckResult = secureHashTxnDetails.value.result
-                    assertThat(txIds).contains(secureHashTxnDetails.key)
+                txnDetails.firstNotNullOf { secureHashTxnDetail ->
+                    val uniquenessCheckResult = secureHashTxnDetail.value.result
+                    assertThat(txIds).contains(secureHashTxnDetail.key)
                     UniquenessAssertions.assertAcceptedUniquenessCheckResult(uniquenessCheckResult)
                 }
             }
         }
 
         @Test
-        fun `Persisting rejected transaction details succeeds`() {
+        fun `Persisting rejected transaction due to input state unknown error succeeds`() {
             val txId = SecureHashUtils.randomSecureHash()
             val txIds = listOf(txId)
             val externalRequest = generateExternalRequest(txId)
             val internalRequest = UniquenessCheckRequestInternal.create(externalRequest)
             val txns = listOf(
                 Pair(internalRequest, UniquenessCheckResultFailureImpl(
-                        Clock.systemUTC().instant(), UniquenessCheckErrorGeneralImpl("some error")))
+                    Clock.systemUTC().instant(),
+                    UniquenessCheckErrorInputStateUnknownImpl(listOf(UniquenessCheckStateRefImpl(txId, 0))))))
+
+            backingStoreImpl.session { session ->
+                session.executeTransaction { _, txnOps -> txnOps.commitTransactions(txns) }
+            }
+
+            backingStoreImpl.session { session ->
+                val txDetails = session.getTransactionDetails(txIds)
+                assertEquals(1, txDetails.size)
+                txDetails.firstNotNullOf { secureHashTxnDetail ->
+                    val uniquenessCheckResult = secureHashTxnDetail.value.result
+                    assertThat(txIds.contains(secureHashTxnDetail.key))
+
+                    val unknownStates = (toErrorType<UniquenessCheckErrorInputStateUnknown>(uniquenessCheckResult))
+                        .unknownStates
+                    assertThat(unknownStates.size).isEqualTo(1)
+                    assertThat(unknownStates.first().stateIndex).isEqualTo(0)
+                    assertThat(unknownStates.first().txHash).isEqualTo(txId)
+                    UniquenessAssertions.assertRejectedUniquenessCheckResult(uniquenessCheckResult)
+                }
+            }
+        }
+
+        @Test
+        fun `Persisting rejected transaction due to input state conflict succeeds`() {
+            val txId = SecureHashUtils.randomSecureHash()
+            val txIds = listOf(txId)
+            val externalRequest = generateExternalRequest(txId)
+            val internalRequest = UniquenessCheckRequestInternal.create(externalRequest)
+            val txns = listOf(
+                Pair(internalRequest, UniquenessCheckResultFailureImpl(
+                    Clock.systemUTC().instant(),
+                    UniquenessCheckErrorInputStateConflictImpl(listOf(
+                        UniquenessCheckStateDetailsImpl(
+                            UniquenessCheckStateRefImpl(txId, 0), consumingTxId = null)))))
             )
 
             backingStoreImpl.session { session ->
@@ -219,11 +269,151 @@ class JPABackingStoreImplIntegrationTests {
             }
 
             backingStoreImpl.session { session ->
-                val result = session.getTransactionDetails(txIds)
-                assertEquals(1, result.size)
-                result.forEach { secureHashTxnDetails ->
-                    assertThat(txIds.contains(secureHashTxnDetails.key))
-                    UniquenessAssertions.assertRejectedUniquenessCheckResult(secureHashTxnDetails.value.result)
+                val txDetails = session.getTransactionDetails(txIds)
+                assertEquals(1, txDetails.size)
+                txDetails.firstNotNullOf { secureHashTxnDetail ->
+                    val uniquenessCheckResult = secureHashTxnDetail.value.result
+                    assertThat(txIds.contains(secureHashTxnDetail.key))
+
+                    val conflicts = (toErrorType<UniquenessCheckErrorInputStateConflict>(uniquenessCheckResult))
+                        .conflictingStates
+                    assertThat(conflicts.size).isEqualTo(1)
+                    assertThat(conflicts.first().consumingTxId).isNull()
+                    assertThat(conflicts.first().stateRef.txHash).isEqualTo(txId)
+                    assertThat(conflicts.first().stateRef.stateIndex).isEqualTo(0)
+                    UniquenessAssertions.assertRejectedUniquenessCheckResult(uniquenessCheckResult)
+                }
+            }
+        }
+
+        @Test
+        fun `Persisting rejected transaction due to reference state conflict succeeds`() {
+            val txId = SecureHashUtils.randomSecureHash()
+            val txIds = listOf(txId)
+            val externalRequest = generateExternalRequest(txId)
+            val internalRequest = UniquenessCheckRequestInternal.create(externalRequest)
+            val txns = listOf(
+                Pair(internalRequest, UniquenessCheckResultFailureImpl(
+                    Clock.systemUTC().instant(),
+                    UniquenessCheckErrorReferenceStateConflictImpl(listOf(
+                       UniquenessCheckStateDetailsImpl(
+                           UniquenessCheckStateRefImpl(txId, 0), consumingTxId = null))))))
+
+            backingStoreImpl.session { session ->
+                session.executeTransaction { _, txnOps -> txnOps.commitTransactions(txns) }
+            }
+
+            backingStoreImpl.session { session ->
+                val txDetails = session.getTransactionDetails(txIds)
+                assertEquals(1, txDetails.size)
+                txDetails.firstNotNullOf { secureHashTxnDetail ->
+                    val uniquenessCheckResult = secureHashTxnDetail.value.result
+                    assertThat(txIds.contains(secureHashTxnDetail.key))
+
+                    val conflicts = (toErrorType<UniquenessCheckErrorReferenceStateConflict>(uniquenessCheckResult))
+                        .conflictingStates
+                    assertThat(conflicts.size).isEqualTo(1)
+                    assertThat(conflicts.first().consumingTxId).isNull()
+                    assertThat(conflicts.first().stateRef.txHash).isEqualTo(txId)
+                    assertThat(conflicts.first().stateRef.stateIndex).isEqualTo(0)
+                    UniquenessAssertions.assertRejectedUniquenessCheckResult(uniquenessCheckResult)
+                }
+            }
+        }
+
+        @Test
+        fun `Persisting rejected transaction due to reference state unknown succeeds`() {
+            val txId = SecureHashUtils.randomSecureHash()
+            val txIds = listOf(txId)
+            val externalRequest = generateExternalRequest(txId)
+            val internalRequest = UniquenessCheckRequestInternal.create(externalRequest)
+            val txns = listOf(
+                Pair(internalRequest, UniquenessCheckResultFailureImpl(
+                    Clock.systemUTC().instant(),
+                    UniquenessCheckErrorReferenceStateUnknownImpl(listOf(
+                        UniquenessCheckStateRefImpl(txId, 0))))))
+
+            backingStoreImpl.session { session ->
+                session.executeTransaction { _, txnOps -> txnOps.commitTransactions(txns) }
+            }
+
+            backingStoreImpl.session { session ->
+                val txDetails = session.getTransactionDetails(txIds)
+                assertEquals(1, txDetails.size)
+                txDetails.firstNotNullOf { secureHashTxnDetail ->
+                    val uniquenessCheckResult = secureHashTxnDetail.value.result
+                    assertThat(txIds.contains(secureHashTxnDetail.key))
+
+                    val unknownStates = (toErrorType<UniquenessCheckErrorReferenceStateUnknown>(uniquenessCheckResult))
+                        .unknownStates
+                    assertThat(unknownStates.size).isEqualTo(1)
+                    assertThat(unknownStates.first().stateIndex).isEqualTo(0)
+                    assertThat(unknownStates.first().txHash).isEqualTo(txId)
+                    UniquenessAssertions.assertRejectedUniquenessCheckResult(uniquenessCheckResult)
+                }
+            }
+        }
+
+        @Test
+        fun `Persisting rejected transaction due to time window out of bound succeeds`() {
+            val txId = SecureHashUtils.randomSecureHash()
+            val txIds = listOf(txId)
+            val externalRequest = generateExternalRequest(txId)
+            val internalRequest = UniquenessCheckRequestInternal.create(externalRequest)
+
+            val lowerBound: Instant = LocalDateTime.of(2022, 9, 30, 0, 0).toInstant(ZoneOffset.UTC)
+            val upperBound: Instant = LocalDateTime.of(2022, 10, 2, 0, 0).toInstant(ZoneOffset.UTC)
+            val evaluationTime: Instant = LocalDateTime.of(2022, 10, 3, 0, 0).toInstant(ZoneOffset.UTC)
+            val txns = listOf(
+                Pair(internalRequest, UniquenessCheckResultFailureImpl(
+                    Clock.systemUTC().instant(),
+                    UniquenessCheckErrorTimeWindowOutOfBoundsImpl(evaluationTime, lowerBound, upperBound))))
+
+            backingStoreImpl.session { session ->
+                session.executeTransaction { _, txnOps -> txnOps.commitTransactions(txns) }
+            }
+
+            backingStoreImpl.session { session ->
+                val txDetails = session.getTransactionDetails(txIds)
+                assertEquals(1, txDetails.size)
+                txDetails.firstNotNullOf { secureHashTxnDetail ->
+                    val uniquenessCheckResult = secureHashTxnDetail.value.result
+                    assertThat(txIds.contains(secureHashTxnDetail.key))
+
+                    val error = toErrorType<UniquenessCheckErrorTimeWindowOutOfBounds>(uniquenessCheckResult)
+                    assertThat(error.evaluationTimestamp).isEqualTo(evaluationTime)
+                    assertThat(error.timeWindowLowerBound).isEqualTo(lowerBound)
+                    assertThat(error.timeWindowUpperBound).isEqualTo(upperBound)
+                    UniquenessAssertions.assertRejectedUniquenessCheckResult(uniquenessCheckResult)
+                }
+            }
+        }
+
+        @Test
+        fun `Persisting rejected transaction with general error succeeds`() {
+            val txId = SecureHashUtils.randomSecureHash()
+            val txIds = listOf(txId)
+            val externalRequest = generateExternalRequest(txId)
+            val internalRequest = UniquenessCheckRequestInternal.create(externalRequest)
+            val errorMessage = "some error message"
+            val txns = listOf(
+                Pair(internalRequest, UniquenessCheckResultFailureImpl(
+                        Clock.systemUTC().instant(), UniquenessCheckErrorGeneralImpl(errorMessage)))
+            )
+
+            backingStoreImpl.session { session ->
+                session.executeTransaction { _, txnOps -> txnOps.commitTransactions(txns) }
+            }
+
+            backingStoreImpl.session { session ->
+                val txnDetails = session.getTransactionDetails(txIds)
+                assertEquals(1, txnDetails.size)
+                txnDetails.firstNotNullOf { secureHashTxnDetail ->
+                    val uniquenessCheckResult = secureHashTxnDetail.value.result
+                    assertThat(txIds.contains(secureHashTxnDetail.key))
+                    assertThat((toErrorType<UniquenessCheckErrorGeneral>(uniquenessCheckResult)).errorText)
+                        .isEqualTo(errorMessage)
+                    UniquenessAssertions.assertRejectedUniquenessCheckResult(uniquenessCheckResult)
                 }
             }
         }

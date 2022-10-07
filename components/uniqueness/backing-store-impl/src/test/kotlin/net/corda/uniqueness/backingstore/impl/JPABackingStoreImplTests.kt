@@ -228,7 +228,6 @@ class JPABackingStoreImplTests {
         fun `Stop event TODO`() {
             val mockCoordinator = mock<LifecycleCoordinator>()
             backingStoreImpl.eventHandler(StopEvent(), mockCoordinator)
-            // TODO: add tests
         }
 
         @Test
