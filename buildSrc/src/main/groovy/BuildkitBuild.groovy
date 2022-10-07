@@ -1,4 +1,4 @@
-import org.gradle.api.DefaultTask
+import org.gradle.api.tasks.Exec
 import org.gradle.api.GradleException
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.model.ObjectFactory
@@ -24,7 +24,7 @@ import java.nio.file.StandardCopyOption
 
 // More info available here https://r3-cev.atlassian.net/wiki/spaces/CB/pages/4063035406/BuildKit
 
-abstract class BuildkitBuild extends DefaultTask {
+abstract class BuildkitBuild extends Exec {
 
     @Inject
     protected abstract ObjectFactory getObjects()
@@ -64,6 +64,13 @@ abstract class BuildkitBuild extends DefaultTask {
     final Property<String> subDir =
         getObjects().property(String).convention('')
 
+    @Input
+    final Property<String> containerTag =
+        getObjects().property(String).convention('')
+
+    @Input
+    final Property<String> containerName =
+        getObjects().property(String).convention('')
 
     @TaskAction
     def checkForDaemon() {
@@ -78,15 +85,15 @@ abstract class BuildkitBuild extends DefaultTask {
 
     }
 
-    // Copy fat jars and jdbc drivers to temporary directory 
-    // Runs before the buildctl command execution
-
+    @Override
     @TaskAction
-    def CopyFiles() {
+    protected void exec(){
 
         def buildBaseDir = temporaryDir.toPath()
         def containerizationDir = Paths.get("$buildBaseDir/containerization/")
         def driverDir = Paths.get("$buildBaseDir/jdbc-driver/")
+        def containerLocation = '/opt/override/'
+        def driverLocation = '/opt/jdbc-driver'
 
         if (!(Files.exists(containerizationDir))) {
             logger.quiet("Created containerization dir")
@@ -122,5 +129,35 @@ abstract class BuildkitBuild extends DefaultTask {
                 Files.copy(Paths.get(it.path), Paths.get("${driverDir.toString()}/$jarName"), StandardCopyOption.REPLACE_EXISTING)
             }           
         }
+
+        List<String> javaArgs = new ArrayList<String>(arguments.get())
+        javaArgs.add("-Dlog4j2.debug=\${ENABLE_LOG4J2_DEBUG:-false}")
+        javaArgs.add("-Dlog4j.configurationFile=log4j2-console.xml")
+        javaArgs.add("-Dpf4j.pluginsDir=${containerLocation + subDir.get()}")
+
+        def baseImageName = "${baseImageTag.get().empty ? baseImageName.get() : "${baseImageName.get()}:${baseImageTag.get()}"}"
+        def finalName = "${containerTag.get().isEmpty() ? containerName.get() : "${containerName.get()}:${containerTag.get()}"}"
+
+        String systemCommand
+        String systemPrefix
+        if (System.properties['os.name'].toLowerCase().contains('windows')) {
+            systemCommand = 'powershell'
+            systemPrefix = '/c'
+        } else{
+            systemCommand = 'bash'
+            systemPrefix = '-c'
+        }
+
+        String[] baseCommand = ['buildctl', "--addr tcp://localhost:3476" , "build" ,"--frontend=dockerfile.v0" , "--local context=/" , "--local dockerfile=${project.rootDir.toString() + "/docker"}"]
+        String[] opts = ["--opt build-arg:BASE_IMAGE=${baseImageName}" , "--opt build-arg:BUILD_PATH=${containerizationDir}" , "--opt build-arg:JAR_LOCATION=${containerLocation + subDir.get()}" , "--opt build-arg:JDBC_PATH=${driverDir}" , "--opt build-arg:JDBC_DRIVER_LOCATION=${driverLocation}" , "--opt build-arg:IMAGE_ENTRYPOINT=\"exec java ${javaArgs.join(" ")} -jar  ${containerLocation}cli.jar\" "]
+        String[] commandTail = ["--output type=image,name=docker-js-temp.software.r3.com/corda-os-${finalName},push=true" , "--export-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-${containerName.get()}-cache" , "--import-cache type=registry,ref=docker-js-temp.software.r3.com/corda-os-${containerName.get()}-cache"]
+        
+        String[] buildkitCommand = baseCommand + opts + commandTail
+
+        String finalCommand = buildkitCommand.join("\n")
+        println("$finalCommand")
+
+        commandLine systemCommand, systemPrefix, buildkitCommand.join(" ")    
+        super.exec()
     }
 }
