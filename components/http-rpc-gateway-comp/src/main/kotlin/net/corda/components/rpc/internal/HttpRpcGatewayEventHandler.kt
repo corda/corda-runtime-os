@@ -40,7 +40,7 @@ import net.corda.schema.configuration.ConfigKeys.RPC_WEBSOCKET_CONNECTION_IDLE_T
 import net.corda.utilities.NetworkHostAndPort
 import net.corda.utilities.PathProvider
 import net.corda.utilities.TempPathProvider
-import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import java.util.function.Supplier
 

@@ -23,6 +23,9 @@ dependencies {
 
     implementation "org.hibernate:hibernate-core:$hibernateVersion"
     implementation "org.hsqldb:hsqldb:$hsqldbVersion"
+    
+    api "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion"
+    api "org.bouncycastle:bcpkix-jdk15on:$bouncycastleVersion"
 
     testImplementation "org.junit.jupiter:junit-jupiter:$junit5Version"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
@@ -32,4 +35,36 @@ dependencies {
 
 tasks.named('jar', Jar) {
     archiveBaseName = 'corda-simulator-runtime'
+}
+
+publishing {
+    publications {
+        configureEach {
+            pom {
+                name = 'corda-simulator-runtime'
+                description = 'corda-simulator-runtime'
+                url = 'https://github.com/corda/corda-runtime-os'
+
+                scm {
+                    url = 'https://github.com/corda/corda-runtime-os'
+                }
+
+                licenses {
+                    license {
+                        name = licenseName
+                        url = licenseUrl
+                        distribution = 'repo'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = 'R3'
+                        name = 'R3'
+                        email = 'dev@corda.net'
+                    }
+                }
+            }
+        }
+    }
 }

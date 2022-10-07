@@ -18,7 +18,9 @@ import org.osgi.service.component.annotations.ReferenceCardinality.OPTIONAL
 import org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC
 import java.nio.file.Path
 import java.util.Collections.unmodifiableSet
+import java.util.Deque
 import java.util.Hashtable
+import java.util.LinkedList
 import java.util.concurrent.TimeoutException
 
 @Suppress("unused")
@@ -69,7 +71,7 @@ class SandboxSetupImpl @Activate constructor(
         private val logger = loggerFor<SandboxSetup>()
     }
 
-    private val cleanups = mutableListOf<AutoCloseable>()
+    private val cleanups: Deque<AutoCloseable> = LinkedList()
 
     override fun configure(
         bundleContext: BundleContext,
@@ -138,7 +140,7 @@ class SandboxSetupImpl @Activate constructor(
             bundleContext.getServiceReferences(serviceType, filter).maxOrNull()?.let { ref ->
                 val service = bundleContext.getService(ref)
                 if (service != null) {
-                    cleanups.add(AutoCloseable { bundleContext.ungetService(ref) })
+                    withCleanup { bundleContext.ungetService(ref) }
                     return service
                 }
             }
@@ -151,5 +153,9 @@ class SandboxSetupImpl @Activate constructor(
         }
         val serviceDescription = serviceType.name + (filter?.let { f -> ", filter=$f" } ?: "")
         throw TimeoutException("Service $serviceDescription did not arrive in $timeout milliseconds")
+    }
+
+    override fun withCleanup(closeable: AutoCloseable) {
+        cleanups.addFirst(closeable)
     }
 }

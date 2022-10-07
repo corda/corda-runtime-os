@@ -39,7 +39,6 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.time.TestClock
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.ShortHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -240,20 +239,18 @@ class MemberOpsClientTest {
     }
 
     @Test
-    fun `should fail when there is an RPC sender exception while sending the request`() {
+    fun `checkRegistrationProgress should return empty list when there is an RPC sender exception while sending the request`() {
         memberOpsClient.start()
         setUpRpcSender()
         val message = "Sender exception."
         whenever(rpcSender.sendRequest(any())).thenThrow(CordaRPCAPISenderException(message))
-        val ex = assertFailsWith<CordaRuntimeException> {
-            memberOpsClient.checkRegistrationProgress(request.holdingIdentityShortHash)
-        }
-        assertTrue { ex.message!!.contains(message) }
+        val result = memberOpsClient.checkRegistrationProgress(request.holdingIdentityShortHash)
+        assertThat(result).isEqualTo(emptyList<RegistrationRequestStatusDto>())
         memberOpsClient.stop()
     }
 
     @Test
-    fun `should fail when response is null`() {
+    fun `checkRegistrationProgress should return empty list when response is null`() {
         memberOpsClient.start()
         setUpRpcSender()
 
@@ -271,15 +268,13 @@ class MemberOpsClientTest {
             )
         }
 
-        val ex = assertFailsWith<CordaRuntimeException> {
-            memberOpsClient.checkRegistrationProgress(request.holdingIdentityShortHash)
-        }
-        assertTrue { ex.message!!.contains("null") }
+        val result = memberOpsClient.checkRegistrationProgress(request.holdingIdentityShortHash)
+        assertThat(result).isEqualTo(emptyList<RegistrationRequestStatusDto>())
         memberOpsClient.stop()
     }
 
     @Test
-    fun `should fail when request and response has different ids`() {
+    fun `checkRegistrationProgress should return empty list when request and response has different ids`() {
         memberOpsClient.start()
         setUpRpcSender()
 
@@ -305,15 +300,13 @@ class MemberOpsClientTest {
             )
         }
 
-        val ex = assertFailsWith<CordaRuntimeException> {
-            memberOpsClient.checkRegistrationProgress(request.holdingIdentityShortHash)
-        }
-        assertTrue { ex.message!!.contains("ID") }
+        val result = memberOpsClient.checkRegistrationProgress(request.holdingIdentityShortHash)
+        assertThat(result).isEqualTo(emptyList<RegistrationRequestStatusDto>())
         memberOpsClient.stop()
     }
 
     @Test
-    fun `should fail when request and response has different requestTimestamp`() {
+    fun `checkRegistrationProgress should return empty list when request and response has different requestTimestamp`() {
         memberOpsClient.start()
         setUpRpcSender()
 
@@ -338,15 +331,13 @@ class MemberOpsClientTest {
             )
         }
 
-        val ex = assertFailsWith<CordaRuntimeException> {
-            memberOpsClient.checkRegistrationProgress(request.holdingIdentityShortHash)
-        }
-        assertTrue { ex.message!!.contains("timestamp") }
+        val result = memberOpsClient.checkRegistrationProgress(request.holdingIdentityShortHash)
+        assertThat(result).isEqualTo(emptyList<RegistrationRequestStatusDto>())
         memberOpsClient.stop()
     }
 
     @Test
-    fun `should fail when response type is not the expected type`() {
+    fun `checkRegistrationProgress should return empty list when response type is not the expected type`() {
         memberOpsClient.start()
         setUpRpcSender()
 
@@ -364,10 +355,8 @@ class MemberOpsClientTest {
             )
         }
 
-        val ex = assertFailsWith<CordaRuntimeException> {
-            memberOpsClient.checkRegistrationProgress(request.holdingIdentityShortHash)
-        }
-        assertTrue { ex.message!!.contains("Expected class") }
+        val result = memberOpsClient.checkRegistrationProgress(request.holdingIdentityShortHash)
+        assertThat(result).isEqualTo(emptyList<RegistrationRequestStatusDto>())
         memberOpsClient.stop()
     }
 

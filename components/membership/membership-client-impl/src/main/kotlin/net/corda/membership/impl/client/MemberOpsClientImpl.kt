@@ -1,6 +1,5 @@
 package net.corda.membership.impl.client
 
-import net.corda.utilities.time.UTCClock
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.membership.common.RegistrationStatus
@@ -13,8 +12,10 @@ import net.corda.data.membership.rpc.request.RegistrationStatusRpcRequest
 import net.corda.data.membership.rpc.request.RegistrationStatusSpecificRpcRequest
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.RegistrationRpcResponse
+import net.corda.data.membership.rpc.response.RegistrationRpcStatus
 import net.corda.data.membership.rpc.response.RegistrationStatusResponse
 import net.corda.data.membership.rpc.response.RegistrationsStatusResponse
+import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -28,7 +29,6 @@ import net.corda.membership.client.MemberOpsClient
 import net.corda.membership.client.dto.MemberInfoSubmittedDto
 import net.corda.membership.client.dto.MemberRegistrationRequestDto
 import net.corda.membership.client.dto.RegistrationRequestProgressDto
-import net.corda.libs.configuration.helper.getConfig
 import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
 import net.corda.membership.lib.toWire
@@ -39,6 +39,7 @@ import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.concurrent.getOrThrow
+import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.ShortHash
@@ -46,7 +47,7 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.util.*
+import java.util.UUID
 
 @Component(service = [MemberOpsClient::class])
 class MemberOpsClientImpl @Activate constructor(
@@ -194,53 +195,77 @@ class MemberOpsClientImpl @Activate constructor(
         val rpcSender: RPCSender<MembershipRpcRequest, MembershipRpcResponse>
     ) : InnerMemberOpsClient {
         override fun startRegistration(memberRegistrationRequest: MemberRegistrationRequestDto): RegistrationRequestProgressDto {
-            val request = MembershipRpcRequest(
-                MembershipRpcRequestContext(
-                    UUID.randomUUID().toString(),
-                    clock.instant()
-                ),
-                RegistrationRpcRequest(
-                    memberRegistrationRequest.holdingIdentityShortHash.toString(),
-                    RegistrationRpcAction.valueOf(memberRegistrationRequest.action.name),
-                    memberRegistrationRequest.context.toWire()
+            val requestId = UUID.randomUUID().toString()
+            try {
+                val request = MembershipRpcRequest(
+                    MembershipRpcRequestContext(
+                        requestId,
+                        clock.instant()
+                    ),
+                    RegistrationRpcRequest(
+                        memberRegistrationRequest.holdingIdentityShortHash.toString(),
+                        RegistrationRpcAction.valueOf(memberRegistrationRequest.action.name),
+                        memberRegistrationRequest.context.toWire()
+                    )
                 )
-            )
 
-            val response: RegistrationRpcResponse = request.sendRequest()
+                val response: RegistrationRpcResponse = request.sendRequest()
 
-            return response.toDto()
+                return response.toDto()
+            } catch (e: Exception) {
+                logger.warn("Could not submit registration request for holding identity ID" +
+                        " [${memberRegistrationRequest.holdingIdentityShortHash}].", e)
+                return RegistrationRequestProgressDto(
+                    requestId,
+                    null,
+                    RegistrationRpcStatus.NOT_SUBMITTED.toString(),
+                    MemberInfoSubmittedDto(emptyMap())
+                )
+            }
         }
 
         override fun checkRegistrationProgress(holdingIdentityShortHash: ShortHash): List<RegistrationRequestStatusDto> {
-            val request = MembershipRpcRequest(
-                MembershipRpcRequestContext(
-                    UUID.randomUUID().toString(),
-                    clock.instant()
-                ),
-                RegistrationStatusRpcRequest(holdingIdentityShortHash.toString())
-            )
+            return try {
+                val request = MembershipRpcRequest(
+                    MembershipRpcRequestContext(
+                        UUID.randomUUID().toString(),
+                        clock.instant()
+                    ),
+                    RegistrationStatusRpcRequest(holdingIdentityShortHash.toString())
+                )
 
-            return registrationsResponse(request.sendRequest())
+                registrationsResponse(request.sendRequest())
+            } catch (e: Exception) {
+                logger.warn("Could not check statuses of registration requests made by holding identity ID" +
+                        " [${holdingIdentityShortHash}].", e)
+                emptyList()
+            }
         }
 
         override fun checkSpecificRegistrationProgress(
             holdingIdentityShortHash: ShortHash,
             registrationRequestId: String,
         ): RegistrationRequestStatusDto? {
-            val request = MembershipRpcRequest(
-                MembershipRpcRequestContext(
-                    UUID.randomUUID().toString(),
-                    clock.instant()
-                ),
-                RegistrationStatusSpecificRpcRequest(
-                    holdingIdentityShortHash.toString(),
-                    registrationRequestId,
+            try {
+                val request = MembershipRpcRequest(
+                    MembershipRpcRequestContext(
+                        UUID.randomUUID().toString(),
+                        clock.instant()
+                    ),
+                    RegistrationStatusSpecificRpcRequest(
+                        holdingIdentityShortHash.toString(),
+                        registrationRequestId,
+                    )
                 )
-            )
 
-            val response: RegistrationStatusResponse = request.sendRequest()
+                val response: RegistrationStatusResponse = request.sendRequest()
 
-            return response.status?.toDto()
+                return response.status?.toDto()
+            } catch (e: Exception) {
+                logger.warn("Could not check status of registration request `$registrationRequestId` made by holding identity ID" +
+                        " [${holdingIdentityShortHash}].", e)
+                return null
+            }
         }
 
         override fun close() = rpcSender.close()

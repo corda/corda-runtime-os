@@ -1,0 +1,9 @@
+db:
+  appSimulator:
+    user: postgres
+
+appSimulators:
+   receiver:
+      enabled: true
+   dbSink:
+      enabled: true

@@ -12,7 +12,6 @@ dependencies {
     api project(':libs:lifecycle:lifecycle')
 
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
-
     implementation "net.corda:corda-avro-schema"
     implementation "net.corda:corda-crypto"
     implementation "net.corda:corda-db-schema"
@@ -24,7 +23,8 @@ dependencies {
     implementation project(':libs:db:db-admin-impl')
     implementation project(":libs:uniqueness:jpa-backing-store-datamodel")
     implementation project(":libs:uniqueness:common")
-    implementation project(':libs:virtual-node:virtual-node-info')
+    implementation project(":libs:utilities")
+//    implementation project(':libs:virtual-node:virtual-node-info')
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

@@ -13,6 +13,7 @@ dependencies {
     implementation project(":libs:configuration:configuration-core")
     implementation project(":components:configuration:configuration-read-service")
     implementation project(":libs:messaging:messaging")
+    implementation project(":libs:utilities")
 
     implementation "com.typesafe:config:$typeSafeConfigVersion"
 

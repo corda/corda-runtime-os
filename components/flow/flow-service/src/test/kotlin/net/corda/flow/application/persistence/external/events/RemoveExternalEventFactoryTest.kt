@@ -1,7 +1,6 @@
 package net.corda.flow.application.persistence.external.events
 
 import net.corda.data.KeyValuePairList
-import java.nio.ByteBuffer
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.persistence.DeleteEntities
 import net.corda.data.persistence.EntityRequest
@@ -14,6 +13,7 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.nio.ByteBuffer
 
 class RemoveExternalEventFactoryTest {
 
@@ -29,7 +29,7 @@ class RemoveExternalEventFactoryTest {
             externalEventContext,
             RemoveParameters(listOf(ByteBuffer.wrap(byteArrayOf(1))))
         )
-        assertEquals(Schemas.VirtualNode.ENTITY_PROCESSOR, externalEventRecord.topic)
+        assertEquals(Schemas.Persistence.PERSISTENCE_ENTITY_PROCESSOR_TOPIC, externalEventRecord.topic)
         assertNull(externalEventRecord.key)
         assertEquals(
             EntityRequest(

@@ -4,8 +4,12 @@ import net.corda.crypto.testkit.SecureHashUtils
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
+import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.db.connection.manager.VirtualNodeDbType
+import net.corda.db.testkit.DatabaseInstaller
 import net.corda.db.testkit.DbUtils
+import net.corda.db.testkit.TestDbInfo
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
@@ -15,60 +19,22 @@ import net.corda.orm.impl.JpaEntitiesRegistryImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.uniqueness.backingstore.jpa.datamodel.JPABackingStoreEntities
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTransactionDetailEntity
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorGeneralImpl
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultSuccessImpl
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateDetailsImpl
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateConflictImpl
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateRefImpl
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateUnknownImpl
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateConflictImpl
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorTimeWindowOutOfBoundsImpl
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateUnknownImpl
+import net.corda.uniqueness.datamodel.impl.*
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.uniqueness.utils.UniquenessAssertions
 import net.corda.uniqueness.utils.UniquenessAssertions.toErrorType
-import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
-import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
-import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorInputStateConflict
-import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorInputStateUnknown
-import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateConflict
-import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateUnknown
-import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorGeneral
-import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorTimeWindowOutOfBounds
+import net.corda.v5.application.uniqueness.model.*
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions.assertInstanceOf
-import org.junit.jupiter.api.TestInstance
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Nested
-import org.junit.jupiter.api.Disabled
-import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.api.assertAll
-import org.junit.jupiter.api.assertDoesNotThrow
+import org.junit.jupiter.api.*
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mockito
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.any
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.whenever
-import org.mockito.kotlin.times
-import org.mockito.kotlin.never
-import java.time.Clock
-import java.time.LocalDate
-import java.time.ZoneOffset
-import java.time.Instant
-import java.time.LocalDateTime
-import java.util.UUID
-import javax.persistence.EntityExistsException
-import javax.persistence.EntityManagerFactory
-import javax.persistence.OptimisticLockException
-import javax.persistence.PersistenceException
-import javax.persistence.QueryTimeoutException
-import javax.persistence.RollbackException
+import org.mockito.kotlin.*
+import java.time.*
+import java.util.*
+import javax.persistence.*
 import kotlin.reflect.full.createInstance
 import kotlin.test.assertEquals
 
@@ -84,12 +50,24 @@ class JPABackingStoreImplIntegrationTests {
 
     companion object {
         private val UPPER_BOUND = LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
-        private val TEST_IDENTITY = createTestHoldingIdentity("C=GB, L=London, O=Alice", "Test Group").toAvro()
-        private val MAX_ATTEMPTS = 10 // Set it same as "MAX_ATTEMPTS" in JPABackingStoreImpl.kt
+        private val TEST_IDENTITY = createTestHoldingIdentity("C=GB, L=London, O=Alice", "Test Group")
+        private val MAX_ATTEMPTS = 10
         private val DB_NAME = "uniqueness_default"
+        private val DEFAULT_DB_NAME = VirtualNodeDbType.UNIQUENESS.getSchemaName(TEST_IDENTITY.shortHash)
+        
         private val dbConfig = DbUtils.getEntityManagerConfiguration(DB_NAME)
-        private val entityManagerFactory: EntityManagerFactory = EntityManagerFactoryFactoryImpl().create(
-            DB_NAME, JPABackingStoreEntities.classes.toList(), dbConfig
+        private val databaseInstaller = DatabaseInstaller(
+            EntityManagerFactoryFactoryImpl(),
+            LiquibaseSchemaMigratorImpl(),
+            JpaEntitiesRegistryImpl()
+        )
+
+        // Each DB uses both a different db name and schema name, as HSQLDB does not appear to
+        // respect schema name.
+        private val defaultDb: EntityManagerFactory = databaseInstaller.setupDatabase(
+            TestDbInfo("uniq_test_default", DB_NAME),
+            "vnode-uniqueness",
+            JPABackingStoreEntities.classes
         )
     }
 
@@ -102,7 +80,8 @@ class JPABackingStoreImplIntegrationTests {
             whenever(createCoordinator(any(), any())) doReturn lifecycleCoordinator
         }
 
-        backingStoreImpl = createBackingStoreImpl(entityManagerFactory)
+//        backingStoreImpl = createBackingStoreImpl(entityManagerFactory)
+        backingStoreImpl = createBackingStoreImpl(defaultDb)
         backingStoreImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
     }
 
@@ -110,7 +89,7 @@ class JPABackingStoreImplIntegrationTests {
         return JPABackingStoreImpl(lifecycleCoordinatorFactory,
             JpaEntitiesRegistryImpl(),
             mock<DbConnectionManager>().apply {
-                whenever(getOrCreateEntityManagerFactory(any(), any(), any())) doReturn emFactory
+                whenever(getOrCreateEntityManagerFactory(eq(DEFAULT_DB_NAME), any(), any())) doReturn emFactory
                 whenever(getClusterDataSource()) doReturn dbConfig.dataSource
             })
     }
@@ -126,7 +105,7 @@ class JPABackingStoreImplIntegrationTests {
 
         return UniquenessCheckRequestAvro.newBuilder(
             UniquenessCheckRequestAvro(
-                TEST_IDENTITY,
+                TEST_IDENTITY.toAvro(),
                 ExternalEventContext(
                     UUID.randomUUID().toString(),
                     UUID.randomUUID().toString(),
@@ -148,7 +127,7 @@ class JPABackingStoreImplIntegrationTests {
         fun `Executing transaction retries upon expected exceptions`() {
             var execCounter = 0
             assertThrows<IllegalStateException> {
-                backingStoreImpl.session { session ->
+                backingStoreImpl.session(TEST_IDENTITY) { session ->
                     session.executeTransaction { _, _ ->
                         execCounter++
                         throw EntityExistsException()
@@ -162,7 +141,7 @@ class JPABackingStoreImplIntegrationTests {
         fun `Executing transaction does not retry upon unexpected exception`() {
             var execCounter = 0
             assertThrows<DummyException> {
-                backingStoreImpl.session { session ->
+                backingStoreImpl.session(TEST_IDENTITY) { session ->
                     session.executeTransaction { _, _ ->
                         execCounter++
                         throw DummyException("dummy exception")
@@ -177,7 +156,7 @@ class JPABackingStoreImplIntegrationTests {
             val RETRY_CNT = 3
             var execCounter = 0
             assertDoesNotThrow {
-                backingStoreImpl.session { session ->
+                backingStoreImpl.session(TEST_IDENTITY) { session ->
                     session.executeTransaction { _, _ ->
                         execCounter++
                         if (execCounter < RETRY_CNT)
@@ -202,11 +181,11 @@ class JPABackingStoreImplIntegrationTests {
                 Pair(internalRequest, UniquenessCheckResultSuccessImpl(Clock.systemUTC().instant()))
             )
 
-            backingStoreImpl.session { session ->
+            backingStoreImpl.session(TEST_IDENTITY) { session ->
                 session.executeTransaction { _, txnOps -> txnOps.commitTransactions(txns) }
             }
 
-            backingStoreImpl.session { session ->
+            backingStoreImpl.session(TEST_IDENTITY) { session ->
                 val txnDetails = session.getTransactionDetails(txIds)
                 assertThat(txnDetails.size).isEqualTo(1)
 
@@ -225,15 +204,19 @@ class JPABackingStoreImplIntegrationTests {
             val externalRequest = generateExternalRequest(txId)
             val internalRequest = UniquenessCheckRequestInternal.create(externalRequest)
             val txns = listOf(
-                Pair(internalRequest, UniquenessCheckResultFailureImpl(
-                    Clock.systemUTC().instant(),
-                    UniquenessCheckErrorInputStateUnknownImpl(listOf(UniquenessCheckStateRefImpl(txId, 0))))))
+                Pair(
+                    internalRequest, UniquenessCheckResultFailureImpl(
+                        Clock.systemUTC().instant(),
+                        UniquenessCheckErrorInputStateUnknownImpl(listOf(UniquenessCheckStateRefImpl(txId, 0)))
+                    )
+                )
+            )
 
-            backingStoreImpl.session { session ->
+            backingStoreImpl.session(TEST_IDENTITY) { session ->
                 session.executeTransaction { _, txnOps -> txnOps.commitTransactions(txns) }
             }
 
-            backingStoreImpl.session { session ->
+            backingStoreImpl.session(TEST_IDENTITY) { session ->
                 val txDetails = session.getTransactionDetails(txIds)
                 assertEquals(1, txDetails.size)
                 txDetails.firstNotNullOf { secureHashTxnDetail ->
@@ -257,18 +240,25 @@ class JPABackingStoreImplIntegrationTests {
             val externalRequest = generateExternalRequest(txId)
             val internalRequest = UniquenessCheckRequestInternal.create(externalRequest)
             val txns = listOf(
-                Pair(internalRequest, UniquenessCheckResultFailureImpl(
-                    Clock.systemUTC().instant(),
-                    UniquenessCheckErrorInputStateConflictImpl(listOf(
-                        UniquenessCheckStateDetailsImpl(
-                            UniquenessCheckStateRefImpl(txId, 0), consumingTxId = null)))))
+                Pair(
+                    internalRequest, UniquenessCheckResultFailureImpl(
+                        Clock.systemUTC().instant(),
+                        UniquenessCheckErrorInputStateConflictImpl(
+                            listOf(
+                                UniquenessCheckStateDetailsImpl(
+                                    UniquenessCheckStateRefImpl(txId, 0), consumingTxId = null
+                                )
+                            )
+                        )
+                    )
+                )
             )
 
-            backingStoreImpl.session { session ->
+            backingStoreImpl.session(TEST_IDENTITY) { session ->
                 session.executeTransaction { _, txnOps -> txnOps.commitTransactions(txns) }
             }
 
-            backingStoreImpl.session { session ->
+            backingStoreImpl.session(TEST_IDENTITY) { session ->
                 val txDetails = session.getTransactionDetails(txIds)
                 assertEquals(1, txDetails.size)
                 txDetails.firstNotNullOf { secureHashTxnDetail ->
@@ -293,17 +283,25 @@ class JPABackingStoreImplIntegrationTests {
             val externalRequest = generateExternalRequest(txId)
             val internalRequest = UniquenessCheckRequestInternal.create(externalRequest)
             val txns = listOf(
-                Pair(internalRequest, UniquenessCheckResultFailureImpl(
-                    Clock.systemUTC().instant(),
-                    UniquenessCheckErrorReferenceStateConflictImpl(listOf(
-                       UniquenessCheckStateDetailsImpl(
-                           UniquenessCheckStateRefImpl(txId, 0), consumingTxId = null))))))
+                Pair(
+                    internalRequest, UniquenessCheckResultFailureImpl(
+                        Clock.systemUTC().instant(),
+                        UniquenessCheckErrorReferenceStateConflictImpl(
+                            listOf(
+                                UniquenessCheckStateDetailsImpl(
+                                    UniquenessCheckStateRefImpl(txId, 0), consumingTxId = null
+                                )
+                            )
+                        )
+                    )
+                )
+            )
 
-            backingStoreImpl.session { session ->
+            backingStoreImpl.session(TEST_IDENTITY) { session ->
                 session.executeTransaction { _, txnOps -> txnOps.commitTransactions(txns) }
             }
 
-            backingStoreImpl.session { session ->
+            backingStoreImpl.session(TEST_IDENTITY) { session ->
                 val txDetails = session.getTransactionDetails(txIds)
                 assertEquals(1, txDetails.size)
                 txDetails.firstNotNullOf { secureHashTxnDetail ->
@@ -328,16 +326,23 @@ class JPABackingStoreImplIntegrationTests {
             val externalRequest = generateExternalRequest(txId)
             val internalRequest = UniquenessCheckRequestInternal.create(externalRequest)
             val txns = listOf(
-                Pair(internalRequest, UniquenessCheckResultFailureImpl(
-                    Clock.systemUTC().instant(),
-                    UniquenessCheckErrorReferenceStateUnknownImpl(listOf(
-                        UniquenessCheckStateRefImpl(txId, 0))))))
+                Pair(
+                    internalRequest, UniquenessCheckResultFailureImpl(
+                        Clock.systemUTC().instant(),
+                        UniquenessCheckErrorReferenceStateUnknownImpl(
+                            listOf(
+                                UniquenessCheckStateRefImpl(txId, 0)
+                            )
+                        )
+                    )
+                )
+            )
 
-            backingStoreImpl.session { session ->
+            backingStoreImpl.session(TEST_IDENTITY) { session ->
                 session.executeTransaction { _, txnOps -> txnOps.commitTransactions(txns) }
             }
 
-            backingStoreImpl.session { session ->
+            backingStoreImpl.session(TEST_IDENTITY) { session ->
                 val txDetails = session.getTransactionDetails(txIds)
                 assertEquals(1, txDetails.size)
                 txDetails.firstNotNullOf { secureHashTxnDetail ->
@@ -365,15 +370,19 @@ class JPABackingStoreImplIntegrationTests {
             val upperBound: Instant = LocalDateTime.of(2022, 10, 2, 0, 0).toInstant(ZoneOffset.UTC)
             val evaluationTime: Instant = LocalDateTime.of(2022, 10, 3, 0, 0).toInstant(ZoneOffset.UTC)
             val txns = listOf(
-                Pair(internalRequest, UniquenessCheckResultFailureImpl(
-                    Clock.systemUTC().instant(),
-                    UniquenessCheckErrorTimeWindowOutOfBoundsImpl(evaluationTime, lowerBound, upperBound))))
+                Pair(
+                    internalRequest, UniquenessCheckResultFailureImpl(
+                        Clock.systemUTC().instant(),
+                        UniquenessCheckErrorTimeWindowOutOfBoundsImpl(evaluationTime, lowerBound, upperBound)
+                    )
+                )
+            )
 
-            backingStoreImpl.session { session ->
+            backingStoreImpl.session(TEST_IDENTITY) { session ->
                 session.executeTransaction { _, txnOps -> txnOps.commitTransactions(txns) }
             }
 
-            backingStoreImpl.session { session ->
+            backingStoreImpl.session(TEST_IDENTITY) { session ->
                 val txDetails = session.getTransactionDetails(txIds)
                 assertEquals(1, txDetails.size)
                 txDetails.firstNotNullOf { secureHashTxnDetail ->
@@ -397,21 +406,25 @@ class JPABackingStoreImplIntegrationTests {
             val internalRequest = UniquenessCheckRequestInternal.create(externalRequest)
             val errorMessage = "some error message"
             val txns = listOf(
-                Pair(internalRequest, UniquenessCheckResultFailureImpl(
-                        Clock.systemUTC().instant(), UniquenessCheckErrorGeneralImpl(errorMessage)))
+                Pair(
+                    internalRequest, UniquenessCheckResultFailureImpl(
+//                        Clock.systemUTC().instant(), UniquenessCheckErrorGeneralImpl(errorMessage)))
+                        Clock.systemUTC().instant(), UniquenessCheckErrorMalformedRequestImpl(errorMessage)
+                    )
+                )
             )
 
-            backingStoreImpl.session { session ->
+            backingStoreImpl.session(TEST_IDENTITY) { session ->
                 session.executeTransaction { _, txnOps -> txnOps.commitTransactions(txns) }
             }
 
-            backingStoreImpl.session { session ->
+            backingStoreImpl.session(TEST_IDENTITY) { session ->
                 val txnDetails = session.getTransactionDetails(txIds)
                 assertEquals(1, txnDetails.size)
                 txnDetails.firstNotNullOf { secureHashTxnDetail ->
                     val uniquenessCheckResult = secureHashTxnDetail.value.result
                     assertThat(txIds.contains(secureHashTxnDetail.key))
-                    assertThat((toErrorType<UniquenessCheckErrorGeneral>(uniquenessCheckResult)).errorText)
+                    assertThat((toErrorType<UniquenessCheckErrorMalformedRequest>(uniquenessCheckResult)).errorText)
                         .isEqualTo(errorMessage)
                     UniquenessAssertions.assertRejectedUniquenessCheckResult(uniquenessCheckResult)
                 }
@@ -424,11 +437,11 @@ class JPABackingStoreImplIntegrationTests {
             val secureHashes = List(hashCnt) { SecureHashUtils.randomSecureHash() }
             val stateRefs = secureHashes.map { UniquenessCheckStateRefImpl(it, 0) }
 
-            backingStoreImpl.session { session ->
+            backingStoreImpl.session(TEST_IDENTITY) { session ->
                 session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
             }
 
-            backingStoreImpl.session { session ->
+            backingStoreImpl.session(TEST_IDENTITY) { session ->
                 val result = session.getStateDetails(stateRefs).toList()
                 assertThat(result.size).isEqualTo(hashCnt)
                 result.forEach { stateRefAndStateDetail ->
@@ -445,21 +458,21 @@ class JPABackingStoreImplIntegrationTests {
             val stateRefs = secureHashes.map { UniquenessCheckStateRefImpl(it, 0) }
 
             // Generate unconsumed states in DB.
-            backingStoreImpl.session { session ->
+            backingStoreImpl.session(TEST_IDENTITY) { session ->
                 session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
             }
 
             // Consume one of unconsumed states in DB.
             val consumingTxId: SecureHash = SecureHashUtils.randomSecureHash()
             val consumingStateRef = stateRefs[0] // Consume the first out of two items.
-            backingStoreImpl.session { session ->
+            backingStoreImpl.session(TEST_IDENTITY) { session ->
                 session.executeTransaction { _, txnOps ->
                     txnOps.consumeStates(consumingTxId = consumingTxId, stateRefs = listOf(consumingStateRef))
                 }
             }
 
             // Verify if the target state has been correctly updated.
-            backingStoreImpl.session { session ->
+            backingStoreImpl.session(TEST_IDENTITY) { session ->
                 val stateDetails = session.getStateDetails(stateRefs)
                 val consumedStates = stateDetails.filterValues { it.consumingTxId != null }
                 val unconsumedStates = stateDetails.filterValues { it.consumingTxId == null }
@@ -478,20 +491,20 @@ class JPABackingStoreImplIntegrationTests {
             val stateRefs = secureHashes.map { UniquenessCheckStateRefImpl(it, 0) }
 
             // Generate an unconsumed state in DB.
-            backingStoreImpl.session { session ->
+            backingStoreImpl.session(TEST_IDENTITY) { session ->
                 session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
             }
 
             val consumingTxId = SecureHashUtils.randomSecureHash()
             val consumingStateRefs = listOf<UniquenessCheckStateRef>(stateRefs[0])
 
-            backingStoreImpl.session { session ->
+            backingStoreImpl.session(TEST_IDENTITY) { session ->
                 session.executeTransaction { _, txnOps -> txnOps.consumeStates(consumingTxId, consumingStateRefs) }
             }
 
             // An attempt to spend an already spent state should fail.
             assertThrows<IllegalStateException> {
-                backingStoreImpl.session { session ->
+                backingStoreImpl.session(TEST_IDENTITY) { session ->
                     session.executeTransaction { _, txnOps -> txnOps.consumeStates(consumingTxId, consumingStateRefs) }
                 }
             }
@@ -503,7 +516,7 @@ class JPABackingStoreImplIntegrationTests {
             val stateRefs = secureHashes.map { UniquenessCheckStateRefImpl(it, 0) }
 
             // Generate an unconsumed state in DB.
-            backingStoreImpl.session { session ->
+            backingStoreImpl.session(TEST_IDENTITY) { session ->
                 session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
             }
 
@@ -511,7 +524,7 @@ class JPABackingStoreImplIntegrationTests {
             val consumingStateRefs = listOf<UniquenessCheckStateRef>(stateRefs[0])
 
             assertThrows<IllegalStateException> {
-                backingStoreImpl.session { session ->
+                backingStoreImpl.session(TEST_IDENTITY) { session ->
                     session.executeTransaction { _, txnOps ->
                         // Attempt a double-spend.
                         txnOps.consumeStates(consumingTxId, consumingStateRefs)
@@ -528,7 +541,7 @@ class JPABackingStoreImplIntegrationTests {
             val stateRefs = secureHashes.map { UniquenessCheckStateRefImpl(it, 0) }
 
             // Generate unconsumed states in DB.
-            backingStoreImpl.session { session ->
+            backingStoreImpl.session(TEST_IDENTITY) { session ->
                 session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
             }
 
@@ -536,7 +549,7 @@ class JPABackingStoreImplIntegrationTests {
             val consumingStateRefs = listOf<UniquenessCheckStateRef>(UniquenessCheckStateRefImpl(consumingTxId, 0))
 
             assertThrows<IllegalStateException> {
-                backingStoreImpl.session { session ->
+                backingStoreImpl.session(TEST_IDENTITY) { session ->
                     session.executeTransaction { _, txnOps ->
                         txnOps.consumeStates(consumingTxId = consumingTxId, stateRefs = consumingStateRefs)
                     }
@@ -570,7 +583,7 @@ class JPABackingStoreImplIntegrationTests {
             storeImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
 
             assertThrows<QueryTimeoutException> {
-                storeImpl.session { session ->
+                storeImpl.session(TEST_IDENTITY) { session ->
                     val txIds = listOf(SecureHashUtils.randomSecureHash())
                     session.getTransactionDetails(txIds)
                 }
@@ -603,7 +616,7 @@ class JPABackingStoreImplIntegrationTests {
             val secureHashes = listOf(SecureHashUtils.randomSecureHash())
             val stateRefs = secureHashes.map { UniquenessCheckStateRefImpl(it, 0) }
             assertThrows<IllegalStateException> {
-                storeImpl.session { session ->
+                storeImpl.session(TEST_IDENTITY) { session ->
                     session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
                 }
             }
@@ -625,7 +638,7 @@ class JPABackingStoreImplIntegrationTests {
             storeImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
 
             assertThrows<DummyException> {
-                storeImpl.session { session ->
+                storeImpl.session(TEST_IDENTITY) { session ->
                     session.executeTransaction { _, _ -> throw DummyException("dummy exception") }
                 }
             }
@@ -646,7 +659,7 @@ class JPABackingStoreImplIntegrationTests {
 
         val sessionInvokeCnt = 3
         repeat(sessionInvokeCnt) {
-            storeImpl.session { session -> session.executeTransaction { _, _ -> } }
+            storeImpl.session(TEST_IDENTITY) { session -> session.executeTransaction { _, _ -> } }
         }
         Mockito.verify(spyEmFactory, times(sessionInvokeCnt)).createEntityManager()
     }

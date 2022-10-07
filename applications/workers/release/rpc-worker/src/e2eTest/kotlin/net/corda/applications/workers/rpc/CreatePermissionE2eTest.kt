@@ -9,6 +9,7 @@ import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermission
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionResponseType
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
 import net.corda.test.util.eventually
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
@@ -56,7 +57,15 @@ class CreatePermissionE2eTest {
             // message bus, hence use of `eventually` along with `assertDoesNotThrow`.
             eventually {
                 assertDoesNotThrow {
-                    proxy.getPermission(permId).assertResponseType()
+                    // Retrieve by id
+                    val permById = proxy.getPermission(permId).assertResponseType()
+
+                    // Retrieve by query
+                    val firstPermission = proxy.queryPermissions(
+                        1, PermissionType.ALLOW.name,
+                        permissionStringPrefix = setPermString
+                    ).first()
+                    assertThat(firstPermission).isEqualTo(permById)
                 }
             }
         }

@@ -2,6 +2,7 @@ package net.corda.membership.p2p.helpers
 
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.crypto.wire.CryptoSigningKey
+import net.corda.membership.p2p.helpers.Verifier.Companion.SIGNATURE_SPEC
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.RSA_CODE_NAME
@@ -37,7 +38,8 @@ class SignerTest {
                 tenantId = tenantId,
                 publicKey = publicKey,
                 data = data,
-                signatureSpec = SignatureSpec.RSA_SHA512
+                signatureSpec = SignatureSpec.RSA_SHA512,
+                context = mapOf(SIGNATURE_SPEC to SignatureSpec.RSA_SHA512.signatureName)
             )
         ).doReturn(signature)
 

@@ -68,7 +68,10 @@ class SessionDataWaitingForHandler @Activate constructor(
     private fun convertToIncomingPayloads(receivedSessionDataEvents: List<Pair<SessionState, SessionEvent>>): Map<String, ByteArray> {
         return receivedSessionDataEvents.associate { (_, event) ->
             when (val sessionPayload = event.payload) {
-                is net.corda.data.flow.event.session.SessionData -> Pair(event.sessionId, sessionPayload.payload.array())
+                is net.corda.data.flow.event.session.SessionData -> Pair(
+                    event.sessionId,
+                    sessionPayload.payload.array()
+                )
                 else -> throw IllegalStateException(
                     "Received events should be data messages but got a ${sessionPayload::class.java.name} instead"
                 )
@@ -85,7 +88,10 @@ class SessionDataWaitingForHandler @Activate constructor(
             flowSessionManager.acknowledgeReceivedEvents(receivedSessionDataEvents)
             val sessionIdsToStatuses = terminatedSessions.map { "${it.sessionId} - ${it.status}" }
             FlowContinuation.Error(
-                CordaRuntimeException("Failed to receive due to sessions with terminated statuses: $sessionIdsToStatuses")
+                CordaRuntimeException(
+                    "Failed to receive due to sessions with terminated statuses: $sessionIdsToStatuses. " +
+                            "$PROTOCOL_MISMATCH_HINT"
+                )
             )
         } else {
             FlowContinuation.Continue

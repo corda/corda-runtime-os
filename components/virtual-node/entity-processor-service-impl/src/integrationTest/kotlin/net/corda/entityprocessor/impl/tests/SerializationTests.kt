@@ -2,12 +2,13 @@ package net.corda.entityprocessor.impl.tests
 
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.db.messagebus.testkit.DBSetup
-import net.corda.entityprocessor.impl.internal.EntitySandboxServiceImpl
-import net.corda.entityprocessor.impl.tests.components.VirtualNodeService
-import net.corda.entityprocessor.impl.tests.helpers.BasicMocks
-import net.corda.entityprocessor.impl.tests.helpers.Resources
-import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.createDog
-import net.corda.entityprocessor.impl.tests.helpers.SandboxHelper.getSerializer
+import net.corda.db.persistence.testkit.components.VirtualNodeService
+import net.corda.db.persistence.testkit.helpers.BasicMocks
+import net.corda.db.persistence.testkit.helpers.Resources
+import net.corda.db.persistence.testkit.helpers.SandboxHelper.createDog
+import net.corda.db.persistence.testkit.helpers.SandboxHelper.getSerializer
+import net.corda.persistence.common.EntitySandboxContextTypes
+import net.corda.persistence.common.EntitySandboxServiceFactory
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
@@ -26,8 +27,6 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.file.Path
-import java.time.Instant
-import java.util.UUID
 
 /**
  * Check that we can get the serializer from the 'internal' sandbox class once it's been created.
@@ -66,7 +65,7 @@ class SerializationTests {
         val virtualNodeInfo = virtualNode.load(Resources.EXTENDABLE_CPB)
 
         val entitySandboxService =
-            EntitySandboxServiceImpl(
+            EntitySandboxServiceFactory().create(
                 virtualNode.sandboxGroupContextComponent,
                 cpiInfoReadService,
                 virtualNodeInfoReadService,
@@ -77,9 +76,9 @@ class SerializationTests {
         val sandbox = entitySandboxService.get(virtualNodeInfo.holdingIdentity)
 
         val expectedDog = sandbox.createDog( "Rover")
-        val bytes = sandbox.getSerializer().serialize(expectedDog.instance)
+        val bytes = sandbox.getSerializer(EntitySandboxContextTypes.SANDBOX_SERIALIZER).serialize(expectedDog.instance)
 
-        val actualDog = sandbox.getSerializer().deserialize(bytes)
+        val actualDog = sandbox.getSerializer(EntitySandboxContextTypes.SANDBOX_SERIALIZER).deserialize(bytes)
 
         assertThat(actualDog).isEqualTo(expectedDog.instance)
     }

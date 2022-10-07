@@ -7,7 +7,7 @@ import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandle
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.virtualnode.toCorda
 
-class PersistMemberRegistrationStateHandler(
+internal class PersistMemberRegistrationStateHandler(
     private val membershipPersistenceClient: MembershipPersistenceClient,
 ) : RegistrationHandler<PersistMemberRegistrationState> {
     override fun invoke(
@@ -15,8 +15,9 @@ class PersistMemberRegistrationStateHandler(
         key: String,
         command: PersistMemberRegistrationState,
     ): RegistrationHandlerResult {
+        val member = command.member.toCorda()
         membershipPersistenceClient.setRegistrationRequestStatus(
-            command.member.toCorda(),
+            member,
             command.setStatusRequest.registrationId,
             command.setStatusRequest.newStatus,
         )

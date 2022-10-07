@@ -48,7 +48,7 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         "persistence_merge_bulk" to this::persistenceMergeDogs,
         "persistence_find" to this::persistenceFindDog,
         "persistence_find_bulk" to this::persistenceFindDogs,
-        "persistence_findall" to  { persistenceFindAllDogs() },
+        "persistence_findall" to { persistenceFindAllDogs() },
         "persistence_query" to { persistenceQueryDogs() },
         "throw_platform_error" to this::throwPlatformError,
         "subflow_passed_in_initiated_session" to { createSessionsInInitiatingFlowAndPassToInlineFlow(it, true) },
@@ -77,6 +77,9 @@ class RpcSmokeTestFlow : RPCStartableFlow {
 
     @CordaInject
     lateinit var serializationService: SerializationService
+
+    @CordaInject
+    lateinit var memberLookup: MemberLookup
 
     @CordaInject
     lateinit var signingService: SigningService
@@ -190,7 +193,7 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         log.info("Creating session for '${x500}'...")
         val session = flowMessaging.initiateFlow(MemberX500Name.parse(x500))
         log.info("Sending first time to session for '${x500}'...")
-        session.send(InitiatedSmokeTestMessage("test 1"))
+        session.sendAndReceive<InitiatedSmokeTestMessage>(InitiatedSmokeTestMessage("test 1"))
         log.info("Closing session for '${session}'...")
         session.close()
         log.info("Try and send on a closed session to generate an error '${session}'...")
@@ -293,27 +296,33 @@ class RpcSmokeTestFlow : RPCStartableFlow {
 
     @Suspendable
     private fun signAndVerify(input: RpcSmokeTestInput): String {
-        val publicKey = signingService.decodePublicKey(input.getValue("publicKey"))
+        val x500Name = input.getValue("memberX500")
+        val member = memberLookup.lookup(MemberX500Name.parse(x500Name))
+        checkNotNull(member) { "Member $x500Name could not be looked up" }
+        val publicKey = member.ledgerKeys[0]
         val bytesToSign = byteArrayOf(1, 2, 3, 4, 5)
         log.info("Crypto - Signing bytes $bytesToSign with public key '$publicKey'")
-        val signedBytes = signingService.sign(bytesToSign, publicKey, SignatureSpec.RSA_SHA256)
+        val signedBytes = signingService.sign(bytesToSign, publicKey, SignatureSpec.ECDSA_SHA256)
         log.info("Crypto - Signature $signedBytes received")
-        digitalSignatureVerificationService.verify(publicKey, SignatureSpec.RSA_SHA256, signedBytes.bytes, bytesToSign)
+        digitalSignatureVerificationService.verify(publicKey, SignatureSpec.ECDSA_SHA256, signedBytes.bytes, bytesToSign)
         log.info("Crypto - Verified $signedBytes as the signature of $bytesToSign")
         return true.toString()
     }
 
     @Suspendable
     private fun verifyInvalidSignature(input: RpcSmokeTestInput): String {
-        val publicKey = signingService.decodePublicKey(input.getValue("publicKey"))
+        val x500Name = input.getValue("memberX500")
+        val member = memberLookup.lookup(MemberX500Name.parse(x500Name))
+        checkNotNull(member) { "Member $x500Name could not be looked up" }
+        val publicKey = member.ledgerKeys[0]
         val bytesToSign = byteArrayOf(1, 2, 3, 4, 5)
         log.info("Crypto - Signing bytes $bytesToSign with public key '$publicKey'")
-        val signedBytes = signingService.sign(bytesToSign, publicKey, SignatureSpec.RSA_SHA256)
+        val signedBytes = signingService.sign(bytesToSign, publicKey, SignatureSpec.ECDSA_SHA256)
         log.info("Crypto - Signature $signedBytes received")
         return try {
             digitalSignatureVerificationService.verify(
                 publicKey,
-                SignatureSpec.ECDSA_SHA256,
+                SignatureSpec.RSA_SHA256,
                 signedBytes.bytes,
                 bytesToSign
             )

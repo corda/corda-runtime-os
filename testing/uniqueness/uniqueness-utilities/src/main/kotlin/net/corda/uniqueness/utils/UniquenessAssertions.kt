@@ -67,6 +67,18 @@ object UniquenessAssertions {
     }
 
     /**
+     * Checks for an unhandled exception response with the specified exception type
+     */
+    fun assertUnhandledExceptionResponse(
+        response: UniquenessCheckResponseAvro,
+        expectedExceptionType: String
+    ) {
+        getResultOfType<UniquenessCheckResultUnhandledExceptionAvro>(response).run {
+            assertThat(exception.errorType).isEqualTo(expectedExceptionType)
+        }
+    }
+
+    /**
      * Checks for an unknown input state response, ensuring that all specified unknown states
      *  are captured.
      */
@@ -142,7 +154,7 @@ object UniquenessAssertions {
     /**
      * Checks that all commit timestamps within a list of responses are unique
      */
-    fun assertUniqueCommitTimestamps(responses: List<UniquenessCheckResponseAvro>) {
+    fun assertUniqueCommitTimestamps(responses: Collection<UniquenessCheckResponseAvro>) {
         assertEquals(
             responses.size,
             responses.distinctBy {

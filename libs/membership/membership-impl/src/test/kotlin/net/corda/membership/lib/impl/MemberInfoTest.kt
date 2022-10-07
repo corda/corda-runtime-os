@@ -1,10 +1,12 @@
 package net.corda.membership.lib.impl
 
+import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.SignedMemberInfo
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.layeredpropertymap.toAvro
+import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
@@ -23,8 +25,8 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
-import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.membership.lib.toSortedMap
+import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.ValueNotFoundException
 import net.corda.v5.base.util.parse
 import net.corda.v5.base.util.parseList
@@ -37,22 +39,23 @@ import org.apache.avro.io.DatumReader
 import org.apache.avro.io.DatumWriter
 import org.apache.avro.specific.SpecificDatumReader
 import org.apache.avro.specific.SpecificDatumWriter
-import org.assertj.core.util.Files
-import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doAnswer
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.io.File
 import java.nio.ByteBuffer
 import java.security.PublicKey
+import java.time.Instant
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import net.corda.test.util.time.TestClock
-import java.time.Instant
 
 @Suppress("MaxLineLength")
 class MemberInfoTest {
@@ -64,9 +67,17 @@ class MemberInfoTest {
 
         private val clock = TestClock(Instant.ofEpochSecond(100))
         private val modifiedTime = clock.instant()
+        private val endpointInfoFactory: EndpointInfoFactory = mock {
+            on { create(any(), any()) } doAnswer { invocation ->
+                mock {
+                    on { this.url } doReturn invocation.getArgument(0)
+                    on { this.protocolVersion } doReturn invocation.getArgument(1)
+                }
+            }
+        }
         private val endpoints = listOf(
-            EndpointInfoImpl("https://localhost:10000"),
-            EndpointInfoImpl("https://google.com", 10)
+            endpointInfoFactory.create("https://localhost:10000"),
+            endpointInfoFactory.create("https://google.com", 10)
         )
         private val ledgerKeys = listOf(key, key)
         private val testObjects = listOf(
@@ -153,7 +164,9 @@ class MemberInfoTest {
 
         private var memberInfo: MemberInfo? = null
 
-        private val avroMemberInfo = File.createTempFile("avro-member-info", "avro")
+        private val avroMemberInfo = File.createTempFile("avro-member-info", "avro").also {
+            it.deleteOnExit()
+        }
 
         private val signature = CryptoSignatureWithKey(
             ByteBuffer.wrap(byteArrayOf()),
@@ -172,12 +185,6 @@ class MemberInfoTest {
             ).thenReturn(KEY)
 
             memberInfo = createDummyMemberInfo()
-        }
-
-        @AfterAll
-        @JvmStatic
-        fun tearDown() {
-            Files.delete(avroMemberInfo)
         }
     }
 

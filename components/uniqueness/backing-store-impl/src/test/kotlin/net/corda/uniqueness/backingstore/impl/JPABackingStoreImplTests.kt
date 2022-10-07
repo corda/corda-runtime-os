@@ -22,7 +22,8 @@ import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessRejectedTransac
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessStateDetailEntity
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTransactionDetailEntity
 import net.corda.uniqueness.datamodel.common.UniquenessConstants
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorGeneralImpl
+import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorMalformedRequestImpl
+//import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorGeneralImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateRefImpl
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
@@ -79,11 +80,11 @@ class JPABackingStoreImplTests {
 
     // NOTE: While expecting refactoring around createDefaultUniquenessDb(), it's mocked for testing
     //  convenience. Since it's a final class, MockMaker's been added under resources with content "mock-maker-inline".
-    private lateinit var schemaMigrator: LiquibaseSchemaMigratorImpl
+//    private lateinit var schemaMigrator: LiquibaseSchemaMigratorImpl
     private lateinit var dbConnectionManager: DbConnectionManager
 
     companion object {
-        val TEST_IDENTITY = createTestHoldingIdentity("C=GB, L=London, O=Alice", "Test Group").toAvro()
+        val TEST_IDENTITY = createTestHoldingIdentity("C=GB, L=London, O=Alice", "Test Group")
         val UPPER_BOUND = LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
     }
 
@@ -155,7 +156,7 @@ class JPABackingStoreImplTests {
             whenever(get(any())) doReturn mock<JpaEntitiesSet>()
         }
 
-        schemaMigrator = mock<LiquibaseSchemaMigratorImpl>()
+//        schemaMigrator = mock<LiquibaseSchemaMigratorImpl>()
         dbConnectionManager = mock<DbConnectionManager>().apply {
             whenever(getClusterDataSource()) doReturn dummyDataSource
             whenever(getOrCreateEntityManagerFactory(any(), any(), any())) doReturn entityManagerFactory
@@ -164,8 +165,8 @@ class JPABackingStoreImplTests {
         backingStoreImpl = JPABackingStoreImpl(
             lifecycleCoordinatorFactory,
             jpaEntitiesRegistry,
-            dbConnectionManager,
-            schemaMigrator = schemaMigrator
+            dbConnectionManager
+//            schemaMigrator = schemaMigrator
         )
     }
 
@@ -174,7 +175,7 @@ class JPABackingStoreImplTests {
 
         return UniquenessCheckRequestAvro.newBuilder(
             UniquenessCheckRequestAvro(
-                TEST_IDENTITY,
+                TEST_IDENTITY.toAvro(),
                 ExternalEventContext(
                     UUID.randomUUID().toString(),
                     UUID.randomUUID().toString(),
@@ -272,14 +273,14 @@ class JPABackingStoreImplTests {
 
         @Test
         fun `Session always closes entity manager after use`() {
-            backingStoreImpl.session { }
+            backingStoreImpl.session(TEST_IDENTITY) { }
             Mockito.verify(entityManager, times(1)).close()
         }
 
         @Test
         fun `Session closes entity manager even when exception occurs`() {
             assertThrows<java.lang.RuntimeException> {
-                backingStoreImpl.session { throw java.lang.RuntimeException("test exception") }
+                backingStoreImpl.session(TEST_IDENTITY) { throw java.lang.RuntimeException("test exception") }
             }
             Mockito.verify(entityManager, times(1)).close()
         }
@@ -300,7 +301,7 @@ class JPABackingStoreImplTests {
             val secureHashes = List(hashCnt) { SecureHashUtils.randomSecureHash() }
             val stateRefs = secureHashes.map { UniquenessCheckStateRefImpl(it, 0)}
 
-            backingStoreImpl.session { session ->
+            backingStoreImpl.session(TEST_IDENTITY) { session ->
                 session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
             }
 
@@ -317,7 +318,7 @@ class JPABackingStoreImplTests {
 
         @Test
         fun `Commiting a failed transaction persists error data`() {
-            backingStoreImpl.session { session ->
+            backingStoreImpl.session(TEST_IDENTITY) { session ->
                 val txId = SecureHashUtils.randomSecureHash()
                 val externalRequest = generateExternalRequest(txId)
                 val internalRequest = UniquenessCheckRequestInternal.create(externalRequest)
@@ -325,7 +326,7 @@ class JPABackingStoreImplTests {
                     Pair(
                         internalRequest,
                         UniquenessCheckResultFailureImpl(
-                            Clock.systemUTC().instant(), UniquenessCheckErrorGeneralImpl("some error")
+                            Clock.systemUTC().instant(), UniquenessCheckErrorMalformedRequestImpl("some error")
                         )
                     )
                 )
@@ -368,7 +369,7 @@ class JPABackingStoreImplTests {
 
         @Test
         fun `Executing transaction runs with transaction begin and commit`() {
-            backingStoreImpl.session { session ->
+            backingStoreImpl.session(TEST_IDENTITY) { session ->
                 session.executeTransaction { _, _ -> }
             }
 
@@ -381,7 +382,7 @@ class JPABackingStoreImplTests {
         @ValueSource(classes = [EntityExistsException::class, RollbackException::class, OptimisticLockException::class])
         fun `Executing transaction retries upon expected exceptions`(exception: Class<Exception>) {
             assertThrows<IllegalStateException> {
-                backingStoreImpl.session { session ->
+                backingStoreImpl.session(TEST_IDENTITY) { session ->
                     session.executeTransaction { _, _ -> throw exception.kotlin.createInstance() }
                 }
             }
@@ -393,7 +394,7 @@ class JPABackingStoreImplTests {
         @Test
         fun `Executing transaction does not retry upon unexpected exception`() {
             assertThrows<DummyException> {
-                backingStoreImpl.session { session ->
+                backingStoreImpl.session(TEST_IDENTITY) { session ->
                     session.executeTransaction { _, _ -> throw DummyException("dummy exception") }
                 }
             }
@@ -404,7 +405,7 @@ class JPABackingStoreImplTests {
         @Test
         fun `Executing transaction triggers rollback upon receiving expected exception if transaction is active`() {
             assertThrows<java.lang.IllegalStateException> {
-                backingStoreImpl.session { session ->
+                backingStoreImpl.session(TEST_IDENTITY) { session ->
                     session.executeTransaction { _, _ -> throw EntityExistsException() }
                 }
             }
@@ -427,7 +428,7 @@ class JPABackingStoreImplTests {
 
             // Expect an exception because no error details is available from the mock.
             assertThrows<IllegalStateException> {
-                backingStoreImpl.session { session ->
+                backingStoreImpl.session(TEST_IDENTITY) { session ->
                     session.getTransactionDetails(List(1) { SecureHashUtils.randomSecureHash() } )
                 }
             }

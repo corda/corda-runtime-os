@@ -1,5 +1,7 @@
 package net.corda.libs.configuration.endpoints.v1.types
 
+import net.corda.httprpc.JsonObject
+
 /**
  * The data object sent via HTTP to request a cluster configuration update.
  *
@@ -9,5 +11,5 @@ package net.corda.libs.configuration.endpoints.v1.types
  * @property schemaVersion Schema version of the configuration.
  */
 data class UpdateConfigParameters(
-    val section: String, val version: Int, val config: String, val schemaVersion: ConfigSchemaVersion
+    val section: String, val version: Int, val config: JsonObject, val schemaVersion: ConfigSchemaVersion
 )

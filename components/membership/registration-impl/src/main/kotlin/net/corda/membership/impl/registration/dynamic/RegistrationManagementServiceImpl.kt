@@ -6,7 +6,6 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.state.RegistrationState
-import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -28,12 +27,13 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -61,10 +61,8 @@ class RegistrationManagementServiceImpl @Activate constructor(
     private val cryptoOpsClient: CryptoOpsClient,
     @Reference(service = CipherSchemeMetadata::class)
     private val cipherSchemeMetadata: CipherSchemeMetadata,
-    @Reference(service = LayeredPropertyMapFactory::class)
-    private val layeredPropertyMapFactory: LayeredPropertyMapFactory,
-    @Reference(service = MerkleTreeFactory::class)
-    private val merkleTreeFactory: MerkleTreeFactory,
+    @Reference(service = MerkleTreeProvider::class)
+    private val merkleTreeProvider: MerkleTreeProvider,
 ) : RegistrationManagementService {
 
     companion object {
@@ -130,7 +128,7 @@ class RegistrationManagementServiceImpl @Activate constructor(
                         configHandle?.close()
                         configHandle = configurationReadService.registerComponentForUpdates(
                             coordinator,
-                            setOf(MESSAGING_CONFIG, BOOT_CONFIG)
+                            setOf(MESSAGING_CONFIG, BOOT_CONFIG, MEMBERSHIP_CONFIG)
                         )
                     } else if (event.registration == subRegistration) {
                         logger.info("Received config, started subscriptions and setting status to UP")
@@ -147,6 +145,7 @@ class RegistrationManagementServiceImpl @Activate constructor(
             }
             is ConfigChangedEvent -> {
                 val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+                val membershipConfig = event.config.getConfig(MEMBERSHIP_CONFIG)
                 subRegistration?.close()
                 subRegistration = null
                 subscription?.close()
@@ -164,8 +163,8 @@ class RegistrationManagementServiceImpl @Activate constructor(
                         membershipQueryClient,
                         cryptoOpsClient,
                         cipherSchemeMetadata,
-                        layeredPropertyMapFactory,
-                        merkleTreeFactory,
+                        merkleTreeProvider,
+                        membershipConfig,
                     ),
                     messagingConfig
                 ).also {

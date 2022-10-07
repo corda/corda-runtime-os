@@ -12,6 +12,9 @@ import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 
+/**
+ * @see [FlowChecker] for details.
+ */
 class CordaFlowChecker : FlowChecker {
     override fun check(flowClass: Class<out Flow>) {
 
