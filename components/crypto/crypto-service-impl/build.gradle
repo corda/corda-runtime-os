@@ -25,7 +25,7 @@ dependencies {
     implementation project(":components:crypto:crypto-component-core-impl")
     implementation project(":components:crypto:crypto-persistence")
     implementation project(":libs:configuration:configuration-core")
-    implementation project(':libs:crypto:cipher-suite-impl')
+    implementation project(':libs:crypto:crypto-core-impl')
     implementation project(':libs:crypto:crypto-config-impl')
     implementation project(':libs:crypto:crypto-flow')
     implementation project(':libs:flows:external-event-responses')

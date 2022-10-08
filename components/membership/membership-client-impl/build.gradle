@@ -25,7 +25,7 @@ dependencies {
     implementation "net.corda:corda-topic-schema"
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
 
-    testImplementation project(":libs:crypto:crypto-impl")
+    testImplementation project(":libs:crypto:crypto-core-impl")
     testImplementation project(":libs:membership:membership-impl")
     testImplementation project(":testing:layered-property-map-testkit")
     testImplementation project(":testing:test-utilities")

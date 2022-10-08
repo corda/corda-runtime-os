@@ -39,7 +39,7 @@ dependencies {
     implementation project(":libs:serialization:serialization-checkpoint-api")
     implementation project(path: ':libs:serialization:serialization-encoding', configuration: 'bundle')
     implementation project(":libs:utilities")
-    runtimeOnly project(':libs:crypto:cipher-suite-impl')
+    runtimeOnly project(':libs:crypto:crypto-core-impl')
 
     cpbs project(path: 'cpks:serializable-cpk-one', configuration: 'cordaCPB')
     cpbs project(path: 'cpks:serializable-cpk-two', configuration: 'cordaCPB')
@@ -59,7 +59,7 @@ dependencies {
     integrationTestRuntimeOnly "co.paralleluniverse:quasar-core-osgi:$quasarVersion:framework-extension"
 
     integrationTestRuntimeOnly project(':libs:crypto:crypto-core')
-    integrationTestRuntimeOnly project(':libs:crypto:cipher-suite-impl')
+    integrationTestRuntimeOnly project(':libs:crypto:crypto-core-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')

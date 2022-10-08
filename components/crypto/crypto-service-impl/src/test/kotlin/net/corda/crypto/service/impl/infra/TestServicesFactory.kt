@@ -12,7 +12,7 @@ import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.crypto.core.aes.KeyCredentials
 import net.corda.crypto.core.aes.WrappingKey
 import net.corda.crypto.service.CryptoServiceFactory
-import net.corda.crypto.service.SigningService
+import net.corda.crypto.core.service.SigningService
 import net.corda.crypto.service.impl.CryptoServiceFactoryImpl
 import net.corda.crypto.service.impl.HSMServiceImpl
 import net.corda.crypto.service.impl.SigningServiceImpl

@@ -19,14 +19,13 @@ dependencies {
     implementation "net.corda:corda-application"
     implementation "net.corda:corda-crypto"
     implementation "net.corda:corda-cipher-suite"
-    implementation project(":libs:crypto:cipher-suite-impl")
+    implementation project(":libs:crypto:crypto-core-impl")
 
     implementation project(":libs:crypto:crypto-core")
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation project(":libs:crypto:cipher-suite-impl")
     testImplementation project(":testing:test-utilities")
 
     integrationTestRuntimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {

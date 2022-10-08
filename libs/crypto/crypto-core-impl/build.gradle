@@ -1,0 +1,66 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Common crypto implementation'
+
+dependencies {
+    api project(":libs:crypto:crypto-core")
+
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+    compileOnly "org.osgi:osgi.annotation"
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    implementation project(":libs:configuration:configuration-core")
+    implementation project(":libs:utilities")
+    implementation project(':libs:layered-property-map')
+
+    implementation "net.corda:corda-avro-schema"
+    implementation "net.corda:corda-config-schema"
+    implementation "net.corda:corda-serialization"
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation "org.apache.commons:commons-lang3:$commonsLangVersion"
+
+    testImplementation project(":testing:layered-property-map-testkit")
+
+    testImplementation "javax.persistence:javax.persistence-api"
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.hibernate:hibernate-core:$hibernateVersion"
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}
+
+tasks.named('jar', Jar) {
+    bnd """\
+Import-Package:\
+    org.bouncycastle.jcajce.provider.asymmetric,\
+    org.bouncycastle.jcajce.provider.asymmetric.dh,\
+    org.bouncycastle.jcajce.provider.asymmetric.dsa,\
+    org.bouncycastle.jcajce.provider.asymmetric.dstu,\
+    org.bouncycastle.jcajce.provider.asymmetric.ec,\
+    org.bouncycastle.jcajce.provider.asymmetric.ecgost,\
+    org.bouncycastle.jcajce.provider.asymmetric.ecgost12,\
+    org.bouncycastle.jcajce.provider.asymmetric.edec,\
+    org.bouncycastle.jcajce.provider.asymmetric.elgamal,\
+    org.bouncycastle.jcajce.provider.asymmetric.gost,\
+    org.bouncycastle.jcajce.provider.asymmetric.ies,\
+    org.bouncycastle.jcajce.provider.asymmetric.rsa,\
+    org.bouncycastle.jcajce.provider.asymmetric.util,\
+    org.bouncycastle.jcajce.provider.asymmetric.x509,\
+    org.bouncycastle.jcajce.provider.config,\
+    org.bouncycastle.jcajce.provider.digest,\
+    org.bouncycastle.jcajce.provider.drbg,\
+    org.bouncycastle.jcajce.provider.keystore,\
+    org.bouncycastle.jcajce.provider.keystore.bc,\
+    org.bouncycastle.jcajce.provider.keystore.bcfks,\
+    org.bouncycastle.jcajce.provider.keystore.pkcs12,\
+    org.bouncycastle.jcajce.provider.keystore.util,\
+    org.bouncycastle.jcajce.provider.symmetric,\
+    org.bouncycastle.jcajce.provider.symmetric.util,\
+    org.bouncycastle.jcajce.provider.util,\
+    *
+"""
+}

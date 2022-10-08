@@ -8,10 +8,10 @@ import net.corda.crypto.core.publicKeyIdFromBytes
 import net.corda.crypto.ecies.EciesParams
 import net.corda.crypto.ecies.impl.EphemeralKeyPairEncryptorImpl
 import net.corda.crypto.ecies.impl.StableKeyPairDecryptorImpl
-import net.corda.crypto.impl.CompositeKeyProviderImpl
+import net.corda.crypto.impl.service.CompositeKeyProviderImpl
 import net.corda.crypto.service.KeyOrderBy
 import net.corda.crypto.service.SigningKeyInfo
-import net.corda.crypto.service.SigningService
+import net.corda.crypto.core.service.SigningService
 import net.corda.crypto.service.impl.infra.TestCryptoOpsClient
 import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.lifecycle.LifecycleStatus

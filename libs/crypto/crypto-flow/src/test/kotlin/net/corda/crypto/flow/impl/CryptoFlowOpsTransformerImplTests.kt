@@ -1,5 +1,6 @@
 package net.corda.crypto.flow.impl
 
+import net.corda.crypto.core.service.KeyEncodingService
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_TTL_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.RESPONSE_ERROR_KEY
@@ -19,7 +20,6 @@ import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.flow.commands.GenerateFreshKeyFlowCommand
 import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
 import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
-import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
@@ -80,7 +80,7 @@ class CryptoFlowOpsTransformerImplTests {
             on { encodeAsByteArray(any()) } doAnswer {
                 (it.getArgument(0) as PublicKey).encoded
             }
-            on { decodePublicKey(any<ByteArray>()) } doAnswer { sc ->
+            on { decode(any<ByteArray>()) } doAnswer { sc ->
                 mock {
                     on { encoded } doAnswer {
                         sc.getArgument(0) as ByteArray

@@ -22,7 +22,7 @@ dependencies {
     testImplementation project(':testing:ledger:ledger-common-testkit')
     testImplementation project(":libs:serialization:serialization-kryo")
     testImplementation project(":libs:crypto:merkle-impl")
-    testImplementation project(":libs:crypto:cipher-suite-impl")
+    testImplementation project(":libs:crypto:crypto-core-impl")
     testImplementation project(":libs:application:application-impl")
 
     integrationTestImplementation project(':testing:sandboxes')

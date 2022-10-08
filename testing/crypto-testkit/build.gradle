@@ -14,5 +14,5 @@ dependencies {
     implementation "net.corda:corda-cipher-suite"
 
     implementation project(":libs:crypto:crypto-core")
-    implementation project(":libs:crypto:crypto-impl")
+    implementation project(":libs:crypto:crypto-core-impl")
 }

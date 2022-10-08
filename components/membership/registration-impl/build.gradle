@@ -56,8 +56,7 @@ dependencies {
     integrationTestRuntimeOnly "org.ops4j.pax.jdbc:pax-jdbc-hsqldb:$paxJdbcVersion"
     integrationTestRuntimeOnly "org.hsqldb:hsqldb:$hsqldbVersion"
 
-    testImplementation project(":libs:crypto:cipher-suite-impl")
-    testImplementation project(":libs:crypto:crypto-impl")
+    testImplementation project(":libs:crypto:crypto-core-impl")
     testImplementation project(":testing:layered-property-map-testkit")
     testImplementation project(":testing:test-utilities")
 

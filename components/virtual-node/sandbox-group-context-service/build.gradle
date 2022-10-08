@@ -64,7 +64,7 @@ dependencies {
     integrationTestImplementation project(':components:security-manager')
     integrationTestImplementation project(':testing:security-manager-utilities')
     integrationTestImplementation project(':testing:test-utilities')
-    integrationTestRuntimeOnly project(':libs:crypto:cipher-suite-impl')
+    integrationTestRuntimeOnly project(':libs:crypto:crypto-core-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')

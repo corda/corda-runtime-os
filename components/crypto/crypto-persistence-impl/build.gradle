@@ -27,7 +27,7 @@ dependencies {
     implementation project(":components:db:db-connection-manager")
     implementation project(":components:virtual-node:virtual-node-info-read-service")
     implementation project(":libs:cache:cache-caffeine")
-    implementation project(":libs:crypto:cipher-suite-impl")
+    implementation project(":libs:crypto:crypto-core-impl")
     implementation project(":libs:crypto:crypto-config-impl")
     implementation project(":libs:db:db-orm")
     implementation project(":libs:layered-property-map")

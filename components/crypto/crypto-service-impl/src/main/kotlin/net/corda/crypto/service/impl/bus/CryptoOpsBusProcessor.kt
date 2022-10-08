@@ -9,7 +9,7 @@ import net.corda.crypto.impl.toMap
 import net.corda.crypto.impl.toSignatureSpec
 import net.corda.crypto.impl.toWire
 import net.corda.crypto.service.KeyOrderBy
-import net.corda.crypto.service.SigningService
+import net.corda.crypto.core.service.SigningService
 import net.corda.crypto.service.SigningServiceFactory
 import net.corda.crypto.service.impl.WireProcessor
 import net.corda.data.crypto.wire.CryptoDerivedSharedSecret

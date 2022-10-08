@@ -9,7 +9,7 @@
     bnd.identity;id='${project.archivesBaseName}-tests',\
     bnd.identity;id='junit-jupiter-engine',\
     bnd.identity;id='junit-platform-launcher',\
-    bnd.identity;id='net.corda.cipher-suite-impl',\
+    bnd.identity;id='net.corda.crypto-core-impl',\
     bnd.identity;id='net.corda.merkle-impl',\
     bnd.identity;id='net.corda.serialization-kryo',\
     bnd.identity;id='slf4j.simple'

@@ -36,7 +36,7 @@ dependencies {
     testImplementation project(":testing:layered-property-map-testkit")
     testImplementation project(':testing:ledger:ledger-consensual-testkit')
     testImplementation project(":testing:kryo-serialization-testkit")
-    testImplementation project(":libs:crypto:cipher-suite-impl")
+    testImplementation project(":libs:crypto:crypto-core-impl")
     testImplementation project(":libs:crypto:crypto-serialization-impl")
     testImplementation project(":libs:crypto:merkle-impl")
     testImplementation project(':libs:flows:flow-api')

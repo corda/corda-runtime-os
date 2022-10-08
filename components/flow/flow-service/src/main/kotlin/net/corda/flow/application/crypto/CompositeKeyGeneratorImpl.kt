@@ -1,6 +1,6 @@
 package net.corda.flow.application.crypto
 
-import net.corda.crypto.core.CompositeKeyProvider
+import net.corda.crypto.core.service.CompositeKeyProvider
 import net.corda.v5.application.crypto.CompositeKeyGenerator
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.CompositeKeyNodeAndWeight

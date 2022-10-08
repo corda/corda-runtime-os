@@ -1,5 +1,7 @@
 package net.corda.crypto.flow.impl
 
+import net.corda.crypto.core.service.AlgorithmParameterSpecEncodingService
+import net.corda.crypto.core.service.KeyEncodingService
 import net.corda.crypto.flow.CryptoFlowOpsTransformer
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_OP_KEY
 import net.corda.crypto.flow.CryptoFlowOpsTransformer.Companion.REQUEST_TTL_KEY
@@ -18,8 +20,6 @@ import net.corda.data.crypto.wire.ops.flow.FlowOpsResponse
 import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
 import net.corda.data.crypto.wire.ops.flow.queries.FilterMyKeysFlowQuery
 import net.corda.data.flow.event.external.ExternalEventContext
-import net.corda.v5.cipher.suite.AlgorithmParameterSpecEncodingService
-import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import java.nio.ByteBuffer
@@ -118,7 +118,7 @@ class CryptoFlowOpsTransformerImpl(
     private fun transformCryptoSigningKeys(response: FlowOpsResponse): List<PublicKey> {
         val resp = response.validateAndGet<CryptoSigningKeys>()
         return resp.keys.map {
-            keyEncodingService.decodePublicKey(it.publicKey.array())
+            keyEncodingService.decode(it.publicKey.array())
         }
     }
 
@@ -128,7 +128,7 @@ class CryptoFlowOpsTransformerImpl(
     private fun transformCryptoSignatureWithKey(response: FlowOpsResponse): DigitalSignature.WithKey {
         val resp = response.validateAndGet<CryptoSignatureWithKey>()
         return DigitalSignature.WithKey(
-            by = keyEncodingService.decodePublicKey(resp.publicKey.array()),
+            by = keyEncodingService.decode(resp.publicKey.array()),
             bytes = resp.bytes.array(),
             context = resp.context.toMap()
         )
