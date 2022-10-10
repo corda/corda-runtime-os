@@ -132,6 +132,11 @@ class CertificatesRpcOpsImpl @Activate constructor(
     }
 
     override fun importCertificateChain(tenantId: String, alias: String, certificates: List<HttpFileUpload>) {
+        if (alias.isBlank()) {
+            throw InvalidInputDataException(
+                details = mapOf("alias" to "Empty alias")
+            )
+        }
         // validate certificate
         if (certificates.isEmpty()) {
             throw InvalidInputDataException(
