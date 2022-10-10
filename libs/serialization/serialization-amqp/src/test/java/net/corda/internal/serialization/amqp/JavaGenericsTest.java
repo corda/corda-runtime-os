@@ -1,10 +1,10 @@
 package net.corda.internal.serialization.amqp;
 
+import net.corda.internal.serialization.amqp.custom.BigIntegerSerializer;
 import net.corda.internal.serialization.amqp.helper.TestSerializationContext;
+import net.corda.internal.serialization.amqp.testutils.AMQPTestUtilsKt;
 import net.corda.v5.base.annotations.CordaSerializable;
 import net.corda.v5.serialization.SerializedBytes;
-import net.corda.internal.serialization.amqp.custom.BigIntegerSerializer;
-import net.corda.internal.serialization.amqp.testutils.AMQPTestUtilsKt;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -19,8 +19,8 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import static net.corda.internal.serialization.amqp.testutils.AMQPTestUtilsKt.testDefaultFactory;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SuppressWarnings("unchecked")
 @Timeout(value = 30, unit = TimeUnit.SECONDS)

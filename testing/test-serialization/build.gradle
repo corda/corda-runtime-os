@@ -12,7 +12,6 @@ dependencies {
 
     api "net.corda:corda-application"
     implementation project(":libs:serialization:serialization-amqp")
-    implementation project(":libs:sandbox")
     implementation project(":libs:serialization:serialization-internal")
     implementation project(":libs:crypto:crypto-serialization-impl")
     implementation project(':components:flow:flow-service')

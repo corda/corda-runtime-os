@@ -51,7 +51,7 @@ class FingerPrinterTestingTests {
         data class C(val a: Int, val b: Long)
 
         val factory = SerializerFactoryBuilder.build(
-            testSerializationContext.currentSandboxGroup(),
+            testSerializationContext.currentClassloadingContext(),
             overrideFingerPrinter = FingerPrinterTesting()
         )
 

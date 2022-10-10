@@ -1,7 +1,7 @@
 package net.corda.internal.serialization.amqp.custom
 
 import net.corda.internal.serialization.amqp.AMQPNotSerializableException
-import net.corda.internal.serialization.amqp.currentSandboxGroup
+import net.corda.internal.serialization.amqp.currentClassloadingContext
 import net.corda.serialization.InternalDirectSerializer
 import net.corda.serialization.InternalDirectSerializer.ReadObject
 import net.corda.serialization.InternalDirectSerializer.WriteObject
@@ -30,7 +30,7 @@ class ClassSerializer : InternalDirectSerializer<Class<*>> {
         logger.trace { "serializer=custom, type=ClassSerializer, name=\"$className\"" }
 
         return try {
-            context.currentSandboxGroup().loadClassFromMainBundles(className)
+            context.currentClassloadingContext().loadClassFromMainBundles(className)
         } catch (e: ClassNotFoundException) {
             throw AMQPNotSerializableException(
                 type,

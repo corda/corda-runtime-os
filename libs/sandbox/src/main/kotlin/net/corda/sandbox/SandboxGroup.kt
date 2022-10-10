@@ -7,7 +7,7 @@ import org.osgi.framework.Bundle
 /**
  * A group of sandboxes with visibility of one another.
  *
- * @property cpks The CPKs this sandbox group is constructed from.
+ * @property metadata The CPKs this sandbox group is constructed from.
  */
 interface SandboxGroup: SingletonSerializeAsToken {
     val metadata: Map<Bundle, CpkMetadata>

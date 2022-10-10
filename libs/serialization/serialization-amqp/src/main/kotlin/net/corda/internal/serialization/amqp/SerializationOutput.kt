@@ -120,7 +120,7 @@ open class SerializationOutput constructor(
         if (obj == null) {
             data.putNull()
         } else {
-            writeObject(obj, data, if (type == TypeIdentifier.UnknownType.getLocalType(context.currentSandboxGroup())) obj.javaClass else type, context, debugIndent)
+            writeObject(obj, data, if (type == TypeIdentifier.UnknownType.getLocalType(context.currentClassloadingContext())) obj.javaClass else type, context, debugIndent)
         }
     }
 
@@ -132,7 +132,7 @@ open class SerializationOutput constructor(
      * Attaches information about the CPKs associated with the serialised objects to the metadata
      */
     private fun putTypeToMetadata(type: Type, context: SerializationContext) {
-        val classTag = context.currentSandboxGroup().getEvolvableTag(type.asClass())
+        val classTag = context.currentClassloadingContext().getEvolvableTag(type.asClass())
         if (!metadata.containsKey(type.typeName)) {
             val key = type.asClass().name
             metadata.putValue(key, classTag)

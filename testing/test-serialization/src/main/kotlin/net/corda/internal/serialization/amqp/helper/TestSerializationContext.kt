@@ -3,14 +3,13 @@
 package net.corda.internal.serialization.amqp.helper
 
 import net.corda.internal.serialization.SerializationContextImpl
+import net.corda.internal.serialization.amqp.ClassloadingContext
 import net.corda.internal.serialization.amqp.amqpMagic
-import net.corda.libs.packaging.core.CpkMetadata
-import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
-import org.osgi.framework.Bundle
 
-private class MockSandboxGroup(private val classLoader: ClassLoader = ClassLoader.getSystemClassLoader()) : SandboxGroup {
-    override val metadata: Map<Bundle, CpkMetadata> = emptyMap()
+private class MockSandboxGroup(
+    private val classLoader: ClassLoader = ClassLoader.getSystemClassLoader()
+) : ClassloadingContext {
 
     override fun loadClassFromMainBundles(className: String): Class<*> =
         Class.forName(className, false, classLoader)
@@ -20,7 +19,6 @@ private class MockSandboxGroup(private val classLoader: ClassLoader = ClassLoade
     override fun loadClassFromPublicBundles(className: String): Class<*>? =
         Class.forName(className, false, classLoader)
 
-    override fun getStaticTag(klass: Class<*>): String = "S;bundle;sandbox"
     override fun getEvolvableTag(klass: Class<*>) = "E;bundle;sandbox"
 }
 

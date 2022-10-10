@@ -8,7 +8,6 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.io.NotSerializableException
-import kotlin.collections.ArrayList
 
 @Timeout(value = 30)
 class ListsSerializationTests {

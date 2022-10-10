@@ -1,6 +1,5 @@
 package net.corda.internal.serialization.amqp
 
-import java.io.NotSerializableException
 import net.corda.internal.serialization.amqp.testutils.TestSerializationOutput
 import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
@@ -9,6 +8,7 @@ import net.corda.v5.base.annotations.CordaSerializable
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
+import java.io.NotSerializableException
 
 class ErrorMessagesTests {
     companion object {

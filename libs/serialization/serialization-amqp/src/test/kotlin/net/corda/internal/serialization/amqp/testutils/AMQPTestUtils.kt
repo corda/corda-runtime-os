@@ -11,7 +11,7 @@ import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.amqp.TransformsSchema
-import net.corda.internal.serialization.amqp.currentSandboxGroup
+import net.corda.internal.serialization.amqp.currentClassloadingContext
 import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.serialization.SerializationContext
 import net.corda.serialization.SerializationEncoding
@@ -51,7 +51,7 @@ fun testDefaultFactory(
         DefaultDescriptorBasedSerializerRegistry()
 ) =
     SerializerFactoryBuilder.build(
-        testSerializationContext.currentSandboxGroup(),
+        testSerializationContext.currentClassloadingContext(),
         descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry
     )
 
@@ -61,7 +61,7 @@ fun testDefaultFactoryNoEvolution(
         DefaultDescriptorBasedSerializerRegistry()
 ): SerializerFactory =
     SerializerFactoryBuilder.build(
-        testSerializationContext.currentSandboxGroup(),
+        testSerializationContext.currentClassloadingContext(),
         descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry,
         allowEvolution = false
     )

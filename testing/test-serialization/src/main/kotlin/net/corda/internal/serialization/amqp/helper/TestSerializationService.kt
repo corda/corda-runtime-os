@@ -8,7 +8,7 @@ import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
-import net.corda.internal.serialization.amqp.currentSandboxGroup
+import net.corda.internal.serialization.amqp.currentClassloadingContext
 import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -22,7 +22,7 @@ class TestSerializationService {
                 DefaultDescriptorBasedSerializerRegistry(),
         ): SerializerFactory =
             SerializerFactoryBuilder.build(
-                testSerializationContext.currentSandboxGroup(),
+                testSerializationContext.currentClassloadingContext(),
                 descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry,
                 allowEvolution = false
             ).also {

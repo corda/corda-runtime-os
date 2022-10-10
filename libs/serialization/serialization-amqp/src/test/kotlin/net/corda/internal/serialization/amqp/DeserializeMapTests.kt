@@ -9,7 +9,13 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
 import java.io.NotSerializableException
-import java.util.*
+import java.util.AbstractMap
+import java.util.Dictionary
+import java.util.Hashtable
+import java.util.NavigableMap
+import java.util.SortedMap
+import java.util.TreeMap
+import java.util.WeakHashMap
 import java.util.concurrent.TimeUnit
 
 @Timeout(value = 30, unit = TimeUnit.SECONDS)

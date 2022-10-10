@@ -3,7 +3,7 @@ package net.corda.internal.serialization
 
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
-import net.corda.internal.serialization.amqp.currentSandboxGroup
+import net.corda.internal.serialization.amqp.currentClassloadingContext
 import net.corda.serialization.SerializationContext
 
 // Allow us to create a SerializerFactory.
@@ -16,7 +16,7 @@ fun createSerializerFactoryFactory(): SerializerFactoryFactory = SerializerFacto
 open class SerializerFactoryFactoryImpl : SerializerFactoryFactory {
     override fun make(context: SerializationContext): SerializerFactory {
         return SerializerFactoryBuilder.build(
-            context.currentSandboxGroup(),
+            context.currentClassloadingContext(),
             mustPreserveDataWhenEvolving = context.preventDataLoss
         )
     }

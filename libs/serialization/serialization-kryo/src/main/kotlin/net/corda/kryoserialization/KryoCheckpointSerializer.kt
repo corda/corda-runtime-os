@@ -1,10 +1,10 @@
 package net.corda.kryoserialization
 
 import com.esotericsoftware.kryo.Kryo
-import java.io.ByteArrayInputStream
 import net.corda.serialization.checkpoint.CheckpointSerializer
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.uncheckedCast
+import java.io.ByteArrayInputStream
 
 class KryoCheckpointSerializer(
     private val kryo: Kryo,

@@ -2,10 +2,10 @@ package net.corda.internal.serialization.amqp.standard
 
 import net.corda.internal.serialization.amqp.AMQPSerializer
 import net.corda.internal.serialization.amqp.AMQPTypeIdentifiers
+import net.corda.internal.serialization.amqp.DeserializationInput
+import net.corda.internal.serialization.amqp.Metadata
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializationSchemas
-import net.corda.internal.serialization.amqp.Metadata
-import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.serialization.SerializationContext
 import org.apache.qpid.proton.amqp.Binary
 import org.apache.qpid.proton.amqp.Symbol

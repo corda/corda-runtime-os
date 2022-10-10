@@ -1,7 +1,7 @@
 package net.corda.internal.serialization.model
 
 import com.google.common.reflect.TypeToken
-import net.corda.internal.serialization.amqp.currentSandboxGroup
+import net.corda.internal.serialization.amqp.currentClassloadingContext
 import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
@@ -72,7 +72,7 @@ class TypeIdentifierTests {
 
     private fun assertRoundtrips(original: Type) {
         val identifier = TypeIdentifier.forGenericType(original)
-        val localType = identifier.getLocalType(testSerializationContext.currentSandboxGroup())
+        val localType = identifier.getLocalType(testSerializationContext.currentClassloadingContext())
         assertIdentified(localType, identifier.prettyPrint())
     }
 }

@@ -43,7 +43,7 @@ class AMQPTypeIdentifierParserTests {
         assertFailsWith<IllegalTypeNameParserStateException> {
             AMQPTypeIdentifierParser.parse(
                 "string" + "[]".repeat(33),
-                testSerializationContext.currentSandboxGroup()
+                testSerializationContext.currentClassloadingContext()
             )
         }
     }
@@ -74,7 +74,7 @@ class AMQPTypeIdentifierParserTests {
         assertFailsWith<IllegalTypeNameParserStateException> {
             AMQPTypeIdentifierParser.parse(
                 "WithParameter<".repeat(33) + ">".repeat(33),
-                testSerializationContext.currentSandboxGroup()
+                testSerializationContext.currentClassloadingContext()
             )
         }
     }
@@ -206,7 +206,7 @@ class AMQPTypeIdentifierParserTests {
     private inline fun <reified T> assertParseResult(typeString: String) {
         assertEquals(
             TypeIdentifier.forGenericType(typeOf<T>()),
-            AMQPTypeIdentifierParser.parse(typeString, testSerializationContext.currentSandboxGroup())
+            AMQPTypeIdentifierParser.parse(typeString, testSerializationContext.currentClassloadingContext())
         )
     }
 
@@ -226,7 +226,7 @@ class AMQPTypeIdentifierParserTests {
         val nameForType = AMQPTypeIdentifiers.nameForType(type)
         val parsedIdentifier = AMQPTypeIdentifierParser.parse(
             nameForType,
-            testSerializationContext.currentSandboxGroup()
+            testSerializationContext.currentClassloadingContext()
         )
         assertEquals(expectedIdentifierPrettyPrint, parsedIdentifier.prettyPrint())
     }
@@ -236,7 +236,7 @@ class AMQPTypeIdentifierParserTests {
     }
 
     private fun verify(typeName: String) {
-        val sandboxGroup = testSerializationContext.currentSandboxGroup()
+        val sandboxGroup = testSerializationContext.currentClassloadingContext()
         val type = AMQPTypeIdentifierParser.parse(typeName, sandboxGroup).getLocalType(sandboxGroup)
         assertEquals(normalise(typeName), normalise(type.typeName))
     }

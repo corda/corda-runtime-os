@@ -1,7 +1,7 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.amqp.ReusableSerialiseDeserializeAssert.Companion.serializeDeserializeAssert
 import net.corda.internal.serialization.amqp.ReusableSerialiseDeserializeAssert.Companion.factory
+import net.corda.internal.serialization.amqp.ReusableSerialiseDeserializeAssert.Companion.serializeDeserializeAssert
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.TypeNotation
 import net.corda.internal.serialization.amqp.helper.testSerializationContext

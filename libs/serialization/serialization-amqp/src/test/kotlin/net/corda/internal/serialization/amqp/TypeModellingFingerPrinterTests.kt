@@ -17,7 +17,7 @@ class TypeModellingFingerPrinterTests {
     val customRegistry = CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry)
     val fingerprinter = TypeModellingFingerPrinter(
         customRegistry,
-        testSerializationContext.currentSandboxGroup(),
+        testSerializationContext.currentClassloadingContext(),
         true
     )
 

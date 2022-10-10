@@ -10,8 +10,8 @@ import java.io.NotSerializableException;
 import java.util.concurrent.TimeUnit;
 
 import static net.corda.internal.serialization.amqp.testutils.AMQPTestUtilsKt.testDefaultFactory;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
 public class JavaPrivatePropertyTests {

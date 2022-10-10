@@ -1,22 +1,6 @@
 package net.corda.internal.serialization.amqp.standard
 
-import net.corda.internal.serialization.amqp.AMQPSerializer
-import net.corda.internal.serialization.amqp.ComposableTypePropertySerializer
-import net.corda.internal.serialization.amqp.CompositeType
-import net.corda.internal.serialization.amqp.DeserializationInput
-import net.corda.internal.serialization.amqp.EvolutionObjectBuilder
-import net.corda.internal.serialization.amqp.Field
-import net.corda.internal.serialization.amqp.LocalSerializerFactory
-import net.corda.internal.serialization.amqp.Metadata
-import net.corda.internal.serialization.amqp.ObjectBuilder
-import net.corda.internal.serialization.amqp.PropertySerializer
-import net.corda.internal.serialization.amqp.SerializationOutput
-import net.corda.internal.serialization.amqp.SerializationSchemas
-import net.corda.internal.serialization.amqp.TypeNotation
-import net.corda.internal.serialization.amqp.TypeNotationGenerator
-import net.corda.internal.serialization.amqp.ifThrowsAppend
-import net.corda.internal.serialization.amqp.withDescribed
-import net.corda.internal.serialization.amqp.withList
+import net.corda.internal.serialization.amqp.*
 import net.corda.internal.serialization.model.LocalConstructorInformation
 import net.corda.internal.serialization.model.LocalPropertyInformation
 import net.corda.internal.serialization.model.LocalTypeInformation
@@ -24,7 +8,6 @@ import net.corda.internal.serialization.model.PropertyName
 import net.corda.internal.serialization.model.RemotePropertyInformation
 import net.corda.internal.serialization.model.RemoteTypeInformation
 import net.corda.internal.serialization.model.TypeIdentifier
-import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
 import net.corda.v5.serialization.MissingSerializerException
 import org.apache.qpid.proton.amqp.Symbol
@@ -226,8 +209,8 @@ class EvolutionObjectSerializer(
                  constructor: LocalConstructorInformation,
                  properties: Map<String, LocalPropertyInformation>,
                  mustPreserveData: Boolean,
-                 sandboxGroup: SandboxGroup): EvolutionObjectSerializer {
-            val propertySerializers = makePropertySerializers(properties, remoteTypeInformation.properties, sandboxGroup)
+                 classloadingContext: ClassloadingContext): EvolutionObjectSerializer {
+            val propertySerializers = makePropertySerializers(properties, remoteTypeInformation.properties, classloadingContext)
             val reader = ComposableObjectReader(
                     localTypeInformation.typeIdentifier,
                     propertySerializers,
@@ -247,11 +230,11 @@ class EvolutionObjectSerializer(
 
         private fun makePropertySerializers(localProperties: Map<String, LocalPropertyInformation>,
                                             remoteProperties: Map<String, RemotePropertyInformation>,
-                                            sandboxGroup: SandboxGroup): Map<String, PropertySerializer> =
+                                            classloadingContext: ClassloadingContext): Map<String, PropertySerializer> =
                 remoteProperties.mapValues { (name, property) ->
                     val localProperty = localProperties[name]
                     val isCalculated = localProperty?.isCalculated ?: false
-                    val type = localProperty?.type?.observedType ?: property.type.typeIdentifier.getLocalType(sandboxGroup)
+                    val type = localProperty?.type?.observedType ?: property.type.typeIdentifier.getLocalType(classloadingContext)
                     ComposableTypePropertySerializer.makeForEvolution(name, isCalculated, property.type.typeIdentifier, type)
                 }
     }

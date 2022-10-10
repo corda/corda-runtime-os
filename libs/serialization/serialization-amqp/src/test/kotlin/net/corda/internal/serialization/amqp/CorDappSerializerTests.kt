@@ -22,7 +22,7 @@ class CorDappSerializerTests {
 
     private fun proxyFactory(
             serializers: List<SerializationCustomSerializer<*, *>>
-    ) = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup()).apply {
+    ) = SerializerFactoryBuilder.build(testSerializationContext.currentClassloadingContext()).apply {
         serializers.forEach {
             registerExternal(it, this)
         }
@@ -97,7 +97,7 @@ class CorDappSerializerTests {
 	fun testWithAllowListBlocked() {
         data class A(val a: Int, val b: NeedsProxy)
 
-        val factory = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
+        val factory = SerializerFactoryBuilder.build(testSerializationContext.currentClassloadingContext())
         factory.registerExternal(NeedsProxyProxySerializer(), factory)
 
         val tv1 = 100

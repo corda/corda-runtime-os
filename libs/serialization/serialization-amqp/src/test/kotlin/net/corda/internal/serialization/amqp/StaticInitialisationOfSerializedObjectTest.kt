@@ -50,7 +50,7 @@ class StaticInitialisationOfSerializedObjectTest {
 	fun kotlinObjectWithCompanionObject() {
         data class D(val c: C)
 
-        val sf = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
+        val sf = SerializerFactoryBuilder.build(testSerializationContext.currentClassloadingContext())
 
         val typeMap = sf::class.java.getDeclaredField("serializersByType")
         typeMap.isAccessible = true
@@ -83,7 +83,7 @@ class StaticInitialisationOfSerializedObjectTest {
 //        val sc = SerializationOutput(sf1).serialize(D(C2(20)))
 //        File(URI("$localPath/$resource")).writeBytes(sc.bytes)
 
-        val sf2 = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
+        val sf2 = SerializerFactoryBuilder.build(testSerializationContext.currentClassloadingContext())
         val bytes = url.readBytes()
 
         assertThatThrownBy {

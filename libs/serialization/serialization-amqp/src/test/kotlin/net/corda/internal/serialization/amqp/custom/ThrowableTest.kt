@@ -7,13 +7,13 @@ import net.corda.internal.serialization.amqp.TypeNotation
 import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertAll
 import org.junit.jupiter.api.fail
-import org.junit.jupiter.api.Assertions.assertArrayEquals
-import org.junit.jupiter.api.Test
 
 class ThrowableTest {
     class TestException(override val message: String) : CordaRuntimeException(message)

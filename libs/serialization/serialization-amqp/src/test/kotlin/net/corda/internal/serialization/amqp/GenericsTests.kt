@@ -145,8 +145,8 @@ class GenericsTests {
         @CordaSerializable
         data class Wrapper<T : Any>(val a: Int, val b: SerializedBytes<T>)
 
-        val factory = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
-        val factory2 = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
+        val factory = SerializerFactoryBuilder.build(testSerializationContext.currentClassloadingContext())
+        val factory2 = SerializerFactoryBuilder.build(testSerializationContext.currentClassloadingContext())
         val ser = SerializationOutput(factory)
 
         val gBytes = ser.serialize(G(1))
@@ -176,8 +176,8 @@ class GenericsTests {
         @CordaSerializable
         data class Wrapper<T : Any>(val c: Container<T>)
 
-        val factory = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
-        val factories = listOf(factory, SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup()))
+        val factory = SerializerFactoryBuilder.build(testSerializationContext.currentClassloadingContext())
+        val factories = listOf(factory, SerializerFactoryBuilder.build(testSerializationContext.currentClassloadingContext()))
         val ser = SerializationOutput(factory)
 
         ser.serialize(Wrapper(Container(InnerA(1)))).apply {
@@ -209,8 +209,8 @@ class GenericsTests {
         data class Wrapper<T : Any>(val c: Container<T>)
 
         val factorys = listOf(
-            SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup()),
-            SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
+            SerializerFactoryBuilder.build(testSerializationContext.currentClassloadingContext()),
+            SerializerFactoryBuilder.build(testSerializationContext.currentClassloadingContext())
         )
 
         val ser = SerializationOutput(factorys[0])
@@ -233,7 +233,7 @@ class GenericsTests {
 
     private fun forceWildcardSerialize(
         a: ForceWildcard<*>,
-        factory: SerializerFactory = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
+        factory: SerializerFactory = SerializerFactoryBuilder.build(testSerializationContext.currentClassloadingContext())
     ): SerializedBytes<*> {
         val bytes = SerializationOutput(factory).serializeAndReturnSchema(a)
         bytes.printSchema()
@@ -243,7 +243,7 @@ class GenericsTests {
     @Suppress("UNCHECKED_CAST")
     private fun forceWildcardDeserializeString(
         bytes: SerializedBytes<*>,
-        factory: SerializerFactory = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
+        factory: SerializerFactory = SerializerFactoryBuilder.build(testSerializationContext.currentClassloadingContext())
     ) {
         DeserializationInput(factory).deserialize(bytes as SerializedBytes<ForceWildcard<String>>)
     }
@@ -251,7 +251,7 @@ class GenericsTests {
     @Suppress("UNCHECKED_CAST")
     private fun forceWildcardDeserializeDouble(
         bytes: SerializedBytes<*>,
-        factory: SerializerFactory = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
+        factory: SerializerFactory = SerializerFactoryBuilder.build(testSerializationContext.currentClassloadingContext())
     ) {
         DeserializationInput(factory).deserialize(bytes as SerializedBytes<ForceWildcard<Double>>)
     }
@@ -259,7 +259,7 @@ class GenericsTests {
     @Suppress("UNCHECKED_CAST")
     private fun forceWildcardDeserialize(
         bytes: SerializedBytes<*>,
-        factory: SerializerFactory = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
+        factory: SerializerFactory = SerializerFactoryBuilder.build(testSerializationContext.currentClassloadingContext())
     ) {
         DeserializationInput(factory).deserialize(bytes as SerializedBytes<ForceWildcard<*>>)
     }
@@ -272,7 +272,7 @@ class GenericsTests {
 
     @Test
     fun forceWildcardSharedFactory() {
-        val f = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
+        val f = SerializerFactoryBuilder.build(testSerializationContext.currentClassloadingContext())
         forceWildcardDeserializeString(forceWildcardSerialize(ForceWildcard("hello"), f), f)
         forceWildcardDeserializeDouble(forceWildcardSerialize(ForceWildcard(3.0), f), f)
     }
@@ -286,7 +286,7 @@ class GenericsTests {
 
     @Test
     fun forceWildcardDeserializeSharedFactory() {
-        val f = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
+        val f = SerializerFactoryBuilder.build(testSerializationContext.currentClassloadingContext())
         forceWildcardDeserialize(forceWildcardSerialize(ForceWildcard("hello"), f), f)
         forceWildcardDeserialize(forceWildcardSerialize(ForceWildcard(10), f), f)
         forceWildcardDeserialize(forceWildcardSerialize(ForceWildcard(20.0), f), f)
@@ -330,14 +330,14 @@ class GenericsTests {
         // attempt at having a class loader without some of the derived non core types loaded and thus
         // possibly altering how we serialise things
 
-        val factory2 = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
+        val factory2 = SerializerFactoryBuilder.build(testSerializationContext.currentClassloadingContext())
         val ser2 = TestSerializationOutput(VERBOSE, factory2).serializeAndReturnSchema(state)
 
         //  now deserialise those objects
         val factory3 = testDefaultFactory()
         DeserializationInput(factory3).deserializeAndReturnEnvelope(ser1.obj)
 
-        val factory4 = SerializerFactoryBuilder.build(testSerializationContext.currentSandboxGroup())
+        val factory4 = SerializerFactoryBuilder.build(testSerializationContext.currentClassloadingContext())
         DeserializationInput(factory4).deserializeAndReturnEnvelope(ser2.obj)
     }
 

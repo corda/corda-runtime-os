@@ -1,24 +1,9 @@
 package net.corda.internal.serialization.amqp.standard
 
+import net.corda.internal.serialization.amqp.*
 import net.corda.internal.serialization.model.LocalTypeInformation
 import net.corda.internal.serialization.model.TypeIdentifier
-import net.corda.internal.serialization.amqp.LocalSerializerFactory
-import net.corda.internal.serialization.amqp.AMQPSerializer
-import net.corda.internal.serialization.amqp.AMQPNotSerializableException
-import net.corda.internal.serialization.amqp.asClass
-import net.corda.internal.serialization.amqp.TypeNotation
-import net.corda.internal.serialization.amqp.RestrictedType
-import net.corda.internal.serialization.amqp.Descriptor
-import net.corda.internal.serialization.amqp.AMQPTypeIdentifiers
-import net.corda.internal.serialization.amqp.resolveTypeVariables
-import net.corda.internal.serialization.amqp.SerializationOutput
-import net.corda.internal.serialization.amqp.ifThrowsAppend
-import net.corda.internal.serialization.amqp.withDescribed
-import net.corda.internal.serialization.amqp.SerializationSchemas
-import net.corda.internal.serialization.amqp.Metadata
-import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.serialization.SerializationContext
-import net.corda.sandbox.SandboxGroup
 import net.corda.v5.base.util.uncheckedCast
 import org.apache.qpid.proton.amqp.Symbol
 import org.apache.qpid.proton.codec.Data
@@ -32,7 +17,6 @@ import java.util.NavigableMap
 import java.util.SortedMap
 import java.util.TreeMap
 import java.util.WeakHashMap
-import kotlin.collections.LinkedHashMap
 
 private typealias MapCreationFunction = (Map<*, *>) -> Map<*, *>
 
@@ -66,21 +50,21 @@ class MapSerializer(private val declaredType: ParameterizedType, factory: LocalS
             return supportedTypes[clazz] ?: throw AMQPNotSerializableException(clazz, "Unsupported map type $clazz.")
         }
 
-        fun resolveDeclared(declaredTypeInformation: LocalTypeInformation.AMap, sandboxGroup: SandboxGroup): LocalTypeInformation.AMap {
+        fun resolveDeclared(declaredTypeInformation: LocalTypeInformation.AMap, classloadingContext: ClassloadingContext): LocalTypeInformation.AMap {
             declaredTypeInformation.observedType.asClass().checkSupportedMapType()
             if (supportedTypeIdentifiers.contains(declaredTypeInformation.typeIdentifier.erased))
                 return if (!declaredTypeInformation.isErased) declaredTypeInformation
-                else declaredTypeInformation.withParameters(LocalTypeInformation.Unknown, LocalTypeInformation.Unknown, sandboxGroup)
+                else declaredTypeInformation.withParameters(LocalTypeInformation.Unknown, LocalTypeInformation.Unknown, classloadingContext)
 
             throw NotSerializableException("Cannot derive map type for declared type " +
                     declaredTypeInformation.prettyPrint(false))
         }
 
-        fun resolveActual(actualClass: Class<*>, declaredTypeInformation: LocalTypeInformation.AMap, sandboxGroup: SandboxGroup): LocalTypeInformation.AMap {
+        fun resolveActual(actualClass: Class<*>, declaredTypeInformation: LocalTypeInformation.AMap, classloadingContext: ClassloadingContext): LocalTypeInformation.AMap {
             declaredTypeInformation.observedType.asClass().checkSupportedMapType()
             if (supportedTypeIdentifiers.contains(declaredTypeInformation.typeIdentifier.erased)) {
                 return if (!declaredTypeInformation.isErased) declaredTypeInformation
-                else declaredTypeInformation.withParameters(LocalTypeInformation.Unknown, LocalTypeInformation.Unknown, sandboxGroup)
+                else declaredTypeInformation.withParameters(LocalTypeInformation.Unknown, LocalTypeInformation.Unknown, classloadingContext)
             }
 
             val mapClass = findMostSuitableMapType(actualClass)
@@ -93,8 +77,8 @@ class MapSerializer(private val declaredType: ParameterizedType, factory: LocalS
                 is TypeIdentifier.Parameterised -> erasedInformation.withParameters(
                         declaredTypeInformation.keyType,
                         declaredTypeInformation.valueType,
-                        sandboxGroup)
-                else -> erasedInformation.withParameters(LocalTypeInformation.Unknown, LocalTypeInformation.Unknown, sandboxGroup)
+                        classloadingContext)
+                else -> erasedInformation.withParameters(LocalTypeInformation.Unknown, LocalTypeInformation.Unknown, classloadingContext)
             }
         }
 
@@ -114,9 +98,9 @@ class MapSerializer(private val declaredType: ParameterizedType, factory: LocalS
     )
 
     private val inboundKeyType = declaredType.actualTypeArguments[0]
-    private val outboundKeyType = resolveTypeVariables(inboundKeyType, null, factory.sandboxGroup)
+    private val outboundKeyType = resolveTypeVariables(inboundKeyType, null, factory.classloadingContext)
     private val inboundValueType = declaredType.actualTypeArguments[1]
-    private val outboundValueType = resolveTypeVariables(inboundValueType, null, factory.sandboxGroup)
+    private val outboundValueType = resolveTypeVariables(inboundValueType, null, factory.classloadingContext)
 
     override fun writeClassInfo(output: SerializationOutput, context: SerializationContext) = ifThrowsAppend({ declaredType.typeName }) {
         if (output.writeTypeNotations(typeNotation)) {

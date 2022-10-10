@@ -1,15 +1,15 @@
 package net.corda.internal.serialization.model
 
 import com.google.common.hash.Hashing
-import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.toBase64
+import net.corda.internal.serialization.amqp.ClassloadingContext
 import net.corda.internal.serialization.amqp.CustomSerializerRegistry
 import net.corda.internal.serialization.amqp.asClass
 import net.corda.internal.serialization.amqp.ifThrowsAppend
 import net.corda.internal.serialization.model.TypeIdentifier.ArrayOf
 import net.corda.internal.serialization.model.TypeIdentifier.Parameterised
 import net.corda.internal.serialization.model.TypeIdentifier.UnknownType
-import net.corda.sandbox.SandboxGroup
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.toBase64
 import java.lang.reflect.ParameterizedType
 
 /**
@@ -35,7 +35,7 @@ interface FingerPrinter {
  */
 class TypeModellingFingerPrinter(
         private val customTypeDescriptorLookup: CustomSerializerRegistry,
-        private val sandboxGroup: SandboxGroup,
+        private val classloadingContext: ClassloadingContext,
         private val debugEnabled: Boolean = false) : FingerPrinter {
 
     private val cache: MutableMap<TypeIdentifier, String> = DefaultCacheProvider.createCache()
@@ -47,7 +47,7 @@ class TypeModellingFingerPrinter(
          * the Fingerprinter cannot guarantee that.
          */
         cache.getOrPut(typeInformation.typeIdentifier) {
-            FingerPrintingState(customTypeDescriptorLookup, sandboxGroup, FingerprintWriter(debugEnabled))
+            FingerPrintingState(customTypeDescriptorLookup, classloadingContext, FingerprintWriter(debugEnabled))
                     .fingerprint(typeInformation)
         }
 }
@@ -100,7 +100,7 @@ internal class FingerprintWriter(debugEnabled: Boolean = false) {
  */
 private class FingerPrintingState(
         private val customSerializerRegistry: CustomSerializerRegistry,
-        private val sandboxGroup: SandboxGroup,
+        private val classloadingContext: ClassloadingContext,
         private val writer: FingerprintWriter) {
 
     companion object {
@@ -245,7 +245,7 @@ private class FingerPrintingState(
         val observedGenericType = if (observedType !is ParameterizedType
                 && type.typeIdentifier is Parameterised
                 && observedClass != Class::class.java) {
-            type.typeIdentifier.getLocalType(sandboxGroup)
+            type.typeIdentifier.getLocalType(classloadingContext)
         } else {
             observedType
         }

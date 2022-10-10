@@ -5,7 +5,6 @@ import net.corda.internal.serialization.model.LocalTypeModel
 import net.corda.internal.serialization.model.RemoteTypeInformation
 import net.corda.internal.serialization.model.TypeDescriptor
 import net.corda.internal.serialization.model.TypeLoader
-import net.corda.sandbox.SandboxGroup
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
 import net.corda.v5.serialization.MissingSerializerException
@@ -28,7 +27,7 @@ interface RemoteSerializerFactory {
         typeDescriptor: TypeDescriptor,
         serializationSchemas: SerializationSchemas,
         metadata: Metadata,
-        sandboxGroup: SandboxGroup
+        classloadingContext: ClassloadingContext
     ): AMQPSerializer<Any>
 }
 
@@ -75,21 +74,21 @@ class DefaultRemoteSerializerFactory(
         typeDescriptor: TypeDescriptor,
         serializationSchemas: SerializationSchemas,
         metadata: Metadata,
-        sandboxGroup: SandboxGroup
+        classloadingContext: ClassloadingContext
     ): AMQPSerializer<Any> =
         // If we have seen this descriptor before, we assume we have seen everything in this schema before.
         descriptorBasedSerializerRegistry.getOrBuild(typeDescriptor) {
             logger.trace { "get Serializer descriptor=$typeDescriptor" }
 
             // Interpret all of the types in the schema into RemoteTypeInformation, and reflect that into LocalTypeInformation.
-            val remoteTypeInformationMap = remoteTypeModel.interpret(serializationSchemas, sandboxGroup)
-            val reflected = reflect(remoteTypeInformationMap, sandboxGroup, metadata)
+            val remoteTypeInformationMap = remoteTypeModel.interpret(serializationSchemas, classloadingContext)
+            val reflected = reflect(remoteTypeInformationMap, classloadingContext, metadata)
 
             // Get, and record in the registry, serializers for all of the types contained in the schema.
             // This will save us having to re-interpret the entire schema on re-entry when deserialising individual property values.
             val serializers = reflected.mapValues { (descriptor, remoteLocalPair) ->
                 descriptorBasedSerializerRegistry.getOrBuild(descriptor) {
-                    getUncached(remoteLocalPair.remoteTypeInformation, remoteLocalPair.localTypeInformation, sandboxGroup, metadata)
+                    getUncached(remoteLocalPair.remoteTypeInformation, remoteLocalPair.localTypeInformation, classloadingContext, metadata)
                 }
             }
 
@@ -103,7 +102,7 @@ class DefaultRemoteSerializerFactory(
     private fun getUncached(
         remoteTypeInformation: RemoteTypeInformation,
         localTypeInformation: LocalTypeInformation,
-        sandboxGroup: SandboxGroup,
+        classloadingContext: ClassloadingContext,
         metadata: Metadata
     ): AMQPSerializer<Any> {
         val remoteDescriptor = remoteTypeInformation.typeDescriptor
@@ -130,7 +129,7 @@ class DefaultRemoteSerializerFactory(
             // Big 'n Scary warnings either. Assume that the local serializer is fine
             // provided the local type is the same one we expect when loading the
             // remote class.
-            remoteTypeInformation.isCompatibleWith(localTypeInformation, sandboxGroup, metadata) -> localSerializer
+            remoteTypeInformation.isCompatibleWith(localTypeInformation, classloadingContext, metadata) -> localSerializer
 
             // Descriptors don't match, and something is probably broken, but we let the framework do what it can with the local
             // serialiser (BlobInspectorTest uniquely breaks if we throw an exception here, and passes if we just warn and continue).
@@ -152,9 +151,9 @@ ${localTypeInformation.prettyPrint(false)}
         }
     }
 
-    private fun reflect(remoteInformation: Map<TypeDescriptor, RemoteTypeInformation>, sandboxGroup: SandboxGroup, metadata: Metadata):
+    private fun reflect(remoteInformation: Map<TypeDescriptor, RemoteTypeInformation>, classloadingContext: ClassloadingContext, metadata: Metadata):
         Map<TypeDescriptor, RemoteAndLocalTypeInformation> {
-        val localInformationByIdentifier = typeLoader.load(remoteInformation.values, sandboxGroup, metadata).mapValues { (_, type) ->
+        val localInformationByIdentifier = typeLoader.load(remoteInformation.values, classloadingContext, metadata).mapValues { (_, type) ->
             localTypeModel.inspect(type)
         }
 
@@ -178,10 +177,10 @@ ${localTypeInformation.prettyPrint(false)}
 
     private fun RemoteTypeInformation.isCompatibleWith(
         localTypeInformation: LocalTypeInformation,
-        sandboxGroup: SandboxGroup,
+        classloadingContext: ClassloadingContext,
         metadata: Metadata
     ): Boolean {
-        val localTypes = typeLoader.load(singletonList(this), sandboxGroup, metadata)
+        val localTypes = typeLoader.load(singletonList(this), classloadingContext, metadata)
         return localTypes.size == 1 &&
             localTypeInformation.observedType == localTypes.values.first()
     }

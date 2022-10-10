@@ -1,11 +1,11 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.internal.serialization.amqp.testutils.deserializeAndReturnEnvelope
 import net.corda.internal.serialization.amqp.testutils.serialize
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactoryNoEvolution
 import net.corda.internal.serialization.amqp.testutils.testName
+import net.corda.v5.base.annotations.CordaSerializable
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.util.concurrent.TimeUnit

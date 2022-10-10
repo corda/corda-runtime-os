@@ -50,15 +50,15 @@ fun Data.writeReferencedObject(refObject: ReferencedObject) {
     exit() // exit described
 }
 
-fun resolveTypeVariables(actualType: Type, contextType: Type?, sandboxGroup: SandboxGroup): Type {
+fun resolveTypeVariables(actualType: Type, contextType: Type?, classloadingContext: ClassloadingContext): Type {
     val resolvedType = if (contextType != null) TypeToken.of(contextType).resolveType(actualType).type else actualType
     // TODO: surely we check it is concrete at this point with no TypeVariables
     return if (resolvedType is TypeVariable<*>) {
         val bounds = resolvedType.bounds
         return if (bounds.isEmpty()) {
-            TypeIdentifier.UnknownType.getLocalType(sandboxGroup)
+            TypeIdentifier.UnknownType.getLocalType(classloadingContext)
         } else if (bounds.size == 1) {
-            resolveTypeVariables(bounds[0], contextType, sandboxGroup)
+            resolveTypeVariables(bounds[0], contextType, classloadingContext)
         } else throw AMQPNotSerializableException(
                 actualType,
                 "Got bounded type $actualType but only support single bound.")
@@ -80,10 +80,10 @@ internal fun Type.asClass(): Class<*> {
     }
 }
 
-internal fun Type.asArray(sandboxGroup: SandboxGroup): Type? {
+internal fun Type.asArray(classloadingContext: ClassloadingContext): Type? {
     return when(this) {
         is Class<*>,
-        is ParameterizedType -> TypeIdentifier.ArrayOf(TypeIdentifier.forGenericType(this)).getLocalType(sandboxGroup)
+        is ParameterizedType -> TypeIdentifier.ArrayOf(TypeIdentifier.forGenericType(this)).getLocalType(classloadingContext)
         else -> null
     }
 }
@@ -97,14 +97,14 @@ internal fun Type.componentType(): Type {
     return (this as? Class<*>)?.componentType ?: (this as GenericArrayType).genericComponentType
 }
 
-internal fun Class<*>.asParameterizedType(sandboxGroup: SandboxGroup): ParameterizedType =
+internal fun Class<*>.asParameterizedType(classloadingContext: ClassloadingContext): ParameterizedType =
     TypeIdentifier.Erased(this.name, this.typeParameters.size)
             .toParameterized(this.typeParameters.map { TypeIdentifier.forGenericType(it) })
-            .getLocalType(sandboxGroup) as ParameterizedType
+            .getLocalType(classloadingContext) as ParameterizedType
 
-internal fun Type.asParameterizedType(sandboxGroup: SandboxGroup): ParameterizedType {
+internal fun Type.asParameterizedType(classloadingContext: ClassloadingContext): ParameterizedType {
     return when (this) {
-        is Class<*> -> this.asParameterizedType(sandboxGroup)
+        is Class<*> -> this.asParameterizedType(classloadingContext)
         is ParameterizedType -> this
         else -> throw AMQPNotSerializableException(this, "Don't know how to convert to ParameterizedType")
     }
@@ -133,5 +133,7 @@ fun hasCordaSerializable(type: Class<*>): Boolean {
             || (type.superclass != null && hasCordaSerializable(type.superclass))
 }
 
-fun SerializationContext.currentSandboxGroup(): SandboxGroup = sandboxGroup as? SandboxGroup
-    ?: throw NotSerializableException("sandboxGroup is not set in serialization context")
+fun SerializationContext.currentClassloadingContext(): ClassloadingContext = ClassloadingContextImpl(
+    sandboxGroup as? SandboxGroup
+        ?: throw NotSerializableException("sandboxGroup is not set in serialization context")
+)

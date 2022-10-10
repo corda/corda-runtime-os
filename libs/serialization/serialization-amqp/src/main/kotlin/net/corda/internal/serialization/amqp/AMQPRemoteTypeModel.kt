@@ -8,7 +8,6 @@ import net.corda.internal.serialization.model.RemotePropertyInformation
 import net.corda.internal.serialization.model.RemoteTypeInformation
 import net.corda.internal.serialization.model.TypeDescriptor
 import net.corda.internal.serialization.model.TypeIdentifier
-import net.corda.sandbox.SandboxGroup
 import java.io.NotSerializableException
 
 /**
@@ -32,18 +31,18 @@ class AMQPRemoteTypeModel {
      * We also build a [Map] of [TypeNotation] by [TypeDescriptor], which we then convert into [RemoteTypeInformation]
      * while merging with the cache.
      */
-    fun interpret(serializationSchemas: SerializationSchemas, sandboxGroup: SandboxGroup): Map<TypeDescriptor, RemoteTypeInformation> {
+    fun interpret(serializationSchemas: SerializationSchemas, classloadingContext: ClassloadingContext): Map<TypeDescriptor, RemoteTypeInformation> {
         val (schema, transforms) = serializationSchemas
-        val notationLookup = schema.types.associateBy { it.name.getTypeIdentifier(sandboxGroup) }
+        val notationLookup = schema.types.associateBy { it.name.getTypeIdentifier(classloadingContext) }
         val byTypeDescriptor = schema.types.associateBy { it.typeDescriptor }
         val enumTransformsLookup = transforms.types.asSequence().map { (name, transformSet) ->
-            name.getTypeIdentifier(sandboxGroup) to transformSet
+            name.getTypeIdentifier(classloadingContext) to transformSet
         }.toMap()
 
         val interpretationState = InterpretationState(notationLookup, enumTransformsLookup, cache, emptySet())
 
         val result = byTypeDescriptor.mapValues { (typeDescriptor, typeNotation) ->
-            cache.getOrPut(typeDescriptor) { interpretationState.run { typeNotation.name.getTypeIdentifier(sandboxGroup).interpretIdentifier(sandboxGroup) } }
+            cache.getOrPut(typeDescriptor) { interpretationState.run { typeNotation.name.getTypeIdentifier(classloadingContext).interpretIdentifier(classloadingContext) } }
         }
         val typesByIdentifier = result.values.associateBy { it.typeIdentifier }
         result.values.forEach { typeInformation ->
@@ -73,22 +72,22 @@ class AMQPRemoteTypeModel {
          * If we have visited this [TypeIdentifier] before while traversing the graph of related [TypeNotation]s, then we
          * know we have hit a cycle and respond accordingly.
          */
-        fun TypeIdentifier.interpretIdentifier(sandboxGroup: SandboxGroup): RemoteTypeInformation =
+        fun TypeIdentifier.interpretIdentifier(classloadingContext: ClassloadingContext): RemoteTypeInformation =
             if (this in seen) RemoteTypeInformation.Cycle(this)
             else withSeen(this) {
                 val identifier = this@interpretIdentifier
-                notationLookup[identifier]?.interpretNotation(identifier, sandboxGroup) ?: interpretNoNotation(sandboxGroup)
+                notationLookup[identifier]?.interpretNotation(identifier, classloadingContext) ?: interpretNoNotation(classloadingContext)
             }
 
         /**
          * Either fetch from the cache, or interpret, cache, and return, the [RemoteTypeInformation] corresponding to this
          * [TypeNotation].
          */
-        private fun TypeNotation.interpretNotation(identifier: TypeIdentifier, sandboxGroup: SandboxGroup): RemoteTypeInformation =
+        private fun TypeNotation.interpretNotation(identifier: TypeIdentifier, classloadingContext: ClassloadingContext): RemoteTypeInformation =
                 cache.getOrPut(typeDescriptor) {
                     when (this) {
-                        is CompositeType -> interpretComposite(identifier, sandboxGroup)
-                        is RestrictedType -> interpretRestricted(identifier, sandboxGroup)
+                        is CompositeType -> interpretComposite(identifier, classloadingContext)
+                        is RestrictedType -> interpretRestricted(identifier, classloadingContext)
                     }
                 }
 
@@ -96,14 +95,14 @@ class AMQPRemoteTypeModel {
          * Interpret the properties, interfaces and type parameters in this [TypeNotation], and return suitable
          * [RemoteTypeInformation].
          */
-        private fun CompositeType.interpretComposite(identifier: TypeIdentifier, sandboxGroup: SandboxGroup): RemoteTypeInformation {
-            val properties = fields.asSequence().sortedBy { it.name }.map { it.interpret(sandboxGroup) }.toMap(LinkedHashMap())
-            val typeParameters = identifier.interpretTypeParameters(sandboxGroup)
-            val interfaceIdentifiers = provides.map { name -> name.getTypeIdentifier(sandboxGroup) }
+        private fun CompositeType.interpretComposite(identifier: TypeIdentifier, classloadingContext: ClassloadingContext): RemoteTypeInformation {
+            val properties = fields.asSequence().sortedBy { it.name }.map { it.interpret(classloadingContext) }.toMap(LinkedHashMap())
+            val typeParameters = identifier.interpretTypeParameters(classloadingContext)
+            val interfaceIdentifiers = provides.map { name -> name.getTypeIdentifier(classloadingContext) }
             val isInterface = identifier in interfaceIdentifiers
             val interfaces = interfaceIdentifiers.mapNotNull { interfaceIdentifier ->
                 if (interfaceIdentifier == identifier) null
-                else interfaceIdentifier.interpretIdentifier(sandboxGroup)
+                else interfaceIdentifier.interpretIdentifier(classloadingContext)
             }
 
             return if (isInterface) RemoteTypeInformation.AnInterface(typeDescriptor, identifier, properties, interfaces, typeParameters)
@@ -113,26 +112,26 @@ class AMQPRemoteTypeModel {
         /**
          * Type parameters are read off from the [TypeIdentifier] we translated the AMQP type name into.
          */
-        private fun TypeIdentifier.interpretTypeParameters(sandboxGroup: SandboxGroup): List<RemoteTypeInformation> = when (this) {
-            is TypeIdentifier.Parameterised -> parameters.map { it.interpretIdentifier(sandboxGroup) }
+        private fun TypeIdentifier.interpretTypeParameters(classloadingContext: ClassloadingContext): List<RemoteTypeInformation> = when (this) {
+            is TypeIdentifier.Parameterised -> parameters.map { it.interpretIdentifier(classloadingContext) }
             else -> emptyList()
         }
 
         /**
          * Interpret a [RestrictedType] into suitable [RemoteTypeInformation].
          */
-        private fun RestrictedType.interpretRestricted(identifier: TypeIdentifier, sandboxGroup: SandboxGroup): RemoteTypeInformation = when (identifier) {
+        private fun RestrictedType.interpretRestricted(identifier: TypeIdentifier, classloadingContext: ClassloadingContext): RemoteTypeInformation = when (identifier) {
             is TypeIdentifier.Parameterised ->
                 RemoteTypeInformation.Parameterised(
                         typeDescriptor,
                         identifier,
-                        identifier.interpretTypeParameters(sandboxGroup)
+                        identifier.interpretTypeParameters(classloadingContext)
                 )
             is TypeIdentifier.ArrayOf ->
                 RemoteTypeInformation.AnArray(
                         typeDescriptor,
                         identifier,
-                        identifier.componentType.interpretIdentifier(sandboxGroup)
+                        identifier.componentType.interpretIdentifier(classloadingContext)
                 )
             is TypeIdentifier.Unparameterised ->
                 if (choices.isEmpty()) {
@@ -161,16 +160,16 @@ class AMQPRemoteTypeModel {
         /**
          * Interpret a [Field] into a name/[RemotePropertyInformation] pair.
          */
-        private fun Field.interpret(sandboxGroup: SandboxGroup): Pair<String, RemotePropertyInformation> {
-            val identifier = type.getTypeIdentifier(sandboxGroup)
+        private fun Field.interpret(classloadingContext: ClassloadingContext): Pair<String, RemotePropertyInformation> {
+            val identifier = type.getTypeIdentifier(classloadingContext)
 
             // A type of "*" is replaced with the value of the "requires" field
             val fieldTypeIdentifier = if (identifier == TypeIdentifier.TopType && !requires.isEmpty()) {
-                requires[0].getTypeIdentifier(sandboxGroup)
+                requires[0].getTypeIdentifier(classloadingContext)
             } else identifier
 
             // We convert Java Object types to Java primitive types if the field is mandatory.
-            val fieldType = fieldTypeIdentifier.forcePrimitive(mandatory).interpretIdentifier(sandboxGroup)
+            val fieldType = fieldTypeIdentifier.forcePrimitive(mandatory).interpretIdentifier(classloadingContext)
 
             return name to RemotePropertyInformation(
                     fieldType,
@@ -181,7 +180,7 @@ class AMQPRemoteTypeModel {
          * If there is no [TypeNotation] in the [Schema] matching a given [TypeIdentifier], we interpret the [TypeIdentifier]
          * directly.
          */
-        private fun TypeIdentifier.interpretNoNotation(sandboxGroup: SandboxGroup): RemoteTypeInformation =
+        private fun TypeIdentifier.interpretNoNotation(classloadingContext: ClassloadingContext): RemoteTypeInformation =
                 when (this) {
                     is TypeIdentifier.TopType -> RemoteTypeInformation.Top
                     is TypeIdentifier.UnknownType -> RemoteTypeInformation.Unknown
@@ -189,13 +188,13 @@ class AMQPRemoteTypeModel {
                         RemoteTypeInformation.AnArray(
                                 name,
                                 this,
-                                componentType.interpretIdentifier(sandboxGroup)
+                                componentType.interpretIdentifier(classloadingContext)
                         )
                     is TypeIdentifier.Parameterised ->
                         RemoteTypeInformation.Parameterised(
                                 name,
                                 this,
-                                parameters.map { it.interpretIdentifier(sandboxGroup) })
+                                parameters.map { it.interpretIdentifier(classloadingContext) })
                     else -> RemoteTypeInformation.Unparameterised(name, this)
                 }
     }
@@ -204,7 +203,7 @@ class AMQPRemoteTypeModel {
 private val TypeNotation.typeDescriptor: String get() = descriptor.name?.toString() ?:
 throw NotSerializableException("Type notation has no type descriptor: $this")
 
-private fun String.getTypeIdentifier(sandboxGroup: SandboxGroup) = AMQPTypeIdentifierParser.parse(this, sandboxGroup)
+private fun String.getTypeIdentifier(classloadingContext: ClassloadingContext) = AMQPTypeIdentifierParser.parse(this, classloadingContext)
 
 /**
  * Force e.g. [java.lang.Integer] to `int`, if it is the type of a mandatory field.

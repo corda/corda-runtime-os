@@ -6,6 +6,7 @@ import net.corda.v5.serialization.annotations.CordaSerializationTransformEnumDef
 import net.corda.v5.serialization.annotations.CordaSerializationTransformEnumDefaults
 import net.corda.v5.serialization.annotations.CordaSerializationTransformRename
 import net.corda.v5.serialization.annotations.CordaSerializationTransformRenames
+
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout

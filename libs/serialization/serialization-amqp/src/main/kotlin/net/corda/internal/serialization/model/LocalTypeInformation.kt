@@ -1,5 +1,6 @@
 package net.corda.internal.serialization.model
 
+import net.corda.internal.serialization.amqp.ClassloadingContext
 import net.corda.internal.serialization.model.LocalTypeInformation.Abstract
 import net.corda.internal.serialization.model.LocalTypeInformation.AnArray
 import net.corda.internal.serialization.model.LocalTypeInformation.AnEnum
@@ -12,7 +13,6 @@ import net.corda.internal.serialization.model.LocalTypeInformation.Opaque
 import net.corda.internal.serialization.model.LocalTypeInformation.Singleton
 import net.corda.internal.serialization.model.LocalTypeInformation.Top
 import net.corda.internal.serialization.model.LocalTypeInformation.Unknown
-import net.corda.sandbox.SandboxGroup
 import java.lang.reflect.Constructor
 import java.lang.reflect.Type
 import java.util.Objects
@@ -290,7 +290,7 @@ sealed class LocalTypeInformation {
     data class ACollection(override val observedType: Type, override val typeIdentifier: TypeIdentifier, val elementType: LocalTypeInformation) : LocalTypeInformation() {
         val isErased: Boolean get() = typeIdentifier is TypeIdentifier.Erased
 
-        fun withElementType(parameter: LocalTypeInformation, sandboxGroup: SandboxGroup): ACollection = when(typeIdentifier) {
+        fun withElementType(parameter: LocalTypeInformation, sandboxGroup: ClassloadingContext): ACollection = when(typeIdentifier) {
             is TypeIdentifier.Erased -> {
                 val unerasedType = typeIdentifier.toParameterized(listOf(parameter.typeIdentifier))
                 ACollection(
@@ -322,18 +322,18 @@ sealed class LocalTypeInformation {
                     val keyType: LocalTypeInformation, val valueType: LocalTypeInformation) : LocalTypeInformation() {
         val isErased: Boolean get() = typeIdentifier is TypeIdentifier.Erased
 
-        fun withParameters(keyType: LocalTypeInformation, valueType: LocalTypeInformation, sandboxGroup: SandboxGroup): AMap = when(typeIdentifier) {
+        fun withParameters(keyType: LocalTypeInformation, valueType: LocalTypeInformation, classloadingContext: ClassloadingContext): AMap = when(typeIdentifier) {
             is TypeIdentifier.Erased -> {
                 val unerasedType = typeIdentifier.toParameterized(listOf(keyType.typeIdentifier, valueType.typeIdentifier))
                 AMap(
-                        unerasedType.getLocalType(sandboxGroup),
+                        unerasedType.getLocalType(classloadingContext),
                         unerasedType,
                         keyType, valueType)
             }
             is TypeIdentifier.Parameterised -> {
                 val reparameterizedType = typeIdentifier.copy(parameters = listOf(keyType.typeIdentifier, valueType.typeIdentifier))
                 AMap(
-                        reparameterizedType.getLocalType(sandboxGroup),
+                        reparameterizedType.getLocalType(classloadingContext),
                         reparameterizedType,
                         keyType, valueType
                 )

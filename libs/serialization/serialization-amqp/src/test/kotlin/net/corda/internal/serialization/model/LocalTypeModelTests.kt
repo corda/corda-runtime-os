@@ -3,11 +3,11 @@ package net.corda.internal.serialization.model
 import com.google.common.reflect.TypeToken
 import net.corda.internal.serialization.amqp.AMQPSerializer
 import net.corda.internal.serialization.amqp.CachingCustomSerializerRegistry
-import net.corda.internal.serialization.amqp.standard.CustomSerializer
 import net.corda.internal.serialization.amqp.CustomSerializerRegistry
 import net.corda.internal.serialization.amqp.DefaultDescriptorBasedSerializerRegistry
-import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.LocalTypeModelConfigurationImpl
+import net.corda.internal.serialization.amqp.SerializerFactory
+import net.corda.internal.serialization.amqp.standard.CustomSerializer
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.serialization.SerializationCustomSerializer

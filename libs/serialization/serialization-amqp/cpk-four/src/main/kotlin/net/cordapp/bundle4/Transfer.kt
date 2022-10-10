@@ -1,9 +1,9 @@
 package net.cordapp.bundle4
 
-import net.cordapp.bundle5.Container
+import net.corda.v5.base.annotations.CordaSerializable
 import net.cordapp.bundle2.Document
 import net.cordapp.bundle3.Obligation
-import net.corda.v5.base.annotations.CordaSerializable
+import net.cordapp.bundle5.Container
 
 @CordaSerializable
 class Transfer(val obligation: Obligation, val document: Document, val id: Container<Int>) {

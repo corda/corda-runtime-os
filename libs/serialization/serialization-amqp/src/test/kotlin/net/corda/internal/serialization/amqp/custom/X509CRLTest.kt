@@ -6,10 +6,10 @@ import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.TypeNotation
 import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.fail
 import org.junit.jupiter.api.Test
-import java.security.cert.CertificateFactory
+import org.junit.jupiter.api.fail
 import java.security.cert.CRL
+import java.security.cert.CertificateFactory
 
 class X509CRLTest {
     private fun generateCRL(resourceName: String): CRL {

@@ -89,9 +89,12 @@ object SerializerFactoryBuilder {
     }) as Map<Class<*>, Class<*>>
 
     @JvmStatic
-    fun build(sandboxGroup: SandboxGroup): SerializerFactory {
+    fun build(sandboxGroup: SandboxGroup): SerializerFactory = build(ClassloadingContextImpl(sandboxGroup))
+
+    @JvmStatic
+    fun build(classloadingContext: ClassloadingContext): SerializerFactory {
         return makeFactory(
-            sandboxGroup,
+            classloadingContext,
             DefaultDescriptorBasedSerializerRegistry(),
             allowEvolution = true,
             overrideFingerPrinter = null,
@@ -103,7 +106,7 @@ object SerializerFactoryBuilder {
     @Suppress("LongParameterList")
     @JvmStatic
     fun build(
-            sandboxGroup: SandboxGroup,
+            classloadingContext: ClassloadingContext,
             descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
                     DefaultDescriptorBasedSerializerRegistry(),
             allowEvolution: Boolean = true,
@@ -111,7 +114,7 @@ object SerializerFactoryBuilder {
             onlyCustomSerializers: Boolean = false,
             mustPreserveDataWhenEvolving: Boolean = false): SerializerFactory {
         return makeFactory(
-                sandboxGroup,
+                classloadingContext,
                 descriptorBasedSerializerRegistry,
                 allowEvolution,
                 overrideFingerPrinter,
@@ -121,21 +124,23 @@ object SerializerFactoryBuilder {
 
     @Suppress("LongParameterList")
     private fun makeFactory(
-                            sandboxGroup: SandboxGroup,
-                            descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
-                            allowEvolution: Boolean,
-                            overrideFingerPrinter: FingerPrinter?,
-                            onlyCustomSerializers: Boolean,
-                            mustPreserveDataWhenEvolving: Boolean): SerializerFactory {
+            classloadingContext: ClassloadingContext,
+            descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
+            allowEvolution: Boolean,
+            overrideFingerPrinter: FingerPrinter?,
+            onlyCustomSerializers: Boolean,
+            mustPreserveDataWhenEvolving: Boolean
+    ): SerializerFactory {
+
         val customSerializerRegistry = CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry)
 
         val typeModelConfiguration = LocalTypeModelConfigurationImpl(customSerializerRegistry)
         val localTypeModel = ConfigurableLocalTypeModel(typeModelConfiguration)
 
-        val fingerPrinter = overrideFingerPrinter ?: TypeModellingFingerPrinter(customSerializerRegistry, sandboxGroup)
+        val fingerPrinter = overrideFingerPrinter ?: TypeModellingFingerPrinter(customSerializerRegistry, classloadingContext)
 
         val localSerializerFactory = DefaultLocalSerializerFactory(
-            sandboxGroup,
+            classloadingContext,
             localTypeModel,
             fingerPrinter,
             descriptorBasedSerializerRegistry,

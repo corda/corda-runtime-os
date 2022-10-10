@@ -2,54 +2,22 @@
 package net.corda.internal.serialization
 
 import net.corda.internal.serialization.amqp.AccessOrderLinkedHashMap
+import net.corda.internal.serialization.amqp.ClassloadingContext
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.amqpMagic
-import net.corda.internal.serialization.amqp.currentSandboxGroup
-import net.corda.internal.serialization.amqp.custom.BigDecimalSerializer
-import net.corda.internal.serialization.amqp.custom.BigIntegerSerializer
-import net.corda.internal.serialization.amqp.custom.BitSetSerializer
-import net.corda.internal.serialization.amqp.custom.CertPathSerializer
-import net.corda.internal.serialization.amqp.custom.ClassSerializer
-import net.corda.internal.serialization.amqp.custom.CurrencySerializer
-import net.corda.internal.serialization.amqp.custom.DayOfWeekSerializer
-import net.corda.internal.serialization.amqp.custom.DurationSerializer
-import net.corda.internal.serialization.amqp.custom.EnumSetSerializer
-import net.corda.internal.serialization.amqp.custom.InputStreamSerializer
-import net.corda.internal.serialization.amqp.custom.InstantSerializer
-import net.corda.internal.serialization.amqp.custom.LocalDateSerializer
-import net.corda.internal.serialization.amqp.custom.LocalDateTimeSerializer
-import net.corda.internal.serialization.amqp.custom.LocalTimeSerializer
-import net.corda.internal.serialization.amqp.custom.MonthDaySerializer
-import net.corda.internal.serialization.amqp.custom.MonthSerializer
-import net.corda.internal.serialization.amqp.custom.OffsetDateTimeSerializer
-import net.corda.internal.serialization.amqp.custom.OffsetTimeSerializer
-import net.corda.internal.serialization.amqp.custom.OpaqueBytesSubSequenceSerializer
-import net.corda.internal.serialization.amqp.custom.OptionalSerializer
-import net.corda.internal.serialization.amqp.custom.PairSerializer
-import net.corda.internal.serialization.amqp.custom.PeriodSerializer
-import net.corda.internal.serialization.amqp.custom.StackTraceElementSerializer
-import net.corda.internal.serialization.amqp.custom.StringBufferSerializer
-import net.corda.internal.serialization.amqp.custom.ThrowableSerializer
-import net.corda.internal.serialization.amqp.custom.UnitSerializer
-import net.corda.internal.serialization.amqp.custom.X500PrincipalSerializer
-import net.corda.internal.serialization.amqp.custom.X509CRLSerializer
-import net.corda.internal.serialization.amqp.custom.X509CertificateSerializer
-import net.corda.internal.serialization.amqp.custom.YearMonthSerializer
-import net.corda.internal.serialization.amqp.custom.YearSerializer
-import net.corda.internal.serialization.amqp.custom.ZoneIdSerializer
-import net.corda.internal.serialization.amqp.custom.ZonedDateTimeSerializer
-import net.corda.sandbox.SandboxGroup
+import net.corda.internal.serialization.amqp.currentClassloadingContext
+import net.corda.internal.serialization.amqp.custom.*
 import net.corda.serialization.SerializationContext
-import net.corda.utilities.toSynchronised
 import net.corda.utilities.VisibleForTesting
+import net.corda.utilities.toSynchronised
 import net.corda.v5.base.types.ByteSequence
 import net.corda.v5.serialization.SerializationCustomSerializer
 import net.corda.v5.serialization.SerializedBytes
 import java.util.Collections
 
-data class SerializationFactoryCacheKey(val sandboxGroup: SandboxGroup?,
+data class SerializationFactoryCacheKey(val classloadingContext: ClassloadingContext?,
                                         val preventDataLoss: Boolean,
                                         val customSerializers: Set<SerializationCustomSerializer<*, *>>?)
 
@@ -85,8 +53,8 @@ abstract class AbstractAMQPSerializationScheme private constructor(
     }
 
     fun getSerializerFactory(context: SerializationContext): SerializerFactory {
-        val sandboxGroup = context.currentSandboxGroup()
-        val key = SerializationFactoryCacheKey(sandboxGroup, context.preventDataLoss, context.customSerializers)
+        val classloadingContext = context.currentClassloadingContext()
+        val key = SerializationFactoryCacheKey(classloadingContext, context.preventDataLoss, context.customSerializers)
         // ConcurrentHashMap.get() is lock free, but computeIfAbsent is not, even if the key is in the map already.
         return serializerFactoriesForContexts[key] ?: serializerFactoriesForContexts.computeIfAbsent(key) {
             sff.make(context).also {

@@ -1,8 +1,8 @@
 package net.corda.internal.serialization.amqp.custom
 
-import net.corda.internal.serialization.amqp.LocalSerializerFactory
 import net.corda.internal.serialization.amqp.GetterReader
-import net.corda.internal.serialization.amqp.currentSandboxGroup
+import net.corda.internal.serialization.amqp.LocalSerializerFactory
+import net.corda.internal.serialization.amqp.currentClassloadingContext
 import net.corda.internal.serialization.model.LocalConstructorInformation
 import net.corda.internal.serialization.model.LocalTypeInformation
 import net.corda.serialization.InternalProxySerializer
@@ -69,7 +69,7 @@ class ThrowableSerializer(
     @Suppress("NestedBlockDepth")
     override fun fromProxy(proxy: ThrowableProxy, context: SerializationContext): Throwable {
         try {
-            val clazz = context.currentSandboxGroup().loadClassFromMainBundles(proxy.exceptionClass)
+            val clazz = context.currentClassloadingContext().loadClassFromMainBundles(proxy.exceptionClass)
 
             // If it is a CordaRuntimeException, we can seek any constructor and then set the properties
             // Otherwise we just make a CordaRuntimeException

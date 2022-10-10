@@ -10,7 +10,7 @@ import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.io.OutputStream
 import java.nio.BufferOverflowException
-import java.util.*
+import java.util.Random
 import java.util.zip.DeflaterOutputStream
 import java.util.zip.InflaterInputStream
 

@@ -1,6 +1,7 @@
 package net.corda.serialization.amqp.test
 
 import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT
+import net.corda.internal.serialization.amqp.ClassloadingContextImpl
 import net.corda.internal.serialization.amqp.DeserializationInput
 import net.corda.internal.serialization.amqp.ObjectAndEnvelope
 import net.corda.internal.serialization.amqp.SerializationOutput
@@ -68,7 +69,7 @@ class AMQPwithOSGiSerializationTests {
     }
 
     private fun testDefaultFactory(sandboxGroup: SandboxGroup): SerializerFactory =
-        SerializerFactoryBuilder.build(sandboxGroup, allowEvolution = true)
+        SerializerFactoryBuilder.build(ClassloadingContextImpl(sandboxGroup), allowEvolution = true)
 
     @Throws(NotSerializableException::class)
     inline fun <reified T : Any> DeserializationInput.deserializeAndReturnEnvelope(

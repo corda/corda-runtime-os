@@ -534,7 +534,7 @@ class EvolvabilityTests {
         val model = AMQPRemoteTypeModel()
         val remoteTypeInfo = model.interpret(
             SerializationSchemas(newVersion.schema, newVersion.transformsSchema),
-            testSerializationContext.currentSandboxGroup()
+            testSerializationContext.currentClassloadingContext()
         )
         println(remoteTypeInfo)
 
