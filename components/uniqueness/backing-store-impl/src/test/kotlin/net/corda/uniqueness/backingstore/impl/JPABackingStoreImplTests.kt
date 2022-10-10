@@ -1,9 +1,6 @@
 package net.corda.uniqueness.backingstore.impl
 
 import net.corda.crypto.testkit.SecureHashUtils
-import net.corda.data.KeyValuePairList
-import net.corda.data.flow.event.external.ExternalEventContext
-import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.schema.CordaDb
@@ -22,41 +19,26 @@ import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessRejectedTransac
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessStateDetailEntity
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTransactionDetailEntity
 import net.corda.uniqueness.datamodel.common.UniquenessConstants
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorMalformedRequestImpl
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateRefImpl
-import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
-import net.corda.v5.crypto.SecureHash
-import net.corda.virtualnode.toAvro
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.Mockito
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.eq
-import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.whenever
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import java.sql.Connection
-import java.time.Clock
 import java.time.LocalDate
 import java.time.ZoneOffset
-import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
 import javax.persistence.TypedQuery
-import javax.persistence.EntityExistsException
-import javax.persistence.RollbackException
-import javax.persistence.OptimisticLockException
-import kotlin.reflect.full.createInstance
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class JPABackingStoreImplTests {
@@ -80,12 +62,9 @@ class JPABackingStoreImplTests {
 
     companion object {
         val TEST_IDENTITY = createTestHoldingIdentity("C=GB, L=London, O=Alice", "Test Group")
-        val UPPER_BOUND = LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
     }
 
     inner class DummyLifecycle : LifecycleEvent
-
-    class DummyException(message: String) : Exception(message)
 
     @Suppress("ComplexMethod")
     @BeforeEach
@@ -151,7 +130,6 @@ class JPABackingStoreImplTests {
             whenever(get(any())) doReturn mock<JpaEntitiesSet>()
         }
 
-//        schemaMigrator = mock<LiquibaseSchemaMigratorImpl>()
         dbConnectionManager = mock<DbConnectionManager>().apply {
             whenever(getClusterDataSource()) doReturn dummyDataSource
             whenever(getOrCreateEntityManagerFactory(any(), any(), any())) doReturn entityManagerFactory
@@ -161,29 +139,7 @@ class JPABackingStoreImplTests {
             lifecycleCoordinatorFactory,
             jpaEntitiesRegistry,
             dbConnectionManager
-//            schemaMigrator = schemaMigrator
         )
-    }
-
-    private fun generateExternalRequest(txId: SecureHash): UniquenessCheckRequestAvro {
-        val inputStateRef = "${SecureHashUtils.randomSecureHash()}:0"
-
-        return UniquenessCheckRequestAvro.newBuilder(
-            UniquenessCheckRequestAvro(
-                TEST_IDENTITY.toAvro(),
-                ExternalEventContext(
-                    UUID.randomUUID().toString(),
-                    UUID.randomUUID().toString(),
-                    KeyValuePairList(emptyList())
-                ),
-                txId.toString(),
-                emptyList(),
-                emptyList(),
-                0,
-                null,
-                UPPER_BOUND
-            )
-        ).setInputStates(listOf(inputStateRef)).build()
     }
 
     @Nested
@@ -237,9 +193,7 @@ class JPABackingStoreImplTests {
 
         @Test
         fun `Unknown life cycle event does not throw exception`() {
-            assertDoesNotThrow {
-                backingStoreImpl.eventHandler(DummyLifecycle(), mock())
-            }
+            assertDoesNotThrow { backingStoreImpl.eventHandler(DummyLifecycle(), mock()) }
         }
     }
 
@@ -268,79 +222,7 @@ class JPABackingStoreImplTests {
     }
 
     @Nested
-    inner class TransactionOpsTests {
-        @BeforeEach
-        fun init() {
-            backingStoreImpl.eventHandler(
-                RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), lifecycleCoordinator
-            )
-        }
-
-        @Test
-        fun `Creating unconsumed states persist correct fields`() {
-            val hashCnt = 1
-            val secureHashes = List(hashCnt) { SecureHashUtils.randomSecureHash() }
-            val stateRefs = secureHashes.map { UniquenessCheckStateRefImpl(it, 0)}
-
-            backingStoreImpl.session(TEST_IDENTITY) { session ->
-                session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
-            }
-
-            Mockito.verify(entityManager, times(hashCnt)).persist(
-                UniquenessStateDetailEntity(
-                    stateRefs[0].txHash.algorithm,
-                    stateRefs[0].txHash.bytes,
-                    stateRefs[0].stateIndex.toLong(),
-                    null,
-                    null
-                )
-            )
-        }
-
-        @Test
-        fun `Commiting a failed transaction persists error data`() {
-            backingStoreImpl.session(TEST_IDENTITY) { session ->
-                val txId = SecureHashUtils.randomSecureHash()
-                val externalRequest = generateExternalRequest(txId)
-                val internalRequest = UniquenessCheckRequestInternal.create(externalRequest)
-                val txns = listOf(
-                    Pair(
-                        internalRequest,
-                        UniquenessCheckResultFailureImpl(
-                            Clock.systemUTC().instant(), UniquenessCheckErrorMalformedRequestImpl("some error")
-                        )
-                    )
-                )
-
-                session.executeTransaction { _, txnOps ->
-                    txnOps.commitTransactions(txns)
-
-                    Mockito.verify(entityManager, Mockito.atMostOnce()).persist(
-                        UniquenessStateDetailEntity(
-                            txns[0].first.txId.algorithm,
-                            txns[0].first.txId.bytes,
-                            txns[0].first.inputStates[0].stateIndex.toLong(),
-                            null,
-                            null
-                        )
-                    )
-                    Mockito.verify(entityManager, Mockito.atMostOnce()).persist(
-                        UniquenessRejectedTransactionEntity(
-                            txns[0].first.txId.algorithm,
-                            txns[0].first.txId.bytes,
-                            jpaBackingStoreObjectMapper().writeValueAsBytes(txns[0].second)
-                        )
-                    )
-                }
-            }
-        }
-    }
-
-
-    @Nested
     inner class TransactionTests {
-        private val MAX_ATTEMPTS = 10
-
         @BeforeEach
         fun init() {
             backingStoreImpl.eventHandler(
@@ -358,41 +240,6 @@ class JPABackingStoreImplTests {
             Mockito.verify(entityTransaction, times(1)).commit()
             Mockito.verify(entityManager, times(1)).close()
         }
-
-        @ParameterizedTest
-        @ValueSource(classes = [EntityExistsException::class, RollbackException::class, OptimisticLockException::class])
-        fun `Executing transaction retries upon expected exceptions`(exception: Class<Exception>) {
-            assertThrows<IllegalStateException> {
-                backingStoreImpl.session(TEST_IDENTITY) { session ->
-                    session.executeTransaction { _, _ -> throw exception.kotlin.createInstance() }
-                }
-            }
-
-            Mockito.verify(entityTransaction, times(MAX_ATTEMPTS)).begin()
-            Mockito.verify(entityTransaction, never()).commit()
-        }
-
-        @Test
-        fun `Executing transaction does not retry upon unexpected exception`() {
-            assertThrows<DummyException> {
-                backingStoreImpl.session(TEST_IDENTITY) { session ->
-                    session.executeTransaction { _, _ -> throw DummyException("dummy exception") }
-                }
-            }
-            Mockito.verify(entityTransaction, times(1)).begin()
-            Mockito.verify(entityTransaction, never()).commit()
-        }
-
-        @Test
-        fun `Executing transaction triggers rollback upon receiving expected exception if transaction is active`() {
-            assertThrows<java.lang.IllegalStateException> {
-                backingStoreImpl.session(TEST_IDENTITY) { session ->
-                    session.executeTransaction { _, _ -> throw EntityExistsException() }
-                }
-            }
-            Mockito.verify(entityTransaction, times(MAX_ATTEMPTS)).rollback()
-        }
-
 
         @Test
         fun `Throw if no error detail is available for a failed transaction`() {
