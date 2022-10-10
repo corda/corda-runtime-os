@@ -18,6 +18,7 @@ class TransactionMetaData(private val properties: Map<String, Any>) {
         const val DIGEST_SETTINGS_KEY = "digestSettings"
         const val PLATFORM_VERSION_KEY = "platformVersion"
         const val CPI_METADATA_KEY = "cpiMetadata"
+        const val CPK_METADATA_KEY = "cpkMetadata"
     }
 
     override fun equals(other: Any?): Boolean {
@@ -40,21 +41,11 @@ class TransactionMetaData(private val properties: Map<String, Any>) {
                     @Suppress("UNCHECKED_CAST")
                     val cpi = data as Map<String, Any?>
 
-                    @Suppress("UNCHECKED_CAST")
-                    val cpks = cpi["cpks"] as List<Map<String, Any?>>
                     CpiSummary(
                         cpi["name"].toString(),
                         cpi["version"].toString(),
                         cpi["signerSummaryHash"]?.toString(),
-                        cpi["fileChecksum"].toString(),
-                        cpks.map { cpk ->
-                            CpkSummary(
-                                cpk["name"].toString(),
-                                cpk["version"].toString(),
-                                cpk["signerSummaryHash"]?.toString(),
-                                cpk["fileChecksum"].toString()
-                            )
-                        })
+                        cpi["fileChecksum"].toString())
                 } catch (e: Exception) {
                     throw CordaRuntimeException(
                         "Transaction metadata representation error: expected CPI metadata but found [$data]"
@@ -66,6 +57,31 @@ class TransactionMetaData(private val properties: Map<String, Any>) {
                 throw CordaRuntimeException(
                     "Transaction metadata representation error: expected CPI metadata but found [$data]"
                 )
+        }
+    }
+
+    fun getCpkMetadata(): List<CpkSummary> {
+        return when (val data = this[CPK_METADATA_KEY]) {
+            null -> emptyList()
+            is List<*> -> {
+                return data.map {
+                    when (it) {
+                        is CpkSummary -> it
+                        is Map<*, *> -> {
+                            CpkSummary(
+                                it["name"].toString(),
+                                it["version"].toString(),
+                                it["signerSummaryHash"]?.toString(),
+                                it["fileChecksum"].toString()
+                            )
+                        }
+                        else -> throw CordaRuntimeException(
+                            "Transaction metadata representation error: expected CPK metadata but found [$data]")
+                    }
+                }
+            }
+            else -> throw CordaRuntimeException(
+                "Transaction metadata representation error: expected list of CPK metadata but found [$data]")
         }
     }
 

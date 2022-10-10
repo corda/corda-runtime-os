@@ -124,19 +124,21 @@ internal class ConsensualTransactionBuilderImplTest{
             "CPI version",
             "46616B652D76616C7565",
             "00000000000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
-            listOf(
+        )
+        assertEquals(expectedCpiMetadata, metadata.getCpiMetadata())
+
+        val expectedCpkMetadata = listOf(
                 CpkSummary(
                     "MockCpk",
                     "1",
                     "",
-                "0101010101010101010101010101010101010101010101010101010101010101"),
+                    "0101010101010101010101010101010101010101010101010101010101010101"),
                 CpkSummary(
                     "MockCpk",
                     "3",
                     "",
-                    "0303030303030303030303030303030303030303030303030303030303030303")))
-
-        assertEquals(expectedCpiMetadata, metadata.getCpiMetadata())
+                    "0303030303030303030303030303030303030303030303030303030303030303"))
+        assertEquals(expectedCpkMetadata, metadata.getCpkMetadata())
     }
 
     private fun makeTransactionBuilder() = ConsensualTransactionBuilderImpl(

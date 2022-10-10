@@ -5,6 +5,7 @@ import net.corda.ledger.common.impl.transaction.CpkSummary
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.TransactionMetaData
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPI_METADATA_KEY
+import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPK_METADATA_KEY
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.DIGEST_SETTINGS_KEY
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.LEDGER_MODEL_KEY
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.LEDGER_VERSION_KEY
@@ -75,7 +76,8 @@ class ConsensualTransactionBuilderImpl(
                 LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
                 DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
                 PLATFORM_VERSION_KEY to memberLookup.myInfo().platformVersion,
-                CPI_METADATA_KEY to getCpiMetadata()
+                CPI_METADATA_KEY to getCpiMetadata(),
+                CPK_METADATA_KEY to getCpkMetadata()
             )
         )
     }
@@ -97,16 +99,19 @@ class ConsensualTransactionBuilderImpl(
             name = cpiIdentifier.name,
             version = cpiIdentifier.version,
             signerSummaryHash = cpiIdentifier.signerSummaryHash?.toHexString(),
-            fileChecksum = "00000000000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",  // TODO: where do we get this?
-            cpks = sandboxCpks.filter { it.isContractCpk() }.map { cpk ->
-                CpkSummary(
-                    name = cpk.cpkId.name,
-                    version = cpk.cpkId.version,
-                    signerSummaryHash = cpk.cpkId.signerSummaryHash?.toHexString() ?: "",
-                    fileChecksum = cpk.fileChecksum.toHexString()
-                )
-            }
+            fileChecksum = "00000000000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
         )
+    }
+
+    private fun getCpkMetadata(): List<CpkSummary> {
+        return sandboxCpks.filter { it.isContractCpk() }.map { cpk ->
+            CpkSummary(
+                name = cpk.cpkId.name,
+                version = cpk.cpkId.version,
+                signerSummaryHash = cpk.cpkId.signerSummaryHash?.toHexString() ?: "",
+                fileChecksum = cpk.fileChecksum.toHexString()
+            )
+        }
     }
 
     private fun calculateComponentGroupLists(serializer: SerializationService): List<List<ByteArray>>

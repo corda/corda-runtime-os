@@ -8,5 +8,4 @@ data class CpiSummary(
     val version: String,
     val signerSummaryHash: String?,
     val fileChecksum: String,
-    val cpks: List<CpkSummary>
 )
