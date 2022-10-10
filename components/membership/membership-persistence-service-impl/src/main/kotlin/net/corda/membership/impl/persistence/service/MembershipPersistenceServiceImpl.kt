@@ -29,6 +29,7 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -52,7 +53,9 @@ class MembershipPersistenceServiceImpl @Activate constructor(
     @Reference(service = CordaAvroSerializationFactory::class)
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = VirtualNodeInfoReadService::class)
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    @Reference(service = KeyEncodingService::class)
+    private val keyEncodingService: KeyEncodingService,
 ) : MembershipPersistenceService {
 
     private companion object {
@@ -164,7 +167,8 @@ class MembershipPersistenceServiceImpl @Activate constructor(
                 jpaEntitiesRegistry,
                 memberInfoFactory,
                 cordaAvroSerializationFactory,
-                virtualNodeInfoReadService
+                virtualNodeInfoReadService,
+                keyEncodingService
             ),
             messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         ).also {

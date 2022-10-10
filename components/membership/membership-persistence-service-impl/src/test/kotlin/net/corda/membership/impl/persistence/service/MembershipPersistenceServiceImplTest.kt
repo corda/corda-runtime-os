@@ -27,6 +27,7 @@ import net.corda.orm.JpaEntitiesRegistry
 import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_DB_RPC_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -88,6 +89,7 @@ class MembershipPersistenceServiceImplTest {
     private val memberInfoFactory: MemberInfoFactory = mock()
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock()
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock()
+    private val keyEncodingService: KeyEncodingService = mock()
 
     @BeforeEach
     fun setUp() {
@@ -99,7 +101,8 @@ class MembershipPersistenceServiceImplTest {
             jpaEntitiesRegistry,
             memberInfoFactory,
             cordaAvroSerializationFactory,
-            virtualNodeInfoReadService
+            virtualNodeInfoReadService,
+            keyEncodingService,
         )
         verify(coordinatorFactory).createCoordinator(any(), any())
     }

@@ -73,6 +73,7 @@ import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
+import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -182,6 +183,20 @@ class MembershipPersistenceTest {
                 groupPolicy: LayeredPropertyMap,
             ) = safeCall {
                 membershipPersistenceClient.persistGroupPolicy(viewOwningIdentity, groupPolicy)
+            }
+
+            override fun persistGroupParameters(
+                viewOwningIdentity: HoldingIdentity,
+                groupParameters: GroupParameters
+            ) = safeCall {
+                membershipPersistenceClient.persistGroupParameters(viewOwningIdentity, groupParameters)
+            }
+
+            override fun addNotaryToGroupParameters(
+                viewOwningIdentity: HoldingIdentity,
+                notary: MemberInfo
+            ) = safeCall {
+                membershipPersistenceClient.addNotaryToGroupParameters(viewOwningIdentity, notary)
             }
 
             override fun persistRegistrationRequest(

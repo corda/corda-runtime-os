@@ -3,6 +3,8 @@ package net.corda.membership.impl.persistence.service
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.MembershipRequestContext
+import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
+import net.corda.data.membership.db.request.command.PersistGroupParameters
 import net.corda.data.membership.db.request.command.PersistGroupPolicy
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
@@ -18,6 +20,8 @@ import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.membership.impl.persistence.service.handler.AddNotaryToGroupParametersHandler
+import net.corda.membership.impl.persistence.service.handler.PersistGroupParametersHandler
 import net.corda.membership.impl.persistence.service.handler.PersistGroupPolicyHandler
 import net.corda.membership.impl.persistence.service.handler.PersistMemberInfoHandler
 import net.corda.membership.impl.persistence.service.handler.PersistRegistrationRequestHandler
@@ -37,6 +41,7 @@ import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import java.util.concurrent.CompletableFuture
 
@@ -47,7 +52,8 @@ internal class MembershipPersistenceRPCProcessor(
     jpaEntitiesRegistry: JpaEntitiesRegistry,
     memberInfoFactory: MemberInfoFactory,
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-    virtualNodeInfoReadService: VirtualNodeInfoReadService
+    virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    keyEncodingService: KeyEncodingService,
 ) : RPCResponderProcessor<MembershipPersistenceRequest, MembershipPersistenceResponse> {
 
     private companion object {
@@ -60,13 +66,16 @@ internal class MembershipPersistenceRPCProcessor(
         jpaEntitiesRegistry,
         memberInfoFactory,
         cordaAvroSerializationFactory,
-        virtualNodeInfoReadService
+        virtualNodeInfoReadService,
+        keyEncodingService
     )
     private val handlerFactories: Map<Class<*>, () -> PersistenceHandler<out Any, out Any>> = mapOf(
         PersistRegistrationRequest::class.java to { PersistRegistrationRequestHandler(persistenceHandlerServices) },
         PersistMemberInfo::class.java to { PersistMemberInfoHandler(persistenceHandlerServices) },
         QueryMemberInfo::class.java to { QueryMemberInfoHandler(persistenceHandlerServices) },
         PersistGroupPolicy::class.java to { PersistGroupPolicyHandler(persistenceHandlerServices) },
+        PersistGroupParameters::class.java to { PersistGroupParametersHandler(persistenceHandlerServices) },
+        AddNotaryToGroupParameters::class.java to { AddNotaryToGroupParametersHandler(persistenceHandlerServices) },
         QueryMemberSignature::class.java to { QueryMemberSignatureHandler(persistenceHandlerServices) },
         UpdateMemberAndRegistrationRequestToApproved::class.java to
             { UpdateMemberAndRegistrationRequestToApprovedHandler(persistenceHandlerServices) },

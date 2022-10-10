@@ -17,6 +17,7 @@ import net.corda.membership.lib.MemberInfoFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
@@ -101,6 +102,7 @@ class PersistMemberInfoHandlerTest {
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { getByHoldingIdentityShortHash(eq(ourHoldingIdentity.shortHash)) } doReturn virtualNodeInfo
     }
+    private val keyEncodingService: KeyEncodingService = mock()
 
     private val services = PersistenceHandlerServices(
         clock,
@@ -108,7 +110,8 @@ class PersistMemberInfoHandlerTest {
         jpaEntitiesRegistry,
         memberInfoFactory,
         cordaAvroSerializationFactory,
-        virtualNodeInfoReadService
+        virtualNodeInfoReadService,
+        keyEncodingService,
     )
     private lateinit var persistMemberInfoHandler: PersistMemberInfoHandler
 

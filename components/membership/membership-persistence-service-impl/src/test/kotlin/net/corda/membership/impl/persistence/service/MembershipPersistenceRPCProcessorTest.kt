@@ -31,6 +31,7 @@ import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.uncheckedCast
+import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
@@ -117,6 +118,7 @@ class MembershipPersistenceRPCProcessorTest {
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { getByHoldingIdentityShortHash(eq(ourHoldingIdentity.shortHash)) } doReturn virtualNodeInfo
     }
+    private val keyEncodingService: KeyEncodingService = mock()
 
     private lateinit var responseFuture: CompletableFuture<MembershipPersistenceResponse>
     private lateinit var rqContext: MembershipRequestContext
@@ -129,7 +131,8 @@ class MembershipPersistenceRPCProcessorTest {
             jpaEntitiesRegistry,
             memberInfoFactory,
             cordaAvroSerializationFactory,
-            virtualNodeInfoReadService
+            virtualNodeInfoReadService,
+            keyEncodingService,
         )
         responseFuture = CompletableFuture()
         rqContext = MembershipRequestContext(

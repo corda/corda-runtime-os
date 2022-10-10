@@ -10,6 +10,7 @@ import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.utils.transaction
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -66,5 +67,6 @@ internal data class PersistenceHandlerServices(
     val jpaEntitiesRegistry: JpaEntitiesRegistry,
     val memberInfoFactory: MemberInfoFactory,
     val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-    val virtualNodeInfoReadService: VirtualNodeInfoReadService
+    val virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    val keyEncodingService: KeyEncodingService,
 )

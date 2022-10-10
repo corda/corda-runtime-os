@@ -23,6 +23,7 @@ import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
@@ -91,6 +92,7 @@ class UpdateMemberAndRegistrationRequestToDeclinedHandlerTest {
             )
         } doReturn factory
     }
+    private val keyEncodingService: KeyEncodingService = mock()
     private val service = PersistenceHandlerServices(
         clock,
         dbConnectionManager,
@@ -98,6 +100,7 @@ class UpdateMemberAndRegistrationRequestToDeclinedHandlerTest {
         memberInfoFactory,
         cordaAvroSerializationFactory,
         virtualNodeInfoReadService,
+        keyEncodingService,
     )
     private val handler = UpdateMemberAndRegistrationRequestToDeclinedHandler(service)
 

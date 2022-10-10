@@ -14,6 +14,7 @@
     bnd.identity;id='net.corda.messaging-impl',\
     bnd.identity;id='net.corda.membership-impl',\
     bnd.identity;id='net.corda.lifecycle-impl',\
+    bnd.identity;id='net.corda.cipher-suite-impl',\
     bnd.identity;id='net.corda.db-topic-admin-impl',\
     bnd.identity;id='net.corda.db-message-bus-impl',\
     bnd.identity;id='net.corda.schema-registry-impl',\

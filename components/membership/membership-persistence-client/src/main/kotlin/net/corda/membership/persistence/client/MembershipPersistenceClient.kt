@@ -4,6 +4,7 @@ import net.corda.data.membership.common.RegistrationStatus
 import net.corda.lifecycle.Lifecycle
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.v5.base.types.LayeredPropertyMap
+import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 
@@ -39,6 +40,28 @@ interface MembershipPersistenceClient : Lifecycle {
     fun persistGroupPolicy(
         viewOwningIdentity: HoldingIdentity,
         groupPolicy: LayeredPropertyMap,
+    ): MembershipPersistenceResult<Int>
+
+    /**
+     * Persists a new set of group parameters.
+     *
+     * @param viewOwningIdentity The holding identity owning this view of the group parameters.
+     * @param groupParameters The group parameters to persist.
+     *
+     * @return Membership persistence result to indicate the result of the operation. In the case of success, the payload
+     * will include the epoch of the newly persisted group parameters.
+     */
+    fun persistGroupParameters(
+        viewOwningIdentity: HoldingIdentity,
+        groupParameters: GroupParameters
+    ): MembershipPersistenceResult<Int>
+
+    /**
+     * TODO
+     */
+    fun addNotaryToGroupParameters(
+        viewOwningIdentity: HoldingIdentity,
+        notary: MemberInfo
     ): MembershipPersistenceResult<Int>
 
     /**
