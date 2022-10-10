@@ -9,23 +9,18 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
-import java.security.PublicKey
-
-class TestPartyImpl(override val name: MemberX500Name, override val owningKey: PublicKey) : Party
 
 @Suppress("unused")
 class ConsensualSignedTransactionSerializationFlow : RPCStartableFlow {
     data class ResultMessage(val serializedLength: Int)
 
     class TestConsensualState(
-        val testField: String,
-        override val participants: List<Party>
+        val testField: String, override val participants: List<Party>
     ) : ConsensualState {
         override fun verify(ledgerTransaction: ConsensualLedgerTransaction) {}
     }
@@ -52,21 +47,10 @@ class ConsensualSignedTransactionSerializationFlow : RPCStartableFlow {
         try {
             val member = memberLookup.myInfo()
 
-            val testConsensualState =
-                TestConsensualState(
-                    "test",
-                    listOf(
-                        TestPartyImpl(
-                            member.name,
-                            member.ledgerKeys.first()
-                        )
-                    )
-                )
-
+            val testConsensualState = TestConsensualState("test", listOf(Party(member.name, member.ledgerKeys.first())))
             val txBuilder = consensualLedgerService.getTransactionBuilder()
             val signedTransaction = txBuilder
-                .withStates(testConsensualState)
-                .signInitial(memberLookup.myInfo().ledgerKeys.first())
+                .withStates(testConsensualState).signInitial(memberLookup.myInfo().ledgerKeys.first())
 
             log.info("Original signed Tx id: ${signedTransaction.id}")
 
@@ -76,18 +60,20 @@ class ConsensualSignedTransactionSerializationFlow : RPCStartableFlow {
             val deserialized = serializationService.deserialize(serialized)
             log.info("Deserialized signed Tx id: ${deserialized.id}")
 
-            if (deserialized.id != signedTransaction.id ){
+            if (deserialized.id != signedTransaction.id) {
                 log.warn("Deserialized tx Id != original tx Id (${deserialized.id} != ${signedTransaction.id}")
                 throw CordaRuntimeException(
-                    "Deserialized tx Id != original tx Id (${deserialized.id} != ${signedTransaction.id}")
+                    "Deserialized tx Id != original tx Id (${deserialized.id} != ${signedTransaction.id}"
+                )
             }
 
             val resultMessage = ResultMessage(serialized.toString().length)
             log.info("Success! Serialized: $resultMessage")
             return jsonMarshallingService.format(resultMessage)
         } catch (e: Exception) {
-            log.warn("Failed to process ConsensualSignedTransactionSerializationFlow for request body " +
-                    "'$requestBody' because:'${e.message}'")
+            log.warn(
+                "Failed to process ConsensualSignedTransactionSerializationFlow for request body " + "'$requestBody' because:'${e.message}'"
+            )
             throw e
         }
     }

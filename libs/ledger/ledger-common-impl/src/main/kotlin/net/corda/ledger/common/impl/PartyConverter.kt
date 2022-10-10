@@ -35,6 +35,6 @@ class PartyConverter @Activate constructor(
         val owningKey = context.value(SESSION_KEY)?.let { keyEncodingService.decodePublicKey(it) }
             ?: throw ValueNotFoundException("'$SESSION_KEY' is null or missing")
 
-        return PartyImpl(name, owningKey)
+        return Party(name, owningKey)
     }
 }

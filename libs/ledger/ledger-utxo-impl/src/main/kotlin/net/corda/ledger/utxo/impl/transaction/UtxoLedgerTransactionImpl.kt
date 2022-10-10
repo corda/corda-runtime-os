@@ -10,7 +10,7 @@ data class UtxoLedgerTransactionImpl(
     override val timeWindow: TimeWindow,
     override val attachments: List<Attachment>,
     override val commands: List<Command>,
-    override val signatories: Set<PublicKey>,
+    override val signatories: List<PublicKey>,
     override val inputStateAndRefs: List<StateAndRef<*>>,
     override val referenceInputStateAndRefs: List<StateAndRef<*>>,
     override val outputStateAndRefs: List<StateAndRef<*>>

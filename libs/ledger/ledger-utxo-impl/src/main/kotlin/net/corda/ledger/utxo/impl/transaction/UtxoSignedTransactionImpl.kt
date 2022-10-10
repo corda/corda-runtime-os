@@ -7,8 +7,8 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import java.security.PublicKey
 
 data class UtxoSignedTransactionImpl(
-    override val transactionId: SecureHash,
-    override val signatures: Set<DigitalSignatureAndMetadata>
+    override val id: SecureHash,
+    override val signatures: List<DigitalSignatureAndMetadata>
 ) : UtxoSignedTransaction {
 
     override fun addSignatures(signatures: Iterable<DigitalSignatureAndMetadata>): UtxoSignedTransaction {
@@ -19,7 +19,7 @@ data class UtxoSignedTransactionImpl(
         return addSignatures(signatures.toList())
     }
 
-    override fun getMissingSignatories(): Set<PublicKey> {
+    override fun getMissingSignatories(): List<PublicKey> {
         TODO("Not yet implemented")
     }
 

@@ -8,14 +8,11 @@ import java.time.Instant
  *
  * @constructor Creates a new instance of the [TimeWindowFromImpl] data class.
  * @property from The boundary at which the time window begins.
- * @property until Always null as this time window tends towards positive infinity.
- * @property midpoint Always null as this time window tends towards positive infinity.
- * @property duration Always null as this time window tends towards positive infinity.
+ * @property until Always Instant.MAX as this time window tends towards positive infinity.
  */
 data class TimeWindowFromImpl(override val from: Instant) : TimeWindow {
 
-    override val until: Instant? = null
-    override val midpoint: Instant? = null
+    override val until: Instant = Instant.MAX
 
     /**
      * Determines whether the current [TimeWindow] contains the specified [Instant].

@@ -8,10 +8,10 @@ import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import java.security.PublicKey
 
-class ExtensionsTest{
+class ExtensionsTest {
 
     class TestContract : Contract {
-        class TestState(override val participants: Set<PublicKey>) : ContractState
+        class TestState(override val participants: List<PublicKey>) : ContractState
 
         override fun verify(transaction: UtxoLedgerTransaction) {
             TODO("Not yet implemented")
@@ -19,33 +19,33 @@ class ExtensionsTest{
     }
 
     @Test
-    fun canGetContractClassWhenEnclosed(){
-        val state = TestContract.TestState(emptySet())
+    fun canGetContractClassWhenEnclosed() {
+        val state = TestContract.TestState(emptyList())
 
         Assertions.assertNotNull(state.getContractClass())
     }
 
     @BelongsToContract(TestContract::class)
-    class TestState2(override val participants: Set<PublicKey>) : ContractState
+    class TestState2(override val participants: List<PublicKey>) : ContractState
 
     @Test
-    fun canGetContractClassWithAnnotation(){
-        val state = TestState2(emptySet())
+    fun canGetContractClassWithAnnotation() {
+        val state = TestState2(emptyList())
 
         Assertions.assertNotNull(state.getContractClass())
     }
 
-    class Enclosed(override val participants: Set<PublicKey>) : ContractState
+    class Enclosed(override val participants: List<PublicKey>) : ContractState
 
     @Test
-    fun gettingContractFailsForOtherClasses(){
+    fun gettingContractFailsForOtherClasses() {
 
-        val state1 = Enclosed(emptySet())
+        val state1 = Enclosed(emptyList())
         Assertions.assertNull(state1.getContractClass())
 
-        val state2 = NonEnclosed(emptySet())
+        val state2 = NonEnclosed(emptyList())
         Assertions.assertNull(state2.getContractClass())
     }
 }
 
-class NonEnclosed(override val participants: Set<PublicKey>) : ContractState
+class NonEnclosed(override val participants: List<PublicKey>) : ContractState

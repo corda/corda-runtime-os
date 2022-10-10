@@ -31,7 +31,7 @@ class PartySerializer @Activate constructor() : BaseProxySerializer<Party, Party
 
     override fun fromProxy(proxy: PartyProxy): Party {
         val name = MemberX500Name.Companion.parse(proxy.name)
-        return PartyImpl(name, proxy.owningKey)
+        return Party(name, proxy.owningKey)
     }
 
     data class PartyProxy(val name: String, val owningKey: PublicKey)

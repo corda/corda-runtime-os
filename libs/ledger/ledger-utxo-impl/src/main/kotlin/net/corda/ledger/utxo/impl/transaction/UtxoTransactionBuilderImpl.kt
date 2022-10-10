@@ -1,7 +1,6 @@
 package net.corda.ledger.utxo.impl.transaction
 
 import net.corda.ledger.utxo.impl.TimeWindowBetweenImpl
-import net.corda.ledger.utxo.impl.TimeWindowFromImpl
 import net.corda.ledger.utxo.impl.TimeWindowUntilImpl
 import net.corda.ledger.utxo.impl.TransactionStateImpl
 import net.corda.v5.crypto.SecureHash
@@ -10,19 +9,19 @@ import net.corda.v5.ledger.utxo.*
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import java.security.PublicKey
-import java.time.Duration
 import java.time.Instant
 
 data class UtxoTransactionBuilderImpl(
     override val notary: Party,
-    override val timeWindow: TimeWindow,
-    override val attachments: List<SecureHash> = emptyList(),
-    override val commands: List<Command> = emptyList(),
-    override val signatories: Set<PublicKey> = emptySet(),
-    override val inputStateAndRefs: List<StateAndRef<*>> = emptyList(),
-    override val referenceInputStateAndRefs: List<StateAndRef<*>> = emptyList(),
-    override val outputTransactionStates: List<TransactionState<*>> = emptyList()
+    private val timeWindow: TimeWindow,
+    private val attachments: List<SecureHash> = emptyList(),
+    private val commands: List<Command> = emptyList(),
+    private val signatories: Set<PublicKey> = emptySet(),
+    private val inputStateAndRefs: List<StateAndRef<*>> = emptyList(),
+    private val referenceInputStateAndRefs: List<StateAndRef<*>> = emptyList(),
+    private val outputTransactionStates: List<TransactionState<*>> = emptyList()
 ) : UtxoTransactionBuilder {
+
 
     override fun addAttachment(attachmentId: SecureHash): UtxoTransactionBuilder {
         return copy(attachments = attachments + attachmentId)
@@ -57,21 +56,12 @@ data class UtxoTransactionBuilderImpl(
         return copy(outputTransactionStates = outputTransactionStates + transactionState)
     }
 
-    override fun setTimeWindowFrom(from: Instant): UtxoTransactionBuilder {
-        return copy(timeWindow = TimeWindowFromImpl(from))
-    }
-
     override fun setTimeWindowUntil(until: Instant): UtxoTransactionBuilder {
         return copy(timeWindow = TimeWindowUntilImpl(until))
     }
 
     override fun setTimeWindowBetween(from: Instant, until: Instant): UtxoTransactionBuilder {
         return copy(timeWindow = TimeWindowBetweenImpl(from, until))
-    }
-
-    override fun setTimeWindowBetween(midpoint: Instant, tolerance: Duration): UtxoTransactionBuilder {
-        val half = tolerance.dividedBy(2)
-        return setTimeWindowBetween(midpoint - half, midpoint + half)
     }
 
     override fun sign(): UtxoSignedTransaction {
@@ -87,18 +77,6 @@ data class UtxoTransactionBuilderImpl(
     }
 
     override fun verify() {
-        TODO("Not yet implemented")
-    }
-
-    override fun verifyAndSign(): UtxoSignedTransaction {
-        TODO("Not yet implemented")
-    }
-
-    override fun verifyAndSign(vararg signatories: PublicKey): UtxoSignedTransaction {
-        TODO("Not yet implemented")
-    }
-
-    override fun verifyAndSign(signatories: Iterable<PublicKey>): UtxoSignedTransaction {
         TODO("Not yet implemented")
     }
 }
