@@ -41,7 +41,6 @@ public class AbstractMockTestHarness {
     protected final InputStream inputStream = Mockito.mock(InputStream.class);
     protected final Contract contract = Mockito.mock(Contract.class);
     protected final Command command = Mockito.mock(Command.class);
-    protected final StateRef stateRef = Mockito.mock(StateRef.class);
     protected final TimeWindow timeWindow = Mockito.mock(TimeWindow.class);
 
     protected final StateAndRef<ContractState> contractStateAndRef = createStateAndRef(Mockito.mock(ContractState.class));
@@ -69,12 +68,12 @@ public class AbstractMockTestHarness {
     protected final Command createCommand = new Create();
     protected final Command updateCommand = new Update();
     protected final List<Command> commands = List.of(command, createCommand, updateCommand);
+    protected final StateRef stateRef = new StateRef(hash, 0);
 
     public AbstractMockTestHarness() {
         initializeIdentity();
         initializeContract();
         initializeContractState();
-        initializeStateRef();
         initializeAttachment();
         initializeTimeWindow();
         initializeUtxoLedgerService();
@@ -97,9 +96,13 @@ public class AbstractMockTestHarness {
     private <T extends ContractState> StateAndRef<T> createStateAndRef(T contractState) {
         StateAndRef<T> result = Mockito.mock(StateAndRef.class);
 
+        SecureHash hash = SecureHash.parse("SHA256:0000000000000000000000000000000000000000000000000000000000000000");
+        int index = 0;
+        StateRef ref = new StateRef(hash, index);
+
         TransactionState<T> transactionState = createTransactionState(contractState);
         Mockito.when(result.getState()).thenReturn(transactionState);
-        Mockito.when(result.getRef()).thenReturn(stateRef);
+        Mockito.when(result.getRef()).thenReturn(ref);
 
         return result;
     }
@@ -126,11 +129,6 @@ public class AbstractMockTestHarness {
 
     private void initializeContractState() {
         Mockito.when(contractState.getParticipants()).thenReturn(keys);
-    }
-
-    private void initializeStateRef() {
-        Mockito.when(stateRef.getTransactionHash()).thenReturn(hash);
-        Mockito.when(stateRef.getIndex()).thenReturn(0);
     }
 
     private void initializeAttachment() {

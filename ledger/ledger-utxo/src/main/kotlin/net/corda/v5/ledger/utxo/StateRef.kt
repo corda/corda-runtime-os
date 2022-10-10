@@ -10,7 +10,4 @@ import net.corda.v5.crypto.SecureHash
  * @property transactionHash The hash of the transaction in which the referenced state was created.
  */
 @CordaSerializable
-class StateRef (
-    val transactionHash: SecureHash,
-    val index: Int
-)
+data class StateRef(val transactionHash: SecureHash, val index: Int)
