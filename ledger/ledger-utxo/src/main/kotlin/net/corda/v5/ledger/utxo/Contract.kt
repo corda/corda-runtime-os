@@ -20,4 +20,3 @@ interface Contract {
      */
     fun verify(transaction: UtxoLedgerTransaction)
 }
-

@@ -9,16 +9,16 @@ import java.time.Instant
  *
  * There is no such thing as "exact" time in distributed systems, due to the underlying physics involved, and other
  * issues such as network latency. A time window represents an approximation of an instant with a margin of tolerance,
- * and may be fully bounded, or unbounded towards negative or positive infinity.
+ * and may be fully bounded.
  *
- * @property from The boundary at which the time window begins, or null if the time window is unbounded towards negative infinity.
- * @property until The boundary at which the time window ends, or null if the time window is unbounded towards positive infinity.
+ * @property from The boundary at which the time window begins.
+ * @property until The boundary at which the time window ends.
  */
 @DoNotImplement
 @CordaSerializable
 interface TimeWindow {
-    val from: Instant?
-    val until: Instant?
+    val from: Instant
+    val until: Instant
 
     /**
      * Determines whether the current [TimeWindow] contains the specified [Instant].

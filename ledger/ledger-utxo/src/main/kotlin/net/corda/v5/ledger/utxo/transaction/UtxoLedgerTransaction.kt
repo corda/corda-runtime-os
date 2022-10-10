@@ -31,7 +31,7 @@ import java.security.PublicKey
 @Suppress("TooManyFunctions")
 interface UtxoLedgerTransaction {
 
-    val timeWindow: TimeWindow?
+    val timeWindow: TimeWindow
     val attachments: List<Attachment>
     val commands: List<Command>
     val signatories: List<PublicKey>

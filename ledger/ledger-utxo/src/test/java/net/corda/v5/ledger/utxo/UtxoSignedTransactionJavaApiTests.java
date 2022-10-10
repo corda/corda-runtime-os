@@ -9,13 +9,12 @@ import org.junit.jupiter.api.Test;
 
 import java.security.PublicKey;
 import java.util.List;
-import java.util.Set;
 
 public final class UtxoSignedTransactionJavaApiTests extends AbstractMockTestHarness {
 
     @Test
     public void getTransactionIdShouldReturnTheExpectedValue() {
-        SecureHash value = utxoSignedTransaction.getTransactionId();
+        SecureHash value = utxoSignedTransaction.getId();
         Assertions.assertEquals(hash, value);
     }
 

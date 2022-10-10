@@ -180,7 +180,7 @@ public class AbstractMockTestHarness {
     }
 
     private void initializeUtxoSignedTransaction() {
-        Mockito.when(utxoSignedTransaction.getTransactionId()).thenReturn(hash);
+        Mockito.when(utxoSignedTransaction.getId()).thenReturn(hash);
         Mockito.when(utxoSignedTransaction.getSignatures()).thenReturn(signatures);
         Mockito.when(utxoSignedTransaction.addSignatures(List.of(aliceSignature, bobSignature))).thenReturn(utxoSignedTransaction);
         Mockito.when(utxoSignedTransaction.addSignatures(aliceSignature, bobSignature)).thenReturn(utxoSignedTransaction);

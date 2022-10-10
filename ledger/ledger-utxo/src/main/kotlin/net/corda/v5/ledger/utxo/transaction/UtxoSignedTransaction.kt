@@ -9,14 +9,14 @@ import java.security.PublicKey
 /**
  * Defines a signed UTXO transaction.
  *
- * @property transactionId The ID of the transaction.
+ * @property id The ID of the transaction.
  * @property signatures The signatures that have been applied to the transaction.
  */
 @DoNotImplement
 @CordaSerializable
 interface UtxoSignedTransaction {
 
-    val transactionId: SecureHash
+    val id: SecureHash
     val signatures: List<DigitalSignatureAndMetadata>
 
     /**

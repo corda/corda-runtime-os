@@ -11,7 +11,4 @@ import java.security.PublicKey
  * @property owningKey The [PublicKey] that represents the current identity.
  */
 @CordaSerializable
-interface Party {
-    val name: MemberX500Name
-    val owningKey: PublicKey
-}
+data class Party(val name: MemberX500Name, val owningKey: PublicKey)
