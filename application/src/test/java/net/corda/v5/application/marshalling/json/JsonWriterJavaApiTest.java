@@ -43,7 +43,7 @@ public class JsonWriterJavaApiTest {
         jw.writeFieldName(TEST_STRING);
 
         jw.writeString(TEST_CHAR_ARRAY, 1, 1);
-        jw.writeString(TEST_STRING, 1, 1);
+        jw.writeString(TEST_STRING);
         jw.writeStringField(TEST_STRING, TEST_STRING);
 
         jw.writeNumber(TEST_BIG_DECIMAL);
@@ -79,7 +79,7 @@ public class JsonWriterJavaApiTest {
         jw.writeBinary(JsonSerializedBase64Config.MIME_NO_LINEFEEDS, TEST_INPUT_STREAM, 1);
         jw.writeBinary(TEST_BYTE_ARRAY);
         jw.writeBinary(TEST_BYTE_ARRAY, 1, 1);
-        jw.writeBinary(TEST_INPUT_STREAM, 1, 1);
+        jw.writeBinary(TEST_INPUT_STREAM, 1);
         jw.writeBinaryField(TEST_STRING, TEST_BYTE_ARRAY);
 
         jw.writeNull();

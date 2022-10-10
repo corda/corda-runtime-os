@@ -63,12 +63,10 @@ interface JsonWriter {
      * Writes a string value.
      *
      * @param text The string to write.
-     * @param offset The offset into the text to begin writing from.
-     * @param len The length of data to write.
      *
      * @throws IOException if there is a writing error.
      */
-    fun writeString(text: String, offset: Int, len: Int)
+    fun writeString(text: String)
 
     /**
      * Writes a field name and a string value.
@@ -363,12 +361,11 @@ interface JsonWriter {
      * [JsonSerializedBase64Config.MIME_NO_LINEFEEDS].
      *
      * @param data The data to base64 encode and write into Json.
-     * @param offset The offset into the data to begin encoding from.
      * @param len The length of data to encode.
      *
      * @throws IOException if there is a writing error.
      */
-    fun writeBinary(data: InputStream, offset: Int, len: Int)
+    fun writeBinary(data: InputStream, len: Int)
 
     /**
      * Writes a field name and base64 encoded binary chunk value (surrounded by double quotes).
@@ -401,6 +398,13 @@ interface JsonWriter {
      * data is intended to be a field or value, it does not add any separators or escaping, nor does it require that the
      * Json output that results is valid Json.
      *
+     * Note that writeRaw methods do not change the context of the jsonWriter, so the field and value including the
+     * opening field separator (a common if a field has come before it) must all be written explicitly to create valid
+     * Json. A closing separator (a common before the next field if there is one) need not be written as that is written
+     * by the next call to write a field name against the [JsonWriter]. To write only a raw value consider using the
+     * [writeRawValue] methods instead as they do change context and handle the separators and enclosing double quotes
+     * like any other value writing methods.
+     *
      * @param c The char to write.
      *
      * @throws IOException if there is a writing error.
@@ -411,6 +415,13 @@ interface JsonWriter {
      * Writes raw data directly to the Json output unchanged. This method does not make assumptions about whether the
      * data is intended to be a field or value, it does not add any separators or escaping, nor does it require that the
      * Json output that results is valid Json.
+     *
+     * Note that writeRaw methods do not change the context of the jsonWriter, so the field and value including the
+     * opening field separator (a common if a field has come before it) must all be written explicitly to create valid
+     * Json. A closing separator (a common before the next field if there is one) need not be written as that is written
+     * by the next call to write a field name against the [JsonWriter]. To write only a raw value consider using the
+     * [writeRawValue] methods instead as they do change context and handle the separators and enclosing double quotes
+     * like any other value writing methods.
      *
      * @param c The char array to write.
      * @param offset The offset into the char array to begin writing from.
@@ -425,6 +436,13 @@ interface JsonWriter {
      * data is intended to be a field or value, it does not add any separators or escaping, nor does it require that the
      * Json output that results is valid Json.
      *
+     * Note that writeRaw methods do not change the context of the jsonWriter, so the field and value including the
+     * opening field separator (a common if a field has come before it) must all be written explicitly to create valid
+     * Json. A closing separator (a common before the next field if there is one) need not be written as that is written
+     * by the next call to write a field name against the [JsonWriter]. To write only a raw value consider using the
+     * [writeRawValue] methods instead as they do change context and handle the separators and enclosing double quotes
+     * like any other value writing methods.
+     *
      * @param text The string to write.
      *
      * @throws IOException if there is a writing error.
@@ -436,6 +454,13 @@ interface JsonWriter {
      * data is intended to be a field or value, it does not add any separators or escaping, nor does it require that the
      * Json output that results is valid Json.
      *
+     * Note that writeRaw methods do not change the context of the jsonWriter, so the field and value including the
+     * opening field separator (a common if a field has come before it) must all be written explicitly to create valid
+     * Json. A closing separator (a common before the next field if there is one) need not be written as that is written
+     * by the next call to write a field name against the [JsonWriter]. To write only a raw value consider using the
+     * [writeRawValue] methods instead as they do change context and handle the separators and enclosing double quotes
+     * like any other value writing methods.
+     *
      * @param text The string to write.
      * @param offset The offset into the text to begin writing from.
      * @param len The length of data to write.
@@ -446,9 +471,11 @@ interface JsonWriter {
 
     /**
      * Writes raw data directly to the Json output unchanged. This method requires the data to be a valid Json value.
-     * That can be a simple Json value, or a complete array or object. Like any other 'value' method on the JsonWriter,
-     * but unlike the non-value raw methods, enclosing double quotation marks are added around the value in the Json
-     * output.
+     * That can be a simple Json value, or a complete array or object. Like any other 'value' method on the JsonWriter
+     * (but unlike the non-value raw methods) the required separators are added around the value in the Json output and
+     * the context (field followed by value repeated) in this [JsonWriter] is preserved correctly by this method. As
+     * such the [JsonWriter] is ready to have the next field written after a call to this method. Enclosing double
+     * quotation marks are not added unless part of the raw data passed by the caller.
      *
      * @param c The char array to write.
      * @param offset The offset into the char array to begin writing from.
@@ -460,9 +487,11 @@ interface JsonWriter {
 
     /**
      * Writes raw data directly to the Json output unchanged. This method requires the data to be a valid Json value.
-     * That can be a simple Json value, or a complete array or object. Like any other 'value' method on the JsonWriter,
-     * but unlike the non-value raw methods, enclosing double quotation marks are added around the value in the Json
-     * output.
+     * That can be a simple Json value, or a complete array or object. Like any other 'value' method on the JsonWriter
+     * (but unlike the non-value raw methods) the required separators are added around the value in the Json output and
+     * the context (field followed by value repeated) in this [JsonWriter] is preserved correctly by this method. As
+     * such the [JsonWriter] is ready to have the next field written after a call to this method. Enclosing double
+     * quotation marks are not added unless part of the raw data passed by the caller.
      *
      * @param text The string to write.
      *
@@ -471,9 +500,12 @@ interface JsonWriter {
     fun writeRawValue(text: String)
 
     /**
-     * Writes raw data directly to the Json output unchanged. This method does not make assumptions about whether the
-     * data is intended to be a field or value, it does not add any separators or escaping, nor does it require that the
-     * Json output that results is valid Json.
+     * Writes raw data directly to the Json output unchanged. This method requires the data to be a valid Json value.
+     * That can be a simple Json value, or a complete array or object. Like any other 'value' method on the JsonWriter
+     * (but unlike the non-value raw methods) the required separators are added around the value in the Json output and
+     * the context (field followed by value repeated) in this [JsonWriter] is preserved correctly by this method. As
+     * such the [JsonWriter] is ready to have the next field written after a call to this method. Enclosing double
+     * quotation marks are not added unless part of the raw data passed by the caller.
      *
      * @param text The string to write.
      * @param offset The offset into the text to begin writing from.
