@@ -13,7 +13,7 @@ class ConsensualSignedTransactionImpl(
     private val serializer: SerializationService,
     val wireTransaction: WireTransaction,
     override val signatures: List<DigitalSignatureAndMetadata>
-    ): ConsensualSignedTransaction
+): ConsensualSignedTransaction
 {
 
     init {

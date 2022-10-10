@@ -15,6 +15,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation project(":libs:serialization:serialization-checkpoint-api")
+    implementation project(":libs:serialization:serialization-internal")
     implementation project(":libs:crypto:crypto-core")
 
     testImplementation project(":testing:kryo-serialization-testkit")

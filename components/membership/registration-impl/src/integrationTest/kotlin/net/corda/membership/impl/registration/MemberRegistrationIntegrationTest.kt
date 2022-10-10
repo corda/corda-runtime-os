@@ -126,7 +126,7 @@ class MemberRegistrationIntegrationTest {
 
         const val groupId = "dummy_group"
         const val URL_KEY = "corda.endpoints.0.connectionURL"
-        const val URL_VALUE = "localhost:1080"
+        const val URL_VALUE = "https://localhost:1080"
         const val PROTOCOL_KEY = "corda.endpoints.0.protocolVersion"
         const val PROTOCOL_VALUE = "1"
 

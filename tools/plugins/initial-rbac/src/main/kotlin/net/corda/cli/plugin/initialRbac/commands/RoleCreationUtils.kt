@@ -2,6 +2,7 @@ package net.corda.cli.plugin.initialRbac.commands
 
 import net.corda.cli.plugins.common.HttpRpcClientUtils
 import net.corda.cli.plugins.common.HttpRpcClientUtils.createHttpRpcClient
+import net.corda.cli.plugins.common.HttpRpcClientUtils.executeWithRetry
 import net.corda.cli.plugins.common.HttpRpcCommand
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
@@ -31,10 +32,10 @@ internal object RoleCreationUtils {
 
         createHttpRpcClient(RoleEndpoint::class).use { roleEndpointClient ->
             val waitDuration = Duration.of(waitDurationSeconds.toLong(), ChronoUnit.SECONDS)
-            val roleEndpoint = HttpRpcClientUtils.executeWithRetry(waitDuration, "Start of role HTTP endpoint") {
+            val roleEndpoint = executeWithRetry(waitDuration, "Start of role HTTP endpoint") {
                 roleEndpointClient.start().proxy
             }
-            val allRoles = HttpRpcClientUtils.executeWithRetry(waitDuration, "Obtain list of available roles") {
+            val allRoles = executeWithRetry(waitDuration, "Obtain list of available roles") {
                 roleEndpoint.getRoles()
             }
             if (allRoles.any { it.roleName == roleName }) {
@@ -43,9 +44,11 @@ internal object RoleCreationUtils {
             }
 
             val permissionIds = createHttpRpcClient(PermissionEndpoint::class).use { permissionEndpointClient ->
-                val permissionEndpoint = permissionEndpointClient.start().proxy
+                val permissionEndpoint = executeWithRetry(waitDuration, "Start of permissions HTTP endpoint") {
+                    permissionEndpointClient.start().proxy
+                }
                 permissionsToCreate.toSortedMap().map { entry ->
-                    HttpRpcClientUtils.executeWithRetry(waitDuration, "Creating permission: ${entry.key}") {
+                    executeWithRetry(waitDuration, "Creating permission: ${entry.key}") {
                         permissionEndpoint.createPermission(
                             CreatePermissionType(
                                 PermissionType.ALLOW,
@@ -60,11 +63,11 @@ internal object RoleCreationUtils {
                 }
             }
 
-            val roleId = HttpRpcClientUtils.executeWithRetry(waitDuration, "Creating role: $roleName") {
+            val roleId = executeWithRetry(waitDuration, "Creating role: $roleName") {
                 roleEndpoint.createRole(CreateRoleType(roleName, null)).responseBody.id
             }
             permissionIds.forEach { permId ->
-                HttpRpcClientUtils.executeWithRetry(
+                executeWithRetry(
                     waitDuration,
                     "Adding permission: $permId",
                     onAlreadyExists = HttpRpcClientUtils::ignore
