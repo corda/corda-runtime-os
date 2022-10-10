@@ -26,7 +26,8 @@ import java.time.Instant
 class Receiver(private val subscriptionFactory: SubscriptionFactory,
                private val configMerger: ConfigMerger,
                private val topicAdmin: KafkaTopicAdmin,
-               private val commonConfig: CommonConfig
+               private val commonConfig: CommonConfig,
+               private val topicCreationParams: TopicCreationParams
     ): Closeable {
 
     companion object {
@@ -37,7 +38,7 @@ class Receiver(private val subscriptionFactory: SubscriptionFactory,
     private val subscriptions = mutableListOf<Subscription<*, *>>()
 
     fun start() {
-        AppSimulatorTopicCreator(commonConfig.bootConfig, topicAdmin).createTopic()
+        AppSimulatorTopicCreator(commonConfig.bootConfig, topicAdmin, topicCreationParams).createTopic()
         (1..commonConfig.clients).forEach { client ->
             val subscriptionConfig = SubscriptionConfig("app-simulator-receiver", commonConfig.parameters.receiveTopic,)
             val configWithInstanceId = commonConfig.bootConfig.withValue(

@@ -1,7 +1,7 @@
 package net.corda.kotlin
 
 import net.corda.kotlin.reflect.kotlinClass
-import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatIterable
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.extension.ExtensionContext
@@ -37,7 +37,7 @@ class KotlinClassHierarchyTest {
     fun testDeclaredMemberFunctions(klazz: KClass<*>) {
         val kotlinFunctions = klazz.declaredMemberFunctions
         val cordaFunctions = klazz.kotlinClass.declaredMemberFunctions
-        assertThat(cordaFunctions)
+        assertThatIterable(cordaFunctions)
             .usingElementComparator(::compareKotlinFunctions)
             .containsExactlyInAnyOrderElementsOf(kotlinFunctions)
             .isNotEmpty
@@ -49,7 +49,7 @@ class KotlinClassHierarchyTest {
     fun testMemberFunctions(klazz: KClass<*>) {
         val kotlinFunctions = klazz.memberFunctions
         val cordaFunctions = klazz.kotlinClass.memberFunctions
-        assertThat(cordaFunctions)
+        assertThatIterable(cordaFunctions)
             .usingElementComparator(::compareKotlinFunctions)
             .containsExactlyInAnyOrderElementsOf(kotlinFunctions)
             .isNotEmpty

@@ -28,7 +28,7 @@ class NamedQueryExternalEventFactoryTest {
             externalEventContext,
             NamedQueryParameters("query", emptyMap(), 1, Int.MAX_VALUE)
         )
-        assertEquals(Schemas.VirtualNode.ENTITY_PROCESSOR, externalEventRecord.topic)
+        assertEquals(Schemas.Persistence.PERSISTENCE_ENTITY_PROCESSOR_TOPIC, externalEventRecord.topic)
         assertNull(externalEventRecord.key)
         assertEquals(
             EntityRequest(

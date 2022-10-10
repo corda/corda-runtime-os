@@ -130,7 +130,7 @@ object UniquenessAssertions {
     /**
      * Checks that all commit timestamps within a list of responses are unique
      */
-    fun assertUniqueCommitTimestamps(responses: List<UniquenessCheckResponseAvro>) {
+    fun assertUniqueCommitTimestamps(responses: Collection<UniquenessCheckResponseAvro>) {
         assertEquals(
             responses.size,
             responses.distinctBy {

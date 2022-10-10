@@ -3,15 +3,16 @@ package net.corda.crypto.tck.impl.compliance
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants
 import net.corda.crypto.core.DefaultSignatureOIDMap
+import net.corda.crypto.ecies.EciesParams
 import net.corda.crypto.ecies.core.impl.decryptWithStableKeyPair
 import net.corda.crypto.ecies.core.impl.encryptWithEphemeralKeyPair
 import net.corda.crypto.impl.decorators.requiresWrappingKey
 import net.corda.crypto.impl.decorators.supportsKeyDelete
 import net.corda.crypto.impl.decorators.supportsSharedSecretDerivation
-import net.corda.crypto.tck.impl.CryptoServiceProviderMap
-import net.corda.crypto.tck.impl.ComplianceSpecExtension
 import net.corda.crypto.tck.impl.ComplianceSpec
+import net.corda.crypto.tck.impl.ComplianceSpecExtension
 import net.corda.crypto.tck.impl.ConcurrentTests.Companion.createTestCase
+import net.corda.crypto.tck.impl.CryptoServiceProviderMap
 import net.corda.v5.cipher.suite.CRYPTO_CATEGORY
 import net.corda.v5.cipher.suite.CRYPTO_KEY_TYPE
 import net.corda.v5.cipher.suite.CRYPTO_KEY_TYPE_KEYPAIR
@@ -26,11 +27,11 @@ import net.corda.v5.cipher.suite.SharedSecretAliasSpec
 import net.corda.v5.cipher.suite.SharedSecretWrappedSpec
 import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.cipher.suite.schemes.KeySchemeCapability
 import net.corda.v5.cipher.suite.schemes.KeySchemeTemplate
+import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import net.corda.v5.crypto.COMPOSITE_KEY_CODE_NAME
 import net.corda.v5.crypto.EDDSA_ED25519_CODE_NAME
 import net.corda.v5.crypto.OID_COMPOSITE_KEY
@@ -120,7 +121,7 @@ class CryptoServiceCompliance : AbstractCompliance() {
 
     @AfterEach
     fun cleanup() {
-        if(masterKeyAlias != null) {
+        if (masterKeyAlias != null) {
             deleteWrappingKey(masterKeyAlias!!)
         }
     }
@@ -165,10 +166,12 @@ class CryptoServiceCompliance : AbstractCompliance() {
             "The test expects that service doesn't support key deletion."
         )
         assertThrows(UnsupportedOperationException::class.java) {
-            service.delete("alias", mapOf(
-                CRYPTO_TENANT_ID to tenantId,
-                CRYPTO_KEY_TYPE to CRYPTO_KEY_TYPE_KEYPAIR
-            ))
+            service.delete(
+                "alias", mapOf(
+                    CRYPTO_TENANT_ID to tenantId,
+                    CRYPTO_KEY_TYPE to CRYPTO_KEY_TYPE_KEYPAIR
+                )
+            )
         }
     }
 
@@ -179,9 +182,11 @@ class CryptoServiceCompliance : AbstractCompliance() {
             "The test expects that service doesn't require wrapping keys."
         )
         assertThrows(UnsupportedOperationException::class.java) {
-            service.createWrappingKey("masterKeyAlias", false, mapOf(
-                CRYPTO_TENANT_ID to CryptoTenants.CRYPTO
-            ))
+            service.createWrappingKey(
+                "masterKeyAlias", false, mapOf(
+                    CRYPTO_TENANT_ID to CryptoTenants.CRYPTO
+                )
+            )
         }
     }
 
@@ -193,7 +198,7 @@ class CryptoServiceCompliance : AbstractCompliance() {
         )
         assertThrows(UnsupportedOperationException::class.java) {
             service.deriveSharedSecret(SharedSecretAliasSpec(
-                publicKey =  object : PublicKey {
+                publicKey = object : PublicKey {
                     override fun getAlgorithm(): String = "EC"
                     override fun getFormat(): String = ASN1Encoding.DER
                     override fun getEncoded(): ByteArray = "key".toByteArray()
@@ -331,17 +336,16 @@ class CryptoServiceCompliance : AbstractCompliance() {
         key: GeneratedKey,
         keyScheme: KeyScheme
     ) {
-        val salt = ByteArray(DigestFactory.getDigest("SHA-256").digestSize).apply {
-            schemeMetadata.secureRandom.nextBytes(this)
-        }
         val plainText = "Hello MGM!".toByteArray()
         val encryptedData = encryptWithEphemeralKeyPair(
             schemeMetadata = schemeMetadata,
-            salt = salt,
             otherPublicKey = key.publicKey,
-            plainText = plainText,
-            aad = null
-        )
+            plainText = plainText
+        ) { _, _ ->
+            EciesParams(ByteArray(DigestFactory.getDigest("SHA-256").digestSize).apply {
+                schemeMetadata.secureRandom.nextBytes(this)
+            }, null)
+        }
         val spec = if (key is GeneratedWrappedKey) {
             SharedSecretWrappedSpec(
                 publicKey = key.publicKey,
@@ -378,7 +382,7 @@ class CryptoServiceCompliance : AbstractCompliance() {
         }
         val result = decryptWithStableKeyPair(
             schemeMetadata = schemeMetadata,
-            salt = salt,
+            salt = encryptedData.params.salt,
             publicKey = key.publicKey,
             otherPublicKey = encryptedData.publicKey,
             cipherText = encryptedData.cipherText,

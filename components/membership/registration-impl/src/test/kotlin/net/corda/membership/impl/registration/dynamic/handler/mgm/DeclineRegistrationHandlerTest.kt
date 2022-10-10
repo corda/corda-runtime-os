@@ -5,19 +5,24 @@ import net.corda.data.membership.command.registration.mgm.DeclineRegistration
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
 import net.corda.data.membership.state.RegistrationState
+import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.app.AppMessage
+import net.corda.schema.configuration.MembershipConfig.TtlsConfig.DECLINE_REGISTRATION
+import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -49,21 +54,25 @@ class DeclineRegistrationHandlerTest {
     }
 
     private val record = mock<Record<String, AppMessage>>()
+    private val config = mock<SmartConfig>()
     private val p2pRecordsFactory = mock<P2pRecordsFactory> {
         on {
             createAuthenticatedMessageRecord(
-                mgm,
-                member,
-                SetOwnRegistrationStatus(
-                    REGISTRATION_ID,
-                    RegistrationStatus.DECLINED,
+                eq(mgm),
+                eq(member),
+                eq(
+                    SetOwnRegistrationStatus(
+                        REGISTRATION_ID,
+                        RegistrationStatus.DECLINED,
+                    )
                 ),
-                8,
+                any(),
+                any(),
             )
         } doReturn record
     }
 
-    private val handler = DeclineRegistrationHandler(membershipPersistenceClient, mock(), mock(), mock(), p2pRecordsFactory)
+    private val handler = DeclineRegistrationHandler(membershipPersistenceClient, mock(), mock(), mock(), config, p2pRecordsFactory)
 
     @Test
     fun `handler calls persistence client and returns no output states`() {
@@ -83,6 +92,13 @@ class DeclineRegistrationHandlerTest {
             assertThat(this?.mgm).isEqualTo(mgm)
             assertThat(this?.registrationId).isEqualTo(REGISTRATION_ID)
         }
+    }
+
+    @Test
+    fun `handler uses the correct TTL configuration`() {
+        handler.invoke(state, Record(TOPIC, member.toString(), RegistrationCommand(command)))
+
+        verify(config).getIsNull("$TTLS.$DECLINE_REGISTRATION")
     }
 
     @Test

@@ -64,6 +64,7 @@ import net.corda.v5.base.util.seconds
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatIterable
 import org.bouncycastle.jce.PrincipalUtil
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Nested
@@ -267,7 +268,7 @@ class GatewayIntegrationTest : TestBase() {
 
             // Verify Gateway has successfully forwarded the message to the P2P_IN topic
             val publishedRecords = alice.getRecords(LINK_IN_TOPIC, 1)
-            assertThat(publishedRecords)
+            assertThatIterable(publishedRecords)
                 .hasSize(1).allSatisfy {
                     assertThat(it.value).isInstanceOfSatisfying(LinkInMessage::class.java) {
                         assertThat(it.payload).isInstanceOfSatisfying(AuthenticatedDataMessage::class.java) {

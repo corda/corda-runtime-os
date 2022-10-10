@@ -22,28 +22,19 @@ interface EphemeralKeyPairEncryptor {
      * the keys and secrets. The digest algorithm for HKDF is infered based on the key scheme - e.g. SECP256R1 will
      * use SHA-256 and SECP384 will use SHA-384.
      *
-     * @param salt used by the HKDF function and provides source of additional entropy, according to that spec
-     * https://datatracker.ietf.org/doc/html/rfc5869#section-3.1 it can be exchanged between
-     * communicating parties
+     * @param params a [EciesParamsProvider] which used to get the salt and aad
      * @param otherPublicKey the public key of the other party with which the consumer wants to establish secure
      * communication, the ephemeral key pair will be generated using the same key scheme. The key scheme of the
      * public key must support Diffie–Hellman key agreement, see [net.corda.v5.cipher.suite.schemes.KeyScheme] and
      * its capabilities' property.
      * @param plainText plain text to be encrypted.
-     * @param aad the optional additional authentication data used by the GCM, the provided data will be concatenated
      * with the public keys of the both parties.
      *
      * @return the result of the encryption, including the public key of the generated ephemeral key pair.
      */
     fun encrypt(
-        salt: ByteArray,
         otherPublicKey: PublicKey,
         plainText: ByteArray,
-        aad: ByteArray?
-    ): EncryptedDataWithKey = encrypt(
-        salt = salt,
-        otherPublicKey = otherPublicKey,
-        plainText = plainText,
-        aad = aad
-    )
+        params: EciesParamsProvider
+    ): EncryptedDataWithKey
 }
