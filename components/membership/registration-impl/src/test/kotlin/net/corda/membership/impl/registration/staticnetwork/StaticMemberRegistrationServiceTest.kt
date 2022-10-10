@@ -45,6 +45,7 @@ import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
+import net.corda.membership.lib.toMap
 import net.corda.membership.lib.toSortedMap
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -444,6 +445,53 @@ class StaticMemberRegistrationServiceTest {
         val registrationResult = registrationService.register(registrationId, alice, context)
 
         assertThat(registrationResult.outcome).isEqualTo(NOT_SUBMITTED)
+    }
+
+    @Test
+    fun `registration adds notary info to member info`() {
+        val memberInfoCapture = argumentCaptor<KeyValuePairList>()
+        whenever(keyValuePairListSerializer.serialize(memberInfoCapture.capture())).doReturn(byteArrayOf(1, 2, 3))
+        setUpPublisher()
+        registrationService.start()
+        val context = mapOf(
+            KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+            "corda.roles.0" to "notary",
+            "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
+            "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+        )
+
+        registrationService.register(registrationId, alice, context)
+
+        val memberInfo = memberInfoCapture.firstValue.toMap()
+        assertThat(memberInfo)
+            .containsEntry("corda.roles.0", "notary")
+            .containsEntry("corda.notary.service.plugin", "net.corda.notary.MyNotaryService")
+            .containsKey("corda.notary.service.name")
+            .containsKey("corda.notary.keys.0.pem")
+            .containsKey("corda.notary.keys.0.hash")
+            .containsKey("corda.notary.keys.0.signature.spec")
+    }
+
+    @Test
+    fun `registration without notary will not add notary to member info`() {
+        val memberInfoCapture = argumentCaptor<KeyValuePairList>()
+        whenever(keyValuePairListSerializer.serialize(memberInfoCapture.capture())).doReturn(byteArrayOf(1, 2, 3))
+        setUpPublisher()
+        registrationService.start()
+        val context = mapOf(
+            KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+        )
+
+        registrationService.register(registrationId, alice, context)
+
+        val memberInfo = memberInfoCapture.firstValue.toMap()
+        assertThat(memberInfo)
+            .doesNotContainKey("corda.roles.0")
+            .doesNotContainKey("corda.notary.service.plugin")
+            .doesNotContainKey("corda.notary.service.name")
+            .doesNotContainKey("corda.notary.keys.0.pem")
+            .doesNotContainKey("corda.notary.keys.0.hash")
+            .doesNotContainKey("corda.notary.keys.0.signature.spec")
     }
 
     @Test
