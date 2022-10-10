@@ -133,7 +133,7 @@ class HostedIdentityEntryFactoryTest {
     fun `createIdentityRecord create the correct record`() {
         val record = factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
-            certificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             tlsTenantId = null,
             sessionKeyTenantId = null,
             sessionKeyId = null
@@ -159,7 +159,7 @@ class HostedIdentityEntryFactoryTest {
         assertThrows<CertificatesResourceNotFoundException> {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = INVALID_NODE,
-                certificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 tlsTenantId = VALID_NODE.toString(),
                 sessionKeyTenantId = null,
                 sessionKeyId = null
@@ -171,7 +171,7 @@ class HostedIdentityEntryFactoryTest {
     fun `createIdentityRecord will use session tenant ID if provided`() {
         val record = factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
-            certificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             tlsTenantId = VALID_NODE.toString(),
             sessionKeyTenantId = KNOWN_TENANT,
             sessionKeyId = "id1"
@@ -185,7 +185,7 @@ class HostedIdentityEntryFactoryTest {
     fun `createIdentityRecord will default to holding identity short hash if session tenant ID is not provided`() {
         val record = factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
-            certificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             tlsTenantId = VALID_NODE.toString(),
             sessionKeyTenantId = null,
             sessionKeyId = "id1"
@@ -199,7 +199,7 @@ class HostedIdentityEntryFactoryTest {
     fun `createIdentityRecord will look for ID if provided`() {
         factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
-            certificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             tlsTenantId = VALID_NODE.toString(),
             sessionKeyTenantId = null,
             sessionKeyId = "id1"
@@ -214,7 +214,7 @@ class HostedIdentityEntryFactoryTest {
     fun `createIdentityRecord will filter by category if no id is provided`() {
         factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
-            certificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             tlsTenantId = VALID_NODE.toString(),
             sessionKeyTenantId = null,
             sessionKeyId = null
@@ -231,7 +231,7 @@ class HostedIdentityEntryFactoryTest {
         assertThrows<CertificatesResourceNotFoundException> {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = VALID_NODE,
-                certificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 tlsTenantId = VALID_NODE.toString(),
                 sessionKeyTenantId = null,
                 sessionKeyId = null
@@ -244,7 +244,7 @@ class HostedIdentityEntryFactoryTest {
         assertThrows<CertificatesResourceNotFoundException> {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = VALID_NODE,
-                certificateChainAlias = "NOP",
+                tlsCertificateChainAlias = "NOP",
                 tlsTenantId = VALID_NODE.toString(),
                 sessionKeyTenantId = null,
                 sessionKeyId = null
@@ -267,7 +267,7 @@ class HostedIdentityEntryFactoryTest {
 
         factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
-            certificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             tlsTenantId = P2P,
             sessionKeyTenantId = null,
             sessionKeyId = null
@@ -280,7 +280,7 @@ class HostedIdentityEntryFactoryTest {
     fun `createIdentityRecord with another TLS tenant will return that ID`() {
         val record = factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
-            certificateChainAlias = VALID_CERTIFICATE_ALIAS,
+            tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             tlsTenantId = P2P,
             sessionKeyTenantId = null,
             sessionKeyId = null
@@ -303,7 +303,7 @@ class HostedIdentityEntryFactoryTest {
         assertThrows<CordaRuntimeException> {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = VALID_NODE,
-                certificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 tlsTenantId = null,
                 sessionKeyTenantId = null,
                 sessionKeyId = null
@@ -318,7 +318,7 @@ class HostedIdentityEntryFactoryTest {
         assertThrows<CordaRuntimeException> {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = VALID_NODE,
-                certificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 tlsTenantId = null,
                 sessionKeyTenantId = null,
                 sessionKeyId = null
@@ -336,7 +336,7 @@ class HostedIdentityEntryFactoryTest {
         assertThrows<CordaRuntimeException> {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = VALID_NODE,
-                certificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 tlsTenantId = null,
                 sessionKeyTenantId = null,
                 sessionKeyId = null
@@ -354,7 +354,7 @@ class HostedIdentityEntryFactoryTest {
         assertThrows<CordaRuntimeException> {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = VALID_NODE,
-                certificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 tlsTenantId = null,
                 sessionKeyTenantId = null,
                 sessionKeyId = null

@@ -60,7 +60,8 @@ class LinkManagerHostingMapImplTest {
         "id1",
         "id2",
         listOf("cert1", "cert2"),
-        "pem"
+        "pem",
+        null
     )
     private val publicKeyReader = mockConstruction(PublicKeyReader::class.java) { mock, _ ->
         whenever(mock.loadPublicKey("pem")).thenReturn(publicKeyOne)

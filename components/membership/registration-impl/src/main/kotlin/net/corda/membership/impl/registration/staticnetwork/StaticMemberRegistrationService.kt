@@ -286,7 +286,8 @@ class StaticMemberRegistrationService @Activate constructor(
             memberId.value,
             memberId.value,
             listOf(DUMMY_CERTIFICATE),
-            DUMMY_PUBLIC_SESSION_KEY
+            DUMMY_PUBLIC_SESSION_KEY,
+            null
         )
 
         return Record(
