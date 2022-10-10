@@ -58,13 +58,6 @@ open class JPABackingStoreImpl @Activate constructor(
     private val jpaEntitiesRegistry: JpaEntitiesRegistry,
     @Reference(service = DbConnectionManager::class)
     private val dbConnectionManager: DbConnectionManager
-    // NOTE: This is a temporary change for dependency injection for testing convenience around
-    //  createDefaultUniquenessDb(). It can/should be removed when the temporary hack (createDefaultUniquenessDb()) is
-    //  refactored. If createDefaultUniquenessDb() can't be refactored and we want to remove this default parameter,
-    //  revert this change and the only affected test is "Registration status change event instantiates entity manager
-    //  when event status is up"
-//    @Reference(service = LiquibaseSchemaMigrator::class)
-//    private val schemaMigrator: LiquibaseSchemaMigrator = LiquibaseSchemaMigratorImpl()
 ) : BackingStore {
 
     private companion object {

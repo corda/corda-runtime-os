@@ -118,7 +118,6 @@ class JPABackingStoreImplIntegrationTests {
             whenever(createCoordinator(any(), any())) doReturn lifecycleCoordinator
         }
 
-//        backingStoreImpl = createBackingStoreImpl(entityManagerFactory)
         backingStoreImpl = createBackingStoreImpl(defaultDb)
         backingStoreImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
     }
@@ -436,6 +435,37 @@ class JPABackingStoreImplIntegrationTests {
             }
         }
 
+        @Disabled("This test fails because it fails to persist an error message with 1024 bytes.")
+        @Test
+        fun `Persisting error should throw if the size is biggner than the maximum`() {
+            val txId = SecureHashUtils.randomSecureHash()
+            val externalRequest = generateExternalRequest(txId)
+            val internalRequest = UniquenessCheckRequestInternal.create(externalRequest)
+
+            // 1024 is the expected maximum size of an error message.
+            val maxErrMsgLength = 1024
+            val validErrorMessage = "e".repeat(maxErrMsgLength)
+            assertDoesNotThrow {
+                backingStoreImpl.session(TEST_IDENTITY) { session ->
+                    session.executeTransaction { _, txnOps -> txnOps.commitTransactions(
+                        listOf(Pair(internalRequest, UniquenessCheckResultFailureImpl(
+                                Clock.systemUTC().instant(),
+                                UniquenessCheckErrorMalformedRequestImpl(validErrorMessage))))) }
+                }
+            }
+
+            // Persisting this error should throw because its size if bigger than 1024.
+            val invalidErrorMessage = "e".repeat(maxErrMsgLength + 1)
+            assertThrows<IllegalStateException> {
+                backingStoreImpl.session(TEST_IDENTITY) { session ->
+                    session.executeTransaction { _, txnOps -> txnOps.commitTransactions(
+                        listOf(Pair(internalRequest, UniquenessCheckResultFailureImpl(
+                                Clock.systemUTC().instant(),
+                                UniquenessCheckErrorMalformedRequestImpl(invalidErrorMessage))))) }
+                }
+            }
+        }
+
         @Test
         fun `Persisting rejected transaction with general error succeeds`() {
             val txId = SecureHashUtils.randomSecureHash()
@@ -446,7 +476,6 @@ class JPABackingStoreImplIntegrationTests {
             val txns = listOf(
                 Pair(
                     internalRequest, UniquenessCheckResultFailureImpl(
-//                        Clock.systemUTC().instant(), UniquenessCheckErrorGeneralImpl(errorMessage)))
                         Clock.systemUTC().instant(), UniquenessCheckErrorMalformedRequestImpl(errorMessage)
                     )
                 )
