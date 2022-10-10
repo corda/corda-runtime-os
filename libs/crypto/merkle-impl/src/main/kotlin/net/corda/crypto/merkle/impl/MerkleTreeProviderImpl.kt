@@ -1,6 +1,6 @@
 package net.corda.crypto.merkle.impl
 
-import net.corda.v5.cipher.suite.DigestService
+import net.corda.crypto.core.service.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider

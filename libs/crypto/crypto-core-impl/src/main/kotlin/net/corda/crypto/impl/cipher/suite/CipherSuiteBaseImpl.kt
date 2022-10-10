@@ -1,5 +1,6 @@
 package net.corda.crypto.impl.cipher.suite
 
+import net.corda.crypto.core.ReadWriteLockMap
 import net.corda.v5.cipher.suite.CipherSuiteBase
 import net.corda.v5.cipher.suite.KeyScheme
 import net.corda.v5.cipher.suite.KeySchemeInfo

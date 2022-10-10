@@ -12,7 +12,6 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation project(":components:crypto:crypto-client")
-    implementation project(":components:crypto:crypto-client-hsm")
     implementation project(":components:membership:certificates-client")
     implementation project(":components:membership:membership-client")
     implementation project(":components:membership:membership-group-read")

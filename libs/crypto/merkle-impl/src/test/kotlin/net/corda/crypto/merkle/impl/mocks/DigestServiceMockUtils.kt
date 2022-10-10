@@ -2,7 +2,7 @@
 
 package net.corda.crypto.merkle.impl.mocks
 
-import net.corda.v5.cipher.suite.DigestService
+import net.corda.crypto.core.service.DigestService
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import java.util.concurrent.ConcurrentHashMap

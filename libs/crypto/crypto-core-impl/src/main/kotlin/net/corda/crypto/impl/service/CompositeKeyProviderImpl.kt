@@ -1,7 +1,7 @@
 package net.corda.crypto.impl.service
 
 import net.corda.crypto.core.service.CompositeKeyProvider
-import net.corda.crypto.impl.CompositeKeyImpl
+import net.corda.crypto.impl.cipher.suite.CompositeKeyImpl
 import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import org.osgi.service.component.annotations.Component
 import java.security.PublicKey

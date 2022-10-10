@@ -1,9 +1,9 @@
 package net.corda.crypto.impl.converter
 
+import net.corda.crypto.core.service.KeyEncodingService
 import java.security.PublicKey
 import net.corda.layeredpropertymap.ConversionContext
 import net.corda.layeredpropertymap.CustomPropertyConverter
-import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -27,9 +27,9 @@ class PublicKeyConverter @Activate constructor(
      */
     override fun convert(context: ConversionContext): PublicKey? = if (context.value("pem") != null) {
         context.value("pem")?.let {
-            keyEncodingService.decodePublicKey(it)
+            keyEncodingService.decodePem(it)
         }
     } else {
-        context.value()?.let { keyEncodingService.decodePublicKey(it) }
+        context.value()?.let { keyEncodingService.decodePem(it) }
     }
 }

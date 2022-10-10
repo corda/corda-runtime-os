@@ -1,5 +1,6 @@
 package net.corda.crypto.impl.cipher.suite
 
+import net.corda.crypto.core.service.PlatformCipherSuiteMetadata
 import net.corda.utilities.LazyPool
 import net.corda.v5.cipher.suite.KeyScheme
 import net.corda.v5.crypto.SignatureSpec

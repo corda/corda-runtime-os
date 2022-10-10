@@ -26,6 +26,7 @@ dependencies {
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+    testImplementation project(":testing:crypto-testkit")
     testImplementation project(":testing:test-utilities")
 
     integrationTestRuntimeOnly("org.apache.felix:org.apache.felix.framework.security:$felixSecurityVersion") {

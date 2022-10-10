@@ -1,11 +1,9 @@
 package net.corda.crypto.merkle.impl
 
-import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
-import net.corda.cipher.suite.impl.DigestServiceImpl
+import net.corda.crypto.core.service.DigestService
 import net.corda.crypto.core.toByteArray
 import net.corda.crypto.merkle.impl.mocks.getZeroHash
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.DigestService
+import net.corda.crypto.testkit.CryptoTestKit
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
@@ -38,10 +36,9 @@ class MerkleTreeTest {
         @BeforeAll
         @JvmStatic
         fun setup() {
-            val schemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
-            digestService = DigestServiceImpl(schemeMetadata, null)
-            secureRandom = schemeMetadata.secureRandom
-
+            val testKit = CryptoTestKit()
+            digestService = testKit.digestService
+            secureRandom = testKit.secureRandom
             defaultHashDigestProvider = DefaultHashDigestProvider(digestAlgorithm, digestService)
             nonceHashDigestProvider = NonceHashDigestProvider(digestAlgorithm, digestService, secureRandom)
             nonceHashDigestProviderVerify = NonceHashDigestProvider.Verify(digestAlgorithm, digestService)

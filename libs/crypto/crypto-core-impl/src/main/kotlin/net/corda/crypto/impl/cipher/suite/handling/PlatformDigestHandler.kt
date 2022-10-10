@@ -1,6 +1,6 @@
 package net.corda.crypto.impl.cipher.suite.handling
 
-import net.corda.crypto.impl.cipher.suite.PlatformCipherSuiteMetadata
+import net.corda.crypto.core.service.PlatformCipherSuiteMetadata
 import net.corda.v5.cipher.suite.handlers.digest.DigestHandler
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
@@ -15,7 +15,15 @@ import java.util.concurrent.ConcurrentHashMap
 class PlatformDigestHandler(
     private val suiteMetadata: PlatformCipherSuiteMetadata,
 ) : DigestHandler {
-    private val factories = ConcurrentHashMap<String, DigestAlgorithmFactory>()
+    companion object {
+        val customDigestAlgorithms: List<String> = listOf(DoubleSHA256Digest.ALGORITHM)
+    }
+
+    private val factories = ConcurrentHashMap<String, DigestAlgorithmFactory>().also {
+        val factory = DoubleSHA256DigestFactory()
+        it[factory.algorithm] = factory
+    }
+
     private val lengths = ConcurrentHashMap<String, Int>()
 
     override val rank: Int = 0

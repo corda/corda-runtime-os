@@ -1,7 +1,7 @@
 package net.corda.crypto.core.aes
 
 import net.corda.crypto.core.ManagedKey
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.crypto.core.service.PlatformCipherSuiteMetadata
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import java.security.PrivateKey
 import java.security.spec.PKCS8EncodedKeySpec
@@ -11,27 +11,27 @@ import java.security.spec.PKCS8EncodedKeySpec
  */
 class WrappingKey(
     private val key: ManagedKey,
-    private val schemeMetadata: CipherSchemeMetadata,
+    private val metadata: PlatformCipherSuiteMetadata,
 ) {
     companion object {
         /**
          * Derives a new instance of [WrappingKey] using passphrase and salt delegating that to [AesKey].[derive].
          * The resulting key is deterministic.
          *
-         * [schemeMetadata] is used to correctly decode a [PrivateKey] when unwrapping it
+         * [metadata] is used to correctly decode a [PrivateKey] when unwrapping it
          */
-        fun derive(schemeMetadata: CipherSchemeMetadata, credentials: KeyCredentials): WrappingKey =
-            derive(schemeMetadata, credentials.passphrase, credentials.salt)
+        fun derive(metadata: PlatformCipherSuiteMetadata, credentials: KeyCredentials): WrappingKey =
+            derive(metadata, credentials.passphrase, credentials.salt)
 
         /**
          * Derives a new instance of [WrappingKey] using passphrase and salt delegating that to [AesKey].[derive].
          * The resulting key is deterministic.
          *
-         * [schemeMetadata] is used to correctly decode a [PrivateKey] when unwrapping it
+         * [metadata] is used to correctly decode a [PrivateKey] when unwrapping it
          */
-        fun derive(schemeMetadata: CipherSchemeMetadata, passphrase: String, salt: String): WrappingKey =
+        fun derive(metadata: PlatformCipherSuiteMetadata, passphrase: String, salt: String): WrappingKey =
             WrappingKey(
-                schemeMetadata = schemeMetadata,
+                metadata = metadata,
                 key = AesKey.derive(passphrase, salt)
             )
 
@@ -39,9 +39,9 @@ class WrappingKey(
          * Generates a new instance of [WrappingKey].
          * The resulting key is random.
          */
-        fun generateWrappingKey(schemeMetadata: CipherSchemeMetadata): WrappingKey =
+        fun generateWrappingKey(metadata: PlatformCipherSuiteMetadata): WrappingKey =
             WrappingKey(
-                schemeMetadata = schemeMetadata,
+                metadata = metadata,
                 key = AesKey.generate()
             )
     }
@@ -66,7 +66,7 @@ class WrappingKey(
      * Decrypts the [other] [WrappingKey].
      */
     fun unwrapWrappingKey(other: ByteArray): WrappingKey = WrappingKey(
-        schemeMetadata = schemeMetadata,
+        metadata = metadata,
         key = this.key.unwrapKey(other)
     )
 
@@ -77,8 +77,7 @@ class WrappingKey(
 
     private fun ByteArray.decodePrivateKey(): PrivateKey {
         val keyInfo = PrivateKeyInfo.getInstance(this)
-        val scheme = schemeMetadata.findKeyScheme(keyInfo.privateKeyAlgorithm)
-        val keyFactory = schemeMetadata.findKeyFactory(scheme)
+        val keyFactory = metadata.findKeyFactory(keyInfo.privateKeyAlgorithm)
         return keyFactory.generatePrivate(PKCS8EncodedKeySpec(this))
     }
 
