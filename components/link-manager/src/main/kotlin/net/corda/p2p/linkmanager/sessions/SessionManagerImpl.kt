@@ -558,7 +558,7 @@ internal class SessionManagerImpl(
         executorService.schedule(
             { refreshSessionAndLog(sessionCounterparties, message.header.sessionId) },
             sessionManagerConfig.sessionRefreshThreshold.toLong(),
-            TimeUnit.DAYS
+            TimeUnit.MILLISECONDS
         )
         return null
     }
