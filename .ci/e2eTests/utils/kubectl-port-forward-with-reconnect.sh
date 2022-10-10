@@ -8,6 +8,6 @@ fi
 
 while true; do
 	kubectl --namespace "${1}" port-forward "${2}" "${3}:${4}" 2>&1
-	echo "kubectl port-forward connection to ${2}:${4} lost, sleeping 5 seconds before trying again..."
-	sleep 5
+	echo "kubectl port-forward connection to ${2}:${4} lost, sleeping 1 seconds before trying again..."
+	sleep 1
 done
