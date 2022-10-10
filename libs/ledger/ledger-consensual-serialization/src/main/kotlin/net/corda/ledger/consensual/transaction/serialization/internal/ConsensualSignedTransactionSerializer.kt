@@ -12,7 +12,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
-// need to decide where we want to keep our serializers since they seem to be split over different places atm.
 @Component(service = [InternalCustomSerializer::class])
 class ConsensualSignedTransactionSerializer @Activate constructor(
     @Reference(service = SerializationService::class)

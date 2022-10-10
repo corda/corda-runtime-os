@@ -83,7 +83,7 @@ class ConsensualReceiveFinalityFlow(
             }
         }
 
-        // TODO Record the transaction
+        // TODO [CORE-7055] Record the transaction
         log.debug { "Recorded signed transaction $transactionId" }
 
         session.send(Unit)
