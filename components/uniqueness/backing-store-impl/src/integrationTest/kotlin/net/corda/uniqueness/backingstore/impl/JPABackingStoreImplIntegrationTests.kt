@@ -56,7 +56,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.any
 import org.mockito.kotlin.times
 import org.mockito.kotlin.never
-import org.mockito.kotlin.eq
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.LocalDate
@@ -93,11 +92,13 @@ class JPABackingStoreImplIntegrationTests {
             LiquibaseSchemaMigratorImpl(),
             JpaEntitiesRegistryImpl()
         )
-        private val aliceIdentityDb: EntityManagerFactory = databaseInstaller.setupDatabase(
+        private val aliceEmFactory: EntityManagerFactory = databaseInstaller.setupDatabase(
             TestDbInfo("uniq_test_default", aliceIdentityDbName),
             "vnode-uniqueness",
             JPABackingStoreEntities.classes
         )
+        private val defaultEmFactory: EntityManagerFactory = EntityManagerFactoryFactoryImpl().create(
+        "test", JPABackingStoreEntities.classes.toList(), dbConfig)
     }
 
     class DummyException(message: String) : Exception(message)
@@ -121,7 +122,7 @@ class JPABackingStoreImplIntegrationTests {
             whenever(createCoordinator(any(), any())) doReturn lifecycleCoordinator
         }
 
-        backingStoreImpl = createBackingStoreImpl(aliceIdentityDb)
+        backingStoreImpl = createBackingStoreImpl(aliceEmFactory)
         backingStoreImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
     }
 
@@ -129,7 +130,7 @@ class JPABackingStoreImplIntegrationTests {
         return JPABackingStoreImpl(lifecycleCoordinatorFactory,
             JpaEntitiesRegistryImpl(),
             mock<DbConnectionManager>().apply {
-                whenever(getOrCreateEntityManagerFactory(eq(aliceIdentityDbName), any(), any())) doReturn emFactory
+                whenever(getOrCreateEntityManagerFactory(any(), any(), any())) doReturn emFactory
                 whenever(getClusterDataSource()) doReturn dbConfig.dataSource
             })
     }
@@ -440,7 +441,6 @@ class JPABackingStoreImplIntegrationTests {
             val secureHashes = List(hashCnt) { SecureHashUtils.randomSecureHash() }
             val stateRefs = secureHashes.map { UniquenessCheckStateRefImpl(it, 0) }
 
-
             backingStoreImpl.session(aliceIdentity) { session ->
                 session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
             }
@@ -666,5 +666,21 @@ class JPABackingStoreImplIntegrationTests {
             storeImpl.session(aliceIdentity) { session -> session.executeTransaction { _, _ -> } }
         }
         Mockito.verify(spyEmFactory, times(sessionInvokeCnt)).createEntityManager()
+    }
+
+    @Test
+    fun `Persisting with an incorrect identity throws an expected exception`() {
+        val impl = createBackingStoreImpl(defaultEmFactory)
+        impl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
+
+        try {
+            val stateRefs = List(1) { UniquenessCheckStateRefImpl(SecureHashUtils.randomSecureHash(), 0) }
+            impl.session(aliceIdentity) { session ->
+                session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
+            }
+        }catch(e: IllegalStateException) {
+            // Expect a RollbackException at committing.
+            assertThat(e.cause).isInstanceOf(RollbackException::class.java)
+        }
     }
 }
