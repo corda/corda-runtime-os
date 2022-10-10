@@ -1,7 +1,7 @@
 package net.corda.ledger.common.transaction.serialization.internal
 
 import net.corda.ledger.common.impl.transaction.WireTransaction
-import net.corda.ledger.common.transaction.serialization.WireTransactionContainer
+import net.corda.ledger.common.transaction.serialization.WireTransactionProxy
 import net.corda.ledger.common.transaction.serialization.WireTransactionVersion
 import net.corda.serialization.BaseProxySerializer
 import net.corda.serialization.InternalCustomSerializer
@@ -18,16 +18,23 @@ class WireTransactionSerializer @Activate constructor(
     @Reference(service = MerkleTreeProvider::class) private val merkleTreeProvider: MerkleTreeProvider,
     @Reference(service = DigestService::class) private val digestService: DigestService,
     @Reference(service = JsonMarshallingService::class) private val jsonMarshallingService: JsonMarshallingService
-) : BaseProxySerializer<WireTransaction, WireTransactionContainer>() {
+) : BaseProxySerializer<WireTransaction, WireTransactionProxy>() {
 
-    override fun toProxy(obj: WireTransaction): WireTransactionContainer =
-        WireTransactionContainer(
+    override val type = WireTransaction::class.java
+
+    override val proxyType = WireTransactionProxy::class.java
+
+    override val withInheritance = true
+
+    override fun toProxy(obj: WireTransaction): WireTransactionProxy {
+        return WireTransactionProxy(
             WireTransactionVersion.VERSION_1,
             obj.privacySalt,
             obj.componentGroupLists
         )
+    }
 
-    override fun fromProxy(proxy: WireTransactionContainer): WireTransaction {
+    override fun fromProxy(proxy: WireTransactionProxy): WireTransaction {
         if (proxy.version == WireTransactionVersion.VERSION_1) {
             return WireTransaction(
                 merkleTreeProvider,
@@ -39,11 +46,4 @@ class WireTransactionSerializer @Activate constructor(
         }
         throw CordaRuntimeException("Unable to create WireTransaction with Version='${proxy.version}'")
     }
-
-    override val proxyType: Class<WireTransactionContainer>
-        get() = WireTransactionContainer::class.java
-    override val type: Class<WireTransaction>
-        get() = WireTransaction::class.java
-    override val withInheritance: Boolean
-        get() = true
 }

@@ -7,7 +7,7 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
  * The class that actually gets serialized on the wire.
  */
 
-data class ConsensualSignedTransactionImplContainer(
+data class ConsensualSignedTransactionProxy(
     /**
      * Version of container.
      */
