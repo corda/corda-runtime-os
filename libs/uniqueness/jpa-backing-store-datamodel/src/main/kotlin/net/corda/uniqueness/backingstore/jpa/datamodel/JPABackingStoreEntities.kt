@@ -26,7 +26,7 @@ object JPABackingStoreEntities {
 data class UniquenessTxAlgoStateRefKey(
     val issueTxIdAlgo: String = "",
     val issueTxId: ByteArray = ByteArray(0),
-    val issueTxOutputIndex: Long = 0
+    val issueTxOutputIndex: Int = 0
 ) : Serializable {
 
     override fun equals(other: Any?): Boolean {
@@ -110,8 +110,7 @@ data class UniquenessStateDetailEntity(
 
     @Id
     @Column(name = "issue_tx_output_idx", nullable = false)
-    // TODO Using Long here instead of Int is a temporary solution, should be investigated as part of NAAS-458
-    val issueTxOutputIndex: Long,
+    val issueTxOutputIndex: Int,
 
     @Column(name = "consuming_tx_id_algo", nullable = true, length = TRANSACTION_ID_ALGO_LENGTH)
     val consumingTxIdAlgo: String?,
@@ -212,11 +211,14 @@ data class UniquenessRejectedTransactionEntity(
     @Column(name = "tx_id", length = TRANSACTION_ID_LENGTH, nullable = false)
     val txId: ByteArray,
 
-    // TODO Removing @Lob annotation from here is a temporary solution, should be investigated as part of NAAS-458
-    // @Lob
     @Column(name = "error_details", nullable = false)
     val errorDetails: ByteArray
 ) {
+    init {
+        if (errorDetails.size > 1024) {
+            throw IllegalArgumentException("The maximum size of an Error detail is 1024")
+        }
+    }
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is UniquenessRejectedTransactionEntity) return false
