@@ -31,9 +31,6 @@ public class AbstractMockTestHarness {
     protected final PublicKey aliceKey = Mockito.mock(PublicKey.class);
     protected final PublicKey bobKey = Mockito.mock(PublicKey.class);
     protected final PublicKey notaryKey = Mockito.mock(PublicKey.class);
-    protected final Party aliceParty = Mockito.mock(Party.class);
-    protected final Party bobParty = Mockito.mock(Party.class);
-    protected final Party notaryParty = Mockito.mock(Party.class);
 
     protected final Attachment attachment = Mockito.mock(Attachment.class);
     protected final ZipInputStream zipInputStream = Mockito.mock(ZipInputStream.class);
@@ -42,6 +39,21 @@ public class AbstractMockTestHarness {
     protected final Contract contract = Mockito.mock(Contract.class);
     protected final Command command = Mockito.mock(Command.class);
     protected final TimeWindow timeWindow = Mockito.mock(TimeWindow.class);
+
+    protected final Instant minInstant = Instant.MIN;
+    protected final Instant maxInstant = Instant.MIN;
+    protected final Instant midpoint = Instant.EPOCH;
+    protected final SecureHash hash = SecureHash.parse("SHA256:0000000000000000000000000000000000000000000000000000000000000000");
+    protected final List<PublicKey> keys = List.of(aliceKey, bobKey);
+    protected final MemberX500Name notaryName = new MemberX500Name("Notary", "Zurich", "CH");
+    protected final DigitalSignatureAndMetadata aliceSignature = createDigitalSignature(aliceKey);
+    protected final DigitalSignatureAndMetadata bobSignature = createDigitalSignature(bobKey);
+    protected final List<DigitalSignatureAndMetadata> signatures = List.of(aliceSignature);
+    protected final Command createCommand = new Create();
+    protected final Command updateCommand = new Update();
+    protected final List<Command> commands = List.of(command, createCommand, updateCommand);
+    protected final StateRef stateRef = new StateRef(hash, 0);
+    protected final Party notaryParty = new Party(notaryName, notaryKey);
 
     protected final StateAndRef<ContractState> contractStateAndRef = createStateAndRef(Mockito.mock(ContractState.class));
     protected final TransactionState<ContractState> contractTransactionState = contractStateAndRef.getState();
@@ -52,26 +64,7 @@ public class AbstractMockTestHarness {
     protected final UtxoSignedTransaction utxoSignedTransaction = Mockito.mock(UtxoSignedTransaction.class);
     protected final UtxoTransactionBuilder utxoTransactionBuilder = Mockito.mock(UtxoTransactionBuilder.class);
 
-    // Mocked Data
-    protected final Instant minInstant = Instant.MIN;
-    protected final Instant maxInstant = Instant.MIN;
-    protected final Instant midpoint = Instant.EPOCH;
-    protected final Duration duration = Duration.between(minInstant, maxInstant);
-    protected final SecureHash hash = SecureHash.parse("SHA256:0000000000000000000000000000000000000000000000000000000000000000");
-    protected final List<PublicKey> keys = List.of(aliceKey, bobKey);
-    protected final MemberX500Name aliceName = new MemberX500Name("Alice", "London", "GB");
-    protected final MemberX500Name bobName = new MemberX500Name("Bob", "New York", "US");
-    protected final MemberX500Name notaryName = new MemberX500Name("Notary", "Zurich", "CH");
-    protected final DigitalSignatureAndMetadata aliceSignature = createDigitalSignature(aliceKey);
-    protected final DigitalSignatureAndMetadata bobSignature = createDigitalSignature(bobKey);
-    protected final List<DigitalSignatureAndMetadata> signatures = List.of(aliceSignature);
-    protected final Command createCommand = new Create();
-    protected final Command updateCommand = new Update();
-    protected final List<Command> commands = List.of(command, createCommand, updateCommand);
-    protected final StateRef stateRef = new StateRef(hash, 0);
-
     public AbstractMockTestHarness() {
-        initializeIdentity();
         initializeContract();
         initializeContractState();
         initializeAttachment();
@@ -86,8 +79,8 @@ public class AbstractMockTestHarness {
         TransactionState<T> result = Mockito.mock(TransactionState.class);
 
         Mockito.when(result.getContractState()).thenReturn(contractState);
-        Mockito.when(result.getContractType()).thenReturn((Class) contract.getClass()); // Not sure why this needs a cast.
-        Mockito.when(result.getNotary()).thenReturn(notaryParty);
+        Mockito.when(result.getContractType()).thenReturn((Class) contract.getClass());
+        Mockito.when(result.getNotary()).thenReturn(new Party(notaryName, notaryKey));
         Mockito.when(result.getEncumbrance()).thenReturn(0);
 
         return result;
@@ -112,15 +105,6 @@ public class AbstractMockTestHarness {
         DigitalSignatureMetadata metadata = new DigitalSignatureMetadata(minInstant, Map.of());
 
         return new DigitalSignatureAndMetadata(signature, metadata);
-    }
-
-    private void initializeIdentity() {
-        Mockito.when(aliceParty.getName()).thenReturn(aliceName);
-        Mockito.when(aliceParty.getOwningKey()).thenReturn(aliceKey);
-        Mockito.when(bobParty.getName()).thenReturn(bobName);
-        Mockito.when(bobParty.getOwningKey()).thenReturn(bobKey);
-        Mockito.when(notaryParty.getName()).thenReturn(notaryName);
-        Mockito.when(notaryParty.getOwningKey()).thenReturn(notaryKey);
     }
 
     private void initializeContract() {
