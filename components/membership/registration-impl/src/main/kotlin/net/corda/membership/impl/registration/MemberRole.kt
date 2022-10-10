@@ -73,7 +73,7 @@ internal sealed class MemberRole {
         ): Collection<Pair<String, String>> {
             val key = keysFactory.getOrGenerateKeyPair(NOTARY)
             return listOf(
-                "$ROLES_PREFIX.$index" to NOTARY_NAME,
+                "$ROLES_PREFIX$index" to NOTARY_NAME,
                 NOTARY_SERVICE_NAME to serviceName.toString(),
                 NOTARY_SERVICE_PLUGIN to plugin,
                 String.format(NOTARY_KEY_PEM, index) to key.pem,
