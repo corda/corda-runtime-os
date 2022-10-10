@@ -24,7 +24,6 @@ dependencies {
     implementation project(":libs:uniqueness:jpa-backing-store-datamodel")
     implementation project(":libs:uniqueness:common")
     implementation project(":libs:utilities")
-//    implementation project(':libs:virtual-node:virtual-node-info')
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
