@@ -225,7 +225,7 @@ class DynamicMemberRegistrationServiceTest {
     private val context = mapOf(
         "corda.session.key.id" to SESSION_KEY_ID,
         "corda.session.key.signature.spec" to "CORDA.ECDSA.SECP256R1",
-        "corda.endpoints.0.connectionURL" to "localhost:1080",
+        "corda.endpoints.0.connectionURL" to "https://localhost:1080",
         "corda.endpoints.0.protocolVersion" to "1",
         "corda.ledger.keys.0.id" to LEDGER_KEY_ID,
         "corda.ledger.keys.0.signature.spec" to "CORDA.ECDSA.SECP256R1",
