@@ -15,7 +15,11 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
-@Component(service = [SigningService::class, SingletonSerializeAsToken::class], scope = PROTOTYPE)
+@Component(
+    service = [SigningService::class, SingletonSerializeAsToken::class],
+    scope = PROTOTYPE,
+    property = ["corda.system=true"]
+)
 class SigningServiceImpl @Activate constructor(
     @Reference(service = ExternalEventExecutor::class)
     private val externalEventExecutor: ExternalEventExecutor,
