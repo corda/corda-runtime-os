@@ -39,7 +39,10 @@
             <column name="signature_idx" type="INT">
                 <constraints nullable="false"/>
             </column>
-            <column name="signature" type="VARBINARY(64)">
+            <column name="signature" type="VARBINARY(1048576)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="pub_key_hash" type="VARCHAR(64)">
                 <constraints nullable="false"/>
             </column>
             <column name="created" type="TIMESTAMP">

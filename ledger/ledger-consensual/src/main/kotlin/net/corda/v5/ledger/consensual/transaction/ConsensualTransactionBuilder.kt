@@ -3,6 +3,7 @@ package net.corda.v5.ledger.consensual.transaction
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.ledger.consensual.ConsensualState
 import java.security.PublicKey
+import net.corda.v5.base.annotations.Suspendable
 
 /**
  * Defines a builder for [ConsensualSignedTransaction]s.
@@ -42,5 +43,6 @@ interface ConsensualTransactionBuilder {
      * @throws [UnsupportedOperationException] when called second time on the same object to prevent duplicate
      *      transactions accidentally.
      */
+    @Suspendable
     fun signInitial(publicKey: PublicKey): ConsensualSignedTransaction
 }

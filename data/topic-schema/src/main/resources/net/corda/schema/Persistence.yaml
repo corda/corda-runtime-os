@@ -1,0 +1,11 @@
+topics:
+  PersistenceEntityProcessorTopic:
+    name: persistence.entity.processor
+    consumers:
+    producers:
+    config:
+  PersistenceLedgerProcessorTopic:
+    name: persistence.ledger.processor
+    consumers:
+    producers:
+    config:

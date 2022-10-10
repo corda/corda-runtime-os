@@ -147,6 +147,16 @@ class Schemas {
     }
 
     /**
+     * Persistence Message schema
+     */
+    class Persistence {
+        companion object {
+            const val PERSISTENCE_ENTITY_PROCESSOR_TOPIC = "persistence.entity.processor"
+            const val PERSISTENCE_LEDGER_PROCESSOR_TOPIC = "persistence.ledger.processor"
+        }
+    }
+
+    /**
      * RPC Message schema
      */
     class RPC {
@@ -183,9 +193,6 @@ class Schemas {
             const val CPI_CHUNK_WRITER = "cpi.chunk.writer"
             const val CPI_UPLOAD_STATUS_TOPIC = "cpi.upload.status"
             const val CPK_FILE_TOPIC = "cpk.file"
-            const val ENTITY_PROCESSOR = "db.entity.processor"
-            const val LEDGER_PERSISTENCE_TOPIC = "virtual.node.ledger.persistence"
-            const val VIRTUAL_NODE_ENTITY_PROCESSOR = "virtual.node.entity.processor"
         }
     }
 }

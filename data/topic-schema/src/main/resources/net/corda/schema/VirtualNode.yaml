@@ -36,21 +36,6 @@ topics:
       min.compaction.lag.ms: 60000
       max.compaction.lag.ms: 604800000
       min.cleanable.dirty.ratio: 0.5
-  DatabaseEntityTopic:
-    name: db.entity.processor
-    consumers:
-    producers:
-    config:
-  VirtualNodeEntityTopic:
-    name: virtual.node.entity.processor
-    consumers:
-    producers:
-    config:
-  VirtualNodeLedgerPersistenceTopic:
-    name: virtual.node.ledger.persistence
-    consumers:
-    producers:
-    config:
   VirtualNodeManagementTopic:
     name: virtual.node.management
     consumers:
