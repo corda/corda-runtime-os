@@ -15,8 +15,7 @@ class JsonSerializerAdaptor<T>(private val jsonSerializer: JsonSerializer<T>, cl
     override fun serialize(
         value: T, jgen: JsonGenerator, provider: SerializerProvider
     ) {
-        val jsonWriterAdaptor = JsonWriterAdaptor(jgen)
-        jsonSerializer.serialize(value, jsonWriterAdaptor);
+        jsonSerializer.serialize(value, JsonWriterAdaptor(jgen))
     }
 }
 
