@@ -65,10 +65,10 @@ class SetupCordaCluster : Runnable {
     var zooKeeperReplicas: Int = 3
 
     @Option(
-        names = ["--namespace-type", "--type"],
-        description = ["The name space type (will add namespace-type label with that name to the cluster). Default to corda-e2e"]
+        names = ["--corda-e2e-type", "--corda-e2e", "--e2e"],
+        description = ["Mark the namespace as corda-e2e."]
     )
-    var namespaceType: String = "corda-e2e"
+    var cordaE2eType: Boolean = false
 
     private fun execute(command: String, vararg arguments: String) {
         val process = ProcessBuilder()
@@ -90,7 +90,9 @@ class SetupCordaCluster : Runnable {
     private fun deploy(clusterName: String) {
         kubectl("delete", "ns", clusterName, "--ignore-not-found=true")
         kubectl("create", "ns", clusterName)
-        kubectl("label", "ns", clusterName, "namespace-type=$namespaceType", "--overwrite=true")
+        if (cordaE2eType) {
+            kubectl("label", "ns", clusterName, "namespace-type=corda-e2e", "--overwrite=true")
+        }
 
         try {
             kubectl(
@@ -125,6 +127,10 @@ class SetupCordaCluster : Runnable {
                 "db.cluster.existingSecret=prereqs-postgresql",
             "-n", clusterName, "--wait", "--timeout", "600s"
         )
+        if (!cordaE2eType) {
+            println("Don't forget to delete the namespace $clusterName by running:")
+            println("kubectl delete ns $clusterName")
+        }
     }
 
     private val actualBaseImage by lazy {
