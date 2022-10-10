@@ -10,6 +10,7 @@ import net.corda.crypto.impl.converter.PublicKeyHashConverter
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
@@ -60,6 +61,7 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.membership.MembershipSchema
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.calculateHash
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
@@ -141,12 +143,16 @@ class StaticMemberRegistrationServiceTest {
 
         on { encodeAsByteArray(any()) } doReturn ByteArray(1)
     }
+    private val cryptoSigningKey = mock<CryptoSigningKey> {
+        on { schemeCodeName } doReturn RSA_CODE_NAME
+    }
 
     private val cryptoOpsClient: CryptoOpsClient = mock {
         on { generateKeyPair(any(), any(), any(), any(), any<Map<String, String>>()) } doReturn defaultKey
-        on { generateKeyPair(any(), any(), eq(aliceId.value), any(), any<Map<String, String>>()) } doReturn aliceKey
-        on { generateKeyPair(any(), any(), eq(bobId.value), any(), any<Map<String, String>>()) } doReturn bobKey
-        on { generateKeyPair(any(), any(), eq(charlieId.value), any(), any<Map<String, String>>()) } doReturn charlieKey
+        on { generateKeyPair(any(), any(), eq("${aliceId.value}-LEDGER"), any(), any<Map<String, String>>()) } doReturn aliceKey
+        on { generateKeyPair(any(), any(), eq("${bobId.value}-LEDGER"), any(), any<Map<String, String>>()) } doReturn bobKey
+        on { generateKeyPair(any(), any(), eq("${charlieId.value}-LEDGER"), any(), any<Map<String, String>>()) } doReturn charlieKey
+        on { lookup(any(), any()) } doReturn listOf(cryptoSigningKey)
     }
 
     private val configurationReadService: ConfigurationReadService = mock()
