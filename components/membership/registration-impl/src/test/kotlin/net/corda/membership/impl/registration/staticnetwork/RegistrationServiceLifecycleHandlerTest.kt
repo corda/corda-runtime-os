@@ -70,7 +70,8 @@ class RegistrationServiceLifecycleHandlerTest {
         memberInfoFactory,
         mock(),
         mock(),
-        membershipSchemaValidatorFactory
+        membershipSchemaValidatorFactory,
+        mock()
     )
 
     private val registrationServiceLifecycleHandler = RegistrationServiceLifecycleHandler(

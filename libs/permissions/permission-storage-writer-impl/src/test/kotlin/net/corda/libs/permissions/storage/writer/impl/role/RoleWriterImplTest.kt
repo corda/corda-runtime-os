@@ -1,12 +1,11 @@
 package net.corda.libs.permissions.storage.writer.impl.role
 
 import net.corda.data.permissions.management.role.AddPermissionToRoleRequest
-import javax.persistence.EntityManager
-import javax.persistence.EntityManagerFactory
-import javax.persistence.EntityTransaction
-import javax.persistence.Query
 import net.corda.data.permissions.management.role.CreateRoleRequest
 import net.corda.data.permissions.management.role.RemovePermissionFromRoleRequest
+import net.corda.libs.permissions.common.exception.EntityAssociationAlreadyExistsException
+import net.corda.libs.permissions.common.exception.EntityAssociationDoesNotExistException
+import net.corda.libs.permissions.common.exception.EntityNotFoundException
 import net.corda.libs.permissions.storage.writer.impl.role.impl.RoleWriterImpl
 import net.corda.permissions.model.ChangeAudit
 import net.corda.permissions.model.Group
@@ -16,6 +15,7 @@ import net.corda.permissions.model.RPCPermissionOperation
 import net.corda.permissions.model.Role
 import net.corda.permissions.model.RolePermissionAssociation
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatIterable
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -34,9 +34,10 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicBoolean
-import net.corda.libs.permissions.common.exception.EntityAssociationAlreadyExistsException
-import net.corda.libs.permissions.common.exception.EntityAssociationDoesNotExistException
-import net.corda.libs.permissions.common.exception.EntityNotFoundException
+import javax.persistence.EntityManager
+import javax.persistence.EntityManagerFactory
+import javax.persistence.EntityTransaction
+import javax.persistence.Query
 
 class RoleWriterImplTest {
 
@@ -165,7 +166,7 @@ class RoleWriterImplTest {
         val persistedRole = capture.firstValue as Role
         assertSame(role, persistedRole)
 
-        assertThat(persistedRole.rolePermAssociations).hasSize(1).allMatch { it.permission === permission }
+        assertThatIterable(persistedRole.rolePermAssociations).hasSize(1).allMatch { it.permission === permission }
 
         val audit = capture.secondValue as ChangeAudit
         assertNotNull(audit)

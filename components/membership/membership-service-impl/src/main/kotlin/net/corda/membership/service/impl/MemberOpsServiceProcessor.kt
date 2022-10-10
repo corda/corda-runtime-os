@@ -139,6 +139,9 @@ class MemberOpsServiceProcessor(
             } catch (e: RegistrationProtocolSelectionException) {
                 logger.warn("Could not select registration protocol.", e)
                 null
+            } catch (e: IllegalStateException) {
+                logger.warn("Could not submit registration request.", e)
+                null
             }
             val registrationStatus = result?.outcome?.let {
                 RegistrationRpcStatus.valueOf(it.toString())

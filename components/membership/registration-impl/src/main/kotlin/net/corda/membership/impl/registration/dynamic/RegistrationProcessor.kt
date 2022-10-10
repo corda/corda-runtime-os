@@ -11,6 +11,7 @@ import net.corda.data.membership.command.registration.mgm.ProcessMemberVerificat
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.command.registration.mgm.VerifyMember
 import net.corda.data.membership.state.RegistrationState
+import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.impl.registration.dynamic.handler.MemberTypeChecker
 import net.corda.membership.impl.registration.dynamic.handler.MissingRegistrationStateException
 import net.corda.membership.impl.registration.dynamic.handler.RegistrationHandler
@@ -29,7 +30,6 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.utilities.time.Clock
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
@@ -45,6 +45,7 @@ class RegistrationProcessor(
     cryptoOpsClient: CryptoOpsClient,
     cipherSchemeMetadata: CipherSchemeMetadata,
     merkleTreeProvider: MerkleTreeProvider,
+    membershipConfig: SmartConfig,
 ) : StateAndEventProcessor<String, RegistrationState, RegistrationCommand> {
 
     override val keyClass = String::class.java
@@ -74,13 +75,15 @@ class RegistrationProcessor(
             cryptoOpsClient,
             cordaAvroSerializationFactory,
             merkleTreeProvider,
-            memberTypeChecker
+            memberTypeChecker,
+            membershipConfig,
         ),
         DeclineRegistration::class.java to DeclineRegistrationHandler(
             membershipPersistenceClient,
             clock,
             cordaAvroSerializationFactory,
             memberTypeChecker,
+            membershipConfig,
         ),
 
         ProcessMemberVerificationRequest::class.java to ProcessMemberVerificationRequestHandler(
@@ -94,12 +97,14 @@ class RegistrationProcessor(
             cordaAvroSerializationFactory,
             membershipPersistenceClient,
             memberTypeChecker,
+            membershipConfig,
         ),
         ProcessMemberVerificationResponse::class.java to ProcessMemberVerificationResponseHandler(
             membershipPersistenceClient,
             clock,
             cordaAvroSerializationFactory,
             memberTypeChecker,
+            membershipConfig,
         ),
         PersistMemberRegistrationState::class.java to PersistMemberRegistrationStateHandler(
             membershipPersistenceClient,
@@ -151,8 +156,8 @@ class RegistrationProcessor(
         } catch (e: MissingRegistrationStateException) {
             logger.error("RegistrationState was null during dynamic registration.", e)
             createEmptyResult()
-        } catch (e: CordaRuntimeException) {
-            logger.error("Unexpected error in handling registration.", e)
+        } catch (e: Exception) {
+            logger.error("Unexpected error in handling registration command.", e)
             createEmptyResult()
         }
         return StateAndEventProcessor.Response(

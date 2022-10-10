@@ -180,8 +180,6 @@ pipeline {
                     }
                 }
                 sh '''\
-                    procno=$! # remember process number started in background
-                    trap "kill -9 ${procno}" EXIT
                     ./gradlew smokeTest ${GRADLE_PERFORMANCE_TUNING}
                     ./gradlew e2eTest ${GRADLE_PERFORMANCE_TUNING}
                 '''.stripIndent()

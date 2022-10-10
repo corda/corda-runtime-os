@@ -29,6 +29,7 @@ import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithInvalidStaticNetworkTemplate
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithStaticNetwork
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithoutStaticNetwork
+import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
@@ -194,6 +195,14 @@ class StaticMemberRegistrationServiceTest {
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory = mock {
         on { createValidator() } doReturn membershipSchemaValidator
     }
+    private val endpointInfoFactory: EndpointInfoFactory = mock {
+        on { create(any(), any()) } doAnswer { invocation ->
+            mock {
+                on { this.url } doReturn invocation.getArgument(0)
+                on { this.protocolVersion } doReturn invocation.getArgument(1)
+            }
+        }
+    }
 
     private val registrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
@@ -206,7 +215,8 @@ class StaticMemberRegistrationServiceTest {
         memberInfoFactory,
         persistenceClient,
         cordaAvroSerializationFactory,
-        membershipSchemaValidatorFactory
+        membershipSchemaValidatorFactory,
+        endpointInfoFactory,
     )
 
     private fun setUpPublisher() {
@@ -384,6 +394,50 @@ class StaticMemberRegistrationServiceTest {
             registrationResult
         )
         registrationService.stop()
+    }
+
+    @Test
+    fun `registration fails when notary role has missing information`() {
+        setUpPublisher()
+        registrationService.start()
+        val context = mapOf(
+            KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+            "corda.roles.0" to "notary",
+        )
+
+        val registrationResult = registrationService.register(registrationId, alice, context)
+
+        assertThat(registrationResult.outcome).isEqualTo(NOT_SUBMITTED)
+    }
+
+    @Test
+    fun `registration submitted when context has notary role`() {
+        setUpPublisher()
+        registrationService.start()
+        val context = mapOf(
+            KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+            "corda.roles.0" to "notary",
+            "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
+            "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+        )
+
+        val registrationResult = registrationService.register(registrationId, alice, context)
+
+        assertThat(registrationResult.outcome).isEqualTo(SUBMITTED)
+    }
+
+    @Test
+    fun `registration not submitted when context has un known role`() {
+        setUpPublisher()
+        registrationService.start()
+        val context = mapOf(
+            KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+            "corda.roles.0" to "nop",
+        )
+
+        val registrationResult = registrationService.register(registrationId, alice, context)
+
+        assertThat(registrationResult.outcome).isEqualTo(NOT_SUBMITTED)
     }
 
     @Test

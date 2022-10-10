@@ -2,6 +2,8 @@ package net.corda.cli.plugin.initialRbac
 
 import net.corda.cli.api.CordaCliPlugin
 import net.corda.cli.plugin.initialRbac.commands.UserAdminSubcommand
+import net.corda.cli.plugin.initialRbac.commands.CordaDeveloperSubcommand
+import net.corda.cli.plugin.initialRbac.commands.VNodeCreatorSubcommand
 import org.pf4j.Extension
 import org.pf4j.Plugin
 import org.pf4j.PluginWrapper
@@ -19,7 +21,7 @@ class InitialRbacPlugin(wrapper: PluginWrapper) : Plugin(wrapper) {
     @Extension
     @CommandLine.Command(
         name = "initial-rbac",
-        subcommands = [UserAdminSubcommand::class],
+        subcommands = [UserAdminSubcommand::class, VNodeCreatorSubcommand::class, CordaDeveloperSubcommand::class],
         description = ["Creates common cluster-wide RBAC roles"]
     )
     class PluginEntryPoint : CordaCliPlugin

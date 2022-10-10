@@ -70,9 +70,9 @@ class PublicKeyConverterTest {
         assertNull(result)
     }
 
-    interface LayeredContext : LayeredPropertyMap
+    private interface LayeredContext : LayeredPropertyMap
 
-    class LayeredContextImpl(
+    private class LayeredContextImpl(
         private val map: LayeredPropertyMap
     ) : LayeredPropertyMap by map, LayeredContext
 }

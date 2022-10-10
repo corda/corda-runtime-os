@@ -37,4 +37,42 @@ class CheckClusterRolesE2eTest {
             }
         }
     }
+
+    @Test
+    fun `test VNodeCreatorRole content`() {
+        testToolkit.httpClientFor(RoleEndpoint::class.java).use { roleClient ->
+            val roleProxy = roleClient.start().proxy
+
+            val allRoles = roleProxy.getRoles()
+
+            val mayBeRequiredRole: RoleResponseType? = allRoles.firstOrNull { it.roleName == "VNodeCreatorRole" }
+            val requiredRole = requireNotNull(mayBeRequiredRole) { "Available roles: $allRoles" }
+
+            testToolkit.httpClientFor(PermissionEndpoint::class.java).use { permClient ->
+                val permProxy = permClient.start().proxy
+                val permissions = requiredRole.permissions.map { permProxy.getPermission(it.id) }
+                assertThat(permissions.size).withFailMessage("Permissions: $permissions").isEqualTo(6)
+                assertThat(permissions.map { it.permissionString }).contains("POST:/api/v1/virtualnode")
+            }
+        }
+    }
+
+    @Test
+    fun `test CordaDeveloperRole content`() {
+        testToolkit.httpClientFor(RoleEndpoint::class.java).use { roleClient ->
+            val roleProxy = roleClient.start().proxy
+
+            val allRoles = roleProxy.getRoles()
+
+            val mayBeRequiredRole: RoleResponseType? = allRoles.firstOrNull { it.roleName == "CordaDeveloperRole" }
+            val requiredRole = requireNotNull(mayBeRequiredRole) { "Available roles: $allRoles" }
+
+            testToolkit.httpClientFor(PermissionEndpoint::class.java).use { permClient ->
+                val permProxy = permClient.start().proxy
+                val permissions = requiredRole.permissions.map { permProxy.getPermission(it.id) }
+                assertThat(permissions.size).withFailMessage("Permissions: $permissions").isEqualTo(1)
+                assertThat(permissions.map { it.permissionString }).contains("POST:/api/v1/maintenance/virtualnode")
+            }
+        }
+    }
 }
