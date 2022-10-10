@@ -1,10 +1,9 @@
 package net.corda.v5.ledger.consensual.transaction
 
+import java.security.PublicKey
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.crypto.SecureHash
-import java.security.PublicKey
 
 /**
  * Defines a signed Consensual transaction.
@@ -25,7 +24,6 @@ import java.security.PublicKey
  * Thus adding or removing a signature does not change it.
  */
 @DoNotImplement
-@CordaSerializable
 interface ConsensualSignedTransaction {
     /**
      * @property id The ID of the transaction.
