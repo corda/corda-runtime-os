@@ -16,5 +16,4 @@ cordaPipeline(
     publishToMavenS3Repository: true,
     // allow publishing an installer to a download site
     publishToDownloadSiteTask: ':tools:plugins:publish',
-    gradleAdditionalArgs: '-PcliBaseTag=5.0.0-alpha-1664297524432' // just while testing PR
     )

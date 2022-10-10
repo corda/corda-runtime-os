@@ -247,6 +247,11 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             platformSet.add(new Platform("arm64", "linux"))
             builder.setPlatforms(platformSet)
             tagPrefix = "arm64-"
+        } else {
+            logger.quiet("Detected amd64 host, switching Jib to produce amd64 images")
+            Set<Platform> platformSet = new HashSet<Platform>()
+            platformSet.add(new Platform("amd64", "linux"))
+            builder.setPlatforms(platformSet)        
         }
 
         def containerName = overrideContainerName.get().empty ? projectName : overrideContainerName.get()
