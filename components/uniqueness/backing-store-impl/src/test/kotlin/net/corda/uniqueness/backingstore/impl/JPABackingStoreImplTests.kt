@@ -4,9 +4,9 @@ import net.corda.crypto.testkit.SecureHashUtils
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
-import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.core.CloseableDataSource
+import net.corda.db.schema.CordaDb
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -23,7 +23,6 @@ import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessStateDetailEnti
 import net.corda.uniqueness.backingstore.jpa.datamodel.UniquenessTransactionDetailEntity
 import net.corda.uniqueness.datamodel.common.UniquenessConstants
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorMalformedRequestImpl
-//import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorGeneralImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckStateRefImpl
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
@@ -77,10 +76,6 @@ class JPABackingStoreImplTests {
     private lateinit var stateDetailSelectQuery: TypedQuery<UniquenessStateDetailEntity>
     private lateinit var txnErrors: List<UniquenessRejectedTransactionEntity>
     private lateinit var txnErrorQuery: TypedQuery<UniquenessRejectedTransactionEntity>
-
-    // NOTE: While expecting refactoring around createDefaultUniquenessDb(), it's mocked for testing
-    //  convenience. Since it's a final class, MockMaker's been added under resources with content "mock-maker-inline".
-//    private lateinit var schemaMigrator: LiquibaseSchemaMigratorImpl
     private lateinit var dbConnectionManager: DbConnectionManager
 
     companion object {
@@ -216,9 +211,8 @@ class JPABackingStoreImplTests {
     inner class EventHandlerTests {
         @Test
         fun `Start event starts following the statuses of the required dependencies`() {
-            val mockCoordinator = mock<LifecycleCoordinator>()
-            backingStoreImpl.eventHandler(StartEvent(), mockCoordinator)
-            Mockito.verify(mockCoordinator).followStatusChangesByName(
+            backingStoreImpl.eventHandler(StartEvent(), lifecycleCoordinator)
+            Mockito.verify(lifecycleCoordinator).followStatusChangesByName(
                 eq(
                     setOf(LifecycleCoordinatorName.forComponent<DbConnectionManager>())
                 )
@@ -232,26 +226,13 @@ class JPABackingStoreImplTests {
         }
 
         @Test
-        fun `Registration status change event instantiates entity manager when event status is up`() {
-            val mockCoordinator = mock<LifecycleCoordinator>()
-            backingStoreImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mockCoordinator)
-            Mockito.verify(dbConnectionManager).getOrCreateEntityManagerFactory(any(), any(), any())
-        }
+        fun `Registration status change event registers jpa entries`() {
+            val lifeCycleStatus = LifecycleStatus.UP
+            backingStoreImpl.eventHandler(RegistrationStatusChangeEvent(mock(), lifeCycleStatus), lifecycleCoordinator)
 
-        @Test
-        fun `Registration status change event does not instantiate entity manager if event status is not up`() {
-            val mockCoordinator = mock<LifecycleCoordinator>()
-            backingStoreImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.DOWN), mockCoordinator)
-            Mockito.verify(mockCoordinator).updateStatus(LifecycleStatus.DOWN)
-            Mockito.verify(dbConnectionManager, never()).getOrCreateEntityManagerFactory(any(), any(), any())
-
-            backingStoreImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.ERROR), mockCoordinator)
-            Mockito.verify(mockCoordinator).updateStatus(LifecycleStatus.ERROR)
-            Mockito.verify(dbConnectionManager, never()).getOrCreateEntityManagerFactory(any(), any(), any())
-
-            backingStoreImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mockCoordinator)
-            Mockito.verify(mockCoordinator).updateStatus(LifecycleStatus.UP)
-            Mockito.verify(dbConnectionManager, times(1)).getOrCreateEntityManagerFactory(any(), any(), any())
+            Mockito.verify(jpaEntitiesRegistry, times(1)).register(any(), any())
+            Mockito.verify(jpaEntitiesRegistry, times(1)).get(CordaDb.Uniqueness.persistenceUnitName)
+            Mockito.verify(lifecycleCoordinator).updateStatus(lifeCycleStatus)
         }
 
         @Test
