@@ -10,6 +10,7 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FIL
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -142,6 +143,11 @@ class KeysRpcOpsImpl @Activate constructor(
         hsmCategory: String,
         scheme: String
     ): KeyPairIdentifier {
+        if (alias.isBlank()) {
+            throw InvalidInputDataException(
+                details = mapOf("alias" to "Empty alias")
+            )
+        }
         return KeyPairIdentifier(cryptoOpsClient.generateKeyPair(
             tenantId = tenantId,
             category = hsmCategory.uppercase(),

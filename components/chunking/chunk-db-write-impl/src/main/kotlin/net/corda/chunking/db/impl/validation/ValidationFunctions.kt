@@ -195,7 +195,11 @@ fun Cpi.validateAndGetGroupId(requestId: String, getGroupIdFromJson: (String) ->
  */
 fun Cpi.validateAndGetGroupPolicyFileVersion(): Int {
     validateHasGroupPolicy()
-    return GroupPolicyParser.getFileFormatVersion(this.metadata.groupPolicy!!)
+    return try {
+        GroupPolicyParser.getFileFormatVersion(this.metadata.groupPolicy!!)
+    } catch (e: Exception) {
+        throw ValidationException("Group policy file in the CPI is invalid. Could not get file format version. ${e.message}", null, e)
+    }
 }
 
 /**

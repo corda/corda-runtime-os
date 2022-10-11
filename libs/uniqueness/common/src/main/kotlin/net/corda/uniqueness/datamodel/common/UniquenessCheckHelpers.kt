@@ -30,6 +30,7 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.crypto.SecureHash
 import org.apache.avro.specific.SpecificRecord
 import java.lang.IllegalArgumentException
+import java.lang.IllegalStateException
 import java.time.Instant
 
 /**
@@ -101,35 +102,53 @@ fun UniquenessCheckResponseAvro.toUniquenessResult(): UniquenessCheckResult {
 }
 
 /**
- * Converts the failure to the external Avro error
+ * Converts a [UniquenessCheckResult] to an Avro result.
  */
-fun UniquenessCheckResultFailure.toExternalError(): SpecificRecord {
-    return when (val uniquenessError = error) {
-        is UniquenessCheckErrorInputStateConflict ->
-            UniquenessCheckResultInputStateConflictAvro(
-                uniquenessError.conflictingStates.map { it.stateRef.toString() }
-            )
-        is UniquenessCheckErrorInputStateUnknown ->
-            UniquenessCheckResultInputStateUnknownAvro(
-                uniquenessError.unknownStates.map { it.toString() }
-            )
-        is UniquenessCheckErrorReferenceStateConflict ->
-            UniquenessCheckResultReferenceStateConflictAvro(
-                uniquenessError.conflictingStates.map { it.stateRef.toString() }
-            )
-        is UniquenessCheckErrorReferenceStateUnknown ->
-            UniquenessCheckResultReferenceStateUnknownAvro(
-                uniquenessError.unknownStates.map { it.toString() }
-            )
-        is UniquenessCheckErrorTimeWindowOutOfBounds ->
-            UniquenessCheckResultTimeWindowOutOfBoundsAvro(
-                uniquenessError.evaluationTimestamp,
-                uniquenessError.timeWindowLowerBound,
-                uniquenessError.timeWindowUpperBound
-            )
+fun UniquenessCheckResult.toAvro(): SpecificRecord {
+    return when (this) {
+        is UniquenessCheckResultSuccess -> {
+            UniquenessCheckResultSuccessAvro(this.resultTimestamp)
+        }
+        is UniquenessCheckResultFailure -> {
+            when (val uniquenessError = this.error) {
+                is UniquenessCheckErrorInputStateConflict ->
+                    UniquenessCheckResultInputStateConflictAvro(
+                        uniquenessError.conflictingStates.map { it.stateRef.toString() }
+                    )
+
+                is UniquenessCheckErrorInputStateUnknown ->
+                    UniquenessCheckResultInputStateUnknownAvro(
+                        uniquenessError.unknownStates.map { it.toString() }
+                    )
+
+                is UniquenessCheckErrorReferenceStateConflict ->
+                    UniquenessCheckResultReferenceStateConflictAvro(
+                        uniquenessError.conflictingStates.map { it.stateRef.toString() }
+                    )
+
+                is UniquenessCheckErrorReferenceStateUnknown ->
+                    UniquenessCheckResultReferenceStateUnknownAvro(
+                        uniquenessError.unknownStates.map { it.toString() }
+                    )
+
+                is UniquenessCheckErrorTimeWindowOutOfBounds ->
+                    UniquenessCheckResultTimeWindowOutOfBoundsAvro(
+                        uniquenessError.evaluationTimestamp,
+                        uniquenessError.timeWindowLowerBound,
+                        uniquenessError.timeWindowUpperBound
+                    )
+
+                else -> {
+                    throw IllegalArgumentException(
+                        "Unable to convert result type \"${uniquenessError.javaClass.typeName}\" to Avro"
+                    )
+                }
+            }
+        }
         else -> {
-            throw IllegalArgumentException(
-                "Unable to convert result type \"${uniquenessError.javaClass.typeName}\" to Avro")
+            throw IllegalStateException(
+                "Unknown result type: ${this.javaClass.typeName}"
+            )
         }
     }
 }
