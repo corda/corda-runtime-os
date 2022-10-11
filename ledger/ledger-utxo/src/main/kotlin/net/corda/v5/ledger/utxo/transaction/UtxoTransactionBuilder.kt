@@ -144,9 +144,4 @@ interface UtxoTransactionBuilder {
      * @return Returns a [UtxoSignedTransaction] with signatures for the specified signatory keys.
      */
     fun sign(vararg signatories: PublicKey): UtxoSignedTransaction
-
-    /**
-     * Verifies the current transaction.
-     */
-    fun verify()
 }

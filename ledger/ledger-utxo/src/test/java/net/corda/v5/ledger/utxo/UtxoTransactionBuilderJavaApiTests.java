@@ -6,10 +6,6 @@ import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.security.PublicKey;
-import java.util.List;
-import java.util.Set;
-
 public final class UtxoTransactionBuilderJavaApiTests extends AbstractMockTestHarness {
 
     @Test
@@ -118,10 +114,5 @@ public final class UtxoTransactionBuilderJavaApiTests extends AbstractMockTestHa
     public void signWithVarargKeysShouldReturnTheExpectedValue() {
         UtxoSignedTransaction value = utxoTransactionBuilder.sign(aliceKey, bobKey);
         Assertions.assertEquals(utxoSignedTransaction, value);
-    }
-
-    @Test
-    public void verifyShouldBeCallable() {
-        utxoTransactionBuilder.verify();
     }
 }

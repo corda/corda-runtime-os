@@ -191,6 +191,5 @@ public class AbstractMockTestHarness {
         Mockito.when(utxoTransactionBuilder.sign()).thenReturn(utxoSignedTransaction);
         Mockito.when(utxoTransactionBuilder.sign(keys)).thenReturn(utxoSignedTransaction);
         Mockito.when(utxoTransactionBuilder.sign(aliceKey, bobKey)).thenReturn(utxoSignedTransaction);
-        Mockito.doNothing().when(utxoTransactionBuilder).verify();
     }
 }
