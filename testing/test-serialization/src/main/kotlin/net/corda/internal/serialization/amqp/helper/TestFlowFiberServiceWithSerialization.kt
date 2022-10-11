@@ -16,6 +16,7 @@ import net.corda.libs.packaging.core.CpkType
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.sandbox.SandboxGroup
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.sandboxgroupcontext.CurrentSandboxGroupContext
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
@@ -27,11 +28,13 @@ import org.osgi.framework.Bundle
 import java.time.Instant
 
 class TestFlowFiberServiceWithSerialization : FlowFiberService, SingletonSerializeAsToken {
-    private val mockFlowFiber: FlowFiber
+    private val mockFlowFiber = mock(FlowFiber::class.java)
     private val mockFlowSandboxGroupContext = mock(FlowSandboxGroupContext::class.java)
+    private val membershipGroupReader = mock(MembershipGroupReader::class.java)
+    private val currentSandboxGroupContext = mock(CurrentSandboxGroupContext::class.java)
+    private val mockSandboxGroup = mock(SandboxGroup::class.java)
 
-    init{
-        val membershipGroupReader: MembershipGroupReader = mock(MembershipGroupReader::class.java)
+    init {
         val bobX500 = "CN=Bob, O=Bob Corp, L=LDN, C=GB"
         val bobX500Name = MemberX500Name.parse(bobX500)
         val holdingIdentity =  HoldingIdentity(bobX500Name,"group1")
@@ -44,20 +47,23 @@ class TestFlowFiberServiceWithSerialization : FlowFiberService, SingletonSeriali
             mockFlowSandboxGroupContext,
             holdingIdentity,
             membershipGroupReader,
+            currentSandboxGroupContext,
             emptyMap()
         )
 
-        mockFlowFiber = mock(FlowFiber::class.java)
+        Mockito.`when`(currentSandboxGroupContext.get()).thenReturn(mockFlowSandboxGroupContext)
         Mockito.`when`(mockFlowFiber.getExecutionContext()).thenReturn(flowFiberExecutionContext)
-
+        Mockito.`when`(mockSandboxGroup.metadata).thenReturn(emptyMap())
+        Mockito.`when`(mockFlowSandboxGroupContext.sandboxGroup).thenReturn(mockSandboxGroup)
     }
+
     override fun getExecutingFiber(): FlowFiber {
         return mockFlowFiber
     }
 
-    fun configureSerializer(registerMoreSerializers: (it: SerializerFactory) -> Unit, schemeMetadata: CipherSchemeMetadata){
+    fun configureSerializer(registerMoreSerializers: (it: SerializerFactory) -> Unit, schemeMetadata: CipherSchemeMetadata) {
         val serializer = TestSerializationService.getTestSerializationService(registerMoreSerializers, schemeMetadata)
-        Mockito.`when`(mockFlowSandboxGroupContext.amqpSerializer).thenReturn(serializer)
+        whenever(mockFlowSandboxGroupContext.amqpSerializer).thenReturn(serializer)
     }
 
     private fun mockCpkMetadata() = mapOf(

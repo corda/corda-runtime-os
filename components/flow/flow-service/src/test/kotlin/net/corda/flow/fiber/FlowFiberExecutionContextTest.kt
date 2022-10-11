@@ -18,7 +18,7 @@ class FlowFiberExecutionContextTest {
     @Test
     fun `getMemberX500Name returns x500name parsed from holding identity`() {
         val holdingIdentity = HoldingIdentity(BOB_X500_NAME, "group1")
-        val context = FlowFiberExecutionContext(mock(), mock(), holdingIdentity, mock(), emptyMap())
+        val context = FlowFiberExecutionContext(mock(), mock(), holdingIdentity, mock(), mock(), emptyMap())
         assertThat(context.memberX500Name).isEqualTo(BOB_X500_NAME)
     }
 
