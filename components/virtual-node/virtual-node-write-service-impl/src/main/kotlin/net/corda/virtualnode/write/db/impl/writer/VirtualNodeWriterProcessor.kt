@@ -50,6 +50,7 @@ import java.lang.System.currentTimeMillis
 import java.time.Instant
 import java.util.*
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.function.Supplier
 import javax.persistence.EntityManager
@@ -87,6 +88,10 @@ internal class VirtualNodeWriterProcessor(
     companion object {
         private val logger = contextLogger()
         const val PUBLICATION_TIMEOUT_SECONDS = 30L
+    }
+
+    private val executorService = Executors.newSingleThreadExecutor { runnable ->
+        Thread(runnable, this::class.java.simpleName)
     }
 
     @Suppress("ReturnCount", "ComplexMethod", "LongMethod")
@@ -206,16 +211,19 @@ internal class VirtualNodeWriterProcessor(
                         "${currentTimeMillis() - startMillis} ms"}
             }
 
-            measureTimeMillis {
-                permissionManagerSupplier.get().createRbacRole(
-                    holdingId,
-                    cpiInfoReadService.getFlowNames(cpiMetadata),
-                    create.updateActor
-                )
-            }.also {
-                logger.debug {
-                    "[Create ${create.x500Name}] creating RBAC role took $it ms, elapsed " +
-                            "${currentTimeMillis() - startMillis} ms"
+            // Creation of permission and roles may take sometime (> 10 seconds), therefore launching this convenience
+            // operation asynchronously in order not to delay main vNode creation function.
+            executorService.submit {
+                measureTimeMillis {
+                    permissionManagerSupplier.get().createRbacRole(
+                        holdingId,
+                        cpiInfoReadService.getFlowNames(cpiMetadata),
+                        create.updateActor
+                    )
+                }.also {
+                    logger.debug {
+                        "[Create ${create.x500Name}] creating RBAC role took $it ms"
+                    }
                 }
             }
 
@@ -225,6 +233,8 @@ internal class VirtualNodeWriterProcessor(
                 logger.debug {"[Create ${create.x500Name}] send response to RPC gateway took $it ms, elapsed " +
                         "${currentTimeMillis() - startMillis} ms"}
             }
+
+            logger.info("vNode ${holdingId}, short hash: ${holdingId.shortHash} successfully created.")
         } catch (e: Exception) {
             handleException(respFuture, e)
         }
