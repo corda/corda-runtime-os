@@ -1,7 +1,5 @@
 package net.corda.ledger.consensual.impl.transaction
 
-import java.security.PublicKey
-import java.time.Instant
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.SignableData
 import net.corda.ledger.common.impl.transaction.TransactionMetaData
@@ -23,10 +21,13 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
+import java.security.PublicKey
+import java.time.Instant
 
 // TODO Create an AMQP serializer if we plan on sending transaction builders between virtual nodes
 @Suppress("LongParameterList")
@@ -46,6 +47,13 @@ class ConsensualTransactionBuilderImpl(
     override fun withStates(vararg states: ConsensualState): ConsensualTransactionBuilder =
         this.copy(states = this.states + states)
 
+    @Suspendable
+    override fun signInitial(publicKey: PublicKey): ConsensualSignedTransaction {
+        val wireTransaction = buildWireTransaction()
+        val signatureWithMetaData = createSignature(wireTransaction.id, publicKey)
+        return ConsensualSignedTransactionImpl(serializationService, wireTransaction, listOf(signatureWithMetaData))
+    }
+
     private fun getSignatureMetadata(): DigitalSignatureMetadata {
         val cpi = getCpiIdentifier()
         return DigitalSignatureMetadata(
@@ -63,18 +71,11 @@ class ConsensualTransactionBuilderImpl(
         val signatureMetadata = getSignatureMetadata()
         val signableData = SignableData(txId, signatureMetadata)
         val signature = signingService.sign(
-            serializer.serialize(signableData).bytes,
+            serializationService.serialize(signableData).bytes,
             publicKey,
             SignatureSpec.ECDSA_SHA256
         ) //Rework with CORE-6969
         return DigitalSignatureAndMetadata(signature, signatureMetadata)
-    }
-
-    @Suspendable
-    override fun signInitial(publicKey: PublicKey): ConsensualSignedTransaction {
-        val wireTransaction = buildWireTransaction()
-        val signatureWithMetaData = createSignature(wireTransaction.id, publicKey)
-        return ConsensualSignedTransactionImpl(serializer, wireTransaction, listOf(signatureWithMetaData))
     }
 
     private fun buildWireTransaction(): WireTransaction {
@@ -141,11 +142,11 @@ class ConsensualTransactionBuilderImpl(
 
     private fun calculateMetaData(): TransactionMetaData {
         return TransactionMetaData(
-            mapOf(
+            linkedMapOf(
                 LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
                 LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
                 DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
-		 PLATFORM_VERSION_KEY to memberLookup.myInfo().platformVersion
+		        PLATFORM_VERSION_KEY to memberLookup.myInfo().platformVersion,
                 // TODO(CORE-5940 set CPK identifier/etc)
             )
         )
@@ -171,6 +172,8 @@ class ConsensualTransactionBuilderImpl(
             merkleTreeProvider,
             serializationService,
             signingService,
+            memberLookup,
+            sandboxCpks,
             states,
         )
     }

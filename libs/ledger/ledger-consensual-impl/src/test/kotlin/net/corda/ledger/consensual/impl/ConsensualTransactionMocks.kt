@@ -3,8 +3,6 @@ package net.corda.ledger.consensual.impl
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
-import net.corda.sandbox.SandboxContextService
-import net.corda.sandbox.SandboxGroup
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.types.MemberX500Name
