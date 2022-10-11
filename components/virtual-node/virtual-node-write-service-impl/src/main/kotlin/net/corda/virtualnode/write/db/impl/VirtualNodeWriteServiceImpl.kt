@@ -5,7 +5,6 @@ import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.connection.manager.DbAdmin
 import net.corda.db.connection.manager.DbConnectionManager
-import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
@@ -51,7 +50,8 @@ internal class VirtualNodeWriteServiceImpl @Activate constructor(
             dbConnectionManager,
             dbAdmin,
             schemaMigrator,
-            groupPolicyParser, { permissionManagementService.permissionManager },
+            groupPolicyParser,
+            permissionManagementService::permissionManager,
             cpiInfoReadService
         )
         val eventHandler = VirtualNodeWriteEventHandler(configReadService, vnodeWriterFactory)
