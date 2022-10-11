@@ -26,6 +26,23 @@ class ArgParsingUtils {
         }
 
         /***
+         * Get a topic creation parameter from the command line or the config file. Command line options override options in
+         * the config file.
+         */
+        fun getTopicCreationParameter(path: String, default: Int, configFromFile: Config, parameters: CliParameters): Int {
+            val stringParameter = getParameter(
+                path,
+                configFromFile.getConfigOrEmpty(AppSimulator.TOPIC_CREATION_PREFIX),
+                parameters.topicCreationParams
+            ) ?: return default
+            return try {
+                Integer.parseInt(stringParameter)
+            } catch (exception: NumberFormatException) {
+                throw InvalidArgumentException("Topic creation parameter $path = $stringParameter is not an integer.")
+            }
+        }
+
+        /***
          * Get a load generation parameter from the command line or the config file. Command line options override options in
          * the config file.
          */

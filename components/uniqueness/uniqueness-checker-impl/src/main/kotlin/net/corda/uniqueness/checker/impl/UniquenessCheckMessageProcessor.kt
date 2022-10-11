@@ -23,7 +23,7 @@ class UniquenessCheckMessageProcessor(
 
         val requests = events.mapNotNull { it.value }
 
-        return requests.zip(uniquenessChecker.processRequests(requests)).map { (request, response) ->
+        return uniquenessChecker.processRequests(requests).map { (request, response) ->
             if (response.result is UniquenessCheckResultUnhandledExceptionAvro) {
                 externalEventResponseFactory.platformError(
                     request.flowExternalEventContext,

@@ -168,7 +168,7 @@ class MembershipP2PReadServiceImplTest {
 
         verify(registrationHandle).close()
         verify(configHandle).close()
-        verify(subscription).close()
+        verify(subscription, times(2)).close()
         verify(coordinator).updateStatus(
             eq(LifecycleStatus.DOWN), any()
         )
@@ -248,7 +248,7 @@ class MembershipP2PReadServiceImplTest {
         )
 
         verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
-        verify(subscription).close()
+        verify(subscription, times(2)).close()
     }
 
     @Test
@@ -264,13 +264,13 @@ class MembershipP2PReadServiceImplTest {
         )
 
         verify(subscription, never()).close()
-        verify(subscriptionFactory).createDurableSubscription(
+        verify(subscriptionFactory, times(2)).createDurableSubscription(
             any(),
             any<DurableProcessor<String, AppMessage>>(),
             any(),
             eq(null)
         )
-        verify(subscription).start()
+        verify(subscription, times(2)).start()
         verify(coordinator).followStatusChangesByName(any())
     }
 
@@ -317,14 +317,14 @@ class MembershipP2PReadServiceImplTest {
             ), coordinator
         )
 
-        verify(subscription).close()
-        verify(subscriptionFactory, times(2)).createDurableSubscription(
+        verify(subscription, times(2)).close()
+        verify(subscriptionFactory, times(4)).createDurableSubscription(
             any(),
             any<DurableProcessor<String, AppMessage>>(),
             any(),
             eq(null)
         )
-        verify(subscription, times(2)).start()
+        verify(subscription, times(4)).start()
         verify(coordinator, times(2)).followStatusChangesByName(any())
     }
 }
