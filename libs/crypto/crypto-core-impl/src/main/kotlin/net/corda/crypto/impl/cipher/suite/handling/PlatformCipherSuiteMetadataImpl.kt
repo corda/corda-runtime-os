@@ -1,7 +1,19 @@
-package net.corda.crypto.impl.cipher.suite
+package net.corda.crypto.impl.cipher.suite.handling
 
 import net.corda.crypto.core.OID_COMPOSITE_KEY_IDENTIFIER
 import net.corda.crypto.core.service.PlatformCipherSuiteMetadata
+import net.corda.crypto.impl.cipher.suite.CordaSecureRandomService
+import net.corda.crypto.impl.cipher.suite.CordaSecurityProvider
+import net.corda.crypto.impl.cipher.suite.DigestScheme
+import net.corda.crypto.impl.cipher.suite.ECDSAK1KeySchemeInfo
+import net.corda.crypto.impl.cipher.suite.ECDSAR1KeySchemeInfo
+import net.corda.crypto.impl.cipher.suite.EDDSAKeySchemeInfo
+import net.corda.crypto.impl.cipher.suite.GOST3410GOST3411KeySchemeInfo
+import net.corda.crypto.impl.cipher.suite.KeyFactoryProvider
+import net.corda.crypto.impl.cipher.suite.RSAKeySchemeInfo
+import net.corda.crypto.impl.cipher.suite.SM2KeySchemeInfo
+import net.corda.crypto.impl.cipher.suite.SPHINCS256KeySchemeInfo
+import net.corda.crypto.impl.cipher.suite.X25519KeySchemeInfo
 import net.corda.v5.cipher.suite.KeySchemeInfo
 import net.corda.v5.cipher.suite.KeyScheme
 import net.corda.v5.cipher.suite.KeySchemeCapability
@@ -253,7 +265,7 @@ class PlatformCipherSuiteMetadataImpl : PlatformCipherSuiteMetadata {
             null
         }
 
-    override fun encodeAsPem(scheme: KeyScheme, publicKey: PublicKey): String =
+    override fun encodeAsPem(publicKey: PublicKey): String =
         StringWriter().use { strWriter ->
             JcaPEMWriter(strWriter).use { pemWriter ->
                 pemWriter.writeObject(publicKey)

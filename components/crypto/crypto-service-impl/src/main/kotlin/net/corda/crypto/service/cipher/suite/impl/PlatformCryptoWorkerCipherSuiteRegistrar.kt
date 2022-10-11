@@ -1,6 +1,6 @@
 package net.corda.crypto.service.cipher.suite.impl
 
-import net.corda.crypto.impl.cipher.suite.PlatformCipherSuiteMetadataImpl
+import net.corda.crypto.impl.cipher.suite.handling.PlatformCipherSuiteMetadataImpl
 import net.corda.crypto.impl.cipher.suite.handling.PlatformDigestHandler
 import net.corda.crypto.impl.cipher.suite.handling.PlatformVerifySignatureHandler
 import net.corda.crypto.service.cipher.suite.SoftKeyMap

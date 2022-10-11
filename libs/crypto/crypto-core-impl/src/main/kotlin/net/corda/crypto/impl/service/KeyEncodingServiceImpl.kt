@@ -66,7 +66,7 @@ class KeyEncodingServiceImpl @Activate constructor(
             ?: throw IllegalArgumentException("The key ${publicKey.publicKeyId()} is not supported.")
         val handler = suite.findKeyEncodingHandler(scheme.codeName)
             ?: throw IllegalArgumentException("The encoding handler is not found for ${publicKey.publicKeyId()}.")
-        return handler.encodeAsPem(scheme, publicKey)
+        return handler.encodeAsPem(publicKey)
     }
 
     private fun quickDecode(encodedKey: ByteArray): PublicKey? {

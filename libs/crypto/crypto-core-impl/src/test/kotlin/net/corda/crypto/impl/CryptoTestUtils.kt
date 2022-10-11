@@ -11,11 +11,13 @@ import org.bouncycastle.cert.X509CertificateHolder
 import org.bouncycastle.cert.X509v3CertificateBuilder
 import org.bouncycastle.jcajce.spec.EdDSAParameterSpec
 import org.bouncycastle.jce.ECNamedCurveTable
+import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.operator.ContentSigner
 import java.io.ByteArrayOutputStream
 import java.io.OutputStream
 import java.math.BigInteger
 import java.security.PrivateKey
+import java.security.Provider
 import java.security.PublicKey
 import java.security.Signature
 import java.security.cert.CertificateFactory
@@ -26,12 +28,7 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.*
 
-
-fun CompositeKeyProviderImpl.createFromKeys(vararg keys: PublicKey, threshold: Int? = 1) =
-    createFromKeys(keys.toList(), threshold)
-
-fun CompositeKeyProviderImpl.createFromWeightedKeys(vararg keys: CompositeKeyNodeAndWeight, threshold: Int? = 1) =
-    create(keys.toList(), threshold)
+val bouncyCastleProvider: Provider = BouncyCastleProvider()
 
 fun X509CertificateHolder.toJca(): X509Certificate =
     requireNotNull(
