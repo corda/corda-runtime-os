@@ -31,6 +31,7 @@ interface CertificatesClient : Lifecycle {
      * @param sessionCertificateChainAlias The certificate chain alias of the Session Key. Should be null if no PKI is used for sessions.
      * @throws CertificatesResourceNotFoundException if a resource was not found.
      */
+    @Suppress("LongParameterList")
     fun setupLocallyHostedIdentity(
         holdingIdentityShortHash: ShortHash,
         p2pTlsCertificateChainAlias: String,

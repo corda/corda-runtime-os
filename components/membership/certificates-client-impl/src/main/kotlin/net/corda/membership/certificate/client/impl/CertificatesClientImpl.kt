@@ -95,7 +95,8 @@ class CertificatesClientImpl @Activate constructor(
     ) {
 
         val record = hostedIdentityEntryFactory.createIdentityRecord(
-            holdingIdentityShortHash, p2pTlsCertificateChainAlias, p2pTlsTenantId, sessionKeyTenantId, sessionKeyId, sessionCertificateChainAlias
+            holdingIdentityShortHash, p2pTlsCertificateChainAlias, p2pTlsTenantId, sessionKeyTenantId, sessionKeyId,
+            sessionCertificateChainAlias
         )
 
         val futures = publisher?.publish(

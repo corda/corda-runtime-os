@@ -88,7 +88,7 @@ internal class HostedIdentityEntryFactory(
             }
         }
     }
-
+    @Suppress("LongParameterList")
     fun createIdentityRecord(
         holdingIdentityShortHash: ShortHash,
         tlsCertificateChainAlias: String,
