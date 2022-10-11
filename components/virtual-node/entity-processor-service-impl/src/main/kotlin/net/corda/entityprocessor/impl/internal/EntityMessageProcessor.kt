@@ -19,6 +19,7 @@ import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService
+import net.corda.sandboxgroupcontext.SandboxGroupContextService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
@@ -42,6 +43,7 @@ fun EntitySandboxService.getClass(holdingIdentity: HoldingIdentity, fullyQualifi
 class EntityMessageProcessor(
     private val entitySandboxService: EntitySandboxService,
     externalEventResponseFactory: ExternalEventResponseFactory,
+    private val sandboxGroupContextService: SandboxGroupContextService,
     private val payloadCheck: (bytes: ByteBuffer) -> ByteBuffer,
 ) : DurableProcessor<String, EntityRequest> {
     private companion object {
@@ -65,9 +67,12 @@ class EntityMessageProcessor(
                 try {
                     val holdingIdentity = request.holdingIdentity.toCorda()
                     val sandbox = entitySandboxService.get(holdingIdentity)
+                    sandboxGroupContextService.setCurrent(sandbox)
                     processRequestWithSandbox(sandbox, request)
                 } catch (e: Exception) {
                     responseFactory.errorResponse(request.flowExternalEventContext, e)
+                } finally {
+                    sandboxGroupContextService.removeCurrent()
                 }
             }
         }

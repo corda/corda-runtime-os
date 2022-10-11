@@ -66,7 +66,7 @@ class SerializationTests {
 
         val entitySandboxService =
             EntitySandboxServiceFactory().create(
-                virtualNode.sandboxGroupContextComponent,
+                virtualNode.sandboxGroupComponent,
                 cpiInfoReadService,
                 virtualNodeInfoReadService,
                 BasicMocks.dbConnectionManager(),

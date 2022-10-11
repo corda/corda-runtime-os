@@ -17,6 +17,7 @@ import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 
+@Suppress("TooManyFunctions")
 class FlowFiberImpl(
     override val flowId: UUID,
     override val flowLogic: FlowLogicAndArgs,
@@ -52,6 +53,7 @@ class FlowFiberImpl(
 
     @Suspendable
     override fun run() {
+        setCurrentSandboxGroupContext()
         // Ensure run() does not exit via any means without completing the future, in order not to indefinitely block
         // the flow event pipeline. Note that this is executed in a Quasar concurrent executor thread and Throwables are
         // consumed by that too, so if they are rethrown from here we do not get process termination or any other form
@@ -120,6 +122,7 @@ class FlowFiberImpl(
     @Suspendable
     override fun <SUSPENDRETURN> suspend(request: FlowIORequest<SUSPENDRETURN>): SUSPENDRETURN {
         log.info("Flow suspending.")
+        removeCurrentSandboxGroupContext()
         parkAndSerialize(SerializableFiberWriter { _, _ ->
             log.info("Parking...")
             val fiberState = getExecutionContext().sandboxGroupContext.checkpointSerializer.serialize(this)
@@ -128,6 +131,7 @@ class FlowFiberImpl(
         })
 
         setLoggingContext()
+        setCurrentSandboxGroupContext()
         log.info("Flow resuming.")
 
         @Suppress("unchecked_cast")
@@ -156,6 +160,7 @@ class FlowFiberImpl(
         if (flowStackItem.sessionIds.isNotEmpty()) {
             suspend(FlowIORequest.SubFlowFinished(flowStackItem.sessionIds.toList()))
         }
+        removeCurrentSandboxGroupContext()
         flowCompletion.complete(outcomeOfFlow)
     }
 
@@ -169,6 +174,7 @@ class FlowFiberImpl(
         if (flowStackItem.sessionIds.isNotEmpty()) {
             suspend(FlowIORequest.SubFlowFailed(throwable, flowStackItem.sessionIds.toList()))
         }
+        removeCurrentSandboxGroupContext()
         flowCompletion.complete(FlowIORequest.FlowFailed(throwable))
     }
 
@@ -204,6 +210,15 @@ class FlowFiberImpl(
                 }
             }
         }
+    }
+
+    private fun setCurrentSandboxGroupContext() {
+        val context = getExecutionContext()
+        context.sandboxGroupContextService.setCurrent(context.sandboxGroupContext)
+    }
+
+    private fun removeCurrentSandboxGroupContext() {
+        getExecutionContext().sandboxGroupContextService.removeCurrent()
     }
 
     private fun Throwable.isUnrecoverable(): Boolean = this is VirtualMachineError && this !is StackOverflowError

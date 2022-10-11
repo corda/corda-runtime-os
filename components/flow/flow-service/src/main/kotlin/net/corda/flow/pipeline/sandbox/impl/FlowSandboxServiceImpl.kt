@@ -18,7 +18,7 @@ import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.putObjectByKey
-import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
+import net.corda.sandboxgroupcontext.service.SandboxGroupComponent
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFactory
@@ -59,8 +59,8 @@ class FlowSandboxServiceImpl @Activate constructor(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = CpiInfoReadService::class)
     private val cpiInfoReadService: CpiInfoReadService,
-    @Reference(service = SandboxGroupContextComponent::class)
-    private val sandboxGroupContextComponent: SandboxGroupContextComponent,
+    @Reference(service = SandboxGroupComponent::class)
+    private val sandboxGroupComponent: SandboxGroupComponent,
     @Reference(service = SandboxDependencyInjectorFactory::class)
     private val dependencyInjectionFactory: SandboxDependencyInjectorFactory,
     @Reference(service = CheckpointSerializerBuilderFactory::class)
@@ -106,11 +106,11 @@ class FlowSandboxServiceImpl @Activate constructor(
             null
         )
 
-        if (!sandboxGroupContextComponent.hasCpks(vNodeContext.cpkFileChecksums)) {
+        if (!sandboxGroupComponent.hasCpks(vNodeContext.cpkFileChecksums)) {
             throw IllegalStateException("The sandbox can't find one or more of the CPKs for CPI '${cpiMetadata.cpiId}'")
         }
 
-        val sandboxGroupContext = sandboxGroupContextComponent.getOrCreate(vNodeContext) { _, sandboxGroupContext ->
+        val sandboxGroupContext = sandboxGroupComponent.getOrCreate(vNodeContext) { _, sandboxGroupContext ->
             initialiseSandbox(dependencyInjectionFactory, sandboxGroupContext, cpiMetadata)
         }
 
@@ -123,7 +123,7 @@ class FlowSandboxServiceImpl @Activate constructor(
         cpiMetadata: CpiMetadata
     ): AutoCloseable {
         val sandboxGroup = sandboxGroupContext.sandboxGroup
-        val customCrypto = sandboxGroupContextComponent.registerCustomCryptography(sandboxGroupContext)
+        val customCrypto = sandboxGroupComponent.registerCustomCryptography(sandboxGroupContext)
 
         val injectorService = dependencyInjectionFactory.create(sandboxGroupContext)
         sandboxGroupContext.putObjectByKey(FlowSandboxGroupContextImpl.DEPENDENCY_INJECTOR, injectorService)

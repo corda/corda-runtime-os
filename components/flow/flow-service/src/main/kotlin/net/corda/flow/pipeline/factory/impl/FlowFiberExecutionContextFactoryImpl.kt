@@ -6,6 +6,7 @@ import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.factory.FlowFiberExecutionContextFactory
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.sandboxgroupcontext.SandboxGroupContextService
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -16,7 +17,9 @@ class FlowFiberExecutionContextFactoryImpl @Activate constructor(
     @Reference(service = FlowSandboxService::class)
     private val flowSandboxService: FlowSandboxService,
     @Reference(service = MembershipGroupReaderProvider::class)
-    private val membershipGroupReaderProvider: MembershipGroupReaderProvider
+    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    @Reference(service = SandboxGroupContextService::class)
+    private val sandboxGroupContextService: SandboxGroupContextService
 ) : FlowFiberExecutionContextFactory {
 
     override fun createFiberExecutionContext(
@@ -32,7 +35,8 @@ class FlowFiberExecutionContextFactoryImpl @Activate constructor(
             checkpoint,
             sandbox,
             checkpoint.holdingIdentity,
-            membershipGroupReaderProvider.getGroupReader(checkpoint.holdingIdentity)
+            membershipGroupReaderProvider.getGroupReader(checkpoint.holdingIdentity),
+            sandboxGroupContextService
         )
     }
 }

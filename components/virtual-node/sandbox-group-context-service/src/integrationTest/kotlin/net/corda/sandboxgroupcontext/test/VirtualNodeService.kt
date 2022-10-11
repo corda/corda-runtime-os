@@ -3,7 +3,7 @@ package net.corda.sandboxgroupcontext.test
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
-import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
+import net.corda.sandboxgroupcontext.service.SandboxGroupComponent
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.VirtualNodeLoader
@@ -28,7 +28,7 @@ class VirtualNodeService @Activate constructor(
     private val virtualNodeLoader: VirtualNodeLoader,
 
     @Reference
-    private val sandboxGroupContextComponent: SandboxGroupContextComponent
+    private val sandboxGroupComponent: SandboxGroupComponent
 ) {
     private companion object {
         private const val X500_NAME = "CN=Testing, OU=Application, O=R3, L=London, C=GB"
@@ -37,7 +37,7 @@ class VirtualNodeService @Activate constructor(
     }
     init {
         // setting cache size to 2 as some tests require 2 concurrent sandboxes for validating they don't overlap
-        sandboxGroupContextComponent.initCache(2)
+        sandboxGroupComponent.initCache(2)
     }
 
     private val vnodes = mutableMapOf<SandboxGroupContext, VirtualNodeInfo>()
@@ -45,7 +45,7 @@ class VirtualNodeService @Activate constructor(
     @Suppress("unused")
     @Deactivate
     fun done() {
-        sandboxGroupContextComponent.close()
+        sandboxGroupComponent.close()
     }
 
     private fun getOrCreateSandbox(virtualNodeInfo: VirtualNodeInfo, type: SandboxGroupType): SandboxGroupContext {
@@ -58,8 +58,8 @@ class VirtualNodeService @Activate constructor(
             SingletonSerializeAsToken::class.java,
             null
         )
-        return sandboxGroupContextComponent.getOrCreate(vNodeContext) { _, sandboxGroupContext ->
-            sandboxGroupContextComponent.registerCustomCryptography(sandboxGroupContext)
+        return sandboxGroupComponent.getOrCreate(vNodeContext) { _, sandboxGroupContext ->
+            sandboxGroupComponent.registerCustomCryptography(sandboxGroupContext)
         }
     }
 

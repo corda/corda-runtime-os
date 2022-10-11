@@ -7,7 +7,7 @@ import net.corda.flow.MINIMUM_SMART_CONFIG
 import net.corda.flow.scheduler.FlowWakeUpScheduler
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.test.impl.LifecycleTest
-import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
+import net.corda.sandboxgroupcontext.service.SandboxGroupComponent
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.Test
@@ -27,7 +27,7 @@ class FlowServiceTest {
         fun dependants(): Stream<Arguments> {
             return Stream.of(
                 Arguments.of(LifecycleCoordinatorName.forComponent<ConfigurationReadService>()),
-                Arguments.of(LifecycleCoordinatorName.forComponent<SandboxGroupContextComponent>()),
+                Arguments.of(LifecycleCoordinatorName.forComponent<SandboxGroupComponent>()),
                 Arguments.of(LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>()),
                 Arguments.of(LifecycleCoordinatorName.forComponent<CpiInfoReadService>()),
                 Arguments.of(LifecycleCoordinatorName.forComponent<FlowExecutor>())
@@ -152,7 +152,7 @@ class FlowServiceTest {
     private fun getFlowServiceTestContext(): LifecycleTest<FlowService> {
         return LifecycleTest {
             addDependency<ConfigurationReadService>()
-            addDependency<SandboxGroupContextComponent>()
+            addDependency<SandboxGroupComponent>()
             addDependency<VirtualNodeInfoReadService>()
             addDependency<CpiInfoReadService>()
             addDependency<FlowExecutor>()

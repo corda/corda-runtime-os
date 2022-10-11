@@ -3,7 +3,7 @@ package net.corda.sandboxgroupcontext
 /**
  * All objects that are [put] into the context are held by their `(type, key)` tuple.
  *
- * An instance of this interface is returned to the initializer via [SandboxGroupContextService].
+ * An instance of this interface is returned to the initializer via [SandboxGroupService].
  *
  * Attempts to [put] another object with the same `(type,key)` throws an [IllegalArgumentException]
  *

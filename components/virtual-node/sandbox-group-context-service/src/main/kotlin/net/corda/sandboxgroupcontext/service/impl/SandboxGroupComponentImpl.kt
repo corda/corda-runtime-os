@@ -19,7 +19,7 @@ import net.corda.sandbox.SandboxCreationService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContextInitializer
 import net.corda.sandboxgroupcontext.VirtualNodeContext
-import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
+import net.corda.sandboxgroupcontext.service.SandboxGroupComponent
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -38,9 +38,9 @@ import java.util.Collections.unmodifiableList
  * that has a lifecycle.
  */
 @Suppress("Unused", "LongParameterList")
-@Component(service = [SandboxGroupContextComponent::class])
+@Component(service = [SandboxGroupComponent::class])
 @RequireSandboxHooks
-class SandboxGroupContextComponentImpl @Activate constructor(
+class SandboxGroupComponentImpl @Activate constructor(
     @Reference(service = CpkReadService::class)
     private val cpkReadService: CpkReadService,
     @Reference(service = ConfigurationReadService::class)
@@ -52,7 +52,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
     @Reference
     private val serviceComponentRuntime: ServiceComponentRuntime,
     private val bundleContext: BundleContext
-) : SandboxGroupContextComponent {
+) : SandboxGroupComponent {
     companion object {
         private val logger = contextLogger()
 
@@ -90,8 +90,8 @@ class SandboxGroupContextComponentImpl @Activate constructor(
         const val SANDBOX_CACHE_SIZE_DEFAULT: Long = 2
     }
 
-    private var sandboxGroupContextService: SandboxGroupContextServiceImpl? = null
-    private val coordinator = coordinatorFactory.createCoordinator<SandboxGroupContextComponent>(::eventHandler)
+    private var sandboxGroupContextService: SandboxGroupServiceImpl? = null
+    private val coordinator = coordinatorFactory.createCoordinator<SandboxGroupComponent>(::eventHandler)
     private var registrationHandle: RegistrationHandle? = null
     private var configHandle: AutoCloseable? = null
 
@@ -222,7 +222,7 @@ class SandboxGroupContextComponentImpl @Activate constructor(
 
     override fun initCache(cacheSize: Long) {
         logger.info("Initialising Sandbox cache with size: $cacheSize")
-        sandboxGroupContextService = SandboxGroupContextServiceImpl(
+        sandboxGroupContextService = SandboxGroupServiceImpl(
             sandboxCreationService,
             cpkReadService,
             serviceComponentRuntime,

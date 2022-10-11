@@ -9,6 +9,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.PayloadChecker
+import net.corda.sandboxgroupcontext.SandboxGroupContextService
 import net.corda.schema.Schemas
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.DigestService
@@ -31,7 +32,9 @@ class ConsensualLedgerProcessorFactoryImpl @Activate constructor(
     @Reference(service = DigestService::class)
     private val digestService: DigestService,
     @Reference(service = JsonMarshallingService::class)
-    private val jsonMarshallingService: JsonMarshallingService
+    private val jsonMarshallingService: JsonMarshallingService,
+    @Reference(service = SandboxGroupContextService::class)
+    private val sandboxGroupContextService: SandboxGroupContextService
 ) : ConsensualLedgerProcessorFactory {
     companion object {
         internal const val GROUP_NAME = "persistence.ledger.processor"
@@ -47,6 +50,7 @@ class ConsensualLedgerProcessorFactoryImpl @Activate constructor(
             merkleTreeProvider,
             digestService,
             jsonMarshallingService,
+            sandboxGroupContextService,
             PayloadChecker(config)::checkSize
         )
 

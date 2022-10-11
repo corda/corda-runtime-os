@@ -717,7 +717,7 @@ class PersistenceServiceInternalTests {
 
     private fun createEntitySandbox(dbConnectionManager: DbConnectionManager = BasicMocks.dbConnectionManager()) =
         EntitySandboxServiceFactory().create(
-            virtualNode.sandboxGroupContextComponent,
+            virtualNode.sandboxGroupComponent,
             cpiInfoReadService,
             virtualNodeInfoReadService,
             dbConnectionManager,

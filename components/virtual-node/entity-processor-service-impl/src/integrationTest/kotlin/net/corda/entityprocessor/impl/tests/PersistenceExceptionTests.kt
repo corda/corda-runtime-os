@@ -102,7 +102,7 @@ class PersistenceExceptionTests {
 
         val brokenEntitySandboxService =
             EntitySandboxServiceFactory().create(
-                virtualNode.sandboxGroupContextComponent,
+                virtualNode.sandboxGroupComponent,
                 brokenCpiInfoReadService,
                 virtualNodeInfoReadService,
                 dbConnectionManager,
@@ -139,7 +139,7 @@ class PersistenceExceptionTests {
 
         val brokenEntitySandboxService =
             EntitySandboxServiceFactory().create(
-                virtualNode.sandboxGroupContextComponent,
+                virtualNode.sandboxGroupComponent,
                 brokenCpiInfoReadService,
                 virtualNodeInfoReadService,
                 dbConnectionManager,
@@ -175,7 +175,7 @@ class PersistenceExceptionTests {
 
         val entitySandboxService =
             EntitySandboxServiceFactory().create(
-                virtualNode.sandboxGroupContextComponent,
+                virtualNode.sandboxGroupComponent,
                 cpiInfoReadService,
                 virtualNodeInfoReadService,
                 dbConnectionManager,
@@ -214,7 +214,7 @@ class PersistenceExceptionTests {
         // We need a 'working' service to set up the test
         val entitySandboxService =
             EntitySandboxServiceFactory().create(
-                virtualNode.sandboxGroupContextComponent,
+                virtualNode.sandboxGroupComponent,
                 cpiInfoReadService,
                 virtualNodeInfoReadService,
                 dbConnectionManager,

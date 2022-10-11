@@ -16,6 +16,7 @@ import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService
+import net.corda.sandboxgroupcontext.SandboxGroupContextService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
@@ -38,6 +39,7 @@ class ConsensualLedgerMessageProcessor(
     private val merkleTreeProvider: MerkleTreeProvider,
     private val digestService: DigestService,
     private val jsonMarshallingService: JsonMarshallingService,
+    private val sandboxGroupContextService: SandboxGroupContextService,
     private val payloadCheck: (bytes: ByteBuffer) -> ByteBuffer,
 ) : DurableProcessor<String, ConsensualLedgerRequest> {
     private companion object {
@@ -62,9 +64,12 @@ class ConsensualLedgerMessageProcessor(
                 try {
                     val holdingIdentity = request.holdingIdentity.toCorda()
                     val sandbox = entitySandboxService.get(holdingIdentity)
+                    sandboxGroupContextService.setCurrent(sandbox)
                     processRequestWithSandbox(sandbox, request)
                 } catch (e: Exception) {
                     responseFactory.errorResponse(request.flowExternalEventContext, e)
+                } finally {
+                    sandboxGroupContextService.removeCurrent()
                 }
             }
         }

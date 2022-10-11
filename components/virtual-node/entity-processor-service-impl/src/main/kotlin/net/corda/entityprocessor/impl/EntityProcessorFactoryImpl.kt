@@ -10,6 +10,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.PayloadChecker
+import net.corda.sandboxgroupcontext.SandboxGroupContextService
 import net.corda.schema.Schemas
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -25,7 +26,9 @@ class EntityProcessorFactoryImpl @Activate constructor(
     @Reference
     private val entitySandboxService: EntitySandboxService,
     @Reference(service = ExternalEventResponseFactory::class)
-    private val externalEventResponseFactory: ExternalEventResponseFactory
+    private val externalEventResponseFactory: ExternalEventResponseFactory,
+    @Reference(service = SandboxGroupContextService::class)
+    private val sandboxGroupContextService: SandboxGroupContextService
 ) : EntityProcessorFactory {
     companion object {
         internal const val GROUP_NAME = "persistence.entity.processor"
@@ -38,6 +41,7 @@ class EntityProcessorFactoryImpl @Activate constructor(
         val processor = EntityMessageProcessor(
             entitySandboxService,
             externalEventResponseFactory,
+            sandboxGroupContextService,
             PayloadChecker(config)::checkSize
         )
 
