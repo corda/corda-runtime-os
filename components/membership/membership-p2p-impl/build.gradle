@@ -32,12 +32,17 @@ dependencies {
     testImplementation "org.assertj:assertj-core:$assertjVersion"
     testImplementation project(':testing:test-utilities')
 
+    integrationTestImplementation project(':components:crypto:crypto-client')
     integrationTestImplementation project(':testing:db-testkit')
     integrationTestImplementation project(':testing:db-message-bus-testkit')
 
+    integrationTestRuntimeOnly project(':components:crypto:crypto-client-impl')
+    integrationTestRuntimeOnly project(':components:crypto:crypto-ecies-impl')
+    integrationTestRuntimeOnly project(':libs:crypto:cipher-suite-impl')
     integrationTestRuntimeOnly project(':libs:db:db-orm-impl')
     integrationTestRuntimeOnly project(':libs:db:db-admin-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
+    integrationTestRuntimeOnly project(':libs:membership:membership-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:schema-registry:schema-registry-impl')

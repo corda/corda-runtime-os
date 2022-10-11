@@ -21,6 +21,7 @@ import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
 import java.nio.ByteBuffer
+import java.security.PublicKey
 
 internal class RegistrationRequestHandler(
     private val avroSchemaRegistry: AvroSchemaRegistry,
@@ -70,10 +71,7 @@ internal class RegistrationRequestHandler(
         val request = avroSchemaRegistry.deserialize<UnauthenticatedRegistrationRequest>(payload)
         val reqHeader = request.header
         val memberKey = keyEncodingService.decodePublicKey(reqHeader.key)
-        val mgmInfo = membershipGroupReaderProvider.getGroupReader(mgm).lookup(mgm.x500Name)
-            ?: throw IllegalArgumentException("Could not find member info for ${mgm.x500Name}.")
-        require(mgmInfo.isMgm) { "Destination ${mgm.x500Name} of registration request was not an MGM." }
-        val mgmKey = mgmInfo.ecdhKey ?: throw IllegalArgumentException("MGM's ECDH key is missing.")
+        val mgmKey = getECDHKey(mgm)
         val serializedReqHeader = headerSerializer.serialize(reqHeader)
             ?: throw IllegalArgumentException("Serialized header cannot be null.")
         return stableKeyPairDecryptor.decrypt(
@@ -84,5 +82,12 @@ internal class RegistrationRequestHandler(
             request.payload.array(),
             serializedReqHeader
         )
+    }
+
+    private fun getECDHKey(mgm: HoldingIdentity): PublicKey {
+        val mgmInfo = membershipGroupReaderProvider.getGroupReader(mgm).lookup(mgm.x500Name)
+            ?: throw IllegalArgumentException("Could not find member info for ${mgm.x500Name}.")
+        require(mgmInfo.isMgm) { "Destination ${mgm.x500Name} of registration request was not an MGM." }
+        return mgmInfo.ecdhKey ?: throw IllegalArgumentException("MGM's ECDH key is missing.")
     }
 }

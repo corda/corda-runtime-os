@@ -8,22 +8,23 @@ description 'Member Processor'
 
 dependencies {
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
-    compileOnly "org.osgi:osgi.annotation"
+    compileOnly 'org.osgi:osgi.annotation'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-base'
 
-    implementation project(":components:crypto:crypto-client")
-    implementation project(":components:crypto:crypto-client-hsm")
+    implementation project(':components:crypto:crypto-client')
+    implementation project(':components:crypto:crypto-client-hsm')
     implementation project(':libs:lifecycle:lifecycle')
-    implementation project(":libs:messaging:messaging")
+    implementation project(':libs:messaging:messaging')
 
     implementation project(':components:configuration:configuration-read-service')
-    implementation project(":components:membership:group-policy")
-    implementation project(":components:membership:membership-group-read")
-    implementation project(":components:membership:membership-service")
-    implementation project(":components:membership:membership-persistence-client")
-    implementation project(":components:membership:membership-p2p")
+    implementation project(':components:crypto:crypto-ecies')
+    implementation project(':components:membership:group-policy')
+    implementation project(':components:membership:membership-group-read')
+    implementation project(':components:membership:membership-service')
+    implementation project(':components:membership:membership-persistence-client')
+    implementation project(':components:membership:membership-p2p')
     implementation project(':components:membership:registration')
     implementation project(':components:membership:synchronisation')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
@@ -35,47 +36,48 @@ dependencies {
 
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
 
-    runtimeOnly project(":components:membership:group-policy-impl")
-    runtimeOnly project(":components:membership:membership-persistence-client-impl")
-    runtimeOnly project(":components:membership:membership-service-impl")
-    runtimeOnly project(":components:membership:membership-p2p-impl")
-    runtimeOnly project(":components:membership:registration-impl")
-    runtimeOnly project(":components:membership:synchronisation-impl")
-    runtimeOnly project(":components:membership:membership-group-read-impl")
-    runtimeOnly project(":components:virtual-node:cpi-info-read-service-impl")
-    runtimeOnly project(":components:configuration:configuration-read-service-impl")
-    runtimeOnly project(":components:crypto:crypto-client-hsm-impl")
-    runtimeOnly project(":components:crypto:crypto-client-impl")
+    runtimeOnly project(':components:crypto:crypto-ecies-impl')
+    runtimeOnly project(':components:membership:group-policy-impl')
+    runtimeOnly project(':components:membership:membership-persistence-client-impl')
+    runtimeOnly project(':components:membership:membership-service-impl')
+    runtimeOnly project(':components:membership:membership-p2p-impl')
+    runtimeOnly project(':components:membership:registration-impl')
+    runtimeOnly project(':components:membership:synchronisation-impl')
+    runtimeOnly project(':components:membership:membership-group-read-impl')
+    runtimeOnly project(':components:virtual-node:cpi-info-read-service-impl')
+    runtimeOnly project(':components:configuration:configuration-read-service-impl')
+    runtimeOnly project(':components:crypto:crypto-client-hsm-impl')
+    runtimeOnly project(':components:crypto:crypto-client-impl')
     runtimeOnly project(':libs:crypto:cipher-suite-impl')
-    runtimeOnly project(":libs:messaging:messaging-impl")
-    runtimeOnly project(":libs:layered-property-map")
-    runtimeOnly project(":libs:membership:membership-impl")
-    runtimeOnly project(":libs:lifecycle:lifecycle-impl")
-    runtimeOnly project(":libs:schema-registry:schema-registry-impl")
+    runtimeOnly project(':libs:messaging:messaging-impl')
+    runtimeOnly project(':libs:layered-property-map')
+    runtimeOnly project(':libs:membership:membership-impl')
+    runtimeOnly project(':libs:lifecycle:lifecycle-impl')
+    runtimeOnly project(':libs:schema-registry:schema-registry-impl')
     runtimeOnly project(':libs:crypto:merkle-impl')
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
-    testImplementation project(":testing:test-utilities")
-    testImplementation "net.corda:corda-topic-schema"
-    testImplementation "net.corda:corda-config-schema"
-    testImplementation "net.corda:corda-membership"
+    testImplementation project(':testing:test-utilities')
+    testImplementation 'net.corda:corda-topic-schema'
+    testImplementation 'net.corda:corda-config-schema'
+    testImplementation 'net.corda:corda-membership'
 
     integrationTestImplementation 'net.corda:corda-db-schema'
 
-    integrationTestImplementation project(":components:crypto:crypto-persistence-model")
-    integrationTestImplementation project(":components:db:db-connection-manager")
-    integrationTestImplementation project(":libs:configuration:configuration-datamodel")
-    integrationTestImplementation project(":libs:crypto:crypto-core")
+    integrationTestImplementation project(':components:crypto:crypto-persistence-model')
+    integrationTestImplementation project(':components:db:db-connection-manager')
+    integrationTestImplementation project(':libs:configuration:configuration-datamodel')
+    integrationTestImplementation project(':libs:crypto:crypto-core')
     integrationTestImplementation project(':libs:crypto:cipher-suite-impl')
-    integrationTestImplementation project(":libs:crypto:crypto-config-impl")
-    integrationTestImplementation project(":libs:db:db-admin")
-    integrationTestImplementation project(":libs:db:db-admin-impl")
-    integrationTestImplementation project(":libs:db:db-core")
-    integrationTestImplementation project(":libs:db:db-orm")
-    integrationTestImplementation project(":libs:lifecycle:registry")
-    integrationTestImplementation project(":processors:crypto-processor")
-    integrationTestImplementation project(":testing:db-testkit")
-    integrationTestImplementation project(":testing:test-utilities")
+    integrationTestImplementation project(':libs:crypto:crypto-config-impl')
+    integrationTestImplementation project(':libs:db:db-admin')
+    integrationTestImplementation project(':libs:db:db-admin-impl')
+    integrationTestImplementation project(':libs:db:db-core')
+    integrationTestImplementation project(':libs:db:db-orm')
+    integrationTestImplementation project(':libs:lifecycle:registry')
+    integrationTestImplementation project(':processors:crypto-processor')
+    integrationTestImplementation project(':testing:db-testkit')
+    integrationTestImplementation project(':testing:test-utilities')
 
     integrationTestImplementation("org.hibernate:hibernate-osgi:$hibernateVersion") {
         // Need to exclude the org.osgi package as will use the BND ones at runtime
@@ -84,16 +86,16 @@ dependencies {
     }
 
 
-    integrationTestRuntimeOnly project(":libs:db:db-orm-impl")
-    integrationTestImplementation "net.corda:corda-avro-schema"
-    integrationTestImplementation project(":libs:messaging:db-message-bus-datamodel")
-    integrationTestImplementation project(":testing:db-message-bus-testkit")
+    integrationTestRuntimeOnly project(':libs:db:db-orm-impl')
+    integrationTestImplementation 'net.corda:corda-avro-schema'
+    integrationTestImplementation project(':libs:messaging:db-message-bus-datamodel')
+    integrationTestImplementation project(':testing:db-message-bus-testkit')
 
-    integrationTestRuntimeOnly project(":components:virtual-node:cpi-info-write-service-impl")
+    integrationTestRuntimeOnly project(':components:virtual-node:cpi-info-write-service-impl')
 
-    integrationTestRuntimeOnly project(":libs:messaging:db-message-bus-impl")
-    integrationTestRuntimeOnly project(":libs:messaging:db-topic-admin-impl")
-    integrationTestRuntimeOnly project(":libs:schema-registry:schema-registry-impl")
+    integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:db-topic-admin-impl')
+    integrationTestRuntimeOnly project(':libs:schema-registry:schema-registry-impl')
     integrationTestRuntimeOnly project(':libs:crypto:merkle-impl')
 
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"

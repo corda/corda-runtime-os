@@ -50,7 +50,7 @@ class MembershipP2PProcessor(
                 stableKeyPairDecryptor,
                 keyEncodingService,
                 cordaAvroSerializationFactory,
-                membershipGroupReaderProvider
+                membershipGroupReaderProvider,
             )
         },
         VerificationRequest::class.java to { VerificationRequestHandler(avroSchemaRegistry) },

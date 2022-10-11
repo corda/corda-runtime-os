@@ -166,7 +166,7 @@ class MembershipP2PProcessorTest {
             stableKeyPairDecryptor,
             keyEncodingService,
             cordaAvroSerializationFactory,
-            membershipGroupReaderProvider
+            membershipGroupReaderProvider,
         )
     }
 
@@ -410,7 +410,8 @@ class MembershipP2PProcessorTest {
     }
 
     private fun mockPayloadDeserialization() {
-        whenever(avroSchemaRegistry.getClassType(eq(unauthenticatedRegMsgPayload))).thenReturn(UnauthenticatedRegistrationRequest::class.java)
+        whenever(avroSchemaRegistry.getClassType(eq(unauthenticatedRegMsgPayload)))
+            .thenReturn(UnauthenticatedRegistrationRequest::class.java)
         whenever(
             avroSchemaRegistry.deserialize(
                 eq(unauthenticatedRegMsgPayload),
