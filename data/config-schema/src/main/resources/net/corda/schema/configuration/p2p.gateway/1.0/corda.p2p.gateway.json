@@ -41,6 +41,12 @@
         "additionalProperties": false
       }
     },
+    "maxRequestSize": {
+      "description": "The maximum request size accepted by the gateway, in bytes. Any requests crossing that threshold will be rejected.",
+      "type": "number",
+      "default": 5e8,
+      "minimum": 1e7
+    },
     "connectionConfig": {
       "description": "Controls the TCP connection pool to peer gateways.",
       "type": "object",
