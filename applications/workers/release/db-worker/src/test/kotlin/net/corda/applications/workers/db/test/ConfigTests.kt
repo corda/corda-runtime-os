@@ -3,7 +3,7 @@ package net.corda.applications.workers.db.test
 import com.typesafe.config.Config
 import java.io.InputStream
 import net.corda.applications.workers.db.DBWorker
-import net.corda.applications.workers.workercommon.HealthMonitor
+import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.configuration.validation.ConfigurationValidator
@@ -31,7 +31,7 @@ class ConfigTests {
     @Suppress("MaxLineLength")
     fun `instance ID, topic prefix, workspace dir, temp dir, messaging params, database params and additional params are passed through to the processor`() {
         val dbProcessor = DummyDBProcessor()
-        val dbWorker = DBWorker(dbProcessor, mock(), DummyShutdown(), DummyHealthMonitor(), DummyValidatorFactory())
+        val dbWorker = DBWorker(dbProcessor, mock(), DummyShutdown(), DummyWorkerMonitor(), DummyValidatorFactory())
         val args = arrayOf(
             FLAG_INSTANCE_ID, VAL_INSTANCE_ID,
             FLAG_TOPIC_PREFIX, VALUE_TOPIC_PREFIX,
@@ -62,7 +62,7 @@ class ConfigTests {
     @Test
     fun `other params are not passed through to the processor`() {
         val dbProcessor = DummyDBProcessor()
-        val dbWorker = DBWorker(dbProcessor, mock(), DummyShutdown(), DummyHealthMonitor(), DummyValidatorFactory())
+        val dbWorker = DBWorker(dbProcessor, mock(), DummyShutdown(), DummyWorkerMonitor(), DummyValidatorFactory())
         val args = arrayOf(
             FLAG_DISABLE_MONITOR,
             FLAG_MONITOR_PORT, "9999"
@@ -84,7 +84,7 @@ class ConfigTests {
     @Test
     fun `defaults are provided for instance Id, topic prefix, workspace dir, temp dir and reconciliation`() {
         val dbProcessor = DummyDBProcessor()
-        val dbWorker = DBWorker(dbProcessor, mock(), DummyShutdown(), DummyHealthMonitor(), DummyValidatorFactory())
+        val dbWorker = DBWorker(dbProcessor, mock(), DummyShutdown(), DummyWorkerMonitor(), DummyValidatorFactory())
         val args = arrayOf<String>()
         dbWorker.startup(args)
         val config = dbProcessor.config!!
@@ -105,7 +105,7 @@ class ConfigTests {
     @Test
     fun `multiple messaging params can be provided`() {
         val dbProcessor = DummyDBProcessor()
-        val dbWorker = DBWorker(dbProcessor, mock(), DummyShutdown(), DummyHealthMonitor(), DummyValidatorFactory())
+        val dbWorker = DBWorker(dbProcessor, mock(), DummyShutdown(), DummyWorkerMonitor(), DummyValidatorFactory())
         val args = arrayOf(
             FLAG_MSG_PARAM, "$MSG_KEY_ONE=$MSG_VAL_ONE",
             FLAG_MSG_PARAM, "$MSG_KEY_TWO=$MSG_VAL_TWO"
@@ -120,7 +120,7 @@ class ConfigTests {
     @Test
     fun `multiple database params can be provided`() {
         val dbProcessor = DummyDBProcessor()
-        val dbWorker = DBWorker(dbProcessor, mock(), DummyShutdown(), DummyHealthMonitor(), DummyValidatorFactory())
+        val dbWorker = DBWorker(dbProcessor, mock(), DummyShutdown(), DummyWorkerMonitor(), DummyValidatorFactory())
         val args = arrayOf(
             FLAG_DB_PARAM, "$DB_KEY_ONE=$DB_VAL_ONE",
             FLAG_DB_PARAM, "$DB_KEY_TWO=$DB_VAL_TWO"
@@ -148,8 +148,8 @@ class ConfigTests {
         override fun shutdown(bundle: Bundle) = Unit
     }
 
-    /** A no-op [HealthMonitor]. */
-    private class DummyHealthMonitor : HealthMonitor {
+    /** A no-op [WorkerMonitor]. */
+    private class DummyWorkerMonitor : WorkerMonitor {
         override fun listen(port: Int) = Unit
         override fun stop() = throw NotImplementedError()
         override val port = 7000
