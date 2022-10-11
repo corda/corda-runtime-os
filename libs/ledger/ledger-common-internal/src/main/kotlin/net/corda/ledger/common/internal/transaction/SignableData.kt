@@ -1,6 +1,5 @@
-package net.corda.ledger.common.impl.transaction
+package net.corda.ledger.common.internal.transaction
 
-//TODO(move this somewhere else. DP1: net.corda.v5.application.crypto or maybe ledger-common-internal?)
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.crypto.SecureHash
