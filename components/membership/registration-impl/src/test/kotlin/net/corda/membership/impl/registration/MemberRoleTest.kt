@@ -1,10 +1,16 @@
 package net.corda.membership.impl.registration
 
+import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
 import net.corda.membership.impl.registration.MemberRole.Companion.extractRolesFromContext
+import net.corda.membership.impl.registration.MemberRole.Companion.toMemberInfo
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.PublicKeyHash
+import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.mock
 
 class MemberRoleTest {
     @Test
@@ -106,5 +112,37 @@ class MemberRoleTest {
                 )
             )
         }
+    }
+
+    @Test
+    fun `toMemberInfo returns the correct information`() {
+        val keyHash = PublicKeyHash.calculate("test".toByteArray())
+        val key = mock<KeysFactory.Key>() {
+            on { pem } doReturn "pem"
+            on { hash } doReturn keyHash
+            on { spec } doReturn SignatureSpec.RSA_SHA256
+        }
+        val keyFactory = mock<KeysFactory> {
+            on { getOrGenerateKeyPair(NOTARY) } doReturn key
+        }
+        val roles = extractRolesFromContext(
+            mapOf(
+                "corda.roles.0" to "notary",
+                "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
+                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+            )
+        )
+
+        val info = roles.toMemberInfo(keyFactory)
+
+        assertThat(info)
+            .containsExactlyInAnyOrder(
+                "corda.roles.0" to "notary",
+                "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
+                "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+                "corda.notary.keys.0.pem" to "pem",
+                "corda.notary.keys.0.hash" to keyHash.toString(),
+                "corda.notary.keys.0.signature.spec" to "SHA256withRSA",
+            )
     }
 }

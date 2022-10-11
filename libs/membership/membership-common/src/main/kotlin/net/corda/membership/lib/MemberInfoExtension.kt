@@ -1,5 +1,6 @@
 package net.corda.membership.lib
 
+import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.utilities.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.parse
@@ -97,6 +98,25 @@ class MemberInfoExtension {
          */
         const val MEMBER_STATUS_SUSPENDED = "SUSPENDED"
 
+        /**
+         * PREFIX for notary roles name
+         */
+        const val ROLES_PREFIX = "corda.roles."
+
+        /**
+         * Notary role name
+         */
+        const val NOTARY_NAME = "notary"
+
+        /**
+         * Notary role properties
+         */
+        const val NOTARY_SERVICE_NAME = "corda.notary.service.name"
+        const val NOTARY_SERVICE_PLUGIN = "corda.notary.service.plugin"
+        const val NOTARY_KEY_PEM = "corda.notary.keys.%s.pem"
+        const val NOTARY_KEY_HASH = "corda.notary.keys.%s.hash"
+        const val NOTARY_KEY_SPEC = "corda.notary.keys.%s.signature.spec"
+
         /** Identity certificate or null for non-PKI option. Certificate subject and key should match party */
         // TODO we will need a CertPath converter somewhere
         /*@JvmStatic
@@ -175,5 +195,24 @@ class MemberInfoExtension {
         @JvmStatic
         val MemberInfo.isMgm: Boolean
             get() = mgmProvidedContext.parseOrNull(IS_MGM) ?: false
+
+        /**
+         * Return the notary details if the member is a notary.
+         */
+        @JvmStatic
+        val MemberInfo.notaryDetails: MemberNotaryDetails?
+            get() = if (
+                memberProvidedContext
+                    .entries
+                    .filter {
+                        it.key.startsWith(ROLES_PREFIX)
+                    }.any {
+                        it.value == NOTARY_NAME
+                    }
+            ) {
+                memberProvidedContext.parse("corda.notary")
+            } else {
+                null
+            }
     }
 }
