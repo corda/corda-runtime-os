@@ -89,7 +89,7 @@ internal class VirtualNodeWriterProcessor(
         const val PUBLICATION_TIMEOUT_SECONDS = 30L
     }
 
-    @Suppress("ReturnCount", "ComplexMethod")
+    @Suppress("ReturnCount", "ComplexMethod", "LongMethod")
     private fun createVirtualNode(
         instant: Instant,
         create: VirtualNodeCreateRequest,

@@ -16,7 +16,6 @@ import net.corda.virtualnode.write.db.impl.writer.VirtualNodeWriterFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.function.Supplier
 
 /** An implementation of [VirtualNodeWriteService]. */
 @Suppress("LongParameterList")
