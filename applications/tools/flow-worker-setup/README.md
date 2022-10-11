@@ -47,7 +47,8 @@ To publish the configuration required by the `LinkManager` which is used by the 
     },
     "heartbeatMessagePeriod": 2000,
     "sessionTimeout": 10000,
-    "sessionsPerPeer": 4
+    "sessionsPerPeer": 4,
+    "sessionRefreshThreshold": 432000000
   },
   "gatewayConfig": {
     "hostAddress": "0.0.0.0",
