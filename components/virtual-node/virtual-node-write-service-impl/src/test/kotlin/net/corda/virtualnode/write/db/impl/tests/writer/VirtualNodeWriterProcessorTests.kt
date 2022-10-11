@@ -1,5 +1,6 @@
 package net.corda.virtualnode.write.db.impl.tests.writer
 
+import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePair
 import net.corda.data.crypto.SecureHash
@@ -16,9 +17,11 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
-import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
+import net.corda.libs.packaging.core.CpiMetadata
+import net.corda.libs.permissions.manager.PermissionManager
+import net.corda.libs.permissions.manager.response.RoleResponseDto
 import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
@@ -62,14 +65,11 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
-import java.security.PublicKey
-import java.sql.Connection
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
-import javax.persistence.EntityTransaction
 
 /** Tests of [VirtualNodeWriterProcessor]. */
 class VirtualNodeWriterProcessorTests {
@@ -106,6 +106,24 @@ class VirtualNodeWriterProcessorTests {
      */
     private val clock = TestClock(Instant.now())
 
+    private val mockRole = mock<RoleResponseDto> {
+        on { id }.doReturn("mockRoleId")
+    }
+
+    private val permissionManagerSupplier = {
+        mock<PermissionManager> {
+            on { createRole(any()) }.doReturn(mockRole)
+        }
+    }
+
+    private val cpiMetadata = mock<CpiMetadata> {
+        on { cpksMetadata }.doReturn(emptySet())
+    }
+
+    private val cpiInfoReadService = mock<CpiInfoReadService> {
+        on { get(any()) }.doReturn(cpiMetadata)
+    }
+
     private val vnodeInfo =
         VirtualNodeInfo(
             holdingIdentity.toAvro(),
@@ -135,28 +153,28 @@ class VirtualNodeWriterProcessorTests {
             "update_actor"
         )
 
-    private val em = mock<EntityManager>() {
-        on { transaction }.doReturn(mock<EntityTransaction>())
+    private val em = mock<EntityManager> {
+        on { transaction }.doReturn(mock())
     }
 
-    private val emf = mock<EntityManagerFactory>() {
+    private val emf = mock<EntityManagerFactory> {
         on { createEntityManager() }.doReturn(em)
     }
 
-    private val dataSource = mock<CloseableDataSource>() {
-        on { connection }.doReturn(mock<Connection>())
+    private val dataSource = mock<CloseableDataSource> {
+        on { connection }.doReturn(mock())
     }
 
-    private val connectionManager = mock<DbConnectionManager>() {
+    private val connectionManager = mock<DbConnectionManager> {
         on { getDataSource(any()) }.doReturn(dataSource)
         on { getClusterEntityManagerFactory() }.doReturn(emf)
         on { putConnection(any(), any(), any(), any(), any(), any()) }.doReturn(UUID.fromString(connectionId))
     }
 
-    private val dbConnection = mock<DbConnection>() {
+    private val dbConnection = mock<DbConnection> {
         on { name }.doReturn("connection")
         on { privilege }.doReturn(DbPrivilege.DDL)
-        on { config }.doReturn(mock<SmartConfig>())
+        on { config }.doReturn(mock())
         on { description }.doReturn("description")
         on { getUser() }.doReturn("user")
         on { getPassword() }.doReturn("password")
@@ -173,14 +191,14 @@ class VirtualNodeWriterProcessorTests {
         VirtualNodeDbType.CRYPTO, true, HOLDING_ID_SHORT_HASH, dbConnections, mock(), connectionManager, mock())
     private val uniquenessDb = VirtualNodeDb(
         VirtualNodeDbType.UNIQUENESS, true, HOLDING_ID_SHORT_HASH, dbConnections, mock(), connectionManager, mock())
-    private val vNodeFactory = mock<VirtualNodeDbFactory>() {
+    private val vNodeFactory = mock<VirtualNodeDbFactory> {
         on { createVNodeDbs(any(), any()) }.doReturn(mapOf(
             VirtualNodeDbType.VAULT to vaultDb,
             VirtualNodeDbType.CRYPTO to cryptoDb,
             VirtualNodeDbType.UNIQUENESS to uniquenessDb))
     }
 
-    private val vNodeRepo = mock<VirtualNodeEntityRepository>() {
+    private val vNodeRepo = mock<VirtualNodeEntityRepository> {
         on { getCpiMetadataByChecksum(any()) }.doReturn(cpiMetaData)
         on { virtualNodeExists(any(), any()) }.doReturn(false)
         on { getHoldingIdentity(any()) }.doReturn(null)
@@ -205,10 +223,6 @@ class VirtualNodeWriterProcessorTests {
         on { getMgmInfo(any(), eq(dummyGroupPolicy)) } doReturn null
         on { getMgmInfo(any(), eq(dummyGroupPolicyWithMGMInfo)) } doReturn mgmMemberInfo
         on { getMgmInfo(any(), eq(mgmGroupPolicy)) } doReturn mgmMemberInfo
-    }
-
-    private val defaultKey: PublicKey = mock {
-        on { encoded } doReturn "1234".toByteArray()
     }
 
     private val publisherError = CordaMessageAPIIntermittentException("Error.")
@@ -247,7 +261,9 @@ class VirtualNodeWriterProcessorTests {
             vNodeRepo,
             vNodeFactory,
             groupPolicyParser,
-            clock
+            clock,
+            permissionManagerSupplier,
+            cpiInfoReadService
         )  { _, _ ->
             listOf()
         }
@@ -270,7 +286,9 @@ class VirtualNodeWriterProcessorTests {
                     vNodeRepo,
                     vNodeFactory,
                     groupPolicyParser,
-                    clock
+                    clock,
+                    permissionManagerSupplier,
+                    cpiInfoReadService
                 ) { _, _ -> listOf(changeLog) }
 
                 processRequest(processor, VirtualNodeManagementRequest(clock.instant(), vnodeCreationReq))
@@ -296,7 +314,9 @@ class VirtualNodeWriterProcessorTests {
             vNodeRepo,
             vNodeFactory,
             groupPolicyParser,
-            clock
+            clock,
+            permissionManagerSupplier,
+            cpiInfoReadService
         ) { _, _ ->
             listOf()
         }
@@ -335,7 +355,7 @@ class VirtualNodeWriterProcessorTests {
     @Test
     fun `skips MGM member info publishing to Kafka without error if MGM information is not present in group policy`() {
         val publisher = getPublisher()
-        val vNodeRepo = mock<VirtualNodeEntityRepository>() {
+        val vNodeRepo = mock<VirtualNodeEntityRepository> {
             on { getCpiMetadataByChecksum(any()) }.doReturn(cpiMetaData)
         }
         val processor = VirtualNodeWriterProcessor(
@@ -344,7 +364,9 @@ class VirtualNodeWriterProcessorTests {
             vNodeRepo,
             vNodeFactory,
             groupPolicyParser,
-            clock
+            clock,
+            permissionManagerSupplier,
+            cpiInfoReadService
         )  { _, _ ->
             listOf()
         }
@@ -395,7 +417,9 @@ class VirtualNodeWriterProcessorTests {
             vNodeRepo,
             vNodeFactory,
             groupPolicyParser,
-            clock
+            clock,
+            permissionManagerSupplier,
+            cpiInfoReadService
         )  { _, _ ->
             listOf()
         }
@@ -442,7 +466,9 @@ class VirtualNodeWriterProcessorTests {
             vNodeRepo,
             vNodeFactory,
             groupPolicyParser,
-            clock
+            clock,
+            permissionManagerSupplier,
+            cpiInfoReadService
         )  { _, _ ->
             listOf()
         }
@@ -465,7 +491,9 @@ class VirtualNodeWriterProcessorTests {
             vNodeRepo,
             vNodeFactory,
             groupPolicyParser,
-            clock
+            clock,
+            permissionManagerSupplier,
+            cpiInfoReadService
         ) { _, _ -> listOf() }
         val resp = processRequest(
             processor,
@@ -490,7 +518,9 @@ class VirtualNodeWriterProcessorTests {
             vNodeRepo,
             vNodeFactory,
             groupPolicyParser,
-            clock
+            clock,
+            permissionManagerSupplier,
+            cpiInfoReadService
         )   { _, _ ->
             listOf()
         }
@@ -668,7 +698,9 @@ class VirtualNodeWriterProcessorTests {
             entityRepository,
             vNodeFactory,
             groupPolicyParser,
-            clock
+            clock,
+            permissionManagerSupplier,
+            cpiInfoReadService
         )   { _, _ ->
             listOf()
         }
@@ -701,7 +733,9 @@ class VirtualNodeWriterProcessorTests {
             entityRepository,
             vNodeFactory,
             groupPolicyParser,
-            clock
+            clock,
+            permissionManagerSupplier,
+            cpiInfoReadService
         )   { _, _ ->
             listOf()
         }
@@ -717,13 +751,13 @@ class VirtualNodeWriterProcessorTests {
             ""
         )
 
-        val collisionHoldingIdentity = mock<HoldingIdentity>() {
+        val collisionHoldingIdentity = mock<HoldingIdentity> {
             on { x500Name }.thenReturn(MemberX500Name.parse("OU=LLC, O=Alice, L=Dublin, C=IE"))
             on { groupId }.thenReturn("group_id")
             on { shortHash }.thenReturn(holdingIdentity.shortHash)
         }
 
-        val entityRepository = mock<VirtualNodeEntityRepository>() {
+        val entityRepository = mock<VirtualNodeEntityRepository> {
             on { getCpiMetadataByChecksum(any()) }.doReturn(cpiMetaData)
             on { virtualNodeExists(any(), any()) }.doReturn(false)
             on { getHoldingIdentity(any()) }.doReturn(collisionHoldingIdentity)
@@ -735,7 +769,9 @@ class VirtualNodeWriterProcessorTests {
             entityRepository,
             vNodeFactory,
             groupPolicyParser,
-            clock
+            clock,
+            permissionManagerSupplier,
+            cpiInfoReadService
         ) { _, _ -> listOf() }
         val resp = processRequest(
             processor,
