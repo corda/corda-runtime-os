@@ -2,6 +2,7 @@ package net.corda.uniqueness.backingstore.jpa.datamodel
 
 import net.corda.uniqueness.datamodel.common.UniquenessConstants.TRANSACTION_ID_ALGO_LENGTH
 import net.corda.uniqueness.datamodel.common.UniquenessConstants.TRANSACTION_ID_LENGTH
+import net.corda.uniqueness.datamodel.common.UniquenessConstants.REJECTED_TRANSACTION_ERROR_DETAILS_LENGTH
 import java.io.Serializable
 import java.time.Instant
 import javax.persistence.Column
@@ -215,8 +216,8 @@ data class UniquenessRejectedTransactionEntity(
     val errorDetails: ByteArray
 ) {
     init {
-        if (errorDetails.size > 1024) {
-            throw IllegalArgumentException("The maximum size of an Error detail is 1024")
+        if (errorDetails.size > REJECTED_TRANSACTION_ERROR_DETAILS_LENGTH) {
+            throw IllegalArgumentException("The maximum size of the error_detail field is $REJECTED_TRANSACTION_ERROR_DETAILS_LENGTH")
         }
     }
     override fun equals(other: Any?): Boolean {
