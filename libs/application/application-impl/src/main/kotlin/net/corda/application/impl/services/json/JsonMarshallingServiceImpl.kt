@@ -45,8 +45,8 @@ class JsonMarshallingServiceImpl : JsonMarshallingService, SingletonSerializeAsT
         registerModule(standardTypesModule())
     }
 
-    private val customSerializabkeClasses = mutableSetOf<Class<*>>()
-    private val customDeserializabkeClasses = mutableSetOf<Class<*>>()
+    private val customSerializableClasses = mutableSetOf<Class<*>>()
+    private val customDeserializableClasses = mutableSetOf<Class<*>>()
 
     override fun format(data: Any): String {
         return try {
@@ -79,8 +79,8 @@ class JsonMarshallingServiceImpl : JsonMarshallingService, SingletonSerializeAsT
     }
 
     override fun <T> setSerializer(serializer: JsonSerializer<T>, clazz: Class<T>): Boolean {
-        if (customSerializabkeClasses.contains(clazz)) return false
-        customSerializabkeClasses.add(clazz)
+        if (customSerializableClasses.contains(clazz)) return false
+        customSerializableClasses.add(clazz)
 
         val module = SimpleModule()
         module.addSerializer(clazz, JsonSerializerAdaptor(serializer, clazz))
@@ -90,8 +90,8 @@ class JsonMarshallingServiceImpl : JsonMarshallingService, SingletonSerializeAsT
     }
 
     override fun <T> setDeserializer(deserializer: JsonDeserializer<T>, clazz: Class<T>): Boolean {
-        if (customDeserializabkeClasses.contains(clazz)) return false
-        customDeserializabkeClasses.add(clazz)
+        if (customDeserializableClasses.contains(clazz)) return false
+        customDeserializableClasses.add(clazz)
 
         val module = SimpleModule()
         // TODO
