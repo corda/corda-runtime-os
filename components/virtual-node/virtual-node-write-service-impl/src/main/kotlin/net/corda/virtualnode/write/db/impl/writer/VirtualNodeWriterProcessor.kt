@@ -234,7 +234,7 @@ internal class VirtualNodeWriterProcessor(
                         "${currentTimeMillis() - startMillis} ms"}
             }
 
-            logger.info("vNode ${holdingId}, short hash: ${holdingId.shortHash} successfully created.")
+            logger.info("vNode successfully created: ${holdingId}, short hash: ${holdingId.shortHash}.")
         } catch (e: Exception) {
             handleException(respFuture, e)
         }
