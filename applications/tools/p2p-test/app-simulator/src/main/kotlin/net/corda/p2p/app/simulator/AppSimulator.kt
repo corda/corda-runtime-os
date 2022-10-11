@@ -13,6 +13,8 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
+import net.corda.p2p.app.simulator.AppSimulator.Companion.DEFAULT_NUMBER_OF_PARTITIONS
+import net.corda.p2p.app.simulator.AppSimulator.Companion.DEFAULT_REPLICATION_FACTOR
 import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getDbParameter
 import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getEnumOrNull
 import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getIntOrNull
@@ -21,6 +23,7 @@ import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getLoadGenDurationO
 import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getLoadGenEnumParameter
 import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getLoadGenIntParameter
 import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getLoadGenStrParameter
+import net.corda.p2p.app.simulator.ArgParsingUtils.Companion.getTopicCreationParameter
 import net.corda.schema.Schemas.P2P.Companion.P2P_IN_TOPIC
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.configuration.BootConfig
@@ -58,11 +61,14 @@ class AppSimulator @Activate constructor(
         private val logger: Logger = contextLogger()
         private val clock: Clock = UTCClock()
         const val DB_PARAMS_PREFIX = "dbParams"
+        const val TOPIC_CREATION_PREFIX = "topicCreationParams"
         const val LOAD_GEN_PARAMS_PREFIX = "loadGenerationParams"
         const val PARALLEL_CLIENTS_KEY = "parallelClients"
         const val DEFAULT_PARALLEL_CLIENTS = 1
         const val DEFAULT_TOTAL_NUMBER_OF_MESSAGES = 1
         const val DEFAULT_BATCH_SIZE = 50
+        const val DEFAULT_REPLICATION_FACTOR = 1
+        const val DEFAULT_NUMBER_OF_PARTITIONS = 10
         val DEFAULT_INTER_BATCH_DELAY = Duration.ZERO
         const val DEFAULT_MESSAGE_SIZE_BYTES = 10_000
         internal const val APP_SIMULATOR_SUBSYSTEM = "app-simulator"
@@ -127,11 +133,13 @@ class AppSimulator @Activate constructor(
     }
 
     private fun runReceiver(commonConfig: CommonConfig) {
+        val topicCreationParams = TopicCreationParams.read(commonConfig)
         val receiver = Receiver(
             subscriptionFactory,
             configMerger,
             topicAdmin,
-            commonConfig
+            commonConfig,
+            topicCreationParams
         )
         receiver.start()
         resources.add(receiver)
@@ -177,6 +185,12 @@ class CliParameters {
         description = ["Load generation parameters for the simulator."]
     )
     var loadGenerationParams = emptyMap<String, String>()
+
+    @CommandLine.Option(
+        names = ["-t", "--topicCreationParams"],
+        description = ["Topic creation parameters for the simulator."]
+    )
+    var topicCreationParams = emptyMap<String, String>()
 
     @CommandLine.Option(
         names = ["-i", "--instance-id"],
@@ -265,6 +279,20 @@ class CommonConfig(val parameters: CliParameters) {
         clients = parameters.clients ?: configFromFile.getIntOrNull(AppSimulator.PARALLEL_CLIENTS_KEY)
             ?: AppSimulator.DEFAULT_PARALLEL_CLIENTS
         simulatorMode = parameters.simulationMode ?: configFromFile.getEnumOrNull<SimulationMode>("simulatorMode")
+    }
+}
+
+data class TopicCreationParams(val numPartitions: Int, val replicationFactor: Int) {
+    companion object {
+        fun read(commonConfig: CommonConfig): TopicCreationParams {
+            val numPartitions = getTopicCreationParameter(
+                "numPartitions", DEFAULT_NUMBER_OF_PARTITIONS, commonConfig.configFromFile, commonConfig.parameters
+            )
+            val replicationFactor = getTopicCreationParameter(
+                "replicationFactor", DEFAULT_REPLICATION_FACTOR, commonConfig.configFromFile, commonConfig.parameters
+            )
+            return TopicCreationParams(numPartitions, replicationFactor)
+        }
     }
 }
 

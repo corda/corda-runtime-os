@@ -1,19 +1,13 @@
 package net.corda.ledger.consensual.impl.transaction
 
-import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import java.security.KeyPairGenerator
 import java.security.PublicKey
-import java.security.SecureRandom
-import kotlin.test.assertIs
+import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
-import net.corda.flow.application.crypto.SigningServiceImpl
-import net.corda.flow.external.events.executor.ExternalEventExecutor
-import net.corda.flow.external.events.impl.executor.ExternalEventExecutorImpl
-import net.corda.flow.fiber.FlowFiberServiceImpl
-import net.corda.ledger.common.impl.transaction.CpiMetadata
-import net.corda.ledger.common.impl.transaction.CpkMetadata
+import net.corda.ledger.common.impl.transaction.CpiSummary
+import net.corda.ledger.common.impl.transaction.CpkSummary
 import net.corda.ledger.consensual.impl.ConsensualTransactionMocks
 import net.corda.ledger.consensual.impl.PartyImpl
 import net.corda.ledger.consensual.impl.helper.ConfiguredTestSerializationService
@@ -23,30 +17,26 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
+import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.Party
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
+import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
+import kotlin.test.assertIs
 
-internal class ConsensualTransactionBuilderImplTest{
+internal class ConsensualTransactionBuilderImplTest {
     companion object {
-        private lateinit var digestService: DigestService
-        private lateinit var merkleTreeProvider: MerkleTreeProvider
-        private lateinit var secureRandom: SecureRandom
-        private lateinit var serializer: SerializationService
-        private lateinit var signingService: SigningService
-        private lateinit var jsonMarshallingService: JsonMarshallingService
-
-        private lateinit var externalEventExecutor: ExternalEventExecutor
         private lateinit var testPublicKey: PublicKey
         private lateinit var testConsensualState: ConsensualState
-        private lateinit var keyEncodingService: KeyEncodingService
 
         private val testMemberX500Name = MemberX500Name("R3", "London", "GB")
 
@@ -60,18 +50,6 @@ internal class ConsensualTransactionBuilderImplTest{
         @BeforeAll
         @JvmStatic
         fun setup() {
-            val schemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
-            digestService = DigestServiceImpl(schemeMetadata, null)
-            secureRandom = schemeMetadata.secureRandom
-            merkleTreeProvider = MerkleTreeProviderImpl(digestService)
-            serializer = ConfiguredTestSerializationService.getTestSerializationService(schemeMetadata)
-            jsonMarshallingService = JsonMarshallingServiceImpl()
-
-            val flowFiberService = FlowFiberServiceImpl()
-            externalEventExecutor = ExternalEventExecutorImpl(flowFiberService)
-            keyEncodingService = CipherSchemeMetadataImpl()
-            signingService = SigningServiceImpl(externalEventExecutor, keyEncodingService)
-
             val kpg = KeyPairGenerator.getInstance("RSA")
             kpg.initialize(512) // Shortest possible to not slow down tests.
             testPublicKey = kpg.genKeyPair().public
@@ -82,6 +60,14 @@ internal class ConsensualTransactionBuilderImplTest{
             )
         }
     }
+
+    private val jsonMarshallingService: JsonMarshallingService = JsonMarshallingServiceImpl()
+    private val cipherSchemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
+    private val digestService: DigestService = DigestServiceImpl(cipherSchemeMetadata, null)
+    private val merkleTreeFactory: MerkleTreeProvider = MerkleTreeProviderImpl(digestService)
+    private val signingService: SigningService = mock()
+    private val serializationService: SerializationService =
+        ConfiguredTestSerializationService.getTestSerializationService(cipherSchemeMetadata)
 
     @Test
     fun `can build a simple Transaction`() {
@@ -119,35 +105,46 @@ internal class ConsensualTransactionBuilderImplTest{
         val metadata = tx.wireTransaction.metadata
         assertEquals("0.001", metadata.getLedgerVersion())
 
-        val expectedCpiMetadata = CpiMetadata(
-            "MockCpi",
-            "3.1415-fake",
-            "",
-            "4141414141414141414141414141414141414141414141414141414141414141",
-            listOf(
-                CpkMetadata(
+        val expectedCpiMetadata = CpiSummary(
+            "CPI name",
+            "CPI version",
+            "46616B652D76616C7565",
+            "00000000000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+        )
+        assertEquals(expectedCpiMetadata, metadata.getCpiMetadata())
+
+        val expectedCpkMetadata = listOf(
+                CpkSummary(
                     "MockCpk",
                     "1",
                     "",
-                "0101010101010101010101010101010101010101010101010101010101010101"),
-                CpkMetadata(
+                    "0101010101010101010101010101010101010101010101010101010101010101"),
+                CpkSummary(
                     "MockCpk",
                     "3",
                     "",
-                    "0303030303030303030303030303030303030303030303030303030303030303")))
-
-        assertEquals(expectedCpiMetadata, metadata.getCpiMetadata())
+                    "0303030303030303030303030303030303030303030303030303030303030303"))
+        assertEquals(expectedCpkMetadata, metadata.getCpkMetadata())
     }
 
-    private fun makeTransactionBuilder() = ConsensualTransactionBuilderImpl(
-        merkleTreeProvider,
-        digestService,
-        secureRandom,
-        serializer,
-        signingService,
-        jsonMarshallingService,
-        ConsensualTransactionMocks.mockMemberLookup(),
-        ConsensualTransactionMocks.mockCpiInfoReadService(),
-        ConsensualTransactionMocks.mockVirtualNodeInfoService()
-    )
+    fun makeTransactionBuilder(): ConsensualTransactionBuilder {
+        whenever(signingService.sign(any(), any(), any())).thenReturn(
+            DigitalSignature.WithKey(
+                testPublicKey,
+                byteArrayOf(1),
+                emptyMap()
+            )
+        )
+
+        return ConsensualTransactionBuilderImpl(
+            cipherSchemeMetadata,
+            digestService,
+            jsonMarshallingService,
+            merkleTreeFactory,
+            serializationService,
+            signingService,
+            ConsensualTransactionMocks.mockMemberLookup(),
+            ConsensualTransactionMocks.mockSandboxCpks()
+        )
+    }
 }

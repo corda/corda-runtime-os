@@ -26,8 +26,9 @@ dependencies {
     implementation project(':libs:serialization:serialization-checkpoint-api')
     implementation project(":libs:virtual-node:sandbox-group-context")
     implementation project(":libs:serialization:serialization-internal")
-    implementation project(':components:virtual-node:cpi-info-read-service')
-    implementation project(':components:virtual-node:virtual-node-info-read-service')
+
+    runtimeOnly project(":libs:ledger:ledger-consensual-serialization")
+    runtimeOnly project(":libs:ledger:ledger-common-serialization")
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
@@ -47,6 +48,7 @@ dependencies {
 
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     integrationTestImplementation project(':testing:sandboxes')
+    integrationTestImplementation project(':testing:ledger:ledger-consensual-testkit')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
@@ -56,5 +58,5 @@ dependencies {
     integrationTestRuntimeOnly project(":libs:crypto:crypto-serialization-impl")
     integrationTestRuntimeOnly project(':testing:test-serialization')
     integrationTestRuntimeOnly project(":libs:application:application-impl")
-    integrationTestRuntimeOnly project(':testing:cpi-info-read-service-fake')
+
 }

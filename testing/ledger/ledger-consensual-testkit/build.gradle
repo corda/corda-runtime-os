@@ -11,6 +11,7 @@ dependencies {
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation "net.corda:corda-cipher-suite"
     implementation "net.corda:corda-application"
+    implementation "net.corda:corda-ledger-consensual"
 
     implementation project(":libs:ledger:ledger-common-impl")
     implementation project(":libs:ledger:ledger-consensual-impl")
