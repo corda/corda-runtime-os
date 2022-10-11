@@ -2,7 +2,7 @@ package net.corda.applications.workers.workercommon
 
 import kotlin.math.absoluteValue
 import kotlin.random.Random
-import net.corda.applications.workers.workercommon.internal.HEALTH_MONITOR_PORT
+import net.corda.applications.workers.workercommon.internal.WORKER_MONITOR_PORT
 import net.corda.schema.configuration.ConfigDefaults
 import picocli.CommandLine.Option
 
@@ -27,14 +27,14 @@ class DefaultWorkerParams {
     // This needs revision as arguably it belongs to the `messagingParams`
     var topicPrefix = ""
 
-    @Option(names = ["-n", "--noHealthMonitor"], description = ["Disables the health monitor."])
-    var disableHealthMonitor = false
+    @Option(names = ["-n", "--noWorkerMonitor"], description = ["Disables the worker monitor."])
+    var disableWorkerMonitor = false
 
     @Option(
-        names = ["-p", "--healthMonitorPort"],
-        description = ["The port the health monitor should listen on. Defaults to $HEALTH_MONITOR_PORT."]
+        names = ["-p", "--workerMonitorPort"],
+        description = ["The port the worker monitor should listen on. Defaults to $WORKER_MONITOR_PORT."]
     )
-    var healthMonitorPort = HEALTH_MONITOR_PORT
+    var workerMonitorPort = WORKER_MONITOR_PORT
 
     @Option(names = ["-m", "--messagingParams"], description = ["Messaging parameters for the worker."])
     var messagingParams = emptyMap<String, String>()
