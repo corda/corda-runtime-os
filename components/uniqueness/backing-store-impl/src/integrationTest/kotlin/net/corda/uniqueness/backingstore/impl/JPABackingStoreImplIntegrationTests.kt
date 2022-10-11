@@ -240,9 +240,10 @@ class JPABackingStoreImplIntegrationTests {
 
                     val unknownStates = (toErrorType<UniquenessCheckErrorInputStateUnknown>(uniquenessCheckResult))
                         .unknownStates
-                    assertThat(unknownStates.size).isEqualTo(1)
-                    assertThat(unknownStates.first().stateIndex).isEqualTo(0)
-                    assertThat(unknownStates.first().txHash).isEqualTo(txId)
+                    assertAll(
+                        { assertThat(unknownStates.size).isEqualTo(1) },
+                        { assertThat(unknownStates.first().stateIndex).isEqualTo(0) },
+                        { assertThat(unknownStates.first().txHash).isEqualTo(txId) })
                     UniquenessAssertions.assertRejectedUniquenessCheckResult(uniquenessCheckResult)
                 }
             }
@@ -273,10 +274,11 @@ class JPABackingStoreImplIntegrationTests {
 
                     val conflicts = (toErrorType<UniquenessCheckErrorInputStateConflict>(uniquenessCheckResult))
                         .conflictingStates
-                    assertThat(conflicts.size).isEqualTo(1)
-                    assertThat(conflicts.first().consumingTxId).isNull()
-                    assertThat(conflicts.first().stateRef.txHash).isEqualTo(txId)
-                    assertThat(conflicts.first().stateRef.stateIndex).isEqualTo(0)
+                    assertAll(
+                        { assertThat(conflicts.size).isEqualTo(1) },
+                        { assertThat(conflicts.first().consumingTxId).isNull() },
+                        { assertThat(conflicts.first().stateRef.txHash).isEqualTo(txId) },
+                        { assertThat(conflicts.first().stateRef.stateIndex).isEqualTo(0) })
                     UniquenessAssertions.assertRejectedUniquenessCheckResult(uniquenessCheckResult)
                 }
             }
@@ -307,10 +309,11 @@ class JPABackingStoreImplIntegrationTests {
 
                     val conflicts = (toErrorType<UniquenessCheckErrorReferenceStateConflict>(uniquenessCheckResult))
                         .conflictingStates
-                    assertThat(conflicts.size).isEqualTo(1)
-                    assertThat(conflicts.first().consumingTxId).isNull()
-                    assertThat(conflicts.first().stateRef.txHash).isEqualTo(txId)
-                    assertThat(conflicts.first().stateRef.stateIndex).isEqualTo(0)
+                    assertAll(
+                        { assertThat(conflicts.size).isEqualTo(1) },
+                        { assertThat(conflicts.first().consumingTxId).isNull() },
+                        { assertThat(conflicts.first().stateRef.txHash).isEqualTo(txId) },
+                        { assertThat(conflicts.first().stateRef.stateIndex).isEqualTo(0) })
                     UniquenessAssertions.assertRejectedUniquenessCheckResult(uniquenessCheckResult)
                 }
             }
@@ -339,9 +342,10 @@ class JPABackingStoreImplIntegrationTests {
 
                     val unknownStates = (toErrorType<UniquenessCheckErrorReferenceStateUnknown>(uniquenessCheckResult))
                         .unknownStates
-                    assertThat(unknownStates.size).isEqualTo(1)
-                    assertThat(unknownStates.first().stateIndex).isEqualTo(0)
-                    assertThat(unknownStates.first().txHash).isEqualTo(txId)
+                    assertAll(
+                        { assertThat(unknownStates.size).isEqualTo(1) },
+                        { assertThat(unknownStates.first().stateIndex).isEqualTo(0) },
+                        { assertThat(unknownStates.first().txHash).isEqualTo(txId) })
                     UniquenessAssertions.assertRejectedUniquenessCheckResult(uniquenessCheckResult)
                 }
             }
@@ -371,9 +375,10 @@ class JPABackingStoreImplIntegrationTests {
                     assertThat(txIds.contains(secureHashTxnDetail.key))
 
                     val error = toErrorType<UniquenessCheckErrorTimeWindowOutOfBounds>(uniquenessCheckResult)
-                    assertThat(error.evaluationTimestamp).isEqualTo(evaluationTime)
-                    assertThat(error.timeWindowLowerBound).isEqualTo(lowerBound)
-                    assertThat(error.timeWindowUpperBound).isEqualTo(upperBound)
+                    assertAll(
+                        { assertThat(error.evaluationTimestamp).isEqualTo(evaluationTime) },
+                        { assertThat(error.timeWindowLowerBound).isEqualTo(lowerBound) },
+                        { assertThat(error.timeWindowUpperBound).isEqualTo(upperBound) })
                     UniquenessAssertions.assertRejectedUniquenessCheckResult(uniquenessCheckResult)
                 }
             }
@@ -427,9 +432,10 @@ class JPABackingStoreImplIntegrationTests {
                 assertEquals(1, txnDetails.size)
                 txnDetails.firstNotNullOf { secureHashTxnDetail ->
                     val uniquenessCheckResult = secureHashTxnDetail.value.result
-                    assertThat(txIds.contains(secureHashTxnDetail.key))
-                    assertThat((toErrorType<UniquenessCheckErrorMalformedRequest>(uniquenessCheckResult)).errorText)
-                        .isEqualTo(errorMessage)
+                    assertAll(
+                        { assertThat(txIds.contains(secureHashTxnDetail.key)) },
+                        { assertThat((toErrorType<UniquenessCheckErrorMalformedRequest>(uniquenessCheckResult)).errorText)
+                        .isEqualTo(errorMessage) })
                     UniquenessAssertions.assertRejectedUniquenessCheckResult(uniquenessCheckResult)
                 }
             }
@@ -449,8 +455,9 @@ class JPABackingStoreImplIntegrationTests {
                 val result = session.getStateDetails(stateRefs).toList()
                 assertThat(result.size).isEqualTo(hashCnt)
                 result.forEach { stateRefAndStateDetail ->
-                    assertThat(secureHashes).contains(stateRefAndStateDetail.first.txHash)
-                    assertThat(stateRefAndStateDetail.second.consumingTxId).isNull()
+                    assertAll(
+                        { assertThat(secureHashes).contains(stateRefAndStateDetail.first.txHash) },
+                        { assertThat(stateRefAndStateDetail.second.consumingTxId).isNull()} )
                 }
             }
         }
