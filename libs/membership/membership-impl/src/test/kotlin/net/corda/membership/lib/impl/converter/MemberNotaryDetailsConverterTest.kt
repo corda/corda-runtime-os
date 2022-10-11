@@ -81,12 +81,10 @@ class MemberNotaryDetailsConverterTest {
     }
 
     @Test
-    fun `convert throws exception if service plugin is missing`() {
+    fun `convert return null plugin if plugin is not set`() {
         whenever(context.value("service.plugin")).doReturn(null)
 
-        assertThrows<ValueNotFoundException> {
-            converter.convert(context)
-        }
+        assertThat(converter.convert(context).servicePlugin).isNull()
     }
 
     @Test

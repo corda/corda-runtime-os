@@ -4,7 +4,7 @@ import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_PEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
-import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_ROLE
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PLUGIN
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
@@ -20,7 +20,7 @@ internal sealed class MemberRole {
             }.toSet()
             val roles: Collection<MemberRole> = roleNames.map { roleName ->
                 when (roleName) {
-                    NOTARY_NAME -> {
+                    NOTARY_ROLE -> {
                         readNotary(context)
                     }
 
@@ -50,7 +50,7 @@ internal sealed class MemberRole {
 
         private fun readNotary(context: Map<String, String>): Notary {
             val serviceName = context[NOTARY_SERVICE_NAME] ?: throw IllegalArgumentException("Notary must have a service name")
-            val plugin = context[NOTARY_SERVICE_PLUGIN] ?: throw IllegalArgumentException("Notary must have a service plugin")
+            val plugin = context[NOTARY_SERVICE_PLUGIN]
             return Notary(
                 serviceName = MemberX500Name.parse(serviceName),
                 plugin = plugin,
@@ -65,7 +65,7 @@ internal sealed class MemberRole {
 
     data class Notary(
         val serviceName: MemberX500Name,
-        val plugin: String,
+        val plugin: String?,
     ) : MemberRole() {
         override fun toMemberInfo(
             keysFactory: KeysFactory,
@@ -73,13 +73,18 @@ internal sealed class MemberRole {
         ): Collection<Pair<String, String>> {
             val key = keysFactory.getOrGenerateKeyPair(NOTARY)
             return listOf(
-                "$ROLES_PREFIX$index" to NOTARY_NAME,
+                "$ROLES_PREFIX$index" to NOTARY_ROLE,
                 NOTARY_SERVICE_NAME to serviceName.toString(),
-                NOTARY_SERVICE_PLUGIN to plugin,
                 String.format(NOTARY_KEY_PEM, index) to key.pem,
                 String.format(NOTARY_KEY_HASH, index) to key.hash.toString(),
                 String.format(NOTARY_KEY_SPEC, index) to key.spec.signatureName,
-            )
+            ) + if(plugin == null ){
+                emptyList()
+            } else {
+                listOf(
+                    NOTARY_SERVICE_PLUGIN to plugin,
+                )
+            }
         }
     }
 }

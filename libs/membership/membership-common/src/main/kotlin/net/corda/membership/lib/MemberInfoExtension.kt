@@ -106,7 +106,7 @@ class MemberInfoExtension {
         /**
          * Notary role name
          */
-        const val NOTARY_NAME = "notary"
+        const val NOTARY_ROLE = "notary"
 
         /**
          * Notary role properties
@@ -207,7 +207,7 @@ class MemberInfoExtension {
                     .filter {
                         it.key.startsWith(ROLES_PREFIX)
                     }.any {
-                        it.value == NOTARY_NAME
+                        it.value == NOTARY_ROLE
                     }
             ) {
                 memberProvidedContext.parse("corda.notary")

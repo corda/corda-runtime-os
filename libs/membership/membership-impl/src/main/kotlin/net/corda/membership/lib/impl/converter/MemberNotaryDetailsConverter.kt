@@ -36,7 +36,6 @@ class MemberNotaryDetailsConverter @Activate constructor(
     override fun convert(context: ConversionContext): MemberNotaryDetails {
         val serviceName = context.value(SERVICE_NAME) ?: throw ValueNotFoundException("'$SERVICE_NAME' is null or absent.")
         val servicePlugin = context.value(SERVICE_PLUGIN)
-            ?: throw ValueNotFoundException("'$SERVICE_PLUGIN' is null or absent.")
         val keys = generateSequence(0) {
             it + 1
         }.map { index ->
