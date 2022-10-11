@@ -16,8 +16,6 @@ import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
 import net.corda.ledger.common.internal.transaction.SignableData
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpkMetadata
-import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
@@ -27,7 +25,6 @@ import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
@@ -67,18 +64,7 @@ class ConsensualTransactionBuilderImpl(
                 "cpiSignerSummaryHash" to cpi.signerSummaryHash.toString()
             )
         )
-    }
-
-    @Suspendable
-    private fun createSignature(txId: SecureHash, publicKey: PublicKey): DigitalSignatureAndMetadata {
-        val signatureMetadata = getSignatureMetadata()
-        val signableData = SignableData(txId, signatureMetadata)
-        val signature = signingService.sign(
-            serializationService.serialize(signableData).bytes,
-            publicKey,
-            SignatureSpec.ECDSA_SHA256
-        ) //Rework with CORE-6969
-        return DigitalSignatureAndMetadata(signature, signatureMetadata)
+        return ConsensualSignedTransactionImpl(serializationService, signingService, wireTransaction, listOf(signatureWithMetaData))
     }
 
     private fun buildWireTransaction(): WireTransaction {

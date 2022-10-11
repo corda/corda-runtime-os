@@ -6,6 +6,7 @@ import net.corda.ledger.common.testkit.getWireTransaction
 import net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
+import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.cipher.suite.DigestService
@@ -17,7 +18,8 @@ fun getConsensualSignedTransaction(
     digestService: DigestService,
     merkleTreeProvider: MerkleTreeProvider,
     serializationService: SerializationService,
-    jsonMarshallingService: JsonMarshallingService
+    jsonMarshallingService: JsonMarshallingService,
+    signingService: SigningService
 ): ConsensualSignedTransaction {
     val wireTransaction = getWireTransaction(digestService, merkleTreeProvider, jsonMarshallingService)
 
@@ -29,6 +31,6 @@ fun getConsensualSignedTransaction(
     val digitalSignatureMetadata =
         DigitalSignatureMetadata(Instant.now(), mapOf()) //CORE-5091 populate this properly...
     val signatureWithMetaData = DigitalSignatureAndMetadata(signature, digitalSignatureMetadata)
-    return ConsensualSignedTransactionImpl(serializationService, wireTransaction, listOf(signatureWithMetaData))
+    return ConsensualSignedTransactionImpl(serializationService, signingService, wireTransaction, listOf(signatureWithMetaData))
 }
 

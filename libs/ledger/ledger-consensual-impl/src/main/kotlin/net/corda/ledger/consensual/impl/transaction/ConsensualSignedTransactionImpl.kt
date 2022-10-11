@@ -1,7 +1,9 @@
 package net.corda.ledger.consensual.impl.transaction
 
 import net.corda.ledger.common.impl.transaction.WireTransaction
+import net.corda.ledger.common.internal.transaction.createTransactionSignature
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
+import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.isFulfilledBy
@@ -11,6 +13,7 @@ import java.security.PublicKey
 
 class ConsensualSignedTransactionImpl(
     private val serializer: SerializationService,
+    private val signingService: SigningService,
     val wireTransaction: WireTransaction,
     override val signatures: List<DigitalSignatureAndMetadata>
 ): ConsensualSignedTransaction
@@ -48,9 +51,9 @@ class ConsensualSignedTransactionImpl(
     override fun toLedgerTransaction(): ConsensualLedgerTransaction =
         ConsensualLedgerTransactionImpl(this.wireTransaction, serializer)
 
-    /** CORE-5091 it does not do anything at the moment. */
     override fun addSignature(publicKey: PublicKey): ConsensualSignedTransaction {
-        return ConsensualSignedTransactionImpl(serializer, wireTransaction, signatures)
+        val signature = createTransactionSignature(signingService, serializer, getCpiIdentifier(), id, publicKey)
+        return ConsensualSignedTransactionImpl(serializer, signingService, wireTransaction, signatures + signature)
     }
 
     override fun getMissingSigningKeys(): Set<PublicKey> {
