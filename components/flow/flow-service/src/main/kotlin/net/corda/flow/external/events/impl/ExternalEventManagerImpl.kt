@@ -78,10 +78,7 @@ class ExternalEventManagerImpl(
         externalEventResponse: ExternalEventResponse
     ): ExternalEventState {
         val requestId = externalEventResponse.requestId
-        log.debug {
-            "Processing received external event response of type ${externalEventResponse.payload.javaClass.name} " +
-                    "with id $requestId"
-        }
+        log.debug { "Processing received external event response with id $requestId" }
         if (requestId == externalEventState.requestId) {
             log.debug { "External event response with id $requestId matched last sent request" }
             externalEventState.response = externalEventResponse

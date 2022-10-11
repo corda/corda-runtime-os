@@ -19,13 +19,16 @@ import org.osgi.test.common.annotation.InjectService
 @Component(service = [FlowFiberService::class, SingletonSerializeAsToken::class])
 class TestFlowFiberServiceWithSerializationProxy @Activate constructor(
     @Reference(service = CipherSchemeMetadata::class) private val schemeMetadata: CipherSchemeMetadata
-) : FlowFiberService, SingletonSerializeAsToken{
+) : FlowFiberService, SingletonSerializeAsToken {
     override fun getExecutingFiber(): FlowFiber {
         val testFlowFiberServiceWithSerialization = TestFlowFiberServiceWithSerialization()
-        testFlowFiberServiceWithSerialization.configureSerializer ({
-        /* Not visible for some reasons. Since serialization is not used in the current tests, not a problem.*/
+        testFlowFiberServiceWithSerialization.configureSerializer(
+            {
+                /* Not visible for some reasons. Since serialization is not used in the current tests, not a problem.*/
 //            it.register(PartySerializer(), it)
-        }, schemeMetadata)
+            },
+            schemeMetadata
+        )
         return testFlowFiberServiceWithSerialization.getExecutingFiber()
     }
 }
