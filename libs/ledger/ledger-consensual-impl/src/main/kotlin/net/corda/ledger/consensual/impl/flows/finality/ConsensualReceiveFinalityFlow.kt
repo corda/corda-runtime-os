@@ -1,7 +1,6 @@
 package net.corda.ledger.consensual.impl.flows.finality
 
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
-import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.membership.MemberLookup
@@ -30,10 +29,6 @@ class ConsensualReceiveFinalityFlow(
     @CordaInject
     lateinit var memberLookup: MemberLookup
 
-    // TODO [CORE-7031] Remove once real signatures can be extracted from a [ConsensualLedgerTransaction]
-    @CordaInject
-    lateinit var signingService: SigningService
-
     @Suspendable
     override fun call(): ConsensualSignedTransaction {
         val signedTransaction = session.receive<ConsensualSignedTransaction>()
@@ -44,16 +39,10 @@ class ConsensualReceiveFinalityFlow(
 
         // TODO [CORE-7029] Record unfinalised transaction
 
-        signedTransaction.addSignature(memberLookup.myInfo().ledgerKeys.first())
-        // TODO [CORE-7031] Remove once real signatures can be extracted from a [ConsensualLedgerTransaction]
-//        session.send(signedTransaction.signatures.last())
-        session.send(
-            signingService.sign(
-                bytes = signedTransaction.id.bytes,
-                publicKey = memberLookup.myInfo().ledgerKeys.first(),
-                signatureSpec = SignatureSpec.ECDSA_SHA256
-            )
-        )
+        val txWithMySignature = signedTransaction.sign(memberLookup.myInfo().ledgerKeys.first())
+        val mySignature = txWithMySignature.signatures.last()
+
+        session.send(mySignature)
 
         val signedTransactionToFinalize = session.receive<ConsensualSignedTransaction>()
 

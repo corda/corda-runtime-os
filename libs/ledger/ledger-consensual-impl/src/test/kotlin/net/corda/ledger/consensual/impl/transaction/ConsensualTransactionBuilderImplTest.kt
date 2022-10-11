@@ -32,14 +32,14 @@ internal class ConsensualTransactionBuilderImplTest {
     fun `can build a simple Transaction`() {
         val tx = makeTransactionBuilder()
             .withStates(ConsensualTransactionMocks.testConsensualState)
-            .signInitial(ConsensualTransactionMocks.testPublicKey)
+            .sign(ConsensualTransactionMocks.testPublicKey)
         assertIs<SecureHash>(tx.id)
     }
 
     @Test
     fun `cannot build Transaction without Consensual States`() {
         val exception = assertThrows(IllegalArgumentException::class.java) {
-            makeTransactionBuilder().signInitial(ConsensualTransactionMocks.testPublicKey)
+            makeTransactionBuilder().sign(ConsensualTransactionMocks.testPublicKey)
         }
         assertEquals("At least one consensual state is required", exception.message)
     }
@@ -50,7 +50,7 @@ internal class ConsensualTransactionBuilderImplTest {
             makeTransactionBuilder()
                 .withStates(ConsensualTransactionMocks.testConsensualState)
                 .withStates(TestConsensualState("test", emptyList()))
-                .signInitial(ConsensualTransactionMocks.testPublicKey)
+                .sign(ConsensualTransactionMocks.testPublicKey)
         }
         assertEquals("All consensual states must have participants", exception.message)
     }
@@ -59,7 +59,7 @@ internal class ConsensualTransactionBuilderImplTest {
     fun `includes CPI and CPK information in metadata`() {
         val tx = makeTransactionBuilder()
             .withStates(ConsensualTransactionMocks.testConsensualState)
-            .signInitial(ConsensualTransactionMocks.testPublicKey) as ConsensualSignedTransactionImpl
+            .sign(ConsensualTransactionMocks.testPublicKey) as ConsensualSignedTransactionImpl
 
         val metadata = tx.wireTransaction.metadata
         assertEquals("0.001", metadata.getLedgerVersion())

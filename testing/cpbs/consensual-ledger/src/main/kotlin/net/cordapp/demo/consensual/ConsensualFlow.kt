@@ -68,7 +68,7 @@ class ConsensualFlow : RPCStartableFlow {
             val txBuilder = consensualLedgerService.getTransactionBuilder()
             val signedTransaction = txBuilder
                 .withStates(testConsensualState)
-                .signInitial(memberLookup.myInfo().ledgerKeys.first())
+                .sign(memberLookup.myInfo().ledgerKeys.first())
 
             val finalizedSignedTransaction = consensualLedgerService.finality(
                 signedTransaction,

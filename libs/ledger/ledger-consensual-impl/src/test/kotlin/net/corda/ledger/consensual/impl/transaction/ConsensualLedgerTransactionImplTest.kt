@@ -43,7 +43,7 @@ internal class ConsensualLedgerTransactionImplTest {
             ConsensualTransactionMocks.mockSandboxCpks(),
         )
             .withStates(ConsensualTransactionMocks.testConsensualState)
-            .signInitial(ConsensualTransactionMocks.testPublicKey)
+            .sign(ConsensualTransactionMocks.testPublicKey)
         val ledgerTransaction = signedTransaction.toLedgerTransaction()
         assertTrue(abs(ledgerTransaction.timestamp.toEpochMilli() / 1000 - testTimestamp.toEpochMilli() / 1000) < 5)
         assertIs<List<ConsensualState>>(ledgerTransaction.states)

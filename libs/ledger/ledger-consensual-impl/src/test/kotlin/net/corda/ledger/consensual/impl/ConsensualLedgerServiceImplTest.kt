@@ -66,7 +66,7 @@ class ConsensualLedgerServiceImplTest {
         val transactionBuilder = service.getTransactionBuilder()
         val signedTransaction = transactionBuilder
             .withStates(ConsensualTransactionMocks.testConsensualState)
-            .signInitial(ConsensualTransactionMocks.testPublicKey)
+            .sign(ConsensualTransactionMocks.testPublicKey)
         assertIs<ConsensualSignedTransaction>(signedTransaction)
         assertIs<SecureHash>(signedTransaction.id)
     }

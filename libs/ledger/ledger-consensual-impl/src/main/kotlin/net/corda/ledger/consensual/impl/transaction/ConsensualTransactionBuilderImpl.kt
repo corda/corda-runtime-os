@@ -48,7 +48,7 @@ class ConsensualTransactionBuilderImpl(
         this.copy(states = this.states + states)
 
     @Suspendable
-    override fun signInitial(publicKey: PublicKey): ConsensualSignedTransaction {
+    override fun sign(publicKey: PublicKey): ConsensualSignedTransaction {
         val wireTransaction = buildWireTransaction()
         val signatureWithMetaData = createSignature(wireTransaction.id, publicKey)
         return ConsensualSignedTransactionImpl(serializationService, wireTransaction, listOf(signatureWithMetaData))

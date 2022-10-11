@@ -1,5 +1,6 @@
 package net.corda.ledger.consensual.impl.flows.finality
 
+import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
@@ -65,7 +66,7 @@ class ConsensualFinalityFlow(
             session.send(signedTransaction)
 
             val signature = try {
-                session.receive<DigitalSignature.WithKey>()
+                session.receive<DigitalSignatureAndMetadata>()
             } catch (e: CordaRuntimeException) {
                 log.warn(
                     "Failed to receive signature from ${session.counterparty} for signed transaction ${signedTransaction.id}"
@@ -79,7 +80,7 @@ class ConsensualFinalityFlow(
                 digitalSignatureVerificationService.verify(
                     publicKey = signature.by,
                     signatureSpec = SignatureSpec.ECDSA_SHA256,
-                    signatureData = signature.bytes,
+                    signatureData = signature.signature.bytes,
                     clearData = signedTransaction.id.bytes
                 )
                 log.debug {
@@ -95,7 +96,7 @@ class ConsensualFinalityFlow(
                 throw e
             }
 
-            signedByParticipantsTransaction = signedTransaction.addSignature(signature.by)
+            signedByParticipantsTransaction = signedTransaction.addSignature(signature)
 
             log.trace {
                 "Added signature from ${session.counterparty} of $signature for signed transaction ${signedTransaction.id}"
