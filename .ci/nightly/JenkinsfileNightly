@@ -1,7 +1,9 @@
 @Library('corda-shared-build-pipeline-steps@5.0') _
 
-cordaNightlyPipeline(
+cordaPipeline(
     nexusAppId: 'net.corda-api-5.0',
     runIntegrationTests: false,
-    dailyBuildCron: 'H 02 * * *'
+    dailyBuildCron: 'H 02 * * *',
+    gradleAdditionalArgs: '-Dscan.tag.Nightly-Build',
+    generateSbom: true
     )
