@@ -678,7 +678,7 @@ class JPABackingStoreImplIntegrationTests {
             impl.session(aliceIdentity) { session ->
                 session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
             }
-        }catch(e: IllegalStateException) {
+        } catch (e: IllegalStateException) {
             // Expect a RollbackException at committing.
             assertThat(e.cause).isInstanceOf(RollbackException::class.java)
         }

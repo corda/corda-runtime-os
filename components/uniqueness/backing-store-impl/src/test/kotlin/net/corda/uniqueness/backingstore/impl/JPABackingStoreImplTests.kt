@@ -61,7 +61,7 @@ class JPABackingStoreImplTests {
     private lateinit var dbConnectionManager: DbConnectionManager
 
     companion object {
-        val TEST_IDENTITY = createTestHoldingIdentity("C=GB, L=London, O=Alice", "Test Group")
+        val aliceIdentity = createTestHoldingIdentity("C=GB, L=London, O=Alice", "Test Group")
     }
 
     inner class DummyLifecycle : LifecycleEvent
@@ -169,16 +169,15 @@ class JPABackingStoreImplTests {
         fun `Start event starts following the statuses of the required dependencies`() {
             backingStoreImpl.eventHandler(StartEvent(), lifecycleCoordinator)
             Mockito.verify(lifecycleCoordinator).followStatusChangesByName(
-                eq(
-                    setOf(LifecycleCoordinatorName.forComponent<DbConnectionManager>())
-                )
+                eq(setOf(LifecycleCoordinatorName.forComponent<DbConnectionManager>()))
             )
+            Mockito.verify(dbConnectionManager, times(1)).start()
         }
 
         @Test
-        fun `Stop event TODO`() {
-            val mockCoordinator = mock<LifecycleCoordinator>()
-            backingStoreImpl.eventHandler(StopEvent(), mockCoordinator)
+        fun `Stop event stops db connection manager`() {
+            backingStoreImpl.eventHandler(StopEvent(), lifecycleCoordinator)
+            Mockito.verify(dbConnectionManager, times(1)).stop()
         }
 
         @Test
@@ -208,14 +207,14 @@ class JPABackingStoreImplTests {
 
         @Test
         fun `Session always closes entity manager after use`() {
-            backingStoreImpl.session(TEST_IDENTITY) { }
+            backingStoreImpl.session(aliceIdentity) { }
             Mockito.verify(entityManager, times(1)).close()
         }
 
         @Test
         fun `Session closes entity manager even when exception occurs`() {
             assertThrows<java.lang.RuntimeException> {
-                backingStoreImpl.session(TEST_IDENTITY) { throw java.lang.RuntimeException("test exception") }
+                backingStoreImpl.session(aliceIdentity) { throw java.lang.RuntimeException("test exception") }
             }
             Mockito.verify(entityManager, times(1)).close()
         }
@@ -232,7 +231,7 @@ class JPABackingStoreImplTests {
 
         @Test
         fun `Executing transaction runs with transaction begin and commit`() {
-            backingStoreImpl.session(TEST_IDENTITY) { session ->
+            backingStoreImpl.session(aliceIdentity) { session ->
                 session.executeTransaction { _, _ -> }
             }
 
@@ -256,7 +255,7 @@ class JPABackingStoreImplTests {
 
             // Expect an exception because no error details is available from the mock.
             assertThrows<IllegalStateException> {
-                backingStoreImpl.session(TEST_IDENTITY) { session ->
+                backingStoreImpl.session(aliceIdentity) { session ->
                     session.getTransactionDetails(List(1) { SecureHashUtils.randomSecureHash() } )
                 }
             }
