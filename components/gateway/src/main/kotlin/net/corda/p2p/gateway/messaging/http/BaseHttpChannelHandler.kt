@@ -17,11 +17,11 @@ abstract class BaseHttpChannelHandler(private val eventListener: HttpConnectionL
     private var messageBodyBuf: ByteBuf? = null
 
     protected fun allocateBodyBuffer(ctx: ChannelHandlerContext, bytes: Int) {
-        messageBodyBuf = ctx.alloc().buffer(bytes)
+        messageBodyBuf = ctx.alloc().buffer(0, bytes)
     }
 
     protected fun readBytesIntoBodyBuffer(buffer: ByteBuf) {
-        buffer.readBytes(messageBodyBuf, buffer.readableBytes())
+        messageBodyBuf!!.writeBytes(buffer)
     }
 
     protected fun releaseBodyBuffer() {
