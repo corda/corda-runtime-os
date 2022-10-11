@@ -67,7 +67,7 @@ class ConsensualTransactionMocks {
             return memberLookup
         }
 
-        fun mockSandboxCpks(): Collection<CpkMetadata> {
+        fun mockSandboxCpks(): List<CpkMetadata> {
             return listOf(
                 makeCpkMetadata(1, CordappType.CONTRACT),
                 makeCpkMetadata(2, CordappType.WORKFLOW),

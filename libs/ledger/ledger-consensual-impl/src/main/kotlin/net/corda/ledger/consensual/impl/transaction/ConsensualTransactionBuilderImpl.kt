@@ -43,7 +43,7 @@ class ConsensualTransactionBuilderImpl(
     private val signingService: SigningService,
     // cpi defines what type of signing/hashing is used (related to the digital signature signing and verification stuff)
     private val memberLookup: MemberLookup,
-    private val sandboxCpks: Collection<CpkMetadata>,
+    private val sandboxCpks: List<CpkMetadata>,
     override val states: List<ConsensualState> = emptyList(),
 ) : ConsensualTransactionBuilder {
 
