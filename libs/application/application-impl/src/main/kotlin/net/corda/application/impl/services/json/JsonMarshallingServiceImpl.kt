@@ -3,12 +3,16 @@ package net.corda.application.impl.services.json
 import com.fasterxml.jackson.databind.JavaType
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector
+import com.fasterxml.jackson.databind.module.SimpleModule
 import com.fasterxml.jackson.databind.type.TypeFactory
 import com.fasterxml.jackson.databind.util.LRUMap
 import com.fasterxml.jackson.databind.util.LookupCache
 import com.fasterxml.jackson.module.kotlin.KotlinModule
+import net.corda.common.json.serializers.SerializationCustomizer
 import net.corda.common.json.serializers.standardTypesModule
 import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.marshalling.json.JsonDeserializer
+import net.corda.v5.application.marshalling.json.JsonSerializer
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
@@ -20,8 +24,8 @@ import java.security.PrivilegedExceptionAction
  * Simple implementation, requires alignment with other serialization such as that used
  * in the HTTP library
  */
-@Component(service = [ JsonMarshallingService::class, SingletonSerializeAsToken::class ], scope = PROTOTYPE)
-class JsonMarshallingServiceImpl : JsonMarshallingService, SingletonSerializeAsToken {
+@Component(service = [JsonMarshallingService::class, SingletonSerializeAsToken::class], scope = PROTOTYPE)
+class JsonMarshallingServiceImpl : JsonMarshallingService, SingletonSerializeAsToken, SerializationCustomizer {
     private companion object {
         private const val INITIAL_SIZE = 16
         private const val MAX_SIZE = 200
@@ -40,6 +44,9 @@ class JsonMarshallingServiceImpl : JsonMarshallingService, SingletonSerializeAsT
 
         registerModule(standardTypesModule())
     }
+
+    private val customSerializabkeClasses = mutableSetOf<Class<*>>()
+    private val customDeserializabkeClasses = mutableSetOf<Class<*>>()
 
     override fun format(data: Any): String {
         return try {
@@ -69,5 +76,28 @@ class JsonMarshallingServiceImpl : JsonMarshallingService, SingletonSerializeAsT
         } catch (e: PrivilegedActionException) {
             throw e.exception
         }
+    }
+
+    override fun <T> setSerializer(serializer: JsonSerializer<T>, clazz: Class<T>): Boolean {
+        if (customSerializabkeClasses.contains(clazz)) return false
+        customSerializabkeClasses.add(clazz)
+
+        val module = SimpleModule()
+        module.addSerializer(clazz, JsonSerializerAdaptor(serializer, clazz))
+        mapper.registerModule(module)
+
+        return true
+    }
+
+    override fun <T> setDeserializer(deserializer: JsonDeserializer<T>, clazz: Class<T>): Boolean {
+        if (customDeserializabkeClasses.contains(clazz)) return false
+        customDeserializabkeClasses.add(clazz)
+
+        val module = SimpleModule()
+        // TODO
+        //module.addDeserializer(clazz, JsonDeserializerAdaptor(deserializer, clazz))
+        mapper.registerModule(module)
+
+        return true
     }
 }
