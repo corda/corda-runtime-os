@@ -34,9 +34,9 @@ class ConsensualLedgerPersistenceServiceImpl @Activate constructor(
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService,
     @Reference(service = SigningService::class)
-    val signingService: SigningService,
+    private val signingService: SigningService,
     @Reference(service = DigitalSignatureVerificationService::class)
-    val digitalSignatureVerificationService: DigitalSignatureVerificationService,
+    private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
 ) : ConsensualLedgerPersistenceService, SingletonSerializeAsToken {
 
     @Suspendable
