@@ -29,6 +29,7 @@ import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateCon
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.uniqueness.utils.UniquenessAssertions
 import net.corda.uniqueness.utils.UniquenessAssertions.toErrorType
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorInputStateUnknown
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorMalformedRequest
@@ -209,7 +210,7 @@ class JPABackingStoreImplIntegrationTests {
                 txnDetails.firstNotNullOf { secureHashTxnDetail ->
                     val uniquenessCheckResult = secureHashTxnDetail.value.result
                     assertThat(txIds).contains(secureHashTxnDetail.key)
-                    UniquenessAssertions.assertAcceptedUniquenessCheckResult(uniquenessCheckResult)
+                    UniquenessAssertions.assertAcceptedResult<UniquenessCheckResultSuccess>(uniquenessCheckResult)
                 }
             }
         }
@@ -244,7 +245,8 @@ class JPABackingStoreImplIntegrationTests {
                         { assertThat(unknownStates.size).isEqualTo(1) },
                         { assertThat(unknownStates.first().stateIndex).isEqualTo(0) },
                         { assertThat(unknownStates.first().txHash).isEqualTo(txId) })
-                    UniquenessAssertions.assertRejectedUniquenessCheckResult(uniquenessCheckResult)
+                    UniquenessAssertions
+                        .assertRejectedResult<UniquenessCheckErrorInputStateUnknown>(uniquenessCheckResult)
                 }
             }
         }
@@ -279,7 +281,8 @@ class JPABackingStoreImplIntegrationTests {
                         { assertThat(conflicts.first().consumingTxId).isNull() },
                         { assertThat(conflicts.first().stateRef.txHash).isEqualTo(txId) },
                         { assertThat(conflicts.first().stateRef.stateIndex).isEqualTo(0) })
-                    UniquenessAssertions.assertRejectedUniquenessCheckResult(uniquenessCheckResult)
+                    UniquenessAssertions
+                        .assertRejectedResult<UniquenessCheckErrorInputStateConflict>(uniquenessCheckResult)
                 }
             }
         }
@@ -314,7 +317,8 @@ class JPABackingStoreImplIntegrationTests {
                         { assertThat(conflicts.first().consumingTxId).isNull() },
                         { assertThat(conflicts.first().stateRef.txHash).isEqualTo(txId) },
                         { assertThat(conflicts.first().stateRef.stateIndex).isEqualTo(0) })
-                    UniquenessAssertions.assertRejectedUniquenessCheckResult(uniquenessCheckResult)
+                    UniquenessAssertions
+                        .assertRejectedResult<UniquenessCheckErrorReferenceStateConflict>(uniquenessCheckResult)
                 }
             }
         }
@@ -346,7 +350,8 @@ class JPABackingStoreImplIntegrationTests {
                         { assertThat(unknownStates.size).isEqualTo(1) },
                         { assertThat(unknownStates.first().stateIndex).isEqualTo(0) },
                         { assertThat(unknownStates.first().txHash).isEqualTo(txId) })
-                    UniquenessAssertions.assertRejectedUniquenessCheckResult(uniquenessCheckResult)
+                    UniquenessAssertions
+                        .assertRejectedResult<UniquenessCheckErrorReferenceStateUnknown>(uniquenessCheckResult)
                 }
             }
         }
@@ -379,7 +384,8 @@ class JPABackingStoreImplIntegrationTests {
                         { assertThat(error.evaluationTimestamp).isEqualTo(evaluationTime) },
                         { assertThat(error.timeWindowLowerBound).isEqualTo(lowerBound) },
                         { assertThat(error.timeWindowUpperBound).isEqualTo(upperBound) })
-                    UniquenessAssertions.assertRejectedUniquenessCheckResult(uniquenessCheckResult)
+                    UniquenessAssertions
+                        .assertRejectedResult<UniquenessCheckErrorTimeWindowOutOfBounds>(uniquenessCheckResult)
                 }
             }
         }
@@ -436,7 +442,8 @@ class JPABackingStoreImplIntegrationTests {
                         { assertThat(txIds.contains(secureHashTxnDetail.key)) },
                         { assertThat((toErrorType<UniquenessCheckErrorMalformedRequest>(uniquenessCheckResult)).errorText)
                         .isEqualTo(errorMessage) })
-                    UniquenessAssertions.assertRejectedUniquenessCheckResult(uniquenessCheckResult)
+                    UniquenessAssertions
+                        .assertRejectedResult<UniquenessCheckErrorMalformedRequest>(uniquenessCheckResult)
                 }
             }
         }

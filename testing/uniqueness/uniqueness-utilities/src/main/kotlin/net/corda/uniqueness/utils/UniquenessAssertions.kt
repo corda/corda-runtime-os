@@ -7,8 +7,6 @@ import net.corda.uniqueness.datamodel.common.UniquenessConstants
 import net.corda.uniqueness.datamodel.common.toCharacterRepresentation
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
-import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
-import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
@@ -39,8 +37,8 @@ object UniquenessAssertions {
     /**
      * Checks for an accepted uniqueness check result.
      */
-    fun assertAcceptedUniquenessCheckResult(result: UniquenessCheckResult, clock: AutoTickTestClock? = null) {
-        assertInstanceOf(UniquenessCheckResultSuccess::class.java, result)
+    inline fun <reified T> assertAcceptedResult(result: UniquenessCheckResult, clock: AutoTickTestClock? = null) {
+        assertInstanceOf(T::class.java, result)
         assertThat(result.toCharacterRepresentation()).isEqualTo(UniquenessConstants.RESULT_ACCEPTED_REPRESENTATION)
         assertValidTimestamp(result.resultTimestamp, clock)
     }
@@ -48,8 +46,8 @@ object UniquenessAssertions {
     /**
      * Checks for a rejected uniqueness check result.
      */
-    fun assertRejectedUniquenessCheckResult(result: UniquenessCheckResult, clock: AutoTickTestClock? = null) {
-        assertInstanceOf(UniquenessCheckResultFailure::class.java, result)
+    inline fun <reified T>assertRejectedResult(result: UniquenessCheckResult, clock: AutoTickTestClock? = null) {
+        assertInstanceOf(T::class.java, toErrorType<T>(result))
         assertThat(result.toCharacterRepresentation()).isEqualTo(UniquenessConstants.RESULT_REJECTED_REPRESENTATION)
         assertValidTimestamp(result.resultTimestamp, clock)
     }
@@ -168,7 +166,6 @@ object UniquenessAssertions {
      */
     inline fun <reified T> toErrorType(result: UniquenessCheckResult): T {
         val failureImpl = result as UniquenessCheckResultFailureImpl
-        @Suppress("UNCHECKED_CAST")
         val errorImpl = failureImpl.error as T
         assertInstanceOf(T::class.java, errorImpl)
         return errorImpl
@@ -180,7 +177,7 @@ object UniquenessAssertions {
         return response.result as T
     }
 
-    private fun assertValidTimestamp(timestamp: Instant, clock: AutoTickTestClock? = null) {
+    fun assertValidTimestamp(timestamp: Instant, clock: AutoTickTestClock? = null) {
         assertThat(timestamp).isAfter(Instant.MIN)
         if (clock != null) {
             assertThat(timestamp).isBeforeOrEqualTo(clock.peekTime())
