@@ -82,7 +82,7 @@ class JPABackingStoreImplIntegrationTests {
 
     companion object {
         private val UPPER_BOUND = LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
-        private val MAX_ATTEMPTS = 10
+        private const val MAX_ATTEMPTS = 10
 
         private val aliceIdentity = createTestHoldingIdentity("C=GB, L=London, O=Alice", "Test Group")
         private val aliceIdentityDbName = VirtualNodeDbType.UNIQUENESS.getSchemaName(aliceIdentity.shortHash)
