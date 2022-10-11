@@ -1,7 +1,11 @@
 package net.corda.ledger.utxo.impl
 
 import net.corda.v5.base.util.uncheckedCast
-import net.corda.v5.ledger.utxo.*
+import net.corda.v5.ledger.utxo.BelongsToContract
+import net.corda.v5.ledger.utxo.Contract
+import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.StateAndRef
+import net.corda.v5.ledger.utxo.TransactionState
 
 /**
  * Casts the current [ContractState] to the specified type.
@@ -67,7 +71,7 @@ fun ContractState.getContractClass(): Class<out Contract>? {
     val enclosingClass = javaClass.enclosingClass
 
     if (enclosingClass != null && Contract::class.java.isAssignableFrom(enclosingClass)) {
-        return  uncheckedCast(enclosingClass)
+        return uncheckedCast(enclosingClass)
     }
     return null
 }

@@ -1,13 +1,6 @@
 package net.cordapp.demo.consensual
 
-import java.security.PublicKey
-import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.FlowEngine
-import net.corda.v5.application.flows.InitiatedBy
-import net.corda.v5.application.flows.InitiatingFlow
-import net.corda.v5.application.flows.RPCRequestData
-import net.corda.v5.application.flows.RPCStartableFlow
-import net.corda.v5.application.flows.ResponderFlow
+import net.corda.v5.application.flows.*
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
@@ -27,8 +20,6 @@ import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransactionVer
  * we can inject the ledger service. Eventually it should do a two-party IOUState
  * agreement.
  */
-
-class TestPartyImpl(override val name: MemberX500Name, override val owningKey: PublicKey) : Party
 
 @InitiatingFlow("consensual-flow-protocol")
 class ConsensualFlow : RPCStartableFlow {
@@ -67,17 +58,7 @@ class ConsensualFlow : RPCStartableFlow {
         try {
             val member = memberLookup.lookup(MemberX500Name("Bob", "London", "GB"))!!
 
-            val testConsensualState =
-                TestConsensualState(
-                    "test",
-                    listOf(
-                        TestPartyImpl(
-                            member.name,
-                            member.ledgerKeys.first()
-                        )
-                    )
-                )
-
+            val testConsensualState = TestConsensualState("test", listOf(Party(member.name, member.ledgerKeys.first())))
             val txBuilder = consensualLedgerService.getTransactionBuilder()
             val signedTransaction = txBuilder
                 .withStates(testConsensualState)

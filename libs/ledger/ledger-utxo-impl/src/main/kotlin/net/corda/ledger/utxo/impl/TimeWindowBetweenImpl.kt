@@ -1,7 +1,6 @@
 package net.corda.ledger.utxo.impl
 
 import net.corda.v5.ledger.utxo.TimeWindow
-import java.time.Duration
 import java.time.Instant
 
 /**
