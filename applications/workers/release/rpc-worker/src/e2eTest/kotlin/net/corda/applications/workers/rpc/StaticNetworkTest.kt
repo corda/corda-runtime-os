@@ -23,6 +23,7 @@ class StaticNetworkTest {
         )
     }
 
+
     @Test
     fun `register members`() {
         onboardStaticGroup()
