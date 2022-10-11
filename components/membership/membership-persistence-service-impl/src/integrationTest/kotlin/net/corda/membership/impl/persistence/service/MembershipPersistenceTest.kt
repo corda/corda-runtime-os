@@ -192,6 +192,12 @@ class MembershipPersistenceTest {
                 membershipPersistenceClient.persistGroupParameters(viewOwningIdentity, groupParameters)
             }
 
+            override fun persistGroupParametersInitialSnapshot(
+                viewOwningIdentity: HoldingIdentity
+            ) = safeCall {
+                membershipPersistenceClient.persistGroupParametersInitialSnapshot(viewOwningIdentity)
+            }
+
             override fun addNotaryToGroupParameters(
                 viewOwningIdentity: HoldingIdentity,
                 notary: MemberInfo

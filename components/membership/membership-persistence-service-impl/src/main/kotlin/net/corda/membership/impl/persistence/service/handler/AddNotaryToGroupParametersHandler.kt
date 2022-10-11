@@ -9,6 +9,7 @@ import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
 import net.corda.data.membership.db.response.command.PersistGroupParametersResponse
 import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PARTY_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.notaryKeys
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.virtualnode.toCorda
 
@@ -20,6 +21,8 @@ internal class AddNotaryToGroupParametersHandler(
         const val NOTARY_SERVICE_PLUGIN_KEY = "corda.notary.service.%s.plugin"
         const val NOTARY_KEYS_KEY = "corda.notary.service.%s.keys.%s"
         const val NOTARY_SERVICE_KEYS_PREFIX = "corda.notary.service.%.keys"
+        const val NOTARY_PLUGIN_KEY = "corda.notary.service.plugin"
+        const val EPOCH_KEY = "corda.epoch"
     }
 
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
@@ -62,46 +65,60 @@ internal class AddNotaryToGroupParametersHandler(
 
             val parameters = deserializeProperties(previous.parameters)
 
-            val notary = persistenceHandlerServices.memberInfoFactory.create(request.notary)
+            val notary = memberInfoFactory.create(request.notary)
             val notaryServiceName = notary.memberProvidedContext[NOTARY_SERVICE_PARTY_NAME]
                 ?: throw MembershipPersistenceException("Cannot add notary to group parameters - missing notary service name.")
-            val notaryServicePlugin = notary.memberProvidedContext["corda.notary.service.plugin"]
-                ?: throw MembershipPersistenceException("Cannot add notary to group parameters - missing notary service plugin.")
+            val notaryServicePlugin = notary.memberProvidedContext[NOTARY_PLUGIN_KEY]
             val notaryServiceNumber = parameters.items.firstOrNull { it.value == notaryServiceName }?.run {
                 key.split(".")[3].toInt()
             }
-            if (notaryServiceNumber != null &&
-                parameters[String.format(NOTARY_SERVICE_PLUGIN_KEY, notaryServiceNumber)] == notaryServicePlugin) {
+            if (notaryServiceNumber != null) {
                 // Add notary to existing notary service, or update notary with rotated keys
+                notaryServicePlugin?.let {
+                    require(parameters[String.format(NOTARY_SERVICE_PLUGIN_KEY, notaryServiceNumber)].toString() == it) {
+                        "Cannot add notary '${notary.name}' to notary service '$notaryServiceName' - plugin types do not match."
+                    }
+                }
                 val notaryKeys = parameters.items
                     .filter { it.key.startsWith(String.format(NOTARY_SERVICE_KEYS_PREFIX, notaryServiceNumber)) }
                     .map { it.value }
                 var newIndex = notaryKeys.size
-                notary.ledgerKeys
-                    .map { persistenceHandlerServices.keyEncodingService.encodeAsString(it) }
+                notary.notaryKeys
+                    .map { keyEncodingService.encodeAsString(it) }
                     .filterNot { notaryKeys.contains(it) }
-                    .forEach { parameters.items.add(KeyValuePair(
-                        String.format(NOTARY_KEYS_KEY, notaryServiceNumber, newIndex++),
-                        it
-                    )) }
+                    .forEach {
+                        parameters.items.add(
+                            KeyValuePair(
+                                String.format(NOTARY_KEYS_KEY, notaryServiceNumber, newIndex++),
+                                it
+                            )
+                        )
+                    }
             } else {
                 // Add new notary service
+                requireNotNull(notaryServicePlugin)
                 val newNotaryServiceNumber = parameters.items
                     .filter { NOTARY_SERVICE_NAME_KEY.format("[0-9]+").toRegex().matches(it.key) }.size
                 var newIndex = 0
                 parameters.items.add(KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, newNotaryServiceNumber), notaryServiceName))
                 parameters.items.add(KeyValuePair(String.format(NOTARY_SERVICE_PLUGIN_KEY, newNotaryServiceNumber), notaryServicePlugin))
-                notary.ledgerKeys
+                notary.notaryKeys
                     .map { persistenceHandlerServices.keyEncodingService.encodeAsString(it) }
                     .forEach { parameters.items.add(KeyValuePair(
                         String.format(NOTARY_KEYS_KEY, newNotaryServiceNumber, newIndex++),
                         it
                     )) }
             }
+            // Update epoch
+            val previousEpoch = parameters[EPOCH_KEY].toString().toInt()
+            val newEpoch = with(parameters.items) {
+                remove(KeyValuePair(EPOCH_KEY, previousEpoch.toString()))
+                add(KeyValuePair(EPOCH_KEY, (previousEpoch + 1).toString()))
+                previousEpoch + 1
+            }
 
             val entity = GroupParametersEntity(
-                epoch = previous.epoch?.plus(1),
-                lastModified = clock.instant(),
+                epoch = newEpoch,
                 parameters = serializeProperties(parameters),
             )
             em.persist(entity)

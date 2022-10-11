@@ -6,6 +6,7 @@ import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
 import net.corda.data.membership.db.request.command.PersistGroupParameters
+import net.corda.data.membership.db.request.command.PersistGroupParametersInitialSnapshot
 import net.corda.data.membership.db.request.command.PersistGroupPolicy
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
@@ -123,10 +124,23 @@ class MembershipPersistenceClientImpl(
         viewOwningIdentity: HoldingIdentity,
         groupParameters: GroupParameters
     ): MembershipPersistenceResult<Int> {
-        logger.info("Persisting new set of group parameters.")
+        logger.info("Persisting group parameters.")
         val result = MembershipPersistenceRequest(
             buildMembershipRequestContext(viewOwningIdentity.toAvro()),
             PersistGroupParameters(groupParameters.toAvro())
+        ).execute()
+        return when (val response = result.payload) {
+            is PersistGroupParametersResponse -> MembershipPersistenceResult.Success(response.epoch)
+            is PersistenceFailedResponse -> MembershipPersistenceResult.Failure(response.errorMessage)
+            else -> MembershipPersistenceResult.Failure("Unexpected response: $response")
+        }
+    }
+
+    override fun persistGroupParametersInitialSnapshot(viewOwningIdentity: HoldingIdentity): MembershipPersistenceResult<Int> {
+        logger.info("Persisting initial snapshot of group parameters.")
+        val result = MembershipPersistenceRequest(
+            buildMembershipRequestContext(viewOwningIdentity.toAvro()),
+            PersistGroupParametersInitialSnapshot()
         ).execute()
         return when (val response = result.payload) {
             is PersistGroupParametersResponse -> MembershipPersistenceResult.Success(response.epoch)

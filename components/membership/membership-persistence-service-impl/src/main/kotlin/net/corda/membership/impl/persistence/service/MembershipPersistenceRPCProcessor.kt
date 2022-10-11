@@ -5,6 +5,7 @@ import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
 import net.corda.data.membership.db.request.command.PersistGroupParameters
+import net.corda.data.membership.db.request.command.PersistGroupParametersInitialSnapshot
 import net.corda.data.membership.db.request.command.PersistGroupPolicy
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
@@ -22,6 +23,7 @@ import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.membership.impl.persistence.service.handler.AddNotaryToGroupParametersHandler
 import net.corda.membership.impl.persistence.service.handler.PersistGroupParametersHandler
+import net.corda.membership.impl.persistence.service.handler.PersistGroupParametersInitialSnapshotHandler
 import net.corda.membership.impl.persistence.service.handler.PersistGroupPolicyHandler
 import net.corda.membership.impl.persistence.service.handler.PersistMemberInfoHandler
 import net.corda.membership.impl.persistence.service.handler.PersistRegistrationRequestHandler
@@ -75,6 +77,7 @@ internal class MembershipPersistenceRPCProcessor(
         QueryMemberInfo::class.java to { QueryMemberInfoHandler(persistenceHandlerServices) },
         PersistGroupPolicy::class.java to { PersistGroupPolicyHandler(persistenceHandlerServices) },
         PersistGroupParameters::class.java to { PersistGroupParametersHandler(persistenceHandlerServices) },
+        PersistGroupParametersInitialSnapshot::class.java to { PersistGroupParametersInitialSnapshotHandler(persistenceHandlerServices) },
         AddNotaryToGroupParameters::class.java to { AddNotaryToGroupParametersHandler(persistenceHandlerServices) },
         QueryMemberSignature::class.java to { QueryMemberSignatureHandler(persistenceHandlerServices) },
         UpdateMemberAndRegistrationRequestToApproved::class.java to

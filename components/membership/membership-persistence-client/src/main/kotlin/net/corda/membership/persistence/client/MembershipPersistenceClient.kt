@@ -56,6 +56,10 @@ interface MembershipPersistenceClient : Lifecycle {
         groupParameters: GroupParameters
     ): MembershipPersistenceResult<Int>
 
+    fun persistGroupParametersInitialSnapshot(
+        viewOwningIdentity: HoldingIdentity
+    ): MembershipPersistenceResult<Int>
+
     /**
      * TODO
      */

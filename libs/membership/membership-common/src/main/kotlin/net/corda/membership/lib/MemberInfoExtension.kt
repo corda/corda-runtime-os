@@ -13,6 +13,7 @@ import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import java.net.URL
+import java.security.PublicKey
 import java.time.Instant
 
 class MemberInfoExtension {
@@ -40,6 +41,9 @@ class MemberInfoExtension {
         /** Key name for notary service property. */
         const val NOTARY_SERVICE_PARTY_NAME = "corda.notaryService.name"
         const val NOTARY_SERVICE_SESSION_KEY = "corda.notaryService.session.key"
+
+        /** Key name for notary key property. */
+        const val NOTARY_KEYS = "corda.notary.keys"
 
         /** Key name for serial property. */
         const val SERIAL = "corda.serial"
@@ -214,5 +218,10 @@ class MemberInfoExtension {
             } else {
                 null
             }
+
+        /** List of current and rotated notary keys. */
+        @JvmStatic
+        val MemberInfo.notaryKeys: List<PublicKey>
+            get() = memberProvidedContext.parseList(NOTARY_KEYS)
     }
 }
