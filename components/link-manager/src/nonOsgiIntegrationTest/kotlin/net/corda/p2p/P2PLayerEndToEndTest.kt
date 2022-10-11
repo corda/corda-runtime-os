@@ -522,6 +522,7 @@ class P2PLayerEndToEndTest {
                         identity.x500Name,
                         tlsCertificatesPem[i],
                         keyPairs[i].public.toPem(),
+                        null
                     )
                 )
             }.toList()

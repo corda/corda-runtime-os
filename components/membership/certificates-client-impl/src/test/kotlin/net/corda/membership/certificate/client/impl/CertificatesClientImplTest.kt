@@ -35,14 +35,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mockConstruction
-import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.times
-import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
+import org.mockito.kotlin.*
 import java.util.concurrent.CompletableFuture
 
 class CertificatesClientImplTest {
@@ -149,7 +142,8 @@ class CertificatesClientImplTest {
                 "Alias",
                 "tlsTenantId",
                 "sessionKeyTenantId",
-                "sessionAlias"
+                "sessionAlias",
+                null
             )
 
             verify(
@@ -159,7 +153,8 @@ class CertificatesClientImplTest {
                 "Alias",
                 "tlsTenantId",
                 "sessionKeyTenantId",
-                "sessionAlias"
+                "sessionAlias",
+                null
             )
         }
 
@@ -193,7 +188,8 @@ class CertificatesClientImplTest {
                     "Alias",
                     "tlsTenantId",
                     "sessionKeyTenantId",
-                    "sessionAlias"
+                    "sessionAlias",
+                    null
                 )
             }
         }
@@ -213,7 +209,8 @@ class CertificatesClientImplTest {
                     "Alias",
                     "tlsTenantId",
                     "sessionKeyTenantId",
-                    "sessionAlias"
+                    "sessionAlias",
+                    null
                 )
             }
         }
@@ -223,7 +220,7 @@ class CertificatesClientImplTest {
             val record = mock<Record<String, HostedIdentityEntry>>()
             whenever(
                 mockHostedIdentityEntryFactory.constructed().first()
-                    .createIdentityRecord(any(), any(), any(), any(), any())
+                    .createIdentityRecord(any(), any(), any(), any(), any(), eq(null))
             ).doReturn(record)
             val event = ConfigChangedEvent(
                 emptySet(),
@@ -236,7 +233,8 @@ class CertificatesClientImplTest {
                 "Alias",
                 "tlsTenantId",
                 "sessionKeyTenantId",
-                "sessionAlias"
+                "sessionAlias",
+                null
             )
 
             verify(publisher).publish(listOf(record))

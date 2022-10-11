@@ -136,7 +136,8 @@ class HostedIdentityEntryFactoryTest {
             tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             tlsTenantId = null,
             sessionKeyTenantId = null,
-            sessionKeyId = null
+            sessionKeyId = null,
+            sessionCertificateChainAlias = null
         )
 
         assertSoftly { softly ->
@@ -148,7 +149,8 @@ class HostedIdentityEntryFactoryTest {
                     VALID_NODE.toString(),
                     VALID_NODE.toString(),
                     listOf(certificatePem),
-                    PUBLIC_KEY_PEM
+                    PUBLIC_KEY_PEM,
+                    null
                 )
             )
         }
@@ -162,7 +164,8 @@ class HostedIdentityEntryFactoryTest {
                 tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 tlsTenantId = VALID_NODE.toString(),
                 sessionKeyTenantId = null,
-                sessionKeyId = null
+                sessionKeyId = null,
+                sessionCertificateChainAlias = null
             )
         }
     }
@@ -174,7 +177,8 @@ class HostedIdentityEntryFactoryTest {
             tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             tlsTenantId = VALID_NODE.toString(),
             sessionKeyTenantId = KNOWN_TENANT,
-            sessionKeyId = "id1"
+            sessionKeyId = "id1",
+            sessionCertificateChainAlias = null
         )
 
         assertThat(record.value?.sessionKeyTenantId).isEqualTo(KNOWN_TENANT)
@@ -188,7 +192,8 @@ class HostedIdentityEntryFactoryTest {
             tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             tlsTenantId = VALID_NODE.toString(),
             sessionKeyTenantId = null,
-            sessionKeyId = "id1"
+            sessionKeyId = "id1",
+            sessionCertificateChainAlias = null
         )
 
         assertThat(record.value?.sessionKeyTenantId).isEqualTo(VALID_NODE.toString())
@@ -202,7 +207,8 @@ class HostedIdentityEntryFactoryTest {
             tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             tlsTenantId = VALID_NODE.toString(),
             sessionKeyTenantId = null,
-            sessionKeyId = "id1"
+            sessionKeyId = "id1",
+            sessionCertificateChainAlias = null
         )
 
         assertThat(ids.firstValue)
@@ -217,7 +223,8 @@ class HostedIdentityEntryFactoryTest {
             tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             tlsTenantId = VALID_NODE.toString(),
             sessionKeyTenantId = null,
-            sessionKeyId = null
+            sessionKeyId = null,
+            sessionCertificateChainAlias = null
         )
 
         assertThat(filter.firstValue)
@@ -234,7 +241,8 @@ class HostedIdentityEntryFactoryTest {
                 tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 tlsTenantId = VALID_NODE.toString(),
                 sessionKeyTenantId = null,
-                sessionKeyId = null
+                sessionKeyId = null,
+                sessionCertificateChainAlias = null
             )
         }
     }
@@ -247,7 +255,8 @@ class HostedIdentityEntryFactoryTest {
                 tlsCertificateChainAlias = "NOP",
                 tlsTenantId = VALID_NODE.toString(),
                 sessionKeyTenantId = null,
-                sessionKeyId = null
+                sessionKeyId = null,
+                sessionCertificateChainAlias = null
             )
         }
     }
@@ -270,7 +279,8 @@ class HostedIdentityEntryFactoryTest {
             tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             tlsTenantId = P2P,
             sessionKeyTenantId = null,
-            sessionKeyId = null
+            sessionKeyId = null,
+            sessionCertificateChainAlias = null
         )
 
         assertThat(tenantId).isEqualTo("p2p")
@@ -283,7 +293,8 @@ class HostedIdentityEntryFactoryTest {
             tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
             tlsTenantId = P2P,
             sessionKeyTenantId = null,
-            sessionKeyId = null
+            sessionKeyId = null,
+            sessionCertificateChainAlias = null
         )
 
         assertThat(record.value?.tlsTenantId).isEqualTo("p2p")
@@ -306,7 +317,8 @@ class HostedIdentityEntryFactoryTest {
                 tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 tlsTenantId = null,
                 sessionKeyTenantId = null,
-                sessionKeyId = null
+                sessionKeyId = null,
+                sessionCertificateChainAlias = null
             )
         }
     }
@@ -321,7 +333,8 @@ class HostedIdentityEntryFactoryTest {
                 tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 tlsTenantId = null,
                 sessionKeyTenantId = null,
-                sessionKeyId = null
+                sessionKeyId = null,
+                sessionCertificateChainAlias = null
             )
         }
     }
@@ -339,7 +352,8 @@ class HostedIdentityEntryFactoryTest {
                 tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 tlsTenantId = null,
                 sessionKeyTenantId = null,
-                sessionKeyId = null
+                sessionKeyId = null,
+                sessionCertificateChainAlias = null
             )
         }
     }
@@ -357,7 +371,8 @@ class HostedIdentityEntryFactoryTest {
                 tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
                 tlsTenantId = null,
                 sessionKeyTenantId = null,
-                sessionKeyId = null
+                sessionKeyId = null,
+                sessionCertificateChainAlias = null
             )
         }
     }
