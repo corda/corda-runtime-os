@@ -25,6 +25,7 @@ import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
+import net.corda.membership.p2p.helpers.Verifier
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.read.MembershipGroupReader
@@ -127,8 +128,16 @@ class DynamicMemberRegistrationServiceTest {
 
         on { encodeAsString(any()) } doReturn SESSION_KEY
         on { encodeAsString(ledgerKey) } doReturn LEDGER_KEY
+        on { encodeAsByteArray(sessionKey) } doReturn SESSION_KEY.toByteArray()
     }
-    private val mockSignature: DigitalSignature.WithKey = DigitalSignature.WithKey(mock(), byteArrayOf(1), emptyMap())
+    private val mockSignature: DigitalSignature.WithKey =
+        DigitalSignature.WithKey(
+            sessionKey,
+            byteArrayOf(1),
+            mapOf(
+                Verifier.SIGNATURE_SPEC to "CORDA.ECDSA.SECP256R1"
+            )
+        )
     private val cryptoOpsClient: CryptoOpsClient = mock {
         on { lookup(memberId.value, listOf(SESSION_KEY_ID)) } doReturn listOf(sessionCryptoSigningKey)
         on { lookup(memberId.value, listOf(LEDGER_KEY_ID)) } doReturn listOf(ledgerCryptoSigningKey)
@@ -138,7 +147,11 @@ class DynamicMemberRegistrationServiceTest {
                 any(),
                 any<SignatureSpec>(),
                 any(),
-                eq(CryptoOpsClient.EMPTY_CONTEXT)
+                eq(
+                    mapOf(
+                        Verifier.SIGNATURE_SPEC to "CORDA.ECDSA.SECP256R1"
+                    )
+                ),
             )
         }.doReturn(mockSignature)
     }
@@ -212,7 +225,7 @@ class DynamicMemberRegistrationServiceTest {
     private val context = mapOf(
         "corda.session.key.id" to SESSION_KEY_ID,
         "corda.session.key.signature.spec" to "CORDA.ECDSA.SECP256R1",
-        "corda.endpoints.0.connectionURL" to "localhost:1080",
+        "corda.endpoints.0.connectionURL" to "https://localhost:1080",
         "corda.endpoints.0.protocolVersion" to "1",
         "corda.ledger.keys.0.id" to LEDGER_KEY_ID,
         "corda.ledger.keys.0.signature.spec" to "CORDA.ECDSA.SECP256R1",

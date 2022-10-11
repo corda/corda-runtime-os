@@ -27,6 +27,7 @@ import net.corda.messaging.api.subscription.config.SubscriptionConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.schema.Schemas.Membership.Companion.REGISTRATION_COMMAND_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
+import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
@@ -127,7 +128,7 @@ class RegistrationManagementServiceImpl @Activate constructor(
                         configHandle?.close()
                         configHandle = configurationReadService.registerComponentForUpdates(
                             coordinator,
-                            setOf(MESSAGING_CONFIG, BOOT_CONFIG)
+                            setOf(MESSAGING_CONFIG, BOOT_CONFIG, MEMBERSHIP_CONFIG)
                         )
                     } else if (event.registration == subRegistration) {
                         logger.info("Received config, started subscriptions and setting status to UP")
@@ -144,6 +145,7 @@ class RegistrationManagementServiceImpl @Activate constructor(
             }
             is ConfigChangedEvent -> {
                 val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
+                val membershipConfig = event.config.getConfig(MEMBERSHIP_CONFIG)
                 subRegistration?.close()
                 subRegistration = null
                 subscription?.close()
@@ -162,6 +164,7 @@ class RegistrationManagementServiceImpl @Activate constructor(
                         cryptoOpsClient,
                         cipherSchemeMetadata,
                         merkleTreeProvider,
+                        membershipConfig,
                     ),
                     messagingConfig
                 ).also {

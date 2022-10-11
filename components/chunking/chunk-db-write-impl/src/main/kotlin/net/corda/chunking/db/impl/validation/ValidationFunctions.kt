@@ -140,6 +140,7 @@ fun CpiPersistence.persistCpiToDatabase(
             )
         }
     } catch (ex: Exception) {
+        log.info("Unexpected error when persisting CPI to the database", ex)
         when (ex) {
             is ValidationException -> throw ex
             is PersistenceException -> throw ValidationException("Could not persist CPI and CPK to database", requestId, ex)
@@ -194,7 +195,11 @@ fun Cpi.validateAndGetGroupId(requestId: String, getGroupIdFromJson: (String) ->
  */
 fun Cpi.validateAndGetGroupPolicyFileVersion(): Int {
     validateHasGroupPolicy()
-    return GroupPolicyParser.getFileFormatVersion(this.metadata.groupPolicy!!)
+    return try {
+        GroupPolicyParser.getFileFormatVersion(this.metadata.groupPolicy!!)
+    } catch (e: Exception) {
+        throw ValidationException("Group policy file in the CPI is invalid. Could not get file format version. ${e.message}", null, e)
+    }
 }
 
 /**

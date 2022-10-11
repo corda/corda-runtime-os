@@ -1,5 +1,6 @@
 package net.corda.crypto.ecies.impl
 
+import net.corda.crypto.ecies.EciesParamsProvider
 import net.corda.crypto.ecies.EncryptedDataWithKey
 import net.corda.crypto.ecies.EphemeralKeyPairEncryptor
 import net.corda.crypto.ecies.core.impl.encryptWithEphemeralKeyPair
@@ -15,10 +16,9 @@ class EphemeralKeyPairEncryptorImpl @Activate constructor(
     private val schemeMetadata: CipherSchemeMetadata
 ) : EphemeralKeyPairEncryptor {
     override fun encrypt(
-        salt: ByteArray,
         otherPublicKey: PublicKey,
         plainText: ByteArray,
-        aad: ByteArray?
+        params: EciesParamsProvider
     ): EncryptedDataWithKey =
-        encryptWithEphemeralKeyPair(schemeMetadata, salt, otherPublicKey, plainText, aad)
+        encryptWithEphemeralKeyPair(schemeMetadata, otherPublicKey, plainText, params)
 }

@@ -8,6 +8,9 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.flow.event.external.ExternalEventContext
+import net.corda.data.flow.event.external.ExternalEventResponse
+import net.corda.data.flow.event.external.ExternalEventResponseError
+import net.corda.data.flow.event.external.ExternalEventResponseErrorType
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.data.uniqueness.UniquenessCheckResponseAvro
 import net.corda.db.messagebus.testkit.DBSetup
@@ -40,6 +43,7 @@ import net.corda.uniqueness.utils.UniquenessAssertions
 import net.corda.uniqueness.utils.UniquenessAssertions.assertUnknownInputStateResponse
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
@@ -49,6 +53,7 @@ import org.junit.jupiter.api.assertAll
 import org.junit.jupiter.api.extension.ExtendWith
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
+import java.lang.RuntimeException
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
@@ -129,6 +134,32 @@ class MessageBusIntegrationTests {
     private lateinit var publisher: Publisher
     private lateinit var uniquenessChecker: UniquenessChecker
 
+    /**
+     * Behaves like [BackingStoreImplFake], but allows us to selectively force exceptions to be
+     * thrown when creating new sessions.
+     */
+    private class ThrowableBackingStoreImplFake(
+        coordinatorFactory: LifecycleCoordinatorFactory
+    ) : BackingStoreImplFake(coordinatorFactory) {
+        private var throwException: Boolean = false
+
+        override fun session(
+            holdingIdentity: HoldingIdentity,
+            block: (BackingStore.Session) -> Unit
+        ) {
+            if ( throwException ) {
+                throwException = false
+                throw RuntimeException("Backing store forced to throw")
+            } else {
+                super.session(holdingIdentity, block)
+            }
+        }
+
+        fun throwOnNextSession() { throwException = true }
+    }
+
+    private lateinit var backingStore: ThrowableBackingStoreImplFake
+
     private val defaultHoldingIdentity = createTestHoldingIdentity(
         "C=GB, L=London, O=Alice", "Test Group").toAvro()
 
@@ -161,7 +192,7 @@ class MessageBusIntegrationTests {
 
     private fun processRequests(
         vararg requests: UniquenessCheckRequestAvro
-    ) : List<UniquenessCheckResponseAvro> {
+    ) : List<ExternalEventResponse> {
 
         val requestIds = requests.map { it.flowExternalEventContext.requestId }
 
@@ -188,16 +219,25 @@ class MessageBusIntegrationTests {
 
         val responses = externalEventResponseMonitor.getResponses(requestIds)
 
+        // Responses may be out of order with respect to the passed in request list, so re-sequence
+        // these before returning
+        return requestIds.map { responses[it]!! }
+    }
+
+    private fun ExternalEventResponse.toSuccessfulResponse(): UniquenessCheckResponseAvro {
+        assertThat(this.payload).isNotNull
+
         val responseDeserializer = cordaAvroSerializationFactory
             .createAvroDeserializer({}, UniquenessCheckResponseAvro::class.java)
 
-        // Responses may be out of order with respect to the passed in request list, so re-sequence
-        // these before returning
+        return  responseDeserializer.deserialize(
+            this.payload.array()) as UniquenessCheckResponseAvro
+    }
 
-        return requestIds.map {
-            responseDeserializer.deserialize(
-                responses[it]!!.payload.array()) as UniquenessCheckResponseAvro
-        }
+    private fun ExternalEventResponse.toUnsuccessfulResponse(): ExternalEventResponseError {
+        assertThat(this.error).isNotNull
+
+        return this.error
     }
 
     private fun generateUnspentStates(numOutputStates: Int): List<String> {
@@ -212,7 +252,7 @@ class MessageBusIntegrationTests {
             newRequestBuilder(issueTxId)
                 .setNumOutputStates(numOutputStates)
                 .build()
-        ).let { responses ->
+        ).map { it.toSuccessfulResponse() }.let { responses ->
             assertAll(
                 { assertThat(responses).hasSize(1) },
                 { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) }
@@ -224,7 +264,8 @@ class MessageBusIntegrationTests {
 
     @BeforeAll
     fun initialSetup() {
-        val backingStore = BackingStoreImplFake(lifecycleCoordinatorFactory).also { it.start() }
+        backingStore = ThrowableBackingStoreImplFake(lifecycleCoordinatorFactory)
+            .also { it.start() }
 
         uniquenessChecker = BatchedUniquenessCheckerImpl(
             lifecycleCoordinatorFactory,
@@ -291,7 +332,7 @@ class MessageBusIntegrationTests {
             newRequestBuilder()
                 .setInputStates(generateUnspentStates(1))
                 .build()
-        ).let { responses ->
+        ).map { it.toSuccessfulResponse() }.let { responses ->
             assertAll(
                 { assertThat(responses).hasSize(1) },
                 { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) }
@@ -307,7 +348,7 @@ class MessageBusIntegrationTests {
             newRequestBuilder()
                 .setInputStates(listOf(inputStateRef))
                 .build()
-        ).let { responses ->
+        ).map { it.toSuccessfulResponse() }.let { responses ->
             assertAll(
                 { assertThat(responses).hasSize(1) },
                 { assertUnknownInputStateResponse(responses[0], listOf(inputStateRef)) }
@@ -323,7 +364,7 @@ class MessageBusIntegrationTests {
             newRequestBuilder()
                 .setInputStates(sharedState)
                 .build()
-        ).let { responses ->
+        ).map { it.toSuccessfulResponse() }.let { responses ->
             assertAll(
                 { assertThat(responses).hasSize(1) },
                 { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) }
@@ -334,7 +375,7 @@ class MessageBusIntegrationTests {
             newRequestBuilder()
                 .setInputStates(sharedState)
                 .build()
-        ).let { responses ->
+        ).map { it.toSuccessfulResponse() }.let { responses ->
             assertAll(
                 { assertThat(responses).hasSize(1) },
                 {
@@ -355,7 +396,7 @@ class MessageBusIntegrationTests {
             newRequestBuilder()
                 .setReferenceStates(listOf(referenceStateRef))
                 .build()
-        ).let { responses ->
+        ).map { it.toSuccessfulResponse() }.let { responses ->
             assertAll(
                 { assertThat(responses).hasSize(1) },
                 {
@@ -376,7 +417,7 @@ class MessageBusIntegrationTests {
             newRequestBuilder()
                 .setInputStates(spentState)
                 .build()
-        ).let { responses ->
+        ).map { it.toSuccessfulResponse() }.let { responses ->
             assertAll(
                 { assertThat(responses).hasSize(1) },
                 { UniquenessAssertions.assertStandardSuccessResponse(responses[0], testClock) }
@@ -388,7 +429,7 @@ class MessageBusIntegrationTests {
                 .setInputStates(generateUnspentStates(1))
                 .setReferenceStates(spentState)
                 .build()
-        ).let { responses ->
+        ).map { it.toSuccessfulResponse() }.let { responses ->
             assertAll(
                 { assertThat(responses).hasSize(1) },
                 {
@@ -409,7 +450,7 @@ class MessageBusIntegrationTests {
             newRequestBuilder()
                 .setTimeWindowLowerBound(lowerBound)
                 .build()
-        ).let { responses ->
+        ).map { it.toSuccessfulResponse() }.let { responses ->
             assertAll(
                 { assertThat(responses).hasSize(1) },
                 {
@@ -419,6 +460,26 @@ class MessageBusIntegrationTests {
                         expectedUpperBound = defaultTimeWindowUpperBound
                     )
                 }
+            )
+        }
+    }
+
+    @Test
+    fun `exception thrown during uniqueness checking raises a platform error`() {
+
+        backingStore.throwOnNextSession()
+
+        processRequests(
+            newRequestBuilder()
+                .setNumOutputStates(1)
+                .build()
+        ).map { it.toUnsuccessfulResponse() }.let { responses ->
+            assertAll(
+                { assertThat(responses).hasSize(1) },
+                { assertThat(responses[0].errorType)
+                    .isEqualTo(ExternalEventResponseErrorType.PLATFORM) },
+                { assertThat(responses[0].exception.errorMessage)
+                    .isEqualTo("Backing store forced to throw")}
             )
         }
     }

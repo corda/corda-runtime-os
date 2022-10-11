@@ -2,6 +2,8 @@ package net.corda.ledger.consensual.impl.transaction
 
 import net.corda.ledger.common.impl.transaction.CpiSummary
 import net.corda.ledger.common.impl.transaction.CpkSummary
+import java.security.PublicKey
+import java.time.Instant
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.TransactionMetaData
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPI_METADATA_KEY
@@ -20,54 +22,92 @@ import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
-import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
-import java.security.PublicKey
-import java.security.SecureRandom
-import java.time.Instant
 
+// TODO Create an AMQP serializer if we plan on sending transaction builders between virtual nodes
 @Suppress("LongParameterList")
 class ConsensualTransactionBuilderImpl(
-    private val merkleTreeProvider: MerkleTreeProvider,
+    private val cipherSchemeMetadata: CipherSchemeMetadata,
     private val digestService: DigestService,
-    private val secureRandom: SecureRandom,
-    private val serializer: SerializationService,
-    private val signingService: SigningService,
     private val jsonMarshallingService: JsonMarshallingService,
+    private val merkleTreeProvider: MerkleTreeProvider,
+    private val serializationService: SerializationService,
+    private val signingService: SigningService,
+    // cpi defines what type of signing/hashing is used (related to the digital signature signing and verification stuff)
     private val memberLookup: MemberLookup,
     private val sandboxCpks: Collection<CpkMetadata>,
     override val states: List<ConsensualState> = emptyList(),
 ) : ConsensualTransactionBuilder {
 
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is ConsensualTransactionBuilderImpl) return false
-        if (other.states.size != states.size) return false
+    override fun withStates(vararg states: ConsensualState): ConsensualTransactionBuilder =
+        this.copy(states = this.states + states)
 
-        return other.states.withIndex().all{
-            it.value == states[it.index]
-        }
+    @Suspendable
+    override fun signInitial(publicKey: PublicKey): ConsensualSignedTransaction {
+        val wireTransaction = buildWireTransaction()
+        // TODO(CORE-5091 we just fake the signature for now...)
+        val signature = signingService.sign(wireTransaction.id.bytes, publicKey, SignatureSpec.ECDSA_SHA256)
+        val digitalSignatureMetadata =
+            DigitalSignatureMetadata(Instant.now(), mapOf()) //CORE-5091 populate this properly...
+        val signatureWithMetaData = DigitalSignatureAndMetadata(signature, digitalSignatureMetadata)
+        return ConsensualSignedTransactionImpl(serializationService, wireTransaction, listOf(signatureWithMetaData))
     }
 
-    override fun hashCode(): Int = states.hashCode()
+    private fun buildWireTransaction(): WireTransaction {
+        // TODO(CORE-5982 more verifications)
+        // TODO(CORE-5940 ? metadata verifications: nulls, order of CPKs, at least one CPK?))
+        require(states.isNotEmpty()) { "At least one Consensual State is required" }
+        require(states.all { it.participants.isNotEmpty() }) { "All consensual states needs to have participants" }
+        val componentGroupLists = calculateComponentGroupLists(serializationService)
 
-    private fun copy(
-        states: List<ConsensualState> = this.states
-    ): ConsensualTransactionBuilderImpl {
-        return ConsensualTransactionBuilderImpl(
-            merkleTreeProvider, digestService, secureRandom, serializer, signingService, jsonMarshallingService,
-            memberLookup, sandboxCpks,
-            states,
+        val entropy = ByteArray(32)
+        cipherSchemeMetadata.secureRandom.nextBytes(entropy)
+        val privacySalt = PrivacySaltImpl(entropy)
+
+        return WireTransaction(
+            merkleTreeProvider,
+            digestService,
+            jsonMarshallingService,
+            privacySalt,
+            componentGroupLists
         )
     }
 
-    override fun withStates(vararg states: ConsensualState): ConsensualTransactionBuilder =
-        this.copy(states = this.states + states)
+    private fun calculateComponentGroupLists(serializer: SerializationService): List<List<ByteArray>> {
+        val requiredSigningKeys = states
+            .map { it.participants }
+            .flatten()
+            .map { it.owningKey }
+            .distinct()
+
+        val componentGroupLists = mutableListOf<List<ByteArray>>()
+        for (componentGroupIndex in ConsensualComponentGroupEnum.values()) {
+            componentGroupLists += when (componentGroupIndex) {
+                ConsensualComponentGroupEnum.METADATA ->
+                    listOf(
+                        jsonMarshallingService.format(calculateMetaData())
+                            .toByteArray(Charsets.UTF_8)
+                    ) // TODO(update with CORE-5940)
+                ConsensualComponentGroupEnum.TIMESTAMP ->
+                    listOf(serializer.serialize(Instant.now()).bytes)
+                ConsensualComponentGroupEnum.REQUIRED_SIGNING_KEYS ->
+                    requiredSigningKeys.map { serializer.serialize(it).bytes }
+                ConsensualComponentGroupEnum.OUTPUT_STATES ->
+                    states.map { serializer.serialize(it).bytes }
+                ConsensualComponentGroupEnum.OUTPUT_STATE_TYPES ->
+                    states.map { serializer.serialize(it::class.java.name).bytes }
+            }
+        }
+        return componentGroupLists
+    }
 
     private fun calculateMetaData(): TransactionMetaData {
         return TransactionMetaData(
@@ -89,7 +129,8 @@ class ConsensualTransactionBuilderImpl(
         return CpiIdentifier(
             "CPI name",
             "CPI version",
-            SecureHash("SHA-256", "Fake-value".toByteArray()))
+            SecureHash("SHA-256", "Fake-value".toByteArray())
+        )
     }
 
     private fun getCpiMetadata(): CpiSummary {
@@ -114,59 +155,29 @@ class ConsensualTransactionBuilderImpl(
         }
     }
 
-    private fun calculateComponentGroupLists(serializer: SerializationService): List<List<ByteArray>>
-    {
-        val requiredSigningKeys = states
-            .map{it.participants}
-            .flatten()
-            .map{it.owningKey}
-            .distinct()
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is ConsensualTransactionBuilderImpl) return false
+        if (other.states.size != states.size) return false
 
-        val componentGroupLists = mutableListOf<List<ByteArray>>()
-        for (componentGroupIndex in ConsensualComponentGroupEnum.values()) {
-            componentGroupLists += when (componentGroupIndex) {
-                ConsensualComponentGroupEnum.METADATA ->
-                    listOf(jsonMarshallingService.format(calculateMetaData()).toByteArray(Charsets.UTF_8)) // TODO(update with CORE-5940)
-                ConsensualComponentGroupEnum.TIMESTAMP ->
-                    listOf(serializer.serialize(Instant.now()).bytes)
-                ConsensualComponentGroupEnum.REQUIRED_SIGNING_KEYS ->
-                    requiredSigningKeys.map{serializer.serialize(it).bytes}
-                ConsensualComponentGroupEnum.OUTPUT_STATES ->
-                    states.map{serializer.serialize(it).bytes}
-                ConsensualComponentGroupEnum.OUTPUT_STATE_TYPES ->
-                    states.map{serializer.serialize(it::class.java.name).bytes}
-            }
+        return other.states.withIndex().all {
+            it.value == states[it.index]
         }
-        return componentGroupLists
     }
 
-    override fun signInitial(publicKey: PublicKey): ConsensualSignedTransaction {
-        val wireTransaction = buildWireTransaction()
-        // TODO(CORE-5091 we just fake the signature for now...)
-//        val signature = signingService.sign(wireTransaction.id.bytes, publicKey, SignatureSpec.RSA_SHA256)
-        val signature = DigitalSignature.WithKey(publicKey, "0".toByteArray(), mapOf())
-        val digitalSignatureMetadata = DigitalSignatureMetadata(Instant.now(), mapOf()) //CORE-5091 populate this properly...
-        val signatureWithMetaData = DigitalSignatureAndMetadata(signature, digitalSignatureMetadata)
-        return ConsensualSignedTransactionImpl(serializer, wireTransaction, listOf(signatureWithMetaData))
-    }
+    override fun hashCode(): Int = states.hashCode()
 
-    private fun buildWireTransaction() : WireTransaction{
-        // TODO(CORE-5982 more verifications)
-        // TODO(CORE-5940 ? metadata verifications: nulls, order of CPKs, at least one CPK?))
-        require(states.isNotEmpty()){"At least one Consensual State is required"}
-        require(states.all{it.participants.isNotEmpty()}){"All consensual states needs to have participants"}
-        val componentGroupLists = calculateComponentGroupLists(serializer)
-
-        val entropy = ByteArray(32)
-        secureRandom.nextBytes(entropy)
-        val privacySalt = PrivacySaltImpl(entropy)
-
-        return WireTransaction(
-            merkleTreeProvider,
+    private fun copy(states: List<ConsensualState> = this.states): ConsensualTransactionBuilderImpl {
+        return ConsensualTransactionBuilderImpl(
+            cipherSchemeMetadata,
             digestService,
             jsonMarshallingService,
-            privacySalt,
-            componentGroupLists
+            merkleTreeProvider,
+            serializationService,
+            signingService,
+            memberLookup,
+            sandboxCpks,
+            states,
         )
     }
 }

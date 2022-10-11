@@ -35,6 +35,9 @@ dependencies {
     runtimeOnly "com.lmax:disruptor:$disruptorVersion"
     runtimeOnly "biz.aQute.bnd:biz.aQute.bndlib:$bndVersion"
 
+    api "org.bouncycastle:bcprov-jdk15on:$bouncycastleVersion"
+    api "org.bouncycastle:bcpkix-jdk15on:$bouncycastleVersion"
+
     implementation project(":libs:messaging:kafka-message-bus-impl")
     implementation project(":libs:messaging:messaging-impl")
     implementation project(":libs:messaging:message-bus")

@@ -5,6 +5,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.event.MembershipEvent
@@ -21,6 +22,8 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.impl.registration.dynamic.verifiers.OrderVerifier
+import net.corda.membership.impl.registration.dynamic.verifiers.P2pEndpointVerifier
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
@@ -30,12 +33,10 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
-import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.SERIAL
 import net.corda.membership.lib.MemberInfoExtension.Companion.SESSION_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
-import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode
 import net.corda.membership.lib.registration.RegistrationRequest
@@ -151,6 +152,9 @@ class MGMRegistrationService @Activate constructor(
 
     private var _publisher: Publisher? = null
 
+    private val orderVerifier = OrderVerifier()
+    private val p2pEndpointVerifier = P2pEndpointVerifier(orderVerifier)
+
     /**
      * Publisher for Kafka messaging. Recreated after every [MESSAGING_CONFIG] change.
      */
@@ -214,6 +218,7 @@ class MGMRegistrationService @Activate constructor(
     }
 
     private inner class ActiveImpl : InnerRegistrationService {
+        @Suppress("LongMethod")
         override fun register(
             registrationId: UUID,
             member: HoldingIdentity,
@@ -304,8 +309,11 @@ class MGMRegistrationService @Activate constructor(
                         registrationId = registrationId.toString(),
                         requester = member,
                         memberContext = ByteBuffer.wrap(serializedMemberContext),
-                        publicKey = ByteBuffer.wrap(byteArrayOf()),
-                        signature = ByteBuffer.wrap(byteArrayOf()),
+                        signature = CryptoSignatureWithKey(
+                            ByteBuffer.wrap(byteArrayOf()),
+                            ByteBuffer.wrap(byteArrayOf()),
+                            KeyValuePairList(emptyList())
+                        )
                     )
                 )
                 if (registrationRequestPersistenceResult is MembershipPersistenceResult.Failure) {
@@ -353,42 +361,18 @@ class MGMRegistrationService @Activate constructor(
             for (key in errorMessageMap.keys) {
                 context[key] ?: throw IllegalArgumentException(errorMessageMap[key])
             }
-            context.keys.filter { URL_KEY.format("[0-9]+").toRegex().matches(it) }.apply {
-                require(isNotEmpty()) { "No endpoint URL was provided." }
-                require(isOrdered(this, 2)) { "Provided endpoint URLs are incorrectly numbered." }
-            }
-            context.keys.filter { PROTOCOL_VERSION.format("[0-9]+").toRegex().matches(it) }.apply {
-                require(isNotEmpty()) { "No endpoint protocol was provided." }
-                require(isOrdered(this, 2)) { "Provided endpoint protocols are incorrectly numbered." }
-            }
+            p2pEndpointVerifier.verifyContext(context)
             if (context[PKI_SESSION] != SessionPkiMode.NO_PKI.toString()) {
                 context.keys.filter { TRUSTSTORE_SESSION.format("[0-9]+").toRegex().matches(it) }.apply {
                     require(isNotEmpty()) { "No session trust store was provided." }
-                    require(isOrdered(this, 4)) { "Provided session trust stores are incorrectly numbered." }
+                    require(orderVerifier.isOrdered(this, 4)) { "Provided session trust stores are incorrectly numbered." }
                 }
             }
             context.keys.filter { TRUSTSTORE_TLS.format("[0-9]+").toRegex().matches(it) }.apply {
                 require(isNotEmpty()) { "No TLS trust store was provided." }
-                require(isOrdered(this, 4)) { "Provided TLS trust stores are incorrectly numbered." }
+                require(orderVerifier.isOrdered(this, 4)) { "Provided TLS trust stores are incorrectly numbered." }
             }
         }
-
-        /**
-         * Checks if [keys] are numbered correctly (0, 1, ..., n).
-         *
-         * @param keys List of property keys to validate.
-         * @param position Position of numbering in each of the provided [keys]. For example, [position] is 2 in
-         * "corda.endpoints.0.connectionURL".
-         */
-        private fun isOrdered(keys: List<String>, position: Int): Boolean =
-            keys.map { it.split(".")[position].toInt() }
-                .sorted()
-                .run {
-                    indices.forEach { index ->
-                        if (this[index] != index) return false
-                    }
-                    true
-                }
 
         private fun getKeyFromId(keyId: String, tenantId: String): PublicKey {
             return with(cryptoOpsClient) {

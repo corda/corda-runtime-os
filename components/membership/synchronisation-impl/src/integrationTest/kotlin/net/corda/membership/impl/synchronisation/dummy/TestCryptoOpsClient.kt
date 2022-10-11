@@ -19,8 +19,10 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.propertytypes.ServiceRanking
 import java.nio.ByteBuffer
+import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.PublicKey
+import java.security.Signature
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -49,6 +51,8 @@ class TestCryptoOpsClientImpl @Activate constructor(
             }
         }
 
+    private val generatedKeys = ConcurrentHashMap<PublicKey, KeyPair>()
+
     override fun getSupportedSchemes(tenantId: String, category: String): List<String> {
         with(UNIMPLEMENTED_FUNCTION) {
             logger.warn(this)
@@ -76,7 +80,9 @@ class TestCryptoOpsClientImpl @Activate constructor(
             schemeMetadata.providers.getValue(keyScheme.providerName)
         )
         keyPairGenerator.initialize(keyScheme.algSpec, schemeMetadata.secureRandom)
-        val publicKey = keyPairGenerator.generateKeyPair().public
+        val keyPair = keyPairGenerator.generateKeyPair()
+        val publicKey = keyPair.public
+        generatedKeys[publicKey] = keyPair
         val keyId = publicKey.publicKeyId()
         keys[keyId] = CryptoSigningKey(
             keyId,
@@ -134,7 +140,15 @@ class TestCryptoOpsClientImpl @Activate constructor(
         signatureSpec: SignatureSpec,
         data: ByteArray,
         context: Map<String, String>
-    ): DigitalSignature.WithKey = DigitalSignature.WithKey(publicKey, byteArrayOf(1), emptyMap())
+    ): DigitalSignature.WithKey {
+        val keyPair = generatedKeys[publicKey] ?: throw RuntimeException("No such key")
+        val signature = Signature.getInstance(
+            signatureSpec.signatureName,
+        )
+        signature.initSign(keyPair.private)
+        signature.update(data)
+        return DigitalSignature.WithKey(publicKey, signature.sign(), context)
+    }
 
     override fun sign(
         tenantId: String,

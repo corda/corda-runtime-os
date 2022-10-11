@@ -9,6 +9,7 @@ import net.corda.data.uniqueness.UniquenessCheckResponseAvro
 import net.corda.data.uniqueness.UniquenessCheckResultSuccessAvro
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.AutoTickTestClock
+import net.corda.uniqueness.backingstore.BackingStore
 import net.corda.uniqueness.backingstore.impl.fake.BackingStoreImplFake
 import net.corda.uniqueness.checker.UniquenessChecker
 import net.corda.uniqueness.utils.UniquenessAssertions.assertInputStateConflictResponse
@@ -16,6 +17,7 @@ import net.corda.uniqueness.utils.UniquenessAssertions.assertMalformedRequestRes
 import net.corda.uniqueness.utils.UniquenessAssertions.assertReferenceStateConflictResponse
 import net.corda.uniqueness.utils.UniquenessAssertions.assertStandardSuccessResponse
 import net.corda.uniqueness.utils.UniquenessAssertions.assertTimeWindowOutOfBoundsResponse
+import net.corda.uniqueness.utils.UniquenessAssertions.assertUnhandledExceptionResponse
 import net.corda.uniqueness.utils.UniquenessAssertions.assertUniqueCommitTimestamps
 import net.corda.uniqueness.utils.UniquenessAssertions.assertUnknownInputStateResponse
 import net.corda.uniqueness.utils.UniquenessAssertions.assertUnknownReferenceStateResponse
@@ -29,7 +31,15 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertAll
+import org.mockito.Mockito
+import org.mockito.kotlin.any
+import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.spy
+import org.mockito.kotlin.times
+import org.mockito.kotlin.whenever
+import java.lang.UnsupportedOperationException
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
@@ -46,6 +56,7 @@ class UniquenessCheckerImplTests {
 
     private val baseTime: Instant = Instant.EPOCH
 
+    // Default holding id used in most tests
     private val defaultHoldingIdentity = createTestHoldingIdentity(
         "C=GB, L=London, O=Alice", "Test Group").toAvro()
 
@@ -56,6 +67,8 @@ class UniquenessCheckerImplTests {
     private lateinit var testClock: AutoTickTestClock
 
     private lateinit var uniquenessChecker: UniquenessChecker
+
+    private lateinit var backingStore: BackingStore
 
     private fun currentTime(): Instant = testClock.peekTime()
 
@@ -73,8 +86,15 @@ class UniquenessCheckerImplTests {
             )
         )
 
-    private fun processRequests(vararg requests: UniquenessCheckRequestAvro) =
-        uniquenessChecker.processRequests(requests.asList())
+    private fun processRequests(
+        vararg requests: UniquenessCheckRequestAvro
+    ) : List<UniquenessCheckResponseAvro> {
+        val requestsList = requests.asList()
+
+        val responses = uniquenessChecker.processRequests(requests.asList())
+
+        return requestsList.map { responses[it]!! }
+    }
 
     private fun generateUnspentStates(numOutputStates: Int): List<String> {
         val issueTxId = randomSecureHash()
@@ -109,13 +129,15 @@ class UniquenessCheckerImplTests {
          */
         testClock = AutoTickTestClock(baseTime, Duration.ofSeconds(1))
 
+        backingStore = spy(BackingStoreImplFake(mock()))
+
         uniquenessChecker = BatchedUniquenessCheckerImpl(
             mock(),
             mock(),
             mock(),
             mock(),
             testClock,
-            BackingStoreImplFake(mock()))
+            backingStore)
     }
 
     @Nested
@@ -142,7 +164,7 @@ class UniquenessCheckerImplTests {
                         assertMalformedRequestResponse(
                             responses[0], "Number of output states cannot be less than 0."
                         )
-                    }
+                    },
                 )
             }
         }
@@ -256,15 +278,16 @@ class UniquenessCheckerImplTests {
             uniquenessChecker.processRequests(requests).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(5) },
-                    { assertStandardSuccessResponse(responses[0], testClock) },
-                    { assertStandardSuccessResponse(responses[1], testClock) },
-                    { assertStandardSuccessResponse(responses[2], testClock) },
-                    { assertStandardSuccessResponse(responses[3], testClock) },
-                    { assertStandardSuccessResponse(responses[4], testClock) },
+                    { assertStandardSuccessResponse(responses[requests[0]]!!, testClock) },
+                    { assertStandardSuccessResponse(responses[requests[1]]!!, testClock) },
+                    { assertStandardSuccessResponse(responses[requests[2]]!!, testClock) },
+                    { assertStandardSuccessResponse(responses[requests[3]]!!, testClock) },
+                    { assertStandardSuccessResponse(responses[requests[4]]!!, testClock) },
                     // Check all tx ids match up to corresponding requests and commit timestamps
                     // are unique
-                    { assertIterableEquals(requests.map { it.txId }, responses.map { it.txId }) },
-                    { assertUniqueCommitTimestamps(responses) }
+                    { assertIterableEquals(
+                        responses.keys.map { it.txId }, responses.values.map { it.txId }) },
+                    { assertUniqueCommitTimestamps(responses.values) }
                 )
             }
         }
@@ -311,13 +334,14 @@ class UniquenessCheckerImplTests {
             uniquenessChecker.processRequests(requests).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(3) },
-                    { assertStandardSuccessResponse(responses[0], testClock) },
-                    { assertStandardSuccessResponse(responses[1], testClock) },
-                    { assertStandardSuccessResponse(responses[2], testClock) },
+                    { assertStandardSuccessResponse(responses[requests[0]]!!, testClock) },
+                    { assertStandardSuccessResponse(responses[requests[1]]!!, testClock) },
+                    { assertStandardSuccessResponse(responses[requests[2]]!!, testClock) },
                     // Check all tx ids match up to corresponding requests and commit timestamps
                     // are unique
-                    { assertIterableEquals(requests.map { it.txId }, responses.map { it.txId }) },
-                    { assertUniqueCommitTimestamps(responses) }
+                    { assertIterableEquals(
+                        responses.keys.map { it.txId }, responses.values.map { it.txId }) },
+                    { assertUniqueCommitTimestamps(responses.values) }
                 )
             }
         }
@@ -1089,11 +1113,160 @@ class UniquenessCheckerImplTests {
     }
 
     @Nested
+    inner class MultiTenancy {
+        private val bobHoldingIdentity = createTestHoldingIdentity(
+            "C=GB, L=London, O=Bob", "Test Group")
+        private val charlieHoldingIdentity = createTestHoldingIdentity(
+            "C=GB, L=London, O=Charlie", "Test Group")
+        private val davidHoldingIdentity = createTestHoldingIdentity(
+            "C=GB, L=London, O=David", "Test Group")
+
+        @Test
+        fun `Requests for different holding identities are processed independently`() {
+
+            processRequests(
+                newRequestBuilder()
+                    .setHoldingIdentity(bobHoldingIdentity.toAvro())
+                    .setNumOutputStates(1)
+                    .build(),
+                newRequestBuilder()
+                    .setHoldingIdentity(charlieHoldingIdentity.toAvro())
+                    .setNumOutputStates(1)
+                    .build(),
+                newRequestBuilder()
+                    .setHoldingIdentity(davidHoldingIdentity.toAvro())
+                    .setNumOutputStates(1)
+                    .build(),
+                newRequestBuilder()
+                    .setHoldingIdentity(davidHoldingIdentity.toAvro())
+                    .setNumOutputStates(1)
+                    .build(),
+                newRequestBuilder()
+                    .setHoldingIdentity(bobHoldingIdentity.toAvro())
+                    .setNumOutputStates(1)
+                    .build()
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(5) },
+                    { assertStandardSuccessResponse(responses[0]) },
+                    { assertStandardSuccessResponse(responses[1]) },
+                    { assertStandardSuccessResponse(responses[2]) },
+                    { assertStandardSuccessResponse(responses[3]) },
+                    { assertStandardSuccessResponse(responses[4]) }
+                )
+            }
+
+            Mockito.verify(backingStore, times(1)).session(eq(bobHoldingIdentity), any())
+            Mockito.verify(backingStore, times(1)).session(eq(charlieHoldingIdentity), any())
+            Mockito.verify(backingStore, times(1)).session(eq(davidHoldingIdentity), any())
+        }
+
+        @Test
+        fun `Order of holding id processing is random`() {
+            /*
+             * There's no easy way to directly interrogate the processing order as this is only
+             * accessible via private methods / data structures. However, we can infer the ordering
+             * based on response timestamps due to using our auto ticking test clock. As the order
+             * is non-deterministic, we simply run the same test a number of times and make sure
+             * the order of holding id processing is not the same across all runs. We use enough
+             * runs to ensure that probabalistically the results will not be equal by chance.
+             * Duplicate probability for 10 runs with 6 combinations = (1/6)^10 ~= 1.65^-8
+             */
+            val holdingIdsInOrder = List(10) {
+                uniquenessChecker.processRequests(
+                    listOf(
+                        newRequestBuilder()
+                            .setHoldingIdentity(bobHoldingIdentity.toAvro())
+                            .setNumOutputStates(1)
+                            .build(),
+                        newRequestBuilder()
+                            .setHoldingIdentity(charlieHoldingIdentity.toAvro())
+                            .setNumOutputStates(1)
+                            .build(),
+                        newRequestBuilder()
+                            .setHoldingIdentity(davidHoldingIdentity.toAvro())
+                            .setNumOutputStates(1)
+                            .build()
+                    )
+                ).entries.sortedBy {
+                    (it.value.result as UniquenessCheckResultSuccessAvro).commitTimestamp
+                }.map {
+                    it.key.holdingIdentity
+                }
+            }
+
+            // Check at least one run returned a different result from the first
+            assertThat(holdingIdsInOrder).anySatisfy { instance ->
+                assertThat(instance).isNotEqualTo(holdingIdsInOrder.first())
+            }
+        }
+
+        @Test
+        fun `Spending the same state across different holding identities is accepted`() {
+            val issueTxId = randomSecureHash()
+
+            processRequests(
+                newRequestBuilder(issueTxId)
+                    .setHoldingIdentity(bobHoldingIdentity.toAvro())
+                    .setNumOutputStates(1)
+                    .build(),
+                newRequestBuilder(issueTxId)
+                    .setHoldingIdentity(charlieHoldingIdentity.toAvro())
+                    .setNumOutputStates(1)
+                    .build()
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(2) },
+                    { assertStandardSuccessResponse(responses[0]) },
+                    { assertStandardSuccessResponse(responses[1]) }
+                )
+            }
+
+            val unspentStateRef = "${issueTxId}:0"
+
+            processRequests(
+                newRequestBuilder()
+                    .setHoldingIdentity(bobHoldingIdentity.toAvro())
+                    .setInputStates(listOf(unspentStateRef))
+                    .build(),
+                newRequestBuilder()
+                    .setHoldingIdentity(charlieHoldingIdentity.toAvro())
+                    .setInputStates(listOf(unspentStateRef))
+                    .build()
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(2) },
+                    { assertStandardSuccessResponse(responses[0]) },
+                    { assertStandardSuccessResponse(responses[1]) }
+                )
+            }
+        }
+
+        @Test
+        fun `Spending a state that was issued against a different holding id is rejected`() {
+            // Generate against default holding id
+            val unspentStateRefs = generateUnspentStates(1)
+
+            processRequests(
+                newRequestBuilder()
+                    .setHoldingIdentity(bobHoldingIdentity.toAvro())
+                    .setInputStates(unspentStateRefs)
+                    .build()
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(1) },
+                    { assertUnknownInputStateResponse(responses[0], unspentStateRefs) }
+                )
+            }
+        }
+    }
+
+    @Nested
     inner class Miscellaneous {
         @Test
         fun `Empty request list returns no results`() {
             assertEquals(
-                emptyList(),
+                emptyMap(),
                 uniquenessChecker.processRequests(emptyList())
             )
         }
@@ -1243,6 +1416,57 @@ class UniquenessCheckerImplTests {
             }
         }
 
+        @Test
+        fun `Unhandled exception raised in the uniqueness checker returns the appropriate error`() {
+            val exceptionThrowingBackingStore = mock<BackingStore>()
+
+            whenever(exceptionThrowingBackingStore.transactionSession(any(), any()))
+                .doThrow(UnsupportedOperationException())
+
+            val exceptionThrowingUniquenessChecker = BatchedUniquenessCheckerImpl(
+                mock(),
+                mock(),
+                mock(),
+                mock(),
+                testClock,
+                exceptionThrowingBackingStore)
+
+            exceptionThrowingUniquenessChecker.processRequests(
+                listOf(
+                    newRequestBuilder()
+                        .setNumOutputStates(1)
+                        .build()
+                )
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(1) },
+                    { assertUnhandledExceptionResponse(
+                        responses.values.single(),
+                        UnsupportedOperationException::class.java.typeName) }
+                )
+            }
+        }
+
+        @Test
+        fun `Successful and malformed requests in the same batch return results in correct order`() {
+            processRequests(
+                newRequestBuilder()
+                    .setNumOutputStates(1)
+                    .build(),
+                newRequestBuilder()
+                    .setNumOutputStates(-1)
+                    .build()
+            ).let { responses ->
+                assertAll(
+                    { assertThat(responses).hasSize(2) },
+                    { assertStandardSuccessResponse(responses[0], testClock) },
+                    { assertMalformedRequestResponse(
+                        responses[1],
+                        "Number of output states cannot be less than 0.") }
+                )
+            }
+        }
+
         @Suppress("LongMethod")
         @Test
         fun `Complex test scenario with multiple successes and failures in one batch`() {
@@ -1257,9 +1481,9 @@ class UniquenessCheckerImplTests {
             ).let { responses ->
                 assertAll(
                     { assertThat(responses).hasSize(2) },
-                    { assertStandardSuccessResponse(responses[0], testClock) },
-                    { assertStandardSuccessResponse(responses[1], testClock) },
-                    { assertUniqueCommitTimestamps(responses) }
+                    { assertStandardSuccessResponse(responses.values.elementAt(0), testClock) },
+                    { assertStandardSuccessResponse(responses.values.elementAt(1), testClock) },
+                    { assertUniqueCommitTimestamps(responses.values) }
                 )
             }
 
