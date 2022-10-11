@@ -56,7 +56,6 @@ class JPABackingStoreImplTests {
     private lateinit var txnDetailQuery: TypedQuery<UniquenessTransactionDetailEntity>
     private lateinit var stateEntities: List<UniquenessStateDetailEntity>
     private lateinit var stateDetailSelectQuery: TypedQuery<UniquenessStateDetailEntity>
-    private lateinit var txnErrors: List<UniquenessRejectedTransactionEntity>
     private lateinit var txnErrorQuery: TypedQuery<UniquenessRejectedTransactionEntity>
     private lateinit var dbConnectionManager: DbConnectionManager
 
@@ -92,11 +91,10 @@ class JPABackingStoreImplTests {
             whenever(resultList) doReturn txnDetails
         }
 
-        txnErrors = mock<List<UniquenessRejectedTransactionEntity>>()
         txnErrorQuery = mock<TypedQuery<UniquenessRejectedTransactionEntity>>().apply {
             whenever(setParameter(eq("txAlgo"), any())) doReturn this
             whenever(setParameter(eq("txId"), any())) doReturn this
-            whenever(resultList) doReturn txnErrors
+            whenever(resultList) doReturn mock()
         }
 
         entityManager = mock<EntityManager>().apply {
@@ -143,23 +141,23 @@ class JPABackingStoreImplTests {
     }
 
     @Nested
-    inner class LifeCycleTests {
+    inner class BackingStoreApiTests {
         @Test
-        fun `Starting backing store invokes life cycle start`() {
+        fun `Starting backing store starts life cycle coordinator`() {
             backingStoreImpl.start()
-            Mockito.verify(lifecycleCoordinator).start()
+            Mockito.verify(lifecycleCoordinator, times(1)).start()
         }
 
         @Test
-        fun `Stopping backing store invokes life cycle stop`() {
+        fun `Stopping backing store stops life cycle coordinator`() {
             backingStoreImpl.stop()
-            Mockito.verify(lifecycleCoordinator).stop()
+            Mockito.verify(lifecycleCoordinator, times(1)).stop()
         }
 
         @Test
-        fun `Get running life cycle status`() {
+        fun `Getting running life cycle status returns life cycle running status`() {
             backingStoreImpl.isRunning
-            Mockito.verify(lifecycleCoordinator).isRunning
+            Mockito.verify(lifecycleCoordinator, times(1)).isRunning
         }
     }
 
@@ -175,7 +173,7 @@ class JPABackingStoreImplTests {
         }
 
         @Test
-        fun `Stop event stops db connection manager`() {
+        fun `Stop event stops the required dependency`() {
             backingStoreImpl.eventHandler(StopEvent(), lifecycleCoordinator)
             Mockito.verify(dbConnectionManager, times(1)).stop()
         }
@@ -187,7 +185,7 @@ class JPABackingStoreImplTests {
 
             Mockito.verify(jpaEntitiesRegistry, times(1)).register(any(), any())
             Mockito.verify(jpaEntitiesRegistry, times(1)).get(CordaDb.Uniqueness.persistenceUnitName)
-            Mockito.verify(lifecycleCoordinator).updateStatus(lifeCycleStatus)
+            Mockito.verify(lifecycleCoordinator, times(1)).updateStatus(lifeCycleStatus)
         }
 
         @Test

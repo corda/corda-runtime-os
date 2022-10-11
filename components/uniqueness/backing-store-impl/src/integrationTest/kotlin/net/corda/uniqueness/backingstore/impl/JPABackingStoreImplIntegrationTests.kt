@@ -381,7 +381,7 @@ class JPABackingStoreImplIntegrationTests {
 
         @Disabled("This test fails because it fails to persist an error message with 1024 bytes.")
         @Test
-        fun `Persisting error should throw if the size is biggner than the maximum`() {
+        fun `Persisting an error throws if the size is bigger than the maximum`() {
             val txId = SecureHashUtils.randomSecureHash()
             val internalRequest = generateRequestInternal(txId)
 
@@ -606,7 +606,7 @@ class JPABackingStoreImplIntegrationTests {
                 RollbackException::class,
                 OptimisticLockException::class]
         )
-        fun `Persistence errors raised while persisting trigger retry`(e: Class<Exception>) {
+        fun `Persistence errors raised while persisting triggers retry`(e: Class<Exception>) {
             val emFactory = createEntityManagerFactory("uniqueness")
             val spyEmFactory = Mockito.spy(emFactory)
             val em = spyEmFactory.createEntityManager()
