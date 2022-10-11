@@ -217,7 +217,7 @@ data class UniquenessRejectedTransactionEntity(
 ) {
     init {
         if (errorDetails.size > REJECTED_TRANSACTION_ERROR_DETAILS_LENGTH) {
-            throw IllegalArgumentException("The maximum size of the error_detail field is $REJECTED_TRANSACTION_ERROR_DETAILS_LENGTH")
+            throw IllegalArgumentException("The maximum size of the error_details field is $REJECTED_TRANSACTION_ERROR_DETAILS_LENGTH")
         }
     }
     override fun equals(other: Any?): Boolean {
