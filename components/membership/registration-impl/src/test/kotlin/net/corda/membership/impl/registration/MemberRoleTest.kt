@@ -56,15 +56,22 @@ class MemberRoleTest {
     }
 
     @Test
-    fun `throws exception if notary plugin is missing`() {
-        assertThrows<IllegalArgumentException> {
-            extractRolesFromContext(
-                mapOf(
-                    "corda.roles.0" to "notary",
-                    "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
-                )
+    fun `accept context when notary plugin is missing`() {
+        val roles = extractRolesFromContext(
+            mapOf(
+                "corda.roles.0" to "notary",
+                "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
             )
-        }
+        )
+
+        assertThat(roles.toList())
+            .hasSize(1)
+            .allSatisfy {
+                it is MemberRole.Notary
+            }
+            .allSatisfy {
+                assertThat((it as? MemberRole.Notary)?.plugin).isNull()
+            }
     }
 
     @Test
