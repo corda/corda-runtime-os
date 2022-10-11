@@ -31,7 +31,7 @@ class ConsensualTransactionBuilderFactoryImpl @Activate constructor(
 
     override fun create(): ConsensualTransactionBuilder {
         val sandboxGroupContext = flowFiberService.getExecutingFiber().getExecutionContext().sandboxGroupContext
-        val sandboxCpks = sandboxGroupContext.sandboxGroup.metadata.values
+        val sandboxCpks = sandboxGroupContext.sandboxGroup.metadata.values.toList()
 
         return ConsensualTransactionBuilderImpl(
             cipherSchemeMetadata,
@@ -41,7 +41,7 @@ class ConsensualTransactionBuilderFactoryImpl @Activate constructor(
             serializationService,
             signingService,
             memberLookup,
-            sandboxCpks.map { it }
+            sandboxCpks
         )
     }
 }
