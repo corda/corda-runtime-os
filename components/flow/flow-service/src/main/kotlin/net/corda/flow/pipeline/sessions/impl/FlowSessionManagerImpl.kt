@@ -110,10 +110,15 @@ class FlowSessionManagerImpl @Activate constructor(
             sendSessionMessageToExistingSession(
                 checkpoint,
                 sessionId,
-                payload = SessionError(ExceptionEnvelope(throwable::class.qualifiedName, throwable.message)),
+                payload = getSessionError(throwable),
                 instant
             )
         }
+    }
+
+    private fun getSessionError(throwable: Throwable) : SessionError {
+        val errorMessage = throwable.message ?: ""
+        return SessionError(ExceptionEnvelope(throwable::class.qualifiedName, errorMessage))
     }
 
     override fun getReceivedEvents(
