@@ -87,7 +87,7 @@ internal class ConsensualTransactionBuilderImplTest {
         assertEquals(expectedCpkMetadata, metadata.getCpkMetadata())
     }
 
-    fun makeTransactionBuilder(): ConsensualTransactionBuilder {
+    private fun makeTransactionBuilder(): ConsensualTransactionBuilder {
         return ConsensualTransactionBuilderImpl(
             cipherSchemeMetadata,
             digestService,
