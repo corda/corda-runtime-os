@@ -3,11 +3,13 @@ package net.corda.flow.pipeline.sessions.impl
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.stream.Stream
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.session.SessionClose
 import net.corda.data.flow.event.session.SessionData
+import net.corda.data.flow.event.session.SessionError
 import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.session.SessionProcessState
@@ -718,6 +720,119 @@ class FlowSessionManagerImplTest {
 
         val closingList = flowSessionManager.getSessionsWithNextMessageClose(checkpoint, listOf(SESSION_ID))
         assertThat(closingList).isEmpty()
+    }
+
+
+    @Test
+    fun `send error messages - exception message set`() {
+        val instant = Instant.now()
+        whenever(checkpoint.sessions).thenReturn(listOf(sessionState, anotherSessionState))
+
+        whenever(sessionManager.processMessageToSend(any(), eq(sessionState), any(), any())).then {
+            SessionState().apply {
+                sendEventsState = SessionProcessState(
+                    1,
+                    sessionState.sendEventsState.undeliveredMessages.plus(it.getArgument(2) as SessionEvent)
+                )
+            }
+        }
+        whenever(sessionManager.processMessageToSend(any(), eq(anotherSessionState), any(), any())).then {
+            SessionState().apply {
+                sendEventsState = SessionProcessState(
+                    1,
+                    anotherSessionState.sendEventsState.undeliveredMessages.plus(it.getArgument(2) as SessionEvent)
+                )
+            }
+        }
+
+
+        val expectedSessionEvent = buildSessionEvent(
+            MessageDirection.OUTBOUND,
+            SESSION_ID,
+            sequenceNum = null,
+            payload = SessionError(ExceptionEnvelope(IllegalArgumentException::class.qualifiedName, "errorMessage")),
+            timestamp = instant,
+            initiatingIdentity = HOLDING_IDENTITY,
+            initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY
+        )
+
+        val anotherExpectedSessionEvent = buildSessionEvent(
+            MessageDirection.OUTBOUND,
+            ANOTHER_SESSION_ID,
+            sequenceNum = null,
+            payload = SessionError(ExceptionEnvelope(IllegalArgumentException::class.qualifiedName, "errorMessage")),
+            timestamp = instant,
+            initiatingIdentity = HOLDING_IDENTITY,
+            initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY
+        )
+
+        val sessionStates = flowSessionManager.sendErrorMessages(
+            checkpoint,
+            listOf(SESSION_ID , ANOTHER_SESSION_ID),
+            IllegalArgumentException("errorMessage"),
+            instant
+        )
+
+        verify(sessionManager).processMessageToSend(eq(FLOW_ID), eq(sessionState), any(), eq(instant))
+        verify(sessionManager).processMessageToSend(eq(FLOW_ID), eq(anotherSessionState), any(), eq(instant))
+        assertEquals(expectedSessionEvent, sessionStates[0].sendEventsState.undeliveredMessages.single())
+        assertEquals(anotherExpectedSessionEvent, sessionStates[1].sendEventsState.undeliveredMessages.single())
+    }
+
+    @Test
+    fun `send error messages - null exception message`() {
+        val instant = Instant.now()
+        whenever(checkpoint.sessions).thenReturn(listOf(sessionState, anotherSessionState))
+
+        whenever(sessionManager.processMessageToSend(any(), eq(sessionState), any(), any())).then {
+            SessionState().apply {
+                sendEventsState = SessionProcessState(
+                    1,
+                    sessionState.sendEventsState.undeliveredMessages.plus(it.getArgument(2) as SessionEvent)
+                )
+            }
+        }
+        whenever(sessionManager.processMessageToSend(any(), eq(anotherSessionState), any(), any())).then {
+            SessionState().apply {
+                sendEventsState = SessionProcessState(
+                    1,
+                    anotherSessionState.sendEventsState.undeliveredMessages.plus(it.getArgument(2) as SessionEvent)
+                )
+            }
+        }
+
+
+        val expectedSessionEvent = buildSessionEvent(
+            MessageDirection.OUTBOUND,
+            SESSION_ID,
+            sequenceNum = null,
+            payload = SessionError(ExceptionEnvelope(IllegalArgumentException::class.qualifiedName, "")),
+            timestamp = instant,
+            initiatingIdentity = HOLDING_IDENTITY,
+            initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY
+        )
+
+        val anotherExpectedSessionEvent = buildSessionEvent(
+            MessageDirection.OUTBOUND,
+            ANOTHER_SESSION_ID,
+            sequenceNum = null,
+            payload = SessionError(ExceptionEnvelope(IllegalArgumentException::class.qualifiedName, "")),
+            timestamp = instant,
+            initiatingIdentity = HOLDING_IDENTITY,
+            initiatedIdentity = COUNTERPARTY_HOLDING_IDENTITY
+        )
+
+        val sessionStates = flowSessionManager.sendErrorMessages(
+            checkpoint,
+            listOf(SESSION_ID , ANOTHER_SESSION_ID),
+            IllegalArgumentException(),
+            instant
+        )
+
+        verify(sessionManager).processMessageToSend(eq(FLOW_ID), eq(sessionState), any(), eq(instant))
+        verify(sessionManager).processMessageToSend(eq(FLOW_ID), eq(anotherSessionState), any(), eq(instant))
+        assertEquals(expectedSessionEvent, sessionStates[0].sendEventsState.undeliveredMessages.single())
+        assertEquals(anotherExpectedSessionEvent, sessionStates[1].sendEventsState.undeliveredMessages.single())
     }
 
 }
