@@ -45,6 +45,7 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
@@ -118,12 +119,12 @@ class BatchedUniquenessCheckerImpl(
         HashMap<UniquenessCheckStateRef, UniquenessCheckStateDetails>()
 
     override fun start() {
-        log.info("Uniqueness checker starting.")
+        log.info("Uniqueness checker starting")
         lifecycleCoordinator.start()
     }
 
     override fun stop() {
-        log.info("Uniqueness checker stopping.")
+        log.info("Uniqueness checker stopping")
         lifecycleCoordinator.stop()
     }
 
@@ -150,11 +151,15 @@ class BatchedUniquenessCheckerImpl(
         val requestsToProcess = ArrayList<
                 Pair<UniquenessCheckRequestInternal, UniquenessCheckRequestAvro>>(requests.size)
 
+        log.debug { "Processing ${requests.size} requests" }
+
         // Convert the supplied batch of external requests to internal requests. Doing this can
         // throw an exception if the request is malformed. These are filtered out immediately with
         // the appropriate result returned as we can't make any assumptions about the input and
         // such a failure would be inherently idempotent anyway (changing the request would change
         // the tx id)
+        var numMalformed = 0
+
         for ( request in requests ) {
             try {
                 requestsToProcess.add(
@@ -164,8 +169,11 @@ class BatchedUniquenessCheckerImpl(
                     request.txId,
                     UniquenessCheckResultMalformedRequestAvro(e.message)
                 )
+                ++numMalformed
             }
         }
+
+        if ( numMalformed > 0 ) { log.debug { "$numMalformed malformed requests were rejected" } }
 
         // TODO - Re-instate batch processing logic based on number of states if needed - need to
         // establish what batching there is in the message bus layer first
@@ -221,6 +229,8 @@ class BatchedUniquenessCheckerImpl(
 
         val resultsToRespondWith =
             mutableListOf<Pair<UniquenessCheckRequestInternal, UniquenessCheckResult>>()
+
+        log.debug { "Processing batch of ${batch.size} requests for $holdingIdentity" }
 
         // DB operations are retried, removing conflicts from the batch on each attempt.
         backingStore.transactionSession(holdingIdentity) { session, transactionOps ->
@@ -313,8 +323,7 @@ class BatchedUniquenessCheckerImpl(
                                 )
                             )
                         // All checks passed
-                        else ->
-                            handleSuccessfulRequest(request)
+                        else -> handleSuccessfulRequest(request)
                     }
 
                     resultsToRespondWith.add(result)
@@ -324,6 +333,15 @@ class BatchedUniquenessCheckerImpl(
 
             // Now that the processing has finished, we need to commit to the database.
             commitResults(transactionOps, resultsToCommit)
+        }
+
+        if (log.isDebugEnabled) {
+            val numSuccessful = resultsToRespondWith.filter {
+                it.second is UniquenessCheckResultSuccess }.size
+
+            log.debug { "Finished processing batch for $holdingIdentity. " +
+                    "$numSuccessful successful, " +
+                    "${resultsToRespondWith.size - numSuccessful} rejected" }
         }
 
         return resultsToRespondWith
@@ -410,7 +428,7 @@ class BatchedUniquenessCheckerImpl(
     }
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        log.info("Uniqueness checker received event $event.")
+        log.info("Uniqueness checker received event $event")
         when (event) {
             is StartEvent -> {
                 configurationReadService.start()
@@ -440,7 +458,7 @@ class BatchedUniquenessCheckerImpl(
                 initialiseSubscription(event.config.getConfig(MESSAGING_CONFIG))
             }
             else -> {
-                log.warn("Unexpected event $event!")
+                log.warn("Unexpected event ${event}, ignoring")
             }
         }
     }
