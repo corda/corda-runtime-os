@@ -7,6 +7,7 @@ import net.corda.data.membership.db.request.command.PersistGroupParameters
 import net.corda.data.membership.db.response.command.PersistGroupParametersResponse
 import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.toMap
 import net.corda.virtualnode.toCorda
 
 internal class PersistGroupParametersHandler(
@@ -31,13 +32,15 @@ internal class PersistGroupParametersHandler(
         request: PersistGroupParameters
     ): PersistGroupParametersResponse {
         val epoch = transaction(context.holdingIdentity.toCorda().shortHash) { em ->
-            val epochFromRequest = request.groupParameters[EPOCH_KEY].toString().toInt()
+            val epochFromRequest = request.groupParameters.toMap()[EPOCH_KEY].toString().toInt()
             em.createQuery(
                 "SELECT c FROM ${GroupParametersEntity::class.simpleName} c " +
                         "ORDER BY c.epoch DESC",
                 GroupParametersEntity::class.java
             ).resultList.firstOrNull()?.epoch?.let {
-                require(epochFromRequest > it) { "Group parameters with epoch=$epochFromRequest already exist." }
+                require(epochFromRequest > it) {
+                    throw MembershipPersistenceException("Group parameters with epoch=$epochFromRequest already exist.")
+                }
             }
             
             val entity = GroupParametersEntity(
