@@ -9,6 +9,7 @@ import net.corda.data.CordaAvroSerializer
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -210,6 +211,9 @@ class DynamicMemberRegistrationServiceTest {
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory = mock {
         on { createValidator() } doReturn membershipSchemaValidator
     }
+    private val platformInfoProvider: PlatformInfoProvider = mock {
+        on { platformVersion } doReturn 5000
+    }
     private val registrationService = DynamicMemberRegistrationService(
         publisherFactory,
         configurationReadService,
@@ -219,7 +223,8 @@ class DynamicMemberRegistrationServiceTest {
         serializationFactory,
         membershipGroupReaderProvider,
         membershipPersistenceClient,
-        membershipSchemaValidatorFactory
+        membershipSchemaValidatorFactory,
+        platformInfoProvider
     )
 
     private val context = mapOf(

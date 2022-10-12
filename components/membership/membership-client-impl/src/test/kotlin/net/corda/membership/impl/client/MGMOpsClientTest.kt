@@ -129,7 +129,7 @@ class MGMOpsClientTest {
             *convertPublicKeys().toTypedArray(),
             *convertEndpoints().toTypedArray(),
             MemberInfoExtension.SOFTWARE_VERSION to "5.0.0",
-            MemberInfoExtension.PLATFORM_VERSION to "10",
+            MemberInfoExtension.PLATFORM_VERSION to "5000",
             MemberInfoExtension.SERIAL to "1"
         ),
         sortedMapOf(
