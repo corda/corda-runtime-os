@@ -35,8 +35,8 @@ internal class ConsensualTransactionBuilderImplTest {
             merkleTreeFactory,
             serializationService,
             ConsensualTransactionMocks.mockSigningService(),
-            ConsensualTransactionMocks.transactionMetadata,
-            ConsensualTransactionMocks.cpiIdentifier
+            ConsensualTransactionMocks.mockMemberLookup(),
+            ConsensualTransactionMocks.mockSandboxCpks()
         )
             .withStates(ConsensualTransactionMocks.testConsensualState)
             .signInitial(ConsensualTransactionMocks.testPublicKey)
@@ -53,8 +53,8 @@ internal class ConsensualTransactionBuilderImplTest {
                 merkleTreeFactory,
                 serializationService,
                 ConsensualTransactionMocks.mockSigningService(),
-                ConsensualTransactionMocks.transactionMetadata,
-                ConsensualTransactionMocks.cpiIdentifier
+                ConsensualTransactionMocks.mockMemberLookup(),
+                ConsensualTransactionMocks.mockSandboxCpks()
             )
                 .signInitial(ConsensualTransactionMocks.testPublicKey)
 
@@ -72,8 +72,8 @@ internal class ConsensualTransactionBuilderImplTest {
                 merkleTreeFactory,
                 serializationService,
                 ConsensualTransactionMocks.mockSigningService(),
-                ConsensualTransactionMocks.transactionMetadata,
-                ConsensualTransactionMocks.cpiIdentifier
+                ConsensualTransactionMocks.mockMemberLookup(),
+                ConsensualTransactionMocks.mockSandboxCpks()
             )
                 .withStates(ConsensualTransactionMocks.testConsensualState)
                 .withStates(TestConsensualState("test", emptyList()))
