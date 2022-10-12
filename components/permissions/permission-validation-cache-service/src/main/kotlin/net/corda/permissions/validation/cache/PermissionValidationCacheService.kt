@@ -29,6 +29,7 @@ import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
@@ -50,7 +51,10 @@ class PermissionValidationCacheService @Activate constructor(
 
     private companion object {
         val log = contextLogger()
-        const val CONSUMER_GROUP = "PERMISSION_SERVICE"
+        // Cache may exist on multiple Workers, i.e. in the separate VMs. Therefore, since we do have just a single
+        // instance of cache per VM it is OK to have just a single consumer in VM. But different VMs need to have
+        // different consumer groups or else permission cache content will not be delivered to them.
+        val CONSUMER_GROUP = "PERMISSION_SERVICE-${UUID.randomUUID()}"
     }
 
     /**
