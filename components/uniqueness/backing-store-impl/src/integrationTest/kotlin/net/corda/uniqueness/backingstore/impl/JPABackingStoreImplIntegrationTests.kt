@@ -98,23 +98,17 @@ class JPABackingStoreImplIntegrationTests {
             "vnode-uniqueness",
             JPABackingStoreEntities.classes
         )
-        private val defaultEmFactory: EntityManagerFactory = EntityManagerFactoryFactoryImpl().create(
-        "test", JPABackingStoreEntities.classes.toList(), dbConfig)
+        private val noDbEmFactory: EntityManagerFactory = EntityManagerFactoryFactoryImpl()
+            .create("test", JPABackingStoreEntities.classes.toList(), dbConfig)
     }
 
     class DummyException(message: String) : Exception(message)
 
-    private fun generateRequestInternal(txId: SecureHash): UniquenessCheckRequestInternal {
-        return UniquenessCheckRequestInternal(
-            txId,
-            txId.toString(),
-            inputStates = emptyList(),
-            referenceStates = emptyList(),
-            numOutputStates = 0,
-            null,
-            UPPER_BOUND
+    private fun generateRequestInternal(txId: SecureHash = SecureHashUtils.randomSecureHash())
+            : UniquenessCheckRequestInternal =
+        UniquenessCheckRequestInternal(
+            txId, txId.toString(), emptyList(), emptyList(), 0, null, UPPER_BOUND
         )
-    }
 
     @BeforeEach
     fun init() {
