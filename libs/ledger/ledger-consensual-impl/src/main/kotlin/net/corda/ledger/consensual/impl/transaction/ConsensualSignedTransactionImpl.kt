@@ -5,6 +5,7 @@ import net.corda.ledger.common.internal.transaction.createTransactionSignature
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.isFulfilledBy
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
@@ -51,6 +52,7 @@ class ConsensualSignedTransactionImpl(
     override fun toLedgerTransaction(): ConsensualLedgerTransaction =
         ConsensualLedgerTransactionImpl(this.wireTransaction, serializer)
 
+    @Suspendable
     override fun sign(publicKey: PublicKey): ConsensualSignedTransaction =
         ConsensualSignedTransactionImpl(serializer, signingService, wireTransaction,
             signatures + createTransactionSignature(signingService, serializer, getCpiIdentifier(), id, publicKey)
