@@ -1,5 +1,6 @@
 package net.corda.ledger.consensual.impl.flows.finality
 
+import net.corda.ledger.common.internal.transaction.SignableData
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.flows.CordaInject
@@ -7,12 +8,14 @@ import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.receive
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.ParameterizedSignatureSpec
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 
@@ -30,6 +33,9 @@ class ConsensualFinalityFlow(
 
     @CordaInject
     lateinit var memberLookup: MemberLookup
+
+    @CordaInject
+    lateinit var serializationService: SerializationService
 
     @Suspendable
     override fun call(): ConsensualSignedTransaction {
@@ -49,9 +55,10 @@ class ConsensualFinalityFlow(
         }
 
         // Should this also be a [CordaRuntimeException]? Or make the others [IllegalArgumentException]s?
-        val requiredSignatures = signedTransaction.toLedgerTransaction().requiredSigningKeys
-        require(signedTransaction.toLedgerTransaction().requiredSigningKeys == sessionPublicKeys.toSet()) {
-            "Required signatures $requiredSignatures but ledger keys for the passed in sessions are $sessionPublicKeys"
+        // TODO: Is it OK to assume that finalityflow gathers exactly the missing keys and nobody else?
+        val missingSigningKeys = signedTransaction.getMissingSigningKeys()
+        require(missingSigningKeys == sessionPublicKeys.toSet()) {
+            "Required signatures $missingSigningKeys but ledger keys for the passed in sessions are $sessionPublicKeys"
         }
 
         // TODO [CORE-7029] Record unfinalised transaction
@@ -60,7 +67,7 @@ class ConsensualFinalityFlow(
 
         var signedByParticipantsTransaction = signedTransaction
 
-        for (session in sessions) {
+        sessions.forEachIndexed{idx, session ->
             // TODO Use [FlowMessaging.sendAll] and [FlowMessaging.receiveAll] anyway
             log.debug { "Requesting signature from ${session.counterparty} for signed transaction ${signedTransaction.id}" }
             session.send(signedTransaction)
@@ -76,12 +83,19 @@ class ConsensualFinalityFlow(
             log.debug { "Received signature from ${session.counterparty} for signed transaction ${signedTransaction.id}" }
 
             try {
+                if(signature.by != sessionPublicKeys[idx]) {
+                    throw CordaRuntimeException(
+                        "A session with ${session.counterparty} sent back a signature with another keys." +
+                                "Expected: ${sessionPublicKeys[idx]} vs Received: ${signature.by}"
+                    )
+                }
                 // TODO Do not hardcode signature spec
+                val signedData = SignableData(signedTransaction.id, signature.metadata)
                 digitalSignatureVerificationService.verify(
                     publicKey = signature.by,
                     signatureSpec = SignatureSpec.ECDSA_SHA256,
                     signatureData = signature.signature.bytes,
-                    clearData = signedTransaction.id.bytes
+                    clearData = serializationService.serialize(signedData).bytes
                 )
                 log.debug {
                     "Successfully verified signature from ${session.counterparty} of $signature for signed transaction " +

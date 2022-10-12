@@ -1,11 +1,13 @@
 package net.corda.ledger.consensual.impl.flows.finality
 
+import net.corda.ledger.common.internal.transaction.SignableData
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.application.messaging.receive
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -28,6 +30,9 @@ class ConsensualReceiveFinalityFlow(
 
     @CordaInject
     lateinit var memberLookup: MemberLookup
+
+    @CordaInject
+    lateinit var serializationService: SerializationService
 
     @Suspendable
     override fun call(): ConsensualSignedTransaction {
@@ -56,11 +61,12 @@ class ConsensualReceiveFinalityFlow(
             try {
                 // TODO Signature spec to be determined internally by crypto code
                 // Throws if the signature is invalid which will terminate the peer flows with an error
+                val signedData = SignableData(transactionId, signature.metadata)
                 digitalSignatureVerificationService.verify(
                     publicKey = signature.by,
                     signatureSpec = SignatureSpec.ECDSA_SHA256,
                     signatureData = signature.signature.bytes,
-                    clearData = signedTransactionToFinalize.id.bytes
+                    clearData = serializationService.serialize(signedData).bytes
                 )
                 log.debug { "Successfully verified signature of ${signature.signature} for signed transaction $transactionId" }
             } catch (e: Exception) {
