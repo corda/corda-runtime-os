@@ -28,7 +28,7 @@ import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateConflic
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateConflictImpl
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.uniqueness.utils.UniquenessAssertions
-import net.corda.uniqueness.utils.UniquenessAssertions.toErrorType
+import net.corda.uniqueness.utils.UniquenessAssertions.getErrorOfType
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorInputStateUnknown
@@ -236,7 +236,7 @@ class JPABackingStoreImplIntegrationTests {
                 assertEquals(1, txDetails.size)
                 txDetails.entries.single { true }.apply {
                     val uniquenessCheckResult = this.value.result
-                    val unknownStates = (toErrorType<UniquenessCheckErrorInputStateUnknown>(uniquenessCheckResult))
+                    val unknownStates = (getErrorOfType<UniquenessCheckErrorInputStateUnknown>(uniquenessCheckResult))
                         .unknownStates
                     assertAll(
                         { assertThat(txIds).contains(this.key) },
@@ -270,7 +270,7 @@ class JPABackingStoreImplIntegrationTests {
                 assertEquals(1, txDetails.size)
                 txDetails.entries.single { true }.apply {
                     val uniquenessCheckResult = this.value.result
-                    val conflicts = (toErrorType<UniquenessCheckErrorInputStateConflict>(uniquenessCheckResult))
+                    val conflicts = (getErrorOfType<UniquenessCheckErrorInputStateConflict>(uniquenessCheckResult))
                         .conflictingStates
                     assertAll(
                         { assertThat(txIds).contains(this.key) },
@@ -305,7 +305,7 @@ class JPABackingStoreImplIntegrationTests {
                 assertEquals(1, txDetails.size)
                 txDetails.entries.single { true }.apply {
                     val uniquenessCheckResult = this.value.result
-                    val conflicts = (toErrorType<UniquenessCheckErrorReferenceStateConflict>(uniquenessCheckResult))
+                    val conflicts = (getErrorOfType<UniquenessCheckErrorReferenceStateConflict>(uniquenessCheckResult))
                         .conflictingStates
                     assertAll(
                         { assertThat(txIds).contains(this.key) },
@@ -338,7 +338,7 @@ class JPABackingStoreImplIntegrationTests {
                 assertEquals(1, txDetails.size)
                 txDetails.entries.single { true }.apply {
                     val uniquenessCheckResult = this.value.result
-                    val unknownStates = (toErrorType<UniquenessCheckErrorReferenceStateUnknown>(uniquenessCheckResult))
+                    val unknownStates = (getErrorOfType<UniquenessCheckErrorReferenceStateUnknown>(uniquenessCheckResult))
                         .unknownStates
                     assertAll(
                         { assertThat(txIds).contains(this.key) },
@@ -372,7 +372,7 @@ class JPABackingStoreImplIntegrationTests {
                 assertEquals(1, txDetails.size)
                 txDetails.entries.single { true }.apply {
                     val uniquenessCheckResult = this.value.result
-                    val error = toErrorType<UniquenessCheckErrorTimeWindowOutOfBounds>(uniquenessCheckResult)
+                    val error = getErrorOfType<UniquenessCheckErrorTimeWindowOutOfBounds>(uniquenessCheckResult)
                     assertAll(
                         { assertThat(txIds).contains(this.key) },
                         { assertThat(error.evaluationTimestamp).isEqualTo(evaluationTime) },
@@ -434,7 +434,7 @@ class JPABackingStoreImplIntegrationTests {
                     val uniquenessCheckResult = this.value.result
                     assertAll(
                         { assertThat(txIds.contains(this.key)) },
-                        { assertThat((toErrorType<UniquenessCheckErrorMalformedRequest>(uniquenessCheckResult)).errorText)
+                        { assertThat((getErrorOfType<UniquenessCheckErrorMalformedRequest>(uniquenessCheckResult)).errorText)
                         .isEqualTo(errorMessage) })
                     UniquenessAssertions
                         .assertRejectedResult<UniquenessCheckErrorMalformedRequest>(uniquenessCheckResult)

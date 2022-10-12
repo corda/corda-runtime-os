@@ -47,7 +47,7 @@ object UniquenessAssertions {
      * Checks for a rejected uniqueness check result.
      */
     inline fun <reified T>assertRejectedResult(result: UniquenessCheckResult, clock: AutoTickTestClock? = null) {
-        assertInstanceOf(T::class.java, toErrorType<T>(result))
+        assertInstanceOf(T::class.java, getErrorOfType<T>(result))
         assertThat(result.toCharacterRepresentation()).isEqualTo(UniquenessConstants.RESULT_REJECTED_REPRESENTATION)
         assertValidTimestamp(result.resultTimestamp, clock)
     }
@@ -164,7 +164,7 @@ object UniquenessAssertions {
     /**
      * Casts to a specific uniqueness check error type.
      */
-    inline fun <reified T> toErrorType(result: UniquenessCheckResult): T {
+    inline fun <reified T> getErrorOfType(result: UniquenessCheckResult): T {
         val failureImpl = result as UniquenessCheckResultFailureImpl
         val errorImpl = failureImpl.error as T
         assertInstanceOf(T::class.java, errorImpl)
