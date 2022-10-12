@@ -11,7 +11,6 @@ import net.corda.ledger.consensual.impl.transaction.ConsensualLedgerTransactionI
 import net.corda.ledger.consensual.impl.transaction.ConsensualTransactionBuilderImpl
 import net.corda.ledger.consensual.impl.transaction.TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
 import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
