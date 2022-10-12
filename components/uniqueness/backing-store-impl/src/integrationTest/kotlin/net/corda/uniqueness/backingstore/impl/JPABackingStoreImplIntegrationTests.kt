@@ -107,7 +107,13 @@ class JPABackingStoreImplIntegrationTests {
     private fun generateRequestInternal(txId: SecureHash = SecureHashUtils.randomSecureHash())
             : UniquenessCheckRequestInternal =
         UniquenessCheckRequestInternal(
-            txId, txId.toString(), emptyList(), emptyList(), 0, null, UPPER_BOUND
+            txId,
+            txId.toString(),
+            emptyList(),
+            emptyList(),
+            0,
+            null,
+            UPPER_BOUND
         )
 
     @BeforeEach
@@ -213,12 +219,9 @@ class JPABackingStoreImplIntegrationTests {
             val txId = SecureHashUtils.randomSecureHash()
             val txIds = listOf(txId)
             val txns = listOf(
-                Pair(
-                    generateRequestInternal(txId), UniquenessCheckResultFailureImpl(
+                Pair(generateRequestInternal(txId), UniquenessCheckResultFailureImpl(
                         Clock.systemUTC().instant(),
-                        UniquenessCheckErrorInputStateUnknownImpl(listOf(UniquenessCheckStateRefImpl(txId, 0)))
-                    )
-                )
+                        UniquenessCheckErrorInputStateUnknownImpl(listOf(UniquenessCheckStateRefImpl(txId, 0)))))
             )
 
             backingStoreImpl.session(aliceIdentity) { session ->
@@ -248,8 +251,7 @@ class JPABackingStoreImplIntegrationTests {
             val txId = SecureHashUtils.randomSecureHash()
             val txIds = listOf(txId)
             val consumingTxId = SecureHashUtils.randomSecureHash()
-            val txns = listOf(Pair(
-                    generateRequestInternal(txId), UniquenessCheckResultFailureImpl(
+            val txns = listOf(Pair(generateRequestInternal(txId), UniquenessCheckResultFailureImpl(
                         Clock.systemUTC().instant(),
                         UniquenessCheckErrorInputStateConflictImpl(
                             listOf(UniquenessCheckStateDetailsImpl(
@@ -319,8 +321,8 @@ class JPABackingStoreImplIntegrationTests {
             val txIds = listOf(txId)
             val txns = listOf(
                 Pair(generateRequestInternal(txId), UniquenessCheckResultFailureImpl(
-                        Clock.systemUTC().instant(),
-                        UniquenessCheckErrorReferenceStateUnknownImpl(
+                    Clock.systemUTC().instant(),
+                    UniquenessCheckErrorReferenceStateUnknownImpl(
                             listOf(UniquenessCheckStateRefImpl(txId, 0))))))
 
             backingStoreImpl.session(aliceIdentity) { session ->
