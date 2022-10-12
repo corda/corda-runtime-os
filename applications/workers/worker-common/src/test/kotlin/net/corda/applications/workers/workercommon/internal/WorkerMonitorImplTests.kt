@@ -1,6 +1,6 @@
 package net.corda.applications.workers.workercommon.internal
 
-import net.corda.applications.workers.workercommon.HealthMonitor
+import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.registry.CoordinatorStatus
@@ -10,8 +10,8 @@ import org.junit.jupiter.api.Test
 import java.net.HttpURLConnection
 import java.net.URL
 
-/** Tests of [HealthMonitorImpl]. */
-class HealthMonitorImplTests {
+/** Tests of [WorkerMonitorImpl]. */
+class WorkerMonitorImplTests {
     @Test
     fun `worker is considered healthy and ready if there are no components in the lifecycle registry`() {
         val healthMonitor = startHealthMonitor(emptyMap())
@@ -99,15 +99,15 @@ class HealthMonitorImplTests {
         return name to CoordinatorStatus(name, status, "")
     }
 
-    /** Creates and starts a [HealthMonitor] that wraps a [LifecycleRegistry] with the given [componentStatuses]. */
-    private fun startHealthMonitor(componentStatuses: Map<LifecycleCoordinatorName, CoordinatorStatus>): HealthMonitor {
+    /** Creates and starts a [WorkerMonitor] that wraps a [LifecycleRegistry] with the given [componentStatuses]. */
+    private fun startHealthMonitor(componentStatuses: Map<LifecycleCoordinatorName, CoordinatorStatus>): WorkerMonitor {
         val lifecycleRegistry = TestLifecycleRegistry(componentStatuses)
-        val healthMonitor = HealthMonitorImpl(lifecycleRegistry)
+        val healthMonitor = WorkerMonitorImpl(lifecycleRegistry)
         healthMonitor.listen(0)
         return healthMonitor
     }
 
-    /** Retrieves the HTTP codes of the health and readiness endpoints of a running [HealthMonitor]. */
+    /** Retrieves the HTTP codes of the health and readiness endpoints of a running [WorkerMonitor]. */
     private fun getHealthAndReadinessCodes(port: Int): Pair<Int, Int> {
         val responseCodeHealthy = (URL("http://localhost:$port$HTTP_HEALTH_ROUTE").openConnection() as HttpURLConnection).responseCode
         val responseCodeReady = (URL("http://localhost:$port$HTTP_STATUS_ROUTE").openConnection() as HttpURLConnection).responseCode
