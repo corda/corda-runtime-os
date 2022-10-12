@@ -322,7 +322,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                         REGISTRATION_ID to registrationId,
                         PARTY_NAME to member.x500Name.toString(),
                         GROUP_ID to member.groupId,
-                        PLATFORM_VERSION to platformInfoProvider.platformVersion.toString(),
+                        PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),
                         // temporarily hardcoded
                         SOFTWARE_VERSION to SOFTWARE_VERSION_CONST,
                         SERIAL to SERIAL_CONST,

@@ -205,7 +205,7 @@ class StaticMemberRegistrationServiceTest {
         }
     }
     private val platformInfoProvider: PlatformInfoProvider = mock {
-        on { platformVersion } doReturn 5000
+        on { activePlatformVersion } doReturn 5000
     }
 
     private val registrationService = StaticMemberRegistrationService(

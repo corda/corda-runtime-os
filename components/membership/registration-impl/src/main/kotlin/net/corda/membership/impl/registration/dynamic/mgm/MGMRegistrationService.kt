@@ -264,7 +264,7 @@ class MGMRegistrationService @Activate constructor(
                     SESSION_KEY_HASH to sessionKey.calculateHash().value,
                     ECDH_KEY to ecdhKey.toPem(),
                     // temporarily hardcoded
-                    PLATFORM_VERSION to platformInfoProvider.platformVersion.toString(),
+                    PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),
                     SOFTWARE_VERSION to SOFTWARE_VERSION_CONST,
                     SERIAL to SERIAL_CONST,
                 )

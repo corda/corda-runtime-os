@@ -245,7 +245,7 @@ class StaticMemberRegistrationService @Activate constructor(
                 *convertEndpoints(staticMemberInfo).toTypedArray(),
                 SESSION_KEY_HASH to memberKey.calculateHash().toString(),
                 SOFTWARE_VERSION to staticMemberInfo.softwareVersion,
-                PLATFORM_VERSION to platformInfoProvider.platformVersion.toString(),
+                PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),
                 SERIAL to staticMemberInfo.serial,
             ),
             sortedMapOf(
