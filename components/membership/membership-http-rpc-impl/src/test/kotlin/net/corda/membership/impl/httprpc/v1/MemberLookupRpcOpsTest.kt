@@ -1,5 +1,6 @@
 package net.corda.membership.impl.httprpc.v1
 
+import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.exception.ServiceUnavailableException
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
@@ -8,7 +9,7 @@ import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.membership.httprpc.v1.types.response.RpcMemberInfo
 import net.corda.membership.httprpc.v1.types.response.RpcMemberInfoList
-import net.corda.membership.lib.impl.EndpointInfoImpl
+import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
@@ -23,13 +24,15 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
-import net.corda.crypto.impl.converter.PublicKeyConverter
+import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.test.util.identity.createTestHoldingIdentity
+import net.corda.test.util.time.TestClock
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.membership.MemberInfo
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -41,8 +44,6 @@ import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import java.security.PublicKey
-import net.corda.test.util.time.TestClock
-import net.corda.virtualnode.ShortHash
 import java.time.Instant
 import java.util.UUID
 import kotlin.test.assertFailsWith
@@ -69,9 +70,17 @@ class MemberLookupRpcOpsTest {
     private val knownKey: PublicKey = mock()
     private val keys = listOf(knownKey, knownKey)
 
+    private val endpointInfoFactory: EndpointInfoFactory = mock {
+        on { create(any(), any()) } doAnswer { invocation ->
+            mock {
+                on { this.url } doReturn invocation.getArgument(0)
+                on { this.protocolVersion } doReturn invocation.getArgument(1)
+            }
+        }
+    }
     private val endpoints = listOf(
-        EndpointInfoImpl("https://corda5.r3.com:10000"),
-        EndpointInfoImpl("https://corda5.r3.com:10001", 10)
+        endpointInfoFactory.create("https://corda5.r3.com:10000"),
+        endpointInfoFactory.create("https://corda5.r3.com:10001", 10)
     )
 
     private val holdingIdentity = createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "0")
@@ -83,6 +92,7 @@ class MemberLookupRpcOpsTest {
 
     private val converters = listOf(
         EndpointInfoConverter(),
+        MemberNotaryDetailsConverter(keyEncodingService),
         PublicKeyConverter(keyEncodingService)
     )
 

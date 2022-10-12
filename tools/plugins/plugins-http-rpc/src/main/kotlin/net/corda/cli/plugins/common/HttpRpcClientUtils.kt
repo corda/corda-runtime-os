@@ -3,6 +3,7 @@ package net.corda.cli.plugins.common
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.client.HttpRpcClient
 import net.corda.httprpc.client.config.HttpRpcClientConfig
+import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.time.Duration
@@ -31,7 +32,11 @@ object HttpRpcClientUtils {
         )
     }
 
-    fun <T> executeWithRetry(waitDuration: Duration, operationName: String, block: () -> T): T {
+    fun <T> executeWithRetry(
+        waitDuration: Duration, operationName: String,
+        onAlreadyExists: (ResourceAlreadyExistsException) -> T = ::reThrow,
+        block: () -> T
+    ): T {
         logger.info("Performing $operationName")
         val endTime = System.currentTimeMillis() + waitDuration.toMillis()
         var lastException: Exception?
@@ -39,6 +44,8 @@ object HttpRpcClientUtils {
         do {
             try {
                 return block()
+            } catch (ex: ResourceAlreadyExistsException) {
+                return onAlreadyExists(ex)
             } catch (ex: Exception) {
                 lastException = ex
                 logger.warn("Cannot perform $operationName yet", ex)
@@ -50,5 +57,14 @@ object HttpRpcClientUtils {
 
         errOut.error("Unable to perform $operationName", lastException)
         throw lastException!!
+    }
+
+    fun reThrow(ex: ResourceAlreadyExistsException): Nothing {
+        logger.info("Re-throwing", ex)
+        throw ex
+    }
+
+    fun ignore(ex: ResourceAlreadyExistsException) {
+        logger.debug("Ignoring", ex)
     }
 }

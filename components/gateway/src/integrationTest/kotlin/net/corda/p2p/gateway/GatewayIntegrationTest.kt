@@ -64,6 +64,7 @@ import net.corda.v5.base.util.seconds
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatIterable
 import org.bouncycastle.jce.PrincipalUtil
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Nested
@@ -105,6 +106,7 @@ class GatewayIntegrationTest : TestBase() {
 
         val aliceX500name = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
         val bobX500Name = "CN=Bob, O=Bob Corp, L=LDN, C=GB"
+        const val MAX_REQUEST_SIZE = 50_000_000L
     }
 
     private val sessionId = "session-1"
@@ -193,7 +195,8 @@ class GatewayIntegrationTest : TestBase() {
                     GatewayConfiguration(
                         serverAddress.host,
                         serverAddress.port,
-                        aliceSslConfig
+                        aliceSslConfig,
+                        MAX_REQUEST_SIZE
                     ),
                 ),
                 alice.subscriptionFactory,
@@ -233,7 +236,8 @@ class GatewayIntegrationTest : TestBase() {
                     GatewayConfiguration(
                         serverAddress.host,
                         serverAddress.port,
-                        aliceSslConfig
+                        aliceSslConfig,
+                        MAX_REQUEST_SIZE
                     ),
                 ),
                 alice.subscriptionFactory,
@@ -264,7 +268,7 @@ class GatewayIntegrationTest : TestBase() {
 
             // Verify Gateway has successfully forwarded the message to the P2P_IN topic
             val publishedRecords = alice.getRecords(LINK_IN_TOPIC, 1)
-            assertThat(publishedRecords)
+            assertThatIterable(publishedRecords)
                 .hasSize(1).allSatisfy {
                     assertThat(it.value).isInstanceOfSatisfying(LinkInMessage::class.java) {
                         assertThat(it.payload).isInstanceOfSatisfying(AuthenticatedDataMessage::class.java) {
@@ -325,6 +329,7 @@ class GatewayIntegrationTest : TestBase() {
                     recipientServerUrl.host,
                     recipientServerUrl.port,
                     aliceSslConfig,
+                    MAX_REQUEST_SIZE
                 ),
                 aliceKeyStore,
             ).use { recipientServer ->
@@ -347,7 +352,7 @@ class GatewayIntegrationTest : TestBase() {
                     }.map {
                         URI.create("http://www.alice.net:$it")
                     }.forEach { url ->
-                        configPublisher.publishConfig(GatewayConfiguration(url.host, url.port, aliceSslConfig))
+                        configPublisher.publishConfig(GatewayConfiguration(url.host, url.port, aliceSslConfig, MAX_REQUEST_SIZE))
                         eventually(duration = 20.seconds) {
                             assertThat(gateway.isRunning).isTrue
                         }
@@ -407,7 +412,8 @@ class GatewayIntegrationTest : TestBase() {
                     GatewayConfiguration(
                         serverAddress.host,
                         serverAddress.port,
-                        aliceSslConfig
+                        aliceSslConfig,
+                        MAX_REQUEST_SIZE
                     )
                 ),
                 alice.subscriptionFactory,
@@ -488,7 +494,7 @@ class GatewayIntegrationTest : TestBase() {
                 }
                 HttpServer(
                     serverListener,
-                    GatewayConfiguration(serverUri.host, serverUri.port, chipSslConfig),
+                    GatewayConfiguration(serverUri.host, serverUri.port, chipSslConfig, MAX_REQUEST_SIZE),
                     chipKeyStore,
                 ).also {
                     serverListener.server = it
@@ -506,6 +512,7 @@ class GatewayIntegrationTest : TestBase() {
                         gatewayAddress.first,
                         gatewayAddress.second,
                         aliceSslConfig,
+                        MAX_REQUEST_SIZE
                     )
                 ),
                 alice.subscriptionFactory,
@@ -614,7 +621,8 @@ class GatewayIntegrationTest : TestBase() {
                         GatewayConfiguration(
                             aliceGatewayAddress.host,
                             aliceGatewayAddress.port,
-                            chipSslConfig
+                            chipSslConfig,
+                            MAX_REQUEST_SIZE
                         ),
                         alice.lifecycleCoordinatorFactory
                     ),
@@ -630,7 +638,8 @@ class GatewayIntegrationTest : TestBase() {
                         GatewayConfiguration(
                             bobGatewayAddress.host,
                             bobGatewayAddress.port,
-                            daleSslConfig
+                            daleSslConfig,
+                            MAX_REQUEST_SIZE
                         ),
                         bob.lifecycleCoordinatorFactory
                     ),
@@ -720,7 +729,8 @@ class GatewayIntegrationTest : TestBase() {
                     GatewayConfiguration(
                         host,
                         port,
-                        aliceSslConfig
+                        aliceSslConfig,
+                        MAX_REQUEST_SIZE
                     )
                 )
                 gateway.startAndWaitForStarted()
@@ -732,7 +742,8 @@ class GatewayIntegrationTest : TestBase() {
                     GatewayConfiguration(
                         host,
                         -20,
-                        aliceSslConfig
+                        aliceSslConfig,
+                        MAX_REQUEST_SIZE
                     )
                 )
                 eventually(duration = 20.seconds) {
@@ -750,7 +761,8 @@ class GatewayIntegrationTest : TestBase() {
                     GatewayConfiguration(
                         host,
                         anotherPort,
-                        aliceSslConfig
+                        aliceSslConfig,
+                        MAX_REQUEST_SIZE
                     )
                 )
                 eventually(duration = 20.seconds) {
@@ -829,7 +841,8 @@ class GatewayIntegrationTest : TestBase() {
                 GatewayConfiguration(
                     aliceAddress.host,
                     aliceAddress.port,
-                    aliceSslConfig
+                    aliceSslConfig,
+                    MAX_REQUEST_SIZE
                 ),
             )
             server.publish(
@@ -920,7 +933,7 @@ class GatewayIntegrationTest : TestBase() {
                 }
 
                 // Change the host
-                configPublisher.publishConfig(GatewayConfiguration(bobAddress.host, bobAddress.port, aliceSslConfig))
+                configPublisher.publishConfig(GatewayConfiguration(bobAddress.host, bobAddress.port, aliceSslConfig, MAX_REQUEST_SIZE))
                 val bobKeyStore =
                     firstCertificatesAuthority.generateKeyAndCertificate(bobAddress.host).toKeyStoreAndPassword()
                 publishKeyStoreCertificatesAndKeys(server.publisher, bobKeyStore)

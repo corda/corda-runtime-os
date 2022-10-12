@@ -1,7 +1,7 @@
 package net.corda.applications.workers.p2p.linkmanager
 
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
-import net.corda.applications.workers.workercommon.HealthMonitor
+import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.applications.workers.workercommon.WorkerHelpers
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.osgi.api.Application
@@ -20,8 +20,8 @@ class LinkManagerWorker @Activate constructor(
     private val shutDownService: Shutdown,
     @Reference(service = LinkManagerProcessor::class)
     private val linkManagerProcessor: LinkManagerProcessor,
-    @Reference(service = HealthMonitor::class)
-    private val healthMonitor: HealthMonitor,
+    @Reference(service = WorkerMonitor::class)
+    private val workerMonitor: WorkerMonitor,
     @Reference(service = ConfigurationValidatorFactory::class)
     private val configurationValidatorFactory: ConfigurationValidatorFactory,
 ) : Application {
@@ -35,7 +35,7 @@ class LinkManagerWorker @Activate constructor(
 
         val params = WorkerHelpers.getParams(args, LinkManagerWorkerParams())
         if (WorkerHelpers.printHelpOrVersion(params.defaultParams, this::class.java, shutDownService)) return
-        WorkerHelpers.setUpHealthMonitor(healthMonitor, params.defaultParams)
+        WorkerHelpers.setupMonitor(workerMonitor, params.defaultParams)
 
         val config = WorkerHelpers.getBootstrapConfig(
             params.defaultParams,
@@ -48,7 +48,7 @@ class LinkManagerWorker @Activate constructor(
     override fun shutdown() {
         logger.info("P2P Link Manager worker stopping.")
         linkManagerProcessor.stop()
-        healthMonitor.stop()
+        workerMonitor.stop()
     }
 }
 /** Additional parameters for the member worker are added here. */

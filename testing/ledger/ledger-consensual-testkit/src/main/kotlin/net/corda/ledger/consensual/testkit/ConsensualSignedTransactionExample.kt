@@ -1,5 +1,7 @@
 package net.corda.ledger.consensual.testkit
 
+import java.security.KeyPairGenerator
+import java.time.Instant
 import net.corda.ledger.common.testkit.getWireTransaction
 import net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -9,15 +11,14 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.DigitalSignature
-import java.security.KeyPairGenerator
-import java.time.Instant
+import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 
-fun getConsensualSignedTransactionImpl(
+fun getConsensualSignedTransaction(
     digestService: DigestService,
     merkleTreeProvider: MerkleTreeProvider,
     serializationService: SerializationService,
     jsonMarshallingService: JsonMarshallingService
-): ConsensualSignedTransactionImpl {
+): ConsensualSignedTransaction {
     val wireTransaction = getWireTransaction(digestService, merkleTreeProvider, jsonMarshallingService)
 
     val kpg = KeyPairGenerator.getInstance("RSA")

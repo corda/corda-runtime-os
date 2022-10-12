@@ -46,6 +46,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
+import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
@@ -170,7 +171,12 @@ class MGMRegistrationServiceTest {
         on { registerComponentForUpdates(eq(coordinator), any()) } doReturn configHandle
     }
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory = LayeredPropertyMapFactoryImpl(
-        listOf(EndpointInfoConverter(), PublicKeyConverter(keyEncodingService), PublicKeyHashConverter())
+        listOf(
+            EndpointInfoConverter(),
+            MemberNotaryDetailsConverter(keyEncodingService),
+            PublicKeyConverter(keyEncodingService),
+            PublicKeyHashConverter()
+        )
     )
     private val memberInfoFactory: MemberInfoFactory = MemberInfoFactoryImpl(layeredPropertyMapFactory)
     private val statusUpdate = argumentCaptor<RegistrationRequest>()
@@ -216,7 +222,7 @@ class MGMRegistrationServiceTest {
         "corda.group.key.session.policy" to "Combined",
         "corda.group.pki.session" to "Standard",
         "corda.group.pki.tls" to "C5",
-        "corda.endpoints.0.connectionURL" to "localhost:1080",
+        "corda.endpoints.0.connectionURL" to "https://localhost:1080",
         "corda.endpoints.0.protocolVersion" to "1",
         "corda.group.truststore.session.0"
                 to "-----BEGIN CERTIFICATE-----Base64–encoded certificate-----END CERTIFICATE-----",

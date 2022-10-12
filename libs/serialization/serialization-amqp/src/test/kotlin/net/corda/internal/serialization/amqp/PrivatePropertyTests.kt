@@ -11,7 +11,7 @@ import net.corda.internal.serialization.model.LocalTypeInformation
 import net.corda.v5.base.annotations.ConstructorForDeserialization
 import net.corda.v5.base.annotations.CordaSerializable
 import org.assertj.core.api.Assertions
-import org.assertj.core.api.Java6Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import java.io.NotSerializableException

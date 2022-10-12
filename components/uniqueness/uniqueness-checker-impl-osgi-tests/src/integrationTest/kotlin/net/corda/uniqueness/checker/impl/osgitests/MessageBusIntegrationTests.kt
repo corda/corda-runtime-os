@@ -43,6 +43,7 @@ import net.corda.uniqueness.utils.UniquenessAssertions
 import net.corda.uniqueness.utils.UniquenessAssertions.assertUnknownInputStateResponse
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.SecureHash
+import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
@@ -142,12 +143,15 @@ class MessageBusIntegrationTests {
     ) : BackingStoreImplFake(coordinatorFactory) {
         private var throwException: Boolean = false
 
-        override fun session(block: (BackingStore.Session) -> Unit) {
+        override fun session(
+            holdingIdentity: HoldingIdentity,
+            block: (BackingStore.Session) -> Unit
+        ) {
             if ( throwException ) {
                 throwException = false
                 throw RuntimeException("Backing store forced to throw")
             } else {
-                super.session(block)
+                super.session(holdingIdentity, block)
             }
         }
 

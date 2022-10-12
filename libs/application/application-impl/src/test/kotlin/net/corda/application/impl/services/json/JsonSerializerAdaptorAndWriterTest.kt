@@ -200,7 +200,7 @@ class JsonSerializerAdaptorAndWriterTest {
     }
 
     @Test
-    fun `validate serializer adaptor and JsonWriterAdaptor`() {
+    fun `validate serializer adaptor and JsonWriter`() {
         val mapper = ObjectMapper()
         val module = SimpleModule()
         module.addSerializer(TestClass::class.java, jsonSerializerAdaptorOf(TestSerializer()))

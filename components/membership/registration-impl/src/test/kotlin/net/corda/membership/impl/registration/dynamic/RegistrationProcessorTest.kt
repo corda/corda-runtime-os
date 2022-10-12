@@ -191,6 +191,7 @@ class RegistrationProcessorTest {
             mock(),
             mock(),
             mock(),
+            mock(),
         )
     }
 

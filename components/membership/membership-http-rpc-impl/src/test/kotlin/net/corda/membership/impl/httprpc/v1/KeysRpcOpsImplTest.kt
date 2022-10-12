@@ -9,6 +9,7 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FIL
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
+import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -236,6 +237,19 @@ class KeysRpcOpsImplTest {
             val id = keysOps.generateKeyPair(tenantId = "tenantId", alias = "alias", hsmCategory = "category", scheme = "scheme")
 
             assertThat(id).isEqualTo(KeyPairIdentifier(publicKey.publicKeyId()))
+        }
+
+        @Test
+        fun `generateKeyPair throws exception for empty alias`() {
+            val publicKey = mock<PublicKey> {
+                on { encoded } doReturn byteArrayOf(1, 2, 3)
+            }
+            whenever(cryptoOpsClient.generateKeyPair("tenantId", "CATEGORY", "alias", "scheme")).doReturn(publicKey)
+
+            val exceptionDetails = assertThrows<InvalidInputDataException> {
+                keysOps.generateKeyPair(tenantId = "tenantId", alias = "", hsmCategory = "category", scheme = "scheme")
+            }.details
+            assertThat(exceptionDetails).containsKey("alias")
         }
 
         @Test

@@ -15,7 +15,11 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope
 
 @Suppress("Unused")
-@Component(service = [MemberLookup::class, SingletonSerializeAsToken::class], scope = ServiceScope.PROTOTYPE)
+@Component(
+    service = [MemberLookup::class, SingletonSerializeAsToken::class],
+    scope = ServiceScope.PROTOTYPE,
+    property = ["corda.system=true"]
+)
 class MemberLookupImpl @Activate constructor(
     @Reference(service = FlowFiberService::class)
     private val flowFiberService: FlowFiberService,

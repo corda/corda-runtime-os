@@ -5,6 +5,7 @@ import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.publicKeyIdFromBytes
+import net.corda.crypto.ecies.EciesParams
 import net.corda.crypto.ecies.impl.EphemeralKeyPairEncryptorImpl
 import net.corda.crypto.ecies.impl.StableKeyPairDecryptorImpl
 import net.corda.crypto.impl.CompositeKeyProviderImpl
@@ -22,12 +23,12 @@ import net.corda.v5.cipher.suite.CustomSignatureSpec
 import net.corda.v5.cipher.suite.SignatureVerificationService
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import net.corda.v5.cipher.suite.schemes.KeySchemeCapability
+import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
-import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import net.corda.v5.crypto.publicKeyId
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jcajce.provider.util.DigestFactory
@@ -167,10 +168,12 @@ class CryptoOperationsTests {
                         signatureName = "RSA/NONE/PKCS1Padding",
                         customDigestName = DigestAlgorithmName(digest.algorithmName)
                     )
+
                     ECDSA_SECP256R1_CODE_NAME -> CustomSignatureSpec(
                         signatureName = "NONEwithECDSA",
                         customDigestName = DigestAlgorithmName(digest.algorithmName)
                     )
+
                     else -> null
                 }
             }
@@ -606,19 +609,18 @@ class CryptoOperationsTests {
         eventually {
             assertEquals(LifecycleStatus.UP, stableDecryptor.lifecycleCoordinator.status)
         }
-        val salt = ByteArray(DigestFactory.getDigest("SHA-256").digestSize).apply {
-            schemeMetadata.secureRandom.nextBytes(this)
-        }
         val plainText = "Hello MGM!".toByteArray()
         val cipherText = ephemeralEncryptor.encrypt(
-            salt = salt,
             otherPublicKey = stableKeyPair.publicKey,
-            plainText = plainText,
-            aad = null
-        )
+            plainText = plainText
+        ) { _, _ ->
+            EciesParams(ByteArray(DigestFactory.getDigest("SHA-256").digestSize).apply {
+                schemeMetadata.secureRandom.nextBytes(this)
+            }, null)
+        }
         val decryptedPlainTex = stableDecryptor.decrypt(
             tenantId = tenantId,
-            salt = salt,
+            salt = cipherText.params.salt,
             publicKey = stableKeyPair.publicKey,
             otherPublicKey = cipherText.publicKey,
             cipherText = cipherText.cipherText,

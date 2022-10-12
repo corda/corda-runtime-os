@@ -11,14 +11,23 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.security.PublicKey
 
-@Component(service = [DigitalSignatureVerificationService::class, SingletonSerializeAsToken::class], scope = PROTOTYPE)
+@Component(
+    service = [DigitalSignatureVerificationService::class, SingletonSerializeAsToken::class],
+    scope = PROTOTYPE,
+    property = ["corda.system=true"]
+)
 class DigitalSignatureVerificationServiceImpl @Activate constructor(
     @Reference(service = SignatureVerificationService::class)
     private val signatureVerificationService: SignatureVerificationService
 ) : DigitalSignatureVerificationService, SingletonSerializeAsToken {
 
     @Suspendable
-    override fun verify(publicKey: PublicKey, signatureSpec: SignatureSpec, signatureData: ByteArray, clearData: ByteArray) {
+    override fun verify(
+        publicKey: PublicKey,
+        signatureSpec: SignatureSpec,
+        signatureData: ByteArray,
+        clearData: ByteArray
+    ) {
         return signatureVerificationService.verify(publicKey, signatureSpec, signatureData, clearData)
     }
 }
