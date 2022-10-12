@@ -603,13 +603,10 @@ class JPABackingStoreImplIntegrationTests {
             Mockito.verify(spyEm, times(MAX_ATTEMPTS)).createNamedQuery(queryName, resultClass)
         }
 
-        @Disabled(
-            "Re-iterate the test after reviewing the expected behaviour." +
-                    "This test fails because PersistenceException is not caught nor retried while persisting."
-        )
+        // Review with CORE-4983 for different types of exceptions such as PersistenceException.
         @ParameterizedTest
         @ValueSource(
-            classes = [PersistenceException::class,
+            classes = [
                 EntityExistsException::class,
                 RollbackException::class,
                 OptimisticLockException::class]
