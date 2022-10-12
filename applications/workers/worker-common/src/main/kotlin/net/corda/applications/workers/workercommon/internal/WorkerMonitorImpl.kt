@@ -2,7 +2,16 @@ package net.corda.applications.workers.workercommon.internal
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.javalin.Javalin
-import net.corda.applications.workers.workercommon.HealthMonitor
+import io.micrometer.core.instrument.Metrics
+import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics
+import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics
+import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics
+import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics
+import io.micrometer.core.instrument.binder.system.ProcessorMetrics
+import io.micrometer.core.instrument.binder.system.UptimeMetrics
+import io.micrometer.prometheus.PrometheusConfig
+import io.micrometer.prometheus.PrometheusMeterRegistry
+import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.utilities.classload.OsgiClassLoader
@@ -16,22 +25,40 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 /**
- * An implementation of [HealthMonitor].
+ * An implementation of [WorkerMonitor].
  *
  * @property server The server that serves worker health and readiness.
  */
-@Component(service = [HealthMonitor::class])
+@Component(service = [WorkerMonitor::class])
 @Suppress("Unused")
-internal class HealthMonitorImpl @Activate constructor(
+internal class WorkerMonitorImpl @Activate constructor(
     @Reference(service = LifecycleRegistry::class)
     private val lifecycleRegistry: LifecycleRegistry
-) : HealthMonitor {
+) : WorkerMonitor {
     private companion object {
         val logger = contextLogger()
     }
+
     // The use of Javalin is temporary, and will be replaced in the future.
     private var server: Javalin? = null
     private val objectMapper = ObjectMapper()
+    private val prometheusRegistry: PrometheusMeterRegistry
+
+    init {
+        val metricsRegistry = Metrics.globalRegistry
+
+        logger.info("Creating Prometheus metric registry")
+        prometheusRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
+        metricsRegistry.add(prometheusRegistry)
+
+        ClassLoaderMetrics().bindTo(metricsRegistry)
+        JvmMemoryMetrics().bindTo(metricsRegistry)
+        JvmGcMetrics().bindTo(metricsRegistry)
+        ProcessorMetrics().bindTo(metricsRegistry)
+        JvmThreadMetrics().bindTo(metricsRegistry)
+        UptimeMetrics().bindTo(metricsRegistry)
+    }
+
 
     override fun listen(port: Int) {
         server = Javalin
@@ -53,6 +80,9 @@ internal class HealthMonitorImpl @Activate constructor(
                 val status = if (anyComponentsNotReady) HTTP_SERVICE_UNAVAILABLE_CODE else HTTP_OK_CODE
                 context.status(status)
                 context.result(objectMapper.writeValueAsString(lifecycleRegistry.componentStatus()))
+            }
+            .get(HTTP_METRICS_ROUTE) { context ->
+                context.result(prometheusRegistry.scrape())
             }
     }
 

@@ -2,13 +2,13 @@ package net.corda.applications.workers.combined
 
 import net.corda.application.dbsetup.PostgresDbSetup
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
-import net.corda.applications.workers.workercommon.HealthMonitor
+import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.applications.workers.workercommon.JavaSerialisationFilter
 import net.corda.applications.workers.workercommon.PathAndConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBootstrapConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
-import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setUpHealthMonitor
+import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupMonitor
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
@@ -54,8 +54,8 @@ class CombinedWorker @Activate constructor(
     private val gatewayProcessor: GatewayProcessor,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
-    @Reference(service = HealthMonitor::class)
-    private val healthMonitor: HealthMonitor,
+    @Reference(service = WorkerMonitor::class)
+    private val workerMonitor: WorkerMonitor,
     @Reference(service = ConfigurationValidatorFactory::class)
     private val configurationValidatorFactory: ConfigurationValidatorFactory
 ) : Application {
@@ -110,7 +110,7 @@ class CombinedWorker @Activate constructor(
             secretsPassphrase
         ).run()
 
-        setUpHealthMonitor(healthMonitor, params.defaultParams)
+        setupMonitor(workerMonitor, params.defaultParams)
 
         JavaSerialisationFilter.install()
 
@@ -138,7 +138,7 @@ class CombinedWorker @Activate constructor(
         linkManagerProcessor.stop()
         gatewayProcessor.stop()
 
-        healthMonitor.stop()
+        workerMonitor.stop()
     }
 }
 

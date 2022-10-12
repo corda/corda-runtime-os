@@ -20,6 +20,7 @@ class GatewayConfigurationTest {
             on { getInt("hostPort") } doReturn 231
             on { getString("hostAddress") } doReturn "address"
             on { getConfig("sslConfig") } doReturn sslConfig
+            on { getLong("maxRequestSize") } doReturn 1_000
             on { getBoolean("traceLogging") } doReturn false
         }
 
@@ -30,6 +31,7 @@ class GatewayConfigurationTest {
                 hostPort = 231,
                 hostAddress = "address",
                 connectionConfig = ConnectionConfiguration(),
+                maxRequestSize = 1_000,
                 sslConfig = SslConfiguration(
                     revocationCheck =
                     RevocationConfig(RevocationConfigMode.HARD_FAIL),
@@ -57,6 +59,7 @@ class GatewayConfigurationTest {
             on { getInt("hostPort") } doReturn 231
             on { getString("hostAddress") } doReturn "address"
             on { getConfig("sslConfig") } doReturn sslConfig
+            on { getLong("maxRequestSize") } doReturn 1_000
             on { getBoolean("traceLogging") } doReturn false
             on { getConfig("connectionConfig") } doReturn connectionConfiguration
         }
@@ -76,6 +79,7 @@ class GatewayConfigurationTest {
                     initialReconnectionDelay = 1.seconds,
                     maxReconnectionDelay = 15.minutes,
                 ),
+                maxRequestSize = 1_000,
                 sslConfig = SslConfiguration(
                     revocationCheck =
                     RevocationConfig(RevocationConfigMode.HARD_FAIL)
