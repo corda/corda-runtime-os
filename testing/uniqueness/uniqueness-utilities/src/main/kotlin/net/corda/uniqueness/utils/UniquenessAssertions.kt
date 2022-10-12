@@ -25,14 +25,7 @@ object UniquenessAssertions {
     fun assertStandardSuccessResponse(
         response: UniquenessCheckResponseAvro,
         clock: AutoTickTestClock? = null
-    ) =
-        getResultOfType<UniquenessCheckResultSuccessAvro>(response).run {
-            assertThat(commitTimestamp).isAfter(Instant.MIN)
-            if (clock != null) {
-                assertThat(commitTimestamp)
-                    .isBeforeOrEqualTo(clock.peekTime())
-            }
-        }
+    ) = getResultOfType<UniquenessCheckResultSuccessAvro>(response).run { assertValidTimestamp(commitTimestamp, clock) }
 
     /**
      * Checks for an accepted uniqueness check result.
@@ -166,9 +159,7 @@ object UniquenessAssertions {
      */
     inline fun <reified T> getErrorOfType(result: UniquenessCheckResult): T {
         val failureImpl = result as UniquenessCheckResultFailureImpl
-        val errorImpl = failureImpl.error as T
-        assertInstanceOf(T::class.java, errorImpl)
-        return errorImpl
+        return failureImpl.error as T
     }
 
     private inline fun<reified T> getResultOfType(response: UniquenessCheckResponseAvro): T {
