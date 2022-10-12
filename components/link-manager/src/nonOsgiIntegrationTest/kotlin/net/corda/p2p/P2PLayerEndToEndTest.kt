@@ -72,9 +72,7 @@ import net.corda.v5.cipher.suite.schemes.RSA_TEMPLATE
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.Timeout
 import org.mockito.kotlin.mock
 import java.io.StringWriter
@@ -393,13 +391,13 @@ class P2PLayerEndToEndTest {
                 .withValue(HEARTBEAT_MESSAGE_PERIOD_KEY, ConfigValueFactory.fromAnyRef(Duration.ofSeconds(2)))
                 .withValue(SESSION_TIMEOUT_KEY, ConfigValueFactory.fromAnyRef(Duration.ofSeconds(10)))
                 .withValue(SESSIONS_PER_PEER_KEY, ConfigValueFactory.fromAnyRef(4))
+                .withValue(SESSION_REFRESH_THRESHOLD_KEY, ConfigValueFactory.fromAnyRef(432000000))
                 .withValue(
                     REPLAY_ALGORITHM_KEY,
                     ConfigFactory.empty().withValue(
                         LinkManagerConfiguration.ReplayAlgorithm.Constant.configKeyName(),
                         replayConfig.root()
                     ).root())
-                .withValue(SESSION_REFRESH_THRESHOLD_KEY, ConfigValueFactory.fromAnyRef(432000000))
         }
         private val replayConfig by lazy {
             ConfigFactory.empty()
