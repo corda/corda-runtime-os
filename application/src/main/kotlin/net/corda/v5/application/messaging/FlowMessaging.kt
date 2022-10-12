@@ -5,6 +5,7 @@ import net.corda.v5.application.flows.FlowContextProperties.Companion.CORDA_RESE
 import net.corda.v5.application.flows.ResponderFlow
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 
 /*
@@ -119,35 +120,44 @@ interface FlowMessaging {
     @Suspendable
     fun initiateFlow(x500Name: MemberX500Name, flowContextPropertiesBuilder: FlowContextPropertiesBuilder): FlowSession
 
-    /** Suspends until a message has been received for each session in the specified [sessions].
-     *
-     * Consider [receiveAll(receiveType: Class<R>, sessions: Set<FlowSession>): List<UntrustworthyData<R>>] when the same type is expected from all sessions.
-     *
-     * Remember that when receiving data from other parties the data should not be trusted until it's been thoroughly
-     * verified for consistency and that all expectations are satisfied, as a malicious peer may send you subtly
-     * corrupted data in order to exploit your code.
-     *
-     * @returns a [Map] containing the objects received, wrapped in an [UntrustworthyData], by the [FlowSession]s who sent them.
-     */
-    @Suspendable
-    fun receiveAllMap(sessions: Map<FlowSession, Class<out Any>>): Map<FlowSession, Any>
-
     /**
      * Suspends until a message has been received for each session in the specified [sessions].
      *
-     * Consider [sessions: Map<FlowSession, Class<out Any>>): Map<FlowSession, UntrustworthyData<Any>>] when sessions are expected to receive different types.
+     * Consider [receiveAllMap(sessions: Map<FlowSession, Class<out Any>>): Map<FlowSession, Any>] when sessions are
+     * expected to receive different types.
      *
      * Remember that when receiving data from other parties the data should not be trusted until it's been thoroughly
      * verified for consistency and that all expectations are satisfied, as a malicious peer may send you subtly
      * corrupted data in order to exploit your code.
      *
-     * @returns a [List] containing the objects received, wrapped in an [UntrustworthyData], with the same order of [sessions].
+     * @param receiveType type of object to be received for all [sessions].
+     * @param sessions Set of sessions to receive from.
+     * @returns a [List] containing the objects received with the same order of [sessions].
+     *
+     * @throws [CordaRuntimeException] if the session is closed or in a failed state.
      */
     @Suspendable
     fun <R : Any> receiveAll(receiveType: Class<out R>, sessions: Set<FlowSession>): List<R>
 
     /**
-     * Queues the given [payload] for sending to the provided [sessions] and continues without suspending.
+     * Suspends until a message has been received for each session in the specified [sessions].
+     *
+     * Consider [receiveAll(receiveType: Class<R>, sessions: Set<FlowSession>): List<R>] when the same type is expected from all sessions.
+     *
+     * Remember that when receiving data from other parties the data should not be trusted until it's been thoroughly
+     * verified for consistency and that all expectations are satisfied, as a malicious peer may send you subtly
+     * corrupted data in order to exploit your code.
+     *
+     * @param sessions Map of session to the type of object that is expected to be received
+     * @returns a [Map] containing the objects received by the [FlowSession]s who sent them.
+     *
+     * @throws [CordaRuntimeException] if the session is closed or in a failed state.
+     */
+    @Suspendable
+    fun receiveAllMap(sessions: Map<FlowSession, Class<out Any>>): Map<FlowSession, Any>
+
+    /**
+     * Queues the given [payload] for sending to the provided [sessions] and continues without waiting for a response.
      *
      * Note that the other parties may receive the message at some arbitrary later point or not at all: if one of the provided [sessions]
      * is offline then message delivery will be retried until the corresponding node comes back or until the message is older than the
@@ -155,18 +165,22 @@ interface FlowMessaging {
      *
      * @param payload the payload to send.
      * @param sessions the sessions to send the provided payload to.
+     *
+     * @throws [CordaRuntimeException] if the session is closed or in a failed state.
      */
     @Suspendable
     fun sendAll(payload: Any, sessions: Set<FlowSession>)
 
     /**
-     * Queues the given payloads for sending to the provided sessions and continues without suspending.
+     * Queues the given payloads for sending to the provided sessions and continues without waiting for a response.
      *
      * Note that the other parties may receive the message at some arbitrary later point or not at all: if one of the provided [sessions]
      * is offline then message delivery will be retried until the corresponding node comes back or until the message is older than the
      * network's event horizon time.
      *
      * @param payloadsPerSession a mapping that contains the payload to be sent to each session.
+     *
+     * @throws [CordaRuntimeException] if the session is closed or in a failed state.
      */
     @Suspendable
     fun sendAllMap(payloadsPerSession: Map<FlowSession, Any>)
