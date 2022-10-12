@@ -79,8 +79,4 @@ data class UtxoTransactionBuilderImpl(
     override fun sign(signatories: Iterable<PublicKey>): UtxoSignedTransaction {
         TODO("Not yet implemented")
     }
-
-    override fun verify() {
-        TODO("Not yet implemented")
-    }
 }
