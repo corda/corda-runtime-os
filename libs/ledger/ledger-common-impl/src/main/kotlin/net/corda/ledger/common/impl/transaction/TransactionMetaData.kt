@@ -3,9 +3,10 @@ package net.corda.ledger.common.impl.transaction
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 
-//TODO(CORE-5940: guarantee its serialization is deterministic)
 @CordaSerializable
-class TransactionMetaData(private val properties: Map<String, Any>) {
+class TransactionMetaData(
+    private val properties: LinkedHashMap<String, Any>
+    ) {
 
     operator fun get(key: String): Any? = properties[key]
 
@@ -85,8 +86,8 @@ class TransactionMetaData(private val properties: Map<String, Any>) {
         }
     }
 
-    fun getDigestSettings(): Map<String, Any> {
+    fun getDigestSettings(): LinkedHashMap<String, Any>{
         @Suppress("UNCHECKED_CAST")
-        return this[DIGEST_SETTINGS_KEY] as Map<String, Any>
+        return this[DIGEST_SETTINGS_KEY] as LinkedHashMap<String, Any>
     }
 }

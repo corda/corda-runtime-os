@@ -3,15 +3,15 @@ package net.corda.ledger.consensual.impl
 import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CordappType
 import net.corda.libs.packaging.core.CpkFormatVersion
-import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkManifest
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
+import net.corda.libs.packaging.core.CpkIdentifier
+import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.types.MemberX500Name
-import net.corda.v5.base.util.parse
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SecureHash
@@ -25,6 +25,10 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.security.KeyPairGenerator
 import java.time.Instant
+import net.corda.v5.membership.MGMContext
+import net.corda.virtualnode.HoldingIdentity
+import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 
 class TestConsensualState(
     val testField: String,
@@ -40,8 +44,8 @@ class TestConsensualState(
     }
     override fun hashCode(): Int = testField.hashCode() + participants.hashCode() * 31
 }
-class ConsensualTransactionMocks {
 
+class ConsensualTransactionMocks {
     companion object {
         private val kpg: KeyPairGenerator = KeyPairGenerator.getInstance("RSA").also{
             it.initialize(512)
@@ -51,17 +55,27 @@ class ConsensualTransactionMocks {
         val testPublicKey =  kpg.genKeyPair().public
         val testPartyImpl = PartyImpl(testMemberX500Name, testPublicKey)
         val testConsensualState = TestConsensualState("test", listOf(testPartyImpl))
-        fun mockMemberLookup(): MemberLookup {
-            val memberInfo: MemberInfo = mock()
-            val memberLookup: MemberLookup = mock()
-            val memberContext: MemberContext = mock()
-            val groupId = "mock-group"
 
-            whenever(memberContext.parse<String>("corda.groupId")).thenReturn(groupId)
-            whenever(memberInfo.platformVersion).thenReturn(888)
-            whenever(memberInfo.memberProvidedContext).thenReturn(memberContext)
-            whenever(memberInfo.groupId).thenReturn(groupId)
-            whenever(memberInfo.name).thenReturn(testMemberX500Name)
+        fun mockMemberLookup(): MemberLookup {
+            val holdingIdentity = HoldingIdentity(testMemberX500Name, "1")
+
+            val mgmContext = mock<MGMContext> {
+                on { parseOrNull(eq(MemberInfoExtension.IS_MGM), any<Class<Boolean>>()) } doReturn true
+                on { parse(eq(MemberInfoExtension.STATUS), any<Class<String>>()) } doReturn "fakestatus"
+                on { entries } doReturn mapOf("mgm" to holdingIdentity.x500Name.toString()).entries
+            }
+            val memberContext = mock<MemberContext> {
+                on { parse(eq(MemberInfoExtension.GROUP_ID), any<Class<String>>()) } doReturn holdingIdentity.groupId
+                on { entries } doReturn mapOf("member" to holdingIdentity.x500Name.toString()).entries
+            }
+            val memberInfo = mock<MemberInfo> {
+                on { mgmProvidedContext } doReturn mgmContext
+                on { memberProvidedContext } doReturn memberContext
+                on { platformVersion } doReturn 888
+                on { name } doReturn testMemberX500Name
+                on { groupId } doReturn "1"
+            }
+            val memberLookup: MemberLookup = mock()
             whenever(memberLookup.myInfo()).thenReturn(memberInfo)
 
             return memberLookup

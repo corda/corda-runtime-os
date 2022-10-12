@@ -34,6 +34,7 @@ import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import org.osgi.service.component.annotations.Activate
@@ -105,12 +106,12 @@ open class JPABackingStoreImpl @Activate constructor(
     }
 
     override fun start() {
-        log.info("Backing store starting.")
+        log.info("Backing store starting")
         lifecycleCoordinator.start()
     }
 
     override fun stop() {
-        log.info("Backing store stopping.")
+        log.info("Backing store stopping")
         lifecycleCoordinator.stop()
     }
 
@@ -146,11 +147,11 @@ open class JPABackingStoreImpl @Activate constructor(
                             //  won't be necessary
                             if (entityManager.transaction.isActive) {
                                 entityManager.transaction.rollback()
-                                contextLogger().info("Rolled back transaction.")
+                                log.debug { "Rolled back transaction" }
                             }
 
                             if (attemptNumber < MAX_ATTEMPTS) {
-                                contextLogger().warn(
+                                log.warn(
                                     "Retrying DB operation. The request might have been " +
                                             "handled by a different notary worker or a DB error " +
                                             "occurred when attempting to commit.",
@@ -167,13 +168,13 @@ open class JPABackingStoreImpl @Activate constructor(
                         else -> {
                             // TODO: Revisit handled exceptions, this is a subset of what
                             // we handled in C4
-                            contextLogger().warn("Unexpected error occurred", e)
+                            log.warn("Unexpected error occurred", e)
                             // We potentially leak a database connection, if we don't rollback. When
                             // the HSM signing operation throws an exception this code path is
                             // triggered.
                             if (entityManager.transaction.isActive) {
                                 entityManager.transaction.rollback()
-                                contextLogger().info("Rolled back transaction.")
+                                log.debug { "Rolled back transaction" }
                             }
                             throw e
                         }
@@ -351,7 +352,7 @@ open class JPABackingStoreImpl @Activate constructor(
 
     @VisibleForTesting
     fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        log.info("Backing store received event $event.")
+        log.info("Backing store received event $event")
         when (event) {
             is StartEvent -> {
                 dependentComponents.registerAndStartAll(coordinator)
@@ -375,7 +376,7 @@ open class JPABackingStoreImpl @Activate constructor(
                 coordinator.updateStatus(event.status)
             }
             else -> {
-                log.warn("Unexpected event $event!")
+                log.warn("Unexpected event ${event}, ignoring")
             }
         }
     }
