@@ -6,7 +6,7 @@ import net.corda.v5.ledger.common.transaction.PrivacySalt
  * The class that actually gets serialized on the wire.
  */
 
-data class WireTransactionContainer(
+data class WireTransactionProxy(
     /**
      * Version of container.
      */

@@ -43,6 +43,8 @@ class HttpTest : TestBase() {
     companion object {
         lateinit var loggingInterceptor: LoggingInterceptor
 
+        const val MAX_REQUEST_SIZE = 50_000_000L
+
         @BeforeAll
         @JvmStatic
         fun setup() {
@@ -71,7 +73,8 @@ class HttpTest : TestBase() {
             GatewayConfiguration(
                 serverAddress.host,
                 serverAddress.port,
-                aliceSslConfig
+                aliceSslConfig,
+                MAX_REQUEST_SIZE
             ),
             aliceKeyStore,
         ).use { server ->
@@ -109,7 +112,8 @@ class HttpTest : TestBase() {
             GatewayConfiguration(
                 serverAddress.host,
                 serverAddress.port,
-                aliceSslConfig
+                aliceSslConfig,
+                MAX_REQUEST_SIZE
             ),
             aliceKeyStore,
         )
@@ -171,7 +175,8 @@ class HttpTest : TestBase() {
             GatewayConfiguration(
                 serverAddress.host,
                 serverAddress.port,
-                aliceSslConfig
+                aliceSslConfig,
+                MAX_REQUEST_SIZE
             ),
             aliceKeyStore,
         ).use { server ->
@@ -206,7 +211,8 @@ class HttpTest : TestBase() {
             GatewayConfiguration(
                 serverAddress.host,
                 serverAddress.port,
-                bobSslConfig
+                bobSslConfig,
+                MAX_REQUEST_SIZE
             ),
             bobKeyStore,
         ).use { server ->
@@ -240,7 +246,8 @@ class HttpTest : TestBase() {
             GatewayConfiguration(
                 serverAddress.host,
                 serverAddress.port,
-                c4sslConfig
+                c4sslConfig,
+                MAX_REQUEST_SIZE
             ),
             c4sslKeyStore,
         ).use { server ->
@@ -337,7 +344,8 @@ class HttpTest : TestBase() {
             GatewayConfiguration(
                 serverAddress.host,
                 serverAddress.port,
-                aliceSslConfig
+                aliceSslConfig,
+                MAX_REQUEST_SIZE
             ),
             aliceKeyStore,
         ).use { server ->
@@ -380,7 +388,8 @@ class HttpTest : TestBase() {
             GatewayConfiguration(
                 serverAddress.host,
                 serverAddress.port,
-                bobSslConfig
+                bobSslConfig,
+                MAX_REQUEST_SIZE
             ),
             bobKeyStore,
         ).use { server ->

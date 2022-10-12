@@ -106,6 +106,7 @@ class GatewayIntegrationTest : TestBase() {
 
         val aliceX500name = "CN=Alice, O=Alice Corp, L=LDN, C=GB"
         val bobX500Name = "CN=Bob, O=Bob Corp, L=LDN, C=GB"
+        const val MAX_REQUEST_SIZE = 50_000_000L
     }
 
     private val sessionId = "session-1"
@@ -194,7 +195,8 @@ class GatewayIntegrationTest : TestBase() {
                     GatewayConfiguration(
                         serverAddress.host,
                         serverAddress.port,
-                        aliceSslConfig
+                        aliceSslConfig,
+                        MAX_REQUEST_SIZE
                     ),
                 ),
                 alice.subscriptionFactory,
@@ -234,7 +236,8 @@ class GatewayIntegrationTest : TestBase() {
                     GatewayConfiguration(
                         serverAddress.host,
                         serverAddress.port,
-                        aliceSslConfig
+                        aliceSslConfig,
+                        MAX_REQUEST_SIZE
                     ),
                 ),
                 alice.subscriptionFactory,
@@ -326,6 +329,7 @@ class GatewayIntegrationTest : TestBase() {
                     recipientServerUrl.host,
                     recipientServerUrl.port,
                     aliceSslConfig,
+                    MAX_REQUEST_SIZE
                 ),
                 aliceKeyStore,
             ).use { recipientServer ->
@@ -348,7 +352,7 @@ class GatewayIntegrationTest : TestBase() {
                     }.map {
                         URI.create("http://www.alice.net:$it")
                     }.forEach { url ->
-                        configPublisher.publishConfig(GatewayConfiguration(url.host, url.port, aliceSslConfig))
+                        configPublisher.publishConfig(GatewayConfiguration(url.host, url.port, aliceSslConfig, MAX_REQUEST_SIZE))
                         eventually(duration = 20.seconds) {
                             assertThat(gateway.isRunning).isTrue
                         }
@@ -408,7 +412,8 @@ class GatewayIntegrationTest : TestBase() {
                     GatewayConfiguration(
                         serverAddress.host,
                         serverAddress.port,
-                        aliceSslConfig
+                        aliceSslConfig,
+                        MAX_REQUEST_SIZE
                     )
                 ),
                 alice.subscriptionFactory,
@@ -489,7 +494,7 @@ class GatewayIntegrationTest : TestBase() {
                 }
                 HttpServer(
                     serverListener,
-                    GatewayConfiguration(serverUri.host, serverUri.port, chipSslConfig),
+                    GatewayConfiguration(serverUri.host, serverUri.port, chipSslConfig, MAX_REQUEST_SIZE),
                     chipKeyStore,
                 ).also {
                     serverListener.server = it
@@ -507,6 +512,7 @@ class GatewayIntegrationTest : TestBase() {
                         gatewayAddress.first,
                         gatewayAddress.second,
                         aliceSslConfig,
+                        MAX_REQUEST_SIZE
                     )
                 ),
                 alice.subscriptionFactory,
@@ -615,7 +621,8 @@ class GatewayIntegrationTest : TestBase() {
                         GatewayConfiguration(
                             aliceGatewayAddress.host,
                             aliceGatewayAddress.port,
-                            chipSslConfig
+                            chipSslConfig,
+                            MAX_REQUEST_SIZE
                         ),
                         alice.lifecycleCoordinatorFactory
                     ),
@@ -631,7 +638,8 @@ class GatewayIntegrationTest : TestBase() {
                         GatewayConfiguration(
                             bobGatewayAddress.host,
                             bobGatewayAddress.port,
-                            daleSslConfig
+                            daleSslConfig,
+                            MAX_REQUEST_SIZE
                         ),
                         bob.lifecycleCoordinatorFactory
                     ),
@@ -721,7 +729,8 @@ class GatewayIntegrationTest : TestBase() {
                     GatewayConfiguration(
                         host,
                         port,
-                        aliceSslConfig
+                        aliceSslConfig,
+                        MAX_REQUEST_SIZE
                     )
                 )
                 gateway.startAndWaitForStarted()
@@ -733,7 +742,8 @@ class GatewayIntegrationTest : TestBase() {
                     GatewayConfiguration(
                         host,
                         -20,
-                        aliceSslConfig
+                        aliceSslConfig,
+                        MAX_REQUEST_SIZE
                     )
                 )
                 eventually(duration = 20.seconds) {
@@ -751,7 +761,8 @@ class GatewayIntegrationTest : TestBase() {
                     GatewayConfiguration(
                         host,
                         anotherPort,
-                        aliceSslConfig
+                        aliceSslConfig,
+                        MAX_REQUEST_SIZE
                     )
                 )
                 eventually(duration = 20.seconds) {
@@ -830,7 +841,8 @@ class GatewayIntegrationTest : TestBase() {
                 GatewayConfiguration(
                     aliceAddress.host,
                     aliceAddress.port,
-                    aliceSslConfig
+                    aliceSslConfig,
+                    MAX_REQUEST_SIZE
                 ),
             )
             server.publish(
@@ -921,7 +933,7 @@ class GatewayIntegrationTest : TestBase() {
                 }
 
                 // Change the host
-                configPublisher.publishConfig(GatewayConfiguration(bobAddress.host, bobAddress.port, aliceSslConfig))
+                configPublisher.publishConfig(GatewayConfiguration(bobAddress.host, bobAddress.port, aliceSslConfig, MAX_REQUEST_SIZE))
                 val bobKeyStore =
                     firstCertificatesAuthority.generateKeyAndCertificate(bobAddress.host).toKeyStoreAndPassword()
                 publishKeyStoreCertificatesAndKeys(server.publisher, bobKeyStore)
