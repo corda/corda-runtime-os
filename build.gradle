@@ -181,6 +181,19 @@ allprojects {
                     includeGroup 'antlr'
                 }
             }
+
+            // NOTE: this needs to be removed once Micrometer contains OSGi metadata
+            //   https://github.com/micrometer-metrics/micrometer/pull/3457
+            exclusiveContent {
+                forRepository {
+                    maven {
+                        url "$artifactoryContextUrl/corda-dependencies-dev"
+                    }
+                }
+                filter {
+                    includeGroup 'io.micrometer'
+                }
+            }
         }
     }
 

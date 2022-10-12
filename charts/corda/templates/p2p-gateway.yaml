@@ -71,19 +71,19 @@ spec:
           - name: profiling
             containerPort: 10045
         {{- end }}
-          - name: health
+          - name: monitor
             containerPort: 7000
         {{- if not .Values.workers.p2pGateway.debug.enabled }}
         livenessProbe:
           httpGet:
             path: /isHealthy
-            port: health
+            port: monitor
           periodSeconds: 10
           failureThreshold: 1
         startupProbe:
           httpGet:
             path: /isHealthy
-            port: health
+            port: monitor
           periodSeconds: 5
           failureThreshold: 20
         {{- end }}
