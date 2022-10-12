@@ -100,7 +100,8 @@ class JPABackingStoreImplTests {
         entityManager = mock<EntityManager>().apply {
             whenever(transaction) doReturn entityTransaction
             whenever(
-                createNamedQuery("UniquenessStateDetailEntity.select", UniquenessStateDetailEntity::class.java)
+                createNamedQuery("UniquenessStateDetailEntity.select",
+                    UniquenessStateDetailEntity::class.java)
             ) doReturn stateDetailSelectQuery
             whenever(
                 createNamedQuery(
