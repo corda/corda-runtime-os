@@ -15,6 +15,7 @@ import io.micrometer.prometheus.PrometheusMeterRegistry
 import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.registry.LifecycleRegistry
+import net.corda.metrics.MeterFactory
 import net.corda.utilities.classload.OsgiClassLoader
 import net.corda.utilities.classload.executeWithThreadContextClassLoader
 import net.corda.utilities.executeWithStdErrSuppressed
@@ -46,18 +47,16 @@ internal class WorkerMonitorImpl @Activate constructor(
     private val prometheusRegistry: PrometheusMeterRegistry
 
     init {
-        val metricsRegistry = Metrics.globalRegistry
-
         logger.info("Creating Prometheus metric registry")
         prometheusRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
-        metricsRegistry.add(prometheusRegistry)
+        MeterFactory.configure("TODO-INSERT-TYPE-OF-WORKER", prometheusRegistry)
 
-        ClassLoaderMetrics().bindTo(metricsRegistry)
-        JvmMemoryMetrics().bindTo(metricsRegistry)
-        JvmGcMetrics().bindTo(metricsRegistry)
-        ProcessorMetrics().bindTo(metricsRegistry)
-        JvmThreadMetrics().bindTo(metricsRegistry)
-        UptimeMetrics().bindTo(metricsRegistry)
+        ClassLoaderMetrics().bindTo(MeterFactory.registry)
+        JvmMemoryMetrics().bindTo(MeterFactory.registry)
+        JvmGcMetrics().bindTo(MeterFactory.registry)
+        ProcessorMetrics().bindTo(MeterFactory.registry)
+        JvmThreadMetrics().bindTo(MeterFactory.registry)
+        UptimeMetrics().bindTo(MeterFactory.registry)
     }
 
 
