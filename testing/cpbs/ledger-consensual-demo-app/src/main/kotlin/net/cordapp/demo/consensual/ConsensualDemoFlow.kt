@@ -59,7 +59,7 @@ class ConsensualDemoFlow : RPCStartableFlow {
         log.info("Consensual flow demo starting...")
         try {
             val alice = memberLookup.myInfo()
-            val bob = memberLookup.lookup(MemberX500Name("Bob", "Application", "R3", "London", null, "GB"))!!
+            val bob = memberLookup.lookup(MemberX500Name("Bob", "Consensual", "R3", "London", null, "GB"))!!
 
             val testConsensualState =
                 TestConsensualState(
