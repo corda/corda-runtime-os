@@ -665,7 +665,7 @@ class JPABackingStoreImplIntegrationTests {
 
     @Test
     fun `Persisting with an incorrect identity throws an expected exception`() {
-        val impl = createBackingStoreImpl(defaultEmFactory)
+        val impl = createBackingStoreImpl(noDbEmFactory)
         impl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
 
         try {
