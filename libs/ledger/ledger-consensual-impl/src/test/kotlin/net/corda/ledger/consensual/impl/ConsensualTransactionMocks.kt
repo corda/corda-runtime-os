@@ -7,8 +7,8 @@ import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.consensual.ConsensualState
-import net.corda.v5.ledger.consensual.Party
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
@@ -33,18 +33,19 @@ class TestConsensualState(
         if (other.participants.size != participants.size) return false
         return other.participants.containsAll(participants)
     }
+
     override fun hashCode(): Int = testField.hashCode() + participants.hashCode() * 31
 }
 
 class ConsensualTransactionMocks {
     companion object {
-        private val kpg: KeyPairGenerator = KeyPairGenerator.getInstance("RSA").also{
+        private val kpg: KeyPairGenerator = KeyPairGenerator.getInstance("RSA").also {
             it.initialize(512)
         }
 
         val testMemberX500Name = MemberX500Name("R3", "London", "GB")
-        val testPublicKey =  kpg.genKeyPair().public
-        val testPartyImpl = PartyImpl(testMemberX500Name, testPublicKey)
+        val testPublicKey = kpg.genKeyPair().public
+        val testPartyImpl = Party(testMemberX500Name, testPublicKey)
         val testConsensualState = TestConsensualState("test", listOf(testPartyImpl))
 
         fun mockMemberLookup(): MemberLookup {
