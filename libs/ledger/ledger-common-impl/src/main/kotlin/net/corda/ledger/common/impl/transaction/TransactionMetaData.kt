@@ -2,10 +2,9 @@ package net.corda.ledger.common.impl.transaction
 
 import net.corda.v5.base.annotations.CordaSerializable
 
-//TODO(CORE-5940: guarantee its serialization is deterministic)
 @CordaSerializable
 class TransactionMetaData(
-    private val properties: Map<String, Any>
+    private val properties: LinkedHashMap<String, Any>
     ) {
 
     operator fun get(key: String): Any? = properties[key]
@@ -18,6 +17,7 @@ class TransactionMetaData(
         const val LEDGER_VERSION_KEY = "ledgerVersion"
         const val CPK_IDENTIFIERS_KEY = "cpkIdentifiers"
         const val DIGEST_SETTINGS_KEY = "digestSettings"
+        const val PLATFORM_VERSION_KEY = "platformVersion"
     }
 
     override fun equals(other: Any?): Boolean {
@@ -37,8 +37,8 @@ class TransactionMetaData(
     fun cpkIdentifiers(){
         this[CPK_IDENTIFIERS_KEY]
     }
-    fun getDigestSettings(): Map<String, Any>{
+    fun getDigestSettings(): LinkedHashMap<String, Any>{
         @Suppress("UNCHECKED_CAST")
-        return this[DIGEST_SETTINGS_KEY] as Map<String, Any>
+        return this[DIGEST_SETTINGS_KEY] as LinkedHashMap<String, Any>
     }
 }
