@@ -119,11 +119,11 @@ fun getFlowClasses(holdingId: String): List<String> {
     }
 }
 
-fun getOrCreateVirtualNodeFor(x500: String): String {
+fun getOrCreateVirtualNodeFor(x500: String, cpiName: String = TEST_CPI_NAME): String {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
         val cpis = cpiList().toJson()["cpis"]
-        val json = cpis.toList().first { it["id"]["cpiName"].textValue() == TEST_CPI_NAME }
+        val json = cpis.toList().first { it["id"]["cpiName"].textValue() == cpiName }
         val hash = truncateLongHash(json["cpiFileChecksum"].textValue())
 
         val vNodesJson = assertWithRetry {
