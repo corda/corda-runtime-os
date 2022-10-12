@@ -94,6 +94,7 @@ internal class PermissionManagementServiceEventHandler(
                         )
                     }
                     LifecycleStatus.DOWN -> {
+                        log.info("Transitioning DOWN.")
                         permissionManager?.stop()
                         permissionManager = null
                         basicAuthenticationService?.stop()

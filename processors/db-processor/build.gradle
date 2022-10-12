@@ -26,6 +26,7 @@ dependencies {
     implementation project(':components:virtual-node:cpi-info-write-service')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
     implementation project(':components:virtual-node:virtual-node-write-service')
+    implementation project(':components:permissions:permission-management-service')
     implementation project(':components:membership:certificates-service')
     implementation project(':libs:chunking:chunking-datamodel')
     implementation project(':libs:membership:certificates-datamodel')

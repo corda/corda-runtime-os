@@ -34,6 +34,7 @@ import net.corda.membership.certificates.datamodel.CertificateEntities
 import net.corda.membership.datamodel.MembershipEntities
 import net.corda.membership.persistence.service.MembershipPersistenceService
 import net.corda.orm.JpaEntitiesRegistry
+import net.corda.permissions.management.PermissionManagementService
 import net.corda.permissions.model.RbacEntities
 import net.corda.permissions.storage.reader.PermissionStorageReaderService
 import net.corda.permissions.storage.writer.PermissionStorageWriterService
@@ -96,6 +97,8 @@ class DBProcessorImpl @Activate constructor(
     private val virtualNodeInfoWriteService: VirtualNodeInfoWriteService,
     @Reference(service = MembershipPersistenceService::class)
     private val membershipPersistenceService: MembershipPersistenceService,
+    @Reference(service = PermissionManagementService::class)
+    private val permissionManagementService: PermissionManagementService,
 ) : DBProcessor {
     init {
         // define the different DB Entity Sets
@@ -139,6 +142,7 @@ class DBProcessorImpl @Activate constructor(
         ::virtualNodeInfoReadService,
         ::virtualNodeInfoWriteService,
         ::membershipPersistenceService,
+        ::permissionManagementService,
     )
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<DBProcessorImpl>(dependentComponents, ::eventHandler)
 
