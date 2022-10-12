@@ -205,21 +205,14 @@ abstract class DeployableContainerBuilder extends DefaultTask {
 
         if (System.getenv().containsKey("JENKINS_URL")) {
             logger.quiet("Running on CI server - producing arm64 and amd64 images")
-            Set<Platform> platformSet = new HashSet<Platform>()
-            platformSet.add(new Platform("arm64", "linux"))
-            platformSet.add(new Platform("amd64", "linux"))
-            builder.setPlatforms(platformSet)
+            builder.addPlatform("arm64","linux")
         } else if (System.properties['os.arch'] == "aarch64") { 
             logger.quiet("Detected arm64 host, switching Jib to produce arm64 images")
-            Set<Platform> platformSet = new HashSet<Platform>()
-            platformSet.add(new Platform("arm64", "linux"))
-            builder.setPlatforms(platformSet)
+            builder.setPlatforms(Set.of(new Platform("arm64", "linux")))
             tagPrefix = "arm64-"
         } else {
-            logger.quiet("Detected amd64 host, switching Jib to produce amd64 images")
-            Set<Platform> platformSet = new HashSet<Platform>()
-            platformSet.add(new Platform("amd64", "linux"))
-            builder.setPlatforms(platformSet)        
+            logger.quiet("Detected amd64 host, producing amd64 images")
+            // Default JIB configuration no specific action needed
         }
 
         def containerName = overrideContainerName.get().empty ? projectName : overrideContainerName.get()
