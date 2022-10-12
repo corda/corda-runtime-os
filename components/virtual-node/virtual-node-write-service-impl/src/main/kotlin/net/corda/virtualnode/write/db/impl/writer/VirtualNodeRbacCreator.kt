@@ -15,7 +15,7 @@ internal object VirtualNodeRbacCreator {
     fun PermissionManager.createRbacRole(holdingId: HoldingIdentity, flowNames: Set<String>, actor: String) {
 
         val vnodeShortHash = holdingId.shortHash.toString()
-        val permissionsCreated = flowNames.map { flowName ->
+        val flowNamesPermissionsCreated = flowNames.map { flowName ->
             val permCreateRequest = CreatePermissionRequestDto(
                 actor,
                 PermissionTypeDto.ALLOW,
@@ -26,11 +26,28 @@ internal object VirtualNodeRbacCreator {
             createPermission(permCreateRequest).id
         }
 
+        val flowOperationsPermissionsCreated = setOf(
+            "POST:/api/v1/flow/$vnodeShortHash",
+            "GET:/api/v1/flow/$vnodeShortHash.*",
+            "WS:/api/v1/flow/$vnodeShortHash/.*"
+        ).map {
+            val permCreateRequest = CreatePermissionRequestDto(
+                actor,
+                PermissionTypeDto.ALLOW,
+                it,
+                null,
+                vnodeShortHash
+            )
+            createPermission(permCreateRequest).id
+        }
+
         val roleName = "FlowExecutorRole-$vnodeShortHash"
         val createRoleRequestDto = CreateRoleRequestDto(actor, roleName, null)
         val roleId = createRole(createRoleRequestDto).id
 
-        permissionsCreated.forEach { permId -> addPermissionToRole(roleId, permId, actor) }
+        (flowNamesPermissionsCreated + flowOperationsPermissionsCreated).forEach { permId ->
+            addPermissionToRole(roleId, permId, actor)
+        }
 
         logger.info("Created role named: $roleName with id: $roleId.")
     }
