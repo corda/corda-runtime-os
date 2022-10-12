@@ -566,12 +566,9 @@ class JPABackingStoreImplIntegrationTests {
 
     @Nested
     inner class FlakyConnectionTests {
-        @Disabled(
-            "Re-iterate the test after reviewing the expected behaviour." +
-                    "This test fails because QueryTimeoutException is not caught nor retried when querying."
-        )
+        // Review with CORE-4983 for different types of exceptions such as QueryTimeoutException.
         @Test
-        fun `Query timeout while querying triggers retry`() {
+        fun `Exceptions thrown while querying triggers retry`() {
             val emFactory = createEntityManagerFactory("uniqueness")
             val spyEmFactory = Mockito.spy(emFactory)
             val em = spyEmFactory.createEntityManager()
@@ -582,19 +579,18 @@ class JPABackingStoreImplIntegrationTests {
             val resultClass = UniquenessTransactionDetailEntity::class.java
             // Actual execution of the query happens at invoking resultList of the query.
             // Find a way to mock a TypedQuery while make the logic JPA implementation agnostic (e.g. Hibernate).
-            Mockito.doThrow(QueryTimeoutException("Executing a query timed out"))
-                .whenever(spyEm).createNamedQuery(queryName, resultClass)
+            Mockito.doThrow(EntityExistsException()).whenever(spyEm).createNamedQuery(queryName, resultClass)
 
             val storeImpl = createBackingStoreImpl(spyEmFactory)
             storeImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
 
-            assertThrows<QueryTimeoutException> {
+            assertThrows<EntityExistsException> {
                 storeImpl.session(aliceIdentity) { session ->
                     val txIds = listOf(SecureHashUtils.randomSecureHash())
                     session.getTransactionDetails(txIds)
                 }
             }
-            Mockito.verify(spyEm, times(MAX_ATTEMPTS)).createNamedQuery(queryName, resultClass)
+            Mockito.verify(spyEm, times(1)).createNamedQuery(queryName, resultClass)
         }
 
         // Review with CORE-4983 for different types of exceptions such as PersistenceException.
