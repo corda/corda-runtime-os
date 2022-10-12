@@ -13,6 +13,7 @@ import net.corda.flow.pipeline.sandbox.SandboxDependencyInjector;
 import net.corda.flow.state.FlowCheckpoint;
 import net.corda.flow.state.FlowContext;
 import net.corda.membership.read.MembershipGroupReader;
+import net.corda.sandboxgroupcontext.SandboxGroupContextService;
 import net.corda.serialization.checkpoint.CheckpointSerializer;
 import net.corda.v5.application.messaging.FlowSession;
 import net.corda.v5.base.types.MemberX500Name;
@@ -42,7 +43,8 @@ public class FlowSessionImplJavaTest {
             mock(FlowCheckpoint.class),
             flowSandboxGroupContext,
             createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group1"),
-            mock(MembershipGroupReader.class)
+            mock(MembershipGroupReader.class),
+            mock(SandboxGroupContextService.class)
     );
     private final FlowFiber flowFiber = new FakeFiber(flowFiberExecutionContext);
     private final FlowFiberService flowFiberService = mock(FlowFiberService.class);

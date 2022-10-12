@@ -74,6 +74,7 @@ class FlowRunnerImplTest {
             flowCheckpoint,
             sandboxGroupContext,
             BOB_X500_HOLDING_IDENTITY.toCorda(),
+            mock(),
             mock()
         )
     }

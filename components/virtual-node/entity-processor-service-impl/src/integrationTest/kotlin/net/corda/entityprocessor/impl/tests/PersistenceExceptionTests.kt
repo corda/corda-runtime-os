@@ -28,6 +28,7 @@ import net.corda.persistence.common.exceptions.NotReadyException
 import net.corda.persistence.common.exceptions.VirtualNodeException
 import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_SERIALIZER
 import net.corda.persistence.common.EntitySandboxServiceFactory
+import net.corda.sandboxgroupcontext.SandboxGroupContextService
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
@@ -68,6 +69,7 @@ class PersistenceExceptionTests {
     private lateinit var cpiInfoReadService: CpiInfoReadService
     private lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
     private lateinit var externalEventResponseFactory: ExternalEventResponseFactory
+    private lateinit var sandboxContextService: SandboxGroupContextService
 
     @BeforeAll
     fun setup(
@@ -85,6 +87,7 @@ class PersistenceExceptionTests {
             cpiInfoReadService = setup.fetchService(timeout = 5000)
             virtualNodeInfoReadService = setup.fetchService(timeout = 5000)
             externalEventResponseFactory = setup.fetchService(timeout = 5000)
+            sandboxContextService = setup.fetchService(timeout = 5000)
         }
     }
 
@@ -109,8 +112,12 @@ class PersistenceExceptionTests {
                 BasicMocks.componentContext()
             )
 
-        val processor =
-            EntityMessageProcessor(brokenEntitySandboxService, externalEventResponseFactory, this::noOpPayloadCheck)
+        val processor = EntityMessageProcessor(
+            brokenEntitySandboxService,
+            externalEventResponseFactory,
+            sandboxContextService,
+            this::noOpPayloadCheck
+        )
 
         // Now "send" the request for processing and "receive" the responses.
         val responses = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), ignoredRequest)))
@@ -146,8 +153,12 @@ class PersistenceExceptionTests {
                 BasicMocks.componentContext()
             )
 
-        val processor =
-            EntityMessageProcessor(brokenEntitySandboxService, externalEventResponseFactory, this::noOpPayloadCheck)
+        val processor = EntityMessageProcessor(
+            brokenEntitySandboxService,
+            externalEventResponseFactory,
+            sandboxContextService,
+            this::noOpPayloadCheck
+        )
 
         // Now "send" the request for processing and "receive" the responses.
         val responses = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), ignoredRequest)))
@@ -182,8 +193,12 @@ class PersistenceExceptionTests {
                 BasicMocks.componentContext()
             )
 
-        val processor =
-            EntityMessageProcessor(entitySandboxService, externalEventResponseFactory, this::noOpPayloadCheck)
+        val processor = EntityMessageProcessor(
+            entitySandboxService,
+            externalEventResponseFactory,
+            sandboxContextService,
+            this::noOpPayloadCheck
+        )
 
         // Now "send" the request for processing and "receive" the responses.
         val responses = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), badRequest)))

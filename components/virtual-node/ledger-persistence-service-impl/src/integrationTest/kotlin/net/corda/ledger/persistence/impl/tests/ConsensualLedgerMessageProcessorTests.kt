@@ -61,6 +61,7 @@ import java.nio.ByteBuffer
 import java.nio.file.Path
 import java.time.Instant
 import java.util.UUID
+import net.corda.sandboxgroupcontext.SandboxGroupContextService
 
 /**
  * To use Postgres rather than in-memory (HSQL):
@@ -94,6 +95,7 @@ class ConsensualLedgerMessageProcessorTests {
     private lateinit var virtualNode: VirtualNodeService
     private lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
     private lateinit var externalEventResponseFactory: ExternalEventResponseFactory
+    private lateinit var sandboxGroupContextService: SandboxGroupContextService
     private lateinit var deserializer: CordaAvroDeserializer<EntityResponse>
 
     @InjectService
@@ -127,6 +129,7 @@ class ConsensualLedgerMessageProcessorTests {
             )
             deserializer = setup.fetchService<CordaAvroSerializationFactory>(timeout = 10000)
                 .createAvroDeserializer({}, EntityResponse::class.java)
+            sandboxGroupContextService = setup.fetchService(timeout = 10000)
         }
     }
 
@@ -177,7 +180,9 @@ class ConsensualLedgerMessageProcessorTests {
             merkleTreeProvider,
             digestService,
             jsonMarshallingService,
-            this::noOpPayloadCheck)
+            sandboxGroupContextService,
+            this::noOpPayloadCheck
+        )
         val requestId = UUID.randomUUID().toString()
         val records = listOf(Record(TOPIC, requestId, request))
 

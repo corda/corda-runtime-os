@@ -76,6 +76,7 @@ import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_SERIALIZER
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.EntitySandboxServiceFactory
 import net.corda.persistence.common.exceptions.KafkaMessageSizeException
+import net.corda.sandboxgroupcontext.SandboxGroupContextService
 
 sealed class QuerySetup {
     data class NamedQuery(val params: Map<String, String>, val query: String = "Dog.summon") : QuerySetup()
@@ -117,6 +118,7 @@ class PersistenceServiceInternalTests {
     private lateinit var entitySandboxService: EntitySandboxService
     private lateinit var sandbox: SandboxGroupContext
     private lateinit var entityManagerFactory: EntityManagerFactory
+    private lateinit var sandboxGroupContextService: SandboxGroupContextService
     private lateinit var dogClass: Class<*>
     private lateinit var catClass: Class<*>
     private lateinit var schemaName: String
@@ -139,6 +141,7 @@ class PersistenceServiceInternalTests {
             externalEventResponseFactory = setup.fetchService(timeout = 10000)
             deserializer = setup.fetchService<CordaAvroSerializationFactory>(timeout = 10000)
                 .createAvroDeserializer({}, EntityResponse::class.java)
+            sandboxGroupContextService = setup.fetchService(timeout = 10000)
         }
     }
 
@@ -243,6 +246,7 @@ class PersistenceServiceInternalTests {
         val processor = EntityMessageProcessor(
             myEntitySandboxService,
             externalEventResponseFactory,
+            sandboxGroupContextService,
             this::noOpPayloadCheck
         )
         val requestId = UUID.randomUUID().toString() // just needs to be something unique.
@@ -510,7 +514,7 @@ class PersistenceServiceInternalTests {
     fun `find all exceeds kakfa packet size`() {
         persistDogs()
 
-        val processor = EntityMessageProcessor(entitySandboxService, externalEventResponseFactory) {
+        val processor = EntityMessageProcessor(entitySandboxService, externalEventResponseFactory, sandboxGroupContextService) {
             if (it.array().size > 50) throw KafkaMessageSizeException("Too large")
             it
         }
@@ -529,7 +533,7 @@ class PersistenceServiceInternalTests {
         val dog = sandbox.createDog("K9", owner = "Doctor Who")
         persistDirectInDb(dog.instance)
 
-        val processor = EntityMessageProcessor(entitySandboxService, externalEventResponseFactory) {
+        val processor = EntityMessageProcessor(entitySandboxService, externalEventResponseFactory, sandboxGroupContextService) {
             if (it.array().size > 4) throw KafkaMessageSizeException("Too large")
             it
         }
@@ -553,7 +557,7 @@ class PersistenceServiceInternalTests {
 
         val modifiedDog = sandbox.createDog("K9", owner = "Doctor Who Peter Davidson", id = dog.id)
 
-        val processor = EntityMessageProcessor(entitySandboxService, externalEventResponseFactory) {
+        val processor = EntityMessageProcessor(entitySandboxService, externalEventResponseFactory, sandboxGroupContextService) {
             if (it.array().size > 4) throw KafkaMessageSizeException("Too large")
             it
         }
@@ -781,7 +785,7 @@ class PersistenceServiceInternalTests {
                 FindAll(querySetup.className, offset, limit)
             }
         }
-        val processor = EntityMessageProcessor(entitySandboxService, externalEventResponseFactory) {
+        val processor = EntityMessageProcessor(entitySandboxService, externalEventResponseFactory, sandboxGroupContextService) {
             val size = it.array().size
             logger.info("payload check size $size c/w limit $sizeLimit")
             if (size > sizeLimit) throw KafkaMessageSizeException("Too large; size $size exceeds limit $sizeLimit")
@@ -816,6 +820,7 @@ class PersistenceServiceInternalTests {
         val processor = EntityMessageProcessor(
             entitySandboxService,
             externalEventResponseFactory,
+            sandboxGroupContextService,
             this::noOpPayloadCheck
         )
 
@@ -848,6 +853,7 @@ class PersistenceServiceInternalTests {
         val processor = EntityMessageProcessor(
             entitySandboxService,
             externalEventResponseFactory,
+            sandboxGroupContextService,
             this::noOpPayloadCheck
         )
         val records = listOf(
@@ -867,6 +873,7 @@ class PersistenceServiceInternalTests {
         val processor = EntityMessageProcessor(
             entitySandboxService,
             externalEventResponseFactory,
+            sandboxGroupContextService,
             this::noOpPayloadCheck
         )
 
@@ -898,6 +905,7 @@ class PersistenceServiceInternalTests {
         val processor = EntityMessageProcessor(
             entitySandboxService,
             externalEventResponseFactory,
+            sandboxGroupContextService,
             this::noOpPayloadCheck
         )
         val requestId = UUID.randomUUID().toString()
@@ -931,6 +939,7 @@ class PersistenceServiceInternalTests {
         val processor = EntityMessageProcessor(
             entitySandboxService,
             externalEventResponseFactory,
+            sandboxGroupContextService,
             this::noOpPayloadCheck
         )
         val responses = assertSuccessResponses(
