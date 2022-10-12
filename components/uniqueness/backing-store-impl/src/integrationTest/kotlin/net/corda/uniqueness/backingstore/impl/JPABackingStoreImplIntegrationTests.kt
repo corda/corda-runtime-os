@@ -461,9 +461,7 @@ class JPABackingStoreImplIntegrationTests {
 
         @Test
         fun `Consuming an unconsumed state succeeds`() {
-            val hashCnt = 2
-            val secureHashes = List(hashCnt) { SecureHashUtils.randomSecureHash() }
-            val stateRefs = secureHashes.map { UniquenessCheckStateRefImpl(it, 0) }
+            val stateRefs = List(2) { UniquenessCheckStateRefImpl(SecureHashUtils.randomSecureHash(), 0) }
 
             // Generate unconsumed states in DB.
             backingStoreImpl.session(aliceIdentity) { session ->
@@ -495,8 +493,7 @@ class JPABackingStoreImplIntegrationTests {
 
         @Test
         fun `Double spend is prevented in separate sessions`() {
-            val secureHashes = listOf(SecureHashUtils.randomSecureHash())
-            val stateRefs = secureHashes.map { UniquenessCheckStateRefImpl(it, 0) }
+            val stateRefs = List(1) { UniquenessCheckStateRefImpl(SecureHashUtils.randomSecureHash(), 0) }
 
             // Generate an unconsumed state in DB.
             backingStoreImpl.session(aliceIdentity) { session ->
@@ -520,8 +517,7 @@ class JPABackingStoreImplIntegrationTests {
 
         @Test
         fun `Double spend is prevented in one session`() {
-            val secureHashes = listOf(SecureHashUtils.randomSecureHash())
-            val stateRefs = secureHashes.map { UniquenessCheckStateRefImpl(it, 0) }
+            val stateRefs = List(1) { UniquenessCheckStateRefImpl(SecureHashUtils.randomSecureHash(), 0) }
 
             // Generate an unconsumed state in DB.
             backingStoreImpl.session(aliceIdentity) { session ->
@@ -544,9 +540,7 @@ class JPABackingStoreImplIntegrationTests {
 
         @Test
         fun `Attempt to consume an unknown state fails with an exception`() {
-            val hashCnt = 2
-            val secureHashes = List(hashCnt) { SecureHashUtils.randomSecureHash() }
-            val stateRefs = secureHashes.map { UniquenessCheckStateRefImpl(it, 0) }
+            val stateRefs = List(2) { UniquenessCheckStateRefImpl(SecureHashUtils.randomSecureHash(), 0) }
 
             // Generate unconsumed states in DB.
             backingStoreImpl.session(aliceIdentity) { session ->
