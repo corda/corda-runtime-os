@@ -1,8 +1,8 @@
 package net.corda.ledger.common.testkit
 
-import net.corda.ledger.common.impl.transaction.TransactionMetaData
-import net.corda.ledger.common.impl.transaction.WireTransaction
-import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
+import net.corda.ledger.common.data.transaction.TransactionMetaData
+import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
@@ -11,7 +11,7 @@ fun getWireTransaction(
     digestService: DigestService,
     merkleTreeProvider: MerkleTreeProvider,
     jsonMarshallingService: JsonMarshallingService
-): WireTransaction{
+): WireTransaction {
     val transactionMetaData = TransactionMetaData(
         linkedMapOf(
             TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues
@@ -26,7 +26,7 @@ fun getWireTransaction(
         merkleTreeProvider,
         digestService,
         jsonMarshallingService,
-        getPrivacySaltImpl(),
+        getPrivacySalt(),
         componentGroupLists
     )
 }
