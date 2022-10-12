@@ -126,10 +126,6 @@ interface FlowMessaging {
      * Consider [receiveAllMap(sessions: Map<FlowSession, Class<out Any>>): Map<FlowSession, Any>] when sessions are
      * expected to receive different types.
      *
-     * Remember that when receiving data from other parties the data should not be trusted until it's been thoroughly
-     * verified for consistency and that all expectations are satisfied, as a malicious peer may send you subtly
-     * corrupted data in order to exploit your code.
-     *
      * @param receiveType type of object to be received for all [sessions].
      * @param sessions Set of sessions to receive from.
      * @returns a [List] containing the objects received from the [sessions].
@@ -143,10 +139,6 @@ interface FlowMessaging {
      * Suspends until a message has been received for each session in the specified [sessions].
      *
      * Consider [receiveAll(receiveType: Class<R>, sessions: Set<FlowSession>): List<R>] when the same type is expected from all sessions.
-     *
-     * Remember that when receiving data from other parties the data should not be trusted until it's been thoroughly
-     * verified for consistency and that all expectations are satisfied, as a malicious peer may send you subtly
-     * corrupted data in order to exploit your code.
      *
      * @param sessions Map of session to the type of object that is expected to be received
      * @returns a [Map] containing the objects received by the [FlowSession]s who sent them.
