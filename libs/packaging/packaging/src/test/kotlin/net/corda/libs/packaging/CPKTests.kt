@@ -315,7 +315,10 @@ class CPKTests {
         }
     }
 
-    private fun isSignatureFile(currentEntry: ZipEntry) = currentEntry.name.startsWith("META-INF/CORDAPP.")
+    private fun isSignatureFile(currentEntry: ZipEntry) = currentEntry.name.startsWith("META-INF/")
+            && (currentEntry.name.endsWith(".SF")
+            || currentEntry.name.endsWith(".RSA")
+            || currentEntry.name.endsWith(".EC"))
 
     private fun signJar(modifiedWorkflowCPK: Path, modifiedWorkflowCPKSigned: Path) {
         ZipFile(modifiedWorkflowCPK.toFile()).use { inputFile ->
