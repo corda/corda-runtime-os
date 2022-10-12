@@ -214,16 +214,20 @@ internal class VirtualNodeWriterProcessor(
             // Creation of permission and roles may take sometime (> 10 seconds), therefore launching this convenience
             // operation asynchronously in order not to delay main vNode creation function.
             executorService.submit {
-                measureTimeMillis {
-                    permissionManagerSupplier.get().createRbacRole(
-                        holdingId,
-                        cpiInfoReadService.getFlowNames(cpiMetadata),
-                        create.updateActor
-                    )
-                }.also {
-                    logger.debug {
-                        "[Create ${create.x500Name}] creating RBAC role took $it ms"
+                try {
+                    measureTimeMillis {
+                        permissionManagerSupplier.get().createRbacRole(
+                            holdingId,
+                            cpiInfoReadService.getFlowNames(cpiMetadata),
+                            create.updateActor
+                        )
+                    }.also {
+                        logger.debug {
+                            "[Create ${create.x500Name}] creating RBAC role took $it ms"
+                        }
                     }
+                } catch (th: Throwable) {
+                    logger.error("Unexpected error when creating RBAC role", th)
                 }
             }
 
