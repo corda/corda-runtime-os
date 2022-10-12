@@ -54,6 +54,6 @@ internal object VirtualNodeRbacCreator {
 
     fun CpiInfoReadService.getFlowNames(cpiMetadataLite: CpiMetadataLite): Set<String> {
         val cpiMetaData = requireNotNull(get(cpiMetadataLite.id))
-        return cpiMetaData.cpksMetadata.flatMap { cpkMeta -> cpkMeta.cordappManifest.flows }.toSet()
+        return cpiMetaData.cpksMetadata.flatMap { cpkMeta -> cpkMeta.cordappManifest.rpcStartableFlows }.toSet()
     }
 }
