@@ -21,7 +21,6 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
@@ -66,8 +65,6 @@ class ConsensualSignedTransactionAMQPSerializationTest {
     lateinit var jsonMarshallingService: JsonMarshallingService
 
     private lateinit var emptySandboxGroup: SandboxGroup
-
-    private lateinit var partySerializer: InternalCustomSerializer<Party>
     private lateinit var publickeySerializer: InternalCustomSerializer<PublicKey>
     private lateinit var wireTransactionSerializer: InternalCustomSerializer<WireTransaction>
     private lateinit var consensualSignedTransactionSerializer: InternalCustomSerializer<ConsensualSignedTransaction>
@@ -89,10 +86,6 @@ class ConsensualSignedTransactionAMQPSerializationTest {
             setup.withCleanup {
                 sandboxCreationService.unloadSandboxGroup(emptySandboxGroup)
             }
-            partySerializer = setup.fetchService(
-                "(component.name=net.corda.ledger.common.impl.PartySerializer)",
-                1500
-            )
             publickeySerializer = setup.fetchService(
                 "(component.name=net.corda.crypto.impl.serialization.PublicKeySerializer)",
                 1500
@@ -113,7 +106,6 @@ class ConsensualSignedTransactionAMQPSerializationTest {
         SerializerFactoryBuilder.build(sandboxGroup, allowEvolution = true).also {
             registerCustomSerializers(it)
             it.register(publickeySerializer, it)
-            it.register(partySerializer, it)
             it.register(wireTransactionSerializer, it)
             it.register(consensualSignedTransactionSerializer, it)
         }
@@ -130,7 +122,6 @@ class ConsensualSignedTransactionAMQPSerializationTest {
         // Create sandbox group
 
         val serializationService = TestSerializationService.getTestSerializationService({
-            it.register(partySerializer, it)
             it.register(wireTransactionSerializer, it)
             it.register(consensualSignedTransactionSerializer, it)
         }, schemeMetadata)
