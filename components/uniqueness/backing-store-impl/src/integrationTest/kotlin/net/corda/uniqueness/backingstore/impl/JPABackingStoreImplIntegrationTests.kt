@@ -247,13 +247,13 @@ class JPABackingStoreImplIntegrationTests {
         fun `Persisting rejected transaction due to input state conflict succeeds`() {
             val txId = SecureHashUtils.randomSecureHash()
             val txIds = listOf(txId)
-            val txns = listOf(
-                Pair(
+            val consumingTxId = SecureHashUtils.randomSecureHash()
+            val txns = listOf(Pair(
                     generateRequestInternal(txId), UniquenessCheckResultFailureImpl(
                         Clock.systemUTC().instant(),
                         UniquenessCheckErrorInputStateConflictImpl(
                             listOf(UniquenessCheckStateDetailsImpl(
-                                    UniquenessCheckStateRefImpl(txId, 0), consumingTxId = null))))))
+                                    UniquenessCheckStateRefImpl(txId, 0), consumingTxId = consumingTxId))))))
 
             backingStoreImpl.session(aliceIdentity) { session ->
                 session.executeTransaction { _, txnOps -> txnOps.commitTransactions(txns) }
@@ -269,7 +269,7 @@ class JPABackingStoreImplIntegrationTests {
                     assertAll(
                         { assertThat(txIds).contains(this.key) },
                         { assertThat(conflicts.size).isEqualTo(1) },
-                        { assertThat(conflicts.first().consumingTxId).isNull() },
+                        { assertThat(conflicts.first().consumingTxId).isEqualTo(consumingTxId) },
                         { assertThat(conflicts.first().stateRef.txHash).isEqualTo(txId) },
                         { assertThat(conflicts.first().stateRef.stateIndex).isEqualTo(0) })
                     UniquenessAssertions
@@ -282,13 +282,13 @@ class JPABackingStoreImplIntegrationTests {
         fun `Persisting rejected transaction due to reference state conflict succeeds`() {
             val txId = SecureHashUtils.randomSecureHash()
             val txIds = listOf(txId)
+            val consumingTxId = SecureHashUtils.randomSecureHash()
             val txns = listOf(
-                Pair(
-                    generateRequestInternal(txId), UniquenessCheckResultFailureImpl(
+                Pair(generateRequestInternal(txId), UniquenessCheckResultFailureImpl(
                         Clock.systemUTC().instant(),
                         UniquenessCheckErrorReferenceStateConflictImpl(
                             listOf(UniquenessCheckStateDetailsImpl(
-                                    UniquenessCheckStateRefImpl(txId, 0), consumingTxId = null))))))
+                                    UniquenessCheckStateRefImpl(txId, 0), consumingTxId = consumingTxId))))))
 
             backingStoreImpl.session(aliceIdentity) { session ->
                 session.executeTransaction { _, txnOps -> txnOps.commitTransactions(txns) }
@@ -304,7 +304,7 @@ class JPABackingStoreImplIntegrationTests {
                     assertAll(
                         { assertThat(txIds).contains(this.key) },
                         { assertThat(conflicts.size).isEqualTo(1) },
-                        { assertThat(conflicts.first().consumingTxId).isNull() },
+                        { assertThat(conflicts.first().consumingTxId).isEqualTo(consumingTxId) },
                         { assertThat(conflicts.first().stateRef.txHash).isEqualTo(txId) },
                         { assertThat(conflicts.first().stateRef.stateIndex).isEqualTo(0) })
                     UniquenessAssertions
