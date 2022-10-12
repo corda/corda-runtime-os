@@ -23,7 +23,6 @@ class JsonNodeReaderAdaptor(
 
     override fun getType() = when (jsonNode.nodeType) {
         JsonNodeType.ARRAY -> JsonNodeReaderType.ARRAY
-        JsonNodeType.BINARY -> JsonNodeReaderType.BINARY
         JsonNodeType.BOOLEAN -> JsonNodeReaderType.BOOLEAN
         JsonNodeType.NULL -> JsonNodeReaderType.NULL
         JsonNodeType.NUMBER -> JsonNodeReaderType.NUMBER
