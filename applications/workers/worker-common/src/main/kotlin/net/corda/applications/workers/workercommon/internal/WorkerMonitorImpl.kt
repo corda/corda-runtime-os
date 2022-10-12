@@ -11,7 +11,7 @@ import io.micrometer.core.instrument.binder.system.ProcessorMetrics
 import io.micrometer.core.instrument.binder.system.UptimeMetrics
 import io.micrometer.prometheus.PrometheusConfig
 import io.micrometer.prometheus.PrometheusMeterRegistry
-import net.corda.applications.workers.workercommon.HealthMonitor
+import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.registry.LifecycleRegistry
 import net.corda.utilities.classload.OsgiClassLoader
@@ -25,16 +25,16 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 
 /**
- * An implementation of [HealthMonitor].
+ * An implementation of [WorkerMonitor].
  *
  * @property server The server that serves worker health and readiness.
  */
-@Component(service = [HealthMonitor::class])
+@Component(service = [WorkerMonitor::class])
 @Suppress("Unused")
-internal class HealthMonitorImpl @Activate constructor(
+internal class WorkerMonitorImpl @Activate constructor(
     @Reference(service = LifecycleRegistry::class)
     private val lifecycleRegistry: LifecycleRegistry
-) : HealthMonitor {
+) : WorkerMonitor {
     private companion object {
         val logger = contextLogger()
     }
