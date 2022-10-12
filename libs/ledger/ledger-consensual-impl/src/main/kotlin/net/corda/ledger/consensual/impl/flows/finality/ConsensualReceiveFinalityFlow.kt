@@ -57,6 +57,7 @@ class ConsensualReceiveFinalityFlow(
                     "${signedTransaction.id} instead"
         }
 
+        //TODO: this looks like a candidate for signedTx.verify() or verifySignatures at least.
         for (signature in signedTransactionToFinalize.signatures) {
             try {
                 // TODO Signature spec to be determined internally by crypto code
