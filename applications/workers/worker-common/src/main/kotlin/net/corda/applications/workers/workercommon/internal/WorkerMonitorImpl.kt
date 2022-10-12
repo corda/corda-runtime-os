@@ -2,6 +2,7 @@ package net.corda.applications.workers.workercommon.internal
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.javalin.Javalin
+import io.javalin.core.util.Header
 import io.micrometer.core.instrument.Metrics
 import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics
 import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics
@@ -73,6 +74,7 @@ internal class WorkerMonitorImpl @Activate constructor(
                     HTTP_SERVICE_UNAVAILABLE_CODE
                 }
                 context.status(status)
+                context.header(Header.CACHE_CONTROL, NO_CACHE)
             }
             .get(HTTP_STATUS_ROUTE) { context ->
                 val anyComponentsNotReady = componentWithStatus(setOf(LifecycleStatus.DOWN, LifecycleStatus.ERROR))
@@ -80,9 +82,11 @@ internal class WorkerMonitorImpl @Activate constructor(
                 val status = if (anyComponentsNotReady) HTTP_SERVICE_UNAVAILABLE_CODE else HTTP_OK_CODE
                 context.status(status)
                 context.result(objectMapper.writeValueAsString(lifecycleRegistry.componentStatus()))
+                context.header(Header.CACHE_CONTROL, NO_CACHE)
             }
             .get(HTTP_METRICS_ROUTE) { context ->
                 context.result(prometheusRegistry.scrape())
+                context.header(Header.CACHE_CONTROL, NO_CACHE)
             }
     }
 
