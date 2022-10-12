@@ -69,13 +69,12 @@ class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
     private fun readCpkMetadata(cpkBytes: ByteArray): CpkMetadata {
 
         val (manifest, cpkEntries) = JarInputStream(cpkBytes.inputStream(), true).use {
-            val manifest = it.manifest
+            val manifest = it.manifest ?: throw CordappManifestException("manifest must not be null")
             val jarEntries = readJar(it).toList()
             Pair(manifest, jarEntries)
         }
 
         // Read manifest
-        if (manifest == null) throw CordappManifestException("manifest must not be null")
         val cordappManifest = CordappManifest.fromManifest(manifest)
         val cpkManifest = CpkManifest(FormatVersionReader.readCpkFormatVersion(Manifest(manifest)))
         val cpkType = manifest.mainAttributes.getValue(CpkLoaderV1.CPK_TYPE)?.let { CpkType.parse(it) } ?: CpkType.UNKNOWN
