@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import net.corda.libs.packaging.Cpk
 import net.corda.libs.packaging.PackagingConstants.CPK_DEPENDENCIES_FILE_ENTRY_V2
+import net.corda.libs.packaging.PackagingConstants.CPK_DEPENDENCIES_FILE_NAME_V2
 import net.corda.libs.packaging.PackagingConstants.CPK_DEPENDENCIES_FORMAT_VERSION2
 import net.corda.libs.packaging.PackagingConstants.CPK_FORMAT_VERSION2_MAINBUNDLE_PLACEHOLDER
 import net.corda.libs.packaging.PackagingConstants.CPK_LIB_FOLDER_V2
@@ -127,7 +128,7 @@ class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
             CPKDependencyFormatVersion::class.java
         )
     } catch (e: JacksonException) {
-        throw DependencyMetadataException("Error reading CPKDependencies.json", e)
+        throw DependencyMetadataException("Error reading $CPK_DEPENDENCIES_FILE_NAME_V2", e)
     }
 
     private fun readCpkDependencies(
@@ -146,7 +147,7 @@ class CpkLoaderV2(private val clock: Clock = UTCClock()) : CpkLoader {
             )
         }
     } catch (e: JacksonException) {
-        throw DependencyMetadataException("Error reading CPKDependencies.json", e)
+        throw DependencyMetadataException("Error reading $CPK_DEPENDENCIES_FILE_NAME_V2", e)
     }
 
     private fun calculateFileHash(bytes: ByteArray) = bytes.hash(DigestAlgorithmName.SHA2_256)
