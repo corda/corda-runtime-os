@@ -10,6 +10,10 @@ import net.corda.lifecycle.domino.logic.ConfigurationChangeHandler
 import net.corda.lifecycle.domino.logic.LifecycleWithDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.ResourcesHolder
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.CORDA_4
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.STANDARD
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.STANDARD_EV3
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -27,8 +31,12 @@ import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
+import net.corda.p2p.crypto.protocol.api.PkiMode
+import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
+import net.corda.p2p.linkmanager.GroupPolicyListener
+import net.corda.p2p.linkmanager.HostingMapListener
 import net.corda.p2p.linkmanager.InboundAssignmentListener
 import net.corda.p2p.linkmanager.LinkManagerGroupPolicyProvider
 import net.corda.p2p.linkmanager.LinkManagerHostingMap
@@ -73,6 +81,7 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
+import kotlin.math.log
 
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class SessionManagerImpl(
@@ -120,7 +129,7 @@ internal class SessionManagerImpl(
     // This default needs to be removed and the lifecycle dependency graph adjusted to ensure the inbound subscription starts only after
     // the configuration has been received and the session manager has started (see CORE-6730).
     private val config = AtomicReference(
-        SessionManagerConfig(1000000, 4)
+        SessionManagerConfig(1000000, 4, RevocationCheckMode.OFF)
     )
 
     private val heartbeatManager: HeartbeatManager = HeartbeatManager(
@@ -162,6 +171,7 @@ internal class SessionManagerImpl(
     internal data class SessionManagerConfig(
         val maxMessageSize: Int,
         val sessionsPerCounterparties: Int,
+        val revocationConfigMode: RevocationCheckMode
     )
 
     internal inner class SessionManagerConfigChangeHandler : ConfigurationChangeHandler<SessionManagerConfig>(
@@ -203,7 +213,8 @@ internal class SessionManagerImpl(
     private fun fromConfig(config: Config): SessionManagerConfig {
         return SessionManagerConfig(
             config.getInt(LinkManagerConfiguration.MAX_MESSAGE_SIZE_KEY),
-            config.getInt(LinkManagerConfiguration.SESSIONS_PER_PEER_KEY)
+            config.getInt(LinkManagerConfiguration.SESSIONS_PER_PEER_KEY),
+            config.getEnum(RevocationCheckMode::class.java, LinkManagerConfiguration.REVOCATION_CHECK_KEY)
         )
     }
 
@@ -339,6 +350,7 @@ internal class SessionManagerImpl(
 
         val sessionManagerConfig = config.get()
         val messagesAndProtocol = mutableListOf<Pair<AuthenticationProtocolInitiator, InitiatorHelloMessage>>()
+        val pkiMode = pkiMode(groupInfo, ourIdentityInfo, sessionManagerConfig) ?: return emptyList()
         (1..multiplicity).map {
             val sessionId = UUID.randomUUID().toString()
             val session = protocolFactory.createInitiator(
@@ -346,11 +358,41 @@ internal class SessionManagerImpl(
                 groupInfo.protocolModes,
                 sessionManagerConfig.maxMessageSize,
                 ourIdentityInfo.sessionPublicKey,
-                ourIdentityInfo.holdingIdentity.groupId
+                ourIdentityInfo.holdingIdentity.groupId,
+                pkiMode
             )
             messagesAndProtocol.add(Pair(session, session.generateInitiatorHello()))
         }
         return messagesAndProtocol
+    }
+
+    private fun pkiMode(
+        groupInfo: GroupPolicyListener.GroupInfo,
+        ourIdentityInfo: HostingMapListener.IdentityInfo,
+        sessionManagerConfig: SessionManagerConfig
+    ): PkiMode? {
+        return when (groupInfo.sessionPkiMode) {
+            STANDARD -> {
+                if (ourIdentityInfo.sessionCertificates == null) {
+                    logger.warn("Expected session certificates to be in hosting map for our identity ${ourIdentityInfo.holdingIdentity}.")
+                    return null
+                }
+                if (groupInfo.sessionTrustStore == null) {
+                    logger.warn("Expected session trust stores to be in group policy for our identity ${ourIdentityInfo.holdingIdentity}.")
+                    return null
+                }
+                PkiMode.Standard(
+                    groupInfo.sessionTrustStore,
+                    ourIdentityInfo.sessionCertificates,
+                    sessionManagerConfig.revocationConfigMode
+                )
+            }
+            STANDARD_EV3, CORDA_4 -> {
+                logger.warn("PkiMode ${groupInfo.sessionPkiMode} is unsupported by the link manager.")
+                return null
+            }
+            NO_PKI -> PkiMode.NoPki
+        }
     }
 
     private fun linkOutMessagesFromSessionInitMessages(
@@ -523,7 +565,12 @@ internal class SessionManagerImpl(
         }
 
         try {
-            session.validatePeerHandshakeMessage(message, memberInfo.sessionPublicKey, memberInfo.publicKeyAlgorithm.getSignatureSpec())
+            session.validatePeerHandshakeMessage(
+                message,
+                sessionCounterparties.counterpartyId.x500Name.x500Principal,
+                memberInfo.sessionPublicKey,
+                memberInfo.publicKeyAlgorithm.getSignatureSpec()
+            )
         } catch (exception: InvalidHandshakeResponderKeyHash) {
             logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
             return null
@@ -585,12 +632,19 @@ internal class SessionManagerImpl(
             logger.couldNotFindGroupInfo(message::class.java.simpleName, message.header.sessionId, hostedIdentityInSameGroup)
             return null
         }
+        val ourIdentityInfo = linkManagerHostingMap.getInfo(hostedIdentityInSameGroup)
+        if (ourIdentityInfo == null) {
+            logger.ourIdNotInMembersMapWarning(message::class.java.simpleName, message.header.sessionId, hostedIdentityInSameGroup)
+            return null
+        }
+        val pkiMode = pkiMode(groupInfo, ourIdentityInfo, sessionManagerConfig) ?: return null
 
         val session = pendingInboundSessions.computeIfAbsent(message.header.sessionId) { sessionId ->
             val session = protocolFactory.createResponder(
                 sessionId,
                 groupInfo.protocolModes,
-                sessionManagerConfig.maxMessageSize
+                sessionManagerConfig.maxMessageSize,
+                pkiMode
             )
             session.receiveInitiatorHello(message)
             session
@@ -633,7 +687,12 @@ internal class SessionManagerImpl(
 
         session.generateHandshakeSecrets()
         val ourIdentityData = try {
-            session.validatePeerHandshakeMessage(message, peer.sessionPublicKey, peer.publicKeyAlgorithm.getSignatureSpec())
+            session.validatePeerHandshakeMessage(
+                message,
+                peer.holdingIdentity.x500Name.x500Principal,
+                peer.sessionPublicKey,
+                peer.publicKeyAlgorithm.getSignatureSpec()
+            )
         } catch (exception: WrongPublicKeyHashException) {
             logger.error("The message was discarded. ${exception.message}")
             return null

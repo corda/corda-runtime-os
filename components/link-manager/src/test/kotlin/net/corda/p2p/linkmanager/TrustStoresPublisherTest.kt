@@ -7,6 +7,7 @@ import net.corda.lifecycle.domino.logic.BlockingDominoTile
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
 import net.corda.lifecycle.domino.logic.util.PublisherWithDominoLogic
 import net.corda.lifecycle.domino.logic.util.SubscriptionDominoTile
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
@@ -77,6 +78,8 @@ class TrustStoresPublisherTest {
         NetworkType.CORDA_5,
         setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),
         certificates,
+        GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI,
+        null
     )
 
     private val trustStoresPublisher = TrustStoresPublisher(

@@ -13,6 +13,9 @@ import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import java.io.ByteArrayInputStream
+import java.security.KeyStore
+import java.security.cert.CertificateFactory
 
 internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordinatorFactory,
                                              private val groupPolicyProvider: GroupPolicyProvider,
@@ -22,7 +25,7 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
     private companion object {
         const val LISTENER_NAME = "link.manager.group.policy.listener"
     }
-
+    private val certificateFactory = CertificateFactory.getInstance("X.509")
 
     private val dependentChildren = setOf(
         LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
@@ -70,8 +73,28 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
         }
 
         val trustedCertificates = groupPolicy.p2pParameters.tlsTrustRoots.toList()
+        val sessionPkiMode = groupPolicy.p2pParameters.sessionPki
 
-        return GroupPolicyListener.GroupInfo(holdingIdentity, networkType, protocolModes, trustedCertificates)
+        val sessionTrustStore = groupPolicy.p2pParameters.sessionTrustRoots?.let { trustRoots ->
+            KeyStore.getInstance("PKCS12").also { keyStore ->
+                keyStore.load(null, null)
+                trustRoots.withIndex().forEach { (index, pemCertificate) ->
+                    val certificate = ByteArrayInputStream(pemCertificate.toByteArray()).use {
+                        certificateFactory.generateCertificate(it)
+                    }
+                    keyStore.setCertificateEntry("session-$index", certificate)
+                }
+            }
+        }
+
+        return GroupPolicyListener.GroupInfo(
+            holdingIdentity,
+            networkType,
+            protocolModes,
+            trustedCertificates,
+            sessionPkiMode,
+            sessionTrustStore
+        )
     }
 
 }

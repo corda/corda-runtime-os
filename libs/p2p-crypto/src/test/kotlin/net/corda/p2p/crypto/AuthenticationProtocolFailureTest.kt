@@ -13,6 +13,7 @@ import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.Signature
 import java.util.UUID
+import javax.security.auth.x500.X500Principal
 
 /**
  * Tests exercising behaviour of authentication protocol under malicious actions and/or invalid operations.
@@ -74,7 +75,7 @@ class AuthenticationProtocolFailureTest {
         )
         assertThatThrownBy {
             authenticationProtocolB.validatePeerHandshakeMessage(
-                modifiedInitiatorHandshakeMessage, partyASessionKey.public, SignatureSpec.ECDSA_SHA256
+                modifiedInitiatorHandshakeMessage, X500Principal(""), partyASessionKey.public, SignatureSpec.ECDSA_SHA256
             )
         }
             .isInstanceOf(InvalidHandshakeMessageException::class.java)
@@ -104,7 +105,7 @@ class AuthenticationProtocolFailureTest {
 
         assertThatThrownBy {
             authenticationProtocolB.validatePeerHandshakeMessage(
-                initiatorHandshakeMessage, partyASessionKey.public, SignatureSpec.ECDSA_SHA256
+                initiatorHandshakeMessage, X500Principal(""), partyASessionKey.public, SignatureSpec.ECDSA_SHA256
             )
         }
             .isInstanceOf(InvalidHandshakeMessageException::class.java)
@@ -135,7 +136,7 @@ class AuthenticationProtocolFailureTest {
         val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
         assertThatThrownBy {
             authenticationProtocolB.validatePeerHandshakeMessage(
-                initiatorHandshakeMessage, wrongPublicKey, SignatureSpec.ECDSA_SHA256
+                initiatorHandshakeMessage, X500Principal(""), wrongPublicKey, SignatureSpec.ECDSA_SHA256
             )
         }
             .isInstanceOf(WrongPublicKeyHashException::class.java)
@@ -165,6 +166,7 @@ class AuthenticationProtocolFailureTest {
 
         authenticationProtocolB.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
+            X500Principal(""),
             partyASessionKey.public,
             SignatureSpec.ECDSA_SHA256,
         )
@@ -179,7 +181,7 @@ class AuthenticationProtocolFailureTest {
 
         assertThatThrownBy {
             authenticationProtocolA.validatePeerHandshakeMessage(
-                responderHandshakeMessage, partyBSessionKey.public, SignatureSpec.ECDSA_SHA256
+                responderHandshakeMessage, X500Principal(""), partyBSessionKey.public, SignatureSpec.ECDSA_SHA256
             )
         }
             .isInstanceOf(InvalidHandshakeMessageException::class.java)

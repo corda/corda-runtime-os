@@ -14,6 +14,7 @@ import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.Signature
 import java.util.UUID
+import javax.security.auth.x500.X500Principal
 
 class AuthenticatedEncryptionSessionTest {
 
@@ -68,6 +69,7 @@ class AuthenticatedEncryptionSessionTest {
 
         authenticationProtocolB.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
+            X500Principal(""),
             partyASessionKey.public,
             SignatureSpec.ECDSA_SHA256,
         )
@@ -82,6 +84,7 @@ class AuthenticatedEncryptionSessionTest {
 
         authenticationProtocolA.validatePeerHandshakeMessage(
             responderHandshakeMessage,
+            X500Principal(""),
             partyBSessionKey.public,
             SignatureSpec.ECDSA_SHA256,
         )
@@ -147,6 +150,7 @@ class AuthenticatedEncryptionSessionTest {
 
         authenticationProtocolB.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
+            X500Principal(""),
             partyASessionKey.public,
             SignatureSpec.ECDSA_SHA256,
         )
@@ -161,6 +165,7 @@ class AuthenticatedEncryptionSessionTest {
 
         authenticationProtocolA.validatePeerHandshakeMessage(
             responderHandshakeMessage,
+            X500Principal(""),
             partyBSessionKey.public,
             SignatureSpec.ECDSA_SHA256,
         )
@@ -232,6 +237,7 @@ class AuthenticatedEncryptionSessionTest {
 
         authenticationProtocolB.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
+            X500Principal(""),
             partyASessionKey.public,
             SignatureSpec.ECDSA_SHA256,
         )
@@ -246,6 +252,7 @@ class AuthenticatedEncryptionSessionTest {
 
         authenticationProtocolA.validatePeerHandshakeMessage(
             responderHandshakeMessage,
+            X500Principal(""),
             partyBSessionKey.public,
             SignatureSpec.ECDSA_SHA256,
         )

@@ -10,6 +10,7 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
+import net.corda.p2p.crypto.protocol.api.PkiMode
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
@@ -30,12 +31,16 @@ class ForwardingGroupPolicyProviderTest {
             alice,
             NetworkType.CORDA_5,
             setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),
-            listOf()
+            listOf(),
+            P2PParameters.SessionPkiMode.NO_PKI,
+            null
         )
     private val p2pParams = mock<GroupPolicy.P2PParameters>().also {
         whenever(it.tlsPki).thenReturn(P2PParameters.TlsPkiMode.STANDARD)
         whenever(it.protocolMode).thenReturn(P2PParameters.ProtocolMode.AUTH_ENCRYPT)
         whenever(it.tlsTrustRoots).thenReturn(emptyList())
+        whenever(it.sessionPki).thenReturn(P2PParameters.SessionPkiMode.NO_PKI)
+        whenever(it.sessionTrustRoots).thenReturn(null)
     }
     private val groupPolicy = mock<GroupPolicy>().also {
         whenever(it.groupId).thenReturn(alice.groupId)

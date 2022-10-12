@@ -4,6 +4,7 @@ import net.corda.p2p.crypto.CommonHeader
 import net.corda.p2p.crypto.MessageType
 import net.corda.p2p.crypto.protocol.ProtocolConstants
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.CIPHER_ALGO
+import net.corda.p2p.crypto.protocol.toByteArray
 import net.corda.p2p.crypto.util.decrypt
 import net.corda.p2p.crypto.util.encryptWithAssociatedData
 import net.corda.v5.base.exceptions.CordaRuntimeException

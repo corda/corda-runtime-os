@@ -29,6 +29,7 @@ import java.security.PublicKey
 import java.security.spec.X509EncodedKeySpec
 import java.time.Instant
 import javax.crypto.AEADBadTagException
+import javax.security.auth.x500.X500Principal
 import kotlin.math.min
 
 /**
@@ -52,7 +53,8 @@ import kotlin.math.min
  */
 class AuthenticationProtocolResponder(val sessionId: String,
                                       private val supportedModes: Set<ProtocolMode>,
-                                      private val ourMaxMessageSize: Int): AuthenticationProtocol() {
+                                      private val ourMaxMessageSize: Int,
+                                      private val pkiMode: PkiMode = PkiMode.NoPki): AuthenticationProtocol(pkiMode) {
 
     init {
         require(supportedModes.isNotEmpty()) { "At least one supported mode must be provided." }
@@ -132,6 +134,7 @@ class AuthenticationProtocolResponder(val sessionId: String,
     @Suppress("ThrowsCount")
     fun validatePeerHandshakeMessage(
         initiatorHandshakeMessage: InitiatorHandshakeMessage,
+        initiatorX500Principal: X500Principal,
         initiatorPublicKey: PublicKey,
         initiatorSignatureSpec: SignatureSpec,
     ): HandshakeIdentityData {
@@ -190,6 +193,10 @@ class AuthenticationProtocolResponder(val sessionId: String,
 
                 agreedMaxMessageSize = min(ourMaxMessageSize, this)
             }
+            certificateValidator?.validate(
+                initiatorHandshakePayload.initiatorEncryptedExtensions.initiatorCertificate,
+                initiatorX500Principal
+            )
 
             handshakeIdentityData =  HandshakeIdentityData(initiatorHandshakePayload.initiatorPublicKeyHash.array(),
                 initiatorHandshakePayload.initiatorEncryptedExtensions.responderPublicKeyHash.array(),
@@ -211,9 +218,12 @@ class AuthenticationProtocolResponder(val sessionId: String,
             val responderRecordHeader = CommonHeader(MessageType.RESPONDER_HANDSHAKE, PROTOCOL_VERSION,
                 sessionId, 1, Instant.now().toEpochMilli())
             val responderRecordHeaderBytes = responderRecordHeader.toByteBuffer().array()
-
+            val ourCertificates = when(pkiMode) {
+                is PkiMode.NoPki -> null
+                is PkiMode.Standard -> pkiMode.ourCertificates
+            }
             val responderHandshakePayload = ResponderHandshakePayload(
-                ResponderEncryptedExtensions(agreedMaxMessageSize),
+                ResponderEncryptedExtensions(agreedMaxMessageSize, ourCertificates),
                 ByteBuffer.wrap(messageDigest.hash(ourPublicKey.encoded)),
                 ByteBuffer.allocate(0),
                 ByteBuffer.allocate(0)

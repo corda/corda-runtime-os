@@ -28,6 +28,7 @@ import java.security.PublicKey
 import java.security.spec.X509EncodedKeySpec
 import java.time.Instant
 import javax.crypto.AEADBadTagException
+import javax.security.auth.x500.X500Principal
 
 /**
  * The initiator side of the session authentication protocol.
@@ -52,7 +53,8 @@ class AuthenticationProtocolInitiator(val sessionId: String,
                                       private val supportedModes: Set<ProtocolMode>,
                                       private val ourMaxMessageSize: Int,
                                       private val ourPublicKey: PublicKey,
-                                      private val groupId: String): AuthenticationProtocol() {
+                                      private val groupId: String,
+                                      private val pkiMode: PkiMode): AuthenticationProtocol(pkiMode) {
 
     init {
         require(supportedModes.isNotEmpty()) { "At least one supported mode must be provided." }
@@ -123,8 +125,12 @@ class AuthenticationProtocolInitiator(val sessionId: String,
                 sessionId, 1, Instant.now().toEpochMilli())
             val initiatorRecordHeaderBytes = initiatorRecordHeader.toByteBuffer().array()
             val responderPublicKeyHash = ByteBuffer.wrap(messageDigest.hash(theirPublicKey.encoded))
+            val certificates = when(pkiMode) {
+                is PkiMode.NoPki -> null
+                is PkiMode.Standard -> pkiMode.ourCertificates
+            }
             val initiatorHandshakePayload = InitiatorHandshakePayload(
-                InitiatorEncryptedExtensions(responderPublicKeyHash, groupId, ourMaxMessageSize),
+                InitiatorEncryptedExtensions(responderPublicKeyHash, groupId, ourMaxMessageSize, certificates),
                 ByteBuffer.wrap(messageDigest.hash(ourPublicKey.encoded)),
                 ByteBuffer.allocate(0),
                 ByteBuffer.allocate(0)
@@ -160,6 +166,7 @@ class AuthenticationProtocolInitiator(val sessionId: String,
      */
     @Suppress("ThrowsCount")
     fun validatePeerHandshakeMessage(responderHandshakeMessage: ResponderHandshakeMessage,
+                                     theirX500Principal: X500Principal,
                                      theirPublicKey: PublicKey,
                                      theirSignatureSpec: SignatureSpec) {
         return transition(Step.SENT_HANDSHAKE_MESSAGE, Step.RECEIVED_HANDSHAKE_MESSAGE, {}) {
@@ -218,6 +225,9 @@ class AuthenticationProtocolInitiator(val sessionId: String,
                 }
                 agreedMaxMessageSize = this
             }
+
+            // validate certificate
+            certificateValidator?.validate(responderHandshakePayload.responderEncryptedExtensions.responderCertificate, theirX500Principal)
         }
     }
 
@@ -262,7 +272,7 @@ class AuthenticationProtocolInitiator(val sessionId: String,
 }
 
 /**
- * Thrown when the responder sends an key hash that does not match the one we requested.
+ * Thrown when the responder sends a key hash that does not match the one we requested.
  */
 class InvalidHandshakeResponderKeyHash: CordaRuntimeException("The responder sent a key hash that was different to the one we requested.")
 class InvalidSelectedModeError(msg: String): CordaRuntimeException(msg)
