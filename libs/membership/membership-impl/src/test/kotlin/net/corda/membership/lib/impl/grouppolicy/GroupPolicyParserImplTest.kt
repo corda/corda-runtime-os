@@ -20,6 +20,7 @@ import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
 import net.corda.crypto.impl.converter.PublicKeyConverter
 import net.corda.crypto.impl.converter.PublicKeyHashConverter
+import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
 import net.corda.membership.lib.impl.grouppolicy.v1.TEST_CERT
 import net.corda.membership.lib.impl.grouppolicy.v1.TEST_FILE_FORMAT_VERSION
 import net.corda.membership.lib.impl.grouppolicy.v1.TEST_GROUP_ID
@@ -63,7 +64,12 @@ class GroupPolicyParserImplTest {
         on { decodePublicKey(any<String>()) } doReturn defaultKey
     }
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory = LayeredPropertyMapFactoryImpl(
-        listOf(EndpointInfoConverter(), PublicKeyConverter(keyEncodingService), PublicKeyHashConverter())
+        listOf(
+            EndpointInfoConverter(),
+            MemberNotaryDetailsConverter(keyEncodingService),
+            PublicKeyConverter(keyEncodingService),
+            PublicKeyHashConverter()
+        )
     )
     private val memberInfoFactory = MemberInfoFactoryImpl(layeredPropertyMapFactory)
     private val groupPolicyParser = GroupPolicyParserImpl(memberInfoFactory)
