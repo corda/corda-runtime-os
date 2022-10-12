@@ -14,8 +14,11 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.days
 import net.corda.v5.base.util.seconds
+import net.corda.v5.crypto.DigestAlgorithmName
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckerClientService
 import java.time.Instant
+import java.util.*
 
 @Suppress("unused")
 @InitiatingFlow(protocol = "uniqueness_protocol")
@@ -24,8 +27,6 @@ class UniquenessCheckTestFlow : RPCStartableFlow {
     private companion object {
         val log = contextLogger()
 
-        const val DUMMY_HASH = "SHA-256:BFD76C0EBBD006FEE583410547C1887B0292BE76D582D96C242D2A792723E3FA"
-        const val DUMMY_HASH_2 = "SHA-256:1D2BE493659AB94A692697F10CA321D5FFC54FCE53B33B6518E87717977BD953"
         const val SUCCESS_MESSAGE = "Uniqueness Check operation complete."
 
         val TX_VALIDITY = 5.days.toMillis()
@@ -44,13 +45,17 @@ class UniquenessCheckTestFlow : RPCStartableFlow {
     @CordaInject
     lateinit var jsonMarshallingService: JsonMarshallingService
 
+    private val random = Random(0)
+
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
 
-        log.info("Calling Uniqueness check for an issuance transaction with 5 output states, ID: $DUMMY_HASH")
+        val issueTxId = newRandomSecureHash()
+
+        log.info("Calling Uniqueness check for an issuance transaction with 5 output states, ID: $issueTxId")
 
         val issuanceResult = uniquenessClient.requestUniquenessCheck(
-            DUMMY_HASH,
+            issueTxId.toString(),
             emptyList(),
             emptyList(),
             5,
@@ -67,11 +72,13 @@ class UniquenessCheckTestFlow : RPCStartableFlow {
             throw CordaRuntimeException("Uniqueness check for issuance transaction was unsuccessful")
         }
 
-        log.info("Calling Uniqueness check for a consume transaction with 1 input state, ID: $DUMMY_HASH_2")
+        val consumeTxId = newRandomSecureHash()
+
+        log.info("Calling Uniqueness check for a consume transaction with 1 input state, ID: $consumeTxId")
 
         val consumeResult = uniquenessClient.requestUniquenessCheck(
-            DUMMY_HASH_2,
-            listOf("$DUMMY_HASH:0"),
+            consumeTxId.toString(),
+            listOf("$issueTxId:0"),
             emptyList(),
             0,
             null,
@@ -90,5 +97,10 @@ class UniquenessCheckTestFlow : RPCStartableFlow {
         return jsonMarshallingService.format(SUCCESS_MESSAGE)
     }
 
-
+    private fun newRandomSecureHash(): SecureHash {
+        return SecureHash(
+            DigestAlgorithmName.DEFAULT_ALGORITHM_NAME.name,
+            ByteArray(32).also(random::nextBytes)
+        )
+    }
 }

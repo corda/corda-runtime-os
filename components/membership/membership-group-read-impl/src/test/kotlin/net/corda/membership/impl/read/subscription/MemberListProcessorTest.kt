@@ -24,6 +24,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
+import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
 import net.corda.messaging.api.records.Record
 import net.corda.test.util.time.TestClock
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -64,6 +65,7 @@ class MemberListProcessorTest {
         private lateinit var memberInfoFactory: MemberInfoFactory
         private val converters = listOf(
             EndpointInfoConverter(),
+            MemberNotaryDetailsConverter(keyEncodingService),
             PublicKeyConverter(keyEncodingService),
         )
 

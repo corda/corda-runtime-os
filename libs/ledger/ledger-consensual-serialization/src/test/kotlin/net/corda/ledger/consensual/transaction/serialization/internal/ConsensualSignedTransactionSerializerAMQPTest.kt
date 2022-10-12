@@ -6,7 +6,7 @@ import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.transaction.serialization.internal.WireTransactionSerializer
-import net.corda.ledger.consensual.testkit.getConsensualSignedTransactionImpl
+import net.corda.ledger.consensual.testkit.getConsensualSignedTransaction
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
@@ -17,7 +17,7 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
-class ConsensualSignedTransactionImplSerializerAMQPTest {
+class ConsensualSignedTransactionSerializerAMQPTest {
     companion object {
         private lateinit var digestService: DigestService
         private lateinit var merkleTreeProvider: MerkleTreeProvider
@@ -35,7 +35,7 @@ class ConsensualSignedTransactionImplSerializerAMQPTest {
             val serializationServiceNullCfg = TestSerializationService.getTestSerializationService({}, schemeMetadata)
             serializationService = TestSerializationService.getTestSerializationService({
                 it.register(WireTransactionSerializer(merkleTreeProvider, digestService, jsonMarshallingService), it)
-                it.register(ConsensualSignedTransactionImplSerializer(serializationServiceNullCfg), it)
+                it.register(ConsensualSignedTransactionSerializer(serializationServiceNullCfg), it)
             }, schemeMetadata)
         }
     }
@@ -43,7 +43,7 @@ class ConsensualSignedTransactionImplSerializerAMQPTest {
     @Test
     fun `Should serialize and then deserialize wire Tx`() {
 
-        val signedTransaction = getConsensualSignedTransactionImpl(
+        val signedTransaction = getConsensualSignedTransaction(
             digestService,
             merkleTreeProvider,
             serializationService,
