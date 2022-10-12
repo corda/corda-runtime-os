@@ -206,10 +206,9 @@ class JPABackingStoreImplIntegrationTests {
             backingStoreImpl.session(aliceIdentity) { session ->
                 val txnDetails = session.getTransactionDetails(txIds)
                 assertThat(txnDetails.size).isEqualTo(1)
-
-                txnDetails.firstNotNullOf { secureHashTxnDetail ->
-                    val uniquenessCheckResult = secureHashTxnDetail.value.result
-                    assertThat(txIds).contains(secureHashTxnDetail.key)
+                txnDetails.entries.single { true }.apply {
+                    val uniquenessCheckResult = this.value.result
+                    assertThat(txIds).contains(this.key)
                     UniquenessAssertions.assertAcceptedResult<UniquenessCheckResultSuccess>(uniquenessCheckResult)
                 }
             }
@@ -235,13 +234,12 @@ class JPABackingStoreImplIntegrationTests {
             backingStoreImpl.session(aliceIdentity) { session ->
                 val txDetails = session.getTransactionDetails(txIds)
                 assertEquals(1, txDetails.size)
-                txDetails.firstNotNullOf { secureHashTxnDetail ->
-                    val uniquenessCheckResult = secureHashTxnDetail.value.result
-                    assertThat(txIds.contains(secureHashTxnDetail.key))
-
+                txDetails.entries.single { true }.apply {
+                    val uniquenessCheckResult = this.value.result
                     val unknownStates = (toErrorType<UniquenessCheckErrorInputStateUnknown>(uniquenessCheckResult))
                         .unknownStates
                     assertAll(
+                        { assertThat(txIds).contains(this.key) },
                         { assertThat(unknownStates.size).isEqualTo(1) },
                         { assertThat(unknownStates.first().stateIndex).isEqualTo(0) },
                         { assertThat(unknownStates.first().txHash).isEqualTo(txId) })
@@ -270,13 +268,12 @@ class JPABackingStoreImplIntegrationTests {
             backingStoreImpl.session(aliceIdentity) { session ->
                 val txDetails = session.getTransactionDetails(txIds)
                 assertEquals(1, txDetails.size)
-                txDetails.firstNotNullOf { secureHashTxnDetail ->
-                    val uniquenessCheckResult = secureHashTxnDetail.value.result
-                    assertThat(txIds.contains(secureHashTxnDetail.key))
-
+                txDetails.entries.single { true }.apply {
+                    val uniquenessCheckResult = this.value.result
                     val conflicts = (toErrorType<UniquenessCheckErrorInputStateConflict>(uniquenessCheckResult))
                         .conflictingStates
                     assertAll(
+                        { assertThat(txIds).contains(this.key) },
                         { assertThat(conflicts.size).isEqualTo(1) },
                         { assertThat(conflicts.first().consumingTxId).isNull() },
                         { assertThat(conflicts.first().stateRef.txHash).isEqualTo(txId) },
@@ -306,13 +303,12 @@ class JPABackingStoreImplIntegrationTests {
             backingStoreImpl.session(aliceIdentity) { session ->
                 val txDetails = session.getTransactionDetails(txIds)
                 assertEquals(1, txDetails.size)
-                txDetails.firstNotNullOf { secureHashTxnDetail ->
-                    val uniquenessCheckResult = secureHashTxnDetail.value.result
-                    assertThat(txIds.contains(secureHashTxnDetail.key))
-
+                txDetails.entries.single { true }.apply {
+                    val uniquenessCheckResult = this.value.result
                     val conflicts = (toErrorType<UniquenessCheckErrorReferenceStateConflict>(uniquenessCheckResult))
                         .conflictingStates
                     assertAll(
+                        { assertThat(txIds).contains(this.key) },
                         { assertThat(conflicts.size).isEqualTo(1) },
                         { assertThat(conflicts.first().consumingTxId).isNull() },
                         { assertThat(conflicts.first().stateRef.txHash).isEqualTo(txId) },
@@ -340,13 +336,12 @@ class JPABackingStoreImplIntegrationTests {
             backingStoreImpl.session(aliceIdentity) { session ->
                 val txDetails = session.getTransactionDetails(txIds)
                 assertEquals(1, txDetails.size)
-                txDetails.firstNotNullOf { secureHashTxnDetail ->
-                    val uniquenessCheckResult = secureHashTxnDetail.value.result
-                    assertThat(txIds.contains(secureHashTxnDetail.key))
-
+                txDetails.entries.single { true }.apply {
+                    val uniquenessCheckResult = this.value.result
                     val unknownStates = (toErrorType<UniquenessCheckErrorReferenceStateUnknown>(uniquenessCheckResult))
                         .unknownStates
                     assertAll(
+                        { assertThat(txIds).contains(this.key) },
                         { assertThat(unknownStates.size).isEqualTo(1) },
                         { assertThat(unknownStates.first().stateIndex).isEqualTo(0) },
                         { assertThat(unknownStates.first().txHash).isEqualTo(txId) })
@@ -375,12 +370,11 @@ class JPABackingStoreImplIntegrationTests {
             backingStoreImpl.session(aliceIdentity) { session ->
                 val txDetails = session.getTransactionDetails(txIds)
                 assertEquals(1, txDetails.size)
-                txDetails.firstNotNullOf { secureHashTxnDetail ->
-                    val uniquenessCheckResult = secureHashTxnDetail.value.result
-                    assertThat(txIds.contains(secureHashTxnDetail.key))
-
+                txDetails.entries.single { true }.apply {
+                    val uniquenessCheckResult = this.value.result
                     val error = toErrorType<UniquenessCheckErrorTimeWindowOutOfBounds>(uniquenessCheckResult)
                     assertAll(
+                        { assertThat(txIds).contains(this.key) },
                         { assertThat(error.evaluationTimestamp).isEqualTo(evaluationTime) },
                         { assertThat(error.timeWindowLowerBound).isEqualTo(lowerBound) },
                         { assertThat(error.timeWindowUpperBound).isEqualTo(upperBound) })
@@ -436,10 +430,10 @@ class JPABackingStoreImplIntegrationTests {
             backingStoreImpl.session(aliceIdentity) { session ->
                 val txnDetails = session.getTransactionDetails(txIds)
                 assertEquals(1, txnDetails.size)
-                txnDetails.firstNotNullOf { secureHashTxnDetail ->
-                    val uniquenessCheckResult = secureHashTxnDetail.value.result
+                txnDetails.entries.single { true }.apply {
+                    val uniquenessCheckResult = this.value.result
                     assertAll(
-                        { assertThat(txIds.contains(secureHashTxnDetail.key)) },
+                        { assertThat(txIds.contains(this.key)) },
                         { assertThat((toErrorType<UniquenessCheckErrorMalformedRequest>(uniquenessCheckResult)).errorText)
                         .isEqualTo(errorMessage) })
                     UniquenessAssertions
