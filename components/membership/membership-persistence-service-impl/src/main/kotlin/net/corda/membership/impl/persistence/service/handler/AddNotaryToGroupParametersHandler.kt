@@ -17,15 +17,6 @@ import net.corda.virtualnode.toCorda
 internal class AddNotaryToGroupParametersHandler(
     private val persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<AddNotaryToGroupParameters, PersistGroupParametersResponse>(persistenceHandlerServices) {
-    private companion object {
-        const val NOTARY_SERVICE_NAME_KEY = "corda.notary.service.%s.name"
-        const val NOTARY_SERVICE_PLUGIN_KEY = "corda.notary.service.%s.plugin"
-        const val NOTARY_KEYS_KEY = "corda.notary.service.%s.keys.%s"
-        const val NOTARY_SERVICE_KEYS_PREFIX = "corda.notary.service.%s.keys"
-        const val NOTARY_PLUGIN_KEY = "corda.notary.service.plugin"
-        const val EPOCH_KEY = "corda.epoch"
-    }
-
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
         cordaAvroSerializationFactory.createAvroSerializer {
             logger.error("Failed to serialize key value pair list.")
@@ -98,7 +89,7 @@ internal class AddNotaryToGroupParametersHandler(
                         }
                     }
                     ?.forEach {
-                        parametersMap[String.format(NOTARY_KEYS_KEY, notaryServiceNumber, newIndex++)] = it
+                        parametersMap[String.format(NOTARY_SERVICE_KEYS_KEY, notaryServiceNumber, newIndex++)] = it
                     }
             } else {
                 // Add new notary service
@@ -114,7 +105,7 @@ internal class AddNotaryToGroupParametersHandler(
                 notary.notaryDetails?.keys
                     ?.map { persistenceHandlerServices.keyEncodingService.encodeAsString(it.publicKey) }
                     ?.forEach {
-                        parametersMap[String.format(NOTARY_KEYS_KEY, newNotaryServiceNumber, newIndex++)] = it
+                        parametersMap[String.format(NOTARY_SERVICE_KEYS_KEY, newNotaryServiceNumber, newIndex++)] = it
                      }
             }
             // Update epoch

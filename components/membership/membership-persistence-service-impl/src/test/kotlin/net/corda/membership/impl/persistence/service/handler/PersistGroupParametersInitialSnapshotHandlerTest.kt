@@ -16,7 +16,7 @@ import net.corda.test.util.time.TestClock
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
@@ -84,6 +84,6 @@ class PersistGroupParametersInitialSnapshotHandlerTest {
 
         val result = handler.invoke(context, request)
 
-        Assertions.assertThat(result).isEqualTo(PersistGroupParametersResponse(0))
+        assertThat(result).isEqualTo(PersistGroupParametersResponse(0))
     }
 }

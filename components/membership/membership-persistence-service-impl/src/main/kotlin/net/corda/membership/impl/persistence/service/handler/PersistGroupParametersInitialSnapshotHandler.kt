@@ -13,11 +13,6 @@ import net.corda.virtualnode.toCorda
 internal class PersistGroupParametersInitialSnapshotHandler(
     persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<PersistGroupParametersInitialSnapshot, PersistGroupParametersResponse>(persistenceHandlerServices) {
-    private companion object {
-        const val EPOCH_KEY = "corda.epoch"
-        const val MPV_KEY = "corda.minimumPlatformVersion"
-        const val MODIFIED_TIME_KEY = "corda.modifiedTime"
-    }
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
         cordaAvroSerializationFactory.createAvroSerializer {
             logger.error("Failed to serialize key value pair list.")

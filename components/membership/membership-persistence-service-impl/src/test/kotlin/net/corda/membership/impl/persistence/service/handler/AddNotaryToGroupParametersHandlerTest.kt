@@ -52,8 +52,6 @@ import kotlin.test.assertFailsWith
 
 class AddNotaryToGroupParametersHandlerTest {
     private companion object {
-        const val EPOCH_KEY = "corda.epoch"
-        const val NOTARY_PLUGIN_KEY = "corda.notary.service.plugin"
         const val EPOCH = 1
         const val KNOWN_NOTARY_SERVICE = "O=NotaryA, L=LDN, C=GB"
         const val KNOWN_NOTARY_PLUGIN = "net.corda.notary.MyNotaryService"
@@ -350,7 +348,7 @@ class AddNotaryToGroupParametersHandlerTest {
     }
 
     @Test
-    fun `notary plugin type must must match that of existing notary service`() {
+    fun `notary plugin type must match that of existing notary service`() {
         val knownKey = mock<MemberNotaryKey> {
             on { publicKey } doReturn mock()
         }

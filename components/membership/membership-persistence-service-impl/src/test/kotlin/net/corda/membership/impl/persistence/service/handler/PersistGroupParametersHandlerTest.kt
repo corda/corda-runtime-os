@@ -18,7 +18,7 @@ import net.corda.test.util.time.TestClock
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
@@ -34,9 +34,6 @@ import javax.persistence.TypedQuery
 import kotlin.test.assertFailsWith
 
 class PersistGroupParametersHandlerTest {
-    private companion object {
-        const val EPOCH_KEY = "corda.epoch"
-    }
     private val context = byteArrayOf(1, 2, 3)
     private val keyValuePairListSerializer = mock<CordaAvroSerializer<KeyValuePairList>> {
         on { serialize(any()) } doReturn context
@@ -104,7 +101,7 @@ class PersistGroupParametersHandlerTest {
 
         val result = handler.invoke(context, request)
 
-        Assertions.assertThat(result).isEqualTo(PersistGroupParametersResponse(5))
+        assertThat(result).isEqualTo(PersistGroupParametersResponse(5))
     }
 
     @Test

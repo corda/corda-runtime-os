@@ -13,9 +13,6 @@ import net.corda.virtualnode.toCorda
 internal class PersistGroupParametersHandler(
     persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<PersistGroupParameters, PersistGroupParametersResponse>(persistenceHandlerServices) {
-    private companion object {
-        const val EPOCH_KEY = "corda.epoch"
-    }
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
         cordaAvroSerializationFactory.createAvroSerializer {
             logger.error("Failed to serialize key value pair list.")
