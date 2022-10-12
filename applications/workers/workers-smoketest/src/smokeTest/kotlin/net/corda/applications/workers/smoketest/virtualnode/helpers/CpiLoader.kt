@@ -76,7 +76,7 @@ object CpiLoader {
     }
 
     private fun getKeyStore() = javaClass.classLoader.getResourceAsStream("cordadevcodesign.p12")?.use { it.readAllBytes() }
-        ?: throw Exception("alice.p12 not found")
+        ?: throw Exception("cordadevcodesign.p12 not found")
 
     private fun getStaticNetworkPolicy(groupId: String) =
         getDefaultStaticNetworkGroupPolicy(groupId, listOf(X500_ALICE, X500_BOB, X500_CHARLIE, X500_DAVID))
