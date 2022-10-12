@@ -17,6 +17,7 @@ import net.corda.data.membership.event.registration.MgmOnboarded
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -200,6 +201,9 @@ class MGMRegistrationServiceTest {
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory = mock {
         on { createValidator() } doReturn membershipSchemaValidator
     }
+    private val platformInfoProvider: PlatformInfoProvider = mock {
+        on { activePlatformVersion } doReturn 5000
+    }
     private val registrationService = MGMRegistrationService(
         publisherFactory,
         configurationReadService,
@@ -210,7 +214,8 @@ class MGMRegistrationServiceTest {
         membershipPersistenceClient,
         layeredPropertyMapFactory,
         cordaAvroSerializationFactory,
-        membershipSchemaValidatorFactory
+        membershipSchemaValidatorFactory,
+        platformInfoProvider
     )
 
     private val properties = mapOf(

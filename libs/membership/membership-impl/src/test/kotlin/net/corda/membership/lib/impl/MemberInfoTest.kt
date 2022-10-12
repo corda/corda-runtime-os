@@ -115,7 +115,7 @@ class MemberInfoTest {
                     *convertTestObjects().toTypedArray(),
                     *createInvalidListFormat().toTypedArray(),
                     SOFTWARE_VERSION to "5.0.0",
-                    PLATFORM_VERSION to "10",
+                    PLATFORM_VERSION to "5000",
                     SERIAL to "1",
                     DUMMY_KEY to "dummyValue",
                     NULL_KEY to null
