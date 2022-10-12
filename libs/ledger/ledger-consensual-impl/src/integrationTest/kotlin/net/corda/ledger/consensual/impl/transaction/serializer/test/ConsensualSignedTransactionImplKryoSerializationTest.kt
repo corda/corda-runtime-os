@@ -3,7 +3,7 @@ package net.corda.ledger.consensual.impl.transaction.serializer.test
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl
-import net.corda.ledger.consensual.testkit.getConsensualSignedTransactionImpl
+import net.corda.ledger.consensual.testkit.getConsensualSignedTransaction
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.InternalCustomSerializer
@@ -106,7 +106,7 @@ class ConsensualSignedTransactionImplKryoSerializationTest {
             .addSerializer(ConsensualSignedTransactionImpl::class.java, consensualSignedTransactionImplSeralizer)
             .build()
 
-        val signedTransaction = getConsensualSignedTransactionImpl(
+        val signedTransaction = getConsensualSignedTransaction(
             digestService,
             merkleTreeProvider,
             serializationService,

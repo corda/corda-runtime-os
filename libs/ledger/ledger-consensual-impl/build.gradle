@@ -1,5 +1,3 @@
-import aQute.bnd.gradle.Bundle
-
 plugins {
     id 'corda.common-publishing'
     id 'corda.osgi-test-conventions'
@@ -22,10 +20,14 @@ dependencies {
     implementation project(":libs:crypto:crypto-core")
     implementation project(':libs:layered-property-map')
     implementation project(":libs:ledger:ledger-common-impl")
+    implementation project(":libs:ledger:ledger-common-internal")
     implementation project(':components:flow:flow-service')
     implementation project(':libs:serialization:serialization-checkpoint-api')
     implementation project(":libs:virtual-node:sandbox-group-context")
     implementation project(":libs:serialization:serialization-internal")
+
+    runtimeOnly project(":libs:ledger:ledger-consensual-serialization")
+    runtimeOnly project(":libs:ledger:ledger-common-serialization")
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
@@ -45,6 +47,7 @@ dependencies {
 
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
     integrationTestImplementation project(':testing:sandboxes')
+    integrationTestImplementation project(':testing:ledger:ledger-consensual-testkit')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
@@ -54,4 +57,5 @@ dependencies {
     integrationTestRuntimeOnly project(":libs:crypto:crypto-serialization-impl")
     integrationTestRuntimeOnly project(':testing:test-serialization')
     integrationTestRuntimeOnly project(":libs:application:application-impl")
+
 }

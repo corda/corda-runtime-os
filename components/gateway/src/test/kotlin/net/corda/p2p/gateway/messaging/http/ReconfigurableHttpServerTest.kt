@@ -45,7 +45,8 @@ class ReconfigurableHttpServerTest {
     private val configuration = GatewayConfiguration(
         hostAddress = "www.r3.com",
         hostPort = 33,
-        sslConfig = mock()
+        sslConfig = mock(),
+        maxRequestSize = 1000
     )
     private val badConfigurationException = RuntimeException("Bad Config")
     private val badConfiguration = mock<GatewayConfiguration> {

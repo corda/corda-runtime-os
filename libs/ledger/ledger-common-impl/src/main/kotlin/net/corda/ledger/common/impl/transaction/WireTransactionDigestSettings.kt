@@ -15,7 +15,7 @@ const val COMPONENT_MERKLE_TREE_ENTROPY_ALGORITHM_NAME_KEY = "COMPONENT_MERKLE_T
 
 class WireTransactionDigestSettings {
     companion object {
-        val defaultValues = mapOf(
+        val defaultValues = linkedMapOf(
             ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME_KEY to HASH_DIGEST_PROVIDER_TWEAKABLE_NAME,
             ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY to DigestAlgorithmName.SHA2_256D.name,
 

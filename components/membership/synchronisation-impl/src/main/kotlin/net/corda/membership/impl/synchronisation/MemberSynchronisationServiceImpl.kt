@@ -88,8 +88,6 @@ class MemberSynchronisationServiceImpl internal constructor(
         configurationReadService: ConfigurationReadService,
         @Reference(service = LifecycleCoordinatorFactory::class)
         coordinatorFactory: LifecycleCoordinatorFactory,
-        @Reference(service = CordaAvroSerializationFactory::class)
-        serializationFactory: CordaAvroSerializationFactory,
         @Reference(service = MemberInfoFactory::class)
         memberInfoFactory: MemberInfoFactory,
         @Reference(service = MembershipGroupReaderProvider::class)
@@ -108,7 +106,7 @@ class MemberSynchronisationServiceImpl internal constructor(
         publisherFactory,
         configurationReadService,
         coordinatorFactory,
-        serializationFactory,
+        cordaAvroSerializationFactory,
         memberInfoFactory,
         membershipGroupReaderProvider,
         Verifier(

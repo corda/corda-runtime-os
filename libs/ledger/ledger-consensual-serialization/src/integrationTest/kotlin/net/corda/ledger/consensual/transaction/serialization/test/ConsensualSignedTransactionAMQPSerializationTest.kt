@@ -9,8 +9,7 @@ import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.ledger.common.impl.transaction.WireTransaction
-import net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl
-import net.corda.ledger.consensual.testkit.getConsensualSignedTransactionImpl
+import net.corda.ledger.consensual.testkit.getConsensualSignedTransaction
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.InternalCustomSerializer
@@ -23,9 +22,10 @@ import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.ledger.consensual.Party
+import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -47,7 +47,7 @@ import java.util.concurrent.TimeUnit
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
-class ConsensualSignedTransactionImplAMQPSerializationTest {
+class ConsensualSignedTransactionAMQPSerializationTest {
     private val testSerializationContext = AMQP_STORAGE_CONTEXT
 
     @RegisterExtension
@@ -70,7 +70,7 @@ class ConsensualSignedTransactionImplAMQPSerializationTest {
     private lateinit var partySerializer: InternalCustomSerializer<Party>
     private lateinit var publickeySerializer: InternalCustomSerializer<PublicKey>
     private lateinit var wireTransactionSerializer: InternalCustomSerializer<WireTransaction>
-    private lateinit var consensualSignedTransactionImplSerializer: InternalCustomSerializer<ConsensualSignedTransactionImpl>
+    private lateinit var consensualSignedTransactionSerializer: InternalCustomSerializer<ConsensualSignedTransaction>
 
     @BeforeAll
     fun setUp(
@@ -102,8 +102,8 @@ class ConsensualSignedTransactionImplAMQPSerializationTest {
                 1500
             )
 
-            consensualSignedTransactionImplSerializer = setup.fetchService(
-                "(component.name=net.corda.ledger.consensual.transaction.serialization.internal.ConsensualSignedTransactionImplSerializer)",
+            consensualSignedTransactionSerializer = setup.fetchService(
+                "(component.name=net.corda.ledger.consensual.transaction.serialization.internal.ConsensualSignedTransactionSerializer)",
                 1500)
         }
     }
@@ -114,7 +114,7 @@ class ConsensualSignedTransactionImplAMQPSerializationTest {
             it.register(publickeySerializer, it)
             it.register(partySerializer, it)
             it.register(wireTransactionSerializer, it)
-            it.register(consensualSignedTransactionImplSerializer, it)
+            it.register(consensualSignedTransactionSerializer, it)
         }
 
     @Throws(NotSerializableException::class)
@@ -131,7 +131,7 @@ class ConsensualSignedTransactionImplAMQPSerializationTest {
         val serializationService = TestSerializationService.getTestSerializationService({
             it.register(partySerializer, it)
             it.register(wireTransactionSerializer, it)
-            it.register(consensualSignedTransactionImplSerializer, it)
+            it.register(consensualSignedTransactionSerializer, it)
         } , schemeMetadata)
 
         // Initialised two serialisation factories to avoid having successful tests due to caching
@@ -141,7 +141,7 @@ class ConsensualSignedTransactionImplAMQPSerializationTest {
         // Initialise the serialisation context
         val testSerializationContext = testSerializationContext.withSandboxGroup(emptySandboxGroup)
 
-        val signedTransaction = getConsensualSignedTransactionImpl(
+        val signedTransaction = getConsensualSignedTransaction(
             digestService,
             merkleTreeProvider,
             serializationService,
@@ -154,13 +154,14 @@ class ConsensualSignedTransactionImplAMQPSerializationTest {
         val deserialized =
             DeserializationInput(factory2).deserializeAndReturnEnvelope(serialised, testSerializationContext)
 
-        assertThat(deserialized.obj.javaClass.name).isEqualTo(
-            "net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl"
-        )
+        assertThat(deserialized.obj.javaClass.name)
+            .isEqualTo("net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl")
 
-        assertThat(deserialized.obj).isEqualTo(signedTransaction)
-        Assertions.assertDoesNotThrow {
-            deserialized.obj.id
+        assertThat(deserialized.obj)
+            .isInstanceOf(ConsensualSignedTransaction::class.java)
+            .isEqualTo(signedTransaction)
+
+        assertDoesNotThrow { deserialized.obj.id
         }
         assertThat(deserialized.obj.id).isEqualTo(signedTransaction.id)
     }

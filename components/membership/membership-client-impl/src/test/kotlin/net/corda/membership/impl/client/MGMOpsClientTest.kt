@@ -26,6 +26,7 @@ import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
+import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.exception.CordaRPCAPISenderException
@@ -113,6 +114,7 @@ class MGMOpsClientTest {
 
     private val converters = listOf(
         EndpointInfoConverter(),
+        MemberNotaryDetailsConverter(keyEncodingService),
         PublicKeyConverter(keyEncodingService)
     )
 
