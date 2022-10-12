@@ -25,6 +25,7 @@ import net.corda.serialization.InternalCustomSerializer
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFactory
 import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.marshalling.json.JsonSerializer
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.serialization.SerializationCustomSerializer
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -195,13 +196,23 @@ class FlowSandboxServiceImpl @Activate constructor(
         // Current implementation has unique serializers per CPI
         val cordappCustomSerializers = buildCorDappSerializers(
             sandboxGroup,
-            serializerClassNames = cpiMetadata.cpksMetadata.flatMap { it.cordappManifest.serializers }.toSet()
+            cpiMetadata.cpksMetadata.flatMap { it.cordappManifest.serializers }.toSet()
         )
         // Register CorDapp serializers
         for (customSerializer in cordappCustomSerializers) {
             log.info("Registering CorDapp serializer {}", customSerializer.javaClass.name)
             factory.registerExternal(customSerializer, factory)
         }
+
+        // Build JsonSerializer/JsonDeserializers
+        val cordappJsonSerializers = buildCorDappSerializers(
+            sandboxGroup,
+            cpiMetadata.cpksMetadata.flatMap { it.cordappManifest.jsonSerializerClasses }.toSet()
+        )
+        val cordappJsonDeserializers = buildCorDappSerializers(
+            sandboxGroup,
+            cpiMetadata.cpksMetadata.flatMap { it.cordappManifest.jsonDeserializerClasses }.toSet()
+        )
 
         val serializationOutput = SerializationOutput(factory)
         val deserializationInput = DeserializationInput(factory)
@@ -223,6 +234,18 @@ class FlowSandboxServiceImpl @Activate constructor(
             sandboxGroup.loadClassFromMainBundles(
                 serializerClassName,
                 SerializationCustomSerializer::class.java
+            ).getConstructor().newInstance()
+        }
+    }
+
+    private fun buildCorDappJsonSerializers(
+        sandboxGroup: SandboxGroup,
+        serializerClassNames: Set<String>
+    ): List<JsonSerializer<*>> {
+        return serializerClassNames.map { serializerClassName ->
+            sandboxGroup.loadClassFromMainBundles(
+                serializerClassName,
+                JsonSerializer::class.java
             ).getConstructor().newInstance()
         }
     }
