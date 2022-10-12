@@ -37,7 +37,7 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.TestMethodOrder
 
-@Suppress("Unused")
+@Suppress("Unused", "FunctionName")
 @Order(20)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 @TestInstance(Lifecycle.PER_CLASS)
@@ -92,7 +92,6 @@ class FlowTests {
             registerMember(charlieHoldingId)
         }
     }
-
     @Test
     fun `start RPC flow`() {
         val requestBody = RpcSmokeTestInput().apply {

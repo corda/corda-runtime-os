@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 
 @Order(40)
+@Suppress("FunctionName")
 class ConfigTests {
 
     @Test
