@@ -8,7 +8,7 @@ import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
 import net.corda.data.membership.db.response.command.PersistGroupParametersResponse
 import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PARTY_NAME
-import net.corda.membership.lib.MemberInfoExtension.Companion.notaryKeys
+import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.membership.lib.toMutableMap
 import net.corda.membership.lib.toWire
@@ -52,6 +52,7 @@ internal class AddNotaryToGroupParametersHandler(
         )
     }
 
+    @Suppress("ComplexMethod")
     override fun invoke(
         context: MembershipRequestContext,
         request: AddNotaryToGroupParameters
@@ -86,17 +87,17 @@ internal class AddNotaryToGroupParametersHandler(
                     .filter { it.key.startsWith(String.format(NOTARY_SERVICE_KEYS_PREFIX, notaryServiceNumber)) }
                     .map { it.value }
                 var newIndex = notaryKeys.size
-                notary.notaryKeys
-                    .map { keyEncodingService.encodeAsString(it) }
-                    .filterNot { notaryKeys.contains(it) }
-                    .apply {
+                notary.notaryDetails?.keys
+                    ?.map { keyEncodingService.encodeAsString(it.publicKey) }
+                    ?.filterNot { notaryKeys.contains(it) }
+                    ?.apply {
                         if (isEmpty()) {
-                            logger.warn("Group parameters not updated. Notary '${notary.name}' and its notary keys are" +
-                                    " already listed under notary service '$notaryServiceName'.")
+                            logger.warn("Group parameters not updated. Notary '${notary.name}' has no notary keys or " +
+                                    "its notary keys are already listed under notary service '$notaryServiceName'.")
                             return@transaction previousEpoch
                         }
                     }
-                    .forEach {
+                    ?.forEach {
                         parametersMap[String.format(NOTARY_KEYS_KEY, notaryServiceNumber, newIndex++)] = it
                     }
             } else {
@@ -110,9 +111,9 @@ internal class AddNotaryToGroupParametersHandler(
                 var newIndex = 0
                 parametersMap[String.format(NOTARY_SERVICE_NAME_KEY, newNotaryServiceNumber)] = notaryServiceName
                 parametersMap[String.format(NOTARY_SERVICE_PLUGIN_KEY, newNotaryServiceNumber)] = notaryServicePlugin
-                notary.notaryKeys
-                    .map { persistenceHandlerServices.keyEncodingService.encodeAsString(it) }
-                    .forEach {
+                notary.notaryDetails?.keys
+                    ?.map { persistenceHandlerServices.keyEncodingService.encodeAsString(it.publicKey) }
+                    ?.forEach {
                         parametersMap[String.format(NOTARY_KEYS_KEY, newNotaryServiceNumber, newIndex++)] = it
                      }
             }

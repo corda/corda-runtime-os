@@ -13,7 +13,6 @@ import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import java.net.URL
-import java.security.PublicKey
 import java.time.Instant
 
 class MemberInfoExtension {
@@ -105,7 +104,7 @@ class MemberInfoExtension {
         /**
          * PREFIX for notary roles name
          */
-        const val ROLES_PREFIX = "corda.roles."
+        const val ROLES_PREFIX = "corda.roles"
 
         /**
          * Notary role name
@@ -218,10 +217,5 @@ class MemberInfoExtension {
             } else {
                 null
             }
-
-        /** List of current and rotated notary keys. */
-        @JvmStatic
-        val MemberInfo.notaryKeys: List<PublicKey>
-            get() = memberProvidedContext.parseList(NOTARY_KEYS)
     }
 }

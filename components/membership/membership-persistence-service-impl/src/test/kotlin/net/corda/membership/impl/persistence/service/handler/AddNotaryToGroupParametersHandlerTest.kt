@@ -13,10 +13,13 @@ import net.corda.data.membership.db.response.command.PersistGroupParametersRespo
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.membership.datamodel.GroupParametersEntity
-import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEYS
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_ROLE
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PARTY_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
+import net.corda.membership.lib.notary.MemberNotaryDetails
+import net.corda.membership.lib.notary.MemberNotaryKey
 import net.corda.membership.lib.toWire
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
@@ -39,7 +42,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
@@ -118,10 +120,17 @@ class AddNotaryToGroupParametersHandlerTest {
 
     @Test
     fun `invoke with new notary service name adds new notary service`() {
+        val knownKey = mock<MemberNotaryKey> {
+            on { publicKey } doReturn mock()
+        }
+        val notaryDetails = mock<MemberNotaryDetails> {
+            on { keys } doReturn listOf(knownKey)
+        }
         val memberContext: MemberContext = mock {
             on { get(eq(NOTARY_SERVICE_PARTY_NAME)) } doReturn KNOWN_NOTARY_SERVICE
             on { get(eq(NOTARY_PLUGIN_KEY)) } doReturn KNOWN_NOTARY_PLUGIN
-            on { parseList(eq(NOTARY_KEYS), eq(PublicKey::class.java)) } doReturn listOf(mock())
+            on { entries } doReturn mapOf("$ROLES_PREFIX.0" to NOTARY_ROLE).entries
+            on { parse(eq("corda.notary"), eq(MemberNotaryDetails::class.java)) } doReturn notaryDetails
         }
         val mgmContext: MGMContext = mock {
             on { entries } doReturn mapOf("a" to "b").entries
@@ -175,10 +184,17 @@ class AddNotaryToGroupParametersHandlerTest {
 
     @Test
     fun `invoke with notary keys adds keys to existing notary service`() {
+        val knownKey = mock<MemberNotaryKey> {
+            on { publicKey } doReturn mock()
+        }
+        val notaryDetails = mock<MemberNotaryDetails> {
+            on { keys } doReturn listOf(knownKey)
+        }
         val memberContext: MemberContext = mock {
             on { get(eq(NOTARY_SERVICE_PARTY_NAME)) } doReturn KNOWN_NOTARY_SERVICE
             on { get(eq(NOTARY_PLUGIN_KEY)) } doReturn KNOWN_NOTARY_PLUGIN
-            on { parseList(eq(NOTARY_KEYS), eq(PublicKey::class.java)) } doReturn listOf(mock())
+            on { entries } doReturn mapOf("$ROLES_PREFIX.0" to NOTARY_ROLE).entries
+            on { parse(eq("corda.notary"), eq(MemberNotaryDetails::class.java)) } doReturn notaryDetails
         }
         val mgmContext: MGMContext = mock {
             on { entries } doReturn mapOf("a" to "b").entries
@@ -238,10 +254,17 @@ class AddNotaryToGroupParametersHandlerTest {
 
     @Test
     fun `invoke with nothing to add does nothing`() {
+        val knownKey = mock<MemberNotaryKey> {
+            on { publicKey } doReturn mock()
+        }
+        val notaryDetails = mock<MemberNotaryDetails> {
+            on { keys } doReturn listOf(knownKey)
+        }
         val memberContext: MemberContext = mock {
             on { get(eq(NOTARY_SERVICE_PARTY_NAME)) } doReturn KNOWN_NOTARY_SERVICE
             on { get(eq(NOTARY_PLUGIN_KEY)) } doReturn KNOWN_NOTARY_PLUGIN
-            on { parseList(eq(NOTARY_KEYS), eq(PublicKey::class.java)) } doReturn listOf(mock())
+            on { entries } doReturn mapOf("$ROLES_PREFIX.0" to NOTARY_ROLE).entries
+            on { parse(eq("corda.notary"), eq(MemberNotaryDetails::class.java)) } doReturn notaryDetails
         }
         val mgmContext: MGMContext = mock {
             on { entries } doReturn mapOf("a" to "b").entries
@@ -285,9 +308,16 @@ class AddNotaryToGroupParametersHandlerTest {
 
     @Test
     fun `notary plugin must be specified to add new notary service`() {
+        val knownKey = mock<MemberNotaryKey> {
+            on { publicKey } doReturn mock()
+        }
+        val notaryDetails = mock<MemberNotaryDetails> {
+            on { keys } doReturn listOf(knownKey)
+        }
         val memberContext: MemberContext = mock {
             on { get(eq(NOTARY_SERVICE_PARTY_NAME)) } doReturn KNOWN_NOTARY_SERVICE
-            on { parseList(eq(NOTARY_KEYS), eq(PublicKey::class.java)) } doReturn listOf(mock())
+            on { entries } doReturn mapOf("$ROLES_PREFIX.0" to NOTARY_ROLE).entries
+            on { parse(eq("corda.notary"), eq(MemberNotaryDetails::class.java)) } doReturn notaryDetails
         }
         val mgmContext: MGMContext = mock {
             on { entries } doReturn mapOf("a" to "b").entries
@@ -321,10 +351,17 @@ class AddNotaryToGroupParametersHandlerTest {
 
     @Test
     fun `notary plugin type must must match that of existing notary service`() {
+        val knownKey = mock<MemberNotaryKey> {
+            on { publicKey } doReturn mock()
+        }
+        val notaryDetails = mock<MemberNotaryDetails> {
+            on { keys } doReturn listOf(knownKey)
+        }
         val memberContext: MemberContext = mock {
             on { get(eq(NOTARY_SERVICE_PARTY_NAME)) } doReturn KNOWN_NOTARY_SERVICE
             on { get(eq(NOTARY_PLUGIN_KEY)) } doReturn "incorrect.plugin.type"
-            on { parseList(eq(NOTARY_KEYS), eq(PublicKey::class.java)) } doReturn listOf(mock())
+            on { entries } doReturn mapOf("$ROLES_PREFIX.0" to NOTARY_ROLE).entries
+            on { parse(eq("corda.notary"), eq(MemberNotaryDetails::class.java)) } doReturn notaryDetails
         }
         val mgmContext: MGMContext = mock {
             on { entries } doReturn mapOf("a" to "b").entries
