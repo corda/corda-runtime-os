@@ -1,21 +1,14 @@
 package net.corda.ledger.consensual.impl.transaction
 
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
-import net.corda.ledger.common.internal.transaction.SignableData
 import net.corda.ledger.common.impl.transaction.TransactionMetaData
-import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.DIGEST_SETTINGS_KEY
-import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.LEDGER_MODEL_KEY
-import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.LEDGER_VERSION_KEY
-import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.PLATFORM_VERSION_KEY
 import net.corda.ledger.common.impl.transaction.WireTransaction
-import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
+import net.corda.ledger.common.internal.transaction.SignableData
 import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -39,8 +32,8 @@ class ConsensualTransactionBuilderImpl(
     private val serializationService: SerializationService,
     private val signingService: SigningService,
     // cpi defines what type of signing/hashing is used (related to the digital signature signing and verification stuff)
-    private val memberLookup: MemberLookup,
-    val sandboxCpks: List<CpkIdentifier>,
+    private val transactionMetadata: TransactionMetaData,
+    private val cpiIdentifier: CpiIdentifier,
     override val states: List<ConsensualState> = emptyList(),
 ) : ConsensualTransactionBuilder {
 
@@ -55,13 +48,12 @@ class ConsensualTransactionBuilderImpl(
     }
 
     private fun getSignatureMetadata(): DigitalSignatureMetadata {
-        val cpi = getCpiIdentifier()
         return DigitalSignatureMetadata(
             Instant.now(),
             linkedMapOf(
-                "cpiName" to cpi.name,
-                "cpiVersion" to cpi.version,
-                "cpiSignerSummaryHash" to cpi.signerSummaryHash.toString()
+                "cpiName" to cpiIdentifier.name,
+                "cpiVersion" to cpiIdentifier.version,
+                "cpiSignerSummaryHash" to cpiIdentifier.signerSummaryHash.toString()
             )
         )
     }
@@ -98,20 +90,6 @@ class ConsensualTransactionBuilderImpl(
         )
     }
 
-    /**
-     * TODO(Fake values until we can get CPI information properly)
-     */
-    private fun getCpiIdentifier(): CpiIdentifier {
-        return CpiIdentifier(
-            "CPI name",
-            "CPI version",
-            SecureHash("SHA-256", "Fake-value".toByteArray()))
-    }
-
-    private fun getCpks():List<CpkIdentifier>{
-        return sandboxCpks
-    }
-
     private fun calculateComponentGroupLists(serializer: SerializationService): List<List<ByteArray>> {
         val requiredSigningKeys = states
             .map { it.participants }
@@ -124,9 +102,9 @@ class ConsensualTransactionBuilderImpl(
             componentGroupLists += when (componentGroupIndex) {
                 ConsensualComponentGroupEnum.METADATA ->
                     listOf(
-                        jsonMarshallingService.format(calculateMetaData())
+                        jsonMarshallingService.format(transactionMetadata)
                             .toByteArray(Charsets.UTF_8)
-                    ) // TODO(update with CORE-5940)
+                    )
                 ConsensualComponentGroupEnum.TIMESTAMP ->
                     listOf(serializer.serialize(Instant.now()).bytes)
                 ConsensualComponentGroupEnum.REQUIRED_SIGNING_KEYS ->
@@ -138,18 +116,6 @@ class ConsensualTransactionBuilderImpl(
             }
         }
         return componentGroupLists
-    }
-
-    private fun calculateMetaData(): TransactionMetaData {
-        return TransactionMetaData(
-            linkedMapOf(
-                LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
-                LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
-                DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
-                PLATFORM_VERSION_KEY to memberLookup.myInfo().platformVersion,
-                // TODO(CORE-5940 set CPK identifier/etc)
-            )
-        )
     }
 
     override fun equals(other: Any?): Boolean {
@@ -172,8 +138,8 @@ class ConsensualTransactionBuilderImpl(
             merkleTreeProvider,
             serializationService,
             signingService,
-            memberLookup,
-            sandboxCpks,
+            transactionMetadata,
+            cpiIdentifier,
             states,
         )
     }

@@ -1,5 +1,10 @@
 package net.corda.ledger.consensual.impl
 
+import net.corda.ledger.common.impl.transaction.TransactionMetaData
+import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
+import net.corda.ledger.consensual.impl.transaction.ConsensualLedgerTransactionImpl
+import net.corda.ledger.consensual.impl.transaction.TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
@@ -7,6 +12,7 @@ import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.Party
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
@@ -46,6 +52,21 @@ class ConsensualTransactionMocks {
         val testPublicKey =  kpg.genKeyPair().public
         val testPartyImpl = PartyImpl(testMemberX500Name, testPublicKey)
         val testConsensualState = TestConsensualState("test", listOf(testPartyImpl))
+
+        val transactionMetadata = TransactionMetaData(
+            linkedMapOf(
+                TransactionMetaData.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
+                TransactionMetaData.LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
+                TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
+                TransactionMetaData.PLATFORM_VERSION_KEY to 999,
+            )
+        )
+
+        val cpiIdentifier = CpiIdentifier(
+            "CPI name",
+            "CPI version",
+            SecureHash("SHA-256", "Fake-value".toByteArray())
+        )
 
         fun mockMemberLookup(): MemberLookup {
             val holdingIdentity = HoldingIdentity(testMemberX500Name, "1")

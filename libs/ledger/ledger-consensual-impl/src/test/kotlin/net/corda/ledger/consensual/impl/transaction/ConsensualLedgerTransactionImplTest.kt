@@ -39,8 +39,8 @@ internal class ConsensualLedgerTransactionImplTest {
             merkleTreeProvider,
             serializationService,
             ConsensualTransactionMocks.mockSigningService(),
- 	        ConsensualTransactionMocks.mockMemberLookup(),
-            ConsensualTransactionMocks.mockSandboxCpks(),
+            ConsensualTransactionMocks.transactionMetadata,
+            ConsensualTransactionMocks.cpiIdentifier
         )
             .withStates(ConsensualTransactionMocks.testConsensualState)
             .signInitial(ConsensualTransactionMocks.testPublicKey)
