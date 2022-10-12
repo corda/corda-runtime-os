@@ -16,6 +16,7 @@ import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
 import net.corda.ledger.common.internal.transaction.SignableData
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpkMetadata
+import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
@@ -50,8 +51,14 @@ class ConsensualTransactionBuilderImpl(
     @Suspendable
     override fun sign(publicKey: PublicKey): ConsensualSignedTransaction {
         val wireTransaction = buildWireTransaction()
-        val signatureWithMetaData = createSignature(wireTransaction.id, publicKey)
-        return ConsensualSignedTransactionImpl(serializationService, wireTransaction, listOf(signatureWithMetaData))
+        val signatureWithMetaData = createTransactionSignature(
+            signingService,
+            serializationService,
+            getCpiIdentifier(),
+            wireTransaction.id,
+            publicKey
+        )
+        return ConsensualSignedTransactionImpl(serializationService, signingService, wireTransaction, listOf(signatureWithMetaData))
     }
 
     private fun getSignatureMetadata(): DigitalSignatureMetadata {
@@ -64,7 +71,6 @@ class ConsensualTransactionBuilderImpl(
                 "cpiSignerSummaryHash" to cpi.signerSummaryHash.toString()
             )
         )
-        return ConsensualSignedTransactionImpl(serializationService, signingService, wireTransaction, listOf(signatureWithMetaData))
     }
 
     private fun buildWireTransaction(): WireTransaction {
@@ -127,18 +133,6 @@ class ConsensualTransactionBuilderImpl(
             )
         )
     }
-
-    /**
-     * TODO(Fake values until we can get CPI information properly)
-     */
-    private fun getCpiIdentifier(): CpiIdentifier {
-        return CpiIdentifier(
-            "CPI name",
-            "CPI version",
-            SecureHash("SHA-256", "Fake-value".toByteArray())
-        )
-    }
-
     private fun getCpiMetadata(): CordaPackageSummary {
         val cpiIdentifier = getCpiIdentifier()
 
@@ -186,4 +180,15 @@ class ConsensualTransactionBuilderImpl(
             states,
         )
     }
+}
+
+/**
+ * TODO(Fake values until we can get CPI information properly)
+ * It is called from multiple places.
+ */
+fun getCpiIdentifier(): CpiIdentifier {
+    return CpiIdentifier(
+        "CPI name",
+        "CPI version",
+        SecureHash("SHA-256", "Fake-value".toByteArray()))
 }
