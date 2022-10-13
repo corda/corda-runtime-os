@@ -25,6 +25,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
+import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.virtualnode.toCorda
 
 /**
@@ -89,17 +90,21 @@ class ConsensualLedgerMessageProcessor(
             when (val req = request.request) {
                 is PersistTransaction -> {
                     val transaction = serializationService.deserialize(req)
+                    val cpks = transaction.wireTransaction.metadata.getCpkMetadata()
+                    val existingCpkFileChecksums = consensualLedgerRepository.findExistingCpkFileChecksums(em, cpks)
+                    consensualLedgerRepository.persistTransaction(em, transaction, existingCpkFileChecksums, request.account())
+                    val missingCpks = cpks.filter { !existingCpkFileChecksums.contains(it.fileChecksum) }
                     responseFactory.successResponse(
                         request.flowExternalEventContext,
-                        consensualLedgerRepository.persistTransaction(em, transaction, request.account())
+                        EntityResponse(missingCpks.map { serializationService.serialized(it) })
                     )
                 }
 
                 is FindTransaction -> responseFactory.successResponse(
                     request.flowExternalEventContext,
-                    createEntityResponse(
-                        consensualLedgerRepository.findTransaction(em, req.id),
-                        serializationService
+                    EntityResponse(
+                        listOfNotNull(consensualLedgerRepository.findTransaction(em, req.id))
+                            .map { serializationService.serialized(it) }
                     ))
                 else -> {
                     responseFactory.fatalErrorResponse(request.flowExternalEventContext, CordaRuntimeException("Unknown command"))
@@ -112,12 +117,9 @@ class ConsensualLedgerMessageProcessor(
         flowExternalEventContext.contextProperties.items.find { it.key == CORDA_ACCOUNT }?.value
             ?: throw NullParameterException("Flow external event context property '$CORDA_ACCOUNT' not set")
 
-    private fun createEntityResponse(obj: Any?, serializationService: SerializationService) =
-        obj?.let {
-            val serializedObj = serializationService.serialize(obj)
-            EntityResponse(listOf(ByteBuffer.wrap(serializedObj.bytes)))
-        } ?: EntityResponse(emptyList())
+    private fun SerializationService.serialized(obj: Any) =
+        ByteBuffer.wrap(serialize(obj).bytes)
 
     private fun SerializationService.deserialize(persistTransaction: PersistTransaction) =
-        deserialize<ConsensualSignedTransactionImpl>(persistTransaction.transaction.array())
+        deserialize<ConsensualSignedTransaction>(persistTransaction.transaction.array()) as ConsensualSignedTransactionImpl
 }

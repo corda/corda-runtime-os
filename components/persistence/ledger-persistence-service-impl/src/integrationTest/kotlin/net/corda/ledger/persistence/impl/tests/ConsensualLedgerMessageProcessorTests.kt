@@ -27,10 +27,9 @@ import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.ledger.consensual.FindTransaction
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getSerializer
-import net.corda.db.testkit.DbUtils
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl
-import net.corda.ledger.consensual.testkit.getConsensualSignedTransactionImpl
+import net.corda.ledger.consensual.testkit.getConsensualSignedTransaction
 import net.corda.ledger.persistence.impl.internal.ConsensualLedgerMessageProcessor
 import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_SERIALIZER
 import net.corda.persistence.common.EntitySandboxServiceFactory
@@ -43,7 +42,6 @@ import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -127,7 +125,7 @@ class ConsensualLedgerMessageProcessorTests {
             virtualNode = setup.fetchService(timeout = 10000)
             virtualNodeInfoReadService = setup.fetchService(timeout = 10000)
             transactionSerializer = setup.fetchService(
-                "(component.name=net.corda.ledger.consensual.transaction.serialization.internal.ConsensualSignedTransactionImplSerializer)",
+                "(component.name=net.corda.ledger.consensual.transaction.serialization.internal.ConsensualSignedTransactionSerializer)",
                 10000
             )
             wireTransactionSerializer = setup.fetchService(
@@ -166,9 +164,7 @@ class ConsensualLedgerMessageProcessorTests {
 
     @Test
     fun `persistTransaction for consensual ledger deserialises the tx and persists`() {
-        // Native SQL is used that is specific to Postgres and won't work with in-memory DB
-        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
-        val tx = getConsensualSignedTransactionImpl(digestService, merkleTreeProvider, serializationService, jsonMarshallingService)
+        val tx = getConsensualSignedTransaction(digestService, merkleTreeProvider, serializationService, jsonMarshallingService)
 
         // serialise tx into bytebuffer and add to PersistTransaction payload
         val serializedTransaction = ctx.serialize(tx)
