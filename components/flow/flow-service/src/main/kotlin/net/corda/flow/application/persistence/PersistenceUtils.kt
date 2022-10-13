@@ -1,7 +1,7 @@
 package net.corda.flow.application.persistence
 
-import co.paralleluniverse.fibers.Suspendable
 import net.corda.v5.application.persistence.CordaPersistenceException
+import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 
 /**
