@@ -64,9 +64,7 @@ internal class RegistrationRequestHandler(
         }
     }
 
-    /**
-     * Decrypts the received encrypted registration request received from member.
-     */
+    /** Decrypts the received encrypted registration request received from member. */
     private fun decryptPayload(payload: ByteBuffer, mgm: HoldingIdentity): ByteArray {
         val request = avroSchemaRegistry.deserialize<UnauthenticatedRegistrationRequest>(payload)
         val reqHeader = request.header
@@ -84,6 +82,7 @@ internal class RegistrationRequestHandler(
         )
     }
 
+    /** Retrieves the MGM's ECDH key required for decrypting the message. */
     private fun getECDHKey(mgm: HoldingIdentity): PublicKey {
         val mgmInfo = membershipGroupReaderProvider.getGroupReader(mgm).lookup(mgm.x500Name)
             ?: throw IllegalArgumentException("Could not find member info for ${mgm.x500Name}.")

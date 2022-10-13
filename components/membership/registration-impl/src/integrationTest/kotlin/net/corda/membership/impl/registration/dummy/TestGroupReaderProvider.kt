@@ -99,7 +99,6 @@ class TestGroupReader @Activate constructor(
     private val id = HoldingIdentity(name, group).shortHash.value
 
     override fun lookup(): Collection<MemberInfo> {
-
         val ecdhKey = cryptoOpsClient.generateKeyPair(
             id,
             "PRE_AUTH",

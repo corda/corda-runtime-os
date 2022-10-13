@@ -151,7 +151,8 @@ class MembershipP2PReadServiceImpl @Activate constructor(
                     stableKeyPairDecryptor,
                     keyEncodingService,
                     cordaAvroSerializationFactory,
-                    membershipGroupReaderProvider),
+                    membershipGroupReaderProvider
+                ),
                 messagingConfig,
                 null
             ),

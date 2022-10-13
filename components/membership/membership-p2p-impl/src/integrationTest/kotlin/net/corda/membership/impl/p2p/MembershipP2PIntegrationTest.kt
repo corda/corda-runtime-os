@@ -269,7 +269,7 @@ class MembershipP2PIntegrationTest {
         val mgm = memberInfoFactory.create(
             sortedMapOf(
                 GROUP_ID to groupId,
-                PARTY_NAME to "O=MGM,C=GB,L=London",
+                PARTY_NAME to destination.x500Name.toString(),
                 Pair(String.format(URL_KEY, "0"), "http://localhost:8080"),
                 Pair(String.format(PROTOCOL_VERSION, "0"), "1"),
                 PLATFORM_VERSION to "1",

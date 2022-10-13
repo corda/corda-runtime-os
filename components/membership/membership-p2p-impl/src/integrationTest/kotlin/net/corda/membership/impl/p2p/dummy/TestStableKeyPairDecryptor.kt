@@ -1,6 +1,5 @@
 package net.corda.membership.impl.p2p.dummy
 
-import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.ecies.StableKeyPairDecryptor
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -36,12 +35,12 @@ class TestStableKeyPairDecryptorImpl @Activate constructor(
         get() = coordinator.status == LifecycleStatus.UP
 
     override fun start() {
-        logger.info("TestCryptoOpsClient starting.")
+        logger.info("TestStableKeyPairDecryptor starting.")
         coordinator.start()
     }
 
     override fun stop() {
-        logger.info("TestCryptoOpsClient starting.")
+        logger.info("TestStableKeyPairDecryptor starting.")
         coordinator.stop()
     }
 

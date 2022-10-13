@@ -35,7 +35,6 @@ class TestCryptoOpsClientImpl @Activate constructor(
     companion object {
         val logger = contextLogger()
         private const val UNIMPLEMENTED_FUNCTION = "Called unimplemented function for test service"
-        //private val keys: ConcurrentHashMap<String, CryptoSigningKey> = ConcurrentHashMap()
     }
 
     private val coordinator =
@@ -46,11 +45,17 @@ class TestCryptoOpsClientImpl @Activate constructor(
         }
 
     override fun getSupportedSchemes(tenantId: String, category: String): List<String> {
-        TODO("Not yet implemented")
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
     }
 
     override fun filterMyKeys(tenantId: String, candidateKeys: Collection<PublicKey>): Collection<PublicKey> {
-        TODO("Not yet implemented")
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
     }
 
     override fun generateKeyPair(
@@ -77,11 +82,17 @@ class TestCryptoOpsClientImpl @Activate constructor(
         scheme: String,
         context: Map<String, String>
     ): PublicKey {
-        TODO("Not yet implemented")
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
     }
 
     override fun freshKey(tenantId: String, category: String, scheme: String, context: Map<String, String>): PublicKey {
-        TODO("Not yet implemented")
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
     }
 
     override fun freshKey(
@@ -91,7 +102,10 @@ class TestCryptoOpsClientImpl @Activate constructor(
         scheme: String,
         context: Map<String, String>
     ): PublicKey {
-        TODO("Not yet implemented")
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
     }
 
     override fun sign(
@@ -101,7 +115,10 @@ class TestCryptoOpsClientImpl @Activate constructor(
         data: ByteArray,
         context: Map<String, String>
     ): DigitalSignature.WithKey {
-        TODO("Not yet implemented")
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
     }
 
     override fun sign(
@@ -111,7 +128,10 @@ class TestCryptoOpsClientImpl @Activate constructor(
         data: ByteArray,
         context: Map<String, String>
     ): DigitalSignature.WithKey {
-        TODO("Not yet implemented")
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
     }
 
     override fun lookup(
@@ -121,11 +141,17 @@ class TestCryptoOpsClientImpl @Activate constructor(
         orderBy: CryptoKeyOrderBy,
         filter: Map<String, String>
     ): List<CryptoSigningKey> {
-        TODO("Not yet implemented")
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
     }
 
     override fun lookup(tenantId: String, ids: List<String>): List<CryptoSigningKey> {
-        TODO("Not yet implemented")
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
     }
 
     override fun createWrappingKey(
@@ -134,7 +160,10 @@ class TestCryptoOpsClientImpl @Activate constructor(
         masterKeyAlias: String,
         context: Map<String, String>
     ) {
-        TODO("Not yet implemented")
+        with(UNIMPLEMENTED_FUNCTION) {
+            logger.warn(this)
+            throw UnsupportedOperationException(this)
+        }
     }
 
     override fun deriveSharedSecret(
@@ -143,7 +172,7 @@ class TestCryptoOpsClientImpl @Activate constructor(
         otherPublicKey: PublicKey,
         context: Map<String, String>
     ): ByteArray {
-        return "1234".toByteArray()
+        return "secret".toByteArray()
     }
 
     override val isRunning: Boolean
