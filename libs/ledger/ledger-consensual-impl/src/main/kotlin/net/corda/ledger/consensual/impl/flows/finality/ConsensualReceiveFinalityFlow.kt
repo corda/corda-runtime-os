@@ -1,7 +1,5 @@
 package net.corda.ledger.consensual.impl.flows.finality
 
-import net.corda.ledger.common.internal.transaction.SignableData
-import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.membership.MemberLookup
@@ -12,7 +10,6 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
-import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransactionVerifier
 

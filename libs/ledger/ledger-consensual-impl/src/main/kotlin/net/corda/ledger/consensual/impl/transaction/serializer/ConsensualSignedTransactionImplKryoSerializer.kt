@@ -16,9 +16,12 @@ import org.osgi.service.component.annotations.Reference
 
 @Component(service = [CheckpointInternalCustomSerializer::class])
 class ConsensualSignedTransactionImplKryoSerializer @Activate constructor(
-    @Reference(service = SerializationService::class) private val serialisationService: SerializationService,
-    @Reference(service = SigningService::class) private val signingService: SigningService,
-    @Reference(service = DigitalSignatureVerificationService::class) private val digitalSignatureVerificationService: DigitalSignatureVerificationService
+    @Reference(service = SerializationService::class)
+    private val serialisationService: SerializationService,
+    @Reference(service = SigningService::class)
+    private val signingService: SigningService,
+    @Reference(service = DigitalSignatureVerificationService::class)
+    private val digitalSignatureVerificationService: DigitalSignatureVerificationService
 ) : CheckpointInternalCustomSerializer<ConsensualSignedTransactionImpl> {
     override val type: Class<ConsensualSignedTransactionImpl> get() = ConsensualSignedTransactionImpl::class.java
 

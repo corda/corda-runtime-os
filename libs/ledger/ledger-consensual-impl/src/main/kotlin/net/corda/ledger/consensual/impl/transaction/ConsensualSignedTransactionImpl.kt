@@ -3,14 +3,11 @@ package net.corda.ledger.consensual.impl.transaction
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.common.internal.transaction.SignableData
 import net.corda.ledger.common.internal.transaction.createTransactionSignature
-import net.corda.ledger.consensual.impl.flows.finality.ConsensualReceiveFinalityFlow
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.isFulfilledBy

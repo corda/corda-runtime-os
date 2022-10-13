@@ -19,15 +19,24 @@ import org.osgi.service.component.annotations.ServiceScope
 @Suppress("LongParameterList")
 @Component(service = [ConsensualTransactionBuilderFactory::class], scope = ServiceScope.PROTOTYPE)
 class ConsensualTransactionBuilderFactoryImpl @Activate constructor(
-    @Reference(service = CipherSchemeMetadata::class) private val cipherSchemeMetadata: CipherSchemeMetadata,
-    @Reference(service = DigestService::class) private val digestService: DigestService,
-    @Reference(service = JsonMarshallingService::class) private val jsonMarshallingService: JsonMarshallingService,
-    @Reference(service = MerkleTreeProvider::class) private val merkleTreeProvider: MerkleTreeProvider,
-    @Reference(service = SerializationService::class) private val serializationService: SerializationService,
-    @Reference(service = SigningService::class) private val signingService: SigningService,
-    @Reference(service = DigitalSignatureVerificationService::class) private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
-    @Reference(service = MemberLookup::class) private val memberLookup: MemberLookup,
-    @Reference(service = FlowFiberService::class) private val flowFiberService: FlowFiberService
+    @Reference(service = CipherSchemeMetadata::class)
+    private val cipherSchemeMetadata: CipherSchemeMetadata,
+    @Reference(service = DigestService::class)
+    private val digestService: DigestService,
+    @Reference(service = JsonMarshallingService::class)
+    private val jsonMarshallingService: JsonMarshallingService,
+    @Reference(service = MerkleTreeProvider::class)
+    private val merkleTreeProvider: MerkleTreeProvider,
+    @Reference(service = SerializationService::class)
+    private val serializationService: SerializationService,
+    @Reference(service = SigningService::class)
+    private val signingService: SigningService,
+    @Reference(service = DigitalSignatureVerificationService::class)
+    private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
+    @Reference(service = MemberLookup::class)
+    private val memberLookup: MemberLookup,
+    @Reference(service = FlowFiberService::class)
+    private val flowFiberService: FlowFiberService
 ) : ConsensualTransactionBuilderFactory {
 
 

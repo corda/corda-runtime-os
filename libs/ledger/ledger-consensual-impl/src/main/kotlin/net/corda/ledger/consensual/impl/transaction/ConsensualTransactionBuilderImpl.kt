@@ -60,7 +60,13 @@ class ConsensualTransactionBuilderImpl(
             wireTransaction.id,
             publicKey
         )
-        return ConsensualSignedTransactionImpl(serializationService, signingService, digitalSignatureVerificationService, wireTransaction, listOf(signatureWithMetaData))
+        return ConsensualSignedTransactionImpl(
+            serializationService,
+            signingService,
+            digitalSignatureVerificationService,
+            wireTransaction,
+            listOf(signatureWithMetaData)
+        )
     }
 
     private fun getSignatureMetadata(): DigitalSignatureMetadata {
