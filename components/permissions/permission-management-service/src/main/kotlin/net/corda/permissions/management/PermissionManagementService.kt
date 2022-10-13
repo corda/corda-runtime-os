@@ -73,11 +73,7 @@ class PermissionManagementService @Activate constructor(
      * Validator for performing permission validation operations using the permission system.
      */
     val permissionValidator: PermissionValidator
-        get() {
-            return checkNotNull(handler.permissionValidator) {
-                "Permission Validator is null. Getter should be called only after service is UP."
-            }
-        }
+        get() = handler.permissionValidator
 
     /**
      * Service that exposes functionality to perform basic authentication using the permission system.
