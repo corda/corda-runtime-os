@@ -8,6 +8,7 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.command.synchronisation.mgm.ProcessSyncRequest
 import net.corda.data.membership.p2p.DistributionType
 import net.corda.data.membership.p2p.MembershipPackage
+import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -22,6 +23,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
 import net.corda.membership.p2p.helpers.MembershipPackageFactory
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
 import net.corda.membership.p2p.helpers.P2pRecordsFactory
+import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.getTtlMinutes
 import net.corda.membership.p2p.helpers.SignerFactory
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -31,7 +33,9 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.schema.configuration.ConfigKeys
+import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
+import net.corda.schema.configuration.MembershipConfig.TtlsConfig.MEMBERS_PACKAGE_UPDATE
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
@@ -39,8 +43,8 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
@@ -107,8 +111,8 @@ class MgmSynchronisationServiceImpl internal constructor(
         cryptoOpsClient: CryptoOpsClient,
         @Reference(service = MembershipQueryClient::class)
         membershipQueryClient: MembershipQueryClient,
-        @Reference(service = MerkleTreeFactory::class)
-        merkleTreeFactory: MerkleTreeFactory,
+        @Reference(service = MerkleTreeProvider::class)
+        merkleTreeProvider: MerkleTreeProvider,
     ) :
             this(
                 publisherFactory,
@@ -117,7 +121,7 @@ class MgmSynchronisationServiceImpl internal constructor(
                 membershipGroupReaderProvider,
                 membershipQueryClient,
                 MerkleTreeGenerator(
-                    merkleTreeFactory,
+                    merkleTreeProvider,
                     cordaAvroSerializationFactory
                 ),
                 cordaAvroSerializationFactory,
@@ -175,8 +179,8 @@ class MgmSynchronisationServiceImpl internal constructor(
         coordinator.stop()
     }
 
-    private fun activate(coordinator: LifecycleCoordinator) {
-        impl = ActiveImpl()
+    private fun activate(coordinator: LifecycleCoordinator, config: SmartConfig) {
+        impl = ActiveImpl(config)
         coordinator.updateStatus(LifecycleStatus.UP)
     }
 
@@ -196,7 +200,9 @@ class MgmSynchronisationServiceImpl internal constructor(
         override fun close() = Unit
     }
 
-    private inner class ActiveImpl : InnerSynchronisationService {
+    private inner class ActiveImpl(
+        private val config: SmartConfig
+    ) : InnerSynchronisationService {
         override fun processSyncRequest(request: ProcessSyncRequest) {
             val memberHashFromTheReq = request.syncRequest.membersHash
             val mgm = request.synchronisationMetaData.mgm
@@ -236,7 +242,8 @@ class MgmSynchronisationServiceImpl internal constructor(
                     p2pRecordsFactory.createAuthenticatedMessageRecord(
                         source = source,
                         destination = dest,
-                        content = data
+                        content = data,
+                        minutesToWait = config.getTtlMinutes(MEMBERS_PACKAGE_UPDATE),
                     )
                 )
             )
@@ -322,7 +329,7 @@ class MgmSynchronisationServiceImpl internal constructor(
                 configHandle?.close()
                 configHandle = configurationReadService.registerComponentForUpdates(
                     coordinator,
-                    setOf(ConfigKeys.BOOT_CONFIG, MESSAGING_CONFIG)
+                    setOf(ConfigKeys.BOOT_CONFIG, MESSAGING_CONFIG, MEMBERSHIP_CONFIG)
                 )
             }
             else -> {
@@ -341,6 +348,7 @@ class MgmSynchronisationServiceImpl internal constructor(
             event.config.getConfig(MESSAGING_CONFIG)
         )
         _publisher?.start()
-        activate(coordinator)
+        val config = event.config.getConfig(MEMBERSHIP_CONFIG)
+        activate(coordinator, config)
     }
 }

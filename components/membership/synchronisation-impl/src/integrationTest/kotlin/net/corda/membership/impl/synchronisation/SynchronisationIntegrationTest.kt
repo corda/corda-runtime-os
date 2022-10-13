@@ -9,7 +9,6 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
-import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
@@ -47,8 +46,10 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.modifiedTime
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.toSortedMap
+import net.corda.membership.lib.toWire
 import net.corda.membership.p2p.MembershipP2PReadService
 import net.corda.membership.p2p.helpers.MerkleTreeGenerator
+import net.corda.membership.p2p.helpers.Verifier
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.membership.synchronisation.SynchronisationProxy
 import net.corda.messaging.api.processor.PubSubProcessor
@@ -69,6 +70,8 @@ import net.corda.schema.configuration.ConfigKeys.CRYPTO_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MEMBERSHIP_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.MembershipConfig.MAX_DURATION_BETWEEN_SYNC_REQUESTS_MINUTES
+import net.corda.schema.configuration.MembershipConfig.TtlsConfig.MEMBERS_PACKAGE_UPDATE
+import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
 import net.corda.schema.configuration.MessagingConfig.Bus.BUS_TYPE
 import net.corda.test.util.eventually
 import net.corda.test.util.time.TestClock
@@ -77,7 +80,9 @@ import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
+import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.SignatureSpec
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
@@ -129,7 +134,7 @@ class SynchronisationIntegrationTest {
         lateinit var membershipP2PReadService: MembershipP2PReadService
 
         @InjectService(timeout = 5000)
-        lateinit var merkleTreeFactory: MerkleTreeFactory
+        lateinit var merkleTreeProvider: MerkleTreeProvider
 
         @InjectService(timeout = 5000)
         lateinit var cordaAvroSerializationFactory: CordaAvroSerializationFactory
@@ -148,7 +153,7 @@ class SynchronisationIntegrationTest {
 
         val merkleTreeGenerator: MerkleTreeGenerator by lazy {
             MerkleTreeGenerator(
-                merkleTreeFactory,
+                merkleTreeProvider,
                 cordaAvroSerializationFactory
             )
         }
@@ -202,11 +207,14 @@ class SynchronisationIntegrationTest {
             .withValue(
                 MAX_DURATION_BETWEEN_SYNC_REQUESTS_MINUTES,
                 ConfigValueFactory.fromAnyRef(100L)
+            ).withValue(
+                "$TTLS.$MEMBERS_PACKAGE_UPDATE",
+                ConfigValueFactory.fromAnyRef(1L)
             ).root()
             .render(ConfigRenderOptions.concise())
         const val MEMBERSHIP_P2P_SUBSYSTEM = "membership"
         const val CATEGORY = "SESSION_INIT"
-        const val SCHEME = "CORDA.ECDSA.SECP256R1"
+        const val SCHEME = ECDSA_SECP256R1_CODE_NAME
         val schemaVersion = ConfigurationSchemaVersion(1, 0)
 
         val syncId = UUID.randomUUID().toString()
@@ -340,7 +348,7 @@ class SynchronisationIntegrationTest {
                 String.format(MemberInfoExtension.URL_KEY, 0) to "https://corda5.r3.com:10000",
                 String.format(MemberInfoExtension.PROTOCOL_VERSION, 0) to "1",
                 MemberInfoExtension.SOFTWARE_VERSION to "5.0.0",
-                MemberInfoExtension.PLATFORM_VERSION to "10",
+                MemberInfoExtension.PLATFORM_VERSION to "5000",
                 MemberInfoExtension.SERIAL to "1",
             ),
             sortedMapOf(
@@ -436,21 +444,44 @@ class SynchronisationIntegrationTest {
 
         // Create membership package to be published
         val members: List<MemberInfo> = mutableListOf(participantInfo)
-        val dummySignature = CryptoSignatureWithKey(
-            ByteBuffer.wrap(mgm.x500Name.toByteArray()),
-            ByteBuffer.wrap(mgm.x500Name.toByteArray()),
-            KeyValuePairList(
-                listOf(
-                    KeyValuePair("name", participant.x500Name)
-                )
-            )
-        )
         val signedMembers = members.map {
+            val memberInfo = keyValueSerializer.serialize(it.memberProvidedContext.toAvro())
+            val memberSignature = cryptoOpsClient.sign(
+                participant.toCorda().shortHash.value,
+                participantSessionKey,
+                SignatureSpec.ECDSA_SHA256,
+                memberInfo!!,
+                mapOf(
+                    Verifier.SIGNATURE_SPEC to SignatureSpec.ECDSA_SHA256.signatureName
+                )
+            ).let { withKey ->
+                CryptoSignatureWithKey(
+                    ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(withKey.by)),
+                    ByteBuffer.wrap(withKey.bytes),
+                    withKey.context.toWire()
+                )
+            }
+            val mgmSignature = cryptoOpsClient.sign(
+                mgm.toCorda().shortHash.value,
+                mgmSessionKey,
+                SignatureSpec.ECDSA_SHA256,
+                merkleTreeGenerator.generateTree(listOf(it))
+                    .root.bytes,
+                mapOf(
+                    Verifier.SIGNATURE_SPEC to SignatureSpec.ECDSA_SHA256.signatureName
+                )
+            ).let { withKey ->
+                CryptoSignatureWithKey(
+                    ByteBuffer.wrap(keyEncodingService.encodeAsByteArray(withKey.by)),
+                    ByteBuffer.wrap(withKey.bytes),
+                    withKey.context.toWire()
+                )
+            }
             SignedMemberInfo.newBuilder()
-                .setMemberContext(ByteBuffer.wrap(keyValueSerializer.serialize(it.memberProvidedContext.toAvro())))
+                .setMemberContext(ByteBuffer.wrap(memberInfo))
                 .setMgmContext(ByteBuffer.wrap(keyValueSerializer.serialize(it.mgmProvidedContext.toAvro())))
-                .setMemberSignature(dummySignature)
-                .setMgmSignature(dummySignature)
+                .setMemberSignature(memberSignature)
+                .setMgmSignature(mgmSignature)
                 .build()
         }
         val hash = merkleTreeGenerator.generateTree(members).root

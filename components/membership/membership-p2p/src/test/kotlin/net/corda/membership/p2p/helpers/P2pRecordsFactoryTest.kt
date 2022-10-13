@@ -4,12 +4,17 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.identity.HoldingIdentity
+import net.corda.libs.configuration.SmartConfig
 import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.MEMBERSHIP_P2P_SUBSYSTEM
+import net.corda.membership.p2p.helpers.P2pRecordsFactory.Companion.getTtlMinutes
 import net.corda.p2p.app.AuthenticatedMessage
 import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
+import net.corda.schema.configuration.MembershipConfig.TtlsConfig.TTLS
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
@@ -84,10 +89,50 @@ class P2pRecordsFactoryTest {
 
         val record = factory.createAuthenticatedMessageRecord(holdingIdentity1, holdingIdentity2, data)
 
-        assertSoftly {
-            val value = record.value?.message as? AuthenticatedMessage
-            val header = value?.header
-            it.assertThat(header?.ttl).isNull()
+        val value = record.value?.message as? AuthenticatedMessage
+        val header = value?.header
+        assertThat(header?.ttl).isNull()
+    }
+
+    @Test
+    fun `createRecords with explicit ID use the ID`() {
+        val id = "Test-ID"
+        val data = mock<KeyValuePairList>()
+        whenever(serializer.serialize(eq(data))).doReturn(dataBytes)
+
+        val record = factory.createAuthenticatedMessageRecord(
+            holdingIdentity1,
+            holdingIdentity2,
+            data,
+            id = id
+        )
+
+        val value = record.value?.message as? AuthenticatedMessage
+        val header = value?.header
+        assertThat(header?.messageId).isEqualTo(id)
+    }
+
+    @Nested
+    inner class GetTtlMinutesTests {
+        private val config = mock<SmartConfig> {
+            on { getIsNull("$TTLS.null") } doReturn true
+            on { getIsNull("$TTLS.hasValue") } doReturn false
+            on { getLong("$TTLS.hasValue") } doReturn 22
+        }
+
+        @Test
+        fun `null name returns null`() {
+            assertThat(config.getTtlMinutes(null)).isNull()
+        }
+
+        @Test
+        fun `null value returns null`() {
+            assertThat(config.getTtlMinutes("null")).isNull()
+        }
+
+        @Test
+        fun `non null value returns value`() {
+            assertThat(config.getTtlMinutes("hasValue")).isEqualTo(22)
         }
     }
 }

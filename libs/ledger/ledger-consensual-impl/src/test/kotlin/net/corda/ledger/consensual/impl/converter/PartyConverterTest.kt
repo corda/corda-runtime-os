@@ -1,16 +1,15 @@
 package net.corda.ledger.consensual.impl.converter
 
-import net.corda.layeredpropertymap.create
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
-import net.corda.ledger.consensual.impl.PartyImpl
+import net.corda.ledger.common.impl.PartyConverter
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_SESSION_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
-import net.corda.membership.lib.impl.MemberContextImpl
+import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.ledger.consensual.Party
+import net.corda.v5.ledger.common.Party
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -29,26 +28,14 @@ class PartyConverterTest {
         private val key = Mockito.mock(PublicKey::class.java)
 
         private val converters = listOf(PartyConverter(keyEncodingService))
-        private val layeredPropertyMapFactory = LayeredPropertyMapMocks.createFactory(converters)
-
-        val memberContext = layeredPropertyMapFactory.create<MemberContextImpl>(
-            sortedMapOf(
-                PARTY_NAME to partyName,
-                PARTY_SESSION_KEY to KEY,
-                NOTARY_SERVICE_PARTY_NAME to notaryName,
-                NOTARY_SERVICE_SESSION_KEY to KEY
-            )
+        private val contextMap = sortedMapOf(
+            PARTY_NAME to partyName,
+            PARTY_SESSION_KEY to KEY,
+            NOTARY_SERVICE_PARTY_NAME to notaryName,
+            NOTARY_SERVICE_SESSION_KEY to KEY
         )
-
-        val nodeParty = PartyImpl(
-            MemberX500Name.parse(partyName),
-            key
-        )
-
-        val notaryServiceParty = PartyImpl(
-            MemberX500Name.parse(notaryName),
-            key
-        )
+        val nodeParty = Party(MemberX500Name.parse(partyName), key)
+        val notaryServiceParty = Party(MemberX500Name.parse(notaryName), key)
     }
 
     @BeforeEach
@@ -63,11 +50,25 @@ class PartyConverterTest {
 
     @Test
     fun `PartyConverter works for converting node's party`() {
-        assertEquals(nodeParty, memberContext.parse(PARTY, Party::class.java))
+        val conversionContext = LayeredPropertyMapMocks.createConversionContext<LayeredContextImpl>(
+            contextMap,
+            converters,
+            PARTY
+        )
+        assertEquals(nodeParty, converters[0].convert(conversionContext))
     }
 
     @Test
     fun `PartyConverter works for converting notary service's party`() {
-        assertEquals(notaryServiceParty, memberContext.parse(NOTARY_SERVICE_PARTY, Party::class.java))
+        val conversionContext = LayeredPropertyMapMocks.createConversionContext<LayeredContextImpl>(
+            contextMap,
+            converters,
+            NOTARY_SERVICE_PARTY
+        )
+        assertEquals(notaryServiceParty, converters[0].convert(conversionContext))
     }
+
+    private class LayeredContextImpl(
+        private val map: LayeredPropertyMap
+    ) : LayeredPropertyMap by map
 }

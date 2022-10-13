@@ -1,11 +1,11 @@
 package net.corda.applications.workers.member
 
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
-import net.corda.applications.workers.workercommon.HealthMonitor
+import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBootstrapConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
-import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setUpHealthMonitor
+import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupMonitor
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
@@ -24,8 +24,8 @@ class MemberWorker @Activate constructor(
     private val processor: MemberProcessor,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
-    @Reference(service = HealthMonitor::class)
-    private val healthMonitor: HealthMonitor,
+    @Reference(service = WorkerMonitor::class)
+    private val workerMonitor: WorkerMonitor,
     @Reference(service = ConfigurationValidatorFactory::class)
     private val configurationValidatorFactory: ConfigurationValidatorFactory
 ) : Application {
@@ -40,7 +40,7 @@ class MemberWorker @Activate constructor(
 
         val params = getParams(args, MemberWorkerParams())
         if (printHelpOrVersion(params.defaultParams, MemberWorker::class.java, shutDownService)) return
-        setUpHealthMonitor(healthMonitor, params.defaultParams)
+        setupMonitor(workerMonitor, params.defaultParams)
 
         val config = getBootstrapConfig(params.defaultParams, configurationValidatorFactory.createConfigValidator())
 
@@ -50,7 +50,7 @@ class MemberWorker @Activate constructor(
     override fun shutdown() {
         logger.info("Member worker stopping.")
         processor.stop()
-        healthMonitor.stop()
+        workerMonitor.stop()
     }
 }
 

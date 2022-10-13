@@ -2,23 +2,23 @@ package net.corda.ledger.common.impl.transaction
 
 import net.corda.crypto.core.concatByteArrays
 import net.corda.crypto.core.toByteArray
+import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.DigestService
+import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.common.transaction.PrivacySalt
-import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.crypto.extensions.merkle.MerkleTreeHashDigestProvider
+import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_ENTROPY_OPTION
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION
-import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_ENTROPY_OPTION
 import net.corda.v5.crypto.merkle.MerkleTree
-import net.corda.v5.crypto.merkle.MerkleTreeFactory
-import net.corda.v5.crypto.merkle.MerkleTreeHashDigestProvider
+import net.corda.v5.ledger.common.transaction.PrivacySalt
 import java.util.Base64
 
 const val ALL_LEDGER_METADATA_COMPONENT_GROUP_ID = 0
 
 class WireTransaction(
-    private val merkleTreeFactory: MerkleTreeFactory,
+    private val merkleTreeProvider: MerkleTreeProvider,
     private val digestService: DigestService,
     private val jsonMarshallingService: JsonMarshallingService,
     val privacySalt: PrivacySalt,
@@ -94,7 +94,7 @@ class WireTransaction(
         )
 
     private fun getRootMerkleTreeDigestProvider() : MerkleTreeHashDigestProvider =
-        merkleTreeFactory.createHashDigestProvider(
+        merkleTreeProvider.createHashDigestProvider(
         rootMerkleTreeDigestProviderName,
         rootMerkleTreeDigestAlgorithmName,
         mapOf(
@@ -116,7 +116,7 @@ class WireTransaction(
         privacySalt: PrivacySalt,
         componentGroupIndex: Int
     ) : MerkleTreeHashDigestProvider =
-        merkleTreeFactory.createHashDigestProvider(
+        merkleTreeProvider.createHashDigestProvider(
             componentMerkleTreeDigestProviderName,
             componentMerkleTreeDigestAlgorithmName,
             mapOf(
@@ -128,14 +128,14 @@ class WireTransaction(
     private val rootMerkleTree: MerkleTree by lazy(LazyThreadSafetyMode.PUBLICATION) {
         val componentGroupRoots = mutableListOf<ByteArray>()
         componentGroupLists.forEachIndexed{ index, leaves: List<ByteArray> ->
-            val componentMerkleTree = merkleTreeFactory.createTree(
+            val componentMerkleTree = merkleTreeProvider.createTree(
                 leaves,
                 getComponentGroupMerkleTreeDigestProvider(privacySalt, index)
             )
             componentGroupRoots += componentMerkleTree.root.bytes
         }
 
-        merkleTreeFactory.createTree(componentGroupRoots, getRootMerkleTreeDigestProvider())
+        merkleTreeProvider.createTree(componentGroupRoots, getRootMerkleTreeDigestProvider())
     }
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

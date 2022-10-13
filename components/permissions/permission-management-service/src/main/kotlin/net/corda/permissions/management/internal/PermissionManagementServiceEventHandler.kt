@@ -29,7 +29,7 @@ import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_MGMT_REQ_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.configuration.ConfigKeys.RPC_CONFIG
-import net.corda.v5.base.annotations.VisibleForTesting
+import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 
 @Suppress("LongParameterList")
@@ -54,10 +54,16 @@ internal class PermissionManagementServiceEventHandler(
     @VisibleForTesting
     internal var rpcSender: RPCSender<PermissionManagementRequest, PermissionManagementResponse>? = null
 
+    @Volatile
     internal var permissionManager: PermissionManager? = null
-    internal var permissionValidator: PermissionValidator? = null
+
+    internal val permissionValidator: PermissionValidator
+        get() = permissionValidationService.permissionValidator
+
+    @Volatile
     internal var basicAuthenticationService: BasicAuthenticationService? = null
 
+    @Volatile
     private var configSubscription: AutoCloseable? = null
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
@@ -86,14 +92,13 @@ internal class PermissionManagementServiceEventHandler(
                             coordinator,
                             setOf(BOOT_CONFIG, MESSAGING_CONFIG, RPC_CONFIG)
                         )
-                        permissionValidator = permissionValidationService.permissionValidator
                     }
                     LifecycleStatus.DOWN -> {
+                        log.info("Transitioning DOWN.")
                         permissionManager?.stop()
                         permissionManager = null
                         basicAuthenticationService?.stop()
                         basicAuthenticationService = null
-                        permissionValidator = null
                         coordinator.updateStatus(LifecycleStatus.DOWN)
                     }
                     LifecycleStatus.ERROR -> {
@@ -123,7 +128,6 @@ internal class PermissionManagementServiceEventHandler(
                 permissionManager = null
                 registrationHandle?.close()
                 registrationHandle = null
-                permissionValidator = null
                 coordinator.updateStatus(LifecycleStatus.DOWN)
             }
         }

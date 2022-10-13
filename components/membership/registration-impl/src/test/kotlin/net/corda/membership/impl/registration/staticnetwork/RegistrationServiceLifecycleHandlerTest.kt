@@ -3,6 +3,7 @@ package net.corda.membership.impl.registration.staticnetwork
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.hsm.HSMRegistrationClient
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -58,6 +59,7 @@ class RegistrationServiceLifecycleHandlerTest {
 
     private val hsmRegistrationClient: HSMRegistrationClient = mock()
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory = mock()
+    private val platformInfoProvider: PlatformInfoProvider = mock()
 
     private val staticMemberRegistrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
@@ -70,7 +72,9 @@ class RegistrationServiceLifecycleHandlerTest {
         memberInfoFactory,
         mock(),
         mock(),
-        membershipSchemaValidatorFactory
+        membershipSchemaValidatorFactory,
+        mock(),
+        platformInfoProvider
     )
 
     private val registrationServiceLifecycleHandler = RegistrationServiceLifecycleHandler(

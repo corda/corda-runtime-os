@@ -2,10 +2,11 @@ package net.corda.uniqueness.checker.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.uniqueness.UniquenessCheckRequestAvro
 import net.corda.data.uniqueness.UniquenessCheckResponseAvro
 import net.corda.data.uniqueness.UniquenessCheckResultMalformedRequestAvro
-import net.corda.data.uniqueness.UniquenessCheckResultSuccessAvro
+import net.corda.data.uniqueness.UniquenessCheckResultUnhandledExceptionAvro
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
@@ -24,7 +25,7 @@ import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.uniqueness.backingstore.BackingStore
 import net.corda.uniqueness.checker.UniquenessChecker
-import net.corda.uniqueness.datamodel.common.toExternalError
+import net.corda.uniqueness.datamodel.common.toAvro
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateConflictImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorInputStateUnknownImpl
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateConflictImpl
@@ -40,12 +41,14 @@ import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.application.uniqueness.model.UniquenessCheckError
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
-import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
+import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -116,76 +119,121 @@ class BatchedUniquenessCheckerImpl(
         HashMap<UniquenessCheckStateRef, UniquenessCheckStateDetails>()
 
     override fun start() {
-        log.info("Uniqueness checker starting.")
+        log.info("Uniqueness checker starting")
         lifecycleCoordinator.start()
     }
 
     override fun stop() {
-        log.info("Uniqueness checker stopping.")
+        log.info("Uniqueness checker stopping")
         lifecycleCoordinator.stop()
     }
 
+
+    /**
+     * Performs uniqueness checking against a list of requests and returns a map of requests and
+     * their corresponding responses. This implementation will process valid (i.e. non-malformed)
+     * requests in the order they are presented in the [requests] list for a given holding identity,
+     * but no guarantees are given for the ordering of requests across different holding identities.
+     *
+     * The ordering of the returned mappings is not guaranteed to match those of the supplied
+     * [requests] parameter. Callers should therefore use the request objects in the returned
+     * responses if relying on any data stored in the request.
+     *
+     * See [UniquenessCheckRequestAvro] and [UniquenessCheckResponseAvro] for details of message
+     * formats.
+     */
     @Synchronized
     override fun processRequests(
         requests: List<UniquenessCheckRequestAvro>
-    ): List<UniquenessCheckResponseAvro> {
+    ): Map<UniquenessCheckRequestAvro, UniquenessCheckResponseAvro> {
 
-        val results = LinkedList<UniquenessCheckResponseAvro>()
+        val results = HashMap<UniquenessCheckRequestAvro, UniquenessCheckResponseAvro>()
+        val requestsToProcess = ArrayList<
+                Pair<UniquenessCheckRequestInternal, UniquenessCheckRequestAvro>>(requests.size)
+
+        log.debug { "Processing ${requests.size} requests" }
 
         // Convert the supplied batch of external requests to internal requests. Doing this can
         // throw an exception if the request is malformed. These are filtered out immediately with
         // the appropriate result returned as we can't make any assumptions about the input and
         // such a failure would be inherently idempotent anyway (changing the request would change
         // the tx id)
-        val requestsToProcess = requests.mapNotNull {
+        var numMalformed = 0
+
+        for ( request in requests ) {
             try {
-                UniquenessCheckRequestInternal.create(it)
+                requestsToProcess.add(
+                    Pair(UniquenessCheckRequestInternal.create(request), request))
             } catch (e: IllegalArgumentException) {
-                results.add(
-                    UniquenessCheckResponseAvro(
-                        it.txId,
-                        UniquenessCheckResultMalformedRequestAvro(e.message)
-                    )
+                results[request] = UniquenessCheckResponseAvro(
+                    request.txId,
+                    UniquenessCheckResultMalformedRequestAvro(e.message)
                 )
-                null
+                ++numMalformed
             }
         }
 
-        // TODO - Re-instate batch processing logic if needed - need to establish what batching
-        // there is in the message bus layer first
-        results += processBatch(requestsToProcess).map { (request, result) ->
-            UniquenessCheckResponseAvro(
-                request.rawTxId,
-                when (result) {
-                    is UniquenessCheckResultSuccess -> {
-                        UniquenessCheckResultSuccessAvro(result.resultTimestamp)
+        if ( numMalformed > 0 ) { log.debug { "$numMalformed malformed requests were rejected" } }
+
+        // TODO - Re-instate batch processing logic based on number of states if needed - need to
+        // establish what batching there is in the message bus layer first
+        requestsToProcess
+            // Partition the data based on holding identity, as each should be processed separately
+            // so the requests cannot interact with each other and the backing store also requires a
+            // separate session per holding identity.
+            .groupBy { it.second.holdingIdentity }
+            // Converting to a list and then shuffling ensures a random order based on holding id to
+            // avoid always prioritising one holding id over another when there is contention, e.g.
+            // we don't want holding id 0xFFFF... to always be the last batch processed. Longer term
+            // this should probably be replaced with a proper QoS algorithm.
+            .toList()
+            .shuffled()
+            .forEach { (holdingIdentity, partitionedRequests) ->
+                try {
+                    processBatch(
+                        holdingIdentity.toCorda(),
+                        partitionedRequests.map { it.first }
+                    ).forEachIndexed { idx, (internalRequest, internalResult) ->
+                        results[partitionedRequests[idx].second] = UniquenessCheckResponseAvro(
+                            internalRequest.rawTxId, internalResult.toAvro())
                     }
-                    is UniquenessCheckResultFailure -> {
-                        result.toExternalError()
-                    }
-                    else -> {
-                        // TODO Should we add a general avro error?
-                        UniquenessCheckResultMalformedRequestAvro(
-                            "Unknown result type: ${result.javaClass.typeName}"
+                } catch (e: Exception) {
+                    // In practice, if we've received an unhandled exception then this will be before we
+                    // managed to commit to the DB, so raise an exception against all requests in the
+                    // batch
+                    log.warn("Unhandled exception was thrown for transaction(s) " +
+                            "${partitionedRequests.map { it.second.txId }}: $e")
+
+                    partitionedRequests.forEachIndexed { idx, (internalRequest, _) ->
+                        results[partitionedRequests[idx].second] = UniquenessCheckResponseAvro(
+                            internalRequest.rawTxId,
+                            UniquenessCheckResultUnhandledExceptionAvro(
+                                ExceptionEnvelope().apply {
+                                    errorType = e::class.java.name
+                                    errorMessage = e.message
+                                }
+                            )
                         )
                     }
                 }
-            )
-        }
+            }
 
         return results
     }
 
     @Suppress("ComplexMethod", "LongMethod")
     private fun processBatch(
+        holdingIdentity: HoldingIdentity,
         batch: List<UniquenessCheckRequestInternal>
     ): List<Pair<UniquenessCheckRequestInternal, UniquenessCheckResult>> {
 
         val resultsToRespondWith =
             mutableListOf<Pair<UniquenessCheckRequestInternal, UniquenessCheckResult>>()
 
+        log.debug { "Processing batch of ${batch.size} requests for $holdingIdentity" }
+
         // DB operations are retried, removing conflicts from the batch on each attempt.
-        backingStore.transactionSession { session, transactionOps ->
+        backingStore.transactionSession(holdingIdentity) { session, transactionOps ->
             // We can clear these between retries, data will be retrieved from the backing store
             // anyway.
             stateDetailsCache.clear()
@@ -275,8 +323,7 @@ class BatchedUniquenessCheckerImpl(
                                 )
                             )
                         // All checks passed
-                        else ->
-                            handleSuccessfulRequest(request)
+                        else -> handleSuccessfulRequest(request)
                     }
 
                     resultsToRespondWith.add(result)
@@ -286,6 +333,15 @@ class BatchedUniquenessCheckerImpl(
 
             // Now that the processing has finished, we need to commit to the database.
             commitResults(transactionOps, resultsToCommit)
+        }
+
+        if (log.isDebugEnabled) {
+            val numSuccessful = resultsToRespondWith.filter {
+                it.second is UniquenessCheckResultSuccess }.size
+
+            log.debug { "Finished processing batch for $holdingIdentity. " +
+                    "$numSuccessful successful, " +
+                    "${resultsToRespondWith.size - numSuccessful} rejected" }
         }
 
         return resultsToRespondWith
@@ -372,7 +428,7 @@ class BatchedUniquenessCheckerImpl(
     }
 
     private fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        log.info("Uniqueness checker received event $event.")
+        log.info("Uniqueness checker received event $event")
         when (event) {
             is StartEvent -> {
                 configurationReadService.start()
@@ -402,7 +458,7 @@ class BatchedUniquenessCheckerImpl(
                 initialiseSubscription(event.config.getConfig(MESSAGING_CONFIG))
             }
             else -> {
-                log.warn("Unexpected event $event!")
+                log.warn("Unexpected event ${event}, ignoring")
             }
         }
     }

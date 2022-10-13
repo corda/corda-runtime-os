@@ -50,7 +50,7 @@ class PermissionValidationCacheService @Activate constructor(
 
     private companion object {
         val log = contextLogger()
-        const val CONSUMER_GROUP = "PERMISSION_SERVICE"
+        const val CONSUMER_GROUP = "PERMISSION_VALIDATION_SERVICE"
     }
 
     /**

@@ -250,6 +250,9 @@ class SynchronisationProxyImpl @Activate constructor(
                     "Failed to select correct synchronisation protocol due to problems retrieving the group policy."
                 logger.error(err, e)
                 throw SynchronisationProtocolSelectionException(err, e)
+            } catch (e: IllegalStateException) {
+                logger.warn("Failed to select correct registration protocol due to problems retrieving the group policy.", e)
+                null
             } ?: throw SynchronisationProtocolSelectionException(
                 "Could not find group policy file for holding identity: [${viewOwningMember.shortHash}]"
             )
@@ -271,7 +274,7 @@ class SynchronisationProxyImpl @Activate constructor(
         }
     }
 
-    private inner class Processor : DurableProcessor<String, SynchronisationCommand> {
+    internal inner class Processor : DurableProcessor<String, SynchronisationCommand> {
         private val handlers = mapOf<Class<*>, SynchronisationHandler<*>>(
             ProcessMembershipUpdates::class.java to ProcessMembershipUpdatesHandler(),
             ProcessSyncRequest::class.java to ProcessSyncRequestHandler(),

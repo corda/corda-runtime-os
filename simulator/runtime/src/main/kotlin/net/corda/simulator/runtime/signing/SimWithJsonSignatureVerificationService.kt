@@ -38,8 +38,10 @@ class SimWithJsonSignatureVerificationService : DigitalSignatureVerificationServ
             throw CryptoSignatureException("Public key did not match")
         }
         if (signatureSpec.signatureName != wrapper.signatureSpecName) {
-            throw CryptoSignatureException("Signature spec did not match; " +
-                    "expected ${signatureSpec.signatureName} but was ${wrapper.signatureSpecName}")
+            throw CryptoSignatureException(
+                "Signature spec did not match; " +
+                        "expected ${signatureSpec.signatureName} but was ${wrapper.signatureSpecName}"
+            )
         }
         if (!clearData.contentEquals(wrapper.clearData)) {
             throw CryptoSignatureException("Clear data did not match")

@@ -268,36 +268,35 @@ class VirtualNodeRpcTest {
     fun `set virtual node state`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-            val states = vNodeList().toJson()["virtualNodes"].map {
+            val vnodesWithStates: List<Pair<String, String>> = vNodeList().toJson()["virtualNodes"].map {
                 it["holdingIdentity"]["shortHash"].textValue() to it["state"].textValue()
             }
 
-            val vnode = states.last()
-            val oldState = vnode.second
+            val (vnodeId, oldState) = vnodesWithStates.last()
             val newState = "IN_MAINTENANCE"
 
-            updateVirtualNodeState(vnode.first, newState)
+            updateVirtualNodeState(vnodeId, newState)
 
             assertWithRetry {
-                timeout(Duration.of(10, ChronoUnit.SECONDS))
+                timeout(Duration.of(60, ChronoUnit.SECONDS))
                 command { vNodeList() }
                 condition {
                     it.code == 200 &&
                             it.toJson()["virtualNodes"].single { virtualNode ->
-                                virtualNode["holdingIdentity"]["shortHash"].textValue() == vnode.first
+                                virtualNode["holdingIdentity"]["shortHash"].textValue() == vnodeId
                             }["state"].textValue() == newState
                 }
             }
 
-            updateVirtualNodeState(vnode.first, oldState)
+            updateVirtualNodeState(vnodeId, oldState)
 
             assertWithRetry {
-                timeout(Duration.of(10, ChronoUnit.SECONDS))
+                timeout(Duration.of(60, ChronoUnit.SECONDS))
                 command { vNodeList() }
                 condition {
                     it.code == 200 &&
                             it.toJson()["virtualNodes"].single { virtualNode ->
-                                virtualNode["holdingIdentity"]["shortHash"].textValue() == vnode.first
+                                virtualNode["holdingIdentity"]["shortHash"].textValue() == vnodeId
                             }["state"].textValue() == oldState
                 }
             }

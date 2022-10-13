@@ -1,6 +1,5 @@
 package net.corda.flow.application.persistence.external.events
 
-import java.nio.ByteBuffer
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.EntityResponse
@@ -9,6 +8,7 @@ import net.corda.flow.external.events.factory.ExternalEventRecord
 import net.corda.flow.state.FlowCheckpoint
 import net.corda.schema.Schemas
 import net.corda.virtualnode.toAvro
+import java.nio.ByteBuffer
 
 abstract class AbstractPersistenceExternalEventFactory<PARAMETERS : Any> :
     ExternalEventFactory<PARAMETERS, EntityResponse, List<ByteBuffer>> {
@@ -23,7 +23,7 @@ abstract class AbstractPersistenceExternalEventFactory<PARAMETERS : Any> :
         parameters: PARAMETERS
     ): ExternalEventRecord {
         return ExternalEventRecord(
-            topic = Schemas.VirtualNode.ENTITY_PROCESSOR,
+            topic = Schemas.Persistence.PERSISTENCE_ENTITY_PROCESSOR_TOPIC,
             payload = EntityRequest.newBuilder()
                 .setHoldingIdentity(checkpoint.holdingIdentity.toAvro())
                 .setRequest(createRequest(parameters))
