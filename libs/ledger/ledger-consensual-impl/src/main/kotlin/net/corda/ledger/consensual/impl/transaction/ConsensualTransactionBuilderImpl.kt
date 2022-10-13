@@ -1,16 +1,21 @@
 package net.corda.ledger.consensual.impl.transaction
 
+import java.security.PublicKey
+import java.time.Instant
+import net.corda.ledger.common.impl.transaction.CordaPackageSummary
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
-import net.corda.ledger.common.internal.transaction.SignableData
 import net.corda.ledger.common.impl.transaction.TransactionMetaData
+import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPI_METADATA_KEY
+import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPK_METADATA_KEY
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.DIGEST_SETTINGS_KEY
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.LEDGER_MODEL_KEY
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.LEDGER_VERSION_KEY
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.PLATFORM_VERSION_KEY
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
+import net.corda.ledger.common.internal.transaction.SignableData
 import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.libs.packaging.core.CpkIdentifier
+import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SigningService
@@ -26,8 +31,6 @@ import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
-import java.security.PublicKey
-import java.time.Instant
 
 // TODO Create an AMQP serializer if we plan on sending transaction builders between virtual nodes
 @Suppress("LongParameterList")
@@ -40,7 +43,7 @@ class ConsensualTransactionBuilderImpl(
     private val signingService: SigningService,
     // cpi defines what type of signing/hashing is used (related to the digital signature signing and verification stuff)
     private val memberLookup: MemberLookup,
-    val sandboxCpks: List<CpkIdentifier>,
+    private val sandboxCpks: List<CpkMetadata>,
     override val states: List<ConsensualState> = emptyList(),
 ) : ConsensualTransactionBuilder {
 
@@ -81,8 +84,8 @@ class ConsensualTransactionBuilderImpl(
     private fun buildWireTransaction(): WireTransaction {
         // TODO(CORE-5982 more verifications)
         // TODO(CORE-5940 ? metadata verifications: nulls, order of CPKs, at least one CPK?))
-        require(states.isNotEmpty()) { "At least one Consensual State is required" }
-        require(states.all { it.participants.isNotEmpty() }) { "All consensual states needs to have participants" }
+        require(states.isNotEmpty()) { "At least one consensual state is required" }
+        require(states.all { it.participants.isNotEmpty() }) { "All consensual states must have participants" }
         val componentGroupLists = calculateComponentGroupLists(serializationService)
 
         val entropy = ByteArray(32)
@@ -96,20 +99,6 @@ class ConsensualTransactionBuilderImpl(
             privacySalt,
             componentGroupLists
         )
-    }
-
-    /**
-     * TODO(Fake values until we can get CPI information properly)
-     */
-    private fun getCpiIdentifier(): CpiIdentifier {
-        return CpiIdentifier(
-            "CPI name",
-            "CPI version",
-            SecureHash("SHA-256", "Fake-value".toByteArray()))
-    }
-
-    private fun getCpks():List<CpkIdentifier>{
-        return sandboxCpks
     }
 
     private fun calculateComponentGroupLists(serializer: SerializationService): List<List<ByteArray>> {
@@ -147,9 +136,43 @@ class ConsensualTransactionBuilderImpl(
                 LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
                 DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
                 PLATFORM_VERSION_KEY to memberLookup.myInfo().platformVersion,
-                // TODO(CORE-5940 set CPK identifier/etc)
+                CPI_METADATA_KEY to getCpiMetadata(),
+                CPK_METADATA_KEY to getCpkMetadata()
             )
         )
+    }
+
+    /**
+     * TODO(Fake values until we can get CPI information properly)
+     */
+    private fun getCpiIdentifier(): CpiIdentifier {
+        return CpiIdentifier(
+            "CPI name",
+            "CPI version",
+            SecureHash("SHA-256", "Fake-value".toByteArray())
+        )
+    }
+
+    private fun getCpiMetadata(): CordaPackageSummary {
+        val cpiIdentifier = getCpiIdentifier()
+
+        return CordaPackageSummary(
+            name = cpiIdentifier.name,
+            version = cpiIdentifier.version,
+            signerSummaryHash = cpiIdentifier.signerSummaryHash?.toHexString(),
+            fileChecksum = "00000000000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+        )
+    }
+
+    private fun getCpkMetadata(): List<CordaPackageSummary> {
+        return sandboxCpks.filter { it.isContractCpk() }.map { cpk ->
+            CordaPackageSummary(
+                name = cpk.cpkId.name,
+                version = cpk.cpkId.version,
+                signerSummaryHash = cpk.cpkId.signerSummaryHash?.toHexString() ?: "",
+                fileChecksum = cpk.fileChecksum.toHexString()
+            )
+        }
     }
 
     override fun equals(other: Any?): Boolean {
