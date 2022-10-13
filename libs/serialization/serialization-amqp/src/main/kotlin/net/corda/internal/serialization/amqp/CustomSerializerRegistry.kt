@@ -148,7 +148,7 @@ class CachingCustomSerializerRegistry(
         val customSerializer = CorDappCustomSerializer(serializer, factory)
         val clazz = customSerializer.type.asClass()
         if (sandboxGroup.loadClassFromPublicBundles(clazz.name) != null) {
-            // Prevent serializing Corda platform types
+            // Prevent registering custom serializers targeting Corda platform types
             logger.warn("Illegal custom serializer detected for $clazz: ${serializer::class.qualifiedName}")
             throw IllegalCustomSerializerException(serializer, clazz)
         }
