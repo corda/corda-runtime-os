@@ -45,7 +45,7 @@ import java.util.concurrent.TimeUnit
 import net.corda.internal.serialization.amqp.IllegalCustomSerializerException
 import net.corda.v5.serialization.SerializationCustomSerializer
 
-//@Timeout(value = 30, unit = TimeUnit.SECONDS)
+@Timeout(value = 30, unit = TimeUnit.SECONDS)
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
 class AMQPwithOSGiSerializationTests {
