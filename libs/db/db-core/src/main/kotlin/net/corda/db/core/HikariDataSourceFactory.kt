@@ -2,6 +2,8 @@ package net.corda.db.core
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import com.zaxxer.hikari.metrics.micrometer.MicrometerMetricsTrackerFactory
+import net.corda.metrics.MeterFactory
 import javax.sql.DataSource
 
 /**
@@ -15,7 +17,9 @@ import javax.sql.DataSource
  */
 class HikariDataSourceFactory(
     private val hikariDataSourceFactory: (c: HikariConfig) -> CloseableDataSource = { c ->
-        DataSourceWrapper(HikariDataSource(c))
+        val ds = HikariDataSource(c)
+        //ds.metricsTrackerFactory = MicrometerMetricsTrackerFactory(MeterFactory.registry)
+        DataSourceWrapper(ds)
     }
 ) : DataSourceFactory {
     /**

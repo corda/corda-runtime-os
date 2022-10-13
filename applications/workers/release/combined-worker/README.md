@@ -181,3 +181,9 @@ cp ../corda-runtime-os/tools/plugins/topic-config/build/libs/topic-config-cli-pl
  ./build/generatedScripts/corda-cli.sh topic -b=localhost:9092 create connect
  cd ../corda-runtime-os/
 ```
+
+## Metrics
+
+Corda exposes Prometheus metrics.
+In order to view this metrics, when running the combined worker, you can use the configuration in  `../../../metrics`.
+See `../../../metrics/readme.md` for further documentation.
