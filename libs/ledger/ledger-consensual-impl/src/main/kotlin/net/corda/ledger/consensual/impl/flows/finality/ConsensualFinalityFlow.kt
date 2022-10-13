@@ -14,8 +14,6 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
-import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.crypto.ParameterizedSignatureSpec
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 
@@ -55,7 +53,7 @@ class ConsensualFinalityFlow(
         }
 
         // Should this also be a [CordaRuntimeException]? Or make the others [IllegalArgumentException]s?
-        // TODO: Is it OK to assume that finalityflow gathers exactly the missing keys and nobody else?
+        // TODO Is it OK to assume that finalityflow gathers exactly the missing keys and nobody else?
         val missingSigningKeys = signedTransaction.getMissingSigningKeys()
         require(missingSigningKeys == sessionPublicKeys.toSet()) {
             "Required signatures $missingSigningKeys but ledger keys for the passed in sessions are $sessionPublicKeys"
