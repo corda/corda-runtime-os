@@ -152,7 +152,6 @@ class ConsensualLedgerRepository(
         timestamp: Instant,
         tx: WireTransaction
     ) {
-        // TODO get values from transaction metadata
         val cpkIdentifiers = tx.metadata.getCpkMetadata()
         logger.info("cpkIdentifiers = [$cpkIdentifiers]")
         val fileHash = SecureHash.parse("SHA-256:1234567890123456")
