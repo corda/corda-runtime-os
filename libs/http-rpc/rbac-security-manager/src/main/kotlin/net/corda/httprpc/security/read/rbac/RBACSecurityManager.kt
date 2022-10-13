@@ -7,9 +7,10 @@ import net.corda.httprpc.security.read.Password
 import net.corda.httprpc.security.read.RPCSecurityManager
 import net.corda.libs.permission.PermissionValidator
 import net.corda.libs.permissions.manager.BasicAuthenticationService
+import java.util.function.Supplier
 
 class RBACSecurityManager(
-    private val permissionValidator: PermissionValidator,
+    private val permissionValidatorSupplier: Supplier<PermissionValidator>,
     private val basicAuthenticationService: BasicAuthenticationService
 ) : RPCSecurityManager {
 
@@ -24,7 +25,7 @@ class RBACSecurityManager(
     }
 
     override fun buildSubject(principal: String): AuthorizingSubject {
-        return RBACAuthorizingSubject(permissionValidator, principal)
+        return RBACAuthorizingSubject(permissionValidatorSupplier, principal)
     }
 
     private var running = false

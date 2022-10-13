@@ -1,5 +1,6 @@
 package net.corda.flow.state
 
+import java.nio.ByteBuffer
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
@@ -10,7 +11,6 @@ import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.serialization.checkpoint.NonSerializable
 import net.corda.virtualnode.HoldingIdentity
-import java.nio.ByteBuffer
 
 /**
  * The FlowCheckpoint provides an API for managing the checkpoint during the processing of a flow.
@@ -54,6 +54,8 @@ interface FlowCheckpoint : NonSerializable {
     fun getSessionState(sessionId: String): SessionState?
 
     fun putSessionState(sessionState: SessionState)
+
+    fun putSessionStates(sessionStates: List<SessionState>)
 
     fun markDeleted()
 

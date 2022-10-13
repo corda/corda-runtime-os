@@ -1,11 +1,7 @@
 package net.corda.flow.testing.context
 
-import java.nio.ByteBuffer
-import java.util.Arrays
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializer
-import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
-import net.corda.data.crypto.wire.ops.flow.commands.SignFlowCommand
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.Wakeup
@@ -198,6 +194,17 @@ class OutputAssertionsImpl(
             val wakeupEvents = eventRecords.filter { it.payload is Wakeup }
 
             assertEquals(1, wakeupEvents.size, "Expected one wakeup event")
+        }
+    }
+
+    override fun noWakeUpEvent() {
+        asserts.add { testRun ->
+            assertNotNull(testRun.response, "Test run response")
+
+            val eventRecords = getMatchedFlowEventRecords(flowId, testRun.response!!)
+            val wakeupEvents = eventRecords.filter { it.payload is Wakeup }
+
+            assertEquals(0, wakeupEvents.size, "Expected no wakeup event")
         }
     }
 
