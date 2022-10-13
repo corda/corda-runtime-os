@@ -2,6 +2,7 @@ package net.corda.flow.application.services
 
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.ALICE_X500_NAME
+import net.corda.flow.application.serialization.SerializationServiceInternal
 import net.corda.flow.application.sessions.factory.FlowSessionFactory
 import net.corda.flow.utils.mutableKeyValuePairList
 import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
@@ -26,12 +27,13 @@ class FlowMessagingImplTest {
     private val mockFlowFiberService = MockFlowFiberService()
     private val flowStackService = mockFlowFiberService.flowStack
     private val flowSession = mock<FlowSession>()
+    private val serializationService = mock<SerializationServiceInternal>()
 
     private val flowSessionFactory = mock<FlowSessionFactory>().apply {
         whenever(createInitiatingFlowSession(any(), eq(ALICE_X500_NAME), any())).thenReturn(flowSession)
     }
 
-    private val flowMessaging = FlowMessagingImpl(mockFlowFiberService, flowSessionFactory)
+    private val flowMessaging = FlowMessagingImpl(mockFlowFiberService, flowSessionFactory, serializationService)
 
     @Test
     fun `initiateFlow creates an initiating FlowSession when the current flow stack item represents an initiating flow`() {

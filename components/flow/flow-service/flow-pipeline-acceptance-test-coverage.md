@@ -21,6 +21,7 @@ This document should be maintained so that we can ensure that we have quick visi
 - Receiving a session init event starts an initiated flow and sends a session ack ✅
 - Receiving a session init event for a flow that does not exist within the sandbox sends a session error event
 - Receiving a session error event resumes the flow with an error ✅
+- Open multiple sessions, receiving ack for only one session does not resume or set output events ✅
 
 ## Sending
 - Calling 'send' on initiated sessions sends a session data event and schedules a wakeup event ✅
@@ -28,6 +29,7 @@ This document should be maintained so that we can ensure that we have quick visi
 - Calling 'send' multiple times on initiated sessions resumes the flow and sends a session data events each time ✅
 - Given a flow resumes after receiving a session data event calling 'send' on the session sends a session data event and no session ack ✅
 - Given a flow resumes after receiving session data events calling 'send' on the sessions sends session data events and no session ack for the session that resumed the flow ✅
+- Calling 'send' on a session that is confirmed sets a wakeup event and data message ✅
 
 ## Send + receiving
 
