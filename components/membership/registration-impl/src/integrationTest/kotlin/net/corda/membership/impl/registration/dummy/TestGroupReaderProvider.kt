@@ -13,6 +13,8 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.membership.read.NotaryLookupService
+import net.corda.membership.read.NotaryVirtualNodeLookup
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.PublicKeyHash
@@ -121,4 +123,9 @@ class TestGroupReader @Activate constructor(
             throw UnsupportedOperationException(this)
         }
     }
+
+    override val notaryLookupService: NotaryLookupService
+        get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
+    override val notaryVirtualNodeLookup: NotaryVirtualNodeLookup
+        get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
 }

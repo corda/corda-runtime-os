@@ -3,6 +3,8 @@ package net.corda.testing.sandboxes.impl
 import net.corda.membership.lib.CPIAllowList
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.membership.read.NotaryLookupService
+import net.corda.membership.read.NotaryVirtualNodeLookup
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.crypto.PublicKeyHash
@@ -57,5 +59,10 @@ class MembershipGroupReaderProviderImpl : MembershipGroupReaderProvider {
         override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash): MemberInfo? {
             return null
         }
+
+        override val notaryLookupService: NotaryLookupService
+            get() = throw IllegalStateException("TEST MODULE: Membership not supported")
+        override val notaryVirtualNodeLookup: NotaryVirtualNodeLookup
+            get() = throw IllegalStateException("TEST MODULE: Membership not supported")
     }
 }

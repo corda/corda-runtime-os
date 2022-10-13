@@ -3,6 +3,8 @@ package net.corda.flow.testing.fakes
 import net.corda.membership.lib.CPIAllowList
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
+import net.corda.membership.read.NotaryLookupService
+import net.corda.membership.read.NotaryVirtualNodeLookup
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.membership.GroupParameters
@@ -67,5 +69,10 @@ class FakeMembershipGroupReaderProvider : MembershipGroupReaderProvider {
         override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash): MemberInfo? {
             TODO("Not yet implemented")
         }
+
+        override val notaryLookupService: NotaryLookupService
+            get() = TODO("Not yet implemented")
+        override val notaryVirtualNodeLookup: NotaryVirtualNodeLookup
+            get() = TODO("Not yet implemented")
     }
 }
