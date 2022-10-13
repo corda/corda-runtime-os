@@ -18,6 +18,7 @@ import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
 import kotlin.test.assertIs
 
 internal class ConsensualTransactionBuilderImplTest {
@@ -94,6 +95,7 @@ internal class ConsensualTransactionBuilderImplTest {
             merkleTreeFactory,
             serializationService,
             ConsensualTransactionMocks.mockSigningService(),
+            mock(),
             ConsensualTransactionMocks.mockMemberLookup(),
             ConsensualTransactionMocks.mockSandboxCpks()
         )

@@ -40,7 +40,8 @@ class ConsensualSignedTransactionImplKryoSerializerTest {
         )
         val consensualSignedTransactionImplKryoSerializer = ConsensualSignedTransactionImplKryoSerializer(
             serializationService,
-            signingService
+            signingService,
+            mock()
         )
 
         val signedTransaction = getConsensualSignedTransaction(
@@ -48,7 +49,8 @@ class ConsensualSignedTransactionImplKryoSerializerTest {
             merkleTreeProvider,
             serializationService,
             jsonMarshallingService,
-            signingService
+            signingService,
+            mock()
         )
 
         val serializer = createCheckpointSerializer(

@@ -6,6 +6,7 @@ import net.corda.serialization.checkpoint.CheckpointInput
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import net.corda.serialization.checkpoint.CheckpointOutput
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
+import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.util.uncheckedCast
@@ -16,7 +17,8 @@ import org.osgi.service.component.annotations.Reference
 @Component(service = [CheckpointInternalCustomSerializer::class])
 class ConsensualSignedTransactionImplKryoSerializer @Activate constructor(
     @Reference(service = SerializationService::class) private val serialisationService: SerializationService,
-    @Reference(service = SigningService::class) private val signingService: SigningService
+    @Reference(service = SigningService::class) private val signingService: SigningService,
+    @Reference(service = DigitalSignatureVerificationService::class) private val digitalSignatureVerificationService: DigitalSignatureVerificationService
 ) : CheckpointInternalCustomSerializer<ConsensualSignedTransactionImpl> {
     override val type: Class<ConsensualSignedTransactionImpl> get() = ConsensualSignedTransactionImpl::class.java
 
@@ -31,6 +33,7 @@ class ConsensualSignedTransactionImplKryoSerializer @Activate constructor(
         return ConsensualSignedTransactionImpl(
             serialisationService,
             signingService,
+            digitalSignatureVerificationService,
             wireTransaction,
             signatures
         )

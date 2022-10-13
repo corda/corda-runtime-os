@@ -17,6 +17,7 @@ import net.corda.ledger.common.internal.transaction.SignableData
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
+import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
@@ -39,6 +40,7 @@ class ConsensualTransactionBuilderImpl(
     private val merkleTreeProvider: MerkleTreeProvider,
     private val serializationService: SerializationService,
     private val signingService: SigningService,
+    private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
     // cpi defines what type of signing/hashing is used (related to the digital signature signing and verification stuff)
     private val memberLookup: MemberLookup,
     private val sandboxCpks: List<CpkMetadata>,
@@ -58,7 +60,7 @@ class ConsensualTransactionBuilderImpl(
             wireTransaction.id,
             publicKey
         )
-        return ConsensualSignedTransactionImpl(serializationService, signingService, wireTransaction, listOf(signatureWithMetaData))
+        return ConsensualSignedTransactionImpl(serializationService, signingService, digitalSignatureVerificationService, wireTransaction, listOf(signatureWithMetaData))
     }
 
     private fun getSignatureMetadata(): DigitalSignatureMetadata {
@@ -175,6 +177,7 @@ class ConsensualTransactionBuilderImpl(
             merkleTreeProvider,
             serializationService,
             signingService,
+            digitalSignatureVerificationService,
             memberLookup,
             sandboxCpks,
             states,

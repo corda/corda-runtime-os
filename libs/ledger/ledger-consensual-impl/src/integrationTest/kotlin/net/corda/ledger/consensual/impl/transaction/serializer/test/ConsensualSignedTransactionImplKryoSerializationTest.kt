@@ -11,6 +11,7 @@ import net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFac
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.AllTestsLifecycle
+import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -55,6 +56,9 @@ class ConsensualSignedTransactionImplKryoSerializationTest {
 
     @InjectService(timeout = 1000)
     lateinit var signingService: SigningService
+
+    @InjectService(timeout = 1000)
+    lateinit var digitalSignatureVerificationService: DigitalSignatureVerificationService
 
     private lateinit var emptySandboxGroup: SandboxGroup
 
@@ -104,7 +108,8 @@ class ConsensualSignedTransactionImplKryoSerializationTest {
             merkleTreeProvider,
             serializationService,
             jsonMarshallingService,
-            signingService
+            signingService,
+            digitalSignatureVerificationService
         )
 
         val bytes = kryoSerializer.serialize(signedTransaction)

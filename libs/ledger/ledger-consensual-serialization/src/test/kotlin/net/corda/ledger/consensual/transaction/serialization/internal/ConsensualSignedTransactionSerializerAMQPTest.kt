@@ -27,7 +27,7 @@ class ConsensualSignedTransactionSerializerAMQPTest {
             digestService,
             jsonMarshallingService
         ), it)
-        it.register(ConsensualSignedTransactionSerializer(serializationServiceNullCfg, signingService), it)
+        it.register(ConsensualSignedTransactionSerializer(serializationServiceNullCfg, signingService, mock()), it)
     }, schemeMetadata)
 
     @Test
@@ -38,7 +38,8 @@ class ConsensualSignedTransactionSerializerAMQPTest {
             merkleTreeProvider,
             serializationService,
             jsonMarshallingService,
-            signingService
+            signingService,
+            mock()
         )
 
         val bytes = serializationService.serialize(signedTransaction)

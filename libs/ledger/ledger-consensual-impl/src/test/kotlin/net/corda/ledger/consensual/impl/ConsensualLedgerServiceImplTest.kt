@@ -19,6 +19,7 @@ import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
 import kotlin.test.assertIs
 
 class TestFlowFiberServiceWithSerializationProxy constructor(
@@ -48,6 +49,7 @@ class ConsensualLedgerServiceImplTest {
             merkleTreeProvider,
             serializationService,
             ConsensualTransactionMocks.mockSigningService(),
+            mock(),
             ConsensualTransactionMocks.mockMemberLookup(),
             flowFiberService
         )

@@ -2,6 +2,7 @@ package net.corda.ledger.consensual.impl.transaction.factory
 
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.ledger.consensual.impl.transaction.ConsensualTransactionBuilderImpl
+import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.membership.MemberLookup
@@ -24,6 +25,7 @@ class ConsensualTransactionBuilderFactoryImpl @Activate constructor(
     @Reference(service = MerkleTreeProvider::class) private val merkleTreeProvider: MerkleTreeProvider,
     @Reference(service = SerializationService::class) private val serializationService: SerializationService,
     @Reference(service = SigningService::class) private val signingService: SigningService,
+    @Reference(service = DigitalSignatureVerificationService::class) private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
     @Reference(service = MemberLookup::class) private val memberLookup: MemberLookup,
     @Reference(service = FlowFiberService::class) private val flowFiberService: FlowFiberService
 ) : ConsensualTransactionBuilderFactory {
@@ -40,6 +42,7 @@ class ConsensualTransactionBuilderFactoryImpl @Activate constructor(
             merkleTreeProvider,
             serializationService,
             signingService,
+            digitalSignatureVerificationService,
             memberLookup,
             sandboxCpks
         )

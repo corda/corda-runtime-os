@@ -26,9 +26,6 @@ class ConsensualReceiveFinalityFlow(
     }
 
     @CordaInject
-    lateinit var digitalSignatureVerificationService: DigitalSignatureVerificationService
-
-    @CordaInject
     lateinit var memberLookup: MemberLookup
 
     @CordaInject
@@ -59,27 +56,7 @@ class ConsensualReceiveFinalityFlow(
                     "${signedTransaction.id} instead"
         }
 
-        //TODO this looks like a candidate for signedTx.verify() or verifySignatures at least.
-        for (signature in signedTransactionToFinalize.signatures) {
-            try {
-                // TODO Signature spec to be determined internally by crypto code
-                // Throws if the signature is invalid which will terminate the peer flows with an error
-                val signedData = SignableData(transactionId, signature.metadata)
-                digitalSignatureVerificationService.verify(
-                    publicKey = signature.by,
-                    signatureSpec = SignatureSpec.ECDSA_SHA256,
-                    signatureData = signature.signature.bytes,
-                    clearData = serializationService.serialize(signedData).bytes
-                )
-                log.debug { "Successfully verified signature of ${signature.signature} for signed transaction $transactionId" }
-            } catch (e: Exception) {
-                log.warn(
-                    "Failed to verify signature of ${signature.signature} for signed transaction ${signedTransactionToFinalize.id}. " +
-                            "Message: ${e.message}"
-                )
-                throw e
-            }
-        }
+        signedTransactionToFinalize.verifySignatureValidity()
 
         // TODO [CORE-7055] Record the transaction
         log.debug { "Recorded signed transaction $transactionId" }
