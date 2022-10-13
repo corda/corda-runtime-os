@@ -53,7 +53,6 @@ class ConsensualFinalityFlow(
         }
 
         // Should this also be a [CordaRuntimeException]? Or make the others [IllegalArgumentException]s?
-        // TODO Is it OK to assume that finalityflow gathers exactly the missing keys and nobody else?
         val missingSigningKeys = signedTransaction.getMissingSigningKeys()
         require(missingSigningKeys == sessionPublicKeys.toSet()) {
             "Required signatures $missingSigningKeys but ledger keys for the passed in sessions are $sessionPublicKeys"
