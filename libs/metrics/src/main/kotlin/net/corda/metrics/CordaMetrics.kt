@@ -5,35 +5,42 @@ import io.micrometer.core.instrument.Metrics
 import io.micrometer.core.instrument.Tag
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry
 
-class MeterFactory {
+object CordaMetrics {
     enum class Meters(val meterName: String) {
-        HttpRequestsCount("http.server.requests"),
-        HttpRequestsTime("http.server.requestTime"),
+        /**
+         * Number of HTTP Requests.
+         */
+        HttpRequestCount("http.server.requestCount"),
+        /**
+         * HTTP Requests time.
+         */
+        HttpRequestTime("http.server.requestTime"),
     }
 
     enum class Tags(val value: String) {
+        /**
+         * Source of metric.
+         */
         Source("source"),
-        VirtualNode("vnode"),
+        /**
+         * Virtual Node for which the metric is applicable.
+         */
+        VirtualNode("virtualNode"),
+        /**
+         * Address for which the metric is applicable..
+         */
         Address("address")
     }
 
-    companion object {
-        val registry: CompositeMeterRegistry = Metrics.globalRegistry
-        private var name: String? = null
+    fun Meters.builder(): MeterBuilder {
+        return MeterBuilder(this.meterName)
+    }
 
-        fun configure(name: String, registry: MeterRegistry) {
-            this.name = name
-            this.registry.add(registry)
-            this.registry.config().commonTags(Tags.Source.value, name)
-        }
+    val registry: CompositeMeterRegistry = Metrics.globalRegistry
 
-        fun create(meter: Meters): MeterBuilder {
-            if(null == name) {
-                throw IllegalStateException("Meter Factory must be configured before using it.")
-            }
-
-            return MeterBuilder(meter.meterName)
-        }
+    fun configure(name: String, registry: MeterRegistry) {
+        this.registry.add(registry)
+        this.registry.config().commonTags(Tags.Source.value, name)
     }
 
     class MeterBuilder(
