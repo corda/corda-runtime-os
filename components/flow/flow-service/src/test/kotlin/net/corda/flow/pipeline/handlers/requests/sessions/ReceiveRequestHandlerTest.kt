@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
 class ReceiveRequestHandlerTest {
@@ -20,18 +21,25 @@ class ReceiveRequestHandlerTest {
         const val ANOTHER_SESSION_ID = "another session id"
     }
 
-    private val record  = Record("","",FlowEvent())
+    private val record = Record("", "", FlowEvent())
     private val testContext = RequestHandlerTestContext(Any())
     private val flowEventContext = testContext.flowEventContext
     private val flowSessionManager = testContext.flowSessionManager
-    private val receiveRequestHandler = ReceiveRequestHandler(testContext.flowSessionManager, testContext.flowRecordFactory)
+    private val receiveRequestHandler =
+        ReceiveRequestHandler(testContext.flowSessionManager, testContext.flowRecordFactory, testContext.initiateFlowReqService)
 
     @Test
     fun `Returns an updated WaitingFor of SessionData`() {
         val result = receiveRequestHandler.getUpdatedWaitingFor(
             flowEventContext,
-            FlowIORequest.Receive(setOf(SESSION_ID, ANOTHER_SESSION_ID))
+            FlowIORequest.Receive(
+                setOf(
+                    FlowIORequest.SessionInfo(SESSION_ID, testContext.counterparty),
+                    FlowIORequest.SessionInfo(ANOTHER_SESSION_ID, testContext.counterparty),
+                )
+            )
         )
+
         assertEquals(SessionData(listOf(SESSION_ID, ANOTHER_SESSION_ID)), result.value)
     }
 
@@ -41,8 +49,15 @@ class ReceiveRequestHandlerTest {
         whenever(testContext.flowRecordFactory.createFlowEventRecord(eq(testContext.flowId), any<Wakeup>())).thenReturn(record)
         val outputContext = receiveRequestHandler.postProcess(
             flowEventContext,
-            FlowIORequest.Receive(setOf(SESSION_ID, ANOTHER_SESSION_ID))
+            FlowIORequest.Receive(
+                setOf(
+                    FlowIORequest.SessionInfo(SESSION_ID, testContext.counterparty),
+                    FlowIORequest.SessionInfo(ANOTHER_SESSION_ID, testContext.counterparty),
+                )
+            )
         )
+        verify(testContext.initiateFlowReqService).initiateFlowsNotInitiated(any(), any())
+
         assertThat(outputContext.outputRecords.first()).isEqualTo(record)
     }
 
@@ -57,8 +72,14 @@ class ReceiveRequestHandlerTest {
 
         val outputContext = receiveRequestHandler.postProcess(
             flowEventContext,
-            FlowIORequest.Receive(setOf(SESSION_ID, ANOTHER_SESSION_ID))
+            FlowIORequest.Receive(
+                setOf(
+                    FlowIORequest.SessionInfo(SESSION_ID, testContext.counterparty),
+                    FlowIORequest.SessionInfo(ANOTHER_SESSION_ID, testContext.counterparty),
+                )
+            )
         )
+        verify(testContext.initiateFlowReqService).initiateFlowsNotInitiated(any(), any())
         assertEquals(0, outputContext.outputRecords.size)
     }
 
@@ -72,8 +93,14 @@ class ReceiveRequestHandlerTest {
         ).thenReturn(false)
         val outputContext = receiveRequestHandler.postProcess(
             flowEventContext,
-            FlowIORequest.Receive(setOf(SESSION_ID, ANOTHER_SESSION_ID))
+            FlowIORequest.Receive(
+                setOf(
+                    FlowIORequest.SessionInfo(SESSION_ID, testContext.counterparty),
+                    FlowIORequest.SessionInfo(ANOTHER_SESSION_ID, testContext.counterparty),
+                )
+            )
         )
+        verify(testContext.initiateFlowReqService).initiateFlowsNotInitiated(any(), any())
         assertEquals(flowEventContext, outputContext)
     }
 }

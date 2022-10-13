@@ -132,8 +132,7 @@ class CloseSessionsRequestHandlerTest {
         val outputContext = handler.postProcess(testContext.flowEventContext, ioRequest)
 
         verify(testContext.flowSessionManager).sendCloseMessages(eq(testContext.flowCheckpoint), eq(sessions), any())
-        verify(testContext.flowCheckpoint).putSessionState(sessionState1)
-        verify(testContext.flowCheckpoint).putSessionState(sessionState2)
+        verify(testContext.flowCheckpoint).putSessionStates(listOf(sessionState1, sessionState2))
         assertThat(outputContext.outputRecords).hasSize(0)
     }
 
@@ -166,7 +165,7 @@ class CloseSessionsRequestHandlerTest {
         val outputContext = handler.postProcess(testContext.flowEventContext, ioRequest)
 
         verify(testContext.flowSessionManager).sendCloseMessages(eq(testContext.flowCheckpoint), eq(listOf(sessionId1)), any())
-        verify(testContext.flowCheckpoint).putSessionState(sessionState1)
+        verify(testContext.flowCheckpoint).putSessionStates(listOf(sessionState1))
         verify(testContext.flowCheckpoint, never()).putSessionState(sessionState2)
         assertThat(outputContext.outputRecords).hasSize(0)
     }
