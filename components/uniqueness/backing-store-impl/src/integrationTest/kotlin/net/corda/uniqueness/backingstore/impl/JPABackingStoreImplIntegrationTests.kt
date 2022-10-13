@@ -167,18 +167,18 @@ class JPABackingStoreImplIntegrationTests {
 
         @Test
         fun `Executing transaction succeeds after transient failures`() {
-            val RETRY_CNT = 3
+            val retryCnt = 3
             var execCounter = 0
             assertDoesNotThrow {
                 backingStoreImpl.session(aliceIdentity) { session ->
                     session.executeTransaction { _, _ ->
                         execCounter++
-                        if (execCounter < RETRY_CNT)
+                        if (execCounter < retryCnt)
                             throw OptimisticLockException()
                     }
                 }
             }
-            assertThat(execCounter).isEqualTo(RETRY_CNT)
+            assertThat(execCounter).isEqualTo(retryCnt)
         }
     }
 
@@ -199,11 +199,9 @@ class JPABackingStoreImplIntegrationTests {
             lateinit var txnDetails: Map<SecureHash, UniquenessCheckTransactionDetailsInternal>
             backingStoreImpl.session(aliceIdentity) { session -> txnDetails = session.getTransactionDetails(txIds) }
             assertThat(txnDetails.size).isEqualTo(1)
-            txnDetails.entries.single().apply {
-                val uniquenessCheckResult = this.value.result
-                assertThat(txIds).contains(this.key)
-                UniquenessAssertions.assertAcceptedResult<UniquenessCheckResultSuccess>(uniquenessCheckResult)
-            }
+            assertThat(txIds).contains(txnDetails.entries.single().key)
+            UniquenessAssertions.assertAcceptedResult<UniquenessCheckResultSuccess>(
+                txnDetails.entries.single().value.result)
         }
 
         @Test
@@ -243,7 +241,6 @@ class JPABackingStoreImplIntegrationTests {
             }
 
             lateinit var txnDetails: Map<SecureHash, UniquenessCheckTransactionDetailsInternal>
-
             backingStoreImpl.session(aliceIdentity) { session -> txnDetails = session.getTransactionDetails(txIds) }
             assertThat(txnDetails.size).isEqualTo(1)
             assertThat(txIds).contains(txnDetails.entries.single().key)
@@ -368,7 +365,6 @@ class JPABackingStoreImplIntegrationTests {
             backingStoreImpl.session(aliceIdentity) { session -> txnDetails = session.getTransactionDetails(txIds) }
             assertThat(txnDetails.size).isEqualTo(1)
             assertThat(txIds).contains(txnDetails.entries.single().key)
-
             UniquenessAssertions.assertMalformedRequestResult(errorMessage, txnDetails.entries.single().value.result)
         }
 
@@ -385,10 +381,10 @@ class JPABackingStoreImplIntegrationTests {
             lateinit var stateDetails: Map<UniquenessCheckStateRef, UniquenessCheckStateDetails>
             backingStoreImpl.session(aliceIdentity) { session -> stateDetails = session.getStateDetails(stateRefs) }
             assertThat(stateDetails.size).isEqualTo(hashCnt)
-            stateDetails.forEach { stateRefAndStateDetail ->
+            stateDetails.forEach { (stateRef, stateDetail) ->
                 assertAll(
-                    { assertThat(secureHashes).contains(stateRefAndStateDetail.key.txHash) },
-                    { assertThat(stateRefAndStateDetail.value.consumingTxId).isNull()} )
+                    { assertThat(secureHashes).contains(stateRef.txHash) },
+                    { assertThat(stateDetail.consumingTxId).isNull()} )
             }
         }
 
@@ -437,8 +433,10 @@ class JPABackingStoreImplIntegrationTests {
             val consumingTxId = SecureHashUtils.randomSecureHash()
             val consumingStateRefs = listOf<UniquenessCheckStateRef>(stateRefs[0])
 
-            backingStoreImpl.session(aliceIdentity) { session ->
-                session.executeTransaction { _, txnOps -> txnOps.consumeStates(consumingTxId, consumingStateRefs) }
+            assertDoesNotThrow {
+                backingStoreImpl.session(aliceIdentity) { session ->
+                    session.executeTransaction { _, txnOps -> txnOps.consumeStates(consumingTxId, consumingStateRefs) }
+                }
             }
 
             // An attempt to spend an already spent state should fail.
@@ -458,15 +456,13 @@ class JPABackingStoreImplIntegrationTests {
                 session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
             }
 
-            val consumingTxId = SecureHashUtils.randomSecureHash()
             val consumingStateRefs = listOf<UniquenessCheckStateRef>(stateRefs[0])
-
             assertThrows<IllegalStateException> {
                 backingStoreImpl.session(aliceIdentity) { session ->
                     session.executeTransaction { _, txnOps ->
                         // Attempt a double-spend.
-                        txnOps.consumeStates(consumingTxId, consumingStateRefs)
-                        txnOps.consumeStates(consumingTxId, consumingStateRefs)
+                        txnOps.consumeStates(SecureHashUtils.randomSecureHash(), consumingStateRefs)
+                        txnOps.consumeStates(SecureHashUtils.randomSecureHash(), consumingStateRefs)
                     }
                 }
             }

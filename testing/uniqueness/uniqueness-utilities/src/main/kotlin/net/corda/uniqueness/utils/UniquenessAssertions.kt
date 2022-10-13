@@ -51,7 +51,7 @@ object UniquenessAssertions {
     }
 
     /**
-     * Checks for a input state unknown result. If a clock is specified, will additionally
+     * Checks for an input state unknown result. If a clock is specified, will additionally
      * check the result timestamp is valid with respect to the provider.
      */
     fun assertInputStateUnknownResult(txId: SecureHash,
@@ -67,7 +67,7 @@ object UniquenessAssertions {
     }
 
     /**
-     * Checks for a input state conflict result. If a clock is specified, will additionally
+     * Checks for an input state conflict result. If a clock is specified, will additionally
      * check the result timestamp is valid with respect to the provider.
      */
     fun assertInputStateConflictResult(txId: SecureHash,
