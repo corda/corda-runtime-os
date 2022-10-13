@@ -82,7 +82,7 @@ class JPABackingStoreImplIntegrationTests {
     private lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 
     companion object {
-        private val UPPER_BOUND = LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
+        private val DEFAULT_TIME_WINDOW_UPPER_BOUND = LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
         private const val MAX_ATTEMPTS = 10
 
         private val aliceIdentity = createTestHoldingIdentity("C=GB, L=London, O=Alice", "Test Group")
@@ -113,7 +113,7 @@ class JPABackingStoreImplIntegrationTests {
             emptyList(),
             0,
             null,
-            UPPER_BOUND
+            DEFAULT_TIME_WINDOW_UPPER_BOUND
         )
 
     @BeforeEach
