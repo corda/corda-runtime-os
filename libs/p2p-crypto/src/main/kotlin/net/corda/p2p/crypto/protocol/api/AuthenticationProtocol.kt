@@ -21,7 +21,6 @@ import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RESPONDER_HANDS
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RESPONDER_HANDSHAKE_MAC_KEY_INFO
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RESPONDER_SESSION_ENCRYPTION_KEY_INFO
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.RESPONDER_SESSION_NONCE_INFO
-import net.corda.p2p.crypto.protocol.api.PkiMode
 import net.corda.p2p.crypto.util.convertToBCDigest
 import net.corda.p2p.crypto.util.generateKey
 import net.corda.v5.crypto.SignatureSpec

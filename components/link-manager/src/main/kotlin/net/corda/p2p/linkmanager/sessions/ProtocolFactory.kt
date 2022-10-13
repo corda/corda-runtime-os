@@ -7,6 +7,7 @@ import net.corda.p2p.crypto.protocol.api.PkiMode
 import java.security.PublicKey
 
 internal interface ProtocolFactory {
+    @Suppress("LongParameterList")
     fun createInitiator(sessionId: String, supportedModes: Set<ProtocolMode>, ourMaxMessageSize: Int,
                         ourPublicKey: PublicKey, groupId: String, mode: PkiMode): AuthenticationProtocolInitiator
     fun createResponder(sessionId: String, supportedModes: Set<ProtocolMode>, ourMaxMessageSize: Int,

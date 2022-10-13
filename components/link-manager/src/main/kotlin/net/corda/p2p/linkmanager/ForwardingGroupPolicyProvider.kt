@@ -59,6 +59,7 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
         }
     }
 
+    @Suppress("ComplexMethod")
     private fun toGroupInfo(holdingIdentity: HoldingIdentity, groupPolicy: GroupPolicy): GroupPolicyListener.GroupInfo {
         val networkType = when (groupPolicy.p2pParameters.tlsPki) {
             P2PParameters.TlsPkiMode.STANDARD -> NetworkType.CORDA_5

@@ -81,7 +81,6 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
 import kotlin.concurrent.write
-import kotlin.math.log
 
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class SessionManagerImpl(

@@ -49,6 +49,7 @@ import javax.security.auth.x500.X500Principal
  *
  * This class is not thread-safe, which means clients that want to use it from different threads need to perform external synchronisation.
  */
+@Suppress("LongParameterList")
 class AuthenticationProtocolInitiator(val sessionId: String,
                                       private val supportedModes: Set<ProtocolMode>,
                                       private val ourMaxMessageSize: Int,
