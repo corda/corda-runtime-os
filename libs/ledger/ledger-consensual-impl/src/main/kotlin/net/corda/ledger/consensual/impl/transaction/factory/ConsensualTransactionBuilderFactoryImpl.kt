@@ -52,8 +52,8 @@ class ConsensualTransactionBuilderFactoryImpl @Activate constructor(
             serializationService,
             signingService,
             digitalSignatureVerificationService,
-            platformInfoProvider,
-            sandboxCpks
+            sandboxCpks,
+            platformInfoProvider.activePlatformVersion
         )
     }
 }

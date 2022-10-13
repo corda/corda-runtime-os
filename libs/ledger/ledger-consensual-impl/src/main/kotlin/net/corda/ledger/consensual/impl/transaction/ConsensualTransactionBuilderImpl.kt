@@ -16,7 +16,6 @@ import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
 import net.corda.ledger.common.internal.transaction.SignableData
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpkMetadata
-import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
@@ -42,8 +41,8 @@ class ConsensualTransactionBuilderImpl(
     private val signingService: SigningService,
     private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
     // cpi defines what type of signing/hashing is used (related to the digital signature signing and verification stuff)
-    private val platformInfoProvider: PlatformInfoProvider,
     private val sandboxCpks: List<CpkMetadata>,
+    private val activePlatformVersion: Int,
     override val states: List<ConsensualState> = emptyList(),
 ) : ConsensualTransactionBuilder {
 
@@ -135,7 +134,7 @@ class ConsensualTransactionBuilderImpl(
                 LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
                 LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
                 DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
-                PLATFORM_VERSION_KEY to platformInfoProvider.activePlatformVersion,
+                PLATFORM_VERSION_KEY to activePlatformVersion,
                 CPI_METADATA_KEY to getCpiMetadata(),
                 CPK_METADATA_KEY to getCpkMetadata()
             )
@@ -166,6 +165,7 @@ class ConsensualTransactionBuilderImpl(
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is ConsensualTransactionBuilderImpl) return false
+        if (other.activePlatformVersion != activePlatformVersion) return false
         if (other.states.size != states.size) return false
 
         return other.states.withIndex().all {
@@ -184,8 +184,8 @@ class ConsensualTransactionBuilderImpl(
             serializationService,
             signingService,
             digitalSignatureVerificationService,
-            platformInfoProvider,
             sandboxCpks,
+            activePlatformVersion,
             states,
         )
     }
