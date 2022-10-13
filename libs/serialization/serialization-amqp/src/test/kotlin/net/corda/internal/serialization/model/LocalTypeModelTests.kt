@@ -25,7 +25,8 @@ import kotlin.test.assertTrue
 class LocalTypeModelTests {
 
     private val descriptorBasedSerializerRegistry = DefaultDescriptorBasedSerializerRegistry()
-    private val customSerializerRegistry: CustomSerializerRegistry = CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry, mock())
+    private val customSerializerRegistry: CustomSerializerRegistry =
+        CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry, mock())
     private val model = ConfigurableLocalTypeModel(LocalTypeModelConfigurationImpl(customSerializerRegistry))
     private val emptyCustomSerializerRegistry = object : CustomSerializerRegistry {
         override val customSerializerNames: List<String> = emptyList()
