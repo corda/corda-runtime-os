@@ -21,6 +21,7 @@ import net.corda.applications.workers.smoketest.getOrCreateVirtualNodeFor
 import net.corda.applications.workers.smoketest.getRpcFlowResult
 import net.corda.applications.workers.smoketest.registerMember
 import net.corda.applications.workers.smoketest.startRpcFlow
+import net.corda.applications.workers.smoketest.TEST_STATIC_MEMBER_LIST
 import net.corda.applications.workers.smoketest.toJsonString
 import net.corda.applications.workers.smoketest.updateConfig
 import net.corda.applications.workers.smoketest.waitForConfigurationChange
@@ -75,7 +76,7 @@ class FlowTests {
         @JvmStatic
         internal fun beforeAll() {
             // Upload test flows if not already uploaded
-            conditionallyUploadCordaPackage(TEST_CPI_NAME, TEST_CPB_LOCATION, GROUP_ID)
+            conditionallyUploadCordaPackage(TEST_CPI_NAME, TEST_CPB_LOCATION, GROUP_ID, TEST_STATIC_MEMBER_LIST)
 
             // Make sure Virtual Nodes are created
             val bobActualHoldingId = getOrCreateVirtualNodeFor(X500_BOB)

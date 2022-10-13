@@ -25,9 +25,9 @@ class ClusterBuilder {
 
     fun get(cmd: String) = client!!.get(cmd)
 
-    private fun uploadCpiResource(cmd: String, resourceName: String, groupId: String): SimpleResponse {
+    private fun uploadCpiResource(cmd: String, resourceName: String, groupId: String, staticMemberNames: List<String>): SimpleResponse {
         val fileName = Paths.get(resourceName).fileName.toString()
-        return CpiLoader.get(resourceName, groupId).use {
+        return CpiLoader.get(resourceName, groupId, staticMemberNames).use {
             client!!.postMultiPart(cmd, emptyMap(), mapOf("upload" to HttpsClientFileUpload(it, fileName)))
         }
     }
@@ -61,14 +61,14 @@ class ClusterBuilder {
     fun cpbUpload(resourceName: String) = uploadUnmodifiedResource("/api/v1/cpi/", resourceName)
 
     /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
-    fun cpiUpload(resourceName: String, groupId: String) = uploadCpiResource("/api/v1/cpi/", resourceName, groupId)
+    fun cpiUpload(resourceName: String, groupId: String, staticMemberNames: List<String>) = uploadCpiResource("/api/v1/cpi/", resourceName, groupId, staticMemberNames)
 
     fun updateVirtualNodeState(holdingIdHash: String, newState: String) =
         put("/api/v1/maintenance/virtualnode/$holdingIdHash/state/$newState", "")
 
     /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
-    fun forceCpiUpload(resourceName: String, groupId: String) =
-        uploadCpiResource("/api/v1/maintenance/virtualnode/forcecpiupload/", resourceName, groupId)
+    fun forceCpiUpload(resourceName: String, groupId: String, staticMemberNames: List<String>) =
+        uploadCpiResource("/api/v1/maintenance/virtualnode/forcecpiupload/", resourceName, groupId, staticMemberNames)
 
     /** Return the status for the given request id */
     fun cpiStatus(id: String) = client!!.get("/api/v1/cpi/status/$id")

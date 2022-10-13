@@ -35,7 +35,7 @@ class ConsensualLedgerFullTest {
         internal fun beforeAll() {
             // Upload test flows if not already uploaded
             conditionallyUploadCordaPackage(CONSENSUAL_TEST_CPI_NAME, CONSENSUAL_TEST_CPB_LOCATION,
-                CONSENSUAL_GROUP_ID)
+                CONSENSUAL_GROUP_ID, CONSENSUAL_TEST_STATIC_MEMBER_LIST)
 
             // Make sure Virtual Nodes are created
             val aliceActualHoldingId = getOrCreateVirtualNodeFor(CONSENSUAL_X500_ALICE, CONSENSUAL_TEST_CPI_NAME)

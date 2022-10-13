@@ -207,7 +207,7 @@ fun getHoldingIdShortHash(x500Name: String, groupId: String): String {
  * Transform a Corda Package Bundle (CPB) into a Corda Package Installer (CPI) by adding the default group policy
  * used by smoke tests and upload the resulting CPI to the system if it doesn't already exist.
  */
-fun conditionallyUploadCordaPackage(name: String, cpb: String, groupId: String) {
+fun conditionallyUploadCordaPackage(name: String, cpb: String, groupId: String, staticMemberNames: List<String>) {
     return cluster {
         endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
@@ -215,7 +215,7 @@ fun conditionallyUploadCordaPackage(name: String, cpb: String, groupId: String) 
         val existingCpi = cpis.toList().firstOrNull { it["id"]["cpiName"].textValue() == name }
 
         if (existingCpi == null) {
-            val uploadResponse = cpiUpload(cpb, groupId)
+            val uploadResponse = cpiUpload(cpb, groupId, staticMemberNames)
             assertThat(uploadResponse.code).isEqualTo(OK.statusCode)
             assertThat(uploadResponse.toJson()["id"].textValue()).isNotEmpty
             val responseStatusId = uploadResponse.toJson()["id"].textValue()
