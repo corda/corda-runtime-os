@@ -3,10 +3,12 @@ package net.corda.uniqueness.utils
 
 import net.corda.data.uniqueness.*
 import net.corda.test.util.time.AutoTickTestClock
+import net.corda.v5.application.uniqueness.model.*
 import net.corda.uniqueness.datamodel.common.UniquenessConstants
 import net.corda.uniqueness.datamodel.common.toCharacterRepresentation
 import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
+import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertInstanceOf
@@ -16,7 +18,7 @@ import java.time.Instant
 /**
  * Uniqueness check related assertions for use in tests
  */
-@Suppress("SpreadOperator")
+@Suppress("SpreadOperator", "TooManyFunctions")
 object UniquenessAssertions {
     /**
      * Checks for a valid, standard success response. If a clock is specified, will additionally
@@ -28,7 +30,8 @@ object UniquenessAssertions {
     ) = getResultOfType<UniquenessCheckResultSuccessAvro>(response).run { assertValidTimestamp(commitTimestamp, clock) }
 
     /**
-     * Checks for an accepted uniqueness check result.
+     * Checks for an accepted uniqueness check result. If a clock is specified, will additionally
+     * check the result timestamp is valid with respect to the provider.
      */
     inline fun <reified T> assertAcceptedResult(result: UniquenessCheckResult, clock: AutoTickTestClock? = null) {
         assertInstanceOf(T::class.java, result)
@@ -37,12 +40,112 @@ object UniquenessAssertions {
     }
 
     /**
-     * Checks for a rejected uniqueness check result.
+     * Performs common checks for a reject result. If a clock is specified, will additionally
+     * check the result timestamp is valid with respect to the provider.
      */
-    inline fun <reified T>assertRejectedResult(result: UniquenessCheckResult, clock: AutoTickTestClock? = null) {
+    private inline fun <reified T>assertRejectedResultCommon(result: UniquenessCheckResult,
+                                                             clock: AutoTickTestClock? = null) {
         assertInstanceOf(T::class.java, getErrorOfType<T>(result))
         assertThat(result.toCharacterRepresentation()).isEqualTo(UniquenessConstants.RESULT_REJECTED_REPRESENTATION)
         assertValidTimestamp(result.resultTimestamp, clock)
+    }
+
+    /**
+     * Checks for a input state unknown result. If a clock is specified, will additionally
+     * check the result timestamp is valid with respect to the provider.
+     */
+    fun assertInputStateUnknownResult(txId: SecureHash,
+                                      result: UniquenessCheckResult,
+                                      clock: AutoTickTestClock? = null) {
+        assertRejectedResultCommon<UniquenessCheckErrorInputStateUnknown>(result, clock)
+
+        val unknownStates = (getErrorOfType<UniquenessCheckErrorInputStateUnknown>(result)).unknownStates
+        assertAll(
+            { assertThat(unknownStates.size).isEqualTo(1) },
+            { assertThat(unknownStates.single().stateIndex).isEqualTo(0) },
+            { assertThat(unknownStates.single().txHash).isEqualTo(txId) })
+    }
+
+    /**
+     * Checks for a input state conflict result. If a clock is specified, will additionally
+     * check the result timestamp is valid with respect to the provider.
+     */
+    fun assertInputStateConflictResult(txId: SecureHash,
+                                       consumingTxId: SecureHash,
+                                       result: UniquenessCheckResult,
+                                       clock: AutoTickTestClock? = null) {
+        assertRejectedResultCommon<UniquenessCheckErrorInputStateConflict>(result, clock)
+
+        val conflicts = (getErrorOfType<UniquenessCheckErrorInputStateConflict>(result)).conflictingStates
+        assertAll(
+            { assertThat(conflicts.size).isEqualTo(1) },
+            { assertThat(conflicts.single().consumingTxId).isEqualTo(consumingTxId) },
+            { assertThat(conflicts.single().stateRef.txHash).isEqualTo(txId) },
+            { assertThat(conflicts.single().stateRef.stateIndex).isEqualTo(0) } )
+    }
+
+    /**
+     * Checks for a reference state conflict result. If a clock is specified, will additionally
+     * check the result timestamp is valid with respect to the provider.
+     */
+    fun assertReferenceStateConflictResult(txId: SecureHash,
+                                           consumingTxId: SecureHash,
+                                           result: UniquenessCheckResult,
+                                           clock: AutoTickTestClock? = null) {
+        assertRejectedResultCommon<UniquenessCheckErrorReferenceStateConflict>(result, clock)
+
+        val conflicts = (getErrorOfType<UniquenessCheckErrorReferenceStateConflict>(result)).conflictingStates
+        assertAll(
+            { assertThat(conflicts.size).isEqualTo(1) },
+            { assertThat(conflicts.single().consumingTxId).isEqualTo(consumingTxId) },
+            { assertThat(conflicts.single().stateRef.txHash).isEqualTo(txId) },
+            { assertThat(conflicts.single().stateRef.stateIndex).isEqualTo(0) })
+    }
+
+    /**
+     * Checks for a reference state unknown result. If a clock is specified, will additionally
+     * check the result timestamp is valid with respect to the provider.
+     */
+    fun assertReferenceStateUnknownResult(txId: SecureHash,
+                                          result: UniquenessCheckResult,
+                                          clock: AutoTickTestClock? = null) {
+        assertRejectedResultCommon<UniquenessCheckErrorReferenceStateUnknown>(result, clock)
+
+        val unknownStates = (getErrorOfType<UniquenessCheckErrorReferenceStateUnknown>(result)).unknownStates
+        assertAll(
+            { assertThat(unknownStates.size).isEqualTo(1) },
+            { assertThat(unknownStates.single().stateIndex).isEqualTo(0) },
+            { assertThat(unknownStates.single().txHash).isEqualTo(txId) })
+    }
+
+    /**
+     * Checks for a time window out of bound result. If a clock is specified, will additionally check the result
+     * timestamp is valid with respect to the provider.
+     */
+    fun assertTimeWindowOutOfBoundsResult(evaluationTime: Instant,
+                                          lowerBound: Instant,
+                                          upperBound:Instant,
+                                          result: UniquenessCheckResult,
+                                          clock: AutoTickTestClock? = null
+    ) {
+        assertRejectedResultCommon<UniquenessCheckErrorTimeWindowOutOfBounds>(result, clock)
+
+        val error = getErrorOfType<UniquenessCheckErrorTimeWindowOutOfBounds>(result)
+        assertAll(
+            { assertThat(error.evaluationTimestamp).isEqualTo(evaluationTime) },
+            { assertThat(error.timeWindowLowerBound).isEqualTo(lowerBound) },
+            { assertThat(error.timeWindowUpperBound).isEqualTo(upperBound) })
+    }
+
+    /**
+     * Checks for a malformed request result with the specified error text. If a clock is specified, will additionally
+     * check the result timestamp is valid with respect to the provider.
+     */
+    fun assertMalformedRequestResult(errorMessage:String,
+                                     result: UniquenessCheckResult,
+                                     clock: AutoTickTestClock? = null) {
+        assertRejectedResultCommon<UniquenessCheckErrorMalformedRequest>(result, clock)
+        assertThat((getErrorOfType<UniquenessCheckErrorMalformedRequest>(result)).errorText) .isEqualTo(errorMessage)
     }
 
     /**
@@ -117,8 +220,8 @@ object UniquenessAssertions {
      */
     fun assertReferenceStateConflictResponse(
         response: UniquenessCheckResponseAvro,
-        expectedConflictingStates: List<String>
-    ) {
+        expectedConflictingStates: List<String>)
+    {
         getResultOfType<UniquenessCheckResultReferenceStateConflictAvro>(response).run {
             assertThat(conflictingStates)
                 .containsExactlyInAnyOrder(*expectedConflictingStates.toTypedArray())
@@ -132,8 +235,8 @@ object UniquenessAssertions {
     fun assertTimeWindowOutOfBoundsResponse(
         response: UniquenessCheckResponseAvro,
         expectedLowerBound: Instant? = null,
-        expectedUpperBound: Instant
-    ) {
+        expectedUpperBound: Instant)
+    {
         getResultOfType<UniquenessCheckResultTimeWindowOutOfBoundsAvro>(response).run {
             assertAll(
                 { assertEquals(expectedLowerBound, timeWindowLowerBound, "Lower bound") },
