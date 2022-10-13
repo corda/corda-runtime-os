@@ -16,7 +16,7 @@ class RBACSecurityManagerTest {
 
     private val validator = mock<PermissionValidator>()
     private val basicAuthenticationService = mock<BasicAuthenticationService>()
-    private val manager = RBACSecurityManager(validator, basicAuthenticationService)
+    private val manager = RBACSecurityManager({ validator }, basicAuthenticationService)
 
     @Test
     fun `unauthenticated user throws FailedLoginException`() {
