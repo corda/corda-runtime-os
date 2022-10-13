@@ -41,7 +41,7 @@ internal class ConsensualLedgerTransactionImplTest {
             serializationService,
             ConsensualTransactionMocks.mockSigningService(),
             mock(),
-            ConsensualTransactionMocks.mockMemberLookup(),
+            ConsensualTransactionMocks.mockPlatformInfoProvider(),
             ConsensualTransactionMocks.mockSandboxCpks(),
         )
             .withStates(ConsensualTransactionMocks.testConsensualState)

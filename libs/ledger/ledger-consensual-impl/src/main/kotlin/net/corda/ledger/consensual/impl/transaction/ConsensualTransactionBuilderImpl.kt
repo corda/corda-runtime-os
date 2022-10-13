@@ -16,11 +16,11 @@ import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
 import net.corda.ledger.common.internal.transaction.SignableData
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpkMetadata
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -42,7 +42,7 @@ class ConsensualTransactionBuilderImpl(
     private val signingService: SigningService,
     private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
     // cpi defines what type of signing/hashing is used (related to the digital signature signing and verification stuff)
-    private val memberLookup: MemberLookup,
+    private val platformInfoProvider: PlatformInfoProvider,
     private val sandboxCpks: List<CpkMetadata>,
     override val states: List<ConsensualState> = emptyList(),
 ) : ConsensualTransactionBuilder {
@@ -135,7 +135,7 @@ class ConsensualTransactionBuilderImpl(
                 LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
                 LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
                 DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
-                PLATFORM_VERSION_KEY to memberLookup.myInfo().platformVersion,
+                PLATFORM_VERSION_KEY to platformInfoProvider.activePlatformVersion,
                 CPI_METADATA_KEY to getCpiMetadata(),
                 CPK_METADATA_KEY to getCpkMetadata()
             )
@@ -184,7 +184,7 @@ class ConsensualTransactionBuilderImpl(
             serializationService,
             signingService,
             digitalSignatureVerificationService,
-            memberLookup,
+            platformInfoProvider,
             sandboxCpks,
             states,
         )

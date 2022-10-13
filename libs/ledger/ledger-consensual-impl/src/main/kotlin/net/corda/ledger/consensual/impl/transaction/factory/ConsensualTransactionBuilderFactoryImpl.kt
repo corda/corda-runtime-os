@@ -2,10 +2,10 @@ package net.corda.ledger.consensual.impl.transaction.factory
 
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.ledger.consensual.impl.transaction.ConsensualTransactionBuilderImpl
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
@@ -33,8 +33,8 @@ class ConsensualTransactionBuilderFactoryImpl @Activate constructor(
     private val signingService: SigningService,
     @Reference(service = DigitalSignatureVerificationService::class)
     private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
-    @Reference(service = MemberLookup::class)
-    private val memberLookup: MemberLookup,
+    @Reference(service = PlatformInfoProvider::class)
+    private val platformInfoProvider: PlatformInfoProvider,
     @Reference(service = FlowFiberService::class)
     private val flowFiberService: FlowFiberService
 ) : ConsensualTransactionBuilderFactory {
@@ -52,7 +52,7 @@ class ConsensualTransactionBuilderFactoryImpl @Activate constructor(
             serializationService,
             signingService,
             digitalSignatureVerificationService,
-            memberLookup,
+            platformInfoProvider,
             sandboxCpks
         )
     }

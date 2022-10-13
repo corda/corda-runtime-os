@@ -96,7 +96,7 @@ internal class ConsensualTransactionBuilderImplTest {
             serializationService,
             ConsensualTransactionMocks.mockSigningService(),
             mock(),
-            ConsensualTransactionMocks.mockMemberLookup(),
+            ConsensualTransactionMocks.mockPlatformInfoProvider(),
             ConsensualTransactionMocks.mockSandboxCpks()
         )
     }

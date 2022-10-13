@@ -7,10 +7,8 @@ import net.corda.libs.packaging.core.CpkManifest
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
 import net.corda.libs.packaging.core.CpkIdentifier
-import net.corda.membership.lib.MemberInfoExtension
-import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.v5.application.crypto.SigningService
-import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
@@ -18,8 +16,6 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
-import net.corda.v5.membership.MemberContext
-import net.corda.v5.membership.MemberInfo
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
@@ -56,31 +52,6 @@ class ConsensualTransactionMocks {
         val testPublicKey = kpg.genKeyPair().public
         val testPartyImpl = Party(testMemberX500Name, testPublicKey)
         val testConsensualState = TestConsensualState("test", listOf(testPartyImpl))
-
-        fun mockMemberLookup(): MemberLookup {
-            val holdingIdentity = HoldingIdentity(testMemberX500Name, "1")
-
-            val mgmContext = mock<MGMContext> {
-                on { parseOrNull(eq(MemberInfoExtension.IS_MGM), any<Class<Boolean>>()) } doReturn true
-                on { parse(eq(MemberInfoExtension.STATUS), any<Class<String>>()) } doReturn "fakestatus"
-                on { entries } doReturn mapOf("mgm" to holdingIdentity.x500Name.toString()).entries
-            }
-            val memberContext = mock<MemberContext> {
-                on { parse(eq(MemberInfoExtension.GROUP_ID), any<Class<String>>()) } doReturn holdingIdentity.groupId
-                on { entries } doReturn mapOf("member" to holdingIdentity.x500Name.toString()).entries
-            }
-            val memberInfo = mock<MemberInfo> {
-                on { mgmProvidedContext } doReturn mgmContext
-                on { memberProvidedContext } doReturn memberContext
-                on { platformVersion } doReturn 888
-                on { name } doReturn testMemberX500Name
-                on { groupId } doReturn "1"
-            }
-            val memberLookup: MemberLookup = mock()
-            whenever(memberLookup.myInfo()).thenReturn(memberInfo)
-
-            return memberLookup
-        }
 
         fun mockSandboxCpks(): List<CpkMetadata> {
             return listOf(
@@ -119,6 +90,12 @@ class ConsensualTransactionMocks {
             val signature = DigitalSignature.WithKey(testPublicKey, "0".toByteArray(), mapOf())
             whenever(signingService.sign(any(), any(), any())).thenReturn(signature)
             return signingService
+        }
+
+        fun mockPlatformInfoProvider(): PlatformInfoProvider{
+            val platformInfoProvider: PlatformInfoProvider = mock()
+            whenever(platformInfoProvider.activePlatformVersion).thenReturn(123)
+            return platformInfoProvider
         }
     }
 }

@@ -50,7 +50,7 @@ class ConsensualLedgerServiceImplTest {
             serializationService,
             ConsensualTransactionMocks.mockSigningService(),
             mock(),
-            ConsensualTransactionMocks.mockMemberLookup(),
+            ConsensualTransactionMocks.mockPlatformInfoProvider(),
             flowFiberService
         )
 
