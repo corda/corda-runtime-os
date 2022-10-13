@@ -40,7 +40,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
-import java.util.UUID
 
 @Component(service = [PermissionManagementCacheService::class])
 class PermissionManagementCacheService @Activate constructor(
@@ -60,10 +59,7 @@ class PermissionManagementCacheService @Activate constructor(
 
     private companion object {
         val log = contextLogger()
-        // Cache may exist on multiple Workers, i.e. in the separate VMs. Therefore, since we do have just a single
-        // instance of cache per VM it is OK to have just a single consumer in VM. But different VMs need to have
-        // different consumer groups or else permission cache content will not be delivered to them.
-        val CONSUMER_GROUP = "PERMISSION_MANAGEMENT_SERVICE-${UUID.randomUUID()}"
+        const val CONSUMER_GROUP = "PERMISSION_MANAGEMENT_SERVICE"
     }
 
     /**
