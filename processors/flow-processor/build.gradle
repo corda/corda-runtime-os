@@ -34,6 +34,7 @@ dependencies {
 
     runtimeOnly 'javax.persistence:javax.persistence-api'
     runtimeOnly "net.corda:corda-avro-schema"
+    runtimeOnly "net.corda:corda-ledger-common"
     runtimeOnly project(':libs:ledger:ledger-common-impl')
     runtimeOnly project(':libs:ledger:ledger-common-serialization')
     runtimeOnly project(':libs:ledger:ledger-consensual-impl')

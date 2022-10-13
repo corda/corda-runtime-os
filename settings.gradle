@@ -238,6 +238,7 @@ include 'libs:ledger:ledger-common-internal'
 include 'libs:ledger:ledger-common-serialization'
 include 'libs:ledger:ledger-consensual-impl'
 include 'libs:ledger:ledger-consensual-serialization'
+include 'libs:ledger:ledger-utxo-impl'
 include 'libs:ledger:ledger-persistence-client'
 include 'libs:lifecycle:lifecycle'
 include 'libs:lifecycle:lifecycle-impl'
@@ -425,7 +426,7 @@ if (compositeBuild.toBoolean() && file(cordaApiLocation).exists()) {
     }
 }
 if (compositeBuild.toBoolean() && file(cordaCliHostLocation).exists()) {
-    includeBuild(cordaCliHostLocation){
+    includeBuild(cordaCliHostLocation) {
         dependencySubstitution {
             substitute module("net.corda.cli.host:corda-cli") with project(":app")
             substitute module("net.corda.cli.host:api") with project(":api")
