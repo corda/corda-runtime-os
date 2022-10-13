@@ -15,7 +15,7 @@ interface SerializationCustomizer {
      *
      * @return true if serializer was added, otherwise false
      */
-    fun <T> setSerializer(serializer: JsonSerializer<T>, clazz: Class<T>): Boolean
+    fun setSerializer(serializer: JsonSerializer<*>, clazz: Class<*>): Boolean
 
     /**
      * Sets a deserializer for a certain class type. If a serializer already exists for this class type, does nothing.
@@ -25,5 +25,5 @@ interface SerializationCustomizer {
      *
      * @return true if deserializer was added, otherwise false
      */
-    fun <T> setDeserializer(deserializer: JsonDeserializer<T>, clazz: Class<T>): Boolean
+    fun setDeserializer(deserializer: JsonDeserializer<*>, clazz: Class<*>): Boolean
 }

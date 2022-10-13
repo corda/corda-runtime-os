@@ -78,7 +78,7 @@ class JsonMarshallingServiceImpl : JsonMarshallingService, SingletonSerializeAsT
         }
     }
 
-    override fun <T> setSerializer(serializer: JsonSerializer<T>, clazz: Class<T>): Boolean {
+    override fun setSerializer(serializer: JsonSerializer<*>, clazz: Class<*>): Boolean {
         if (customSerializableClasses.contains(clazz)) return false
         customSerializableClasses.add(clazz)
 
@@ -89,7 +89,7 @@ class JsonMarshallingServiceImpl : JsonMarshallingService, SingletonSerializeAsT
         return true
     }
 
-    override fun <T> setDeserializer(deserializer: JsonDeserializer<T>, clazz: Class<T>): Boolean {
+    override fun setDeserializer(deserializer: JsonDeserializer<*>, clazz: Class<*>): Boolean {
         if (customDeserializableClasses.contains(clazz)) return false
         customDeserializableClasses.add(clazz)
 
