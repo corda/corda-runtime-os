@@ -182,7 +182,10 @@ abstract class BuildkitBuild extends Exec {
         //for testing
         targetRepo = "docker-js-temp.software.r3.com"
 
-        if (preTest.get()) {
+        if(!containerTag.get().isEmpty()){
+            targetTags = ["${containerTag.get()}"]
+            imageRepo.add([name:targetRepo, tag:targetTags])
+        }else if (preTest.get()) {
             //targetRepo = "corda-os-docker-pre-test.software.r3.com"
             targetTags = ["preTest-${tagPrefix}${version}","preTest-${tagPrefix}${gitRevision}"]
             imageRepo.add([name:targetRepo, tag:targetTags])
@@ -209,12 +212,6 @@ abstract class BuildkitBuild extends Exec {
         } else{
             //targetRepo = "corda-os-docker-dev.software.r3.com/corda-os-${containerName}"
             targetTags = ["latest-local", "${version}", "${gitRevision}"]
-            imageRepo.add([name:targetRepo, tag:targetTags])
-
-        }
-
-        if(!containerTag.get().isEmpty()){
-            targetTags = ["${containerTag.get()}"]
             imageRepo.add([name:targetRepo, tag:targetTags])
         }
 

@@ -95,6 +95,7 @@ tasks.register('publishBuildkitImage' , BuildkitBuild) {
     def cordaApiIncluded = gradle.includedBuilds.collect { it.name == "corda-api" }.contains(true)
     it.subDir = "plugins/"
     it.containerName = project.name
+    it.overrideEntryName = "cli"
     it.sourceFiles.setFrom(otherPluginsTasks)
 
     if (project.hasProperty('cliBaseImage')) {
