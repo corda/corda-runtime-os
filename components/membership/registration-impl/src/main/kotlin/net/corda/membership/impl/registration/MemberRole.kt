@@ -78,7 +78,7 @@ internal sealed class MemberRole {
                 String.format(NOTARY_KEY_PEM, index) to key.pem,
                 String.format(NOTARY_KEY_HASH, index) to key.hash.toString(),
                 String.format(NOTARY_KEY_SPEC, index) to key.spec.signatureName,
-            ) + if(plugin == null ){
+            ) + if (plugin == null) {
                 emptyList()
             } else {
                 listOf(

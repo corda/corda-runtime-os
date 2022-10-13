@@ -375,6 +375,68 @@ class DynamicMemberRegistrationServiceTest {
     }
 
     @Test
+    fun `registration fails when notary keys are numbered incorrectly`() {
+        postConfigChangedEvent()
+        val testProperties =
+            context + mapOf(
+                "corda.roles.0" to "notary",
+                "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
+                "corda.notary.keys.100.id" to LEDGER_KEY_ID,
+            )
+        registrationService.start()
+
+        val result = registrationService.register(registrationResultId, member, testProperties)
+
+        assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+    }
+
+    @Test
+    fun `registration pass when notary keys are numbered correctly`() {
+        postConfigChangedEvent()
+        val testProperties =
+            context + mapOf(
+                "corda.roles.0" to "notary",
+                "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
+                "corda.notary.keys.0.id" to LEDGER_KEY_ID,
+            )
+        registrationService.start()
+
+        val result = registrationService.register(registrationResultId, member, testProperties)
+
+        assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.SUBMITTED)
+    }
+
+    @Test
+    fun `registration fails when notary service is invalid`() {
+        postConfigChangedEvent()
+        val testProperties =
+            context + mapOf(
+                "corda.roles" to "notary",
+                "corda.notary.service.name" to "Hello world",
+            )
+        registrationService.start()
+
+        val result = registrationService.register(registrationResultId, member, testProperties)
+
+        assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+    }
+
+    @Test
+    fun `registration pass when notary service is valid`() {
+        postConfigChangedEvent()
+        val testProperties =
+            context + mapOf(
+                "corda.roles.0" to "notary",
+                "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
+            )
+        registrationService.start()
+
+        val result = registrationService.register(registrationResultId, member, testProperties)
+
+        assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.SUBMITTED)
+    }
+
+    @Test
     fun `registration fails if the registration context doesn't match the schema`() {
         postConfigChangedEvent()
         val err = "ERROR-MESSAGE"
