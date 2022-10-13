@@ -1,7 +1,7 @@
 package net.corda.ledger.consensual.impl.converter
 
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
-import net.corda.ledger.consensual.impl.PartyImpl
+import net.corda.ledger.common.impl.PartyConverter
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_SESSION_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
@@ -9,6 +9,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.ledger.common.Party
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -33,14 +34,8 @@ class PartyConverterTest {
             NOTARY_SERVICE_PARTY_NAME to notaryName,
             NOTARY_SERVICE_SESSION_KEY to KEY
         )
-        val nodeParty = PartyImpl(
-            MemberX500Name.parse(partyName),
-            key
-        )
-        val notaryServiceParty = PartyImpl(
-            MemberX500Name.parse(notaryName),
-            key
-        )
+        val nodeParty = Party(MemberX500Name.parse(partyName), key)
+        val notaryServiceParty = Party(MemberX500Name.parse(notaryName), key)
     }
 
     @BeforeEach
