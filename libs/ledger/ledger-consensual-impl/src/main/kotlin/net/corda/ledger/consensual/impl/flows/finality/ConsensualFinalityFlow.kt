@@ -65,7 +65,7 @@ class ConsensualFinalityFlow(
 
         var signedByParticipantsTransaction = signedTransaction
 
-        sessions.forEachIndexed{idx, session ->
+        sessions.forEachIndexed { idx, session ->
             // TODO Use [FlowMessaging.sendAll] and [FlowMessaging.receiveAll] anyway
             log.debug { "Requesting signature from ${session.counterparty} for signed transaction ${signedTransaction.id}" }
             session.send(signedTransaction)
@@ -81,9 +81,9 @@ class ConsensualFinalityFlow(
             log.debug { "Received signature from ${session.counterparty} for signed transaction ${signedTransaction.id}" }
 
             try {
-                if(signature.by != sessionPublicKeys[idx]) {
+                if (signature.by != sessionPublicKeys[idx]) {
                     throw CordaRuntimeException(
-                        "A session with ${session.counterparty} sent back a signature with another keys." +
+                        "A session with ${session.counterparty} sent back a signature with another key." +
                                 "Expected: ${sessionPublicKeys[idx]} vs Received: ${signature.by}"
                     )
                 }
