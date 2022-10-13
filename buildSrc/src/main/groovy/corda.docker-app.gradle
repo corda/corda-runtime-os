@@ -41,6 +41,14 @@ tasks.register('publishBuildkitImage' , BuildkitBuild) {
     if(project.hasProperty('tag')){
         it.containerTag = tag
     }
+
+    if (project.hasProperty('isNightly')) {
+        nightlyBuild = isNightly.toBoolean()
+    }
+
+    if (project.hasProperty('isPreTest')) {
+        preTest = isPreTest.toBoolean()
+    }
 }
 
 tasks.register('publishOSGiImage', DeployableContainerBuilder) {
