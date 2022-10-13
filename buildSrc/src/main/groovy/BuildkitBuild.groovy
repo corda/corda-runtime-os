@@ -213,6 +213,11 @@ abstract class BuildkitBuild extends Exec {
 
         }
 
+        if(!containerTag.get().isEmpty()){
+            targetTags = ["${containerTag.get()}"]
+            imageRepo.add([name:targetRepo, tag:targetTags])
+        }
+
         List<String> javaArgs = new ArrayList<String>(arguments.get())
         javaArgs.add("-Dlog4j2.debug=\${ENABLE_LOG4J2_DEBUG:-false}")
         javaArgs.add("-Dlog4j.configurationFile=log4j2-console.xml")
