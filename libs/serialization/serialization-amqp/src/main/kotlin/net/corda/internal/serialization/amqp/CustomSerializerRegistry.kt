@@ -26,7 +26,7 @@ import net.corda.sandbox.SandboxGroup
  */
 class IllegalCustomSerializerException private constructor(customSerializerQualifiedName: String?, clazz: Class<*>) :
     Exception(
-        "Custom serializer $customSerializerQualifiedName registered " +
+        "Custom serializer $customSerializerQualifiedName " +
                 "to serialize non-custom-serializable type $clazz"
     ) {
     constructor(customSerializer: AMQPSerializer<*>, clazz: Class<*>) :
@@ -149,7 +149,7 @@ class CachingCustomSerializerRegistry(
         val clazz = customSerializer.type.asClass()
         if (sandboxGroup.loadClassFromPublicBundles(clazz.name) != null) {
             // Prevent registering custom serializers targeting Corda platform types
-            logger.warn("Illegal custom serializer detected for $clazz: ${serializer::class.qualifiedName}")
+            logger.warn("Illegal custom serializer external registration for $clazz: ${serializer::class.qualifiedName}")
             throw IllegalCustomSerializerException(serializer, clazz)
         }
         logger.trace { "action=\"Registering external serializer\", class=\"${customSerializer.type}\"" }
