@@ -44,8 +44,7 @@ class ConsensualReceiveFinalityFlow(
 
         // TODO [CORE-7029] Record unfinalised transaction
 
-        val txWithMySignature = signedTransaction.sign(memberLookup.myInfo().ledgerKeys.first())
-        val mySignature = txWithMySignature.signatures.last()
+        val (_, mySignature) = signedTransaction.addSignature(memberLookup.myInfo().ledgerKeys.first())
 
         session.send(mySignature)
 

@@ -53,10 +53,13 @@ class ConsensualSignedTransactionImpl(
         ConsensualLedgerTransactionImpl(this.wireTransaction, serializer)
 
     @Suspendable
-    override fun sign(publicKey: PublicKey): ConsensualSignedTransaction =
-        ConsensualSignedTransactionImpl(serializer, signingService, wireTransaction,
-            signatures + createTransactionSignature(signingService, serializer, getCpiIdentifier(), id, publicKey)
-        )
+    override fun addSignature(publicKey: PublicKey): Pair<ConsensualSignedTransaction, DigitalSignatureAndMetadata> {
+        val newSignature = createTransactionSignature(signingService, serializer, getCpiIdentifier(), id, publicKey)
+        return Pair(ConsensualSignedTransactionImpl(
+            serializer, signingService, wireTransaction,
+            signatures + newSignature
+        ), newSignature)
+    }
 
     override fun addSignature(signature: DigitalSignatureAndMetadata): ConsensualSignedTransaction =
         ConsensualSignedTransactionImpl(serializer, signingService, wireTransaction, signatures + signature)
