@@ -1,13 +1,13 @@
 package net.corda.applications.workers.crypto
 
 import net.corda.applications.workers.workercommon.DefaultWorkerParams
-import net.corda.applications.workers.workercommon.HealthMonitor
+import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.applications.workers.workercommon.JavaSerialisationFilter
 import net.corda.applications.workers.workercommon.PathAndConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBootstrapConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
-import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setUpHealthMonitor
+import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupMonitor
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
@@ -31,8 +31,8 @@ class CryptoWorker @Activate constructor(
     private val processor: CryptoProcessor,
     @Reference(service = Shutdown::class)
     private val shutDownService: Shutdown,
-    @Reference(service = HealthMonitor::class)
-    private val healthMonitor: HealthMonitor,
+    @Reference(service = WorkerMonitor::class)
+    private val workerMonitor: WorkerMonitor,
     @Reference(service = ConfigurationValidatorFactory::class)
     private val configurationValidatorFactory: ConfigurationValidatorFactory
 ) : Application {
@@ -51,7 +51,7 @@ class CryptoWorker @Activate constructor(
         if (params.hsmId.isBlank()) {
             throw IllegalStateException("Please specify which HSM the worker must handle, like --hsm-id SOFT")
         }
-        setUpHealthMonitor(healthMonitor, params.defaultParams)
+        setupMonitor(workerMonitor, params.defaultParams)
         processor.start(
             buildBoostrapConfig(params, configurationValidatorFactory)
         )
@@ -60,7 +60,7 @@ class CryptoWorker @Activate constructor(
     override fun shutdown() {
         logger.info("Crypto worker stopping.")
         processor.stop()
-        healthMonitor.stop()
+        workerMonitor.stop()
     }
 
     private fun buildBoostrapConfig(

@@ -1,6 +1,5 @@
 package net.corda.flow.application.persistence.query
 
-import co.paralleluniverse.fibers.Suspendable
 import java.nio.ByteBuffer
 import net.corda.flow.application.persistence.external.events.NamedQueryExternalEventFactory
 import net.corda.flow.application.persistence.external.events.NamedQueryParameters
@@ -8,6 +7,7 @@ import net.corda.flow.application.persistence.wrapWithPersistenceException
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.v5.application.persistence.ParameterizedQuery
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.base.annotations.Suspendable
 
 /**
  * [NamedParameterizedQuery] is used to set and execute named queries.
@@ -57,7 +57,6 @@ class NamedParameterizedQuery<R : Any>(
         return deserialized
     }
 
-    @Suspendable
     private fun getSerializedParameters(parameters: Map<String, Any>) : Map<String, ByteBuffer> {
         return parameters.mapValues {
             ByteBuffer.wrap(serializationService.serialize(it.value).bytes)

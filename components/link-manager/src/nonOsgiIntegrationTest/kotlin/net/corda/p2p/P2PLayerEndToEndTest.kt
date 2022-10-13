@@ -98,6 +98,8 @@ class P2PLayerEndToEndTest {
         private const val GROUP_ID = "group-1"
         private const val TLS_KEY_TENANT_ID = "p2p"
 
+        private const val MAX_REQUEST_SIZE = 50_000_000L
+
         fun Key.toPem(): String {
             return StringWriter().use { str ->
                 JcaPEMWriter(str).use { writer ->
@@ -414,6 +416,7 @@ class P2PLayerEndToEndTest {
             return ConfigFactory.empty()
                 .withValue("hostAddress", ConfigValueFactory.fromAnyRef(domainName))
                 .withValue("hostPort", ConfigValueFactory.fromAnyRef(port))
+                .withValue("maxRequestSize", ConfigValueFactory.fromAnyRef(MAX_REQUEST_SIZE))
                 .withValue("sslConfig.revocationCheck.mode", ConfigValueFactory.fromAnyRef(sslConfig.revocationCheck.mode.toString()))
         }
 

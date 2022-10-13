@@ -13,7 +13,7 @@ fun getWireTransaction(
     jsonMarshallingService: JsonMarshallingService
 ): WireTransaction{
     val transactionMetaData = TransactionMetaData(
-        mapOf(
+        linkedMapOf(
             TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues
         )
     )

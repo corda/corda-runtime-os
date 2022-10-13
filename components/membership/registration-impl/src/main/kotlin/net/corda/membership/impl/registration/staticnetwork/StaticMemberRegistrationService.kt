@@ -4,19 +4,20 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
-import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.ALIAS_FILTER
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.layeredpropertymap.toAvro
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.impl.registration.KeysFactory
 import net.corda.membership.impl.registration.MemberRole
+import net.corda.membership.impl.registration.MemberRole.Companion.toMemberInfo
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_PROTOCOL
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_URL
 import net.corda.membership.lib.EndpointInfoFactory
@@ -55,7 +56,7 @@ import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.versioning.Version
 import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.crypto.calculateHash
+import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
@@ -65,7 +66,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import java.nio.ByteBuffer
-import java.security.PublicKey
 import java.util.UUID
 
 @Suppress("LongParameterList")
@@ -95,6 +95,8 @@ class StaticMemberRegistrationService @Activate constructor(
     val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
     @Reference(service = EndpointInfoFactory::class)
     private val endpointInfoFactory: EndpointInfoFactory,
+    @Reference(service = PlatformInfoProvider::class)
+    private val platformInfoProvider: PlatformInfoProvider
 ) : MemberRegistrationService {
     companion object {
         private val logger: Logger = contextLogger()
@@ -162,7 +164,12 @@ class StaticMemberRegistrationService @Activate constructor(
             val keyScheme = context[KEY_SCHEME] ?: throw IllegalArgumentException("Key scheme must be specified.")
             val groupPolicy = groupPolicyProvider.getGroupPolicy(member)
                 ?: throw CordaRuntimeException("Could not find group policy for member: [$member]")
-            val (memberInfo, records) = parseMemberTemplate(member, groupPolicy, keyScheme)
+            val (memberInfo, records) = parseMemberTemplate(
+                member,
+                groupPolicy,
+                keyScheme,
+                roles,
+            )
             (records + createHostedIdentity(member, groupPolicy)).publish()
             persistRegistrationRequest(registrationId, memberInfo)
         } catch (e: Exception) {
@@ -209,6 +216,7 @@ class StaticMemberRegistrationService @Activate constructor(
         registeringMember: HoldingIdentity,
         groupPolicy: GroupPolicy,
         keyScheme: String,
+        roles: Collection<MemberRole>,
     ): Pair<MemberInfo, List<Record<String, PersistentMemberInfo>>> {
         val groupId = groupPolicy.groupId
 
@@ -228,21 +236,27 @@ class StaticMemberRegistrationService @Activate constructor(
 
         validateStaticMemberDeclaration(staticMemberInfo)
         // single key used as both session and ledger key
-        val memberKey = getOrGenerateKeyPair(memberId, keyScheme)
-        val encodedMemberKey = keyEncodingService.encodeAsString(memberKey)
+        val keysFactory = KeysFactory(
+            cryptoOpsClient,
+            keyEncodingService,
+            keyScheme,
+            memberId,
+        )
+        val memberKey = keysFactory.getOrGenerateKeyPair(CryptoConsts.Categories.LEDGER)
 
         @Suppress("SpreadOperator")
         val memberInfo = memberInfoFactory.create(
             sortedMapOf(
                 PARTY_NAME to memberName.toString(),
-                PARTY_SESSION_KEY to encodedMemberKey,
+                PARTY_SESSION_KEY to memberKey.pem,
                 GROUP_ID to groupId,
-                *generateLedgerKeys(encodedMemberKey).toTypedArray(),
-                *generateLedgerKeyHashes(memberKey).toTypedArray(),
+                *generateLedgerKeys(memberKey.pem).toTypedArray(),
+                *generateLedgerKeyHashes(memberKey.hash).toTypedArray(),
                 *convertEndpoints(staticMemberInfo).toTypedArray(),
-                SESSION_KEY_HASH to memberKey.calculateHash().toString(),
+                *roles.toMemberInfo(keysFactory).toTypedArray(),
+                SESSION_KEY_HASH to memberKey.hash.toString(),
                 SOFTWARE_VERSION to staticMemberInfo.softwareVersion,
-                PLATFORM_VERSION to staticMemberInfo.platformVersion,
+                PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),
                 SERIAL to staticMemberInfo.serial,
             ),
             sortedMapOf(
@@ -324,27 +338,6 @@ class StaticMemberRegistrationService @Activate constructor(
         }
     }
 
-    private fun getOrGenerateKeyPair(tenantId: String, scheme: String): PublicKey {
-        return with(cryptoOpsClient) {
-            lookup(
-                tenantId = tenantId,
-                skip = 0,
-                take = 10,
-                orderBy = CryptoKeyOrderBy.NONE,
-                filter = mapOf(
-                    ALIAS_FILTER to tenantId,
-                )
-            ).firstOrNull()?.let {
-                keyEncodingService.decodePublicKey(it.publicKey.array())
-            } ?: generateKeyPair(
-                tenantId = tenantId,
-                category = CryptoConsts.Categories.LEDGER,
-                alias = tenantId,
-                scheme = scheme
-            )
-        }
-    }
-
     /**
      * Mapping the keys from the json format to the keys expected in the [MemberInfo].
      */
@@ -394,15 +387,14 @@ class StaticMemberRegistrationService @Activate constructor(
      * For the static network we don't need hashes of the rotated keys.
      */
     private fun generateLedgerKeyHashes(
-        memberKey: PublicKey
+        memberKeyHash: PublicKeyHash
     ): List<Pair<String, String>> {
-        val ledgerKeys = listOf(memberKey)
-        return ledgerKeys.mapIndexed { index, ledgerKey ->
-            val hash = ledgerKey.calculateHash()
+        val ledgerKeys = listOf(memberKeyHash)
+        return ledgerKeys.mapIndexed { index, ledgerKeyHash ->
             String.format(
                 LEDGER_KEY_HASHES_KEY,
                 index
-            ) to hash.toString()
+            ) to ledgerKeyHash.toString()
         }
     }
 }

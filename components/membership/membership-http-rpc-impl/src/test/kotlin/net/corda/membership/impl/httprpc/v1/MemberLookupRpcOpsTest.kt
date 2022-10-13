@@ -24,6 +24,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
 import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
+import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
 import net.corda.membership.read.MembershipGroupReader
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.test.util.identity.createTestHoldingIdentity
@@ -91,6 +92,7 @@ class MemberLookupRpcOpsTest {
 
     private val converters = listOf(
         EndpointInfoConverter(),
+        MemberNotaryDetailsConverter(keyEncodingService),
         PublicKeyConverter(keyEncodingService)
     )
 
@@ -126,7 +128,7 @@ class MemberLookupRpcOpsTest {
             *convertPublicKeys().toTypedArray(),
             *convertEndpoints().toTypedArray(),
             SOFTWARE_VERSION to "5.0.0",
-            PLATFORM_VERSION to "10",
+            PLATFORM_VERSION to "5000",
             SERIAL to "1"
         ),
         sortedMapOf(
