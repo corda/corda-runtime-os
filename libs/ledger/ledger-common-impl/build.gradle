@@ -20,6 +20,8 @@ dependencies {
     implementation project(":libs:layered-property-map")
     implementation project(":libs:serialization:serialization-internal")
 
+    testImplementation project(":testing:layered-property-map-testkit")
+    testImplementation project(":libs:membership:membership-common")
     testImplementation project(":testing:kryo-serialization-testkit")
     testImplementation project(':testing:ledger:ledger-common-testkit')
     testImplementation project(":libs:serialization:serialization-kryo")
