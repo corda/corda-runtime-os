@@ -7,6 +7,10 @@ description 'Metrics Library'
 
 dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    compileOnly 'org.osgi:osgi.core'
+    compileOnly "org.osgi:osgi.annotation"
+
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation 'org.slf4j:slf4j-api'
 

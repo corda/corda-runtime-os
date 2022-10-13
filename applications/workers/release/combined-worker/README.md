@@ -182,6 +182,12 @@ cp ../corda-runtime-os/tools/plugins/topic-config/build/libs/topic-config-cli-pl
  cd ../corda-runtime-os/
 ```
 
+## Metrics
+
+Corda exposes Prometheus metrics.
+In order to view this metrics, when running the combined worker, you can use the configuration in  `../../../metrics`.
+See `../../../metrics/readme.md` for further documentation.
+
 ## Security Manager
 
 Security Manager can get in the way when debugging the code that runs inside the sandbox. For example, evaluating an expression while debugging a flow might result with access denied error. 
