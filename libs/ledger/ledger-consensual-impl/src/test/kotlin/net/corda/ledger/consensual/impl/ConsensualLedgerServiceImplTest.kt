@@ -26,9 +26,7 @@ class TestFlowFiberServiceWithSerializationProxy constructor(
 ) : FlowFiberService, SingletonSerializeAsToken {
     override fun getExecutingFiber(): FlowFiber {
         val testFlowFiberServiceWithSerialization = TestFlowFiberServiceWithSerialization()
-        testFlowFiberServiceWithSerialization.configureSerializer({
-                it.register(PartySerializer(), it)
-            }, schemeMetadata)
+        testFlowFiberServiceWithSerialization.configureSerializer({}, schemeMetadata)
         return testFlowFiberServiceWithSerialization.getExecutingFiber()
     }
 }

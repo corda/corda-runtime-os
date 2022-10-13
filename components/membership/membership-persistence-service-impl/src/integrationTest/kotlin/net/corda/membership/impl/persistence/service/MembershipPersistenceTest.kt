@@ -427,7 +427,7 @@ class MembershipPersistenceTest {
                 KeyValuePair(String.format(PROTOCOL_VERSION, "0"), "1"),
                 KeyValuePair(GROUP_ID, groupId),
                 KeyValuePair(PARTY_NAME, memberx500Name.toString()),
-                KeyValuePair(PLATFORM_VERSION, "11"),
+                KeyValuePair(PLATFORM_VERSION, "5000"),
                 KeyValuePair(SERIAL, "1"),
                 KeyValuePair(SOFTWARE_VERSION, "5.0.0")
             )
@@ -475,7 +475,7 @@ class MembershipPersistenceTest {
             .containsEntry(String.format(PROTOCOL_VERSION, "0"), "1")
             .containsEntry(GROUP_ID, groupId)
             .containsEntry(PARTY_NAME, memberx500Name.toString())
-            .containsEntry(PLATFORM_VERSION, "11")
+            .containsEntry(PLATFORM_VERSION, "5000")
             .containsEntry(SERIAL, "1")
             .containsEntry(SOFTWARE_VERSION, "5.0.0")
     }
@@ -701,7 +701,7 @@ class MembershipPersistenceTest {
                 KeyValuePair(String.format(PROTOCOL_VERSION, "0"), "1"),
                 KeyValuePair(GROUP_ID, groupId),
                 KeyValuePair(PARTY_NAME, memberName.toString()),
-                KeyValuePair(PLATFORM_VERSION, "11"),
+                KeyValuePair(PLATFORM_VERSION, "5000"),
                 KeyValuePair(SERIAL, "1"),
                 KeyValuePair(SOFTWARE_VERSION, "5.0.0")
             )

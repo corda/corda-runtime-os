@@ -6,9 +6,9 @@ import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.ledger.common.impl.transaction.CpiSummary
 import net.corda.ledger.common.impl.transaction.CpkSummary
+import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.consensual.impl.ConsensualTransactionMocks
 import net.corda.ledger.consensual.impl.TestConsensualState
-import net.corda.ledger.consensual.impl.helper.ConfiguredTestSerializationService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -27,7 +27,7 @@ internal class ConsensualTransactionBuilderImplTest {
     private val digestService: DigestService = DigestServiceImpl(cipherSchemeMetadata, null)
     private val merkleTreeFactory: MerkleTreeProvider = MerkleTreeProviderImpl(digestService)
     private val serializationService: SerializationService =
-        ConfiguredTestSerializationService.getTestSerializationService(cipherSchemeMetadata)
+        TestSerializationService.getTestSerializationService({}, cipherSchemeMetadata)
 
     @Test
     fun `can build a simple Transaction`() {

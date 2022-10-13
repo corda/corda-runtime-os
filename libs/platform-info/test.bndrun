@@ -1,0 +1,9 @@
+-tester: biz.aQute.tester.junit-platform
+-runfw: org.apache.felix.framework;
+-runee: JavaSE-11
+-runtrace: true
+
+-runrequires: \
+    bnd.identity;id='${project.archivesBaseName}-tests',\
+    bnd.identity;id='junit-jupiter-engine',\
+    bnd.identity;id='junit-platform-launcher',\

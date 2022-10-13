@@ -20,9 +20,6 @@ class StaticMemberTemplateExtension {
         /** Key name for software version. */
         const val STATIC_SOFTWARE_VERSION = "softwareVersion"
 
-        /** Key name for platform version. */
-        const val STATIC_PLATFORM_VERSION = "platformVersion"
-
         /** Key name for serial number. */
         const val STATIC_SERIAL = "serial"
 

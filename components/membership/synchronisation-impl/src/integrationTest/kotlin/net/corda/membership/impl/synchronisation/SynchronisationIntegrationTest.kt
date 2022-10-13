@@ -348,7 +348,7 @@ class SynchronisationIntegrationTest {
                 String.format(MemberInfoExtension.URL_KEY, 0) to "https://corda5.r3.com:10000",
                 String.format(MemberInfoExtension.PROTOCOL_VERSION, 0) to "1",
                 MemberInfoExtension.SOFTWARE_VERSION to "5.0.0",
-                MemberInfoExtension.PLATFORM_VERSION to "10",
+                MemberInfoExtension.PLATFORM_VERSION to "5000",
                 MemberInfoExtension.SERIAL to "1",
             ),
             sortedMapOf(

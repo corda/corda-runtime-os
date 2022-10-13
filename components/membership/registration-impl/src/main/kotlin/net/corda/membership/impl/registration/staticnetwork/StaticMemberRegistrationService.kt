@@ -11,6 +11,7 @@ import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.layeredpropertymap.toAvro
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.grouppolicy.GroupPolicyProvider
@@ -94,6 +95,8 @@ class StaticMemberRegistrationService @Activate constructor(
     val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
     @Reference(service = EndpointInfoFactory::class)
     private val endpointInfoFactory: EndpointInfoFactory,
+    @Reference(service = PlatformInfoProvider::class)
+    private val platformInfoProvider: PlatformInfoProvider
 ) : MemberRegistrationService {
     companion object {
         private val logger: Logger = contextLogger()
@@ -253,7 +256,7 @@ class StaticMemberRegistrationService @Activate constructor(
                 *roles.toMemberInfo(keysFactory).toTypedArray(),
                 SESSION_KEY_HASH to memberKey.hash.toString(),
                 SOFTWARE_VERSION to staticMemberInfo.softwareVersion,
-                PLATFORM_VERSION to staticMemberInfo.platformVersion,
+                PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),
                 SERIAL to staticMemberInfo.serial,
             ),
             sortedMapOf(
