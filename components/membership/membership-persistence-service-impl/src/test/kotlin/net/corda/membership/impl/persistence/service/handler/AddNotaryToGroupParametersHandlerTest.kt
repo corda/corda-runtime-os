@@ -14,7 +14,6 @@ import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_ROLE
-import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
@@ -24,6 +23,7 @@ import net.corda.membership.lib.toWire
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.test.util.time.TestClock
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
@@ -48,6 +48,11 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
 import javax.persistence.TypedQuery
+import javax.persistence.criteria.CriteriaBuilder
+import javax.persistence.criteria.CriteriaQuery
+import javax.persistence.criteria.Order
+import javax.persistence.criteria.Path
+import javax.persistence.criteria.Root
 import kotlin.test.assertFailsWith
 
 class AddNotaryToGroupParametersHandlerTest {
@@ -86,9 +91,23 @@ class AddNotaryToGroupParametersHandlerTest {
             GroupParametersEntity(EPOCH, "test".toByteArray())
         )
     }
+    private val root = mock<Root<GroupParametersEntity>> {
+        on { get<String>("epoch") } doReturn mock<Path<String>>()
+    }
+    private val order = mock<Order>()
+    private val query = mock<CriteriaQuery<GroupParametersEntity>> {
+        on { from(GroupParametersEntity::class.java) } doReturn root
+        on { select(root) } doReturn mock
+        on { orderBy(order) } doReturn mock
+    }
+    private val criteriaBuilder = mock<CriteriaBuilder> {
+        on { createQuery(GroupParametersEntity::class.java) } doReturn query
+        on { desc(any()) } doReturn order
+    }
     private val entityManager = mock<EntityManager> {
         on { persist(any<GroupParametersEntity>()) } doAnswer {}
-        on { createQuery(any(), eq(GroupParametersEntity::class.java)) } doReturn groupParametersQuery
+        on { criteriaBuilder } doReturn criteriaBuilder
+        on { createQuery(eq(query)) } doReturn groupParametersQuery
         on { transaction } doReturn transaction
     }
     private val entityManagerFactory = mock<EntityManagerFactory> {
@@ -123,10 +142,10 @@ class AddNotaryToGroupParametersHandlerTest {
         }
         val notaryDetails = mock<MemberNotaryDetails> {
             on { keys } doReturn listOf(knownKey)
+            on { serviceName } doReturn MemberX500Name.parse(KNOWN_NOTARY_SERVICE)
+            on { servicePlugin } doReturn KNOWN_NOTARY_PLUGIN
         }
         val memberContext: MemberContext = mock {
-            on { get(eq(NOTARY_SERVICE_PARTY_NAME)) } doReturn KNOWN_NOTARY_SERVICE
-            on { get(eq(NOTARY_PLUGIN_KEY)) } doReturn KNOWN_NOTARY_PLUGIN
             on { entries } doReturn mapOf("$ROLES_PREFIX.0" to NOTARY_ROLE).entries
             on { parse(eq("corda.notary"), eq(MemberNotaryDetails::class.java)) } doReturn notaryDetails
         }
@@ -187,10 +206,10 @@ class AddNotaryToGroupParametersHandlerTest {
         }
         val notaryDetails = mock<MemberNotaryDetails> {
             on { keys } doReturn listOf(knownKey)
+            on { serviceName } doReturn MemberX500Name.parse(KNOWN_NOTARY_SERVICE)
+            on { servicePlugin } doReturn KNOWN_NOTARY_PLUGIN
         }
         val memberContext: MemberContext = mock {
-            on { get(eq(NOTARY_SERVICE_PARTY_NAME)) } doReturn KNOWN_NOTARY_SERVICE
-            on { get(eq(NOTARY_PLUGIN_KEY)) } doReturn KNOWN_NOTARY_PLUGIN
             on { entries } doReturn mapOf("$ROLES_PREFIX.0" to NOTARY_ROLE).entries
             on { parse(eq("corda.notary"), eq(MemberNotaryDetails::class.java)) } doReturn notaryDetails
         }
@@ -257,10 +276,10 @@ class AddNotaryToGroupParametersHandlerTest {
         }
         val notaryDetails = mock<MemberNotaryDetails> {
             on { keys } doReturn listOf(knownKey)
+            on { serviceName } doReturn MemberX500Name.parse(KNOWN_NOTARY_SERVICE)
+            on { servicePlugin } doReturn KNOWN_NOTARY_PLUGIN
         }
         val memberContext: MemberContext = mock {
-            on { get(eq(NOTARY_SERVICE_PARTY_NAME)) } doReturn KNOWN_NOTARY_SERVICE
-            on { get(eq(NOTARY_PLUGIN_KEY)) } doReturn KNOWN_NOTARY_PLUGIN
             on { entries } doReturn mapOf("$ROLES_PREFIX.0" to NOTARY_ROLE).entries
             on { parse(eq("corda.notary"), eq(MemberNotaryDetails::class.java)) } doReturn notaryDetails
         }
@@ -311,9 +330,9 @@ class AddNotaryToGroupParametersHandlerTest {
         }
         val notaryDetails = mock<MemberNotaryDetails> {
             on { keys } doReturn listOf(knownKey)
+            on { serviceName } doReturn MemberX500Name.parse(KNOWN_NOTARY_SERVICE)
         }
         val memberContext: MemberContext = mock {
-            on { get(eq(NOTARY_SERVICE_PARTY_NAME)) } doReturn KNOWN_NOTARY_SERVICE
             on { entries } doReturn mapOf("$ROLES_PREFIX.0" to NOTARY_ROLE).entries
             on { parse(eq("corda.notary"), eq(MemberNotaryDetails::class.java)) } doReturn notaryDetails
         }
@@ -354,10 +373,10 @@ class AddNotaryToGroupParametersHandlerTest {
         }
         val notaryDetails = mock<MemberNotaryDetails> {
             on { keys } doReturn listOf(knownKey)
+            on { serviceName } doReturn MemberX500Name.parse(KNOWN_NOTARY_SERVICE)
+            on { servicePlugin } doReturn "incorrect.plugin.type"
         }
         val memberContext: MemberContext = mock {
-            on { get(eq(NOTARY_SERVICE_PARTY_NAME)) } doReturn KNOWN_NOTARY_SERVICE
-            on { get(eq(NOTARY_PLUGIN_KEY)) } doReturn "incorrect.plugin.type"
             on { entries } doReturn mapOf("$ROLES_PREFIX.0" to NOTARY_ROLE).entries
             on { parse(eq("corda.notary"), eq(MemberNotaryDetails::class.java)) } doReturn notaryDetails
         }

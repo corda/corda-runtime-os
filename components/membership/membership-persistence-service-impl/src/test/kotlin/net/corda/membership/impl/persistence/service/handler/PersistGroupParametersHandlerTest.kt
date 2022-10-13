@@ -31,6 +31,11 @@ import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
 import javax.persistence.TypedQuery
+import javax.persistence.criteria.CriteriaBuilder
+import javax.persistence.criteria.CriteriaQuery
+import javax.persistence.criteria.Order
+import javax.persistence.criteria.Path
+import javax.persistence.criteria.Root
 import kotlin.test.assertFailsWith
 
 class PersistGroupParametersHandlerTest {
@@ -60,9 +65,23 @@ class PersistGroupParametersHandlerTest {
             GroupParametersEntity(1, "test".toByteArray())
         )
     }
+    private val root = mock<Root<GroupParametersEntity>> {
+        on { get<String>("epoch") } doReturn mock<Path<String>>()
+    }
+    private val order = mock<Order>()
+    private val query = mock<CriteriaQuery<GroupParametersEntity>> {
+        on { from(GroupParametersEntity::class.java) } doReturn root
+        on { select(root) } doReturn mock
+        on { orderBy(order) } doReturn mock
+    }
+    private val criteriaBuilder = mock<CriteriaBuilder> {
+        on { createQuery(GroupParametersEntity::class.java) } doReturn query
+        on { desc(any()) } doReturn order
+    }
     private val entityManager = mock<EntityManager> {
         on { persist(any<GroupParametersEntity>()) } doAnswer {}
-        on { createQuery(any(), eq(GroupParametersEntity::class.java)) } doReturn groupParametersQuery
+        on { criteriaBuilder } doReturn criteriaBuilder
+        on { createQuery(eq(query)) } doReturn groupParametersQuery
         on { transaction } doReturn transaction
     }
     private val entityManagerFactory = mock<EntityManagerFactory> {

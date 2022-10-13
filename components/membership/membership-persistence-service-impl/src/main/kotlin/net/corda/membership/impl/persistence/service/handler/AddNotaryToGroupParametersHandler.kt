@@ -2,21 +2,25 @@ package net.corda.membership.impl.persistence.service.handler
 
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializer
+import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
 import net.corda.data.membership.db.response.command.PersistGroupParametersResponse
 import net.corda.membership.datamodel.GroupParametersEntity
-import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_SERVICE_PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
-import net.corda.membership.lib.toMutableMap
-import net.corda.membership.lib.toWire
+import net.corda.membership.lib.notary.MemberNotaryDetails
+import net.corda.membership.lib.toMap
 import net.corda.virtualnode.toCorda
 
 internal class AddNotaryToGroupParametersHandler(
-    private val persistenceHandlerServices: PersistenceHandlerServices
+    persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<AddNotaryToGroupParameters, PersistGroupParametersResponse>(persistenceHandlerServices) {
+    private companion object {
+        val notaryServiceRegex = NOTARY_SERVICE_NAME_KEY.format("[0-9]+").toRegex()
+    }
+
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
         cordaAvroSerializationFactory.createAvroSerializer {
             logger.error("Failed to serialize key value pair list.")
@@ -43,86 +47,116 @@ internal class AddNotaryToGroupParametersHandler(
         )
     }
 
-    @Suppress("ComplexMethod")
     override fun invoke(
         context: MembershipRequestContext,
         request: AddNotaryToGroupParameters
     ): PersistGroupParametersResponse {
         val epoch = transaction(context.holdingIdentity.toCorda().shortHash) { em ->
-            val previous = em.createQuery(
-                "SELECT c FROM ${GroupParametersEntity::class.simpleName} c " +
-                        "ORDER BY c.epoch DESC",
-                GroupParametersEntity::class.java
-            ).resultList.firstOrNull()
+            val criteriaBuilder = em.criteriaBuilder
+            val queryBuilder = criteriaBuilder.createQuery(GroupParametersEntity::class.java)
+            val root = queryBuilder.from(GroupParametersEntity::class.java)
+            val query = queryBuilder
+                .select(root)
+                .orderBy(criteriaBuilder.desc(root.get<String>("epoch")))
+            val previous = em.createQuery(query)
+                .resultList
+                .firstOrNull()
                 ?: throw MembershipPersistenceException("Cannot add notary to group parameters, no group parameters found.")
 
-            val parametersMap = deserializeProperties(previous.parameters).toMutableMap()
-            val previousEpoch = parametersMap[EPOCH_KEY].toString().toInt()
-
-            val notary = memberInfoFactory.create(request.notary)
-            val notaryServiceName = notary.memberProvidedContext[NOTARY_SERVICE_PARTY_NAME]
-                ?: throw MembershipPersistenceException("Cannot add notary to group parameters - missing notary service name.")
-            val notaryServicePlugin = notary.memberProvidedContext[NOTARY_PLUGIN_KEY]
+            val parametersMap = deserializeProperties(previous.parameters).toMap()
+            val notary = memberInfoFactory.create(request.notary).notaryDetails
+                ?: throw MembershipPersistenceException("Cannot add notary to group parameters - notary details not found.")
+            val notaryServiceName = notary.serviceName.toString()
             val notaryServiceNumber = parametersMap.entries.firstOrNull { it.value == notaryServiceName }?.run {
                 key.split(".")[3].toInt()
             }
-            if (notaryServiceNumber != null) {
+            val entity = if (notaryServiceNumber != null) {
                 // Add notary to existing notary service, or update notary with rotated keys
-                notaryServicePlugin?.let {
-                    require(parametersMap[String.format(NOTARY_SERVICE_PLUGIN_KEY, notaryServiceNumber)].toString() == it) {
-                        throw MembershipPersistenceException("Cannot add notary '${notary.name}' to notary service " +
-                                "'$notaryServiceName' - plugin types do not match.")
-                    }
-                }
-                val notaryKeys = parametersMap.entries
-                    .filter { it.key.startsWith(String.format(NOTARY_SERVICE_KEYS_PREFIX, notaryServiceNumber)) }
-                    .map { it.value }
-                var newIndex = notaryKeys.size
-                notary.notaryDetails?.keys
-                    ?.map { keyEncodingService.encodeAsString(it.publicKey) }
-                    ?.filterNot { notaryKeys.contains(it) }
-                    ?.apply {
-                        if (isEmpty()) {
-                            logger.warn("Group parameters not updated. Notary '${notary.name}' has no notary keys or " +
-                                    "its notary keys are already listed under notary service '$notaryServiceName'.")
-                            return@transaction previousEpoch
-                        }
-                    }
-                    ?.forEach {
-                        parametersMap[String.format(NOTARY_SERVICE_KEYS_KEY, notaryServiceNumber, newIndex++)] = it
-                    }
+                updateExistingNotaryService(parametersMap, notary, notaryServiceNumber)
             } else {
                 // Add new notary service
-                requireNotNull(notaryServicePlugin) {
-                    throw MembershipPersistenceException("Cannot add notary to group parameters - notary plugin must be" +
-                            " specified to create new notary service '$notaryServiceName'.")
-                }
-                val newNotaryServiceNumber = parametersMap
-                    .filter { NOTARY_SERVICE_NAME_KEY.format("[0-9]+").toRegex().matches(it.key) }.size
-                var newIndex = 0
-                parametersMap[String.format(NOTARY_SERVICE_NAME_KEY, newNotaryServiceNumber)] = notaryServiceName
-                parametersMap[String.format(NOTARY_SERVICE_PLUGIN_KEY, newNotaryServiceNumber)] = notaryServicePlugin
-                notary.notaryDetails?.keys
-                    ?.map { persistenceHandlerServices.keyEncodingService.encodeAsString(it.publicKey) }
-                    ?.forEach {
-                        parametersMap[String.format(NOTARY_SERVICE_KEYS_KEY, newNotaryServiceNumber, newIndex++)] = it
-                     }
-            }
-            // Update epoch
-            val newEpoch = with(parametersMap) {
-                this[EPOCH_KEY] = (previousEpoch + 1).toString()
-                previousEpoch + 1
-            }
+                addNewNotaryService(parametersMap, notary)
+            } ?: return@transaction previous.epoch
 
-            val entity = GroupParametersEntity(
-                epoch = newEpoch,
-                parameters = serializeProperties(parametersMap.toWire()),
-            )
             em.persist(entity)
 
             entity.epoch
         }
 
         return PersistGroupParametersResponse(epoch)
+    }
+
+    private fun updateExistingNotaryService(
+        currentParameters: Map<String, String>,
+        notaryDetails: MemberNotaryDetails,
+        notaryServiceNumber: Int
+    ): GroupParametersEntity? {
+        val notaryServiceName = notaryDetails.serviceName.toString()
+        notaryDetails.servicePlugin?.let {
+            require(currentParameters[String.format(NOTARY_SERVICE_PLUGIN_KEY, notaryServiceNumber)].toString() == it) {
+                throw MembershipPersistenceException("Cannot add notary to notary service " +
+                        "'$notaryServiceName' - plugin types do not match.")
+            }
+        }
+        val notaryKeys = currentParameters.entries
+            .filter { it.key.startsWith(String.format(NOTARY_SERVICE_KEYS_PREFIX, notaryServiceNumber)) }
+            .map { it.value }
+        val startingIndex = notaryKeys.size
+        val newKeys = notaryDetails.keys
+            .map { keyEncodingService.encodeAsString(it.publicKey) }
+            .filterNot { notaryKeys.contains(it) }
+            .apply {
+                if (isEmpty()) {
+                    logger.warn(
+                        "Group parameters not updated. Notary has no notary keys or " +
+                                "its notary keys are already listed under notary service '$notaryServiceName'."
+                    )
+                    return null
+                }
+            }.mapIndexed { index, key ->
+                KeyValuePair(
+                    String.format(
+                        NOTARY_SERVICE_KEYS_KEY,
+                        notaryServiceNumber,
+                        startingIndex + index
+                    ),
+                    key
+                )
+            }
+        val newEpoch = currentParameters[EPOCH_KEY]!!.toInt() + 1
+        val parametersWithUpdatedEpoch = with(currentParameters) {
+                filterNot { it.key == EPOCH_KEY }
+                .map { KeyValuePair(it.key, it.value) } + listOf(KeyValuePair(EPOCH_KEY, newEpoch.toString()))
+        }
+        return GroupParametersEntity(newEpoch, serializeProperties(KeyValuePairList(parametersWithUpdatedEpoch + newKeys)))
+    }
+
+    private fun addNewNotaryService(
+        currentParameters: Map<String, String>,
+        notaryDetails: MemberNotaryDetails
+    ): GroupParametersEntity {
+        val notaryServiceName = notaryDetails.serviceName.toString()
+        requireNotNull(notaryDetails.servicePlugin) {
+            throw MembershipPersistenceException("Cannot add notary to group parameters - notary plugin must be" +
+                    " specified to create new notary service '$notaryServiceName'.")
+        }
+        val newNotaryServiceNumber = currentParameters
+            .filter { notaryServiceRegex.matches(it.key) }.size
+        val newService = notaryDetails.keys
+            .mapIndexed { index, key ->
+                KeyValuePair(
+                    String.format(NOTARY_SERVICE_KEYS_KEY, newNotaryServiceNumber, index),
+                    keyEncodingService.encodeAsString(key.publicKey)
+                )
+            } + listOf(
+            KeyValuePair(String.format(NOTARY_SERVICE_NAME_KEY, newNotaryServiceNumber), notaryServiceName),
+            KeyValuePair(String.format(NOTARY_SERVICE_PLUGIN_KEY, newNotaryServiceNumber), notaryDetails.servicePlugin)
+        )
+        val newEpoch = currentParameters[EPOCH_KEY]!!.toInt() + 1
+        val parametersWithUpdatedEpoch = with(currentParameters) {
+            filterNot { it.key == EPOCH_KEY }
+                .map { KeyValuePair(it.key, it.value) } + listOf(KeyValuePair(EPOCH_KEY, newEpoch.toString()))
+        }
+        return GroupParametersEntity(newEpoch, serializeProperties(KeyValuePairList(parametersWithUpdatedEpoch + newService)))
     }
 }

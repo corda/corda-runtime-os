@@ -10,11 +10,6 @@ import net.corda.v5.base.types.LayeredPropertyMap
 fun KeyValuePairList.toMap() = items.associate { it.key to it.value }
 
 /**
- * Transforms [KeyValuePairList] into mutable map.
- */
-fun KeyValuePairList.toMutableMap() = items.associateTo(mutableMapOf()) { it.key to it.value }
-
-/**
  * Transforms map into [KeyValuePairList].
  */
 fun Map<String, String>.toWire(): KeyValuePairList {

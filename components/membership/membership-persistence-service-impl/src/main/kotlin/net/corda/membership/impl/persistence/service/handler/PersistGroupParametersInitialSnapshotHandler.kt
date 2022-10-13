@@ -32,13 +32,13 @@ internal class PersistGroupParametersInitialSnapshotHandler(
             // Create initial snapshot of group parameters.
             val groupParameters = KeyValuePairList(
                 listOf(
-                    KeyValuePair(EPOCH_KEY, "0"),
+                    KeyValuePair(EPOCH_KEY, "1"),
                     KeyValuePair(MPV_KEY, "5000"),
                     KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString())
                 )
             )
             val entity = GroupParametersEntity(
-                epoch = 0,
+                epoch = 1,
                 parameters = serializeProperties(groupParameters),
             )
             em.persist(entity)

@@ -84,6 +84,6 @@ class PersistGroupParametersInitialSnapshotHandlerTest {
 
         val result = handler.invoke(context, request)
 
-        assertThat(result).isEqualTo(PersistGroupParametersResponse(0))
+        assertThat(result).isEqualTo(PersistGroupParametersResponse(1))
     }
 }

@@ -29,12 +29,18 @@ internal class PersistGroupParametersHandler(
         request: PersistGroupParameters
     ): PersistGroupParametersResponse {
         val epoch = transaction(context.holdingIdentity.toCorda().shortHash) { em ->
-            val epochFromRequest = request.groupParameters.toMap()[EPOCH_KEY].toString().toInt()
-            em.createQuery(
-                "SELECT c FROM ${GroupParametersEntity::class.simpleName} c " +
-                        "ORDER BY c.epoch DESC",
-                GroupParametersEntity::class.java
-            ).resultList.firstOrNull()?.epoch?.let {
+            val epochFromRequest = request.groupParameters.toMap()[EPOCH_KEY]?.toInt()
+                ?: throw MembershipPersistenceException("Cannot persist group parameters - epoch not found.")
+            val criteriaBuilder = em.criteriaBuilder
+            val queryBuilder = criteriaBuilder.createQuery(GroupParametersEntity::class.java)
+            val root = queryBuilder.from(GroupParametersEntity::class.java)
+            val query = queryBuilder
+                .select(root)
+                .orderBy(criteriaBuilder.desc(root.get<String>("epoch")))
+            em.createQuery(query)
+                .resultList
+                .firstOrNull()
+                ?.epoch?.let {
                 require(epochFromRequest > it) {
                     throw MembershipPersistenceException("Group parameters with epoch=$epochFromRequest already exist.")
                 }

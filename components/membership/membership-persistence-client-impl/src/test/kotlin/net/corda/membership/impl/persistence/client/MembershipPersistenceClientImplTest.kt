@@ -503,7 +503,7 @@ class MembershipPersistenceClientImplTest {
 
         val result = membershipPersistenceClient.persistGroupParametersInitialSnapshot(ourHoldingIdentity)
 
-        assertThat(result).isEqualTo(MembershipPersistenceResult.Success(15))
+        assertThat(result).isEqualTo(MembershipPersistenceResult.success())
     }
 
     @Test

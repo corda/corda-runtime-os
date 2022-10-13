@@ -49,12 +49,12 @@ interface MembershipPersistenceClient : Lifecycle {
      *
      * @param viewOwningIdentity The holding identity of the owner of the view of data.
      *
-     * @return Membership persistence result to indicate the result of the operation. In the case of success, the payload
-     * will include the epoch of the newly persisted group parameters, which is always 0 for the initial snapshot.
+     * @return Membership persistence result to indicate the result of the operation.
+     * No payload is returned in the case of success.
      */
     fun persistGroupParametersInitialSnapshot(
         viewOwningIdentity: HoldingIdentity
-    ): MembershipPersistenceResult<Int>
+    ): MembershipPersistenceResult<Unit>
 
     /**
      * Persists a set of group parameters. This method is expected to be used by members to persist group parameters
