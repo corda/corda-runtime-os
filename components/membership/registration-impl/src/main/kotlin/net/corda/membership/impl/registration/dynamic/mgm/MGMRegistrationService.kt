@@ -13,6 +13,7 @@ import net.corda.data.membership.event.registration.MgmOnboarded
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.toAvro
 import net.corda.libs.configuration.helper.getConfig
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -96,6 +97,8 @@ class MGMRegistrationService @Activate constructor(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = MembershipSchemaValidatorFactory::class)
     val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
+    @Reference(service = PlatformInfoProvider::class)
+    val platformInfoProvider: PlatformInfoProvider,
 ) : MemberRegistrationService {
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
@@ -261,7 +264,7 @@ class MGMRegistrationService @Activate constructor(
                     SESSION_KEY_HASH to sessionKey.calculateHash().value,
                     ECDH_KEY to ecdhKey.toPem(),
                     // temporarily hardcoded
-                    PLATFORM_VERSION to PLATFORM_VERSION_CONST,
+                    PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),
                     SOFTWARE_VERSION to SOFTWARE_VERSION_CONST,
                     SERIAL to SERIAL_CONST,
                 )

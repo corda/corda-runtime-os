@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.handlers.requests
 
+import java.util.stream.Stream
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.data.flow.state.session.SessionState
@@ -24,7 +25,6 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.util.stream.Stream
 
 @Suppress("MaxLineLength")
 class SubFlowFailedRequestHandlerTest {
@@ -108,9 +108,7 @@ class SubFlowFailedRequestHandlerTest {
 
         val outputContext = handler.postProcess(testContext.flowEventContext, ioRequest)
         assertThat(outputContext.outputRecords).containsOnly(record)
-        verify(testContext.flowCheckpoint).putSessionState(sessionState1)
-        verify(testContext.flowCheckpoint).putSessionState(sessionState2)
-        verify(testContext.flowCheckpoint).putSessionState(sessionState3)
+        verify(testContext.flowCheckpoint).putSessionStates(listOf(sessionState1, sessionState2, sessionState3))
         verify(testContext.flowSessionManager).sendErrorMessages(
             eq(testContext.flowCheckpoint),
             eq(sessions),
@@ -150,9 +148,8 @@ class SubFlowFailedRequestHandlerTest {
 
         val outputContext = handler.postProcess(testContext.flowEventContext, ioRequest)
         assertThat(outputContext.outputRecords).containsOnly(record)
-        verify(testContext.flowCheckpoint, never()).putSessionState(sessionState1)
-        verify(testContext.flowCheckpoint, never()).putSessionState(sessionState2)
-        verify(testContext.flowCheckpoint).putSessionState(sessionState3)
+        verify(testContext.flowCheckpoint, never()).putSessionState(any())
+        verify(testContext.flowCheckpoint).putSessionStates(listOf(sessionState3))
         verify(testContext.flowSessionManager).sendErrorMessages(
             eq(testContext.flowCheckpoint),
             eq(listOf(SESSION_ID_3)),

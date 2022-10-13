@@ -128,7 +128,7 @@ class MemberLookupRpcOpsTest {
             *convertPublicKeys().toTypedArray(),
             *convertEndpoints().toTypedArray(),
             SOFTWARE_VERSION to "5.0.0",
-            PLATFORM_VERSION to "10",
+            PLATFORM_VERSION to "5000",
             SERIAL to "1"
         ),
         sortedMapOf(

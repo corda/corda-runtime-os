@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.handlers.requests
 
+import java.time.Instant
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.WaitingFor
 import net.corda.data.flow.state.waiting.Wakeup
@@ -13,7 +14,6 @@ import net.corda.flow.state.FlowCheckpoint
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.time.Instant
 
 @Component(service = [FlowRequestHandler::class])
 class SubFlowFailedRequestHandler @Activate constructor(
@@ -37,14 +37,12 @@ class SubFlowFailedRequestHandler @Activate constructor(
     ): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
         try {
-            flowSessionManager.sendErrorMessages(
+            checkpoint.putSessionStates(flowSessionManager.sendErrorMessages(
                 checkpoint,
                 getSessionsToError(checkpoint, request),
                 request.throwable,
                 Instant.now()
-            ).map { updatedSessionState ->
-                checkpoint.putSessionState(updatedSessionState)
-            }
+            ))
         } catch (e: FlowSessionStateException) {
             // TODO CORE-4850 Wakeup with error when session does not exist
             throw FlowFatalException(e.message, e)

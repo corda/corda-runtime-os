@@ -10,7 +10,6 @@ import net.corda.v5.application.flows.set
 import net.corda.v5.application.messaging.FlowContextPropertiesBuilder
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.serialization.SerializedBytes
-import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -18,7 +17,6 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -51,7 +49,7 @@ class FlowSessionFactoryImplTest {
         assertEquals(BOB_X500_NAME, session.counterparty)
         assertEquals("value", session.contextProperties["key"])
         session.send(HI)
-        verify(flowFiber, never()).suspend(any<FlowIORequest.InitiateFlow>())
+        verify(flowFiber).suspend(any<FlowIORequest.Send>())
     }
 
     @Test
@@ -59,7 +57,7 @@ class FlowSessionFactoryImplTest {
         val session = flowSessionFactory.createInitiatingFlowSession(SESSION_ID, BOB_X500_NAME, null)
         assertEquals(BOB_X500_NAME, session.counterparty)
         session.send(HI)
-        verify(flowFiber).suspend(any<FlowIORequest.InitiateFlow>())
+        verify(flowFiber).suspend(any<FlowIORequest.Send>())
     }
 
     @Test
@@ -69,7 +67,7 @@ class FlowSessionFactoryImplTest {
         assertEquals(BOB_X500_NAME, session.counterparty)
         session.send(HI)
         verify(contextBuilder).apply(any())
-        verify(flowFiber).suspend(any<FlowIORequest.InitiateFlow>())
+        verify(flowFiber).suspend(any<FlowIORequest.Send>())
     }
 
     @Test
@@ -128,17 +126,6 @@ class FlowSessionFactoryImplTest {
         session.send(HI)
 
         val flowIORequestCapture = argumentCaptor<FlowIORequest<*>>()
-        verify(flowFiber, times(2)).suspend(flowIORequestCapture.capture())
-
-        val mutatedUserMap = mockFlowFiberService.userContext.toMutableMap()
-        mutatedUserMap["extraUserKey"] = "extraUserValue"
-
-        val mutatedPlatformMap = mockFlowFiberService.platformContext.toMutableMap()
-        mutatedPlatformMap["extraPlatformKey"] = "extraPlatformValue"
-
-        with(flowIORequestCapture.firstValue as FlowIORequest.InitiateFlow) {
-            Assertions.assertThat(contextUserProperties).isEqualTo(mutatedUserMap)
-            Assertions.assertThat(contextPlatformProperties).isEqualTo(mutatedPlatformMap)
-        }
+        verify(flowFiber, times(1)).suspend(flowIORequestCapture.capture())
     }
 }
