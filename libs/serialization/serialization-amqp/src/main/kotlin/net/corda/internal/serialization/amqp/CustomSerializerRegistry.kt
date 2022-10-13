@@ -240,7 +240,6 @@ class CachingCustomSerializerRegistry(
         AMQPTypeIdentifiers.isPrimitive(this) -> true
         isSubClassOf(CordaThrowable::class.java) -> false
         allowedFor.any { it.isAssignableFrom(this) } -> false
-        sandboxGroup.loadClassFromPublicBundles(this.name) != null -> true
         isAnnotationPresent(CordaSerializable::class.java) -> true
         else -> false
     }
