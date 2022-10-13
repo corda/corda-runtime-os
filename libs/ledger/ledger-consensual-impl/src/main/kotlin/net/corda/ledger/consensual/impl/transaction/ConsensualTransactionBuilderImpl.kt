@@ -5,6 +5,7 @@ import net.corda.ledger.common.impl.transaction.CpkSummary
 import java.security.PublicKey
 import java.time.Instant
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
+import net.corda.ledger.common.internal.transaction.SignableData
 import net.corda.ledger.common.impl.transaction.TransactionMetaData
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPI_METADATA_KEY
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPK_METADATA_KEY
@@ -43,7 +44,7 @@ class ConsensualTransactionBuilderImpl(
     private val signingService: SigningService,
     // cpi defines what type of signing/hashing is used (related to the digital signature signing and verification stuff)
     private val memberLookup: MemberLookup,
-    private val sandboxCpks: Collection<CpkMetadata>,
+    private val sandboxCpks: List<CpkMetadata>,
     override val states: List<ConsensualState> = emptyList(),
 ) : ConsensualTransactionBuilder {
 
@@ -53,19 +54,39 @@ class ConsensualTransactionBuilderImpl(
     @Suspendable
     override fun signInitial(publicKey: PublicKey): ConsensualSignedTransaction {
         val wireTransaction = buildWireTransaction()
-        // TODO(CORE-5091 we just fake the signature for now...)
-        val signature = signingService.sign(wireTransaction.id.bytes, publicKey, SignatureSpec.ECDSA_SHA256)
-        val digitalSignatureMetadata =
-            DigitalSignatureMetadata(Instant.now(), mapOf()) //CORE-5091 populate this properly...
-        val signatureWithMetaData = DigitalSignatureAndMetadata(signature, digitalSignatureMetadata)
+        val signatureWithMetaData = createSignature(wireTransaction.id, publicKey)
         return ConsensualSignedTransactionImpl(serializationService, wireTransaction, listOf(signatureWithMetaData))
+    }
+
+    private fun getSignatureMetadata(): DigitalSignatureMetadata {
+        val cpi = getCpiIdentifier()
+        return DigitalSignatureMetadata(
+            Instant.now(),
+            linkedMapOf(
+                "cpiName" to cpi.name,
+                "cpiVersion" to cpi.version,
+                "cpiSignerSummaryHash" to cpi.signerSummaryHash.toString()
+            )
+        )
+    }
+
+    @Suspendable
+    private fun createSignature(txId: SecureHash, publicKey: PublicKey): DigitalSignatureAndMetadata {
+        val signatureMetadata = getSignatureMetadata()
+        val signableData = SignableData(txId, signatureMetadata)
+        val signature = signingService.sign(
+            serializationService.serialize(signableData).bytes,
+            publicKey,
+            SignatureSpec.ECDSA_SHA256
+        ) //Rework with CORE-6969
+        return DigitalSignatureAndMetadata(signature, signatureMetadata)
     }
 
     private fun buildWireTransaction(): WireTransaction {
         // TODO(CORE-5982 more verifications)
         // TODO(CORE-5940 ? metadata verifications: nulls, order of CPKs, at least one CPK?))
-        require(states.isNotEmpty()) { "At least one Consensual State is required" }
-        require(states.all { it.participants.isNotEmpty() }) { "All consensual states needs to have participants" }
+        require(states.isNotEmpty()) { "At least one consensual state is required" }
+        require(states.all { it.participants.isNotEmpty() }) { "All consensual states must have participants" }
         val componentGroupLists = calculateComponentGroupLists(serializationService)
 
         val entropy = ByteArray(32)
@@ -111,7 +132,7 @@ class ConsensualTransactionBuilderImpl(
 
     private fun calculateMetaData(): TransactionMetaData {
         return TransactionMetaData(
-            mapOf(
+            linkedMapOf(
                 LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
                 LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
                 DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,

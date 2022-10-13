@@ -3,9 +3,10 @@ package net.corda.ledger.common.impl.transaction
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 
-//TODO(CORE-5940: guarantee its serialization is deterministic)
 @CordaSerializable
-class TransactionMetaData(private val properties: Map<String, Any>) {
+class TransactionMetaData(
+    private val properties: LinkedHashMap<String, Any>
+    ) {
 
     operator fun get(key: String): Any? = properties[key]
 
@@ -42,10 +43,10 @@ class TransactionMetaData(private val properties: Map<String, Any>) {
                     val cpi = data as Map<String, Any?>
 
                     CpiSummary(
-                        cpi["name"].toString(),
-                        cpi["version"].toString(),
-                        cpi["signerSummaryHash"]?.toString(),
-                        cpi["fileChecksum"].toString())
+                        cpi["name"] as String,
+                        cpi["version"] as String,
+                        cpi["signerSummaryHash"] as? String,
+                        cpi["fileChecksum"] as String)
                 } catch (e: Exception) {
                     throw CordaRuntimeException(
                         "Transaction metadata representation error: expected CPI metadata but found [$data]"
@@ -64,19 +65,23 @@ class TransactionMetaData(private val properties: Map<String, Any>) {
         return when (val data = this[CPK_METADATA_KEY]) {
             null -> emptyList()
             is List<*> -> {
-                return data.map {
-                    when (it) {
-                        is CpkSummary -> it
-                        is Map<*, *> -> {
-                            CpkSummary(
-                                it["name"].toString(),
-                                it["version"].toString(),
-                                it["signerSummaryHash"]?.toString(),
-                                it["fileChecksum"].toString()
-                            )
+                return data.map { item ->
+                    when (item) {
+                        is CpkSummary -> item
+                        else -> {
+                            try {
+                                val cpk = item as Map<*, *>
+                                CpkSummary(
+                                    cpk["name"] as String,
+                                    cpk["version"] as String,
+                                    cpk["signerSummaryHash"] as? String,
+                                    cpk["fileChecksum"] as String
+                                )
+                            } catch (e: Exception) {
+                                throw CordaRuntimeException(
+                                    "Transaction metadata representation error: expected CPK metadata but found [$item]")
+                            }
                         }
-                        else -> throw CordaRuntimeException(
-                            "Transaction metadata representation error: expected CPK metadata but found [$data]")
                     }
                 }
             }
@@ -85,8 +90,8 @@ class TransactionMetaData(private val properties: Map<String, Any>) {
         }
     }
 
-    fun getDigestSettings(): Map<String, Any> {
+    fun getDigestSettings(): LinkedHashMap<String, Any>{
         @Suppress("UNCHECKED_CAST")
-        return this[DIGEST_SETTINGS_KEY] as Map<String, Any>
+        return this[DIGEST_SETTINGS_KEY] as LinkedHashMap<String, Any>
     }
 }

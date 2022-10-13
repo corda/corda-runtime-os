@@ -99,10 +99,10 @@ class WorkerHelpers {
             return url.openStream()
         }
 
-        /** Sets up the [healthMonitor] based on the [params]. */
-        fun setUpHealthMonitor(healthMonitor: HealthMonitor, params: DefaultWorkerParams) {
-            if (!params.disableHealthMonitor) {
-                healthMonitor.listen(params.healthMonitorPort)
+        /** Sets up the [workerMonitor] based on the [params]. */
+        fun setupMonitor(workerMonitor: WorkerMonitor, params: DefaultWorkerParams) {
+            if (!params.disableWorkerMonitor) {
+                workerMonitor.listen(params.workerMonitorPort)
             }
         }
 

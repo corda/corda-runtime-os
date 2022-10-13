@@ -22,9 +22,10 @@ import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.ledger.consensual.Party
+import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -42,8 +43,6 @@ import java.io.NotSerializableException
 import java.nio.file.Path
 import java.security.PublicKey
 import java.util.concurrent.TimeUnit
-import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
-import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)

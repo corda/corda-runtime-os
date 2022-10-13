@@ -69,7 +69,7 @@ spec:
           - name: debug
             containerPort: 5005
         {{- end }}
-          - name: health
+          - name: monitor
             containerPort: 7000
         {{- if .Values.workers.db.profiling.enabled }}
           - name: profiling
@@ -79,13 +79,13 @@ spec:
         livenessProbe:
           httpGet:
             path: /isHealthy
-            port: health
+            port: monitor
           periodSeconds: 10
           failureThreshold: 1
         startupProbe:
           httpGet:
             path: /isHealthy
-            port: health
+            port: monitor
           periodSeconds: 5
           failureThreshold: 20
         {{- end }}
