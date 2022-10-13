@@ -4,6 +4,7 @@ import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
 import net.corda.p2p.crypto.protocol.api.NoCommonModeError
+import net.corda.p2p.crypto.protocol.api.PkiMode
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
 import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -35,7 +36,8 @@ class AuthenticationProtocolFailureTest {
         setOf(ProtocolMode.AUTHENTICATION_ONLY),
         partyAMaxMessageSize,
         partyASessionKey.public,
-        groupId
+        groupId,
+        PkiMode.NoPki
     )
 
     // party B
@@ -194,7 +196,8 @@ class AuthenticationProtocolFailureTest {
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
             partyAMaxMessageSize,
             partyASessionKey.public,
-            sessionId
+            sessionId,
+            PkiMode.NoPki
         )
         val authenticationProtocolB = AuthenticationProtocolResponder(
             sessionId, setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION), partyBMaxMessageSize

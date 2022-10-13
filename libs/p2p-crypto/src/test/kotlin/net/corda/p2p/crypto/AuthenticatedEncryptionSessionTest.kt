@@ -5,6 +5,7 @@ import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.DecryptionFailedError
 import net.corda.p2p.crypto.protocol.api.MessageTooLargeError
+import net.corda.p2p.crypto.protocol.api.PkiMode
 import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -33,7 +34,8 @@ class AuthenticatedEncryptionSessionTest {
         setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),
         partyAMaxMessageSize,
         partyASessionKey.public,
-        groupId
+        groupId,
+        PkiMode.NoPki
     )
 
     // party B

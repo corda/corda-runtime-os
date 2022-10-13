@@ -3,6 +3,7 @@ package net.corda.p2p.crypto
 import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.MIN_PACKET_SIZE
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
+import net.corda.p2p.crypto.protocol.api.PkiMode
 import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -75,7 +76,8 @@ class AuthenticationProtocolTest {
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
             partyAMaxMessageSize,
             partyASessionKey.public,
-            groupId
+            groupId,
+            PkiMode.NoPki
         )
         val protocolResponder = AuthenticationProtocolResponder(sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize)
 

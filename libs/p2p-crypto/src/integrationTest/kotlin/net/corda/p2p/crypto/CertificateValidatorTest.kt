@@ -1,7 +1,7 @@
 package net.corda.p2p.crypto
 
 import net.corda.p2p.crypto.protocol.api.CertificateValidator
-import net.corda.p2p.crypto.protocol.InvalidPeerCertificate
+import net.corda.p2p.crypto.protocol.api.InvalidPeerCertificate
 import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
