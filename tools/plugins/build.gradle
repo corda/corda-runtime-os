@@ -119,6 +119,14 @@ tasks.register('publishBuildkitImage' , BuildkitBuild) {
         dependsOn gradle.includedBuild("corda-api").task(':application:jar')
         dependsOn gradle.includedBuild("corda-cli-plugin-host").task(':app:publishBuildkitImage')
     }
+
+    if (project.hasProperty('isNightly')) {
+        nightlyBuild = isNightly.toBoolean()
+    }
+
+    if (project.hasProperty('isPreTest')) {
+        preTest = isPreTest.toBoolean()
+    }
 }
 
 tasks.register('publishOSGiImage', DeployableContainerBuilder) {
