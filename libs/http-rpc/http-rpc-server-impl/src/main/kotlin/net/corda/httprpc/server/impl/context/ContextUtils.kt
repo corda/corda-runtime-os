@@ -19,7 +19,8 @@ import net.corda.httprpc.server.impl.internal.ParameterRetrieverFactory
 import net.corda.httprpc.server.impl.internal.ParametersRetrieverContext
 import net.corda.httprpc.server.impl.security.HttpRpcSecurityManager
 import net.corda.httprpc.server.impl.security.provider.credentials.CredentialResolver
-import net.corda.metrics.MeterFactory
+import net.corda.metrics.CordaMetrics
+import net.corda.metrics.CordaMetrics.builder
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
@@ -93,11 +94,11 @@ internal object ContextUtils {
             log.debug { "Invoke method \"${this.method.method.name}\" for route info." }
             log.trace { "Get parameter values." }
 
-            MeterFactory.create(MeterFactory.Meters.HttpRequestsCount)
-                .withTag(MeterFactory.Tags.Address, "${ctx.method()} ${ctx.path()}")
+            CordaMetrics.Meters.HttpRequestCount.builder()
+                .withTag(CordaMetrics.Tags.Address, "${ctx.method()} ${ctx.path()}")
                 .build<Counter>(Metrics::counter).increment()
-            MeterFactory.create(MeterFactory.Meters.HttpRequestsTime)
-                .withTag(MeterFactory.Tags.Address, "${ctx.method()} ${ctx.path()}")
+            CordaMetrics.Meters.HttpRequestTime.builder()
+                .withTag(CordaMetrics.Tags.Address, "${ctx.method()} ${ctx.path()}")
                 .build<Timer>(Metrics::timer).wrap {
                 try {
                     validateRequestContentType(this, ctx)

@@ -2,8 +2,6 @@ package net.corda.db.core
 
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
-import com.zaxxer.hikari.metrics.micrometer.MicrometerMetricsTrackerFactory
-import net.corda.metrics.MeterFactory
 import javax.sql.DataSource
 
 /**
