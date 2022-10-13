@@ -16,10 +16,16 @@ import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
+import org.slf4j.LoggerFactory
 
 @Order(2)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class ClusterBootstrapTest {
+
+    private companion object {
+        private val logger = LoggerFactory.getLogger(ClusterBootstrapTest::class.java)
+    }
+
     private val healthChecks = mapOf(
         "combined-worker" to System.getProperty("combinedWorkerHealthHttp"),
 //        "crypto-worker" to System.getProperty("cryptoWorkerHealthHttp"),
@@ -44,11 +50,16 @@ class ClusterBootstrapTest {
                                 lastResponse = it
                             }
                         }
-                        if (isReady)
-                            println("${it.key} is ready")
-                        else
-                            softly.fail("Problem with ${it.key} (${it.value}), \"status\"" +
-                                    " returns: $isReady, body: ${lastResponse?.body()}")
+                        if (isReady) {
+                            logger.info("${it.key} is ready")
+                        }
+                        else {
+                            """Problem with ${it.key} (${it.value}), status returns not ready, 
+                                | body: ${lastResponse?.body()}""".trimMargin().let {
+                                logger.error(it)
+                                softly.fail(it)
+                            }
+                        }
                     }
                 }.awaitAll()
 
@@ -62,12 +73,14 @@ class ClusterBootstrapTest {
             try {
                 val response = function()
                 val statusCode = response.statusCode()
-                if (statusCode in 200..299)
+                if (statusCode in 200..299) {
                     return true
-                else
-                    println("Returned status $statusCode.")
+                }
+                else {
+                    logger.info("Returned status $statusCode.")
+                }
             } catch (connectionException: IOException) {
-                println("Cannot connect.")
+                logger.info("Cannot connect.", connectionException)
             }
             Thread.sleep(1000)
         }
@@ -76,7 +89,7 @@ class ClusterBootstrapTest {
 
     private fun sendAndReceiveResponse(name: String, endpoint: String): HttpResponse<String> {
         val url = "${endpoint}status"
-        println("Checking $name on $url")
+        logger.info("Checking $name on $url")
         val request = HttpRequest.newBuilder()
             .uri(URI.create(url))
             .build()
