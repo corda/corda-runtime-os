@@ -33,8 +33,8 @@ class ConsensualReceiveFinalityFlow(
         val signedTransaction = session.receive<ConsensualSignedTransaction>()
         val transactionId = signedTransaction.id
 
-        // TODO Verify Ledger Transaction
-        // TODO Verify already added signatures.
+        // TODO [CORE-5982] Verify Ledger Transaction
+        // TODO [CORE-5982] Verify already added signatures.
 
         // TODO [CORE-7027] Catch exceptions coming out of this method and return a [Try] structure to [ConsensualFinalityFlow]
         verifier.verify(signedTransaction)

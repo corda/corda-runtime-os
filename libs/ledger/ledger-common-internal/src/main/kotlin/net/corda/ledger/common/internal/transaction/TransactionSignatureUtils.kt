@@ -11,7 +11,7 @@ import net.corda.v5.crypto.SignatureSpec
 import java.security.PublicKey
 import java.time.Instant
 
-//TODO(Should this be another service? Or could we just squeeze this into the signingservice?)
+//TODO(CORE-6969 Place this to somewhere else, potentially into a new Service. )
 
 private fun getSignatureMetadata(cpiIdentifier: CpiIdentifier): DigitalSignatureMetadata {
     return DigitalSignatureMetadata(
