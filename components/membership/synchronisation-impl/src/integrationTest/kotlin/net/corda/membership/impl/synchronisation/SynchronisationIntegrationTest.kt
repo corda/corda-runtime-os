@@ -6,6 +6,7 @@ import com.typesafe.config.ConfigValueFactory
 import net.corda.chunking.toAvro
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.ecies.StableKeyPairDecryptor
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
@@ -151,6 +152,9 @@ class SynchronisationIntegrationTest {
         @InjectService(timeout = 5000)
         lateinit var memberInfoFactory: MemberInfoFactory
 
+        @InjectService(timeout = 5000)
+        lateinit var stableKeyPairDecryptor: StableKeyPairDecryptor
+
         val merkleTreeGenerator: MerkleTreeGenerator by lazy {
             MerkleTreeGenerator(
                 merkleTreeProvider,
@@ -287,6 +291,7 @@ class SynchronisationIntegrationTest {
             groupPolicyProvider.start()
             synchronisationProxy.start()
             membershipGroupReaderProvider.start()
+            stableKeyPairDecryptor.start()
             membershipP2PReadService.start()
             cryptoOpsClient.start()
             membershipQueryClient.start()

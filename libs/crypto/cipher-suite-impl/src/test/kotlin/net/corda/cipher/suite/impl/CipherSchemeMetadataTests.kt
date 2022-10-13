@@ -531,6 +531,7 @@ class CipherSchemeMetadataTests {
         assert(encodedPublicKey.startsWith("-----BEGIN PUBLIC KEY-----")) { encodedPublicKey }
         assert(encodedPublicKey.contains("-----END PUBLIC KEY-----")) { encodedPublicKey }
         val decodedPublicKey = schemeMetadata.decodePublicKey(encodedPublicKey)
+        assertEquals(keyPair.public.algorithm, decodedPublicKey.algorithm)
         assertEquals(decodedPublicKey, keyPair.public)
         val data = UUID.randomUUID().toString().toByteArray(Charsets.UTF_8)
         val signatureSpec = schemeMetadata.inferSignatureSpecOrCreateDefault(
@@ -580,6 +581,7 @@ class CipherSchemeMetadataTests {
         assert(encodedPublicKey.contains("-----END PUBLIC KEY-----")) { encodedPublicKey }
         val decodedPublicKey = schemeMetadata.decodePublicKey(encodedPublicKey)
         assertEquals(decodedPublicKey, keyPair.public)
+        assertEquals(keyPair.public.algorithm, decodedPublicKey.algorithm)
     }
 
     @ParameterizedTest
@@ -644,6 +646,7 @@ class CipherSchemeMetadataTests {
         val encoded = schemeMetadata.encodeAsString(aliceAndBobOrCharlie)
         val decoded = schemeMetadata.decodePublicKey(encoded)
         assertEquals(decoded, aliceAndBobOrCharlie)
+        assertEquals(aliceAndBobOrCharlie.algorithm, decoded.algorithm)
     }
 
     @ParameterizedTest
@@ -698,6 +701,7 @@ class CipherSchemeMetadataTests {
         val encoded = schemeMetadata.encodeAsString(aliceAndBobOrCharlie)
         val decoded = schemeMetadata.decodePublicKey(encoded)
         assertEquals(decoded, aliceAndBobOrCharlie)
+        assertEquals(aliceAndBobOrCharlie.algorithm, decoded.algorithm)
     }
 
     @Suppress("TooGenericExceptionThrown")

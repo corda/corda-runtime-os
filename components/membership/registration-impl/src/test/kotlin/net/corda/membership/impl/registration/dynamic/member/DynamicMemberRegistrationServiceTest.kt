@@ -48,6 +48,7 @@ import net.corda.schema.membership.MembershipSchema
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
@@ -142,7 +143,7 @@ class DynamicMemberRegistrationServiceTest {
             sessionKey,
             byteArrayOf(1),
             mapOf(
-                Verifier.SIGNATURE_SPEC to "CORDA.ECDSA.SECP256R1"
+                Verifier.SIGNATURE_SPEC to ECDSA_SECP256R1_CODE_NAME
             )
         )
     private val cryptoOpsClient: CryptoOpsClient = mock {
@@ -156,7 +157,7 @@ class DynamicMemberRegistrationServiceTest {
                 any(),
                 eq(
                     mapOf(
-                        Verifier.SIGNATURE_SPEC to "CORDA.ECDSA.SECP256R1"
+                        Verifier.SIGNATURE_SPEC to ECDSA_SECP256R1_CODE_NAME
                     )
                 ),
             )
@@ -243,11 +244,11 @@ class DynamicMemberRegistrationServiceTest {
 
     private val context = mapOf(
         "corda.session.key.id" to SESSION_KEY_ID,
-        "corda.session.key.signature.spec" to "CORDA.ECDSA.SECP256R1",
+        "corda.session.key.signature.spec" to ECDSA_SECP256R1_CODE_NAME,
         "corda.endpoints.0.connectionURL" to "https://localhost:1080",
         "corda.endpoints.0.protocolVersion" to "1",
         "corda.ledger.keys.0.id" to LEDGER_KEY_ID,
-        "corda.ledger.keys.0.signature.spec" to "CORDA.ECDSA.SECP256R1",
+        "corda.ledger.keys.0.signature.spec" to ECDSA_SECP256R1_CODE_NAME,
     )
 
     private fun postStartEvent() {

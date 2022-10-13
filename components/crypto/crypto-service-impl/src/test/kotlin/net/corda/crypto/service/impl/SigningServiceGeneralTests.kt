@@ -345,7 +345,7 @@ class SigningServiceGeneralTests {
             scheme = scheme,
             alias = expectedAlias
         )
-        assertSame(generatedKey.publicKey, result)
+        assertEquals(generatedKey.publicKey, result)
         val expectedExternalId = UUID.randomUUID().toString()
         result = signingService.generateKeyPair(
             tenantId = tenantId,
@@ -354,7 +354,7 @@ class SigningServiceGeneralTests {
             scheme = scheme,
             alias = expectedAlias
         )
-        assertSame(generatedKey.publicKey, result)
+        assertEquals(generatedKey.publicKey, result)
         Mockito.verify(store, times(1)).save(
             eq(tenantId),
             argThat {

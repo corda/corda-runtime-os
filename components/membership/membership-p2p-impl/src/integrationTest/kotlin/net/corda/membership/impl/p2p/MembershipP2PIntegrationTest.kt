@@ -2,7 +2,7 @@ package net.corda.membership.impl.p2p
 
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.ecies.EciesParams
 import net.corda.crypto.ecies.StableKeyPairDecryptor
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
@@ -38,9 +38,20 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.impl.p2p.MembershipP2PProcessor.Companion.MEMBERSHIP_P2P_SUBSYSTEM
+import net.corda.membership.impl.p2p.dummy.TestCryptoOpsClient
+import net.corda.membership.impl.p2p.dummy.TestEphemeralKeyPairEncryptor
 import net.corda.membership.impl.p2p.dummy.TestGroupReaderProvider
-import net.corda.membership.lib.MemberInfoExtension
+import net.corda.membership.impl.p2p.dummy.TestStableKeyPairDecryptor
+import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
+import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.PROTOCOL_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.SOFTWARE_VERSION
+import net.corda.membership.lib.MemberInfoExtension.Companion.STATUS
+import net.corda.membership.lib.MemberInfoExtension.Companion.URL_KEY
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.p2p.MembershipP2PReadService
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -69,6 +80,8 @@ import net.corda.test.util.time.TestClock
 import net.corda.utilities.time.Clock
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.cipher.suite.KeyEncodingService
+import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
@@ -81,6 +94,7 @@ import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.ByteBuffer
 import java.time.Duration
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
@@ -101,10 +115,10 @@ class MembershipP2PIntegrationTest {
         lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 
         @InjectService(timeout = 5000)
-        lateinit var cryptoOpsClient: CryptoOpsClient
+        lateinit var cryptoOpsClient: TestCryptoOpsClient
 
         @InjectService(timeout = 5000)
-        lateinit var stableKeyPairDecryptor: StableKeyPairDecryptor
+        lateinit var stableKeyPairDecryptor: TestStableKeyPairDecryptor
 
         @InjectService(timeout = 5000)
         lateinit var membershipGroupReaderProvider: TestGroupReaderProvider
@@ -117,6 +131,12 @@ class MembershipP2PIntegrationTest {
 
         @InjectService(timeout = 5000)
         lateinit var memberInfoFactory: MemberInfoFactory
+
+        @InjectService(timeout = 5000)
+        lateinit var keyEncodingService: KeyEncodingService
+
+        @InjectService(timeout = 5000)
+        lateinit var ephemeralKeyPairEncryptor: TestEphemeralKeyPairEncryptor
 
         val logger = contextLogger()
         val clock: Clock = TestClock(Instant.ofEpochSecond(100))
@@ -149,13 +169,12 @@ class MembershipP2PIntegrationTest {
                 }
             }
         """
-        const val cryptoConf = """
-            dummy=1
-        """
         private val schemaVersion = ConfigurationSchemaVersion(1, 0)
 
         lateinit var p2pSender: Publisher
-        lateinit var registrationRequestSerializer: CordaAvroSerializer<UnauthenticatedRegistrationRequest>
+        lateinit var registrationRequestSerializer: CordaAvroSerializer<MembershipRegistrationRequest>
+        lateinit var unauthRegistrationRequestSerializer: CordaAvroSerializer<UnauthenticatedRegistrationRequest>
+        lateinit var headerSerializer: CordaAvroSerializer<UnauthenticatedRegistrationRequestHeader>
         lateinit var keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList>
         lateinit var keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList>
         lateinit var verificationRequestSerializer: CordaAvroSerializer<VerificationRequest>
@@ -183,6 +202,8 @@ class MembershipP2PIntegrationTest {
             }.also { it.start() }
 
             registrationRequestSerializer = cordaAvroSerializationFactory.createAvroSerializer { }
+            unauthRegistrationRequestSerializer = cordaAvroSerializationFactory.createAvroSerializer { }
+            headerSerializer = cordaAvroSerializationFactory.createAvroSerializer { }
             keyValuePairListSerializer = cordaAvroSerializationFactory.createAvroSerializer { }
             keyValuePairListDeserializer =
                 cordaAvroSerializationFactory.createAvroDeserializer({}, KeyValuePairList::class.java)
@@ -225,15 +246,6 @@ class MembershipP2PIntegrationTest {
                     )
                 )
             )
-            publisher.publish(
-                listOf(
-                    Record(
-                        Schemas.Config.CONFIG_TOPIC,
-                        ConfigKeys.CRYPTO_CONFIG,
-                        Configuration(cryptoConf, cryptoConf, 0, schemaVersion)
-                    )
-                )
-            )
             configurationReadService.start()
             configurationReadService.bootstrapConfig(bootConfig)
         }
@@ -247,20 +259,25 @@ class MembershipP2PIntegrationTest {
         val fakeKey = "fakeKey"
         val fakeSig = "fakeSig"
 
-        val testKey = "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEhjszsd2l6GgyFhLDByyz526WTe0q\nGE7eYHXkye3sgozcBPulaMqgFh20gv/IaRgnLiLAsUr6wEGp5BgEbN2meA==\n-----END PUBLIC KEY-----\n"
+        val ecdhKey = cryptoOpsClient.generateKeyPair(
+            destination.shortHash.value,
+            "PRE_AUTH",
+            destination.shortHash.value + "ecdh",
+            ECDSA_SECP256R1_CODE_NAME
+        )
 
         val mgm = memberInfoFactory.create(
             sortedMapOf(
-                MemberInfoExtension.GROUP_ID to groupId,
-                MemberInfoExtension.PARTY_NAME to "O=MGM,C=GB,L=London",
-                Pair(String.format(MemberInfoExtension.URL_KEY, "0"), "http://localhost:8080"),
-                Pair(String.format(MemberInfoExtension.PROTOCOL_VERSION, "0"), "1"),
-                MemberInfoExtension.PLATFORM_VERSION to "1",
-                MemberInfoExtension.SOFTWARE_VERSION to "5.0.0",
-                MemberInfoExtension.ECDH_KEY to testKey
+                GROUP_ID to groupId,
+                PARTY_NAME to "O=MGM,C=GB,L=London",
+                Pair(String.format(URL_KEY, "0"), "http://localhost:8080"),
+                Pair(String.format(PROTOCOL_VERSION, "0"), "1"),
+                PLATFORM_VERSION to "1",
+                SOFTWARE_VERSION to "5.0.0",
+                ECDH_KEY to keyEncodingService.encodeAsString(ecdhKey)
             ),
             sortedMapOf(
-                MemberInfoExtension.STATUS to MemberInfoExtension.MEMBER_STATUS_ACTIVE,
+                STATUS to MEMBER_STATUS_ACTIVE,
                 IS_MGM to "true"
             )
         )
@@ -297,9 +314,23 @@ class MembershipP2PIntegrationTest {
             fakeSigWithKey
         )
 
-        val unauthenticatedRegistrationRequest = UnauthenticatedRegistrationRequest(
-            UnauthenticatedRegistrationRequestHeader(1, clock.instant().toEpochMilli(), testKey),
-            message.toByteBuffer()
+        var latestHeader: UnauthenticatedRegistrationRequestHeader? = null
+
+        val encryptedMessage = ephemeralKeyPairEncryptor.encrypt(
+            ecdhKey,
+            registrationRequestSerializer.serialize(message)!!
+        ) { ek, _ ->
+            val timestamp = clock.instant().toEpochMilli()
+            val header = UnauthenticatedRegistrationRequestHeader(1, timestamp, keyEncodingService.encodeAsString(ek))
+            val serializedHeader = headerSerializer.serialize(header)
+                ?: throw IllegalArgumentException("Serialized header cannot be null.")
+            latestHeader = header
+            EciesParams( "salt".toByteArray(), serializedHeader )
+        }
+
+        val request = UnauthenticatedRegistrationRequest(
+            latestHeader,
+            ByteBuffer.wrap(encryptedMessage.cipherText)
         )
 
         // Publish P2P message requesting registration
@@ -307,14 +338,14 @@ class MembershipP2PIntegrationTest {
             listOf(
                 buildUnauthenticatedP2PRequest(
                     messageHeader,
-                    ByteBuffer.wrap(registrationRequestSerializer.serialize(unauthenticatedRegistrationRequest))
+                    ByteBuffer.wrap(unauthRegistrationRequestSerializer.serialize(request))
                 )
             )
         )
 
         // Wait for latch to countdown so we know when processing has completed and results have been collected
         val result = assertDoesNotThrow {
-            completableResult.getOrThrow(Duration.ofSeconds(60))
+            completableResult.getOrThrow(Duration.ofSeconds(10))
         }
         registrationRequestSubscription.close()
 
@@ -360,7 +391,7 @@ class MembershipP2PIntegrationTest {
         }
     }
 
-    /*@Test
+    @Test
     fun `membership p2p service reads verification requests from the p2p topic and puts them on a membership topic for further processing`() {
         val groupId = UUID.randomUUID().toString()
         val source = createTestHoldingIdentity("O=MGM,C=GB,L=London", groupId)
@@ -542,7 +573,7 @@ class MembershipP2PIntegrationTest {
             assertThat(this.synchronisationMetaData.member).isEqualTo(source.toAvro())
             assertThat(this.syncRequest).isEqualTo(syncRequest)
         }
-    }*/
+    }
 
     private fun buildAuthenticatedMessageHeader(
         destination: HoldingIdentity,

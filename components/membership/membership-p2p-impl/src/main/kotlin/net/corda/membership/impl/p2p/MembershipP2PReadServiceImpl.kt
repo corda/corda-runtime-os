@@ -146,7 +146,12 @@ class MembershipP2PReadServiceImpl @Activate constructor(
                     CONSUMER_GROUP,
                     P2P_IN_TOPIC
                 ),
-                MembershipP2PProcessor(avroSchemaRegistry),
+                MembershipP2PProcessor(
+                    avroSchemaRegistry,
+                    stableKeyPairDecryptor,
+                    keyEncodingService,
+                    cordaAvroSerializationFactory,
+                    membershipGroupReaderProvider),
                 messagingConfig,
                 null
             ),
@@ -155,13 +160,7 @@ class MembershipP2PReadServiceImpl @Activate constructor(
                     MARKER_CONSUMER_GROUP,
                     P2P_OUT_MARKERS,
                 ),
-                MembershipP2PMarkersProcessor(
-                    avroSchemaRegistry,
-                    stableKeyPairDecryptor,
-                    keyEncodingService,
-                    cordaAvroSerializationFactory,
-                    membershipGroupReaderProvider
-                ),
+                MembershipP2PMarkersProcessor(),
                 messagingConfig,
                 null,
             )

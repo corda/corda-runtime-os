@@ -9,6 +9,7 @@ description 'Membership P2P message handling implementation'
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
@@ -37,13 +38,10 @@ dependencies {
     integrationTestImplementation project(':testing:db-testkit')
     integrationTestImplementation project(':testing:db-message-bus-testkit')
 
-    integrationTestRuntimeOnly project(':components:crypto:crypto-client-impl')
-    integrationTestRuntimeOnly project(':components:crypto:crypto-ecies-impl')
     integrationTestRuntimeOnly project(':libs:crypto:cipher-suite-impl')
     integrationTestRuntimeOnly project(':libs:db:db-orm-impl')
     integrationTestRuntimeOnly project(':libs:db:db-admin-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
-    integrationTestRuntimeOnly project(':libs:membership:membership-impl')
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:schema-registry:schema-registry-impl')
