@@ -487,7 +487,7 @@ class FlowTests {
 
         val requestId = startRpcFlow(bobHoldingId, requestBody)
 
-        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId, 10)
 
         val flowResult = result.getRpcFlowResult()
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
