@@ -56,6 +56,7 @@ dependencies {
     cpbs project(path: ':libs:serialization:serialization-amqp:cpk-four', configuration: 'cordaCPB')
 
     cpbs project(path: ':libs:serialization:serialization-amqp:cpk-using-lib', configuration: 'cordaCPB')
+    cpbs project(path: ':libs:serialization:serialization-amqp:cpk-platform-type-custom-serializer', configuration: 'cordaCPB')
 
     cpbs project(path: ':libs:serialization:serialization-amqp:cpk-swap-original', configuration: 'cordaCPB')
     cpbs project(path: ':libs:serialization:serialization-amqp:cpk-swap-replacement', configuration: 'cordaCPB')

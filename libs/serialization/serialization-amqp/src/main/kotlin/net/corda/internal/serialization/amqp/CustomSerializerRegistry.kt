@@ -17,15 +17,24 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import java.io.NotSerializableException
 import java.lang.reflect.Type
 import java.security.PrivateKey
+import net.corda.sandbox.SandboxGroup
 
 /**
  * Thrown when a [SerializationCustomSerializer] offers to serialize a type for which custom serialization is not permitted, because
  * it should be handled by standard serialisation methods (or not serialised at all) and there is no valid use case for
  * a custom method.
  */
-class IllegalCustomSerializerException(customSerializer: AMQPSerializer<*>, clazz: Class<*>) :
-        Exception("Custom serializer ${customSerializer::class.qualifiedName} registered " +
-                "to serialize non-custom-serializable type $clazz")
+class IllegalCustomSerializerException private constructor(customSerializerQualifiedName: String?, clazz: Class<*>) :
+    Exception(
+        "Custom serializer $customSerializerQualifiedName registered " +
+                "to serialize non-custom-serializable type $clazz"
+    ) {
+    constructor(customSerializer: AMQPSerializer<*>, clazz: Class<*>) :
+            this(customSerializer::class.qualifiedName, clazz)
+
+    constructor(customSerializer: SerializationCustomSerializer<*, *>, clazz: Class<*>) :
+            this(customSerializer::class.qualifiedName, clazz)
+}
 
 /**
  * Thrown when more than one [SerializationCustomSerializer] offers to serialize the same type, which may indicate a malicious attempt
@@ -88,9 +97,13 @@ interface CustomSerializerRegistry {
 
 class CachingCustomSerializerRegistry(
         private val descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
-        private val allowedFor: Set<Class<*>>
+        private val allowedFor: Set<Class<*>>,
+        private val sandboxGroup: SandboxGroup
 ) : CustomSerializerRegistry {
-    constructor(descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry) : this(descriptorBasedSerializerRegistry, emptySet())
+    constructor(
+        descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
+        sandboxGroup: SandboxGroup
+    ) : this(descriptorBasedSerializerRegistry, emptySet(), sandboxGroup)
 
     companion object {
         val logger = contextLogger()
@@ -133,6 +146,12 @@ class CachingCustomSerializerRegistry(
 
     override fun registerExternal(serializer: SerializationCustomSerializer<*, *>, factory: SerializerFactory) {
         val customSerializer = CorDappCustomSerializer(serializer, factory)
+        val clazz = customSerializer.type.asClass()
+        if (sandboxGroup.loadClassFromPublicBundles(clazz.name) != null) {
+            // Prevent serializing Corda platform types
+            logger.warn("Illegal custom serializer detected for $clazz: ${serializer::class.qualifiedName}")
+            throw IllegalCustomSerializerException(serializer, clazz)
+        }
         logger.trace { "action=\"Registering external serializer\", class=\"${customSerializer.type}\"" }
         registerCustomSerializer(customSerializer)
     }
@@ -221,6 +240,7 @@ class CachingCustomSerializerRegistry(
         AMQPTypeIdentifiers.isPrimitive(this) -> true
         isSubClassOf(CordaThrowable::class.java) -> false
         allowedFor.any { it.isAssignableFrom(this) } -> false
+        sandboxGroup.loadClassFromPublicBundles(this.name) != null -> true
         isAnnotationPresent(CordaSerializable::class.java) -> true
         else -> false
     }

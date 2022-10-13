@@ -1,0 +1,24 @@
+plugins {
+    id 'net.corda.plugins.cordapp-cpb'
+}
+
+cordapp {
+    targetPlatformVersion platformVersion as Integer
+    minimumPlatformVersion platformVersion as Integer
+    workflow {
+        name "Test Serializable Test"
+        versionId 1
+        vendor "R3"
+    }
+}
+
+dependencies {
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+    cordaProvided "net.corda:corda-base"
+    cordaProvided "net.corda:corda-serialization"
+    cordaProvided 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+}
+
+tasks.named('cpk', Jar) {
+    archiveBaseName = 'TestSerializableCpk-platform-type-custom-serializer'
+}

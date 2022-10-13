@@ -42,8 +42,10 @@ import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import net.corda.internal.serialization.amqp.IllegalCustomSerializerException
+import net.corda.v5.serialization.SerializationCustomSerializer
 
-@Timeout(value = 30, unit = TimeUnit.SECONDS)
+//@Timeout(value = 30, unit = TimeUnit.SECONDS)
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
 class AMQPwithOSGiSerializationTests {
@@ -196,6 +198,21 @@ class AMQPwithOSGiSerializationTests {
                 "Attempted to create evolvable class tag for cpk private bundle com.example.serialization.serialization-cpk-library."
             ) {
                 SerializationOutput(factory).serialize(mainBundleItemInstance, context)
+            }
+        } finally {
+            sandboxFactory.unloadSandboxGroup(sandboxGroup)
+        }
+    }
+
+    @Test
+    fun `custom serializers for platform types are blocked`() {
+        val sandboxGroup = sandboxFactory.loadSandboxGroup("META-INF/TestSerializableCpk-platform-type-custom-serializer.cpb")
+        try {
+            val factory = testDefaultFactory(sandboxGroup)
+            val serializerClass = sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle.VersionSerializer")
+            val serializer = serializerClass.getConstructor().newInstance() as SerializationCustomSerializer<*, *>
+            assertThrows<IllegalCustomSerializerException> {
+                factory.registerExternal(serializer, factory)
             }
         } finally {
             sandboxFactory.unloadSandboxGroup(sandboxGroup)
