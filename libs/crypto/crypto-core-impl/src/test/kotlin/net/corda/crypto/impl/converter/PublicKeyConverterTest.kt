@@ -1,5 +1,6 @@
 package net.corda.crypto.impl.converter
 
+import net.corda.crypto.core.service.KeyEncodingService
 import net.corda.layeredpropertymap.CustomPropertyConverter
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.v5.base.types.LayeredPropertyMap
@@ -18,7 +19,7 @@ class PublicKeyConverterTest {
         private val ledgerKey = mock<PublicKey>()
     }
 
-    private lateinit var keyEncodingService: KeyEncodingHandler
+    private lateinit var keyEncodingService: KeyEncodingService
     private lateinit var converters: List<CustomPropertyConverter<out Any>>
 
     @BeforeEach

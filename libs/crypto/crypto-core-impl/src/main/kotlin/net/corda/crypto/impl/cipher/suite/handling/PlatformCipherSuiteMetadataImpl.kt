@@ -260,7 +260,8 @@ class PlatformCipherSuiteMetadataImpl : PlatformCipherSuiteMetadata {
     override fun decodePem(scheme: KeyScheme, publicKeyInfo: SubjectPublicKeyInfo, pemContent: ByteArray): PublicKey? =
         try {
             val converter = getJcaPEMKeyConverter(publicKeyInfo)
-            converter.getPublicKey(publicKeyInfo)
+            val publicKey = converter.getPublicKey(publicKeyInfo)
+            decode(publicKey.encoded) // to get around issue when the EC key is set as ECDSA when converting from PEM
         } catch (e: Throwable) {
             null
         }
