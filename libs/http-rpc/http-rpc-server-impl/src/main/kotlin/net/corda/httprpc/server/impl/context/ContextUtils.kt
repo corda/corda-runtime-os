@@ -93,10 +93,12 @@ internal object ContextUtils {
             log.debug { "Invoke method \"${this.method.method.name}\" for route info." }
             log.trace { "Get parameter values." }
 
-            val meterBuilder = MeterFactory.httpServer.requests()
-                .withTag(MeterFactory.TagKeys.Address, "${ctx.method()} ${ctx.path()}")
-            meterBuilder.build<Counter>(Metrics::counter).increment()
-            meterBuilder.build<Timer>(Metrics::timer).wrap {
+            MeterFactory.create(MeterFactory.Meters.HttpRequestsCount)
+                .withTag(MeterFactory.Tags.Address, "${ctx.method()} ${ctx.path()}")
+                .build<Counter>(Metrics::counter).increment()
+            MeterFactory.create(MeterFactory.Meters.HttpRequestsTime)
+                .withTag(MeterFactory.Tags.Address, "${ctx.method()} ${ctx.path()}")
+                .build<Timer>(Metrics::timer).wrap {
                 try {
                     validateRequestContentType(this, ctx)
 

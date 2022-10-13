@@ -28,10 +28,10 @@ class MeterFactoryTest {
         val meter = MeterFactory
             .httpServer
             .requests()
-            .withTag(MeterFactory.TagKeys.Uri, "blah")
+            .withTag(MeterFactory.Tags.Uri, "blah")
             .build<Any>(Metrics::counter)
         assertThat(meter.id.tags.map { Pair(it.key, it.value) })
-            .contains(Pair(MeterFactory.TagKeys.Uri.value, "blah"))
+            .contains(Pair(MeterFactory.Tags.Uri.value, "blah"))
     }
 
     @Test
@@ -42,7 +42,7 @@ class MeterFactoryTest {
             .forVirtualNode("ABC")
             .build<Any>(Metrics::counter)
         assertThat(meter.id.tags.map { Pair(it.key, it.value) })
-            .contains(Pair(MeterFactory.TagKeys.VirtualNode.value, "ABC"))
+            .contains(Pair(MeterFactory.Tags.VirtualNode.value, "ABC"))
     }
 
     @Test
@@ -50,7 +50,7 @@ class MeterFactoryTest {
         val meter = MeterFactory.httpServer.requests().build<Any>(Metrics::counter)
         assertThat(meter.id.name).isEqualTo("${MeterFactory.Companion.HttpServer.HTTP_SERVER}.requests")
         assertThat(meter.id.tags.map { Pair(it.key, it.value) })
-            .contains(Pair(MeterFactory.TagKeys.Source.value, meterSourceName))
+            .contains(Pair(MeterFactory.Tags.Source.value, meterSourceName))
     }
 }
 

@@ -1,13 +1,17 @@
 package net.corda.metrics
 
-import io.micrometer.core.instrument.Meter
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Metrics
 import io.micrometer.core.instrument.Tag
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry
 
 class MeterFactory {
-    enum class TagKeys(val value: String) {
+    enum class Meters(val meterName: String) {
+        HttpRequestsCount("http.server.requests"),
+        HttpRequestsTime("http.server.requestTime"),
+    }
+
+    enum class Tags(val value: String) {
         Source("source"),
         VirtualNode("vnode"),
         Address("address")
@@ -20,26 +24,15 @@ class MeterFactory {
         fun configure(name: String, registry: MeterRegistry) {
             this.name = name
             this.registry.add(registry)
-            this.registry.config().commonTags(TagKeys.Source.value, name)
+            this.registry.config().commonTags(Tags.Source.value, name)
         }
 
-        val httpServer = HttpServer()
-
-        class HttpServer {
-            companion object {
-                const val HTTP_SERVER = "http.server"
-            }
-
-            fun requests(): MeterBuilder {
-                verifyRegistry()
-                return MeterBuilder("${HTTP_SERVER}.requests")
-            }
-        }
-
-        private fun verifyRegistry() {
+        fun create(meter: Meters): MeterBuilder {
             if(null == name) {
                 throw IllegalStateException("Meter Factory must be configured before using it.")
             }
+
+            return MeterBuilder(meter.meterName)
         }
     }
 
@@ -48,11 +41,12 @@ class MeterFactory {
     ) {
         private val allTags: MutableList<Tag> = mutableListOf()
 
+        // special case for VirtualNode - TODO - is this worth it?
         fun forVirtualNode(name: String): MeterBuilder {
-            return withTag(TagKeys.VirtualNode, name)
+            return withTag(Tags.VirtualNode, name)
         }
 
-        fun withTag(key: TagKeys, value: String): MeterBuilder {
+        fun withTag(key: Tags, value: String): MeterBuilder {
             allTags.add(Tag.of(key.value, value))
             return this
         }
