@@ -73,7 +73,6 @@ interface StepSetup {
     fun sessionErrorEventReceived(
         flowId: String,
         sessionId: String,
-        sequenceNum: Int,
         receivedSequenceNum: Int,
         initiatingIdentity: HoldingIdentity? = null,
         initiatedIdentity: HoldingIdentity? = null

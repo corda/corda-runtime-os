@@ -21,7 +21,7 @@ class FlowSessionImpl(
     private val serializationService: SerializationServiceInternal,
     private val flowContext: FlowContext,
     direction: Direction
-) : FlowSession {
+) : FlowSession, FlowSessionInternal {
 
     private companion object {
         private val log = contextLogger()
@@ -41,29 +41,38 @@ class FlowSessionImpl(
 
     private val fiber: FlowFiber get() = flowFiberService.getExecutingFiber()
 
+    override fun setSessionConfirmed() {
+        isSessionConfirmed = true
+    }
+
+    override fun getSessionId(): String {
+        return sourceSessionId
+    }
+
     @Suspendable
     override fun <R : Any> sendAndReceive(receiveType: Class<R>, payload: Any): R {
         requireBoxedType(receiveType)
-        confirmSession()
-        val request = FlowIORequest.SendAndReceive(mapOf(sourceSessionId to serialize(payload)))
+        val request = FlowIORequest.SendAndReceive(mapOf(getSessionInfo() to serialize(payload)))
         val received = fiber.suspend(request)
+        setSessionConfirmed()
         return deserializeReceivedPayload(received, receiveType)
     }
 
     @Suspendable
     override fun <R : Any> receive(receiveType: Class<R>): R {
         requireBoxedType(receiveType)
-        confirmSession()
-        val request = FlowIORequest.Receive(setOf(sourceSessionId))
+        val request = FlowIORequest.Receive(setOf(getSessionInfo()))
         val received = fiber.suspend(request)
+        setSessionConfirmed()
         return deserializeReceivedPayload(received, receiveType)
     }
 
     @Suspendable
     override fun send(payload: Any) {
-        confirmSession()
-        val request = FlowIORequest.Send(sessionToPayload = mapOf(sourceSessionId to serialize(payload)))
-        return fiber.suspend(request)
+        val request =
+            FlowIORequest.Send(mapOf(getSessionInfo() to serialize(payload)))
+        fiber.suspend(request)
+        setSessionConfirmed()
     }
 
     @Suspendable
@@ -73,21 +82,6 @@ class FlowSessionImpl(
             log.info("Closed session: $sourceSessionId")
         } else {
             log.info("Ignoring close on uninitiated session: $sourceSessionId")
-        }
-    }
-
-    @Suspendable
-    private fun confirmSession() {
-        if (!isSessionConfirmed) {
-            fiber.suspend(
-                FlowIORequest.InitiateFlow(
-                    counterparty,
-                    sourceSessionId,
-                    contextUserProperties = flowContext.flattenUserProperties(),
-                    contextPlatformProperties = flowContext.flattenPlatformProperties()
-                )
-            )
-            isSessionConfirmed = true
         }
     }
 
@@ -117,6 +111,15 @@ class FlowSessionImpl(
             }
         }
             ?: throw CordaRuntimeException("The session [${sourceSessionId}] did not receive a payload when trying to receive one")
+    }
+    
+    private fun getSessionInfo(): FlowIORequest.SessionInfo {
+        return FlowIORequest.SessionInfo(
+            sourceSessionId,
+            counterparty,
+            contextUserProperties = flowContext.flattenUserProperties(),
+            contextPlatformProperties = flowContext.flattenPlatformProperties()
+        )
     }
 
     override fun equals(other: Any?): Boolean =

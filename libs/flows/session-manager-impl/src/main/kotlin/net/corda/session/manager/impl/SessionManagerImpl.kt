@@ -222,7 +222,7 @@ class SessionManagerImpl : SessionManager {
             val nonAckUndeliveredMessages = undeliveredMessages.filter { it.payload !is SessionAck }
             if (status == SessionStateType.WAIT_FOR_FINAL_ACK && nonAckUndeliveredMessages.isEmpty()) {
                 status = SessionStateType.CLOSED
-            } else if (status == SessionStateType.CREATED && nonAckUndeliveredMessages.isEmpty()) {
+            } else if (status == SessionStateType.CREATED && !nonAckUndeliveredMessages.any { it.sequenceNum == 1 }) {
                 status = SessionStateType.CONFIRMED
             }
         }
