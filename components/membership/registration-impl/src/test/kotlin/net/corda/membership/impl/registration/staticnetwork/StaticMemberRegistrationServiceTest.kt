@@ -10,10 +10,12 @@ import net.corda.crypto.impl.converter.PublicKeyHashConverter
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
+import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
@@ -35,11 +37,13 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.ledgerKeyHashes
 import net.corda.membership.lib.MemberInfoExtension.Companion.modifiedTime
+import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.MemberInfoExtension.Companion.softwareVersion
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
+import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
@@ -58,12 +62,17 @@ import net.corda.schema.Schemas
 import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.schema.membership.MembershipSchema
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.PublicKeyHash
+import net.corda.v5.crypto.RSA_CODE_NAME
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.calculateHash
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions
+import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.any
@@ -141,12 +150,16 @@ class StaticMemberRegistrationServiceTest {
 
         on { encodeAsByteArray(any()) } doReturn ByteArray(1)
     }
+    private val cryptoSigningKey = mock<CryptoSigningKey> {
+        on { schemeCodeName } doReturn RSA_CODE_NAME
+    }
 
     private val cryptoOpsClient: CryptoOpsClient = mock {
         on { generateKeyPair(any(), any(), any(), any(), any<Map<String, String>>()) } doReturn defaultKey
-        on { generateKeyPair(any(), any(), eq(aliceId.value), any(), any<Map<String, String>>()) } doReturn aliceKey
-        on { generateKeyPair(any(), any(), eq(bobId.value), any(), any<Map<String, String>>()) } doReturn bobKey
-        on { generateKeyPair(any(), any(), eq(charlieId.value), any(), any<Map<String, String>>()) } doReturn charlieKey
+        on { generateKeyPair(any(), any(), eq("${aliceId.value}-LEDGER"), any(), any<Map<String, String>>()) } doReturn aliceKey
+        on { generateKeyPair(any(), any(), eq("${bobId.value}-LEDGER"), any(), any<Map<String, String>>()) } doReturn bobKey
+        on { generateKeyPair(any(), any(), eq("${charlieId.value}-LEDGER"), any(), any<Map<String, String>>()) } doReturn charlieKey
+        on { lookup(any(), any()) } doReturn listOf(cryptoSigningKey)
     }
 
     private val configurationReadService: ConfigurationReadService = mock()
@@ -174,7 +187,12 @@ class StaticMemberRegistrationServiceTest {
     }
 
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory = LayeredPropertyMapFactoryImpl(
-        listOf(EndpointInfoConverter(), PublicKeyConverter(keyEncodingService), PublicKeyHashConverter())
+        listOf(
+            EndpointInfoConverter(),
+            MemberNotaryDetailsConverter(keyEncodingService),
+            PublicKeyConverter(keyEncodingService),
+            PublicKeyHashConverter()
+        )
     )
     private val memberInfoFactory: MemberInfoFactory = MemberInfoFactoryImpl(layeredPropertyMapFactory)
 
@@ -203,6 +221,9 @@ class StaticMemberRegistrationServiceTest {
             }
         }
     }
+    private val platformInfoProvider: PlatformInfoProvider = mock {
+        on { activePlatformVersion } doReturn 5000
+    }
 
     private val registrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
@@ -217,6 +238,7 @@ class StaticMemberRegistrationServiceTest {
         cordaAvroSerializationFactory,
         membershipSchemaValidatorFactory,
         endpointInfoFactory,
+        platformInfoProvider
     )
 
     private fun setUpPublisher() {
@@ -438,6 +460,68 @@ class StaticMemberRegistrationServiceTest {
         val registrationResult = registrationService.register(registrationId, alice, context)
 
         assertThat(registrationResult.outcome).isEqualTo(NOT_SUBMITTED)
+    }
+
+    @Test
+    fun `registration adds notary info to member info`() {
+        val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
+        whenever(mockPublisher.publish(capturedPublishedList.capture())).doReturn(emptyList())
+        setUpPublisher()
+        registrationService.start()
+        val context = mapOf(
+            KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+            "corda.roles.0" to "notary",
+            "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
+            "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
+        )
+
+        registrationService.register(registrationId, alice, context)
+
+        val persistentMemberPublished = capturedPublishedList.firstValue.firstOrNull()?.value as PersistentMemberInfo
+        val memberInfo = memberInfoFactory.create(
+            persistentMemberPublished.memberContext.toSortedMap(),
+            persistentMemberPublished.mgmContext.toSortedMap()
+        )
+        val notaryDetails = memberInfo.notaryDetails
+        assertSoftly {
+            assertThat(notaryDetails).isNotNull
+            assertThat(notaryDetails?.serviceName).isEqualTo(MemberX500Name.parse("O=MyNotaryService, L=London, C=GB"))
+            assertThat(notaryDetails?.servicePlugin).isEqualTo("net.corda.notary.MyNotaryService")
+
+            assertThat(notaryDetails?.keys?.toList())
+                .hasSize(1)
+                .allMatch {
+                    it.publicKey == defaultKey
+                }
+                .allMatch {
+                    it.publicKeyHash == PublicKeyHash.calculate(defaultKey)
+                }
+                .allMatch {
+                    it.spec.signatureName == SignatureSpec.RSA_SHA512.signatureName
+                }
+        }
+    }
+
+    @Test
+    fun `registration without notary will not add notary to member info`() {
+        val capturedPublishedList = argumentCaptor<List<Record<String, Any>>>()
+        whenever(mockPublisher.publish(capturedPublishedList.capture())).doReturn(emptyList())
+        setUpPublisher()
+        registrationService.start()
+        val context = mapOf(
+            KEY_SCHEME to ECDSA_SECP256R1_CODE_NAME,
+        )
+
+        registrationService.register(registrationId, alice, context)
+
+        val persistentMemberPublished = capturedPublishedList.firstValue.firstOrNull()?.value as PersistentMemberInfo
+        val memberInfo = memberInfoFactory.create(
+            persistentMemberPublished.memberContext.toSortedMap(),
+            persistentMemberPublished.mgmContext.toSortedMap()
+        )
+        val notaryDetails = memberInfo.notaryDetails
+        assertThat(notaryDetails)
+            .isNull()
     }
 
     @Test

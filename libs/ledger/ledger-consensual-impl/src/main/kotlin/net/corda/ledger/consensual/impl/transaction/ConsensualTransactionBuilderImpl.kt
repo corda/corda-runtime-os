@@ -1,27 +1,33 @@
 package net.corda.ledger.consensual.impl.transaction
 
-import java.security.PublicKey
-import java.time.Instant
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
+import net.corda.ledger.common.internal.transaction.SignableData
 import net.corda.ledger.common.impl.transaction.TransactionMetaData
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.DIGEST_SETTINGS_KEY
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.LEDGER_MODEL_KEY
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.LEDGER_VERSION_KEY
+import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.PLATFORM_VERSION_KEY
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
+import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
+import java.security.PublicKey
+import java.time.Instant
 
 // TODO Create an AMQP serializer if we plan on sending transaction builders between virtual nodes
 @Suppress("LongParameterList")
@@ -33,6 +39,8 @@ class ConsensualTransactionBuilderImpl(
     private val serializationService: SerializationService,
     private val signingService: SigningService,
     // cpi defines what type of signing/hashing is used (related to the digital signature signing and verification stuff)
+    private val memberLookup: MemberLookup,
+    val sandboxCpks: List<CpkIdentifier>,
     override val states: List<ConsensualState> = emptyList(),
 ) : ConsensualTransactionBuilder {
 
@@ -42,12 +50,32 @@ class ConsensualTransactionBuilderImpl(
     @Suspendable
     override fun signInitial(publicKey: PublicKey): ConsensualSignedTransaction {
         val wireTransaction = buildWireTransaction()
-        // TODO(CORE-5091 we just fake the signature for now...)
-        val signature = signingService.sign(wireTransaction.id.bytes, publicKey, SignatureSpec.ECDSA_SHA256)
-        val digitalSignatureMetadata =
-            DigitalSignatureMetadata(Instant.now(), mapOf()) //CORE-5091 populate this properly...
-        val signatureWithMetaData = DigitalSignatureAndMetadata(signature, digitalSignatureMetadata)
+        val signatureWithMetaData = createSignature(wireTransaction.id, publicKey)
         return ConsensualSignedTransactionImpl(serializationService, wireTransaction, listOf(signatureWithMetaData))
+    }
+
+    private fun getSignatureMetadata(): DigitalSignatureMetadata {
+        val cpi = getCpiIdentifier()
+        return DigitalSignatureMetadata(
+            Instant.now(),
+            linkedMapOf(
+                "cpiName" to cpi.name,
+                "cpiVersion" to cpi.version,
+                "cpiSignerSummaryHash" to cpi.signerSummaryHash.toString()
+            )
+        )
+    }
+
+    @Suspendable
+    private fun createSignature(txId: SecureHash, publicKey: PublicKey): DigitalSignatureAndMetadata {
+        val signatureMetadata = getSignatureMetadata()
+        val signableData = SignableData(txId, signatureMetadata)
+        val signature = signingService.sign(
+            serializationService.serialize(signableData).bytes,
+            publicKey,
+            SignatureSpec.ECDSA_SHA256
+        ) //Rework with CORE-6969
+        return DigitalSignatureAndMetadata(signature, signatureMetadata)
     }
 
     private fun buildWireTransaction(): WireTransaction {
@@ -68,6 +96,20 @@ class ConsensualTransactionBuilderImpl(
             privacySalt,
             componentGroupLists
         )
+    }
+
+    /**
+     * TODO(Fake values until we can get CPI information properly)
+     */
+    private fun getCpiIdentifier(): CpiIdentifier {
+        return CpiIdentifier(
+            "CPI name",
+            "CPI version",
+            SecureHash("SHA-256", "Fake-value".toByteArray()))
+    }
+
+    private fun getCpks():List<CpkIdentifier>{
+        return sandboxCpks
     }
 
     private fun calculateComponentGroupLists(serializer: SerializationService): List<List<ByteArray>> {
@@ -100,10 +142,11 @@ class ConsensualTransactionBuilderImpl(
 
     private fun calculateMetaData(): TransactionMetaData {
         return TransactionMetaData(
-            mapOf(
+            linkedMapOf(
                 LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
                 LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
-                DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues
+                DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
+                PLATFORM_VERSION_KEY to memberLookup.myInfo().platformVersion,
                 // TODO(CORE-5940 set CPK identifier/etc)
             )
         )
@@ -129,6 +172,8 @@ class ConsensualTransactionBuilderImpl(
             merkleTreeProvider,
             serializationService,
             signingService,
+            memberLookup,
+            sandboxCpks,
             states,
         )
     }

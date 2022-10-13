@@ -17,6 +17,7 @@ import net.corda.data.membership.event.registration.MgmOnboarded
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -46,6 +47,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.impl.MemberInfoFactoryImpl
 import net.corda.membership.lib.impl.converter.EndpointInfoConverter
+import net.corda.membership.lib.impl.converter.MemberNotaryDetailsConverter
 import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
@@ -170,7 +172,12 @@ class MGMRegistrationServiceTest {
         on { registerComponentForUpdates(eq(coordinator), any()) } doReturn configHandle
     }
     private val layeredPropertyMapFactory: LayeredPropertyMapFactory = LayeredPropertyMapFactoryImpl(
-        listOf(EndpointInfoConverter(), PublicKeyConverter(keyEncodingService), PublicKeyHashConverter())
+        listOf(
+            EndpointInfoConverter(),
+            MemberNotaryDetailsConverter(keyEncodingService),
+            PublicKeyConverter(keyEncodingService),
+            PublicKeyHashConverter()
+        )
     )
     private val memberInfoFactory: MemberInfoFactory = MemberInfoFactoryImpl(layeredPropertyMapFactory)
     private val statusUpdate = argumentCaptor<RegistrationRequest>()
@@ -194,6 +201,9 @@ class MGMRegistrationServiceTest {
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory = mock {
         on { createValidator() } doReturn membershipSchemaValidator
     }
+    private val platformInfoProvider: PlatformInfoProvider = mock {
+        on { activePlatformVersion } doReturn 5000
+    }
     private val registrationService = MGMRegistrationService(
         publisherFactory,
         configurationReadService,
@@ -204,7 +214,8 @@ class MGMRegistrationServiceTest {
         membershipPersistenceClient,
         layeredPropertyMapFactory,
         cordaAvroSerializationFactory,
-        membershipSchemaValidatorFactory
+        membershipSchemaValidatorFactory,
+        platformInfoProvider
     )
 
     private val properties = mapOf(

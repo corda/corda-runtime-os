@@ -64,6 +64,12 @@ class SetupCordaCluster : Runnable {
     )
     var zooKeeperReplicas: Int = 3
 
+    @Option(
+        names = ["--corda-e2e-type", "--corda-e2e", "--e2e"],
+        description = ["Mark the namespace as corda-e2e."]
+    )
+    var cordaE2eType: Boolean = false
+
     private fun execute(command: String, vararg arguments: String) {
         val process = ProcessBuilder()
             .command(listOf(command) + arguments)
@@ -84,7 +90,9 @@ class SetupCordaCluster : Runnable {
     private fun deploy(clusterName: String) {
         kubectl("delete", "ns", clusterName, "--ignore-not-found=true")
         kubectl("create", "ns", clusterName)
-        kubectl("label", "ns", clusterName, "namespace-type=corda-e2e", "--overwrite=true")
+        if (cordaE2eType) {
+            kubectl("label", "ns", clusterName, "namespace-type=corda-e2e", "--overwrite=true")
+        }
 
         try {
             kubectl(
@@ -119,12 +127,16 @@ class SetupCordaCluster : Runnable {
                 "db.cluster.existingSecret=prereqs-postgresql",
             "-n", clusterName, "--wait", "--timeout", "600s"
         )
+        if (!cordaE2eType) {
+            println("Don't forget to delete the namespace $clusterName by running:")
+            println("kubectl delete ns $clusterName")
+        }
     }
 
     private val actualBaseImage by lazy {
         if (baseImage == null) {
             val tagsReply = Unirest.get(
-                "https://software.r3.com:443/v2/corda-os-docker-unstable/corda-os-p2p-link-manager-worker/tags/list"
+                "https://corda-os-docker-unstable.software.r3.com:443/v2/corda-os-p2p-link-manager-worker/tags/list"
             )
                 .basicAuth(
                     System.getenv("CORDA_ARTIFACTORY_USERNAME"),

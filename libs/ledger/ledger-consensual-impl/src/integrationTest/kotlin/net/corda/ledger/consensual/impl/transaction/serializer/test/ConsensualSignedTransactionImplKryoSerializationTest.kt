@@ -3,9 +3,9 @@ package net.corda.ledger.consensual.impl.transaction.serializer.test
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl
+import net.corda.ledger.consensual.testkit.getConsensualSignedTransaction
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
-import net.corda.serialization.InternalCustomSerializer
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFactory
 import net.corda.testing.sandboxes.SandboxSetup
@@ -15,7 +15,6 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
-import net.corda.v5.ledger.consensual.Party
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeAll
@@ -31,7 +30,6 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.file.Path
-import net.corda.ledger.consensual.testkit.getConsensualSignedTransaction
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
@@ -59,8 +57,6 @@ class ConsensualSignedTransactionImplKryoSerializationTest {
     private lateinit var wireTransactionKryoSerializer: CheckpointInternalCustomSerializer<WireTransaction>
     private lateinit var consensualSignedTransactionImplSeralizer: CheckpointInternalCustomSerializer<ConsensualSignedTransactionImpl>
 
-    private lateinit var partySerializer: InternalCustomSerializer<Party>
-
     @BeforeAll
     fun setup(
         @InjectService(timeout = 1000)
@@ -77,10 +73,6 @@ class ConsensualSignedTransactionImplKryoSerializationTest {
             setup.withCleanup {
                 sandboxCreationService.unloadSandboxGroup(emptySandboxGroup)
             }
-            partySerializer = setup.fetchService(
-                "(component.name=net.corda.ledger.consensual.impl.PartySerializer)",
-                1500
-            )
             wireTransactionKryoSerializer = setup.fetchService(
                 "(component.name=net.corda.ledger.common.impl.transaction.serializer.WireTransactionKryoSerializer)",
                 1500
@@ -95,12 +87,9 @@ class ConsensualSignedTransactionImplKryoSerializationTest {
     @Test
     @Suppress("FunctionName")
     fun `correct serialization of a consensual Signed Transaction`() {
-        val serializationService = TestSerializationService.getTestSerializationService({
-            it.register(partySerializer, it)
-        }, schemeMetadata)
+        val serializationService = TestSerializationService.getTestSerializationService({ }, schemeMetadata)
 
-        val builder =
-            checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(emptySandboxGroup)
+        val builder = checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(emptySandboxGroup)
         val kryoSerializer = builder
             .addSerializer(WireTransaction::class.java, wireTransactionKryoSerializer)
             .addSerializer(ConsensualSignedTransactionImpl::class.java, consensualSignedTransactionImplSeralizer)
@@ -112,13 +101,12 @@ class ConsensualSignedTransactionImplKryoSerializationTest {
             serializationService,
             jsonMarshallingService
         )
+
         val bytes = kryoSerializer.serialize(signedTransaction)
         val deserialized = kryoSerializer.deserialize(bytes, ConsensualSignedTransactionImpl::class.java)
 
         assertThat(deserialized).isEqualTo(signedTransaction)
-        Assertions.assertDoesNotThrow {
-            deserialized.id
-        }
+        Assertions.assertDoesNotThrow { deserialized.id }
         Assertions.assertEquals(signedTransaction.id, deserialized.id)
     }
 }

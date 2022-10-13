@@ -70,7 +70,7 @@ class HttpHelper {
          * Extension function which validates an incoming request.
          * @return an [HttpResponseStatus] containing the status code
          */
-        fun HttpRequest.validate(): HttpResponseStatus {
+        fun HttpRequest.validate(maxRequestSize: Long): HttpResponseStatus {
             try {
                 val uri = URI.create(this.uri()).normalize()
 
@@ -91,8 +91,9 @@ class HttpHelper {
                 return HttpResponseStatus.NOT_IMPLEMENTED
             }
 
-            if (this.headers()[HttpHeaderNames.CONTENT_LENGTH] == null) {
-                return HttpResponseStatus.LENGTH_REQUIRED
+            val contentLength = this.headers()[HttpHeaderNames.CONTENT_LENGTH]?.toLongOrNull() ?: return HttpResponseStatus.LENGTH_REQUIRED
+            if (contentLength > maxRequestSize) {
+                return HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE
             }
 
             if (!HttpHeaderValues.APPLICATION_JSON.contentEqualsIgnoreCase(this.headers()[HttpHeaderNames.CONTENT_TYPE]))

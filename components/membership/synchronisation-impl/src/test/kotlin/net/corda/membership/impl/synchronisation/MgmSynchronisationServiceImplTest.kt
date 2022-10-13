@@ -295,7 +295,7 @@ class MgmSynchronisationServiceImplTest {
             PARTY_NAME to name,
             Pair(String.format(URL_KEY, "0"), "http://localhost:8080"),
             Pair(String.format(PROTOCOL_VERSION, "0"), "1"),
-            PLATFORM_VERSION to "1",
+            PLATFORM_VERSION to "5000",
             SOFTWARE_VERSION to "5.0.0"
         ),
         sortedMapOf(
