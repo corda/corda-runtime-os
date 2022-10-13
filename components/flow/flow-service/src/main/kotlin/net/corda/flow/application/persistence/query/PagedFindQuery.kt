@@ -1,12 +1,12 @@
 package net.corda.flow.application.persistence.query
 
-import co.paralleluniverse.fibers.Suspendable
 import net.corda.flow.application.persistence.external.events.FindAllExternalEventFactory
 import net.corda.flow.application.persistence.external.events.FindAllParameters
 import net.corda.flow.application.persistence.wrapWithPersistenceException
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.base.annotations.Suspendable
 
 /**
  * Object used to execute paged find queries against a database.

@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
 import org.slf4j.LoggerFactory
-import java.time.ZonedDateTime
 
 @Order(2)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
@@ -55,7 +54,7 @@ class ClusterBootstrapTest {
                             logger.info("${it.key} is ready")
                         }
                         else {
-                            """ ${ZonedDateTime.now()} - Problem with ${it.key} (${it.value}), status returns not ready, 
+                            """Problem with ${it.key} (${it.value}), status returns not ready, 
                                 | body: ${lastResponse?.body()}""".trimMargin().let {
                                 logger.error(it)
                                 softly.fail(it)

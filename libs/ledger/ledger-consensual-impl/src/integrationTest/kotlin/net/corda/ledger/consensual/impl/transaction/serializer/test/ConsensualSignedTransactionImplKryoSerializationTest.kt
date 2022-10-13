@@ -3,6 +3,7 @@ package net.corda.ledger.consensual.impl.transaction.serializer.test
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl
+import net.corda.ledger.consensual.testkit.getConsensualSignedTransaction
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.InternalCustomSerializer
@@ -31,7 +32,6 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.file.Path
-import net.corda.ledger.consensual.testkit.getConsensualSignedTransaction
 
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)

@@ -11,6 +11,7 @@ import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.libs.configuration.helper.getConfig
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -99,6 +100,8 @@ class DynamicMemberRegistrationService @Activate constructor(
     private val membershipPersistenceClient: MembershipPersistenceClient,
     @Reference(service = MembershipSchemaValidatorFactory::class)
     val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
+    @Reference(service = PlatformInfoProvider::class)
+    val platformInfoProvider: PlatformInfoProvider,
 ) : MemberRegistrationService {
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
@@ -120,7 +123,6 @@ class DynamicMemberRegistrationService @Activate constructor(
         const val LEDGER_KEY_ID = "$LEDGER_KEYS.%s.id"
         const val LEDGER_KEY_SIGNATURE_SPEC = "$LEDGER_KEYS.%s.signature.spec"
         const val MEMBERSHIP_P2P_SUBSYSTEM = "membership"
-        const val PLATFORM_VERSION_CONST = "5000"
         const val SOFTWARE_VERSION_CONST = "5.0.0"
         const val SERIAL_CONST = "1"
 
@@ -320,8 +322,8 @@ class DynamicMemberRegistrationService @Activate constructor(
                         REGISTRATION_ID to registrationId,
                         PARTY_NAME to member.x500Name.toString(),
                         GROUP_ID to member.groupId,
+                        PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),
                         // temporarily hardcoded
-                        PLATFORM_VERSION to PLATFORM_VERSION_CONST,
                         SOFTWARE_VERSION to SOFTWARE_VERSION_CONST,
                         SERIAL to SERIAL_CONST,
                     )
