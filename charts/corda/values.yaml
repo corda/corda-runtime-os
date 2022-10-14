@@ -35,20 +35,16 @@ logging:
   # -- log level; one of "all", "trace", "debug", "info", "warn" (the default), "error", "fatal", or "off"
   level: "warn"
 
+# Metrics configuration
+metrics:
+  # -- enable scraping of worker metrics through Prometheus annotations
+  scrape: true
+
 # -- Path on Kubernetes hosts to mount on Corda workers for collecting dumps
 dumpHostPath: ""
 
 # -- Enables capturing JVM heap dumps from Corda workers on an OutOfMemory error
 heapDumpOnOutOfMemoryError: false
-
-# Open Telemetry configuration
-openTelemetry:
-  # -- enables the Open Telemetry Java agent for the Corda workers
-  enabled: false
-  # -- the Open Telemetry endpoint to use e.g https://otel.example.com:4317; telemetry will be logged locally if this is unset
-  endpoint: null
-  # -- the Open Telemetry protocol the endpoint is using; one of `grpc` or `http/protobuf`
-  protocol: "grpc"
 
 # -- node labels for pod assignment, see https://kubernetes.io/docs/user-guide/node-selection/
 nodeSelector: {}
