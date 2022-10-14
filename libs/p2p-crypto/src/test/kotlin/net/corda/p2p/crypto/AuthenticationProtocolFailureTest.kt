@@ -15,7 +15,6 @@ import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.Signature
 import java.util.UUID
-import javax.security.auth.x500.X500Principal
 
 /**
  * Tests exercising behaviour of authentication protocol under malicious actions and/or invalid operations.

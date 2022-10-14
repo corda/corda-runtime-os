@@ -16,7 +16,6 @@ import java.security.KeyPairGenerator
 import java.security.Signature
 import java.time.Instant
 import java.util.UUID
-import javax.security.auth.x500.X500Principal
 
 class AuthenticatedSessionTest {
 

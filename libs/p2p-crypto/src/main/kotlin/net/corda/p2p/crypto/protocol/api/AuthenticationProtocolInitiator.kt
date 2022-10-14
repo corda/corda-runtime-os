@@ -29,7 +29,6 @@ import java.security.PublicKey
 import java.security.spec.X509EncodedKeySpec
 import java.time.Instant
 import javax.crypto.AEADBadTagException
-import javax.security.auth.x500.X500Principal
 
 /**
  * The initiator side of the session authentication protocol.

@@ -658,6 +658,7 @@ internal class SessionManagerImpl(
         return createLinkOutMessage(responderHello, hostedIdentityInSameGroup, peer, groupInfo.networkType)
     }
 
+    @Suppress("ComplexMethod")
     private fun processInitiatorHandshake(message: InitiatorHandshakeMessage): LinkOutMessage? {
         logger.info("Processing ${message::class.java.simpleName} for session ${message.header.sessionId}.")
         val session = pendingInboundSessions[message.header.sessionId]

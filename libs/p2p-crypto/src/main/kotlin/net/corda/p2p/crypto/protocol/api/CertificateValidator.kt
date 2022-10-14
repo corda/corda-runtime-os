@@ -14,7 +14,7 @@ import java.security.cert.PKIXBuilderParameters
 import java.security.cert.PKIXRevocationChecker
 import java.security.cert.X509CertSelector
 import java.security.cert.X509Certificate
-import java.util.*
+import java.util.LinkedList
 
 class CertificateValidator(
     private val revocationCheckMode: RevocationCheckMode,
@@ -27,6 +27,7 @@ class CertificateValidator(
     private val certPathValidator = CertPathValidator.getInstance(certificateAlgorithm)
     private val certificateFactory: CertificateFactory = CertificateFactory.getInstance(certificateFactoryType)
 
+    @Suppress("ThrowsCount")
     fun validate(cert: List<String>, expectedX500Name: MemberX500Name) {
         val certificateChain = certificateFactory.generateCertPath(cert.map { pemCertificate ->
             ByteArrayInputStream(pemCertificate.toByteArray()).use {
