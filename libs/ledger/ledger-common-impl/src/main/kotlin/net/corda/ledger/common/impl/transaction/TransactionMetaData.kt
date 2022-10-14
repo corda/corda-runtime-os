@@ -34,59 +34,14 @@ class TransactionMetaData(
 
     fun getLedgerVersion(): String = this[LEDGER_VERSION_KEY].toString()
 
-    fun getCpiMetadata(): CpiSummary? {
-        return when (val data = this[CPI_METADATA_KEY]) {
-            is CpiSummary -> data
-            is Map<*, *> -> {
-                try {
-                    @Suppress("UNCHECKED_CAST")
-                    val cpi = data as Map<String, Any?>
+    fun getCpiMetadata(): CordaPackageSummary? = this[CPI_METADATA_KEY]?.let { CordaPackageSummary.from(it) }
 
-                    CpiSummary(
-                        cpi["name"] as String,
-                        cpi["version"] as String,
-                        cpi["signerSummaryHash"] as? String,
-                        cpi["fileChecksum"] as String)
-                } catch (e: Exception) {
-                    throw CordaRuntimeException(
-                        "Transaction metadata representation error: expected CPI metadata but found [$data]"
-                    )
-                }
-            }
-            null -> null
-            else ->
-                throw CordaRuntimeException(
-                    "Transaction metadata representation error: expected CPI metadata but found [$data]"
-                )
-        }
-    }
-
-    fun getCpkMetadata(): List<CpkSummary> {
+    fun getCpkMetadata(): List<CordaPackageSummary> {
         return when (val data = this[CPK_METADATA_KEY]) {
             null -> emptyList()
-            is List<*> -> {
-                return data.map { item ->
-                    when (item) {
-                        is CpkSummary -> item
-                        else -> {
-                            try {
-                                val cpk = item as Map<*, *>
-                                CpkSummary(
-                                    cpk["name"] as String,
-                                    cpk["version"] as String,
-                                    cpk["signerSummaryHash"] as? String,
-                                    cpk["fileChecksum"] as String
-                                )
-                            } catch (e: Exception) {
-                                throw CordaRuntimeException(
-                                    "Transaction metadata representation error: expected CPK metadata but found [$item]")
-                            }
-                        }
-                    }
-                }
-            }
+            is List<*> -> data.map { CordaPackageSummary.from(it) }
             else -> throw CordaRuntimeException(
-                "Transaction metadata representation error: expected list of CPK metadata but found [$data]")
+                "Transaction metadata representation error: expected list of Corda package metadata but found [$data]")
         }
     }
 

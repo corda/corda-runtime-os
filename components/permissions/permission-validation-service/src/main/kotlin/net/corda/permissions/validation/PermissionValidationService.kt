@@ -49,10 +49,9 @@ class PermissionValidationService @Activate constructor(
      */
     val permissionValidator: PermissionValidator
         get() {
-            checkNotNull(_permissionValidator) {
+            return checkNotNull(_permissionValidator) {
                 "Permission Validator is null. Getter should be called only after service is UP."
             }
-            return _permissionValidator!!
         }
 
     private fun eventHandler(event: LifecycleEvent) {

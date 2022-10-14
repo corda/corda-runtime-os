@@ -4,11 +4,10 @@ import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
-import net.corda.ledger.common.impl.transaction.CpiSummary
-import net.corda.ledger.common.impl.transaction.CpkSummary
+import net.corda.ledger.common.impl.transaction.CordaPackageSummary
 import net.corda.ledger.consensual.impl.ConsensualTransactionMocks
 import net.corda.ledger.consensual.impl.TestConsensualState
-import net.corda.ledger.consensual.impl.helper.ConfiguredTestSerializationService
+import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -27,7 +26,7 @@ internal class ConsensualTransactionBuilderImplTest {
     private val digestService: DigestService = DigestServiceImpl(cipherSchemeMetadata, null)
     private val merkleTreeFactory: MerkleTreeProvider = MerkleTreeProviderImpl(digestService)
     private val serializationService: SerializationService =
-        ConfiguredTestSerializationService.getTestSerializationService(cipherSchemeMetadata)
+        TestSerializationService.getTestSerializationService({}, cipherSchemeMetadata)
 
     @Test
     fun `can build a simple Transaction`() {
@@ -65,7 +64,7 @@ internal class ConsensualTransactionBuilderImplTest {
         val metadata = tx.wireTransaction.metadata
         assertEquals("0.001", metadata.getLedgerVersion())
 
-        val expectedCpiMetadata = CpiSummary(
+        val expectedCpiMetadata = CordaPackageSummary(
             "CPI name",
             "CPI version",
             "46616B652D76616C7565",
@@ -74,12 +73,12 @@ internal class ConsensualTransactionBuilderImplTest {
         assertEquals(expectedCpiMetadata, metadata.getCpiMetadata())
 
         val expectedCpkMetadata = listOf(
-                CpkSummary(
+                CordaPackageSummary(
                     "MockCpk",
                     "1",
                     "",
                     "0101010101010101010101010101010101010101010101010101010101010101"),
-                CpkSummary(
+                CordaPackageSummary(
                     "MockCpk",
                     "3",
                     "",

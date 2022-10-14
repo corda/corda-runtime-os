@@ -1,9 +1,9 @@
 package net.corda.flow.application.persistence.query
 
-import co.paralleluniverse.fibers.Suspendable
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.v5.application.persistence.PagedQuery
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.base.annotations.Suspendable
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference

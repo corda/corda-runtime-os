@@ -53,6 +53,7 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         "throw_platform_error" to this::throwPlatformError,
         "subflow_passed_in_initiated_session" to { createSessionsInInitiatingFlowAndPassToInlineFlow(it, true) },
         "subflow_passed_in_non_initiated_session" to { createSessionsInInitiatingFlowAndPassToInlineFlow(it, false) },
+        "flow_messaging_apis" to { createMultipleSessionsSingleFlowAndExerciseFlowMessaging(it) },
         "crypto_sign_and_verify" to this::signAndVerify,
         "crypto_verify_invalid_signature" to this::verifyInvalidSignature,
         "context_propagation" to { contextPropagation() },
@@ -278,6 +279,24 @@ class RpcSmokeTestFlow : RPCStartableFlow {
             )
 
             outputs.add("${x500}=${response.message}")
+        }
+
+        return outputs.joinToString("; ")
+    }
+
+    @Suspendable
+    private fun createMultipleSessionsSingleFlowAndExerciseFlowMessaging(
+        input: RpcSmokeTestInput
+    ): String {
+        val sessions = input.getValue("sessions").split(";")
+        log.info("SubFlow Flow Messaging - Starting sessions for '${input.getValue("sessions")}'")
+        val outputs = mutableListOf<String>()
+        sessions.forEachIndexed { _, x500 ->
+            val response = flowEngine.subFlow(
+                SendReceiveAllMessagingFlow(MemberX500Name.parse(x500))
+            )
+
+            outputs.add("${x500}=${response}")
         }
 
         return outputs.joinToString("; ")

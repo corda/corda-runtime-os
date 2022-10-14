@@ -1,5 +1,6 @@
 package net.corda.flow.pipeline.handlers.requests.sessions
 
+import java.time.Instant
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.session.SessionStateType
 import net.corda.data.flow.state.waiting.SessionConfirmation
@@ -16,7 +17,6 @@ import net.corda.flow.state.FlowCheckpoint
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.time.Instant
 
 @Component(service = [FlowRequestHandler::class])
 class CloseSessionsRequestHandler @Activate constructor(
@@ -51,8 +51,7 @@ class CloseSessionsRequestHandler @Activate constructor(
         val hasNoSessionsOrAllClosed = try {
             val sessionsToClose = getSessionsToClose(checkpoint, request)
 
-            flowSessionManager.sendCloseMessages(checkpoint, sessionsToClose, Instant.now())
-                .forEach { updatedSessionState -> checkpoint.putSessionState(updatedSessionState) }
+            checkpoint.putSessionStates(flowSessionManager.sendCloseMessages(checkpoint, sessionsToClose, Instant.now()))
 
             sessionsToClose.isEmpty() || flowSessionManager.doAllSessionsHaveStatus(checkpoint, sessionsToClose, SessionStateType.CLOSED)
         } catch (e: FlowSessionStateException) {

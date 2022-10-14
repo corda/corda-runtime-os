@@ -1,11 +1,9 @@
 package net.corda.ledger.consensual.impl.transaction
 
-import net.corda.ledger.common.impl.transaction.CpiSummary
-import net.corda.ledger.common.impl.transaction.CpkSummary
 import java.security.PublicKey
 import java.time.Instant
+import net.corda.ledger.common.impl.transaction.CordaPackageSummary
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
-import net.corda.ledger.common.internal.transaction.SignableData
 import net.corda.ledger.common.impl.transaction.TransactionMetaData
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPI_METADATA_KEY
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPK_METADATA_KEY
@@ -15,6 +13,7 @@ import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.LE
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.PLATFORM_VERSION_KEY
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
+import net.corda.ledger.common.internal.transaction.SignableData
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -154,10 +153,10 @@ class ConsensualTransactionBuilderImpl(
         )
     }
 
-    private fun getCpiMetadata(): CpiSummary {
+    private fun getCpiMetadata(): CordaPackageSummary {
         val cpiIdentifier = getCpiIdentifier()
 
-        return CpiSummary(
+        return CordaPackageSummary(
             name = cpiIdentifier.name,
             version = cpiIdentifier.version,
             signerSummaryHash = cpiIdentifier.signerSummaryHash?.toHexString(),
@@ -165,9 +164,9 @@ class ConsensualTransactionBuilderImpl(
         )
     }
 
-    private fun getCpkMetadata(): List<CpkSummary> {
+    private fun getCpkMetadata(): List<CordaPackageSummary> {
         return sandboxCpks.filter { it.isContractCpk() }.map { cpk ->
-            CpkSummary(
+            CordaPackageSummary(
                 name = cpk.cpkId.name,
                 version = cpk.cpkId.version,
                 signerSummaryHash = cpk.cpkId.signerSummaryHash?.toHexString() ?: "",
