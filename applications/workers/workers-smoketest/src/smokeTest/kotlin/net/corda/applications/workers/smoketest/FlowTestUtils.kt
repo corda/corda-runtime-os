@@ -215,7 +215,7 @@ fun conditionallyUploadCordaPackage(name: String, cpb: String, groupId: String, 
         val existingCpi = cpis.toList().firstOrNull { it["id"]["cpiName"].textValue() == name }
 
         if (existingCpi == null) {
-            val uploadResponse = cpiUpload(cpb, groupId, staticMemberNames)
+            val uploadResponse = cpiUpload(cpb, groupId, staticMemberNames, name)
             assertThat(uploadResponse.code).isEqualTo(OK.statusCode)
             assertThat(uploadResponse.toJson()["id"].textValue()).isNotEmpty
             val responseStatusId = uploadResponse.toJson()["id"].textValue()
