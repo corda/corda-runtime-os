@@ -45,7 +45,7 @@ import java.util.concurrent.TimeUnit
 import net.corda.internal.serialization.amqp.IllegalCustomSerializerException
 import net.corda.v5.serialization.SerializationCustomSerializer
 
-@Timeout(value = 30, unit = TimeUnit.SECONDS)
+//@Timeout(value = 30, unit = TimeUnit.SECONDS)
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
 @TestInstance(PER_CLASS)
 class AMQPwithOSGiSerializationTests {
@@ -208,11 +208,20 @@ class AMQPwithOSGiSerializationTests {
     fun `custom serializers for platform types are blocked`() {
         val sandboxGroup = sandboxFactory.loadSandboxGroup("META-INF/TestSerializableCpk-platform-type-custom-serializer.cpb")
         try {
+            // Corda platform type custom serializer
             val factory = testDefaultFactory(sandboxGroup)
             val serializerClass = sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle.VersionSerializer")
             val serializer = serializerClass.getConstructor().newInstance() as SerializationCustomSerializer<*, *>
             assertThrows<IllegalCustomSerializerException> {
                 factory.registerExternal(serializer, factory)
+            }
+
+            // JDK type custom serializer
+            val factory1 = testDefaultFactory(sandboxGroup)
+            val serializerClass1 = sandboxGroup.loadClassFromMainBundles("net.cordapp.bundle.ThreadSerializer")
+            val serializer1 = serializerClass1.getConstructor().newInstance() as SerializationCustomSerializer<*, *>
+            assertThrows<IllegalCustomSerializerException> {
+                factory1.registerExternal(serializer1, factory1)
             }
         } finally {
             sandboxFactory.unloadSandboxGroup(sandboxGroup)
