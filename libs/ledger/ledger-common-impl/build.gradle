@@ -12,6 +12,7 @@ dependencies {
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
 
     implementation "net.corda:corda-ledger-common"
+    implementation project(":libs:ledger:ledger-common-internal")
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation project(":libs:serialization:serialization-checkpoint-api")

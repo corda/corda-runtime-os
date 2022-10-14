@@ -6,6 +6,7 @@ import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.impl.transaction.CordaPackageSummary
+import net.corda.ledger.common.internal.transaction.CordaPackageSummary
 import net.corda.ledger.consensual.impl.ConsensualTransactionMocks
 import net.corda.ledger.consensual.impl.TestConsensualState
 import net.corda.v5.application.marshalling.JsonMarshallingService
