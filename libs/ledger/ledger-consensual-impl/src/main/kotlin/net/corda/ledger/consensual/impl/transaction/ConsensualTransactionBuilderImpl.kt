@@ -58,7 +58,7 @@ class ConsensualTransactionBuilderImpl(
 
     private fun buildWireTransaction(): WireTransaction {
         // TODO(CORE-5982 more verifications)
-        // TODO(CORE-5940 ? metadata verifications: nulls, order of CPKs, at least one CPK?))
+        // TODO(CORE-5982 ? metadata verifications: nulls, order of CPKs, at least one CPK?))
         require(states.isNotEmpty()) { "At least one consensual state is required" }
         require(states.all { it.participants.isNotEmpty() }) { "All consensual states must have participants" }
         val componentGroupLists = calculateComponentGroupLists()
@@ -90,7 +90,7 @@ class ConsensualTransactionBuilderImpl(
                     listOf(
                         jsonMarshallingService.format(transactionMetaData)
                             .toByteArray(Charsets.UTF_8)
-                    ) // TODO(update with CORE-5940)
+                    ) // TODO(update with CORE-6890)
                 ConsensualComponentGroupEnum.TIMESTAMP ->
                     listOf(serializationService.serialize(Instant.now()).bytes)
                 ConsensualComponentGroupEnum.REQUIRED_SIGNING_KEYS ->
