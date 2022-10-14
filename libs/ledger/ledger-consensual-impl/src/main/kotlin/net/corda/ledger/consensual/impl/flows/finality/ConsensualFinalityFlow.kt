@@ -40,21 +40,24 @@ class ConsensualFinalityFlow(
 
         // TODO Check there is at least one state
 
+        // Check if the sessions' counterparties are all available and have keys.
         val sessionPublicKeys = sessions.map { session ->
             memberLookup.lookup(session.counterparty)
                 ?: throw CordaRuntimeException(
                     "A session with ${session.counterparty} exists but the member no longer exists in the membership group"
                 )
         }.map { memberInfo ->
-            memberInfo.ledgerKeys.firstOrNull()
-                ?: throw CordaRuntimeException(
+            memberInfo.ledgerKeys.ifEmpty {
+                throw CordaRuntimeException(
                     "A session with ${memberInfo.name} exists but the member does not have any active ledger keys"
                 )
+            }
         }
 
         // Should this also be a [CordaRuntimeException]? Or make the others [IllegalArgumentException]s?
         val missingSigningKeys = signedTransaction.getMissingSigningKeys()
-        require(missingSigningKeys == sessionPublicKeys.toSet()) {
+        // Check if all missing signing keys are covered by the sessions.
+        require(sessionPublicKeys.flatten().containsAll(missingSigningKeys)) {
             "Required signatures $missingSigningKeys but ledger keys for the passed in sessions are $sessionPublicKeys"
         }
 
@@ -69,8 +72,8 @@ class ConsensualFinalityFlow(
             log.debug { "Requesting signature from ${session.counterparty} for signed transaction ${signedTransaction.id}" }
             session.send(signedTransaction)
 
-            val signature = try {
-                session.receive<DigitalSignatureAndMetadata>()
+            val signatures = try {
+                session.receive<List<DigitalSignatureAndMetadata>>()
             } catch (e: CordaRuntimeException) {
                 log.warn(
                     "Failed to receive signature from ${session.counterparty} for signed transaction ${signedTransaction.id}"
@@ -79,38 +82,40 @@ class ConsensualFinalityFlow(
             }
             log.debug { "Received signature from ${session.counterparty} for signed transaction ${signedTransaction.id}" }
 
-            try {
-                if (signature.by != sessionPublicKeys[idx]) {
-                    throw CordaRuntimeException(
-                        "A session with ${session.counterparty} sent back a signature with another key." +
-                                "Expected: ${sessionPublicKeys[idx]} vs Received: ${signature.by}"
-                    )
-                }
-                // TODO Do not hardcode signature spec
-                val signedData = SignableData(signedTransaction.id, signature.metadata)
-                digitalSignatureVerificationService.verify(
-                    publicKey = signature.by,
-                    signatureSpec = SignatureSpec.ECDSA_SHA256,
-                    signatureData = signature.signature.bytes,
-                    clearData = serializationService.serialize(signedData).bytes
+            val expectedSigningKeys = signatures.map { it.by }
+            if (expectedSigningKeys.toSet() != sessionPublicKeys[idx].toSet()) {
+                throw CordaRuntimeException(
+                    "A session with ${session.counterparty} did not back the expected keys" +
+                            "Expected: ${sessionPublicKeys[idx]} vs Received: $expectedSigningKeys"
                 )
-                log.debug {
-                    "Successfully verified signature from ${session.counterparty} of $signature for signed transaction " +
-                            "${signedTransaction.id}"
-                }
-            } catch (e: Exception) {
-                log.warn(
-                    "Failed to verify signature from ${session.counterparty} of $signature for signed transaction " +
-                            "${signedTransaction.id}. Message: ${e.message}"
-                )
-
-                throw e
             }
 
-            signedByParticipantsTransaction = signedTransaction.addSignature(signature)
+            signatures.forEach {signature ->
+                try {
+                    // TODO Do not hardcode signature spec
+                    val signedData = SignableData(signedTransaction.id, signature.metadata)
+                    digitalSignatureVerificationService.verify(
+                        publicKey = signature.by,
+                        signatureSpec = SignatureSpec.ECDSA_SHA256,
+                        signatureData = signature.signature.bytes,
+                        clearData = serializationService.serialize(signedData).bytes
+                    )
+                    log.debug {
+                        "Successfully verified signature from ${session.counterparty} of $signature for signed transaction " +
+                                "${signedTransaction.id}"
+                    }
+                } catch (e: Exception) {
+                    log.warn(
+                        "Failed to verify signature from ${session.counterparty} of $signature for signed transaction " +
+                                "${signedTransaction.id}. Message: ${e.message}"
+                    )
 
-            log.trace {
-                "Added signature from ${session.counterparty} of $signature for signed transaction ${signedTransaction.id}"
+                    throw e
+                }
+                signedByParticipantsTransaction = signedTransaction.addSignature(signature)
+                log.trace {
+                    "Added signature from ${session.counterparty} of $signature for signed transaction ${signedTransaction.id}"
+                }
             }
         }
 

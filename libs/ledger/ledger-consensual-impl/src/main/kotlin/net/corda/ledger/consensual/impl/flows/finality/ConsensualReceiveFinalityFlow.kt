@@ -41,9 +41,25 @@ class ConsensualReceiveFinalityFlow(
 
         // TODO [CORE-7029] Record unfinalised transaction
 
-        val (_, mySignature) = signedTransaction.addSignature(memberLookup.myInfo().ledgerKeys.first())
+        // We check which of our keys are required.
+        val myExpectedSigningKeys = signedTransaction
+            .getMissingSigningKeys()
+            .intersect(
+                    memberLookup
+                        .myInfo()
+                        .ledgerKeys
+                        .toSet()
+            )
 
-        session.send(mySignature)
+        if (myExpectedSigningKeys.isEmpty()) {
+            log.debug { "We are not required signer of $transactionId." }
+        }
+
+        // We sign the transaction with all of our keys which is required.
+        val newSignatures = myExpectedSigningKeys.map {
+            signedTransaction.addSignature(it).second
+        }
+        session.send(newSignatures)
 
         val signedTransactionToFinalize = session.receive<ConsensualSignedTransaction>()
 
