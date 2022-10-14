@@ -3,10 +3,10 @@ package net.corda.ledger.consensual.impl
 import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CordappType
 import net.corda.libs.packaging.core.CpkFormatVersion
+import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.packaging.core.CpkManifest
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.libs.packaging.core.CpkType
-import net.corda.libs.packaging.core.CpkIdentifier
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.base.types.MemberX500Name
@@ -21,10 +21,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.security.KeyPairGenerator
 import java.time.Instant
-import net.corda.v5.membership.MGMContext
-import net.corda.virtualnode.HoldingIdentity
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.eq
 
 class TestConsensualState(
     val testField: String,

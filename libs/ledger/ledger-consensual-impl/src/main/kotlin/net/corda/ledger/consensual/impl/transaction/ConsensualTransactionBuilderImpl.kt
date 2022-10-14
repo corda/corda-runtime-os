@@ -1,7 +1,5 @@
 package net.corda.ledger.consensual.impl.transaction
 
-import java.security.PublicKey
-import java.time.Instant
 import net.corda.ledger.common.impl.transaction.CordaPackageSummary
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.TransactionMetaData
@@ -13,7 +11,7 @@ import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.LE
 import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.PLATFORM_VERSION_KEY
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
-import net.corda.ledger.common.internal.transaction.SignableData
+import net.corda.ledger.common.internal.transaction.createTransactionSignature
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
@@ -29,6 +27,8 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
+import java.security.PublicKey
+import java.time.Instant
 
 // TODO Create an AMQP serializer if we plan on sending transaction builders between virtual nodes
 @Suppress("LongParameterList")
@@ -65,18 +65,6 @@ class ConsensualTransactionBuilderImpl(
             digitalSignatureVerificationService,
             wireTransaction,
             listOf(signatureWithMetaData)
-        )
-    }
-
-    private fun getSignatureMetadata(): DigitalSignatureMetadata {
-        val cpi = getCpiIdentifier()
-        return DigitalSignatureMetadata(
-            Instant.now(),
-            linkedMapOf(
-                "cpiName" to cpi.name,
-                "cpiVersion" to cpi.version,
-                "cpiSignerSummaryHash" to cpi.signerSummaryHash.toString()
-            )
         )
     }
 
