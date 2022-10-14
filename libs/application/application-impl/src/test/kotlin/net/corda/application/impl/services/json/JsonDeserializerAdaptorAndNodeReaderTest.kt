@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule
 import net.corda.v5.application.marshalling.json.JsonDeserializer
 import net.corda.v5.application.marshalling.json.JsonNodeReader
 import net.corda.v5.application.marshalling.json.JsonNodeReaderType
+import net.corda.v5.application.marshalling.json.JsonSerializer
 import net.corda.v5.application.marshalling.json.parse
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -232,11 +233,27 @@ class JsonDeserializerAdaptorAndNodeReaderTest {
         }
     }
 
+    /**
+     * We create the test serializer from a factory function because it more closely resembles the dynamic nature in
+     * which they will be created at runtime in Corda. We need to make sure no compile time type information is required
+     * to register a serializer.
+     */
+    private fun testDeserializerFactory(): Pair<JsonDeserializer<*>, Class<Any>> {
+        val newTestDeserializer = TestDeserializer()
+        val testClassInstance = TestClass()
+        return Pair(newTestDeserializer, testClassInstance.javaClass)
+    }
+
     @Test
     fun `validate deserializer adaptor and JsonNodeReaderAdaptor`() {
         val mapper = ObjectMapper()
         val module = SimpleModule()
-        module.addDeserializer(TestClass::class.java, jsonDeserializerAdaptorOf(TestDeserializer()))
+        val (deserializer, clazz) = testDeserializerFactory()
+        // Note that clazz is a Class<Any> not a Class<*>, this is required because the Jackson api type parameter of
+        // the Class is restricted to types or subtypes of the type the StdDeserializer understands, and in our case
+        // that is an Any. Because of erasure all this is irrelevant internally, Jackson cannot track types except
+        // those that the clazz represents, which is always the specific type we want deserializing.
+        module.addDeserializer(clazz, JsonDeserializerAdaptor(deserializer, clazz))
         mapper.registerModule(module)
         mapper.readValue(JSON_TO_PARSE, TestClass::class.java)
     }
