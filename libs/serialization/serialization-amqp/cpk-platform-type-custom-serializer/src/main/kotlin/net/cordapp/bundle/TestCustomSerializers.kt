@@ -3,7 +3,7 @@ package net.cordapp.bundle
 import net.corda.v5.base.versioning.Version
 import net.corda.v5.serialization.SerializationCustomSerializer
 
-// Custom serializer of platform type should be blocked.
+// Custom serializer for platform type should be blocked.
 class VersionSerializer : SerializationCustomSerializer<Version, VersionProxy> {
     override fun toProxy(obj: Version) =
         VersionProxy(obj.major, obj.minor)
@@ -13,7 +13,7 @@ class VersionSerializer : SerializationCustomSerializer<Version, VersionProxy> {
 }
 class VersionProxy(val major: Int, val minor: Int)
 
-// Custom Serializer of JDK type should be blocked.
+// Custom Serializer for JDK type should be blocked.
 class ThreadSerializer : SerializationCustomSerializer<Thread, TestThreadProxy> {
     override fun toProxy(obj: Thread): TestThreadProxy =
         TestThreadProxy(obj.name)
