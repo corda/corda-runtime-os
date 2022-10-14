@@ -13,6 +13,11 @@ interface FlowStack : NonSerializable {
     val size: Int
 
     /**
+     * @return Return true when a flow stack has no [FlowStackItem]s
+     */
+    fun isEmpty() = size == 0
+
+    /**
      * Pushes a flow onto the stack with some initial context properties. These context properties form an initial set
      * for this stack item and thus behave just like any other context properties added at a particular point in the
      * context stack. Initial context properties for a Flow can be added by calling this method for the first item

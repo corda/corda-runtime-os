@@ -28,17 +28,10 @@ class ConsensualTransactionBuilderFactoryImpl @Activate constructor(
     @Reference(service = FlowFiberService::class) private val flowFiberService: FlowFiberService
 ) : ConsensualTransactionBuilderFactory {
 
+
     override fun create(): ConsensualTransactionBuilder {
-        val sandboxCpks = flowFiberService
-            .getExecutingFiber()
-            .getExecutionContext()
-            .sandboxGroupContext
-            .sandboxGroup
-            .metadata
-            .values
-            .filter{ it.isContractCpk() }
-            .map{ it.cpkId }
-            .toList()
+        val sandboxGroupContext = flowFiberService.getExecutingFiber().getExecutionContext().sandboxGroupContext
+        val sandboxCpks = sandboxGroupContext.sandboxGroup.metadata.values.toList()
 
         return ConsensualTransactionBuilderImpl(
             cipherSchemeMetadata,

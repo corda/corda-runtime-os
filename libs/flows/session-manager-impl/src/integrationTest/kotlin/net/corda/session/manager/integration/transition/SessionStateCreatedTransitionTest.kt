@@ -1,5 +1,6 @@
 package net.corda.session.manager.integration.transition
 
+import java.time.Instant
 import net.corda.data.flow.event.MessageDirection
 import net.corda.data.flow.state.session.SessionState
 import net.corda.data.flow.state.session.SessionStateType
@@ -9,7 +10,6 @@ import net.corda.session.manager.integration.helper.generateMessage
 import net.corda.test.flow.util.buildSessionState
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
-import java.time.Instant
 
 class SessionStateCreatedTransitionTest {
 
@@ -31,7 +31,7 @@ class SessionStateCreatedTransitionTest {
 
         val sessionEvent = generateMessage(SessionMessageType.DATA, instant)
         val outputState = sessionManager.processMessageToSend(sessionState, sessionState, sessionEvent, instant)
-        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.ERROR)
+        Assertions.assertThat(outputState.status).isEqualTo(SessionStateType.CREATED)
     }
 
     @Test

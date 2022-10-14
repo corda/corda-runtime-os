@@ -40,7 +40,7 @@ class SessionInitiationIntegrationTest {
     }
 
     @Test
-    fun `Alice tries to send session data before session is confirmed`() {
+    fun `Alice sends session data before session is confirmed`() {
         val (alice, bob) = SessionPartyFactory().createSessionParties(testSmartConfig)
 
         //send init
@@ -48,19 +48,19 @@ class SessionInitiationIntegrationTest {
         alice.assertStatus(SessionStateType.CREATED)
 
         alice.processNewOutgoingMessage(SessionMessageType.DATA, sendMessages = true)
-        alice.assertStatus(SessionStateType.ERROR)
+        alice.assertStatus(SessionStateType.CREATED)
 
         //bob process init and confirm session
         bob.processNextReceivedMessage(sendMessages = true)
         bob.assertStatus(SessionStateType.CONFIRMED)
 
-        //alice receive ack for session init and send error back
+        //alice receive ack for session init
         alice.processNextReceivedMessage(sendMessages = true)
-        alice.assertStatus(SessionStateType.ERROR)
+        alice.assertStatus(SessionStateType.CONFIRMED)
 
-        //bob process error
+        //bob process message
         bob.processNextReceivedMessage()
-        bob.assertStatus(SessionStateType.ERROR)
+        bob.assertStatus(SessionStateType.CONFIRMED)
     }
 
     @Test

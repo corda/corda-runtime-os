@@ -49,6 +49,8 @@ interface OutputAssertions {
 
     fun wakeUpEvent()
 
+    fun noWakeUpEvent()
+
     fun hasPendingUserException()
 
     fun noPendingUserException()
