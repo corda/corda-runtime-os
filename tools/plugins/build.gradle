@@ -137,6 +137,10 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
     if (project.hasProperty('useDockerDaemon')) {
         useDaemon = useDockerDaemon.toBoolean()
     }
+
+    if (project.hasProperty('multiArchSupport')) {
+        multiArch = multiArchSupport.toBoolean()
+    }
 }
 
 def s3Script = null

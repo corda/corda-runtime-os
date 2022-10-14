@@ -21,12 +21,15 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.impl.registration.KeyDetails
+import net.corda.membership.impl.registration.MemberRole
 import net.corda.membership.impl.registration.dynamic.verifiers.OrderVerifier
 import net.corda.membership.impl.registration.dynamic.verifiers.P2pEndpointVerifier
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.PLATFORM_VERSION
@@ -40,6 +43,7 @@ import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
 import net.corda.membership.lib.toWire
+import net.corda.membership.p2p.helpers.KeySpecExtractor.Companion.spec
 import net.corda.membership.p2p.helpers.Verifier.Companion.SIGNATURE_SPEC
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -60,13 +64,6 @@ import net.corda.schema.membership.MembershipSchema.RegistrationContextSchema
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.versioning.Version
 import net.corda.v5.cipher.suite.KeyEncodingService
-import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_TEMPLATE
-import net.corda.v5.cipher.suite.schemes.GOST3410_GOST3411_TEMPLATE
-import net.corda.v5.crypto.ECDSA_SECP256K1_CODE_NAME
-import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
-import net.corda.v5.crypto.RSA_CODE_NAME
-import net.corda.v5.crypto.SM2_CODE_NAME
-import net.corda.v5.crypto.SPHINCS256_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.calculateHash
 import net.corda.virtualnode.HoldingIdentity
@@ -121,20 +118,14 @@ class DynamicMemberRegistrationService @Activate constructor(
         const val SESSION_KEY_ID = "$PARTY_SESSION_KEY.id"
         const val SESSION_KEY_SIGNATURE_SPEC = "$PARTY_SESSION_KEY.signature.spec"
         const val LEDGER_KEY_ID = "$LEDGER_KEYS.%s.id"
+        const val NOTARY_KEY_ID = "corda.notary.keys.%s.id"
         const val LEDGER_KEY_SIGNATURE_SPEC = "$LEDGER_KEYS.%s.signature.spec"
         const val MEMBERSHIP_P2P_SUBSYSTEM = "membership"
         const val SOFTWARE_VERSION_CONST = "5.0.0"
         const val SERIAL_CONST = "1"
 
-        val defaultCodeNameToSpec = mapOf(
-            ECDSA_SECP256K1_CODE_NAME to SignatureSpec.ECDSA_SHA256,
-            ECDSA_SECP256R1_CODE_NAME to SignatureSpec.ECDSA_SHA256,
-            EDDSA_ED25519_TEMPLATE to SignatureSpec.EDDSA_ED25519,
-            GOST3410_GOST3411_TEMPLATE to SignatureSpec.GOST3410_GOST3411,
-            RSA_CODE_NAME to SignatureSpec.RSA_SHA512,
-            SM2_CODE_NAME to SignatureSpec.SM2_SM3,
-            SPHINCS256_CODE_NAME to SignatureSpec.SPHINCS256_SHA512,
-        )
+        val notaryIdRegex = NOTARY_KEY_ID.format("[0-9]+").toRegex()
+        val ledgerIdRegex = LEDGER_KEY_ID.format("[0-9]+").toRegex()
     }
 
     // for watching the config changes
@@ -240,6 +231,9 @@ class DynamicMemberRegistrationService @Activate constructor(
                 )
             }
             try {
+                val roles = MemberRole.extractRolesFromContext(context)
+                val notaryKeys = generateNotaryKeys(context, member.shortHash.value)
+                logger.debug("Member roles: {}, notary keys: {}", roles, notaryKeys)
                 val memberContext = buildMemberContext(context, registrationId.toString(), member)
                     .toSortedMap()
                     .toWire()
@@ -333,12 +327,14 @@ class DynamicMemberRegistrationService @Activate constructor(
         private fun validateContext(context: Map<String, String>) {
             context[SESSION_KEY_ID] ?: throw IllegalArgumentException("No session key ID was provided.")
             p2pEndpointVerifier.verifyContext(context)
-            context.keys.filter { LEDGER_KEY_ID.format("[0-9]+").toRegex().matches(it) }.apply {
+            context.keys.filter { ledgerIdRegex.matches(it) }.apply {
                 require(isNotEmpty()) { "No ledger key ID was provided." }
                 require(orderVerifier.isOrdered(this, 3)) { "Provided ledger key IDs are incorrectly numbered." }
             }
+            context.keys.filter { notaryIdRegex.matches(it) }.apply {
+                require(orderVerifier.isOrdered(this, 3)) { "Provided notary key IDs are incorrectly numbered." }
+            }
         }
-
 
         @Suppress("NestedBlockDepth")
         private fun getKeysFromIds(keyIds: List<String>, tenantId: String): List<CryptoSigningKey> =
@@ -362,18 +358,35 @@ class DynamicMemberRegistrationService @Activate constructor(
                 "Signature spec for key with ID: ${key.id} was not specified. Applying default signature spec " +
                     "for ${key.schemeCodeName}."
             )
-            return defaultCodeNameToSpec[key.schemeCodeName]
-                ?: throw IllegalArgumentException(
-                    "Could not find a suitable signature spec for ${key.schemeCodeName}. " +
-                        "Specify signature spec for key with ID: ${key.id} explicitly in the context."
-                )
+            return key.spec ?: throw IllegalArgumentException(
+                "Could not find a suitable signature spec for ${key.schemeCodeName}. " +
+                    "Specify signature spec for key with ID: ${key.id} explicitly in the context."
+            )
+        }
+
+        private inner class Key(
+            key: CryptoSigningKey,
+            defaultSpec: String?
+        ) : KeyDetails {
+            private val publicKey by lazy {
+                keyEncodingService.decodePublicKey(key.publicKey.array())
+            }
+            override val pem by lazy {
+                keyEncodingService.encodeAsString(publicKey)
+            }
+            override val hash by lazy {
+                publicKey.calculateHash()
+            }
+            override val spec by lazy {
+                getSignatureSpec(key, defaultSpec)
+            }
         }
 
         private fun generateLedgerKeyData(context: Map<String, String>, tenantId: String): Map<String, String> {
             val ledgerKeys =
                 getKeysFromIds(
                     context.filter {
-                        LEDGER_KEY_ID.format("[0-9]+").toRegex().matches(it.key)
+                        ledgerIdRegex.matches(it.key)
                     }.values.toList(),
                     tenantId
                 )
@@ -399,6 +412,19 @@ class DynamicMemberRegistrationService @Activate constructor(
                 SESSION_KEY_HASH to sessionPublicKey.calculateHash().value,
                 SESSION_KEY_SIGNATURE_SPEC to getSignatureSpec(sessionKey, context[SESSION_KEY_SIGNATURE_SPEC]).signatureName
             )
+        }
+
+        private fun generateNotaryKeys(context: Map<String, String>, tenantId: String): List<KeyDetails> {
+            val keyIds = context.filterKeys {
+                notaryIdRegex.matches(it)
+            }.values
+                .toList()
+            return getKeysFromIds(keyIds, tenantId).mapIndexed { index, key ->
+                Key(
+                    key,
+                    context[String.format(NOTARY_KEY_SPEC, index)]
+                )
+            }
         }
 
         private fun buildUnauthenticatedP2PRequest(
