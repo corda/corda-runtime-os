@@ -35,7 +35,7 @@ interface P2pTestRpcOps : RpcOps {
         responseDescription = "Message ID to content"
     )
     fun read(
-        @HttpRpcRequestBodyParameter(description = "Group")
+        @HttpRpcQueryParameter(description = "Group")
         group: String,
         @HttpRpcQueryParameter(description = "Source")
         source: String,
