@@ -85,8 +85,8 @@ class ConsensualFinalityFlow(
             val expectedSigningKeys = signatures.map { it.by }
             if (expectedSigningKeys.toSet() != sessionPublicKeys[idx].toSet()) {
                 throw CordaRuntimeException(
-                    "A session with ${session.counterparty} did not back the expected keys" +
-                            "Expected: ${sessionPublicKeys[idx]} vs Received: $expectedSigningKeys"
+                    "A session with ${session.counterparty} did not return the signatures with the expected keys. " +
+                            "Expected: $expectedSigningKeys vs Received: ${sessionPublicKeys[idx]}"
                 )
             }
 
