@@ -33,7 +33,7 @@ dependencies {
         exclude group: 'org.hdrhistogram', module: 'HdrHistogram'
         exclude group: 'org.latencyutils', module: 'LatencyUtils'
     }
-    implementation "io.micrometer:micrometer-registry-prometheus:0.1.0-SNAPSHOT"
+    implementation "io.micrometer:micrometer-registry-prometheus:0.1.0-20221014.152948-2"
 
     runtimeOnly project(':libs:lifecycle:lifecycle-impl')
     runtimeOnly "org.apache.commons:commons-lang3:$commonsLangVersion"
