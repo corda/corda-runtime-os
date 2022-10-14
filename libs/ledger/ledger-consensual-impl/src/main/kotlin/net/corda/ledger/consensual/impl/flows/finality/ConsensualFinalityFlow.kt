@@ -42,22 +42,26 @@ class ConsensualFinalityFlow(
 
         // Check if the sessions' counterparties are all available and have keys.
         val sessionPublicKeys = sessions.map { session ->
-            memberLookup.lookup(session.counterparty)
-                ?: throw CordaRuntimeException(
-                    "A session with ${session.counterparty} exists but the member no longer exists in the membership group"
+            session to (
+                memberLookup.lookup(session.counterparty)
+                    ?: throw CordaRuntimeException(
+                        "A session with ${session.counterparty} exists but the member no longer exists in the membership group"
+                    )
+
                 )
-        }.map { memberInfo ->
-            memberInfo.ledgerKeys.ifEmpty {
-                throw CordaRuntimeException(
-                    "A session with ${memberInfo.name} exists but the member does not have any active ledger keys"
-                )
-            }
+        }.associate { (session, memberInfo) ->
+            session to
+                memberInfo.ledgerKeys.ifEmpty {
+                    throw CordaRuntimeException(
+                        "A session with ${memberInfo.name} exists but the member does not have any active ledger keys"
+                    )
+                }
         }
 
         // Should this also be a [CordaRuntimeException]? Or make the others [IllegalArgumentException]s?
         val missingSigningKeys = signedTransaction.getMissingSigningKeys()
         // Check if all missing signing keys are covered by the sessions.
-        require(sessionPublicKeys.flatten().containsAll(missingSigningKeys)) {
+        require(sessionPublicKeys.values.flatten().containsAll(missingSigningKeys)) {
             "Required signatures $missingSigningKeys but ledger keys for the passed in sessions are $sessionPublicKeys"
         }
 
@@ -67,7 +71,7 @@ class ConsensualFinalityFlow(
 
         var signedByParticipantsTransaction = signedTransaction
 
-        sessions.forEachIndexed { idx, session ->
+        sessions.forEach{ session ->
             // TODO Use [FlowMessaging.sendAll] and [FlowMessaging.receiveAll] anyway
             log.debug { "Requesting signature from ${session.counterparty} for signed transaction ${signedTransaction.id}" }
             session.send(signedTransaction)
@@ -82,11 +86,11 @@ class ConsensualFinalityFlow(
             }
             log.debug { "Received signature from ${session.counterparty} for signed transaction ${signedTransaction.id}" }
 
-            val expectedSigningKeys = signatures.map { it.by }
-            if (expectedSigningKeys.toSet() != sessionPublicKeys[idx].toSet()) {
+            val receivedSigningKeys = signatures.map { it.by }
+            if (receivedSigningKeys.toSet() != sessionPublicKeys[session]!!.toSet()) {
                 throw CordaRuntimeException(
                     "A session with ${session.counterparty} did not return the signatures with the expected keys. " +
-                            "Expected: $expectedSigningKeys But received: ${sessionPublicKeys[idx]}"
+                            "Expected: ${sessionPublicKeys[session]} But received: $receivedSigningKeys"
                 )
             }
 
