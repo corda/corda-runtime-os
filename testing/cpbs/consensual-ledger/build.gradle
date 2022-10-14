@@ -1,5 +1,5 @@
 plugins {
-    id 'net.corda.plugins.cordapp-cpb'
+    id 'net.corda.plugins.cordapp-cpb2'
 }
 
 cordapp {
@@ -15,6 +15,7 @@ cordapp {
 dependencies {
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
     cordaProvided 'net.corda:corda-application'
+    cordaProvided 'net.corda:corda-ledger-common'
     cordaProvided 'net.corda:corda-ledger-consensual'
 }
 

@@ -42,7 +42,7 @@ class SessionsAcceptanceTest : FlowServiceTestBase() {
                 ),
                 Arguments.of(
                     SessionError::class.simpleName,
-                    { dsl: StepSetup -> dsl.sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1, sequenceNum = 1, receivedSequenceNum = 1) }
+                    { dsl: StepSetup -> dsl.sessionErrorEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1) }
                 ),
             )
         }

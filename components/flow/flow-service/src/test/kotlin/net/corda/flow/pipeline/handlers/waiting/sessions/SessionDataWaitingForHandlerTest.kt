@@ -182,6 +182,39 @@ class SessionDataWaitingForHandlerTest {
     }
 
     @Test
+    fun `Sessions not confirmed yet returns a FlowContinuation#Continue`() {
+        whenever(flowSessionManager.getSessionsWithStatus(checkpoint, sessions, SessionStateType.CREATED)).thenReturn(listOf(sessionState))
+
+        whenever(flowSessionManager.getReceivedEvents(checkpoint, sessions))
+            .thenReturn(
+                listOf(
+                    sessionState to SessionEvent().apply {
+                        sessionId = SESSION_ID
+                        payload = SessionData(ByteBuffer.wrap(DATA))
+                        sequenceNum = 1
+                    },
+                    sessionStateTwo to SessionEvent().apply {
+                        sessionId = SESSION_ID_2
+                        payload = SessionData(ByteBuffer.wrap(MORE_DATA))
+                        sequenceNum = 1
+                    }
+                )
+            )
+
+        val inputContext = buildFlowEventContext(
+            checkpoint = checkpoint,
+            inputEventPayload = Unit
+        )
+
+        val continuation = sessionDataWaitingForHandler.runOrContinue(
+            inputContext,
+            net.corda.data.flow.state.waiting.SessionData(sessions)
+        )
+
+        assertEquals(FlowContinuation.Continue, continuation)
+    }
+
+    @Test
     fun `A closing or errored session that has already received a session data event returns a FlowContinuation#Run`() {
         whenever(flowSessionManager.getReceivedEvents(checkpoint, listOf(SESSION_ID)))
             .thenReturn(

@@ -1,11 +1,11 @@
 package net.corda.ledger.common.impl.transaction
 
 import net.corda.v5.base.annotations.CordaSerializable
+import net.corda.v5.base.exceptions.CordaRuntimeException
 
-//TODO(CORE-5940: guarantee its serialization is deterministic)
 @CordaSerializable
 class TransactionMetaData(
-    private val properties: Map<String, Any>
+    private val properties: LinkedHashMap<String, Any>
     ) {
 
     operator fun get(key: String): Any? = properties[key]
@@ -16,8 +16,10 @@ class TransactionMetaData(
     companion object {
         const val LEDGER_MODEL_KEY = "ledgerModel"
         const val LEDGER_VERSION_KEY = "ledgerVersion"
-        const val CPK_IDENTIFIERS_KEY = "cpkIdentifiers"
         const val DIGEST_SETTINGS_KEY = "digestSettings"
+        const val PLATFORM_VERSION_KEY = "platformVersion"
+        const val CPI_METADATA_KEY = "cpiMetadata"
+        const val CPK_METADATA_KEY = "cpkMetadata"
     }
 
     override fun equals(other: Any?): Boolean {
@@ -28,17 +30,23 @@ class TransactionMetaData(
 
     override fun hashCode(): Int = properties.hashCode()
 
-    fun getLedgerModel(): String{
-        return this[LEDGER_MODEL_KEY].toString()
+    fun getLedgerModel(): String = this[LEDGER_MODEL_KEY].toString()
+
+    fun getLedgerVersion(): String = this[LEDGER_VERSION_KEY].toString()
+
+    fun getCpiMetadata(): CordaPackageSummary? = this[CPI_METADATA_KEY]?.let { CordaPackageSummary.from(it) }
+
+    fun getCpkMetadata(): List<CordaPackageSummary> {
+        return when (val data = this[CPK_METADATA_KEY]) {
+            null -> emptyList()
+            is List<*> -> data.map { CordaPackageSummary.from(it) }
+            else -> throw CordaRuntimeException(
+                "Transaction metadata representation error: expected list of Corda package metadata but found [$data]")
+        }
     }
-    fun getLedgerVersion(){
-        this[LEDGER_VERSION_KEY]
-    }
-    fun cpkIdentifiers(){
-        this[CPK_IDENTIFIERS_KEY]
-    }
-    fun getDigestSettings(): Map<String, Any>{
+
+    fun getDigestSettings(): LinkedHashMap<String, Any>{
         @Suppress("UNCHECKED_CAST")
-        return this[DIGEST_SETTINGS_KEY] as Map<String, Any>
+        return this[DIGEST_SETTINGS_KEY] as LinkedHashMap<String, Any>
     }
 }
