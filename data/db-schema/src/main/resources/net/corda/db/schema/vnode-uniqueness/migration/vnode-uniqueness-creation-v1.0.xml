@@ -20,7 +20,7 @@
             <column name="issue_tx_id" type="VARBINARY(64)">
                 <constraints nullable="false"/>
             </column>
-            <column name="issue_tx_output_idx" type="bigint">
+            <column name="issue_tx_output_idx" type="int">
                 <constraints nullable="false"/>
             </column>
             <column name="consuming_tx_id_algo" type="VARCHAR(8)">
@@ -92,7 +92,6 @@
             <column name="tx_id" type="VARBINARY(64)">
                 <constraints nullable="false"/>
             </column>
-            <!-- TODO Using VARBINARY instead of BLOB is a temporary solution, should be investigated as part of NAAS-458 -->
             <column name="error_details" type="VARBINARY(1024)">
                 <constraints nullable="false"/>
             </column>
