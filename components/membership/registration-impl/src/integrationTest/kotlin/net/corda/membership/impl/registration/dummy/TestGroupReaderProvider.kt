@@ -123,9 +123,6 @@ class TestGroupReader @Activate constructor(
             throw UnsupportedOperationException(this)
         }
     }
-
-    override val notaryLookupService: NotaryLookupService
-        get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
     override val notaryVirtualNodeLookup: NotaryVirtualNodeLookup
         get() = throw UnsupportedOperationException(UNIMPLEMENTED_FUNCTION)
 }

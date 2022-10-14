@@ -41,9 +41,6 @@ class MembershipGroupReaderImpl(
     override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash): MemberInfo? =
         memberList.singleOrNull { it.isActiveOrPending() && sessionKeyHash == it.sessionKeyHash }
 
-    override val notaryLookupService: NotaryLookupService by lazy {
-        NotaryLookupServiceImpl(this)
-    }
     override val notaryVirtualNodeLookup: NotaryVirtualNodeLookup by lazy {
         NotaryVirtualNodeLookupImpl(this)
     }

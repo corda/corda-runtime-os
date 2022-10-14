@@ -68,11 +68,6 @@ interface MembershipGroupReader {
     fun lookupBySessionKey(sessionKeyHash: PublicKeyHash): MemberInfo?
 
     /**
-     * A service to lookup of notary services in the group.
-     */
-    val notaryLookupService: NotaryLookupService
-
-    /**
      * A service to lookup of a notary virtual nodes in the group.
      */
     val notaryVirtualNodeLookup: NotaryVirtualNodeLookup
