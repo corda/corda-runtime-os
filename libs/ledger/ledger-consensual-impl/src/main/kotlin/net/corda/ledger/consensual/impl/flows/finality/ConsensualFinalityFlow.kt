@@ -86,7 +86,7 @@ class ConsensualFinalityFlow(
             if (expectedSigningKeys.toSet() != sessionPublicKeys[idx].toSet()) {
                 throw CordaRuntimeException(
                     "A session with ${session.counterparty} did not return the signatures with the expected keys. " +
-                            "Expected: $expectedSigningKeys vs Received: ${sessionPublicKeys[idx]}"
+                            "Expected: $expectedSigningKeys But received: ${sessionPublicKeys[idx]}"
                 )
             }
 
