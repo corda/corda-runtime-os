@@ -61,10 +61,16 @@ class ConsensualSignedTransactionImpl(
     @Suspendable
     override fun addSignature(publicKey: PublicKey): Pair<ConsensualSignedTransaction, DigitalSignatureAndMetadata> {
         val newSignature = createTransactionSignature(signingService, serializationService, getCpiSummary(), id, publicKey)
-        return Pair(ConsensualSignedTransactionImpl(
-            serializationService, signingService, digitalSignatureVerificationService, wireTransaction,
+        return Pair(
+            ConsensualSignedTransactionImpl(
+                serializationService,
+                signingService,
+                digitalSignatureVerificationService,
+                wireTransaction,
             signatures + newSignature
-        ), newSignature)
+            ),
+            newSignature
+        )
     }
 
     override fun addSignature(signature: DigitalSignatureAndMetadata): ConsensualSignedTransaction =
