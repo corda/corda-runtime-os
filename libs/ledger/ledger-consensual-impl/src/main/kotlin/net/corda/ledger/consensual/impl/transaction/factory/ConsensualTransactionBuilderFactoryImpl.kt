@@ -57,6 +57,8 @@ class ConsensualTransactionBuilderFactoryImpl @Activate constructor(
             calculateMetaData(),
         )
 
+    // CORE-7127 Get rid of flowFiberService and access CPK information without fiber when the related solution gets
+    // available.
     private fun getCpkSummaries() = flowFiberService
         .getExecutingFiber()
         .getExecutionContext()
@@ -88,8 +90,7 @@ class ConsensualTransactionBuilderFactoryImpl @Activate constructor(
 }
 
 /**
- * TODO(Fake values until we can get CPI information properly)
- * It is called from multiple places.
+ * TODO [CORE-7126] Fake values until we can get CPI information properly)
  */
 fun getCpiSummary(): CordaPackageSummary =
     CordaPackageSummary(
