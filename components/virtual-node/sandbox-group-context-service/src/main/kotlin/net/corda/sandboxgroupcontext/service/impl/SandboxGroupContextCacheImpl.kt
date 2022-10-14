@@ -12,6 +12,7 @@ internal class SandboxGroupContextCacheImpl(override val cacheSize: Long): Sandb
         private val logger = loggerFor<SandboxGroupContextCache>()
     }
     private val contexts: Cache<VirtualNodeContext, CloseableSandboxGroupContext> = CacheFactoryImpl().build(
+        "Sandbox-Cache",
         Caffeine.newBuilder()
             .maximumSize(cacheSize)
             .removalListener { key, value, cause ->
