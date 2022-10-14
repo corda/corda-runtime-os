@@ -31,6 +31,7 @@ import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
+import net.corda.p2p.crypto.protocol.api.InvalidPeerCertificate
 import net.corda.p2p.crypto.protocol.api.PkiMode
 import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.crypto.protocol.api.Session
@@ -566,7 +567,7 @@ internal class SessionManagerImpl(
         try {
             session.validatePeerHandshakeMessage(
                 message,
-                sessionCounterparties.counterpartyId.x500Name.x500Principal,
+                sessionCounterparties.counterpartyId.x500Name,
                 memberInfo.sessionPublicKey,
                 memberInfo.publicKeyAlgorithm.getSignatureSpec()
             )
@@ -574,6 +575,9 @@ internal class SessionManagerImpl(
             logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
             return null
         } catch (exception: InvalidHandshakeMessageException) {
+            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
+            return null
+        } catch (exception: InvalidPeerCertificate) {
             logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
             return null
         }
@@ -688,7 +692,7 @@ internal class SessionManagerImpl(
         val ourIdentityData = try {
             session.validatePeerHandshakeMessage(
                 message,
-                peer.holdingIdentity.x500Name.x500Principal,
+                peer.holdingIdentity.x500Name,
                 peer.sessionPublicKey,
                 peer.publicKeyAlgorithm.getSignatureSpec()
             )
@@ -696,11 +700,10 @@ internal class SessionManagerImpl(
             logger.error("The message was discarded. ${exception.message}")
             return null
         } catch (exception: InvalidHandshakeMessageException) {
-            logger.validationFailedWarning(
-                message::class.java.simpleName,
-                message.header.sessionId,
-                exception.message
-            )
+            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
+            return null
+        } catch (exception: InvalidPeerCertificate) {
+            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
             return null
         }
         // Find the correct Holding Identity to use (using the public key hash).

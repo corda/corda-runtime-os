@@ -752,7 +752,7 @@ class SessionManagerTest {
         whenever(
             protocolResponder.validatePeerHandshakeMessage(
                 initiatorHandshakeMessage,
-                PEER_MEMBER_INFO.holdingIdentity.x500Name.x500Principal,
+                PEER_MEMBER_INFO.holdingIdentity.x500Name,
                 PEER_KEY.public,
                 SignatureSpec.ECDSA_SHA256,
             )
@@ -797,7 +797,7 @@ class SessionManagerTest {
         whenever(
             protocolResponder.validatePeerHandshakeMessage(
                 initiatorHandshakeMessage,
-                PEER_MEMBER_INFO.holdingIdentity.x500Name.x500Principal,
+                PEER_MEMBER_INFO.holdingIdentity.x500Name,
                 PEER_KEY.public,
                 SignatureSpec.ECDSA_SHA256,
             )
@@ -833,7 +833,7 @@ class SessionManagerTest {
         whenever(
             protocolResponder.validatePeerHandshakeMessage(
                 initiatorHandshakeMessage,
-                PEER_MEMBER_INFO.holdingIdentity.x500Name.x500Principal,
+                PEER_MEMBER_INFO.holdingIdentity.x500Name,
                 PEER_KEY.public,
                 SignatureSpec.ECDSA_SHA256,
             )
@@ -942,7 +942,7 @@ class SessionManagerTest {
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
         whenever(protocolResponder.validatePeerHandshakeMessage(
             initiatorHandshake,
-            PEER_MEMBER_INFO.holdingIdentity.x500Name.x500Principal,
+            PEER_MEMBER_INFO.holdingIdentity.x500Name,
             PEER_KEY.public,
             SignatureSpec.ECDSA_SHA256
         )).thenThrow(WrongPublicKeyHashException(initiatorPublicKeyHash.reversedArray(), initiatorPublicKeyHash))
@@ -969,7 +969,7 @@ class SessionManagerTest {
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
         whenever(protocolResponder.validatePeerHandshakeMessage(
             initiatorHandshake,
-            PEER_MEMBER_INFO.holdingIdentity.x500Name.x500Principal,
+            PEER_MEMBER_INFO.holdingIdentity.x500Name,
             PEER_KEY.public,
             SignatureSpec.ECDSA_SHA256
         )).thenThrow(InvalidHandshakeMessageException())
@@ -997,7 +997,7 @@ class SessionManagerTest {
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
         whenever(protocolResponder.validatePeerHandshakeMessage(
             initiatorHandshake,
-            PEER_MEMBER_INFO.holdingIdentity.x500Name.x500Principal,
+            PEER_MEMBER_INFO.holdingIdentity.x500Name,
             PEER_KEY.public,
             SignatureSpec.ECDSA_SHA256
         )).thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
@@ -1028,7 +1028,7 @@ class SessionManagerTest {
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
         whenever(protocolResponder.validatePeerHandshakeMessage(
             initiatorHandshake,
-            PEER_MEMBER_INFO.holdingIdentity.x500Name.x500Principal,
+            PEER_MEMBER_INFO.holdingIdentity.x500Name,
             PEER_KEY.public,
             SignatureSpec.ECDSA_SHA256
         )).thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
@@ -1059,7 +1059,7 @@ class SessionManagerTest {
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
         whenever(protocolResponder.validatePeerHandshakeMessage(
             initiatorHandshake,
-            PEER_MEMBER_INFO.holdingIdentity.x500Name.x500Principal,
+            PEER_MEMBER_INFO.holdingIdentity.x500Name,
             PEER_KEY.public,
             SignatureSpec.ECDSA_SHA256
         )).thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
@@ -1090,7 +1090,7 @@ class SessionManagerTest {
             .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
         whenever(protocolResponder.validatePeerHandshakeMessage(
             initiatorHandshake,
-            PEER_MEMBER_INFO.holdingIdentity.x500Name.x500Principal,
+            PEER_MEMBER_INFO.holdingIdentity.x500Name,
             PEER_KEY.public,
             SignatureSpec.ECDSA_SHA256
         )).thenReturn(HandshakeIdentityData(initiatorPublicKeyHash, responderPublicKeyHash, GROUP_ID))
@@ -1173,7 +1173,7 @@ class SessionManagerTest {
         whenever(
             protocolInitiator.validatePeerHandshakeMessage(
                 responderHandshakeMessage,
-                PEER_MEMBER_INFO.holdingIdentity.x500Name.x500Principal,
+                PEER_MEMBER_INFO.holdingIdentity.x500Name,
                 PEER_KEY.public,
                 SignatureSpec.ECDSA_SHA256,
             )
@@ -1195,7 +1195,7 @@ class SessionManagerTest {
         whenever(
             protocolInitiator.validatePeerHandshakeMessage(
                 responderHandshakeMessage,
-                PEER_MEMBER_INFO.holdingIdentity.x500Name.x500Principal,
+                PEER_MEMBER_INFO.holdingIdentity.x500Name,
                 PEER_KEY.public,
                 SignatureSpec.ECDSA_SHA256,
             )

@@ -1,7 +1,9 @@
 package net.corda.p2p.crypto.protocol.api
 
+import net.corda.v5.base.types.MemberX500Name
 import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
+import java.lang.IllegalArgumentException
 import java.security.KeyStore
 import java.security.cert.CertPathBuilder
 import java.security.cert.CertPathValidator
@@ -13,7 +15,6 @@ import java.security.cert.PKIXRevocationChecker
 import java.security.cert.X509CertSelector
 import java.security.cert.X509Certificate
 import java.util.*
-import javax.security.auth.x500.X500Principal
 
 class CertificateValidator(
     private val revocationCheckMode: RevocationCheckMode,
@@ -26,7 +27,7 @@ class CertificateValidator(
     private val certPathValidator = CertPathValidator.getInstance(certificateAlgorithm)
     private val certificateFactory: CertificateFactory = CertificateFactory.getInstance(certificateFactoryType)
 
-    fun validate(cert: List<String>, expectedX500Principal: X500Principal) {
+    fun validate(cert: List<String>, expectedX500Name: MemberX500Name) {
         val certificateChain = certificateFactory.generateCertPath(cert.map { pemCertificate ->
             ByteArrayInputStream(pemCertificate.toByteArray()).use {
                 certificateFactory.generateCertificate(it)
@@ -35,10 +36,18 @@ class CertificateValidator(
         //By convention, the certificates in a CertPath object of type X.509 are ordered starting with the target certificate
         //and ending with a certificate issued by the trust anchor. So we check the subjectX500Principal of the first certificate
         //matches the x500Name of the peer's identity.
-        val x500PrincipleFromCert = (certificateChain.certificates.first() as X509Certificate).subjectX500Principal
-        if (x500PrincipleFromCert != expectedX500Principal) {
+        val x500PrincipalFromCert = (certificateChain.certificates.first() as? X509Certificate)?.subjectX500Principal ?:
+            throw InvalidPeerCertificate("Session certificate is not an X509 certificate.")
+        val x500NameFromCert = try {
+            MemberX500Name.build(x500PrincipalFromCert)
+        } catch (exception: IllegalArgumentException) {
             throw InvalidPeerCertificate(
-                "X500 Principle in certificate ($x500PrincipleFromCert) is different from expected ($expectedX500Principal)."
+                "X500 principle in session certificate ($x500PrincipalFromCert) is not a valid corda X500 Name."
+            )
+        }
+        if (x500NameFromCert != expectedX500Name) {
+            throw InvalidPeerCertificate(
+                "X500 principle in session certificate ($x500NameFromCert) is different from expected ($expectedX500Name)."
             )
         }
 

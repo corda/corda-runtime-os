@@ -4,6 +4,7 @@ import net.corda.p2p.crypto.protocol.ProtocolConstants.Companion.MIN_PACKET_SIZE
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.PkiMode
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -25,6 +26,7 @@ class AuthenticationProtocolTest {
 
     // party B
     private val partyBMaxMessageSize = 1_500_000
+    private val aliceX500Name = MemberX500Name.parse("CN=alice, OU=MyUnit, O=MyOrg, L=London, S=London, C=GB")
 
     @Test
     fun `no handshake message crosses the minimum value allowed for max message size`() {
@@ -117,7 +119,7 @@ class AuthenticationProtocolTest {
         assertThat(initiatorHandshakeMessage.toByteBuffer().array().size).isLessThanOrEqualTo(MIN_PACKET_SIZE)
         protocolResponder.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
-            X500Principal(""),
+            aliceX500Name,
             partyASessionKey.public,
             signatureSpec
         )
@@ -126,7 +128,7 @@ class AuthenticationProtocolTest {
                 .isEqualTo(initiatorHandshakeMessage)
             protocolResponder.validatePeerHandshakeMessage(
                 initiatorHandshakeMessage,
-                X500Principal(""),
+                aliceX500Name,
                 partyASessionKey.public,
                 signatureSpec
             )
@@ -142,7 +144,7 @@ class AuthenticationProtocolTest {
         assertThat(responderHandshakeMessage.toByteBuffer().array().size).isLessThanOrEqualTo(MIN_PACKET_SIZE)
         protocolInitiator.validatePeerHandshakeMessage(
             responderHandshakeMessage,
-            X500Principal(""),
+            aliceX500Name,
             partyBSessionKey.public,
             signatureSpec
         )
@@ -151,7 +153,7 @@ class AuthenticationProtocolTest {
                 .isEqualTo(responderHandshakeMessage)
             protocolInitiator.validatePeerHandshakeMessage(
                 responderHandshakeMessage,
-                X500Principal(""),
+                aliceX500Name,
                 partyBSessionKey.public,
                 signatureSpec
             )

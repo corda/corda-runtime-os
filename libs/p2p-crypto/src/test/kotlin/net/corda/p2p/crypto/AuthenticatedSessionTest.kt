@@ -6,6 +6,7 @@ import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.InvalidMac
 import net.corda.p2p.crypto.protocol.api.MessageTooLargeError
 import net.corda.p2p.crypto.protocol.api.PkiMode
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.bouncycastle.jce.provider.BouncyCastleProvider
@@ -25,6 +26,7 @@ class AuthenticatedSessionTest {
 
     private val sessionId = UUID.randomUUID().toString()
     private val groupId = "some-group-id"
+    private val aliceX500Name = MemberX500Name.parse("CN=alice, OU=MyUnit, O=MyOrg, L=London, S=London, C=GB")
 
     // party A
     private val partyAMaxMessageSize = 1_000_000
@@ -69,7 +71,7 @@ class AuthenticatedSessionTest {
 
         authenticationProtocolB.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
-            X500Principal(""),
+            aliceX500Name,
             partyASessionKey.public,
             SignatureSpec.ECDSA_SHA256,
         )
@@ -84,7 +86,7 @@ class AuthenticatedSessionTest {
 
         authenticationProtocolA.validatePeerHandshakeMessage(
             responderHandshakeMessage,
-            X500Principal(""),
+            aliceX500Name,
             partyBSessionKey.public,
             SignatureSpec.ECDSA_SHA256,
         )
@@ -143,7 +145,7 @@ class AuthenticatedSessionTest {
 
         authenticationProtocolB.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
-            X500Principal(""),
+            aliceX500Name,
             partyASessionKey.public,
             SignatureSpec.ECDSA_SHA256,
         )
@@ -158,7 +160,7 @@ class AuthenticatedSessionTest {
 
         authenticationProtocolA.validatePeerHandshakeMessage(
             responderHandshakeMessage,
-            X500Principal(""),
+            aliceX500Name,
             partyBSessionKey.public,
             SignatureSpec.ECDSA_SHA256,
         )
@@ -208,7 +210,7 @@ class AuthenticatedSessionTest {
 
         authenticationProtocolB.validatePeerHandshakeMessage(
             initiatorHandshakeMessage,
-            X500Principal(""),
+            aliceX500Name,
             partyASessionKey.public,
             SignatureSpec.ECDSA_SHA256,
         )
@@ -223,7 +225,7 @@ class AuthenticatedSessionTest {
 
         authenticationProtocolA.validatePeerHandshakeMessage(
             responderHandshakeMessage,
-            X500Principal(""),
+            aliceX500Name,
             partyBSessionKey.public,
             SignatureSpec.ECDSA_SHA256,
         )

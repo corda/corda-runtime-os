@@ -23,13 +23,13 @@ import net.corda.p2p.crypto.util.hash
 import net.corda.p2p.crypto.util.perform
 import net.corda.p2p.crypto.util.verify
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SignatureSpec
 import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.security.spec.X509EncodedKeySpec
 import java.time.Instant
 import javax.crypto.AEADBadTagException
-import javax.security.auth.x500.X500Principal
 import kotlin.math.min
 
 /**
@@ -134,7 +134,7 @@ class AuthenticationProtocolResponder(val sessionId: String,
     @Suppress("ThrowsCount")
     fun validatePeerHandshakeMessage(
         initiatorHandshakeMessage: InitiatorHandshakeMessage,
-        initiatorX500Principal: X500Principal,
+        initiatorX500Name: MemberX500Name,
         initiatorPublicKey: PublicKey,
         initiatorSignatureSpec: SignatureSpec,
     ): HandshakeIdentityData {
@@ -195,7 +195,7 @@ class AuthenticationProtocolResponder(val sessionId: String,
             }
             certificateValidator?.validate(
                 initiatorHandshakePayload.initiatorEncryptedExtensions.initiatorCertificate,
-                initiatorX500Principal
+                initiatorX500Name
             )
 
             handshakeIdentityData =  HandshakeIdentityData(initiatorHandshakePayload.initiatorPublicKeyHash.array(),

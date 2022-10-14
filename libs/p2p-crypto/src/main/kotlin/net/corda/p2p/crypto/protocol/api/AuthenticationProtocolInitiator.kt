@@ -22,6 +22,7 @@ import net.corda.p2p.crypto.util.hash
 import net.corda.p2p.crypto.util.perform
 import net.corda.p2p.crypto.util.verify
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SignatureSpec
 import java.nio.ByteBuffer
 import java.security.PublicKey
@@ -167,7 +168,7 @@ class AuthenticationProtocolInitiator(val sessionId: String,
      */
     @Suppress("ThrowsCount")
     fun validatePeerHandshakeMessage(responderHandshakeMessage: ResponderHandshakeMessage,
-                                     theirX500Principal: X500Principal,
+                                     theirX500Name: MemberX500Name,
                                      theirPublicKey: PublicKey,
                                      theirSignatureSpec: SignatureSpec) {
         return transition(Step.SENT_HANDSHAKE_MESSAGE, Step.RECEIVED_HANDSHAKE_MESSAGE, {}) {
@@ -228,7 +229,7 @@ class AuthenticationProtocolInitiator(val sessionId: String,
             }
 
             // validate certificate
-            certificateValidator?.validate(responderHandshakePayload.responderEncryptedExtensions.responderCertificate, theirX500Principal)
+            certificateValidator?.validate(responderHandshakePayload.responderEncryptedExtensions.responderCertificate, theirX500Name)
         }
     }
 
