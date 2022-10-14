@@ -18,7 +18,7 @@ internal class KeysFactory(
     private val keySpecExtractor by lazy {
         KeySpecExtractor(tenantId, cryptoOpsClient)
     }
-    fun getOrGenerateKeyPair(category: String): Key {
+    fun getOrGenerateKeyPair(category: String): KeyDetails {
         val alias = "$tenantId-$category"
         val key = cryptoOpsClient.lookup(
             tenantId = tenantId,
@@ -40,16 +40,16 @@ internal class KeysFactory(
         return Key(key)
     }
 
-    inner class Key(
+    private inner class Key(
         publicKey: PublicKey,
-    ) {
-        val pem by lazy {
+    ) : KeyDetails {
+        override val pem by lazy {
             keyEncodingService.encodeAsString(publicKey)
         }
-        val hash by lazy {
+        override val hash by lazy {
             publicKey.calculateHash()
         }
-        val spec by lazy {
+        override  val spec by lazy {
             keySpecExtractor.getSpec(publicKey)
         }
     }
