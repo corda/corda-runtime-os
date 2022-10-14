@@ -231,20 +231,16 @@ class FlowSandboxServiceImpl @Activate constructor(
         val serializationCustomizer =
             sandboxGroupContext.sandboxGroup.getOsgiServiceByClass<JsonMarshallingService>() as? SerializationCustomizer
 
-        serializationCustomizer?.let {
-            // TODO, in a loop for all instantiated serializers and deserializers
-
-            // Any platform serializers should be added here so they supersede user ones
-
-            // Add the custom serializers and deserializers declared in the CorDapp code
-            // serializationCustomizer.setSerializer(...)
-            // serializationCustomizer.setDeserializer(...)
-
-            // log.warning("Serializer for class ${clazz.canonicalName} was ignored as a serializer for this class type is already registered")
-
-        } ?: run {
-            log.error("registerCustomJsonSerialization failed: JsonMarshallingService does not exist or does not support custom serialization")
+        if (serializationCustomizer == null) {
+            log.error(
+                "registerCustomJsonSerialization failed: JsonMarshallingService does not exist or does not support custom serialization"
+            )
+            return
         }
+
+        // CORE-6985 will add the custom serializers and deserializers declared in the CorDapp code
+        // serializationCustomizer.setSerializer(...)
+        // serializationCustomizer.setDeserializer(...)
     }
 
     private inline fun <reified T> SandboxGroup.getOsgiServiceByClass() =
@@ -254,5 +250,4 @@ class FlowSandboxServiceImpl @Activate constructor(
                     bundleContext.getService(serviceRef)
                 }
         }
-
 }

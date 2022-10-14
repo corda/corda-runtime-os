@@ -13,6 +13,7 @@ import net.corda.common.json.serializers.standardTypesModule
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.marshalling.json.JsonDeserializer
 import net.corda.v5.application.marshalling.json.JsonSerializer
+import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
@@ -94,8 +95,12 @@ class JsonMarshallingServiceImpl : JsonMarshallingService, SingletonSerializeAsT
         customDeserializableClasses.add(clazz)
 
         val module = SimpleModule()
-        // TODO
-        //module.addDeserializer(clazz, JsonDeserializerAdaptor(deserializer, clazz))
+        // Here we have to cast from Class<*> to Class<Any> because Jackson generics try to ensure we're not trying to
+        // associate a deserializer with a Class<...> it doesn't support at compile time, which would normally be quite
+        // convenient. Because we have no type information available at compile time we need to be very unspecific about
+        // what our deserializer can support. This has no effect at runtime because type erasure precludes Jackson
+        // knowing anything about these types except via typeless Class objects once the code is compiled.
+        module.addDeserializer(uncheckedCast<Class<*>, Class<Any>>(clazz), JsonDeserializerAdaptor(deserializer, clazz))
         mapper.registerModule(module)
 
         return true
