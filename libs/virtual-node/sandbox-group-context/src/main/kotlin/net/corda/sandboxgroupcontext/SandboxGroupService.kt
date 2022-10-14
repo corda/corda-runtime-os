@@ -3,7 +3,7 @@ package net.corda.sandboxgroupcontext
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.v5.crypto.SecureHash
 
-interface SandboxGroupContextService: AutoCloseable {
+interface SandboxGroupService: AutoCloseable {
     /**
      * This function creates and returns a "fully constructed" node that is ready to
      * execute a flow with no further configuration required.  Your supplied initializer will be run
@@ -12,7 +12,7 @@ interface SandboxGroupContextService: AutoCloseable {
      * A mutable interface is passed so that the initializer can add per CPI custom objects that are
      * cached together with their SandboxGroup.  The initializer must return an `AutoCloseable` object.
      *
-     * The lifetime of the [SandboxGroupContext] will be managed by the [SandboxGroupContextService]
+     * The lifetime of the [SandboxGroupContext] will be managed by the [SandboxGroupService]
      * implementation subject to some lifetime policy (e.g. resource pressure).
      *
      * Your initializer should be idempotent across a process, and also across different processes running on the same

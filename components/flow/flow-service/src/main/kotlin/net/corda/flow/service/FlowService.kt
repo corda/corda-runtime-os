@@ -15,7 +15,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
-import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
+import net.corda.sandboxgroupcontext.service.SandboxGroupComponent
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.FLOW_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
@@ -58,7 +58,7 @@ class FlowService @Activate constructor(
                     coordinator.followStatusChangesByName(
                         setOf(
                             LifecycleCoordinatorName.forComponent<ConfigurationReadService>(),
-                            LifecycleCoordinatorName.forComponent<SandboxGroupContextComponent>(),
+                            LifecycleCoordinatorName.forComponent<SandboxGroupComponent>(),
                             LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
                             LifecycleCoordinatorName.forComponent<CpiInfoReadService>(),
                             LifecycleCoordinatorName.forComponent<FlowExecutor>(),

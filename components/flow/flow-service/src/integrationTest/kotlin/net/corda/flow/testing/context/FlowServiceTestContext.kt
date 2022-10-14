@@ -28,7 +28,7 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.pipeline.factory.FlowEventProcessorFactory
 import net.corda.flow.testing.fakes.FakeFlowFiberFactory
 import net.corda.flow.testing.fakes.FakeMembershipGroupReaderProvider
-import net.corda.flow.testing.fakes.FakeSandboxGroupContextComponent
+import net.corda.flow.testing.fakes.FakeSandboxGroupComponent
 import net.corda.flow.testing.tests.FLOW_NAME
 import net.corda.flow.utils.emptyKeyValuePairList
 import net.corda.flow.utils.keyValuePairListOf
@@ -72,8 +72,8 @@ class FlowServiceTestContext @Activate constructor(
     val flowFiberFactory: FakeFlowFiberFactory,
     @Reference(service = FakeMembershipGroupReaderProvider::class)
     val membershipGroupReaderProvider: FakeMembershipGroupReaderProvider,
-    @Reference(service = FakeSandboxGroupContextComponent::class)
-    val sandboxGroupContextComponent: FakeSandboxGroupContextComponent,
+    @Reference(service = FakeSandboxGroupComponent::class)
+    val sandboxGroupComponent: FakeSandboxGroupComponent,
     @Reference(service = VirtualNodeInfoReadServiceFake::class)
     val virtualNodeInfoReadService: VirtualNodeInfoReadServiceFake,
 ) : StepSetup, ThenSetup {
@@ -174,7 +174,7 @@ class FlowServiceTestContext @Activate constructor(
     }
 
     override fun sandboxCpk(cpkFileChecksum: SecureHash) {
-        sandboxGroupContextComponent.putCpk(cpkFileChecksum)
+        sandboxGroupComponent.putCpk(cpkFileChecksum)
     }
 
     override fun membershipGroupFor(owningMember: HoldingIdentity) {
@@ -198,7 +198,7 @@ class FlowServiceTestContext @Activate constructor(
         initiatingFlowClassName: String,
         initiatedFlowClassName: String
     ) {
-        sandboxGroupContextComponent.initiatingToInitiatedFlowPair(
+        sandboxGroupComponent.initiatingToInitiatedFlowPair(
             protocol,
             initiatingFlowClassName,
             initiatedFlowClassName
@@ -423,7 +423,7 @@ class FlowServiceTestContext @Activate constructor(
 
         virtualNodeInfoReadService.reset()
         cpiInfoReadService.reset()
-        sandboxGroupContextComponent.reset()
+        sandboxGroupComponent.reset()
         membershipGroupReaderProvider.reset()
     }
 

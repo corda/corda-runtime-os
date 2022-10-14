@@ -15,7 +15,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.processors.flow.FlowProcessor
-import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
+import net.corda.sandboxgroupcontext.service.SandboxGroupComponent
 import net.corda.session.mapper.service.FlowMapperService
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -42,8 +42,8 @@ class FlowProcessorImpl @Activate constructor(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = CpiInfoReadService::class)
     private val cpiInfoReadService: CpiInfoReadService,
-    @Reference(service = SandboxGroupContextComponent::class)
-    private val sandboxGroupContextComponent: SandboxGroupContextComponent,
+    @Reference(service = SandboxGroupComponent::class)
+    private val sandboxGroupComponent: SandboxGroupComponent,
     @Reference(service = MembershipGroupReaderProvider::class)
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider
 ) : FlowProcessor {
@@ -59,7 +59,7 @@ class FlowProcessorImpl @Activate constructor(
         ::flowP2PFilterService,
         ::virtualNodeInfoReadService,
         ::cpiInfoReadService,
-        ::sandboxGroupContextComponent,
+        ::sandboxGroupComponent,
         ::membershipGroupReaderProvider
     )
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator<FlowProcessorImpl>(dependentComponents, ::eventHandler)

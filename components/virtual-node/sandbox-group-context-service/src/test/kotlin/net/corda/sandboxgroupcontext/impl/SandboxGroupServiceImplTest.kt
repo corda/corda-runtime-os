@@ -8,7 +8,7 @@ import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.putUniqueObject
 import net.corda.sandboxgroupcontext.service.impl.CloseableSandboxGroupContext
 import net.corda.sandboxgroupcontext.service.impl.SandboxGroupContextCache
-import net.corda.sandboxgroupcontext.service.impl.SandboxGroupContextServiceImpl
+import net.corda.sandboxgroupcontext.service.impl.SandboxGroupServiceImpl
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -39,9 +39,9 @@ class StubSandboxGroupContextCache: SandboxGroupContextCache {
     }
 }
 
-class SandboxGroupContextServiceImplTest {
+class SandboxGroupServiceImplTest {
 
-    private lateinit var service: SandboxGroupContextServiceImpl
+    private lateinit var service: SandboxGroupServiceImpl
     private val holdingIdentity = createTestHoldingIdentity("CN=Foo, O=Foo Corp, L=LDN, C=GB", "bar")
     private val mainBundle = "MAIN BUNDLE"
 
@@ -82,7 +82,7 @@ class SandboxGroupContextServiceImplTest {
 
     @BeforeEach
     fun beforeEach() {
-        service = SandboxGroupContextServiceImpl(
+        service = SandboxGroupServiceImpl(
             Helpers.mockSandboxCreationService(listOf(cpks)),
             cpkServiceImpl,
             scr,
@@ -167,7 +167,7 @@ class SandboxGroupContextServiceImplTest {
 
         val cpkService = CpkReadServiceFake(cpks1 + cpks2 + cpks3)
 
-        val service = SandboxGroupContextServiceImpl(sandboxCreationService, cpkService, scr, bundleContext, cache)
+        val service = SandboxGroupServiceImpl(sandboxCreationService, cpkService, scr, bundleContext, cache)
 
         val dog1 = Dog("Rover", "Woof!")
         val dog2 = Dog("Rover", "Bark!")
@@ -221,7 +221,7 @@ class SandboxGroupContextServiceImplTest {
         val sandboxCreationService = Helpers.mockSandboxCreationService(listOf(cpks1))
         val cpkService = CpkReadServiceFake(cpks1)
         val mockCache = mock<SandboxGroupContextCache>()
-        val service = SandboxGroupContextServiceImpl(sandboxCreationService, cpkService, scr, bundleContext, mockCache)
+        val service = SandboxGroupServiceImpl(sandboxCreationService, cpkService, scr, bundleContext, mockCache)
 
         service.remove(ctx1)
 
@@ -240,7 +240,7 @@ class SandboxGroupContextServiceImplTest {
         val service = existingCpks.let {
             val sandboxCreationService = Helpers.mockSandboxCreationService(listOf(it))
             val cpkService = CpkReadServiceFake(it)
-            SandboxGroupContextServiceImpl(sandboxCreationService, cpkService, scr, bundleContext, cache)
+            SandboxGroupServiceImpl(sandboxCreationService, cpkService, scr, bundleContext, cache)
         }
 
         val existingCpkChecksums = existingCpks.map {

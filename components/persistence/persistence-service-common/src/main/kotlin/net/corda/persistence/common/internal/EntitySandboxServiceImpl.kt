@@ -24,7 +24,7 @@ import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.putObjectByKey
-import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
+import net.corda.sandboxgroupcontext.service.SandboxGroupComponent
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.serialization.SerializationCustomSerializer
@@ -62,7 +62,7 @@ import org.osgi.service.component.annotations.ReferencePolicy
 )
 class EntitySandboxServiceImpl @Activate constructor(
     @Reference
-    private val sandboxService: SandboxGroupContextComponent,
+    private val sandboxService: SandboxGroupComponent,
     @Reference
     private val cpiInfoService: CpiInfoReadService,
     @Reference

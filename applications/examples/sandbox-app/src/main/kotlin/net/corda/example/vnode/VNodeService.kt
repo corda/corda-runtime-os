@@ -2,7 +2,7 @@ package net.corda.example.vnode
 
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
+import net.corda.sandboxgroupcontext.service.SandboxGroupComponent
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.VirtualNodeLoader
 import net.corda.v5.base.util.loggerFor
@@ -25,7 +25,7 @@ class VNodeServiceImpl @Activate constructor(
     private val flowSandboxService: FlowSandboxService,
 
     @Reference
-    private val sandboxGroupContextComponent: SandboxGroupContextComponent,
+    private val sandboxGroupComponent: SandboxGroupComponent,
 
     @Reference
     private val cpiLoader: CpiLoader,
@@ -57,6 +57,6 @@ class VNodeServiceImpl @Activate constructor(
     }
 
     private fun setupSandboxCache() {
-        sandboxGroupContextComponent.initCache(1)
+        sandboxGroupComponent.initCache(1)
     }
 }

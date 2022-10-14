@@ -213,7 +213,7 @@ class ConsensualLedgerMessageProcessorTests {
         // set up sandbox
         val entitySandboxService =
             EntitySandboxServiceFactory().create(
-                virtualNode.sandboxGroupContextComponent,
+                virtualNode.sandboxGroupComponent,
                 cpiInfoReadService,
                 virtualNodeInfoReadService,
                 dbConnectionManager,

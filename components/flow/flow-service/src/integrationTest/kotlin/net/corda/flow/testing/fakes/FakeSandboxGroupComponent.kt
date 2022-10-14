@@ -9,7 +9,7 @@ import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContextInitializer
 import net.corda.sandboxgroupcontext.VirtualNodeContext
-import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
+import net.corda.sandboxgroupcontext.service.SandboxGroupComponent
 import net.corda.serialization.checkpoint.CheckpointSerializer
 import net.corda.v5.application.flows.Flow
 import net.corda.v5.application.serialization.SerializationService
@@ -21,8 +21,8 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.propertytypes.ServiceRanking
 
 @ServiceRanking(Int.MAX_VALUE)
-@Component(service = [SandboxGroupContextComponent::class, FakeSandboxGroupContextComponent::class])
-class FakeSandboxGroupContextComponent : SandboxGroupContextComponent {
+@Component(service = [SandboxGroupComponent::class, FakeSandboxGroupComponent::class])
+class FakeSandboxGroupComponent : SandboxGroupComponent {
 
     private val availableCpk = mutableSetOf<SecureHash>()
     private var initiatingToInitiatedFlowsMap: Map<String, Pair<String, String>> = mapOf()

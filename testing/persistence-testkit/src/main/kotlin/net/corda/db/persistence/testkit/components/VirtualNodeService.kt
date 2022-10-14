@@ -3,7 +3,7 @@ package net.corda.db.persistence.testkit.components
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
-import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
+import net.corda.sandboxgroupcontext.service.SandboxGroupComponent
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.testing.sandboxes.CpiLoader
 import net.corda.testing.sandboxes.VirtualNodeLoader
@@ -25,11 +25,11 @@ class VirtualNodeService @Activate constructor(
     private val virtualNodeLoader: VirtualNodeLoader,
 
     @Reference
-    val sandboxGroupContextComponent: SandboxGroupContextComponent,
+    val sandboxGroupComponent: SandboxGroupComponent,
 ) {
     init {
         // Needs this since we do not have a config service running:  it will fail to start otherwise.
-        sandboxGroupContextComponent.initCache(2)
+        sandboxGroupComponent.initCache(2)
     }
     private companion object {
         private const val X500_NAME = "CN=Testing, OU=Application, O=R3, L=London, C=GB"
@@ -42,7 +42,7 @@ class VirtualNodeService @Activate constructor(
     @Suppress("unused")
     @Deactivate
     fun done() {
-        sandboxGroupContextComponent.close()
+        sandboxGroupComponent.close()
     }
 
     private fun getOrCreateSandbox(virtualNodeInfo: VirtualNodeInfo): SandboxGroupContext {
@@ -55,8 +55,8 @@ class VirtualNodeService @Activate constructor(
             SingletonSerializeAsToken::class.java,
             null
         )
-        return sandboxGroupContextComponent.getOrCreate(vNodeContext) { _, sandboxGroupContext ->
-            sandboxGroupContextComponent.registerCustomCryptography(sandboxGroupContext)
+        return sandboxGroupComponent.getOrCreate(vNodeContext) { _, sandboxGroupContext ->
+            sandboxGroupComponent.registerCustomCryptography(sandboxGroupContext)
         }
     }
 

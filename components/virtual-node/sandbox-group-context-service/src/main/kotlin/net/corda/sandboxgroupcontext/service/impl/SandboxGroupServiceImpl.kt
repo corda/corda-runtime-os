@@ -1,4 +1,4 @@
-@file:JvmName("SandboxGroupContextServiceUtils")
+@file:JvmName("SandboxGroupServiceUtils")
 package net.corda.sandboxgroupcontext.service.impl
 
 import java.security.AccessControlContext
@@ -14,7 +14,7 @@ import net.corda.sandboxgroupcontext.CORDA_SANDBOX_FILTER
 import net.corda.sandboxgroupcontext.CORDA_SYSTEM_FILTER
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContextInitializer
-import net.corda.sandboxgroupcontext.SandboxGroupContextService
+import net.corda.sandboxgroupcontext.SandboxGroupService
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
@@ -38,7 +38,7 @@ import org.osgi.service.component.runtime.dto.ComponentDescriptionDTO
 private typealias ServiceDefinition = Pair<ServiceObjects<out Any>, List<Class<*>>>
 
 /**
- * This is the underlying implementation of the [SandboxGroupContextService]
+ * This is the underlying implementation of the [SandboxGroupService]
  *
  * Use this service via the mutable and immutable interfaces to create a "virtual node",
  * and retrieve the same instance "later".
@@ -46,18 +46,18 @@ private typealias ServiceDefinition = Pair<ServiceObjects<out Any>, List<Class<*
  * This is a per-process service, but it must return the "same instance" for a given [VirtualNodeContext]
  * in EVERY process.
  */
-class SandboxGroupContextServiceImpl(
+class SandboxGroupServiceImpl(
     private val sandboxCreationService: SandboxCreationService,
     private val cpkReadService: CpkReadService,
     private val serviceComponentRuntime: ServiceComponentRuntime,
     private val bundleContext: BundleContext,
     var cache: SandboxGroupContextCache
-) : SandboxGroupContextService {
+) : SandboxGroupService {
     private companion object {
         private const val SANDBOX_FACTORY_FILTER = "(&($SERVICE_SCOPE=$SCOPE_PROTOTYPE)(!$CORDA_SANDBOX_FILTER)(!$CORDA_SYSTEM_FILTER))"
         private const val SYSTEM_FACTORY_FILTER = "(&($SERVICE_SCOPE=$SCOPE_PROTOTYPE)(!$CORDA_SANDBOX_FILTER)$CORDA_SYSTEM_FILTER)"
 
-        private val logger = loggerFor<SandboxGroupContextServiceImpl>()
+        private val logger = loggerFor<SandboxGroupServiceImpl>()
 
         private val sandboxServiceProperties = Hashtable<String, Any?>().apply {
             put(CORDA_SANDBOX, true)
