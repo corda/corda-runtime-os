@@ -1,6 +1,6 @@
 package net.corda.ledger.persistence.impl.internal
 
-import net.corda.ledger.common.impl.transaction.CpkSummary
+import net.corda.ledger.common.impl.transaction.CordaPackageSummary
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl
@@ -81,7 +81,7 @@ class ConsensualLedgerRepository(
     @Suppress("UNCHECKED_CAST")
     fun findExistingCpkFileChecksums(
         entityManager: EntityManager,
-        cpks: List<CpkSummary>
+        cpks: List<CordaPackageSummary>
     ): Set<String> {
         if (cpks.isEmpty()) return emptySet()
         return entityManager.createNativeQuery(
