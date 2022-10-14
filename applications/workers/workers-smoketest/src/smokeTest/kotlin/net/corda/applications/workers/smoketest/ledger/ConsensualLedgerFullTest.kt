@@ -17,7 +17,7 @@ import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.TestMethodOrder
 
 /**
- * This file uses a dedicated CPI, Group Id and X500 names.
+ * This file uses a dedicated CPI, Group Id and X500 names from ConsensualLedgerConfig.
  */
 
 @Suppress("Unused", "FunctionName")

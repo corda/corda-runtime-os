@@ -104,9 +104,6 @@ class ConsensualTransactionBuilderImpl(
         return componentGroupLists
     }
 
-
-
-    // TODO CORE-7095 Add later metadata when it lands here.
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is ConsensualTransactionBuilderImpl) return false

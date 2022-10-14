@@ -65,14 +65,8 @@ class ConsensualDemoFlow : RPCStartableFlow {
                 TestConsensualState(
                     "test",
                     listOf(
-                        Party(
-                            alice.name,
-                            alice.ledgerKeys.first()
-                        ),
-                        Party(
-                            bob.name,
-                            bob.ledgerKeys.first()
-                        ),
+                        Party(alice.name, alice.ledgerKeys.first()),
+                        Party(bob.name, bob.ledgerKeys.first()),
                     )
                 )
 

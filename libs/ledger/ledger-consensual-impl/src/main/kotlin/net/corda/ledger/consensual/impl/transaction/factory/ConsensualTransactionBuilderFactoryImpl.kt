@@ -90,7 +90,7 @@ class ConsensualTransactionBuilderFactoryImpl @Activate constructor(
 }
 
 /**
- * TODO [CORE-7126] Fake values until we can get CPI information properly)
+ * TODO [CORE-7126] Fake values until we can get CPI information properly
  */
 fun getCpiSummary(): CordaPackageSummary =
     CordaPackageSummary(
