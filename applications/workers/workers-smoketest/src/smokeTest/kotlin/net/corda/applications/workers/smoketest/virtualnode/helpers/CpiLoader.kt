@@ -5,14 +5,18 @@ import net.corda.applications.workers.smoketest.X500_BOB
 import net.corda.applications.workers.smoketest.X500_CHARLIE
 import net.corda.applications.workers.smoketest.X500_DAVID
 import net.corda.applications.workers.smoketest.virtualnode.helpers.GroupPolicyUtils.getDefaultStaticNetworkGroupPolicy
-import java.io.ByteArrayOutputStream
+import net.corda.cli.plugins.packaging.CreateCpiV2
+import net.corda.cli.plugins.packaging.signing.SigningOptions
+import net.corda.utilities.deleteRecursively
+import net.corda.utilities.readAll
 import java.io.FileNotFoundException
 import java.io.InputStream
-import java.util.zip.ZipEntry
-import java.util.zip.ZipInputStream
-import java.util.zip.ZipOutputStream
+import java.nio.file.Files
+import java.nio.file.StandardOpenOption
+import kotlin.io.path.createTempDirectory
 
 object CpiLoader {
+    private const val groupIdPlaceholder = "group-id-placeholder"
     private fun getInputStream(resourceName: String): InputStream {
         return this::class.java.getResource(resourceName)?.openStream()
             ?: throw FileNotFoundException("No such resource: '$resourceName'")
@@ -26,40 +30,54 @@ object CpiLoader {
      * Don't use this method when we have actual CPIs
      */
     private fun cpbToCpi(inputStream: InputStream, groupId: String): InputStream {
-        val bytes = ByteArrayOutputStream().use { byteStream ->
-            ZipOutputStream(byteStream).use { zout ->
-                val zin = ZipInputStream(inputStream)
-                var zipEntry: ZipEntry?
-                while (zin.nextEntry.apply { zipEntry = this } != null) {
-                    zout.apply {
-                        putNextEntry(zipEntry!!)
-                        zin.copyTo(zout)
-                        closeEntry()
-                    }
-                }
-                addGroupPolicy(zout, groupId)
+
+        val tempDirectory = createTempDirectory()
+        try {
+            // Save CPB to disk
+            val cpbPath = tempDirectory.resolve("cpb.cpb")
+            Files.newOutputStream(cpbPath, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW).use {
+                inputStream.copyTo(it)
             }
-            byteStream.toByteArray()
+
+            // Save group policy to disk
+            val groupPolicyPath = tempDirectory.resolve("groupPolicy")
+            val networkPolicyStr = getStaticNetworkPolicy(groupId)
+            Files.newBufferedWriter(groupPolicyPath, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW).use {
+                it.write(networkPolicyStr)
+            }
+
+            // Save keystore to disk
+            val keyStorePath = tempDirectory.resolve("cordadevcodesign.p12")
+            Files.newOutputStream(keyStorePath, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW).use {
+                it.write(getKeyStore())
+            }
+
+            // Create CPI
+            val cpiPath = tempDirectory.resolve("cpi")
+            CreateCpiV2().apply {
+                cpbFileName = cpbPath.toString()
+                cpiName = "test-cordapp"
+                cpiVersion = "1.0.0.0-SNAPSHOT"
+                cpiUpgrade = false
+                groupPolicyFileName = groupPolicyPath.toString()
+                outputFileName = cpiPath.toString()
+                signingOptions = SigningOptions().apply {
+                    keyStoreFileName = keyStorePath.toString()
+                    keyStorePass = "cordacadevpass"
+                    keyAlias = "cordacodesign"
+                }
+            }.run()
+
+            // Read CPI
+            return cpiPath.readAll().inputStream()
+        } finally {
+            tempDirectory.deleteRecursively()
         }
-        return bytes.inputStream()
     }
 
-    private fun addGroupPolicy(
-        zipOutputStream: ZipOutputStream,
-        groupId: String,
-        staticMemberNames: List<String> = listOf(
-            X500_ALICE,
-            X500_BOB,
-            X500_CHARLIE,
-            X500_DAVID
-        )
-    ) {
-        zipOutputStream.putNextEntry(ZipEntry("META-INF/GroupPolicy.json"))
-        val groupPolicy = getDefaultStaticNetworkGroupPolicy(
-            groupId,
-            staticMemberNames
-        )
-        groupPolicy.byteInputStream().use { it.copyTo(zipOutputStream) }
-        zipOutputStream.closeEntry()
-    }
+    private fun getKeyStore() = javaClass.classLoader.getResourceAsStream("cordadevcodesign.p12")?.use { it.readAllBytes() }
+        ?: throw Exception("cordadevcodesign.p12 not found")
+
+    private fun getStaticNetworkPolicy(groupId: String) =
+        getDefaultStaticNetworkGroupPolicy(groupId, listOf(X500_ALICE, X500_BOB, X500_CHARLIE, X500_DAVID))
 }
