@@ -8,6 +8,9 @@ plugins {
 pluginManager.withPlugin('net.corda.plugins.cordapp-cpk') {
     throw new StopExecutionException('corda-api.common-library plugin is incompatible with building CPKs and CPBs')
 }
+pluginManager.withPlugin('net.corda.plugins.cordapp-cpk2') {
+    throw new StopExecutionException('corda-api.common-library plugin is incompatible with building CPKs and CPBs')
+}
 
 configurations {
     testArtifacts {

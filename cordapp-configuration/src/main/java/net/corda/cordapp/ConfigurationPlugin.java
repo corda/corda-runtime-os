@@ -25,8 +25,8 @@ public final class ConfigurationPlugin implements Plugin<Project> {
 
     // These are the IDs of the Corda Gradle plugins that CorDapp developers need.
     private static final List<String> CORDAPP_PLUGIN_IDS = unmodifiableList(asList(
-        "net.corda.plugins.cordapp-cpk",
-        "net.corda.plugins.cordapp-cpb",
+        "net.corda.plugins.cordapp-cpk2",
+        "net.corda.plugins.cordapp-cpb2",
         "net.corda.plugins.quasar-utils"
     ));
 
