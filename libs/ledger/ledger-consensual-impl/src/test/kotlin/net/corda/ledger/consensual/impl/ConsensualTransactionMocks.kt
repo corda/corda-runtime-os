@@ -42,8 +42,8 @@ class ConsensualTransactionMocks {
 
         val testMemberX500Name = MemberX500Name("R3", "London", "GB")
         val testPublicKey = kpg.genKeyPair().public
-        val testPartyImpl = Party(testMemberX500Name, testPublicKey)
-        val testConsensualState = TestConsensualState("test", listOf(testPartyImpl))
+        val testParty = Party(testMemberX500Name, testPublicKey)
+        val testConsensualState = TestConsensualState("test", listOf(testParty))
 
         fun mockTransactionMetaData() =
             TransactionMetaData(
