@@ -977,1730 +977,464 @@
             "additionalProperties": false,
             "properties": {
                 "crypto": {
-                    "type": "object",
-                    "default": {},
-                    "title": "crypto worker configuration",
-                    "required": [
-                        "image",
-                        "replicaCount",
-                        "debug",
-                        "logging",
-                        "profiling",
-                        "resources",
-                        "clusterDbConnectionPool"
-                    ],
-                    "additionalProperties": false,
-                    "properties": {
-                        "image": {
-                            "type": "object",
-                            "default": {},
-                            "title": "crypto worker image configuration",
-                            "required": [
-                                "repository"
-                            ],
+                    "allOf": [
+                        {
+                            "$ref": "#/$defs/worker"
+                        },
+                        {
                             "additionalProperties": false,
+                            "required": [
+                                "clusterDbConnectionPool"
+                            ],
                             "properties": {
-                                "registry": {
-                                    "type": "string",
-                                    "default": "",
-                                    "title": "crypto worker image registry, defaults to image.registry",
-                                    "examples": [
-                                        ""
-                                    ]
-                                },
-                                "repository": {
-                                    "type": "string",
-                                    "default": "corda-os-crypto-worker",
-                                    "title": "crypto worker image repository",
-                                    "examples": [
-                                        "corda-os-crypto-worker"
+                                "image": {},
+                                "javaOptions": {},
+                                "replicaCount": {},
+                                "debug": {},
+                                "logging": {},
+                                "profiling": {},
+                                "resources": {},
+                                "clusterDbConnectionPool": {
+                                    "type": "object",
+                                    "default": {},
+                                    "title": "crypto worker JDBC connection pool configuration for cluster DB",
+                                    "required": [
+                                        "maxSize"
                                     ],
-                                    "minLength": 1
-                                },
-                                "tag": {
-                                    "type": "string",
-                                    "default": "",
-                                    "title": "crypto worker image tag, defaults to image.tag",
-                                    "examples": [
-                                        ""
-                                    ]
-                                }
-                            },
-                            "examples": [{
-                                "registry": "",
-                                "repository": "corda-os-crypto-worker",
-                                "tag": ""
-                            }]
-                        },
-                        "replicaCount": {
-                            "minimum": 0,
-                            "type": "integer",
-                            "default": 1,
-                            "title": "crypto worker replica count",
-                            "examples": [
-                                1
-                            ]
-                        },
-                        "debug": {
-                            "type": "object",
-                            "default": {},
-                            "title": "db worker debug configuration",
-                            "required": [
-                                "enabled"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                                "enabled": {
-                                    "type": "boolean",
-                                    "default": false,
-                                    "title": "run crypto worker with debug enabled",
-                                    "examples": [
-                                        false,
-                                        true
-                                    ]
-                                },
-                                "suspend": {
-                                    "type": "boolean",
-                                    "default": false,
-                                    "title": "if debug is enabled, suspend the DB worker until the debugger is attached",
-                                    "examples": [
-                                        false,
-                                        true
-                                    ]
-                                }
-                            },
-                            "if": {
-                                "properties": {
-                                    "enabled": {
-                                        "const": true
+                                    "properties": {
+                                        "maxSize": {
+                                            "type": "integer",
+                                            "default": 5,
+                                            "title": "crypto worker maximum JDBC connection pool size for cluster DB",
+                                            "examples": [
+                                                5
+                                            ]
+                                        }
                                     }
                                 }
-                            },
-                            "then": {
-                                "required": [
-                                    "suspend"
-                                ]
-                            },
-                            "examples": [{
-                                "enabled": true,
-                                "suspend": false
-                            }]
-                        },
-                        "logging": {
-                            "type": "object",
-                            "default": {},
-                            "title": "logging configuration",
-                            "additionalProperties": false,
-                            "properties": {
-                                "level": {
-                                    "type": ["string", "null"],
-                                    "default": null,
-                                    "title": "log level (defaults to logging.level if not specified)",
-                                    "examples": [
-                                        "warn"
-                                    ],
-                                    "enum": ["all","trace","debug","info","warn","error","fatal","off", null]
-                                }
-                            }
-                        },
-                        "profiling": {
-                            "type": "object",
-                            "default": {},
-                            "title": "crypto profiling configuration",
-                            "required": [
-                                "enabled"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                                "enabled": {
-                                    "type": "boolean",
-                                    "default": false,
-                                    "title": "run crypto worker with profiling enabled",
-                                    "examples": [
-                                        false,
-                                        true
-                                    ]
-                                }
-                            },
-                            "examples": [{
-                                "enabled": false
-                            }]
-                        },
-                        "resources": {
-                            "type": "object",
-                            "default": {},
-                            "title": "resource limits and requests configuration for the crypto worker containers",
-                            "required": [
-                                "requests",
-                                "limits"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                                "requests": {
-                                    "type": "object",
-                                    "default": {},
-                                    "title": "the CPU/memory resource requests for the crypto worker containers",
-                                    "required": [],
-                                    "properties": {
-                                        "cpu": {"type": "string"},
-                                        "memory": {"type": "string"}
-                                    },
-                                    "additionalProperties": false,
-                                    "examples": [{
-                                        "cpu": "1",
-                                        "memory": "2048Mi"
-                                    }]
-                                },
-                                "limits": {
-                                    "type": "object",
-                                    "default": {},
-                                    "title": "the CPU/memory resource limits for the crypto worker containers",
-                                    "required": [],
-                                    "properties": {
-                                        "cpu": {"type": "string"},
-                                        "memory": {"type": "string"}
-                                    },
-                                    "additionalProperties": false,
-                                    "examples": [{
-                                        "cpu": "1",
-                                        "memory": "2048Mi"
-                                    }]
-                                }
-                            },
-                            "examples": [{
-                                "requests": {
-                                    "cpu": "1",
-                                    "memory": "2048Mi"
-                                },
-                                "limits": {
-                                    "cpu": "1",
-                                    "memory": "2048Mi"
-                                }
-                            }]
-                        },
-                    "clusterDbConnectionPool": {
-                        "type": "object",
-                        "default": {},
-                        "title": "crypto worker JDBC connection pool configuration for cluster DB",
-                        "required": [
-                            "maxSize"
-                        ],
-                        "properties": {
-                            "maxSize": {
-                                "type": "integer",
-                                "default": 5,
-                                "title": "crypto worker maximum JDBC connection pool size for cluster DB",
-                                "examples": [
-                                    5
-                                ]
                             }
                         }
-                    }
-                }
+                    ]
                 },
                 "db": {
-                    "type": "object",
-                    "default": {},
-                    "title": "db worker image configuration",
-                    "required": [
-                        "image",
-                        "replicaCount",
-                        "resources"
-                    ],
-                    "properties": {
-                        "image": {
-                            "type": "object",
-                            "default": {},
-                            "title": "db worker image configuration",
-                            "required": [
-                                "repository"
-                            ],
+                    "allOf": [
+                        {
+                            "$ref": "#/$defs/worker"
+                        },
+                        {
                             "additionalProperties": false,
                             "properties": {
-                                "registry": {
+                                "image": {},
+                                "javaOptions": {},
+                                "replicaCount": {},
+                                "debug": {},
+                                "logging": {},
+                                "profiling": {},
+                                "resources": {},
+                                "clusterDbConnectionPool": {
+                                    "type": "object",
+                                    "default": {},
+                                    "title": "DB worker JDBC connection pool configuration for cluster DB",
+                                    "required": [
+                                        "maxSize"
+                                    ],
+                                    "properties": {
+                                        "maxSize": {
+                                            "type": "integer",
+                                            "default": 5,
+                                            "title": "DB worker maximum JDBC connection pool size for cluster DB",
+                                            "examples": [
+                                                5
+                                            ]
+                                        }
+                                    }
+                                },
+                                "salt": {
                                     "type": "string",
                                     "default": "",
-                                    "title": "db worker image registry, defaults to image.registry",
+                                    "title": "db worker salt, defaults to a value randomly-generated on install",
                                     "examples": [
-                                        "corda-os-docker.software.r3.com"
+                                        "password"
                                     ]
                                 },
-                                "repository": {
-                                    "type": "string",
-                                    "default": "corda-os-db-worker",
-                                    "title": "db worker image repository",
-                                    "examples": [
-                                        "corda-os-db-worker"
-                                    ],
-                                    "minLength": 1
-                                },
-                                "tag": {
+                                "passphrase": {
                                     "type": "string",
                                     "default": "",
-                                    "title": "db worker image tag, defaults to image.tag",
+                                    "title": "db worker passphrase, defaults to a value randomly-generated on install",
                                     "examples": [
-                                        ""
+                                        "password"
                                     ]
                                 }
                             },
                             "examples": [{
-                                "registry": "corda-os-docker.software.r3.com",
-                                "repository": "corda-os-db-worker",
-                                "tag": ""
-                            }]
-                        },
-                        "replicaCount": {
-                            "type": "integer",
-                            "default": 1,
-                            "title": "db worker replica count",
-                            "examples": [
-                                1
-                            ]
-                        },
-                        "debug": {
-                            "type": "object",
-                            "default": {},
-                            "title": "db worker debug configuration",
-                            "required": [
-                                "enabled"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                                "enabled": {
-                                    "type": "boolean",
-                                    "default": false,
-                                    "title": "run DB worker with debug enabled",
-                                    "examples": [
-                                        false
-                                    ]
+                                "image": {
+                                    "registry": "",
+                                    "repository": "corda-os-db-worker",
+                                    "tag": ""
                                 },
-                                "suspend": {
-                                    "type": "boolean",
-                                    "default": false,
-                                    "title": "if debug is enabled, suspend the DB worker until the debugger is attached",
-                                    "examples": [
-                                        false
-                                    ]
-                                }
-                            },
-                            "if": {
-                                "properties": {
-                                    "enabled": {
-                                        "const": true
+                                "replicaCount": 1,
+                                "debug": {
+                                    "enabled": false,
+                                    "suspend": false
+                                },
+                                "logging": {
+                                    "level": "warn"
+                                },
+                                "profiling": {
+                                    "enabled": false
+                                },
+                                "salt": "password",
+                                "passphrase": "password",
+                                "resources": {
+                                    "requests": {
+                                        "cpu": "1",
+                                        "memory": "2048Mi"
+                                    },
+                                    "limits": {
+                                        "cpu": "1",
+                                        "memory": "2048Mi"
                                     }
                                 }
-                            },
-                            "then": {
-                                "required": [
-                                    "suspend"
-                                ]
-                            },
-                            "examples": [{
-                                "enabled": true,
-                                "suspend": false
-                            }]
-                        },
-                        "logging": {
-                            "type": "object",
-                            "default": {},
-                            "title": "logging configuration",
-                            "additionalProperties": false,
-                            "properties": {
-                                "level": {
-                                    "type": ["string", "null"],
-                                    "default": null,
-                                    "title": "log level (defaults to logging.level if not specified)",
-                                    "examples": [
-                                        "warn"
-                                    ],
-                                    "enum": ["all","trace","debug","info","warn","error","fatal","off", null]
-                                }
-                            },
-                            "examples": [{
-                                "level": "warn"
-                            }]
-                        },
-                        "profiling": {
-                            "type": "object",
-                            "default": {},
-                            "title": "db profiling configuration",
-                            "required": [
-                                "enabled"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                                "enabled": {
-                                    "type": "boolean",
-                                    "default": false,
-                                    "title": "run DB worker with profiling enabled",
-                                    "examples": [
-                                        false
-                                    ]
-                                }
-                            },
-                            "examples": [{
-                                "enabled": false
-                            }]
-                        },
-                        "salt": {
-                            "type": "string",
-                            "default": "",
-                            "title": "db worker salt, defaults to a value randomly-generated on install",
-                            "examples": [
-                                "password"
-                            ]
-                        },
-                        "passphrase": {
-                            "type": "string",
-                            "default": "",
-                            "title": "db worker passphrase, defaults to a value randomly-generated on install",
-                            "examples": [
-                                "password"
-                            ]
-                        },
-                        "resources": {
-                            "type": "object",
-                            "default": {},
-                            "title": "resource limits and requests configuration for the DB worker containers.",
-                            "required": [
-                                "requests",
-                                "limits"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                                "requests": {
-                                    "type": "object",
-                                    "default": {},
-                                    "title": "the CPU/memory resource requests for the DB worker containers",
-                                    "required": [],
-                                    "properties": {
-                                        "cpu": {"type": "string"},
-                                        "memory": {"type": "string"}
-                                    },
-                                    "additionalProperties": false,
-                                    "examples": [{
-                                        "cpu": "1",
-                                        "memory": "2048Mi"
-                                    }]
-                                },
-                                "limits": {
-                                    "type": "object",
-                                    "default": {},
-                                    "title": "the CPU/memory resource limits for the DB worker containers",
-                                    "required": [],
-                                    "properties": {
-                                        "cpu": {"type": "string"},
-                                        "memory": {"type": "string"}
-                                    },
-                                    "additionalProperties": false,
-                                    "examples": [{
-                                        "cpu": "1",
-                                        "memory": "2048Mi"
-                                    }]
-                                }
-                            },
-                            "examples": [{
-                                "requests": {
-                                    "cpu": "1",
-                                    "memory": "2048Mi"
-                                },
-                                "limits": {
-                                    "cpu": "1",
-                                    "memory": "2048Mi"
-                                }
                             }]
                         }
-                    },
-                    "examples": [{
-                        "image": {
-                            "registry": "",
-                            "repository": "corda-os-db-worker",
-                            "tag": ""
-                        },
-                        "replicaCount": 1,
-                        "debug": {
-                            "enabled": false,
-                            "suspend": false
-                        },
-                        "logging": {
-                            "level": "warn"
-                        },
-                        "profiling": {
-                            "enabled": false
-                        },
-                        "salt": "password",
-                        "passphrase": "password",
-                        "resources": {
-                            "requests": {
-                                "cpu": "1",
-                                "memory": "2048Mi"
-                            },
-                            "limits": {
-                                "cpu": "1",
-                                "memory": "2048Mi"
-                            }
-                        }
-                    }]
+                    ]
                 },
                 "flow": {
-                    "type": "object",
-                    "default": {},
-                    "title": "flow worker configuration",
-                    "required": [
-                        "image",
-                        "replicaCount",
-                        "debug",
-                        "logging",
-                        "profiling",
-                        "resources",
-                        "verifyInstrumentation"
-                    ],
-                    "additionalProperties": false,
-                    "properties": {
-                        "image": {
-                            "type": "object",
-                            "default": {},
-                            "title": "flow worker image configuration",
-                            "required": [
-                                "repository"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                                "registry": {
-                                    "type": "string",
-                                    "default": "",
-                                    "title": "flow worker image registry, defaults to image.registry",
-                                    "examples": [
-                                        ""
-                                    ]
-                                },
-                                "repository": {
-                                    "type": "string",
-                                    "default": "corda-os-flow-worker",
-                                    "title": "flow worker image repository",
-                                    "examples": [
-                                        "corda-os-flow-worker"
-                                    ],
-                                    "minLength": 1
-                                },
-                                "tag": {
-                                    "type": "string",
-                                    "default": "",
-                                    "title": "flow worker image tag, defaults to image.tag",
-                                    "examples": [
-                                        ""
-                                    ]
-                                }
-                            },
-                            "examples": [{
-                                "registry": "",
-                                "repository": "corda-os-flow-worker",
-                                "tag": ""
-                            }]
+                    "allOf": [
+                        {
+                            "$ref": "#/$defs/worker"
                         },
-                        "replicaCount": {
-                            "type": "integer",
-                            "default": 1,
-                            "title": "flow worker replica count",
-                            "examples": [
-                                1
-                            ]
-                        },
-                        "debug": {
-                            "type": "object",
-                            "default": {},
-                            "title": "flow worker debug configuration",
+                        {
                             "required": [
-                                "enabled"
+                                "verifyInstrumentation"
                             ],
-                            "additionalProperties": false,
                             "properties": {
-                                "enabled": {
+                                "image": {},
+                                "javaOptions": {},
+                                "replicaCount": {},
+                                "debug": {},
+                                "logging": {},
+                                "profiling": {},
+                                "resources": {},
+                                "verifyInstrumentation": {
                                     "type": "boolean",
                                     "default": false,
-                                    "title": "run flow worker with debug enabled",
-                                    "examples": [
-                                        false,
-                                        true
-                                    ]
-                                },
-                                "suspend": {
-                                    "type": "boolean",
-                                    "default": false,
-                                    "title": "if debug is enabled, suspend the flow worker until the debugger is attached",
-                                    "examples": [
-                                        false,
-                                        true
-                                    ]
-                                }
-                            },
-                            "if": {
-                                "properties": {
-                                    "enabled": {
-                                        "const": true
-                                    }
-                                }
-                            },
-                            "then": {
-                                "required": [
-                                    "suspend"
-                                ]
-                            },
-                            "examples": [{
-                                "enabled": true,
-                                "suspend": false
-                            }]
-                        },
-                        "logging": {
-                            "type": "object",
-                            "default": {},
-                            "title": "logging configuration",
-                            "additionalProperties": false,
-                            "properties": {
-                                "level": {
-                                    "type": ["string", "null"],
-                                    "default": null,
-                                    "title": "log level (defaults to logging.level if not specified)",
-                                    "examples": [
-                                        "warn"
-                                    ],
-                                    "enum": ["all","trace","debug","info","warn","error","fatal","off", null]
-                                }
-                            },
-                            "examples": [{
-                                "level": "warn"
-                            }]
-                        },
-                        "profiling": {
-                            "type": "object",
-                            "default": {},
-                            "title": "flow profiling configuration",
-                            "required": [
-                                "enabled"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                                "enabled": {
-                                    "type": "boolean",
-                                    "default": false,
-                                    "title": "run flow worker with profiling enabled",
+                                    "title": "run flow worker with Quasar's verifyInstrumentation enabled",
                                     "examples": [
                                         false
                                     ]
                                 }
                             },
                             "examples": [{
-                                "enabled": false
-                            }]
-                        },
-                        "resources": {
-                            "type": "object",
-                            "default": {},
-                            "title": "resource limits and requests configuration for the flow worker containers",
-                            "required": [
-                                "requests",
-                                "limits"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                                "requests": {
-                                    "type": "object",
-                                    "default": {},
-                                    "title": "the CPU/memory resource requests for the flow worker containers",
-                                    "required": [],
-                                    "properties": {
-                                        "cpu": {"type": "string"},
-                                        "memory": {"type": "string"}
-                                    },
-                                    "additionalProperties": false,
-                                    "examples": [{
+                                "image": {
+                                    "registry": "corda-os-docker.software.r3.com",
+                                    "repository": "corda-os-flow-worker",
+                                    "tag": ""
+                                },
+                                "replicaCount": 1,
+                                "debug": {
+                                    "enabled": false,
+                                    "suspend": false
+                                },
+                                "logging": {
+                                    "level": "warn"
+                                },
+                                "profiling": {
+                                    "enabled": false
+                                },
+                                "resources": {
+                                    "requests": {
                                         "cpu": "1",
                                         "memory": "2048Mi"
-                                    }]
-                                },
-                                "limits": {
-                                    "type": "object",
-                                    "default": {},
-                                    "title": "the CPU/memory resource limits for the flow worker containers",
-                                    "required": [],
-                                    "properties": {
-                                        "cpu": {"type": "string"},
-                                        "memory": {"type": "string"}
                                     },
-                                    "additionalProperties": false,
-                                    "examples": [{
+                                    "limits": {
                                         "cpu": "1",
                                         "memory": "2048Mi"
-                                    }]
-                                }
-                            },
-                            "examples": [{
-                                "requests": {
-                                    "cpu": "1",
-                                    "memory": "2048Mi"
+                                    }
                                 },
-                                "limits": {
-                                    "cpu": "1",
-                                    "memory": "2048Mi"
-                                }
+                                "verifyInstrumentation": false
                             }]
-                        },
-                        "verifyInstrumentation": {
-                            "type": "boolean",
-                            "default": false,
-                            "title": "run flow worker with Quasar's verifyInstrumentation enabled",
-                            "examples": [
-                                false
-                            ]
                         }
-                    },
-                    "examples": [{
-                        "image": {
-                            "registry": "corda-os-docker.software.r3.com",
-                            "repository": "corda-os-flow-worker",
-                            "tag": ""
-                        },
-                        "replicaCount": 1,
-                        "debug": {
-                            "enabled": false,
-                            "suspend": false
-                        },
-                        "logging": {
-                            "level": "warn"
-                        },
-                        "profiling": {
-                            "enabled": false
-                        },
-                        "resources": {
-                            "requests": {
-                                "cpu": "1",
-                                "memory": "2048Mi"
-                            },
-                            "limits": {
-                                "cpu": "1",
-                                "memory": "2048Mi"
-                            }
-                        },
-                        "verifyInstrumentation": false
-                    }]
+                    ]
                 },
                 "membership": {
-                    "type": "object",
-                    "default": {},
-                    "title": "membership worker configuration",
-                    "required": [
-                        "image",
-                        "replicaCount",
-                        "debug",
-                        "logging",
-                        "profiling",
-                        "resources"
-                    ],
-                    "additionalProperties": false,
-                    "properties": {
-                        "image": {
-                            "type": "object",
-                            "default": {},
-                            "title": "membership worker image configuration",
-                            "required": [
-                                "repository"
-                            ],
+                    "allOf": [
+                        {
+                            "$ref": "#/$defs/worker"
+                        },
+                        {
                             "additionalProperties": false,
                             "properties": {
-                                "registry": {
-                                    "type": "string",
-                                    "default": "",
-                                    "title": "membership worker image registry, defaults to image.registry",
-                                    "examples": [
-                                        "corda-os-docker.software.r3.com"
-                                    ]
-                                },
-                                "repository": {
-                                    "type": "string",
-                                    "default": "corda-os-member-worker",
-                                    "title": "membership worker image repository",
-                                    "examples": [
-                                        "corda-os-member-worker"
-                                    ],
-                                    "minLength": 1
-                                },
-                                "tag": {
-                                    "type": "string",
-                                    "default": "",
-                                    "title": "membership worker image tag, defaults to image.tag",
-                                    "examples": [
-                                        ""
-                                    ]
-                                }
-                            },
-                            "examples": [{
-                                "registry": "corda-os-docker.software.r3.com",
-                                "repository": "corda-os-member-worker",
-                                "tag": ""
-                            }]
-                        },
-                        "replicaCount": {
-                            "type": "integer",
-                            "default": 1,
-                            "title": "membership worker replica count",
-                            "examples": [
-                                1
-                            ]
-                        },
-                        "debug": {
-                            "type": "object",
-                            "default": {},
-                            "title": "membership worker debug configuration",
-                            "required": [
-                                "enabled"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                                "enabled": {
-                                    "type": "boolean",
-                                    "default": false,
-                                    "title": "run membership worker with debug enabled",
-                                    "examples": [
-                                        false
-                                    ]
-                                },
-                                "suspend": {
-                                    "type": "boolean",
-                                    "default": false,
-                                    "title": "if debug is enabled, suspend the membership worker until the debugger is attached",
-                                    "examples": [
-                                        false
-                                    ]
-                                }
-                            },
-                            "if": {
-                                "properties": {
-                                    "enabled": {
-                                        "const": true
-                                    }
-                                }
-                            },
-                            "then": {
-                                "required": [
-                                    "suspend"
-                                ]
-                            },
-                            "examples": [{
-                                "enabled": true,
-                                "suspend": false
-                            }]
-                        },
-                        "logging": {
-                            "type": "object",
-                            "default": {},
-                            "title": "logging configuration",
-                            "additionalProperties": false,
-                            "properties": {
-                                "level": {
-                                    "type": ["string", "null"],
-                                    "default": null,
-                                    "title": "log level (defaults to logging.level if not specified)",
-                                    "examples": [
-                                        "warn"
-                                    ],
-                                    "enum": ["all","trace","debug","info","warn","error","fatal","off", null]
-                                }
-                            },
-                            "examples": [{
-                                "level": "warn"
-                            }]
-                        },
-                        "profiling": {
-                            "type": "object",
-                            "default": {},
-                            "title": "membership profiling configuration",
-                            "required": [
-                                "enabled"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                                "enabled": {
-                                    "type": "boolean",
-                                    "default": false,
-                                    "title": "run membership worker with profiling enabled",
-                                    "examples": [
-                                        false
-                                    ]
-                                }
-                            },
-                            "examples": [{
-                                "enabled": false
-                            }]
-                        },
-                        "resources": {
-                            "type": "object",
-                            "default": {},
-                            "title": "resource limits and requests configuration for the membership worker containers",
-                            "required": [
-                                "requests",
-                                "limits"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                                "requests": {
-                                    "type": "object",
-                                    "default": {},
-                                    "title": "the CPU/memory resource requests for the membership worker containers",
-                                    "required": [],
-                                    "properties": {
-                                        "cpu": {"type": "string"},
-                                        "memory": {"type": "string"}
-                                    },
-                                    "additionalProperties": false,
-                                    "examples": [{
-                                        "cpu": "1",
-                                        "memory": "2048Mi"
-                                    }]
-                                },
-                                "limits": {
-                                    "type": "object",
-                                    "default": {},
-                                    "title": "the CPU/memory resource limits for the membership worker containers",
-                                    "required": [],
-                                    "properties": {
-                                        "cpu": {"type": "string"},
-                                        "memory": {"type": "string"}
-                                    },
-                                    "additionalProperties": false,
-                                    "examples": [{
-                                        "cpu": "1",
-                                        "memory": "2048Mi"
-                                    }]
-                                }
-                            }
-
-                        }
-                    },
-                    "examples": [{
-                        "image": {
-                            "registry": "corda-os-docker.software.r3.com",
-                            "repository": "corda-os-member-worker",
-                            "tag": ""
-                        },
-                        "replicaCount": 1,
-                        "debug": {
-                            "enabled": false,
-                            "suspend": false
-                        },
-                        "logging": {
-                            "level": ""
-                        },
-                        "profiling": {
-                            "enabled": false
-                        },
-                        "resources": {
-                            "requests": {
-                                "cpu": "1",
-                                "memory": "2048Mi"
-                            },
-                            "limits": {
-                                "cpu": "1",
-                                "memory": "2048Mi"
+                                "image": {},
+                                "javaOptions": {},
+                                "replicaCount": {},
+                                "debug": {},
+                                "logging": {},
+                                "profiling": {},
+                                "resources": {}
                             }
                         }
-                    }]
+                    ]
                 },
                 "rpc": {
-                    "type": "object",
-                    "default": {},
-                    "title": "rpc worker configuration",
-                    "required": [
-                        "image",
-                        "replicaCount",
-                        "debug",
-                        "logging",
-                        "profiling",
-                        "resources",
-                        "service"
-                    ],
-                    "additionalProperties": false,
-                    "properties": {
-                        "image": {
-                            "type": "object",
-                            "default": {},
-                            "title": "rpc worker image configuration",
-                            "required": [
-                                "repository"
-                            ],
-                            "properties": {
-                                "registry": {
-                                    "type": "string",
-                                    "default": "",
-                                    "title": "rpc worker image registry, defaults to image.registry",
-                                    "examples": [
-                                        "corda-os-docker.software.r3.com"
-                                    ]
-                                },
-                                "repository": {
-                                    "type": "string",
-                                    "default": "corda-os-rpc-worker",
-                                    "title": "rpc worker image repository",
-                                    "examples": [
-                                        "corda-os-rpc-worker"
-                                    ],
-                                    "minLength": 1
-                                },
-                                "tag": {
-                                    "type": "string",
-                                    "default": "",
-                                    "title": "rpc worker image tag, defaults to image.tag",
-                                    "examples": [
-                                        ""
-                                    ]
-                                }
-                            },
-                            "examples": [{
-                                "registry": "corda-os-docker.software.r3.com",
-                                "repository": "corda-os-rpc-worker",
-                                "tag": ""
-                            }]
+                    "allOf": [
+                        {
+                            "$ref": "#/$defs/worker"
                         },
-                        "replicaCount": {
-                            "type": "integer",
-                            "default": 1,
-                            "title": "rpc worker replica count",
-                            "examples": [
-                                1
-                            ]
-                        },
-                        "debug": {
-                            "type": "object",
-                            "default": {},
-                            "title": "rpc worker debug configuration",
+                        {
                             "required": [
-                                "enabled"
+                                "service"
                             ],
                             "additionalProperties": false,
                             "properties": {
-                                "enabled": {
-                                    "type": "boolean",
-                                    "default": false,
-                                    "title": "run RPC worker with debug enabled",
+                                "image": {},
+                                "javaOptions": {},
+                                "replicaCount": {},
+                                "debug": {},
+                                "logging": {},
+                                "profiling": {},
+                                "resources": {},
+                                "service": {
+                                    "type": "object",
+                                    "default": {},
+                                    "title": "rpc worker service configuration",
+                                    "required": [
+                                        "type",
+                                        "externalTrafficPolicy",
+                                        "loadBalancerSourceRanges",
+                                        "annotations"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "type": {
+                                            "type": "string",
+                                            "default": "",
+                                            "title": "the type for the RPC worker service",
+                                            "examples": [
+                                                "ClusterIP"
+                                            ]
+                                        },
+                                        "externalTrafficPolicy": {
+                                            "type": "string",
+                                            "default": "",
+                                            "title": "the traffic policy for the RPC worker service",
+                                            "examples": [
+                                                ""
+                                            ]
+                                        },
+                                        "loadBalancerSourceRanges": {
+                                            "type": "array",
+                                            "default": [],
+                                            "title": "the LoadBalancer source ranges to limit access to the RPC worker service",
+                                            "items": {},
+                                            "examples": [
+                                                []
+                                            ]
+                                        },
+                                        "annotations": {
+                                            "type": "object",
+                                            "default": {},
+                                            "title": "the annotations for RPC worker service",
+                                            "required": [],
+                                            "properties": {},
+                                            "examples": [
+                                                {}
+                                            ]
+                                        }
+                                    },
                                     "examples": [
-                                        false
-                                    ]
-                                },
-                                "suspend": {
-                                    "type": "boolean",
-                                    "default": false,
-                                    "title": "if debug is enabled, suspend the RPC worker until the debugger is attached",
-                                    "examples": [
-                                        false
+                                        {
+                                            "type": "ClusterIP",
+                                            "externalTrafficPolicy": "",
+                                            "loadBalancerSourceRanges": [],
+                                            "annotations": {}
+                                        }
                                     ]
                                 }
                             },
-                            "if": {
-                                "properties": {
-                                    "enabled": {
-                                        "const": true
+                            "examples": [
+                                {
+                                    "image": {
+                                        "registry": "corda-os-docker.software.r3.com",
+                                        "repository": "corda-os-rpc-worker",
+                                        "tag": ""
+                                    },
+                                    "replicaCount": 1,
+                                    "debug": {
+                                        "enabled": false,
+                                        "suspend": false
+                                    },
+                                    "logging": {
+                                        "level": "warn"
+                                    },
+                                    "profiling": {
+                                        "enabled": false
+                                    },
+                                    "resources": {
+                                        "requests": {
+                                            "cpu": "1",
+                                            "memory": "2048Mi"
+                                        },
+                                        "limits": {
+                                            "cpu": "1",
+                                            "memory": "2048Mi"
+                                        }
+                                    },
+                                    "service": {
+                                        "type": "ClusterIP",
+                                        "externalTrafficPolicy": "",
+                                        "loadBalancerSourceRanges": [],
+                                        "annotations": {}
                                     }
                                 }
-                            },
-                            "then": {
-                                "required": [
-                                    "suspend"
-                                ]
-                            },
-                            "examples": [{
-                                "enabled": false,
-                                "suspend": false
-                            }]
-                        },
-                        "logging": {
-                            "type": "object",
-                            "default": {},
-                            "title": "logging configuration",
-                            "additionalProperties": false,
-                            "properties": {
-                                "level": {
-                                    "type": ["string", "null"],
-                                    "default": null,
-                                    "title": "log level (defaults to logging.level if not specified)",
-                                    "examples": [
-                                        "warn"
-                                    ],
-                                    "enum": ["all","trace","debug","info","warn","error","fatal","off", null]
-                                }
-                            },
-                            "examples": [{
-                                "level": "warn"
-                            }]
-                        },
-                        "profiling": {
-                            "type": "object",
-                            "default": {},
-                            "title": "rpc profiling configuration",
-                            "required": [
-                                "enabled"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                                "enabled": {
-                                    "type": "boolean",
-                                    "default": false,
-                                    "title": "run RPC worker with profiling enabled",
-                                    "examples": [
-                                        false
-                                    ]
-                                }
-                            },
-                            "examples": [{
-                                "enabled": false
-                            }]
-                        },
-                        "resources": {
-                            "type": "object",
-                            "default": {},
-                            "title": "resource limits and requests configuration for the RPC worker containers.",
-                            "required": [
-                                "requests",
-                                "limits"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                                "requests": {
-                                    "type": "object",
-                                    "default": {},
-                                    "title": "the CPU/memory resource requests for the RPC worker containers",
-                                    "required": [],
-                                    "properties": {
-                                        "cpu": {"type": "string"},
-                                        "memory": {"type": "string"}
-                                    },
-                                    "additionalProperties": false,
-                                    "examples": [{
-                                        "cpu": "1",
-                                        "memory": "2048Mi"
-                                    }]
-                                },
-                                "limits": {
-                                    "type": "object",
-                                    "default": {},
-                                    "title": "the CPU/memory resource limits for the RPC worker containers",
-                                    "required": [],
-                                    "properties": {
-                                        "cpu": {"type": "string"},
-                                        "memory": {"type": "string"}
-                                    },
-                                    "additionalProperties": false,
-                                    "examples": [{
-                                        "cpu": "1",
-                                        "memory": "2048Mi"
-                                    }]
-                                }
-                            },
-                            "examples": [{
-                                "requests": {
-                                    "cpu": "1",
-                                    "memory": "2048Mi"
-                                },
-                                "limits": {
-                                    "cpu": "1",
-                                    "memory": "2048Mi"
-                                }
-                            }]
-                        },
-                        "service": {
-                            "type": "object",
-                            "default": {},
-                            "title": "rpc worker service configuration",
-                            "required": [
-                                "type",
-                                "externalTrafficPolicy",
-                                "loadBalancerSourceRanges",
-                                "annotations"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                                "type": {
-                                    "type": "string",
-                                    "default": "",
-                                    "title": "the type for the RPC worker service",
-                                    "examples": [
-                                        "ClusterIP"
-                                    ]
-                                },
-                                "externalTrafficPolicy": {
-                                    "type": "string",
-                                    "default": "",
-                                    "title": "the traffic policy for the RPC worker service",
-                                    "examples": [
-                                        ""
-                                    ]
-                                },
-                                "loadBalancerSourceRanges": {
-                                    "type": "array",
-                                    "default": [],
-                                    "title": "the LoadBalancer source ranges to limit access to the RPC worker service",
-                                    "items": {},
-                                    "examples": [
-                                        []
-                                    ]
-                                },
-                                "annotations": {
-                                    "type": "object",
-                                    "default": {},
-                                    "title": "the annotations for RPC worker service",
-                                    "required": [],
-                                    "properties": {},
-                                    "examples": [{}]
-                                }
-                            },
-                            "examples": [{
-                                "type": "ClusterIP",
-                                "externalTrafficPolicy": "",
-                                "loadBalancerSourceRanges": [],
-                                "annotations": {}
-                            }]
+                            ]
                         }
-                    },
-                    "examples": [{
-                        "image": {
-                            "registry": "corda-os-docker.software.r3.com",
-                            "repository": "corda-os-rpc-worker",
-                            "tag": ""
-                        },
-                        "replicaCount": 1,
-                        "debug": {
-                            "enabled": false,
-                            "suspend": false
-                        },
-                        "logging": {
-                            "level": "warn"
-                        },
-                        "profiling": {
-                            "enabled": false
-                        },
-                        "resources": {
-                            "requests": {
-                                "cpu": "1",
-                                "memory": "2048Mi"
-                            },
-                            "limits": {
-                                "cpu": "1",
-                                "memory": "2048Mi"
-                            }
-                        },
-                        "service": {
-                            "type": "ClusterIP",
-                            "externalTrafficPolicy": "",
-                            "loadBalancerSourceRanges": [],
-                            "annotations": {}
-                        }
-                    }]
+                    ]
                 },
                 "p2pLinkManager": {
-                    "type": "object",
-                    "default": {},
-                    "title": "P2P Link Manager worker configuration",
-                    "required": [
-                        "image",
-                        "replicaCount",
-                        "useStubs",
-                        "debug",
-                        "logging",
-                        "profiling",
-                        "resources"
-                    ],
-                    "additionalProperties": false,
-                    "properties": {
-                        "image": {
-                            "type": "object",
-                            "default": {},
-                            "title": "p2p-link-manager worker image configuration",
+                    "allOf": [
+                        {
+                            "$ref": "#/$defs/worker"
+                        },
+                        {
                             "required": [
-                                "repository"
+                                "useStubs"
                             ],
                             "additionalProperties": false,
                             "properties": {
-                                "registry": {
-                                    "type": "string",
-                                    "default": "",
-                                    "title": "p2p-link-manager worker image registry, defaults to image.registry",
-                                    "examples": [
-                                        "corda-os-docker.software.r3.com"
-                                    ]
-                                },
-                                "repository": {
-                                    "type": "string",
-                                    "default": "corda-os-p2p-link-manager-worker",
-                                    "title": "p2p-link-manager worker image repository",
-                                    "examples": [
-                                        "corda-os-p2p-link-manager-worker"
-                                    ],
-                                    "minLength": 1
-                                },
-                                "tag": {
-                                    "type": "string",
-                                    "default": "",
-                                    "title": "p2p-link-manager worker image tag, defaults to image.tag",
-                                    "examples": [
-                                        ""
-                                    ]
-                                }
-                            },
-                            "examples": [{
-                                "registry": "corda-os-docker.software.r3.com",
-                                "repository": "corda-os-p2p-link-manager-worker",
-                                "tag": ""
-                            }]
-                        },
-                        "replicaCount": {
-                            "type": "integer",
-                            "default": 1,
-                            "title": "p2p-link-manager worker replica count",
-                            "examples": [
-                                1
-                            ]
-                        },
-                        "useStubs": {
-                            "type": "boolean",
-                            "default": false,
-                            "title": "use stubbed crypto processor, membership group reader and group policy provider",
-                            "examples": [
-                                false
-                            ]
-                        },
-                        "debug": {
-                            "type": "object",
-                            "default": {},
-                            "title": "p2p-link-manager worker debug configuration",
-                            "required": [
-                                "enabled"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                                "enabled": {
+                                "image": {},
+                                "javaOptions": {},
+                                "replicaCount": {},
+                                "debug": {},
+                                "logging": {},
+                                "profiling": {},
+                                "resources": {},
+                                "useStubs": {
                                     "type": "boolean",
                                     "default": false,
-                                    "title": "run p2p-link-manager worker with debug enabled",
-                                    "examples": [
-                                        false,
-                                        true
-                                    ]
-                                },
-                                "suspend": {
-                                    "type": "boolean",
-                                    "default": false,
-                                    "title": "if debug is enabled, suspend the p2p-link-manager worker until the debugger is attached",
-                                    "examples": [
-                                        false,
-                                        true
-                                    ]
-                                }
-                            },
-                            "if": {
-                                "properties": {
-                                    "enabled": {
-                                        "const": true
-                                    }
-                                }
-                            },
-                            "then": {
-                                "required": [
-                                    "suspend"
-                                ]
-                            },
-                            "examples": [{
-                                "enabled": true,
-                                "suspend": false
-                            }]
-                        },
-                        "logging": {
-                            "type": "object",
-                            "default": {},
-                            "title": "logging configuration",
-                            "additionalProperties": false,
-                            "properties": {
-                                "level": {
-                                    "type": ["string", "null"],
-                                    "default": null,
-                                    "title": "log level (defaults to logging.level if not specified)",
-                                    "examples": [
-                                        "warn"
-                                    ],
-                                    "enum": ["all","trace","debug","info","warn","error","fatal","off", null]
-                                }
-                            },
-                            "examples": [{
-                                "level": "warn"
-                            }]
-                        },
-                        "profiling": {
-                            "type": "object",
-                            "default": {},
-                            "title": "p2pLinkManager profiling configuration",
-                            "required": [
-                                "enabled"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                                "enabled": {
-                                    "type": "boolean",
-                                    "default": false,
-                                    "title": "run p2p-link-manager worker with profiling enabled",
+                                    "title": "use stubbed crypto processor, membership group reader and group policy provider",
                                     "examples": [
                                         false
                                     ]
                                 }
                             },
-                            "examples": [{
-                                "enabled": false
-                            }]
-                        },
-                        "resources": {
-                            "type": "object",
-                            "default": {},
-                            "title": "resource limits and requests configuration for the p2p-link-manager worker containers.",
-                            "required": [
-                                "requests",
-                                "limits"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                                "requests": {
-                                    "type": "object",
-                                    "default": {},
-                                    "title": "the CPU/memory resource requests for the p2p-link-manager worker containers",
-                                    "required": [],
-                                    "properties": {
-                                        "cpu": {"type": "string"},
-                                        "memory": {"type": "string"}
+                            "examples": [
+                                {
+                                    "image": {
+                                        "registry": "corda-os-docker.software.r3.com",
+                                        "repository": "corda-os-p2p-link-manager-worker",
+                                        "tag": ""
                                     },
-                                    "additionalProperties": false,
-                                    "examples": [{
-                                        "cpu": "1",
-                                        "memory": "2048Mi"
-                                    }]
-                                },
-                                "limits": {
-                                    "type": "object",
-                                    "default": {},
-                                    "title": "the CPU/memory resource limits for the p2p-link-manager worker containers",
-                                    "required": [],
-                                    "properties": {
-                                        "cpu": {"type": "string"},
-                                        "memory": {"type": "string"}
+                                    "replicaCount": 1,
+                                    "useStubs": false,
+                                    "debug": {
+                                        "enabled": false,
+                                        "suspend": false
                                     },
-                                    "additionalProperties": false,
-                                    "examples": [{
-                                        "cpu": "1",
-                                        "memory": "2048Mi"
-                                    }]
+                                    "logging": {
+                                        "level": "warn"
+                                    },
+                                    "profiling": {
+                                        "enabled": false
+                                    },
+                                    "resources": {
+                                        "requests": {
+                                            "cpu": "1",
+                                            "memory": "2048Mi"
+                                        },
+                                        "limits": {
+                                            "cpu": "1",
+                                            "memory": "2048Mi"
+                                        }
+                                    }
                                 }
-                            },
-                            "examples": [{
-                                "requests": {
-                                    "cpu": "1",
-                                    "memory": "2048Mi"
-                                },
-                                "limits": {
-                                    "cpu": "1",
-                                    "memory": "2048Mi"
-                                }
-                            }]
+                            ]
                         }
-                    },
-                    "examples": [{
-                        "image": {
-                            "registry": "corda-os-docker.software.r3.com",
-                            "repository": "corda-os-p2p-link-manager-worker",
-                            "tag": ""
-                        },
-                        "replicaCount": 1,
-                        "useStubs": false,
-                        "debug": {
-                            "enabled": false,
-                            "suspend": false
-                        },
-                        "logging": {
-                            "level": "warn"
-                        },
-                        "profiling": {
-                            "enabled": false
-                        },
-                        "resources": {
-                            "requests": {
-                                "cpu": "1",
-                                "memory": "2048Mi"
-                            },
-                            "limits": {
-                                "cpu": "1",
-                                "memory": "2048Mi"
-                            }
-                        }
-                    }]
+                    ]
                 },
                 "p2pGateway": {
-                    "type": "object",
-                    "default": {},
-                    "title": "p2p Gateway worker configuration",
-                    "required": [
-                        "image",
-                        "replicaCount",
-                        "useStubs",
-                        "debug",
-                        "logging",
-                        "profiling",
-                        "resources",
-                        "service"
-                    ],
-                    "additionalProperties": false,
-                    "properties": {
-                        "image": {
-                            "type": "object",
-                            "default": {},
-                            "title": "p2p-gateway worker image configuration",
+                    "allOf": [
+                        {
+                            "$ref": "#/$defs/worker"
+                        },
+                        {
                             "required": [
-                                "repository"
+                                "useStubs"
                             ],
                             "additionalProperties": false,
                             "properties": {
-                                "registry": {
-                                    "type": "string",
-                                    "default": "",
-                                    "title": "p2p-gateway worker image registry, defaults to image.registry",
-                                    "examples": [
-                                        "corda-os-docker.software.r3.com"
-                                    ]
-                                },
-                                "repository": {
-                                    "type": "string",
-                                    "default": "corda-os-p2p-gateway-worker",
-                                    "title": "p2p-gateway worker image repository",
-                                    "examples": [
-                                        "corda-os-p2p-gateway-worker"
-                                    ],
-                                    "minLength": 1
-                                },
-                                "tag": {
-                                    "type": "string",
-                                    "default": "",
-                                    "title": "p2p-gateway worker image tag, defaults to image.tag",
-                                    "examples": [
-                                        ""
-                                    ]
-                                }
-                            },
-                            "examples": [{
-                                "registry": "corda-os-docker.software.r3.com",
-                                "repository": "corda-os-p2p-gateway-worker",
-                                "tag": ""
-                            }]
-                        },
-                        "replicaCount": {
-                            "type": "integer",
-                            "default": 1,
-                            "title": "p2p-gateway worker replica count",
-                            "examples": [
-                                1
-                            ]
-                        },
-                        "useStubs": {
-                            "type": "boolean",
-                            "default": false,
-                            "title": "use stub crypto processor",
-                            "examples": [
-                                false
-                            ]
-                        },
-                        "debug": {
-                            "type": "object",
-                            "default": {},
-                            "title": "p2p-gateway worker debug configuration",
-                            "required": [
-                                "enabled"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                                "enabled": {
+                                "image": {},
+                                "javaOptions": {},
+                                "replicaCount": {},
+                                "debug": {},
+                                "logging": {},
+                                "profiling": {},
+                                "resources": {},
+                                "useStubs": {
                                     "type": "boolean",
                                     "default": false,
-                                    "title": "run p2p-gateway worker with debug enabled",
-                                    "examples": [
-                                        false,
-                                        true
-                                    ]
-                                },
-                                "suspend": {
-                                    "type": "boolean",
-                                    "default": false,
-                                    "title": "if debug is enabled, suspend the p2p-gateway worker until the debugger is attached",
-                                    "examples": [
-                                        false,
-                                        true
-                                    ]
-                                }
-                            },
-                            "if": {
-                                "properties": {
-                                    "enabled": {
-                                        "const": true
-                                    }
-                                }
-                            },
-                            "then": {
-                                "required": [
-                                    "suspend"
-                                ]
-                            },
-                            "examples": [{
-                                "enabled": true,
-                                "suspend": false
-                            }]
-                        },
-                        "logging": {
-                            "type": "object",
-                            "default": {},
-                            "title": "logging configuration",
-                            "additionalProperties": false,
-                            "properties": {
-                                "level": {
-                                    "type": ["string", "null"],
-                                    "default": null,
-                                    "title": "log level (defaults to logging.level if not specified)",
-                                    "examples": [
-                                        "warn"
-                                    ],
-                                    "enum": ["all","trace","debug","info","warn","error","fatal","off", null]
-                                }
-                            },
-                            "examples": [{
-                                "level": "warn"
-                            }]
-                        },
-                        "profiling": {
-                            "type": "object",
-                            "default": {},
-                            "title": "p2pGateway profiling configuration",
-                            "required": [
-                                "enabled"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                                "enabled": {
-                                    "type": "boolean",
-                                    "default": false,
-                                    "title": "run p2p-gateway worker with profiling enabled",
+                                    "title": "use stubbed crypto processor",
                                     "examples": [
                                         false
                                     ]
-                                }
-                            },
-                            "examples": [{
-                                "enabled": false
-                            }]
-                        },
-                        "resources": {
-                            "type": "object",
-                            "default": {},
-                            "title": "resource limits and requests configuration for the p2pGateway worker containers",
-                            "required": [
-                                "requests",
-                                "limits"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                                "requests": {
-                                    "type": "object",
-                                    "default": {},
-                                    "title": "the CPU/memory resource requests for the p2pGateway worker containers",
-                                    "properties": {
-                                        "cpu": {"type": "string"},
-                                        "memory": {"type": "string"}
-                                    },
-                                    "additionalProperties": false,
-                                    "examples": [{
-                                        "cpu": "1",
-                                        "memory": "2048Mi"
-                                    }]
                                 },
-                                "limits": {
+                                "service": {
                                     "type": "object",
                                     "default": {},
-                                    "title": "the CPU/memory resource limits for the p2pGateway worker containers",
-                                    "properties": {
-                                        "cpu": {"type": "string"},
-                                        "memory": {"type": "string"}
-                                    },
+                                    "title": "p2p-gateway worker worker service configuration",
+                                    "required": [
+                                        "port"
+                                    ],
                                     "additionalProperties": false,
+                                    "properties": {
+                                        "port": {
+                                            "type": "integer",
+                                            "default": 8080,
+                                            "title": "the Gateway HTTP port",
+                                            "examples": [
+                                                8080
+                                            ]
+                                        }
+                                    },
                                     "examples": [{
-                                        "cpu": "1",
-                                        "memory": "2048Mi"
+                                        "port": 8080
                                     }]
                                 }
                             },
                             "examples": [{
-                                "requests": {
-                                    "cpu": "1",
-                                    "memory": "2048Mi"
+                                "image": {
+                                    "registry": "corda-os-docker.software.r3.com",
+                                    "repository": "corda-os-p2p-gateway-worker",
+                                    "tag": ""
                                 },
-                                "limits": {
-                                    "cpu": "1",
-                                    "memory": "2048Mi"
+                                "replicaCount": 1,
+                                "useStubs": false,
+                                "debug": {
+                                    "enabled": false,
+                                    "suspend": false
+                                },
+                                "logging": {
+                                    "level": "warn"
+                                },
+                                "profiling": {
+                                    "enabled": false
+                                },
+                                "resources": {
+                                    "requests": {
+                                        "cpu": "1",
+                                        "memory": "2048Mi"
+                                    },
+                                    "limits": {
+                                        "cpu": "1",
+                                        "memory": "2048Mi"
+                                    }
+                                },
+                                "service": {
+                                    "port": 8080
                                 }
                             }]
-                        },
-                        "service": {
-                            "type": "object",
-                            "default": {},
-                            "title": "p2p-gateway worker worker service configuration",
-                            "required": [
-                                "port"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                                "port": {
-                                    "type": "integer",
-                                    "default": 8080,
-                                    "title": "the Gateway HTTP port",
-                                    "examples": [
-                                        8080
-                                    ]
-                                }
-                            },
-                            "examples": [{
-                                "port": 8080
-                            }]
                         }
-                    },
-                    "examples": [{
-                        "image": {
-                            "registry": "corda-os-docker.software.r3.com",
-                            "repository": "corda-os-p2p-gateway-worker",
-                            "tag": ""
-                        },
-                        "replicaCount": 1,
-                        "useStubs": false,
-                        "debug": {
-                            "enabled": false,
-                            "suspend": false
-                        },
-                        "logging": {
-                            "level": "warn"
-                        },
-                        "profiling": {
-                            "enabled": false
-                        },
-                        "resources": {
-                            "requests": {
-                                "cpu": "1",
-                                "memory": "2048Mi"
-                            },
-                            "limits": {
-                                "cpu": "1",
-                                "memory": "2048Mi"
-                            }
-                        },
-                        "service": {
-                            "port": 8080
-                        }
-                    }]
+                    ]
                 }
             },
             "examples": [{
@@ -2929,5 +1663,235 @@
             "bootstrapServers": "prereqs-kafka:9092"
         }
     }
-    ]
+    ],
+    "$defs": {
+        "worker": {
+            "type": "object",
+            "default": {},
+            "title": "worker configuration",
+            "required": [
+                "image",
+                "replicaCount",
+                "resources"
+            ],
+            "properties": {
+                "image": {
+                    "type": "object",
+                    "default": {},
+                    "title": "worker image configuration",
+                    "required": [
+                        "repository"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "registry": {
+                            "type": "string",
+                            "default": "",
+                            "title": "worker image registry, defaults to image.registry",
+                            "examples": [
+                                "corda-os-docker.software.r3.com"
+                            ]
+                        },
+                        "repository": {
+                            "type": "string",
+                            "title": "worker image repository",
+                            "examples": [
+                                "corda-os-xxx-worker"
+                            ],
+                            "minLength": 1
+                        },
+                        "tag": {
+                            "type": "string",
+                            "default": "",
+                            "title": "worker image tag, defaults to image.tag",
+                            "examples": [
+                                ""
+                            ]
+                        }
+                    },
+                    "examples": [{
+                        "registry": "corda-os-docker.software.r3.com",
+                        "repository": "corda-os-xxx-worker",
+                        "tag": ""
+                    }]
+                },
+                "javaOptions": {
+                    "type": "string"
+                },
+                "replicaCount": {
+                    "type": "integer",
+                    "default": 1,
+                    "title": "worker replica count",
+                    "examples": [
+                        1
+                    ]
+                },
+                "debug": {
+                    "type": "object",
+                    "default": {},
+                    "title": "worker debug configuration",
+                    "required": [
+                        "enabled"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "default": false,
+                            "title": "run worker with debug enabled",
+                            "examples": [
+                                false
+                            ]
+                        },
+                        "suspend": {
+                            "type": "boolean",
+                            "default": false,
+                            "title": "if debug is enabled, suspend the worker until the debugger is attached",
+                            "examples": [
+                                false
+                            ]
+                        }
+                    },
+                    "if": {
+                        "properties": {
+                            "enabled": {
+                                "const": true
+                            }
+                        }
+                    },
+                    "then": {
+                        "required": [
+                            "suspend"
+                        ]
+                    },
+                    "examples": [{
+                        "enabled": true,
+                        "suspend": false
+                    }]
+                },
+                "logging": {
+                    "type": "object",
+                    "default": {},
+                    "title": "logging configuration",
+                    "additionalProperties": false,
+                    "properties": {
+                        "level": {
+                            "type": ["string", "null"],
+                            "default": null,
+                            "title": "log level (defaults to logging.level if not specified)",
+                            "examples": [
+                                "warn"
+                            ],
+                            "enum": ["all","trace","debug","info","warn","error","fatal","off", null]
+                        }
+                    },
+                    "examples": [{
+                        "level": "warn"
+                    }]
+                },
+                "profiling": {
+                    "type": "object",
+                    "default": {},
+                    "title": "profiling configuration",
+                    "required": [
+                        "enabled"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "default": false,
+                            "title": "run worker with profiling enabled",
+                            "examples": [
+                                false
+                            ]
+                        }
+                    },
+                    "examples": [{
+                        "enabled": false
+                    }]
+                },
+                "resources": {
+                    "type": "object",
+                    "default": {},
+                    "title": "resource limits and requests configuration for the worker containers.",
+                    "required": [
+                        "requests",
+                        "limits"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "requests": {
+                            "type": "object",
+                            "default": {},
+                            "title": "the CPU/memory resource requests for the worker containers",
+                            "required": [],
+                            "properties": {
+                                "cpu": {"type": "string"},
+                                "memory": {"type": "string"}
+                            },
+                            "additionalProperties": false,
+                            "examples": [{
+                                "cpu": "1",
+                                "memory": "2048Mi"
+                            }]
+                        },
+                        "limits": {
+                            "type": "object",
+                            "default": {},
+                            "title": "the CPU/memory resource limits for the worker containers",
+                            "required": [],
+                            "properties": {
+                                "cpu": {"type": "string"},
+                                "memory": {"type": "string"}
+                            },
+                            "additionalProperties": false,
+                            "examples": [{
+                                "cpu": "1",
+                                "memory": "2048Mi"
+                            }]
+                        }
+                    },
+                    "examples": [{
+                        "requests": {
+                            "cpu": "1",
+                            "memory": "2048Mi"
+                        },
+                        "limits": {
+                            "cpu": "1",
+                            "memory": "2048Mi"
+                        }
+                    }]
+                }
+            },
+            "examples": [{
+                "image": {
+                    "registry": "",
+                    "repository": "corda-os-xxx-worker",
+                    "tag": ""
+                },
+                "replicaCount": 1,
+                "debug": {
+                    "enabled": false,
+                    "suspend": false
+                },
+                "logging": {
+                    "level": "warn"
+                },
+                "profiling": {
+                    "enabled": false
+                },
+                "resources": {
+                    "requests": {
+                        "cpu": "1",
+                        "memory": "2048Mi"
+                    },
+                    "limits": {
+                        "cpu": "1",
+                        "memory": "2048Mi"
+                    }
+                }
+            }]
+        }
+    }
 }

@@ -3,7 +3,7 @@ package net.corda.chunking.db.impl.cpi
 import net.corda.chunking.db.impl.cpi.liquibase.LiquibaseExtractor
 import net.corda.db.admin.LiquibaseXmlConstants
 import net.corda.libs.packaging.Cpi
-import net.corda.libs.packaging.CpiReader
+import net.corda.libs.packaging.testutils.cpb.packaging.v2.TestCpbReaderV2
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -32,7 +32,7 @@ internal class LiquibaseExtractorTest {
 
     @Test
     fun `test real cpb via validation function`() {
-        val cpi: Cpi = getInputStream(EXTENDABLE_CPB).use { CpiReader.readCpi(it, testDir) }
+        val cpi: Cpi = getInputStream(EXTENDABLE_CPB).use { TestCpbReaderV2.readCpi(it, testDir) }
         val obj = LiquibaseExtractor()
         assertThat(obj.extractLiquibaseEntitiesFromCpi(cpi).isNotEmpty()).isTrue
 
@@ -42,7 +42,7 @@ internal class LiquibaseExtractorTest {
 
     @Test
     fun `check content`() {
-        val cpi: Cpi = getInputStream(EXTENDABLE_CPB).use { CpiReader.readCpi(it, testDir) }
+        val cpi: Cpi = getInputStream(EXTENDABLE_CPB).use { TestCpbReaderV2.readCpi(it, testDir) }
         val obj = LiquibaseExtractor()
         val entities = obj.extractLiquibaseEntitiesFromCpi(cpi)
         assertThat(entities.isNotEmpty()).isTrue

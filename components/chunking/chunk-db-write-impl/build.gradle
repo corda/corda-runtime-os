@@ -55,6 +55,7 @@ dependencies {
     testImplementation project(':libs:db:db-admin-impl')
     testImplementation project(':libs:db:db-orm-impl')
     testImplementation project(':testing:db-testkit')
+    testImplementation project(":testing:packaging-test-utilities")
     testImplementation project(':testing:test-utilities')
 
     testImplementation "com.google.jimfs:jimfs:$jimfsVersion"

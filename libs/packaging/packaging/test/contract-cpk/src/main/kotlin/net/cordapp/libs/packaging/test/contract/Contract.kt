@@ -1,4 +1,4 @@
-package net.corda.libs.packaging.test.contract
+package net.cordapp.libs.packaging.test.contract
 
 class PackagingTestState
 

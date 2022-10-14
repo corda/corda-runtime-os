@@ -22,6 +22,13 @@ object UniquenessConstants {
     const val TRANSACTION_ID_LENGTH = 64
 
     /**
+     * Specifies the maximum supported rejected transaction error details length.
+     *
+     * CHANGING THIS VALUE WILL CHANGE THE SIZE LIMIT OF REJECTED TRANSACTION ERROR DETAILS
+     */
+    const val REJECTED_TRANSACTION_ERROR_DETAILS_LENGTH = 1024
+
+    /**
      * Character representation of accepted results, used in the backing store
      */
     const val RESULT_ACCEPTED_REPRESENTATION = 'A'
