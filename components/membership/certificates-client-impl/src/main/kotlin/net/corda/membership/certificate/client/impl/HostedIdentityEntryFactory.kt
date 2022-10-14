@@ -109,7 +109,7 @@ internal class HostedIdentityEntryFactory(
         val sessionCertificate = sessionCertificateChainAlias?.let {
             getCertificates(actualSessionKeyTenantId, sessionCertificateChainAlias)
         }
-        sessionCertificate?.let { validateSessionCertificates(actualTlsTenantId, nodeInfo.holdingIdentity, it) }
+        sessionCertificate?.let { validateSessionCertificates(actualSessionKeyTenantId, nodeInfo.holdingIdentity, it) }
 
         val hostedIdentityBuilder = HostedIdentityEntry.newBuilder()
             .setHoldingIdentity(nodeInfo.holdingIdentity.toAvro())
