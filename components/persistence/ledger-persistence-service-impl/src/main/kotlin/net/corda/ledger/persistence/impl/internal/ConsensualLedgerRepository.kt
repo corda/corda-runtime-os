@@ -1,6 +1,5 @@
 package net.corda.ledger.persistence.impl.internal
 
-import net.corda.ledger.common.impl.transaction.CordaPackageSummary
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl
@@ -77,30 +76,10 @@ class ConsensualLedgerRepository(
             .map { r -> serializationService.deserialize(r.get(0) as ByteArray) }
     }
 
-    /** Finds file checksums of existing CPKs. */
-    @Suppress("UNCHECKED_CAST")
-    fun findExistingCpkFileChecksums(
-        entityManager: EntityManager,
-        cpks: List<CordaPackageSummary>
-    ): Set<String> {
-        if (cpks.isEmpty()) return emptySet()
-        return entityManager.createNativeQuery(
-            """
-            SELECT file_checksum
-            FROM {h-schema}consensual_cpk
-            WHERE file_checksum in (:fileChecksums)""",
-            Tuple::class.java
-        )
-            .setParameter("fileChecksums", cpks.map { it.fileChecksum })
-            .resultListAsTuples()
-            .mapTo(HashSet()) { r -> r.get(0) as String }
-    }
-
     /** Persists [signedTransaction] data to database and link it to existing CPKs. */
     fun persistTransaction(
         entityManager: EntityManager,
         signedTransaction: ConsensualSignedTransactionImpl,
-        existingCpkFileChecksums: Set<String>,
         account :String
     ) {
         val transactionId = signedTransaction.id.toHexString()
@@ -115,8 +94,6 @@ class ConsensualLedgerRepository(
         }
         // TODO where to get the status from
         persistTransactionStatus(entityManager, now, transactionId, "Faked")
-        // Link transaction to existing CPKs
-        persistTransactionCpk(entityManager, transactionId, existingCpkFileChecksums)
         // Persist signatures
         signedTransaction.signatures.forEachIndexed { index, digitalSignatureAndMetadata ->
             persistSignature(entityManager, now, transactionId, index, digitalSignatureAndMetadata)
@@ -151,8 +128,8 @@ class ConsensualLedgerRepository(
         groupIndex: Int,
         leafIndex: Int,
         data: ByteArray
-    ) {
-        entityManager.createNativeQuery(
+    ): Int {
+        return entityManager.createNativeQuery(
             """
             INSERT INTO {h-schema}consensual_transaction_component(transaction_id, group_idx, leaf_idx, data, hash, created)
             VALUES(:transactionId, :groupIndex, :leafIndex, :data, :hash, :createdAt)"""
@@ -172,8 +149,8 @@ class ConsensualLedgerRepository(
         timestamp: Instant,
         transactionId: String,
         status: String
-    ) {
-        entityManager.createNativeQuery(
+    ): Int {
+        return entityManager.createNativeQuery(
             """
             INSERT INTO {h-schema}consensual_transaction_status(transaction_id, status, created)
             VALUES (:txId, :status, :createdAt)"""
@@ -184,24 +161,6 @@ class ConsensualLedgerRepository(
             .executeUpdate()
     }
 
-    /** Persists link between transaction with ID [transactionId] and it's CPK data to database. */
-    private fun persistTransactionCpk(
-        entityManager: EntityManager,
-        transactionId: String,
-        cpkFileChecksums: Collection<String>
-    ) {
-        entityManager.createNativeQuery(
-            """
-            INSERT INTO {h-schema}consensual_transaction_cpk
-            SELECT :transactionId, file_checksum
-            FROM {h-schema}consensual_cpk
-            WHERE file_checksum in (:fileChecksums)"""
-        )
-            .setParameter("transactionId", transactionId)
-            .setParameter("fileChecksums", cpkFileChecksums)
-            .executeUpdate()
-    }
-
     /** Persists transaction's [signature] to database. */
     private fun persistSignature(
         entityManager: EntityManager,
@@ -209,8 +168,8 @@ class ConsensualLedgerRepository(
         transactionId: String,
         index: Int,
         signature: DigitalSignatureAndMetadata
-    ) {
-        entityManager.createNativeQuery(
+    ): Int {
+        return entityManager.createNativeQuery(
             """
             INSERT INTO {h-schema}consensual_transaction_signature(transaction_id, signature_idx, signature, pub_key_hash, created)
             VALUES (:transactionId, :signatureIdx, :signature, :publicKeyHash, :createdAt)"""
@@ -221,6 +180,42 @@ class ConsensualLedgerRepository(
             .setParameter("publicKeyHash", signature.by.encoded.hashAsHexString())
             .setParameter("createdAt", timestamp)
             .executeUpdate()
+    }
+
+    /** Persists link between [signedTransaction] and it's CPK data to database. */
+    fun persistTransactionCpk(
+        entityManager: EntityManager,
+        signedTransaction: ConsensualSignedTransactionImpl
+    ): Int {
+        val cpkMetadata = signedTransaction.wireTransaction.metadata.getCpkMetadata()
+        return entityManager.createNativeQuery(
+            """
+            INSERT INTO {h-schema}consensual_transaction_cpk
+            SELECT :transactionId, file_checksum
+            FROM {h-schema}consensual_cpk
+            WHERE file_checksum in (:fileChecksums)"""
+        )
+            .setParameter("transactionId", signedTransaction.id.toHexString())
+            .setParameter("fileChecksums", cpkMetadata.map { it.fileChecksum })
+            .executeUpdate()
+    }
+
+    /** Finds file checksums of CPKs linked to transaction. */
+    fun findTransactionCpkChecksums(
+        entityManager: EntityManager,
+        signedTransaction: ConsensualSignedTransactionImpl,
+    ): Set<String> {
+        val cpkMetadata = signedTransaction.wireTransaction.metadata.getCpkMetadata()
+        return entityManager.createNativeQuery(
+            """
+            SELECT file_checksum
+            FROM {h-schema}consensual_transaction_cpk
+            WHERE file_checksum in (:fileChecksums)""",
+            Tuple::class.java
+        )
+            .setParameter("fileChecksums", cpkMetadata.map { it.fileChecksum })
+            .resultListAsTuples()
+            .mapTo(HashSet()) { r -> r.get(0) as String }
     }
 
     private fun ByteArray.hashAsHexString() =

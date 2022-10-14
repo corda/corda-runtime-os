@@ -83,17 +83,21 @@ class ConsensualLedgerMessageProcessor(
         // get the per-sandbox entity manager and serialization services
         val entityManagerFactory = sandbox.getEntityManagerFactory()
         val serializationService = sandbox.getSerializationService()
-        val consensualLedgerRepository = ConsensualLedgerRepository(
+        val repository = ConsensualLedgerRepository(
             merkleTreeProvider, digestService, jsonMarshallingService, serializationService)
 
         return entityManagerFactory.createEntityManager().transaction { em ->
             when (val req = request.request) {
                 is PersistTransaction -> {
                     val transaction = serializationService.deserialize(req)
-                    val cpks = transaction.wireTransaction.metadata.getCpkMetadata()
-                    val existingCpkFileChecksums = consensualLedgerRepository.findExistingCpkFileChecksums(em, cpks)
-                    consensualLedgerRepository.persistTransaction(em, transaction, existingCpkFileChecksums, request.account())
-                    val missingCpks = cpks.filter { !existingCpkFileChecksums.contains(it.fileChecksum) }
+                    repository.persistTransaction(em, transaction, request.account())
+                    val cpkMetadata = transaction.cpkMetadata()
+                    val missingCpks = if (repository.persistTransactionCpk(em, transaction) < cpkMetadata.size) {
+                        val persistedCpks = repository.findTransactionCpkChecksums(em, transaction)
+                        cpkMetadata.filterNot { persistedCpks.contains(it.fileChecksum) }
+                    } else {
+                        emptyList()
+                    }
                     responseFactory.successResponse(
                         request.flowExternalEventContext,
                         EntityResponse(missingCpks.map { serializationService.serialized(it) })
@@ -103,9 +107,10 @@ class ConsensualLedgerMessageProcessor(
                 is FindTransaction -> responseFactory.successResponse(
                     request.flowExternalEventContext,
                     EntityResponse(
-                        listOfNotNull(consensualLedgerRepository.findTransaction(em, req.id))
+                        listOfNotNull(repository.findTransaction(em, req.id))
                             .map { serializationService.serialized(it) }
                     ))
+
                 else -> {
                     responseFactory.fatalErrorResponse(request.flowExternalEventContext, CordaRuntimeException("Unknown command"))
                 }
@@ -117,8 +122,9 @@ class ConsensualLedgerMessageProcessor(
         flowExternalEventContext.contextProperties.items.find { it.key == CORDA_ACCOUNT }?.value
             ?: throw NullParameterException("Flow external event context property '$CORDA_ACCOUNT' not set")
 
-    private fun SerializationService.serialized(obj: Any) =
-        ByteBuffer.wrap(serialize(obj).bytes)
+    private fun ConsensualSignedTransactionImpl.cpkMetadata() = wireTransaction.metadata.getCpkMetadata()
+
+    private fun SerializationService.serialized(obj: Any) = ByteBuffer.wrap(serialize(obj).bytes)
 
     private fun SerializationService.deserialize(persistTransaction: PersistTransaction) =
         deserialize<ConsensualSignedTransaction>(persistTransaction.transaction.array()) as ConsensualSignedTransactionImpl
