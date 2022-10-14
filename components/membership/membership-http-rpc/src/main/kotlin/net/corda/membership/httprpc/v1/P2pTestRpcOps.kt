@@ -37,11 +37,7 @@ interface P2pTestRpcOps : RpcOps {
     fun read(
         @HttpRpcQueryParameter(description = "Group")
         group: String,
-        @HttpRpcQueryParameter(description = "Source")
-        source: String,
-        @HttpRpcQueryParameter(description = "Target")
-        target: String,
         @HttpRpcQueryParameter(description = "Timeout (seconds)")
         timeout: Int,
-    ): Map<String, String>
+    ): Map<String, Map<String, String>>
 }

@@ -87,11 +87,9 @@ class P2pTestRpcOpsImpl @Activate constructor(
 
     override fun read(
         group: String,
-        source: String,
-        target: String,
         timeout: Int
-    ): Map<String, String> {
-        val messages = ConcurrentHashMap<String, String>()
+    ): Map<String, Map<String, String>> {
+        val messages = ConcurrentHashMap<String, Map<String, String>>()
         val processor = object : DurableProcessor<String, AppMessage> {
             override fun onNext(events: List<Record<String, AppMessage>>): List<Record<*, *>> {
                 events.map { it.value }
@@ -99,8 +97,16 @@ class P2pTestRpcOpsImpl @Activate constructor(
                     .map { it.message }
                     .filterIsInstance<AuthenticatedMessage>()
                     .filter { it.header.subsystem == SUBSYSTEM }
-                    .map { it.header.messageId to String(it.payload.array()) }
-                    .forEach { (id, content) -> messages[id] = content }
+                    .map {
+                        it.header.messageId to
+                            mapOf(
+                                "content" to String(it.payload.array()),
+                                "source" to it.header.source.x500Name,
+                                "target" to it.header.destination.x500Name,
+                                "group" to it.header.source.groupId,
+                            )
+                    }
+                    .forEach { (id, data) -> messages[id] = data }
                 return emptyList()
             }
 
