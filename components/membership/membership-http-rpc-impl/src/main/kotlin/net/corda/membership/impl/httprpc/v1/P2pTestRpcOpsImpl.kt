@@ -9,7 +9,6 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.Resource
-import net.corda.membership.httprpc.v1.KeysRpcOps
 import net.corda.membership.httprpc.v1.P2pTestRpcOps
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.messaging.api.processor.DurableProcessor
@@ -56,7 +55,7 @@ class P2pTestRpcOpsImpl @Activate constructor(
     ): String {
         return publisherFactory.createPublisher(
             PublisherConfig(SUBSYSTEM),
-            messagingConfig ?:throw CordaRuntimeException("Not ready")
+            messagingConfig ?: throw CordaRuntimeException("Not ready")
         ).use { publisher ->
             val messageId = UUID.randomUUID().toString()
             val message = AppMessage(
@@ -93,7 +92,7 @@ class P2pTestRpcOpsImpl @Activate constructor(
         timeout: Int
     ): Map<String, String> {
         val messages = ConcurrentHashMap<String, String>()
-        val processor = object: DurableProcessor<String, AppMessage> {
+        val processor = object : DurableProcessor<String, AppMessage> {
             override fun onNext(events: List<Record<String, AppMessage>>): List<Record<*, *>> {
                 events.map { it.value }
                     .filterNotNull()
@@ -101,7 +100,7 @@ class P2pTestRpcOpsImpl @Activate constructor(
                     .filterIsInstance<AuthenticatedMessage>()
                     .filter { it.header.subsystem == SUBSYSTEM }
                     .map { it.header.messageId to String(it.payload.array()) }
-                    .forEach {(id, content) ->  messages[id] = content }
+                    .forEach { (id, content) -> messages[id] = content }
                 return emptyList()
             }
 
@@ -114,11 +113,11 @@ class P2pTestRpcOpsImpl @Activate constructor(
                 Schemas.P2P.P2P_IN_TOPIC,
             ),
             processor,
-            messagingConfig ?:throw CordaRuntimeException("Not ready"),
+            messagingConfig ?: throw CordaRuntimeException("Not ready"),
             null
         ).use { subscription ->
             subscription.start()
-            Thread.sleep(timeout*1000L)
+            Thread.sleep(timeout * 1000L)
         }
 
         return messages
@@ -128,7 +127,7 @@ class P2pTestRpcOpsImpl @Activate constructor(
 
     override val protocolVersion = 1
 
-    private val coordinatorName = LifecycleCoordinatorName.forComponent<KeysRpcOps>(
+    private val coordinatorName = LifecycleCoordinatorName.forComponent<P2pTestRpcOps>(
         protocolVersion.toString()
     )
     private fun updateStatus(status: LifecycleStatus, reason: String) {
@@ -144,7 +143,7 @@ class P2pTestRpcOpsImpl @Activate constructor(
     }
 
     private fun updateConfig(configs: Map<String, SmartConfig>) {
-        if(configs.containsKey(ConfigKeys.MESSAGING_CONFIG)) {
+        if (configs.containsKey(ConfigKeys.MESSAGING_CONFIG)) {
             messagingConfig = configs[ConfigKeys.MESSAGING_CONFIG]
         }
     }
