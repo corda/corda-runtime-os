@@ -13,6 +13,22 @@
       "description": "The P2P URL protocol version. Can be multiple specified by index.",
       "type": "string"
     },
+    "^corda.roles.[0-9]+$": {
+      "description": "The member roles. Can be multiple specified by index.",
+      "type": "string",
+      "enum": ["notary"],
+      "examples": [
+        "notary"
+      ]
+    },
+    "^corda.notary.keys.[0-9]+.id$": {
+      "description": "The notary public key IDs which should be used for notary signing. Can be multiple specified by index.",
+      "type": "string"
+    },
+    "^corda.notary.keys.[0-9]+.signature.spec$": {
+      "description": "Optional. The notary public key signature spec. Can be multiple specified by index.",
+      "type": "string"
+    },
     "^corda.ledger.keys.[0-9]+.id$": {
       "description": "The ledger public key IDs which should be used for ledger signing. Can be multiple specified by index.",
       "type": "string"
@@ -30,6 +46,22 @@
     "corda.session.key.signature.spec": {
       "description": "Optional. The session key signature spec.",
       "type": "string"
+    },
+    "corda.notary.service.name": {
+      "description": "The notary service X500 name. Valid only when one of the roles is notary.",
+      "type": "string",
+      "minLength": 3,
+      "examples": [
+        "O=NotaryService, L=London, C=GB"
+      ]
+    },
+    "corda.notary.service.plugin": {
+      "description": "The notary plugin type (FQN of notary service plugin class). Valid only when one of the roles is notary.",
+      "type": "string",
+      "pattern": "^(([a-zA-Z][a-zA-Z_$0-9]*(\\.[a-zA-Z][a-zA-Z_$0-9]*)*)\\.)?([a-zA-Z][a-zA-Z_$0-9]*)$",
+      "examples": [
+        "net.corda.notary.MyNotaryService"
+      ]
     }
   },
   "minProperties": 4,
