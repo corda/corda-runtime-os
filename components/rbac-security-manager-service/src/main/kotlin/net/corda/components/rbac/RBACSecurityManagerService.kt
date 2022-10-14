@@ -78,7 +78,7 @@ class RBACSecurityManagerService @Activate constructor(
                     LifecycleStatus.UP -> {
                         innerSecurityManager?.stop()
                         innerSecurityManager = RBACSecurityManager(
-                            permissionManagementService.permissionValidator,
+                            permissionManagementService::permissionValidator,
                             permissionManagementService.basicAuthenticationService
                         )
                         coordinator.updateStatus(LifecycleStatus.UP)

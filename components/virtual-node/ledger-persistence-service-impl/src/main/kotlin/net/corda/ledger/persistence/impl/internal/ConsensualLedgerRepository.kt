@@ -2,7 +2,6 @@ package net.corda.ledger.persistence.impl.internal
 
 import net.corda.data.persistence.EntityResponse
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
-import net.corda.ledger.common.impl.transaction.TransactionMetaData.Companion.CPK_IDENTIFIERS_KEY
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.utilities.VisibleForTesting
@@ -153,8 +152,7 @@ class ConsensualLedgerRepository(
         timestamp: Instant,
         tx: WireTransaction
     ) {
-        // TODO get values from transaction metadata
-        val cpkIdentifiers = tx.metadata.get(CPK_IDENTIFIERS_KEY)
+        val cpkIdentifiers = tx.metadata.getCpkMetadata()
         logger.info("cpkIdentifiers = [$cpkIdentifiers]")
         val fileHash = SecureHash.parse("SHA-256:1234567890123456")
         val name = "cpk-name"
