@@ -3,6 +3,7 @@ package net.corda.ledger.consensual.impl.transaction
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.common.internal.transaction.SignableData
 import net.corda.ledger.common.internal.transaction.createTransactionSignature
+import net.corda.ledger.consensual.impl.transaction.factory.getCpiSummary
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
@@ -59,7 +60,7 @@ class ConsensualSignedTransactionImpl(
 
     @Suspendable
     override fun addSignature(publicKey: PublicKey): Pair<ConsensualSignedTransaction, DigitalSignatureAndMetadata> {
-        val newSignature = createTransactionSignature(signingService, serializer, getCpiIdentifier(), id, publicKey)
+        val newSignature = createTransactionSignature(signingService, serializer, getCpiSummary(), id, publicKey)
         return Pair(ConsensualSignedTransactionImpl(
             serializer, signingService, digitalSignatureVerificationService, wireTransaction,
             signatures + newSignature

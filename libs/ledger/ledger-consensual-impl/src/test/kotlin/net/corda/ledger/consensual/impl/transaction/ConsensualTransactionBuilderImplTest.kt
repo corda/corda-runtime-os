@@ -5,7 +5,6 @@ import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
-import net.corda.ledger.common.impl.transaction.CordaPackageSummary
 import net.corda.ledger.common.internal.transaction.CordaPackageSummary
 import net.corda.ledger.consensual.impl.ConsensualTransactionMocks
 import net.corda.ledger.consensual.impl.TestConsensualState
@@ -70,7 +69,7 @@ internal class ConsensualTransactionBuilderImplTest {
             "CPI name",
             "CPI version",
             "46616B652D76616C7565",
-            "00000000000000000000000000000000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+            "416E6F746865722D46616B652D76616C7565",
         )
         assertEquals(expectedCpiMetadata, metadata.getCpiMetadata())
 
@@ -97,8 +96,7 @@ internal class ConsensualTransactionBuilderImplTest {
             serializationService,
             ConsensualTransactionMocks.mockSigningService(),
             mock(),
-            ConsensualTransactionMocks.mockSandboxCpks(),
-            123
+            ConsensualTransactionMocks.mockTransactionMetaData()
         )
     }
 }

@@ -1,6 +1,5 @@
 package net.corda.ledger.common.internal.transaction
 
-import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.SigningService
@@ -13,13 +12,13 @@ import java.time.Instant
 
 //TODO(CORE-6969 Place this to somewhere else, potentially into a new Service. )
 
-private fun getSignatureMetadata(cpiIdentifier: CpiIdentifier): DigitalSignatureMetadata {
+private fun getSignatureMetadata(cpiSummary: CordaPackageSummary): DigitalSignatureMetadata {
     return DigitalSignatureMetadata(
         Instant.now(),
         linkedMapOf(
-            "cpiName" to cpiIdentifier.name,
-            "cpiVersion" to cpiIdentifier.version,
-            "cpiSignerSummaryHash" to cpiIdentifier.signerSummaryHash.toString()
+            "cpiName" to cpiSummary.name,
+            "cpiVersion" to cpiSummary.version,
+            "cpiSignerSummaryHash" to cpiSummary.signerSummaryHash.toString()
         )
     )
 }
@@ -28,11 +27,11 @@ private fun getSignatureMetadata(cpiIdentifier: CpiIdentifier): DigitalSignature
 fun createTransactionSignature(
     signingService: SigningService,
     serializationService: SerializationService,
-    cpiIdentifier: CpiIdentifier,
+    cpiSummary: CordaPackageSummary,
     txId: SecureHash,
     publicKey: PublicKey
 ): DigitalSignatureAndMetadata {
-    val signatureMetadata = getSignatureMetadata(cpiIdentifier)
+    val signatureMetadata = getSignatureMetadata(cpiSummary)
     val signableData = SignableData(txId, signatureMetadata)
     val signature = signingService.sign(
         serializationService.serialize(signableData).bytes,
