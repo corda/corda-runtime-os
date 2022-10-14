@@ -69,7 +69,7 @@ class ConsensualReceiveFinalityFlow(
                     "${signedTransaction.id} instead"
         }
 
-        signedTransactionToFinalize.verifySignatureValidity()
+        signedTransactionToFinalize.verifySignatures()
 
         // TODO [CORE-7055] Record the transaction
         log.debug { "Recorded signed transaction $transactionId" }

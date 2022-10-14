@@ -83,7 +83,7 @@ class ConsensualSignedTransactionImpl(
         return requiredSigningKeys.filter { !it.isFulfilledBy(alreadySigned) }.toSet()
     }
 
-    override fun verifySignatureValidity() {
+    override fun verifySignatures() {
         if (getMissingSigningKeys().isNotEmpty())
             throw TransactionVerificationException(id, "There are missing signatures", null)
         for (signature in signatures) {
