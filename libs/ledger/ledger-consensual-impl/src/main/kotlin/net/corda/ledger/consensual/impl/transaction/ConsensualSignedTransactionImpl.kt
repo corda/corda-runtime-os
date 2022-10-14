@@ -18,7 +18,7 @@ import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import java.security.PublicKey
 
 class ConsensualSignedTransactionImpl(
-    private val serializer: SerializationService,
+    private val serializationService: SerializationService,
     private val signingService: SigningService,
     private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
     val wireTransaction: WireTransaction,
@@ -56,19 +56,19 @@ class ConsensualSignedTransactionImpl(
         get() = wireTransaction.id
 
     override fun toLedgerTransaction(): ConsensualLedgerTransaction =
-        ConsensualLedgerTransactionImpl(this.wireTransaction, serializer)
+        ConsensualLedgerTransactionImpl(this.wireTransaction, serializationService)
 
     @Suspendable
     override fun addSignature(publicKey: PublicKey): Pair<ConsensualSignedTransaction, DigitalSignatureAndMetadata> {
-        val newSignature = createTransactionSignature(signingService, serializer, getCpiSummary(), id, publicKey)
+        val newSignature = createTransactionSignature(signingService, serializationService, getCpiSummary(), id, publicKey)
         return Pair(ConsensualSignedTransactionImpl(
-            serializer, signingService, digitalSignatureVerificationService, wireTransaction,
+            serializationService, signingService, digitalSignatureVerificationService, wireTransaction,
             signatures + newSignature
         ), newSignature)
     }
 
     override fun addSignature(signature: DigitalSignatureAndMetadata): ConsensualSignedTransaction =
-        ConsensualSignedTransactionImpl(serializer, signingService, digitalSignatureVerificationService,
+        ConsensualSignedTransactionImpl(serializationService, signingService, digitalSignatureVerificationService,
             wireTransaction, signatures + signature)
 
     override fun getMissingSigningKeys(): Set<PublicKey> {
@@ -88,7 +88,7 @@ class ConsensualSignedTransactionImpl(
                     publicKey = signature.by,
                     signatureSpec = SignatureSpec.ECDSA_SHA256,
                     signatureData = signature.signature.bytes,
-                    clearData = serializer.serialize(signedData).bytes
+                    clearData = serializationService.serialize(signedData).bytes
                 )
             } catch (e: Exception) {
                 throw TransactionVerificationException(id,

@@ -61,7 +61,7 @@ class ConsensualTransactionBuilderImpl(
         // TODO(CORE-5940 ? metadata verifications: nulls, order of CPKs, at least one CPK?))
         require(states.isNotEmpty()) { "At least one consensual state is required" }
         require(states.all { it.participants.isNotEmpty() }) { "All consensual states must have participants" }
-        val componentGroupLists = calculateComponentGroupLists(serializationService)
+        val componentGroupLists = calculateComponentGroupLists()
 
         val entropy = ByteArray(32)
         cipherSchemeMetadata.secureRandom.nextBytes(entropy)
@@ -76,7 +76,7 @@ class ConsensualTransactionBuilderImpl(
         )
     }
 
-    private fun calculateComponentGroupLists(serializer: SerializationService): List<List<ByteArray>> {
+    private fun calculateComponentGroupLists(): List<List<ByteArray>> {
         val requiredSigningKeys = states
             .map { it.participants }
             .flatten()
@@ -92,13 +92,13 @@ class ConsensualTransactionBuilderImpl(
                             .toByteArray(Charsets.UTF_8)
                     ) // TODO(update with CORE-5940)
                 ConsensualComponentGroupEnum.TIMESTAMP ->
-                    listOf(serializer.serialize(Instant.now()).bytes)
+                    listOf(serializationService.serialize(Instant.now()).bytes)
                 ConsensualComponentGroupEnum.REQUIRED_SIGNING_KEYS ->
-                    requiredSigningKeys.map { serializer.serialize(it).bytes }
+                    requiredSigningKeys.map { serializationService.serialize(it).bytes }
                 ConsensualComponentGroupEnum.OUTPUT_STATES ->
-                    states.map { serializer.serialize(it).bytes }
+                    states.map { serializationService.serialize(it).bytes }
                 ConsensualComponentGroupEnum.OUTPUT_STATE_TYPES ->
-                    states.map { serializer.serialize(it::class.java.name).bytes }
+                    states.map { serializationService.serialize(it::class.java.name).bytes }
             }
         }
         return componentGroupLists
