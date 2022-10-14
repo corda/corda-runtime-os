@@ -1,6 +1,6 @@
 plugins {
     id 'org.jetbrains.kotlin.jvm'
-    id 'net.corda.plugins.cordapp-cpk'
+    id 'net.corda.plugins.cordapp-cpk2'
 }
 
 configurations {

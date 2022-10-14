@@ -16,7 +16,7 @@ pluginManagement {
             }
         } else {
             maven {
-                url "${artifactoryContextUrl}/corda-releases"
+                url "${artifactoryContextUrl}/corda-dev"
                 content {
                     includeGroupByRegex 'net\\.corda\\.plugins(\\..*)?'
                 }
@@ -44,8 +44,8 @@ pluginManagement {
         id 'org.jetbrains.kotlin.jvm' version kotlinVersion
         id 'org.jetbrains.kotlin.plugin.allopen' version kotlinVersion
         id 'org.jetbrains.kotlin.plugin.jpa' version kotlinVersion
-        id 'net.corda.plugins.cordapp-cpk' version cordaGradlePluginsVersion
-        id 'net.corda.plugins.cordapp-cpb' version cordaGradlePluginsVersion
+        id 'net.corda.plugins.cordapp-cpk2' version cordaGradlePluginsVersion
+        id 'net.corda.plugins.cordapp-cpb2' version cordaGradlePluginsVersion
         id 'io.gitlab.arturbosch.detekt' version detektPluginVersion
         id 'com.github.ben-manes.versions' version dependencyCheckVersion
         id "org.gradle.test-retry" version gradleTestRetryPluginVersion
@@ -234,9 +234,11 @@ include 'libs:layered-property-map'
 include 'libs:layered-property-map:layered-property-map-test-converter'
 include 'libs:ledger:notary'
 include 'libs:ledger:ledger-common-impl'
+include 'libs:ledger:ledger-common-internal'
 include 'libs:ledger:ledger-common-serialization'
 include 'libs:ledger:ledger-consensual-impl'
 include 'libs:ledger:ledger-consensual-serialization'
+include 'libs:ledger:ledger-utxo-impl'
 include 'libs:ledger:ledger-persistence-client'
 include 'libs:lifecycle:lifecycle'
 include 'libs:lifecycle:lifecycle-impl'
@@ -271,6 +273,7 @@ include 'libs:permissions:permission-storage-reader'
 include 'libs:permissions:permission-storage-reader-impl'
 include 'libs:permissions:permission-storage-writer'
 include 'libs:permissions:permission-storage-writer-impl'
+include 'libs:platform-info'
 include 'libs:p2p-crypto'
 include 'libs:packaging:packaging'
 include 'libs:packaging:packaging-core'
@@ -423,7 +426,7 @@ if (compositeBuild.toBoolean() && file(cordaApiLocation).exists()) {
     }
 }
 if (compositeBuild.toBoolean() && file(cordaCliHostLocation).exists()) {
-    includeBuild(cordaCliHostLocation){
+    includeBuild(cordaCliHostLocation) {
         dependencySubstitution {
             substitute module("net.corda.cli.host:corda-cli") with project(":app")
             substitute module("net.corda.cli.host:api") with project(":api")

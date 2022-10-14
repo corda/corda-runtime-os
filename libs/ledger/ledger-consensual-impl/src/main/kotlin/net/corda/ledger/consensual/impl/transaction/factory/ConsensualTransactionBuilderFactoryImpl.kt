@@ -1,8 +1,10 @@
 package net.corda.ledger.consensual.impl.transaction.factory
 
+import net.corda.flow.fiber.FlowFiberService
 import net.corda.ledger.consensual.impl.transaction.ConsensualTransactionBuilderImpl
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
@@ -21,17 +23,25 @@ class ConsensualTransactionBuilderFactoryImpl @Activate constructor(
     @Reference(service = JsonMarshallingService::class) private val jsonMarshallingService: JsonMarshallingService,
     @Reference(service = MerkleTreeProvider::class) private val merkleTreeProvider: MerkleTreeProvider,
     @Reference(service = SerializationService::class) private val serializationService: SerializationService,
-    @Reference(service = SigningService::class) private val signingService: SigningService
+    @Reference(service = SigningService::class) private val signingService: SigningService,
+    @Reference(service = MemberLookup::class) private val memberLookup: MemberLookup,
+    @Reference(service = FlowFiberService::class) private val flowFiberService: FlowFiberService
 ) : ConsensualTransactionBuilderFactory {
 
+
     override fun create(): ConsensualTransactionBuilder {
+        val sandboxGroupContext = flowFiberService.getExecutingFiber().getExecutionContext().sandboxGroupContext
+        val sandboxCpks = sandboxGroupContext.sandboxGroup.metadata.values.toList()
+
         return ConsensualTransactionBuilderImpl(
             cipherSchemeMetadata,
             digestService,
             jsonMarshallingService,
             merkleTreeProvider,
             serializationService,
-            signingService
+            signingService,
+            memberLookup,
+            sandboxCpks
         )
     }
 }

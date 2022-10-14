@@ -21,10 +21,10 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
-import net.corda.v5.ledger.consensual.Party
+import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions
+import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -42,8 +42,6 @@ import java.io.NotSerializableException
 import java.nio.file.Path
 import java.security.PublicKey
 import java.util.concurrent.TimeUnit
-import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
-import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
 @ExtendWith(ServiceExtension::class, BundleContextExtension::class)
@@ -67,8 +65,6 @@ class ConsensualSignedTransactionAMQPSerializationTest {
     lateinit var jsonMarshallingService: JsonMarshallingService
 
     private lateinit var emptySandboxGroup: SandboxGroup
-
-    private lateinit var partySerializer: InternalCustomSerializer<Party>
     private lateinit var publickeySerializer: InternalCustomSerializer<PublicKey>
     private lateinit var wireTransactionSerializer: InternalCustomSerializer<WireTransaction>
     private lateinit var consensualSignedTransactionSerializer: InternalCustomSerializer<ConsensualSignedTransaction>
@@ -90,10 +86,6 @@ class ConsensualSignedTransactionAMQPSerializationTest {
             setup.withCleanup {
                 sandboxCreationService.unloadSandboxGroup(emptySandboxGroup)
             }
-            partySerializer = setup.fetchService(
-                "(component.name=net.corda.ledger.consensual.impl.PartySerializer)",
-                1500
-            )
             publickeySerializer = setup.fetchService(
                 "(component.name=net.corda.crypto.impl.serialization.PublicKeySerializer)",
                 1500
@@ -105,23 +97,23 @@ class ConsensualSignedTransactionAMQPSerializationTest {
 
             consensualSignedTransactionSerializer = setup.fetchService(
                 "(component.name=net.corda.ledger.consensual.transaction.serialization.internal.ConsensualSignedTransactionSerializer)",
-                1500)
+                1500
+            )
         }
     }
 
     private fun testDefaultFactory(sandboxGroup: SandboxGroup): SerializerFactory =
-        SerializerFactoryBuilder.build(sandboxGroup, allowEvolution = true).also{
+        SerializerFactoryBuilder.build(sandboxGroup, allowEvolution = true).also {
             registerCustomSerializers(it)
             it.register(publickeySerializer, it)
-            it.register(partySerializer, it)
             it.register(wireTransactionSerializer, it)
             it.register(consensualSignedTransactionSerializer, it)
         }
 
     @Throws(NotSerializableException::class)
     inline fun <reified T : Any> DeserializationInput.deserializeAndReturnEnvelope(
-            bytes: SerializedBytes<T>,
-            serializationContext: SerializationContext
+        bytes: SerializedBytes<T>,
+        serializationContext: SerializationContext
     ): ObjectAndEnvelope<T> = deserializeAndReturnEnvelope(bytes, T::class.java, serializationContext)
 
     @Test
@@ -130,10 +122,9 @@ class ConsensualSignedTransactionAMQPSerializationTest {
         // Create sandbox group
 
         val serializationService = TestSerializationService.getTestSerializationService({
-            it.register(partySerializer, it)
             it.register(wireTransactionSerializer, it)
             it.register(consensualSignedTransactionSerializer, it)
-        } , schemeMetadata)
+        }, schemeMetadata)
 
         // Initialised two serialisation factories to avoid having successful tests due to caching
         val factory1 = testDefaultFactory(emptySandboxGroup)
@@ -162,7 +153,8 @@ class ConsensualSignedTransactionAMQPSerializationTest {
             .isInstanceOf(ConsensualSignedTransaction::class.java)
             .isEqualTo(signedTransaction)
 
-        assertDoesNotThrow { deserialized.obj.id
+        assertDoesNotThrow {
+            deserialized.obj.id
         }
         assertThat(deserialized.obj.id).isEqualTo(signedTransaction.id)
     }

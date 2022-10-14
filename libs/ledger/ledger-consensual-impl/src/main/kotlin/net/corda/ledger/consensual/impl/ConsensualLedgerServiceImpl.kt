@@ -1,8 +1,5 @@
 package net.corda.ledger.consensual.impl
 
-import java.security.AccessController
-import java.security.PrivilegedActionException
-import java.security.PrivilegedExceptionAction
 import net.corda.ledger.consensual.impl.flows.finality.ConsensualFinalityFlow
 import net.corda.ledger.consensual.impl.flows.finality.ConsensualReceiveFinalityFlow
 import net.corda.ledger.consensual.impl.transaction.factory.ConsensualTransactionBuilderFactory
@@ -18,6 +15,9 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
+import java.security.AccessController
+import java.security.PrivilegedActionException
+import java.security.PrivilegedExceptionAction
 
 @Component(service = [ConsensualLedgerService::class, SingletonSerializeAsToken::class], scope = PROTOTYPE)
 class ConsensualLedgerServiceImpl @Activate constructor(

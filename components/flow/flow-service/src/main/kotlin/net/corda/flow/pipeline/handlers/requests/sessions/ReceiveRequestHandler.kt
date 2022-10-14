@@ -8,6 +8,7 @@ import net.corda.flow.pipeline.FlowEventContext
 import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
+import net.corda.flow.pipeline.handlers.requests.sessions.service.InitiateFlowRequestService
 import net.corda.flow.pipeline.handlers.waiting.sessions.PROTOCOL_MISMATCH_HINT
 import net.corda.flow.pipeline.sessions.FlowSessionManager
 import net.corda.flow.pipeline.sessions.FlowSessionStateException
@@ -20,20 +21,25 @@ class ReceiveRequestHandler @Activate constructor(
     @Reference(service = FlowSessionManager::class)
     private val flowSessionManager: FlowSessionManager,
     @Reference(service = FlowRecordFactory::class)
-    private val flowRecordFactory: FlowRecordFactory
+    private val flowRecordFactory: FlowRecordFactory,
+    @Reference(service = InitiateFlowRequestService::class)
+    private val initiateFlowRequestService: InitiateFlowRequestService,
 ) : FlowRequestHandler<FlowIORequest.Receive> {
 
     override val type = FlowIORequest.Receive::class.java
 
     override fun getUpdatedWaitingFor(context: FlowEventContext<Any>, request: FlowIORequest.Receive): WaitingFor {
-        return WaitingFor(SessionData(request.sessions.toList()))
+        return WaitingFor(SessionData(request.sessions.map { it.sessionId }))
     }
 
     override fun postProcess(context: FlowEventContext<Any>, request: FlowIORequest.Receive): FlowEventContext<Any> {
         val checkpoint = context.checkpoint
 
+        //generate init messages for sessions which do not exist yet
+        initiateFlowRequestService.initiateFlowsNotInitiated(context, request.sessions)
+
         val hasReceivedEvents = try {
-            flowSessionManager.hasReceivedEvents(checkpoint, request.sessions.toList())
+            flowSessionManager.hasReceivedEvents(checkpoint, request.sessions.map { it.sessionId })
         } catch (e: FlowSessionStateException) {
             throw FlowPlatformException("Failed to receive: ${e.message}. $PROTOCOL_MISMATCH_HINT", e)
         }

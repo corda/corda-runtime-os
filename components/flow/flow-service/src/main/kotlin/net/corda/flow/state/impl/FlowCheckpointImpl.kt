@@ -1,5 +1,7 @@
 package net.corda.flow.state.impl
 
+import java.nio.ByteBuffer
+import java.time.Instant
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
@@ -14,8 +16,6 @@ import net.corda.flow.state.FlowContext
 import net.corda.flow.state.FlowStack
 import net.corda.libs.configuration.SmartConfig
 import net.corda.virtualnode.HoldingIdentity
-import java.nio.ByteBuffer
-import java.time.Instant
 
 @Suppress("TooManyFunctions")
 class FlowCheckpointImpl(
@@ -154,6 +154,15 @@ class FlowCheckpointImpl(
         val manager = flowStateManager
             ?: throw IllegalStateException("Attempted to set a session state before the flow has been initialised.")
         manager.putSessionState(sessionState)
+    }
+
+    override fun putSessionStates(sessionStates: List<SessionState>) {
+        checkFlowNotDeleted()
+        val manager = flowStateManager
+            ?: throw IllegalStateException("Attempted to set session states before the flow has been initialised.")
+        sessionStates.forEach {
+            manager.putSessionState(it)
+        }
     }
 
     override fun markDeleted() {

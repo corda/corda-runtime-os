@@ -15,6 +15,7 @@ import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
@@ -220,6 +221,9 @@ class StaticMemberRegistrationServiceTest {
             }
         }
     }
+    private val platformInfoProvider: PlatformInfoProvider = mock {
+        on { activePlatformVersion } doReturn 5000
+    }
 
     private val registrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
@@ -234,6 +238,7 @@ class StaticMemberRegistrationServiceTest {
         cordaAvroSerializationFactory,
         membershipSchemaValidatorFactory,
         endpointInfoFactory,
+        platformInfoProvider
     )
 
     private fun setUpPublisher() {
