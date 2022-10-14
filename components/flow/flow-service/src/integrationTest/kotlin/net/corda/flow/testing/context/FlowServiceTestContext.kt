@@ -315,7 +315,6 @@ class FlowServiceTestContext @Activate constructor(
     override fun sessionErrorEventReceived(
         flowId: String,
         sessionId: String,
-        sequenceNum: Int,
         receivedSequenceNum: Int,
         initiatingIdentity: HoldingIdentity?,
         initiatedIdentity: HoldingIdentity?
@@ -326,7 +325,7 @@ class FlowServiceTestContext @Activate constructor(
             initiatingIdentity,
             initiatedIdentity,
             SessionError(ExceptionEnvelope(RuntimeException::class.qualifiedName, "Something went wrong!")),
-            sequenceNum,
+            null,
             receivedSequenceNum,
         )
     }

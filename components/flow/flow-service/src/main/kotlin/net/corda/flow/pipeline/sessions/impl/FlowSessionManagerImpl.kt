@@ -184,8 +184,8 @@ class FlowSessionManagerImpl @Activate constructor(
         operation: Operation
     ) {
         val validStatuses = when (operation) {
-            Operation.SENDING -> setOf(SessionStateType.CONFIRMED)
-            Operation.RECEIVING -> setOf(SessionStateType.CONFIRMED, SessionStateType.CLOSING)
+            Operation.SENDING -> setOf(SessionStateType.CREATED, SessionStateType.CONFIRMED)
+            Operation.RECEIVING -> setOf(SessionStateType.CREATED, SessionStateType.CONFIRMED, SessionStateType.CLOSING)
         }
 
         val sessions = sessionIds.associateWith { checkpoint.getSessionState(it) }

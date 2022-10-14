@@ -1,12 +1,12 @@
 package net.corda.flow.external.events.impl.executor
 
-import co.paralleluniverse.fibers.Suspendable
 import java.util.*
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.flow.fiber.FlowIORequest
+import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate

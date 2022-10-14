@@ -199,12 +199,26 @@ class JsonSerializerAdaptorAndWriterTest {
         }
     }
 
+    /**
+     * We create the test serializer from a factory function because it more closely resembles the dynamic nature in
+     * which they will be created at runtime in Corda. We need to make sure no compile time type information is required
+     * to register a serializer.
+     */
+    private fun testSerializerFactory(): Pair<JsonSerializer<*>, Class<*>> {
+        val newTestSerializer = TestSerializer()
+        val testClassInstance = TestClass()
+        return Pair(newTestSerializer, testClassInstance.javaClass)
+    }
+
     @Test
     fun `validate serializer adaptor and JsonWriter`() {
         val mapper = ObjectMapper()
+
         val module = SimpleModule()
-        module.addSerializer(TestClass::class.java, jsonSerializerAdaptorOf(TestSerializer()))
+        val (serializer, clazz) = testSerializerFactory()
+        module.addSerializer(clazz, JsonSerializerAdaptor(serializer, clazz))
         mapper.registerModule(module)
+
         val serialized: String = mapper.writeValueAsString(testClassInstance)
         assertEquals(EXPECTED_JSON, serialized)
     }

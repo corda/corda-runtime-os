@@ -8,7 +8,6 @@ import net.corda.flow.fiber.FlowIORequest
 import net.corda.flow.state.FlowContext
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.serialization.SerializedBytes
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -17,7 +16,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -69,19 +67,15 @@ class FlowSessionImplTest {
 
         val flowIORequestCapture = argumentCaptor<FlowIORequest<*>>()
 
-        verify(flowFiber, times(2)).suspend(flowIORequestCapture.capture())
+        verify(flowFiber, times(1)).suspend(flowIORequestCapture.capture())
 
-        assertTrue(flowIORequestCapture.firstValue is FlowIORequest.InitiateFlow)
-        assertTrue(flowIORequestCapture.secondValue is FlowIORequest.SendAndReceive)
-
-        validateInitiateFlowRequest(flowIORequestCapture.firstValue as FlowIORequest.InitiateFlow)
+        assertTrue(flowIORequestCapture.firstValue is FlowIORequest.SendAndReceive)
     }
 
     @Test
     fun `calling sendAndReceive with an initiated session will not cause the flow to suspend to initiate the session`() {
         val session = createInitiatedSession()
         session.sendAndReceive(String::class.java, HI)
-        verify(flowFiber, never()).suspend(any<FlowIORequest.InitiateFlow>())
         verify(flowFiber).suspend(any<FlowIORequest.SendAndReceive>())
     }
 
@@ -108,19 +102,15 @@ class FlowSessionImplTest {
 
         val flowIORequestCapture = argumentCaptor<FlowIORequest<*>>()
 
-        verify(flowFiber, times(2)).suspend(flowIORequestCapture.capture())
+        verify(flowFiber, times(1)).suspend(flowIORequestCapture.capture())
 
-        assertTrue(flowIORequestCapture.firstValue is FlowIORequest.InitiateFlow)
-        assertTrue(flowIORequestCapture.secondValue is FlowIORequest.Receive)
-
-        validateInitiateFlowRequest(flowIORequestCapture.firstValue as FlowIORequest.InitiateFlow)
+        assertTrue(flowIORequestCapture.firstValue is FlowIORequest.Receive)
     }
 
     @Test
     fun `calling receive with an initiated session will not cause the flow to suspend to initiate the session`() {
         val session = createInitiatedSession()
         session.receive(String::class.java)
-        verify(flowFiber, never()).suspend(any<FlowIORequest.InitiateFlow>())
         verify(flowFiber).suspend(any<FlowIORequest.Receive>())
     }
 
@@ -147,19 +137,15 @@ class FlowSessionImplTest {
 
         val flowIORequestCapture = argumentCaptor<FlowIORequest<*>>()
 
-        verify(flowFiber, times(2)).suspend(flowIORequestCapture.capture())
+        verify(flowFiber, times(1)).suspend(flowIORequestCapture.capture())
 
-        assertTrue(flowIORequestCapture.firstValue is FlowIORequest.InitiateFlow)
-        assertTrue(flowIORequestCapture.secondValue is FlowIORequest.Send)
-
-        validateInitiateFlowRequest(flowIORequestCapture.firstValue as FlowIORequest.InitiateFlow)
+        assertTrue(flowIORequestCapture.firstValue is FlowIORequest.Send)
     }
 
     @Test
     fun `calling send with an initiated session will not cause the flow to suspend to initiate the session`() {
         val session = createInitiatedSession()
         session.send(HI)
-        verify(flowFiber, never()).suspend(any<FlowIORequest.InitiateFlow>())
         verify(flowFiber).suspend(any<FlowIORequest.Send>())
     }
 
@@ -196,12 +182,4 @@ class FlowSessionImplTest {
         FlowSessionImpl.Direction.INITIATING_SIDE
     )
 
-    private fun validateInitiateFlowRequest(request: FlowIORequest.InitiateFlow) {
-        with(request) {
-            assertThat(contextUserProperties).isEqualTo(userContext)
-            assertThat(contextPlatformProperties).isEqualTo(platformContext)
-            assertThat(sessionId).isEqualTo(SESSION_ID)
-            assertThat(x500Name).isEqualTo(ALICE_X500_NAME)
-        }
-    }
 }

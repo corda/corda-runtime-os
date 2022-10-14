@@ -31,6 +31,7 @@ const val PROTOCOL_2 = "protocol2"
 const val SESSION_ID_1 = "S1"
 const val SESSION_ID_2 = "S2"
 const val INITIATED_SESSION_ID_1 = "S1-INITIATED"
+val DATA_MESSAGE_0 = byteArrayOf(0)
 val DATA_MESSAGE_1 = byteArrayOf(1)
 val DATA_MESSAGE_2 = byteArrayOf(2)
 val CPK1_CHECKSUM = SecureHash("ALG", byteArrayOf(0, 0, 0, 0))
