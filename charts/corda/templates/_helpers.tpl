@@ -183,7 +183,9 @@ Worker environment variables
       apiVersion: v1
       fieldPath: metadata.namespace
 - name: JAVA_TOOL_OPTIONS
-  value: {{- if ( get .Values.workers .worker ).debug.enabled }}
+  value:
+    {{ ( get .Values.workers .worker ).javaOptions }}
+    {{- if ( get .Values.workers .worker ).debug.enabled }}
       -agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend={{ if ( get .Values.workers .worker ).debug.suspend }}y{{ else }}n{{ end }}
     {{- end -}}
     {{- if  ( get .Values.workers .worker ).profiling.enabled }}
