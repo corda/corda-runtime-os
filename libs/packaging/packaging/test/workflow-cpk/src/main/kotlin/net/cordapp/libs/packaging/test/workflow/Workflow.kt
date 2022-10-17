@@ -1,4 +1,4 @@
-package net.corda.libs.packaging.test.workflow
+package net.cordapp.libs.packaging.test.workflow
 
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow

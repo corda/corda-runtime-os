@@ -124,7 +124,7 @@ class MemberRoleTest {
     @Test
     fun `toMemberInfo returns the correct information`() {
         val keyHash = PublicKeyHash.calculate("test".toByteArray())
-        val key = mock<KeysFactory.Key>() {
+        val key = mock<KeyDetails>() {
             on { pem } doReturn "pem"
             on { hash } doReturn keyHash
             on { spec } doReturn SignatureSpec.RSA_SHA256

@@ -199,7 +199,7 @@ open class JPABackingStoreImpl @Activate constructor(
                 )
                     .setParameter("txAlgo", txId.algorithm)
                     .setParameter("txId", txId.bytes)
-                    .setParameter("stateIndex", stateIndex.toLong())
+                    .setParameter("stateIndex", stateIndex)
                     .resultList as List<UniquenessStateDetailEntity>
 
                 existing.firstOrNull()?.let { stateEntity ->
@@ -288,7 +288,7 @@ open class JPABackingStoreImpl @Activate constructor(
                         UniquenessStateDetailEntity(
                             stateRef.txHash.algorithm,
                             stateRef.txHash.bytes,
-                            stateRef.stateIndex.toLong(),
+                            stateRef.stateIndex,
                             null, // Unconsumed
                             null // Unconsumed
                         )
@@ -308,7 +308,7 @@ open class JPABackingStoreImpl @Activate constructor(
                         .setParameter("consumingTxId", consumingTxId.bytes)
                         .setParameter("issueTxAlgo", stateRef.txHash.algorithm)
                         .setParameter("issueTxId", stateRef.txHash.bytes)
-                        .setParameter("stateIndex", stateRef.stateIndex.toLong())
+                        .setParameter("stateIndex", stateRef.stateIndex)
 
                     val updatedRowCount = safeUpdate.executeUpdate()
 
