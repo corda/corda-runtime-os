@@ -6,7 +6,7 @@
 #  helm upgrade --install corda -n corda \
 #  charts/corda \
 #  --values values.yaml \
-#  --values debug.yaml \
+#  --values debug.yaml \ 
 #  --wait
 #
 # See `debug.yaml` for debug settings
