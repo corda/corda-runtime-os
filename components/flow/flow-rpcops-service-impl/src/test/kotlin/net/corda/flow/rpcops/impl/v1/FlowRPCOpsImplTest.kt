@@ -8,21 +8,26 @@ import net.corda.data.flow.output.FlowStatus
 import net.corda.flow.rpcops.FlowRPCOpsServiceException
 import net.corda.flow.rpcops.FlowStatusCacheService
 import net.corda.flow.rpcops.factory.MessageFactory
+import net.corda.flow.rpcops.v1.FlowRpcOps
 import net.corda.flow.rpcops.v1.types.request.StartFlowParameters
 import net.corda.httprpc.JsonObject
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
+import net.corda.httprpc.security.RpcAuthContext
 import net.corda.httprpc.ws.DuplexChannel
 import net.corda.libs.configuration.SmartConfigImpl
 import net.corda.libs.packaging.core.CordappManifest
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.core.CpkMetadata
+import net.corda.libs.permission.PermissionValidator
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
+import net.corda.permissions.validation.PermissionValidationService
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.VirtualNodeInfo
@@ -36,6 +41,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.doThrow
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
@@ -50,6 +56,8 @@ class FlowRPCOpsImplTest {
     private lateinit var messageFactory: MessageFactory
     private lateinit var cpiInfoReadService: CpiInfoReadService
     private lateinit var publisher: Publisher
+    private lateinit var permissionValidationService: PermissionValidationService
+    private lateinit var permissionValidator: PermissionValidator
 
     private fun getMockCPIMeta(): CpiMetadata {
         val mockManifest = mock<CordappManifest>().also {
@@ -90,7 +98,9 @@ class FlowRPCOpsImplTest {
         publisher = mock()
         messageFactory = mock()
         virtualNodeInfoReadService = mock()
-        cpiInfoReadService  = mock()
+        cpiInfoReadService = mock()
+        permissionValidationService = mock()
+        permissionValidator = mock()
 
         val cpiMetadata= getMockCPIMeta()
         whenever(cpiInfoReadService.get(any())).thenReturn(cpiMetadata)
@@ -101,12 +111,37 @@ class FlowRPCOpsImplTest {
         })
         whenever(publisherFactory.createPublisher(any(), any())).thenReturn(publisher)
         whenever(publisher.publish(any())).thenReturn(arrayListOf())
+
+        val loginName = "${FlowRPCOpsImplTest::class.java.simpleName}-User"
+        val rpcAuthContext = mock<RpcAuthContext>().apply {
+            whenever(principal).thenReturn(loginName)
+        }
+        CURRENT_RPC_CONTEXT.set(rpcAuthContext)
+
+        whenever(permissionValidationService.permissionValidator).thenReturn(permissionValidator)
+
+        whenever(
+            permissionValidator.authorizeUser(
+                eq(loginName),
+                any()
+            )
+        ).thenReturn(true)
+    }
+
+    private fun createFlowRpcOps(): FlowRpcOps {
+        return FlowRPCOpsImpl(
+            virtualNodeInfoReadService,
+            flowStatusCacheService,
+            publisherFactory,
+            messageFactory,
+            cpiInfoReadService,
+            permissionValidationService
+        )
     }
 
     @Test
     fun `initialize creates the publisher`() {
-        val flowRPCOps =
-            FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory, cpiInfoReadService)
+        val flowRPCOps = createFlowRpcOps()
         flowRPCOps.initialise(SmartConfigImpl.empty())
         verify(publisherFactory, times(1)).createPublisher(any(), any())
     }
@@ -115,7 +150,7 @@ class FlowRPCOpsImplTest {
     fun `get flow status`() {
         whenever(flowStatusCacheService.getStatus(any(), any())).thenReturn(FlowStatus())
         val flowRPCOps =
-            FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory, cpiInfoReadService)
+            createFlowRpcOps()
         flowRPCOps.getFlowStatus("1234567890ab", "")
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
@@ -127,8 +162,7 @@ class FlowRPCOpsImplTest {
     fun `get flow status throws resource not found if virtual node does not exist`() {
         whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(any())).thenReturn(null)
 
-        val flowRPCOps =
-            FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory, cpiInfoReadService)
+        val flowRPCOps = createFlowRpcOps()
         flowRPCOps.initialise(SmartConfigImpl.empty())
 
         assertThrows<ResourceNotFoundException> {
@@ -142,8 +176,7 @@ class FlowRPCOpsImplTest {
 
     @Test
     fun `get flow status throws bad request if short hash is invalid`() {
-        val flowRPCOps =
-            FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory, cpiInfoReadService)
+        val flowRPCOps = createFlowRpcOps()
         flowRPCOps.initialise(SmartConfigImpl.empty())
 
         assertThrows<BadRequestException> {
@@ -158,8 +191,7 @@ class FlowRPCOpsImplTest {
     @Test
     fun `get multiple flow status`() {
         whenever(flowStatusCacheService.getStatusesPerIdentity(any())).thenReturn(listOf(FlowStatus(), FlowStatus()))
-        val flowRPCOps =
-            FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory, cpiInfoReadService)
+        val flowRPCOps = createFlowRpcOps()
         flowRPCOps.getMultipleFlowStatus("1234567890ab")
 
         verify(virtualNodeInfoReadService, times(1)).getByHoldingIdentityShortHash(any())
@@ -171,8 +203,7 @@ class FlowRPCOpsImplTest {
     fun `get multiple flow status throws resource not found if virtual node does not exist`() {
         whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(any())).thenReturn(null)
 
-        val flowRPCOps =
-            FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory, cpiInfoReadService)
+        val flowRPCOps = createFlowRpcOps()
         flowRPCOps.initialise(SmartConfigImpl.empty())
 
         assertThrows<ResourceNotFoundException> {
@@ -186,8 +217,7 @@ class FlowRPCOpsImplTest {
 
     @Test
     fun `get multiple flow status throws bad request if short hash is invalid`() {
-        val flowRPCOps =
-            FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory, cpiInfoReadService)
+        val flowRPCOps = createFlowRpcOps()
         flowRPCOps.initialise(SmartConfigImpl.empty())
 
         assertThrows<BadRequestException> {
@@ -203,8 +233,7 @@ class FlowRPCOpsImplTest {
 
     @Test
     fun `start flow event triggers successfully`() {
-        val flowRPCOps =
-            FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory, cpiInfoReadService)
+        val flowRPCOps = createFlowRpcOps()
         flowRPCOps.initialise(SmartConfigImpl.empty())
 
         whenever(messageFactory.createFlowStatusResponse(any())).thenReturn(mock())
@@ -222,8 +251,7 @@ class FlowRPCOpsImplTest {
 
     @Test
     fun `start flow event fails when not initialized`() {
-        val flowRPCOps =
-            FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory, cpiInfoReadService)
+        val flowRPCOps = createFlowRpcOps()
 
         assertThrows<FlowRPCOpsServiceException> {
             flowRPCOps.startFlow("1234567890ab", StartFlowParameters("", "flow1", TestJsonObject()))
@@ -240,8 +268,7 @@ class FlowRPCOpsImplTest {
 
     @Test
     fun `start flow event throws bad request if short hash is invalid`() {
-        val flowRPCOps =
-            FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory, cpiInfoReadService)
+        val flowRPCOps = createFlowRpcOps()
         flowRPCOps.initialise(SmartConfigImpl.empty())
 
         assertThrows<BadRequestException> {
@@ -259,8 +286,7 @@ class FlowRPCOpsImplTest {
     fun `start flow event throws resource not found if virtual node does not exist`() {
         whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(any())).thenReturn(null)
 
-        val flowRPCOps =
-            FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory, cpiInfoReadService)
+        val flowRPCOps = createFlowRpcOps()
         flowRPCOps.initialise(SmartConfigImpl.empty())
 
         assertThrows<ResourceNotFoundException> {
@@ -276,8 +302,7 @@ class FlowRPCOpsImplTest {
 
     @Test
     fun `start flow throws resource exists exception for same criteria`() {
-        val flowRPCOps =
-            FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory, cpiInfoReadService)
+        val flowRPCOps = createFlowRpcOps()
         flowRPCOps.initialise(SmartConfigImpl.empty())
 
         whenever(flowStatusCacheService.getStatus(any(), any())).thenReturn(mock())
@@ -296,10 +321,8 @@ class FlowRPCOpsImplTest {
 
     @Test
     fun `start flow throws invalid data exception when starting invalid flows`() {
-        val flowRPCOps =
-            FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory, cpiInfoReadService)
+        val flowRPCOps = createFlowRpcOps()
         flowRPCOps.initialise(SmartConfigImpl.empty())
-
 
         whenever(messageFactory.createFlowStatusResponse(any())).thenReturn(mock())
 
@@ -318,8 +341,7 @@ class FlowRPCOpsImplTest {
 
     @Test
     fun `start flow throws FlowRPCOpsServiceException exception when publish fails`() {
-        val flowRPCOps =
-            FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory, cpiInfoReadService)
+        val flowRPCOps = createFlowRpcOps()
         flowRPCOps.initialise(SmartConfigImpl.empty())
 
         doThrow(CordaMessageAPIFatalException("")).whenever(publisher).publish(any())
@@ -343,8 +365,7 @@ class FlowRPCOpsImplTest {
         whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(any())).thenReturn(null)
         doNothing().whenever(duplexChannel).error(exceptionArgumentCaptor.capture())
 
-        val flowRPCOps =
-            FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory, cpiInfoReadService)
+        val flowRPCOps = createFlowRpcOps()
         flowRPCOps.initialise(SmartConfigImpl.empty())
 
         flowRPCOps.registerFlowStatusUpdatesFeed(duplexChannel, "1234567890ab", "")
@@ -361,8 +382,7 @@ class FlowRPCOpsImplTest {
 
         doNothing().whenever(duplexChannel).error(exceptionArgumentCaptor.capture())
 
-        val flowRPCOps =
-            FlowRPCOpsImpl(virtualNodeInfoReadService, flowStatusCacheService, publisherFactory, messageFactory, cpiInfoReadService)
+        val flowRPCOps = createFlowRpcOps()
         flowRPCOps.initialise(SmartConfigImpl.empty())
 
         flowRPCOps.registerFlowStatusUpdatesFeed(duplexChannel, "invalid", "")
@@ -371,5 +391,4 @@ class FlowRPCOpsImplTest {
         verify(duplexChannel, times(1)).error(any())
         assertInstanceOf(BadRequestException::class.java, exceptionArgumentCaptor.firstValue.cause)
     }
-
 }
