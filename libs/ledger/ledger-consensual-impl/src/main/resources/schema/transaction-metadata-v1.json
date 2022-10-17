@@ -14,8 +14,9 @@
 	"properties": {
 		"ledgerModel": {
 			"$id": "#root/ledgerModel", 
-			"title": "Ledgermodel", 
+			"title": "Ledger model", 
 			"type": "string",
+			"description": "The name of the class that implements this type of ledger transaction.",
 			"default": "",
 			"examples": [
 				"net.corda.ledger.consensual.impl.transaction.ConsensualLedgerTransactionImpl"
@@ -24,7 +25,8 @@
 		},
 		"digestSettings": {
 			"$id": "#root/digestSettings", 
-			"title": "Digestsettings", 
+			"title": "Digest settings", 
+			"description": "Settings relating to the Merkle tree digest algorithms.",
 			"type": "object",
 			"required": [
 				"ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME",
@@ -38,8 +40,9 @@
 			"properties": {
 				"ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME": {
 					"$id": "#root/digestSettings/ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME", 
-					"title": "Root_merkle_tree_digest_provider_name", 
+					"title": "Root Merkle tree digest provider name", 
 					"type": "string",
+					"description": "Class name of the digest provider for the root Merkle tree.",
 					"default": "",
 					"examples": [
 						"TweakableHashDigestProvider"
@@ -48,8 +51,9 @@
 				},
 				"ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME": {
 					"$id": "#root/digestSettings/ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME", 
-					"title": "Root_merkle_tree_digest_algorithm_name", 
+					"title": "Root Merkle tree digest algorithm name", 
 					"type": "string",
+					"description": "Algorithm name of the digest provider for the root Merkle tree.",
 					"default": "",
 					"examples": [
 						"SHA-256D"
@@ -58,7 +62,7 @@
 				},
 				"ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64": {
 					"$id": "#root/digestSettings/ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64", 
-					"title": "Root_merkle_tree_digest_options_leaf_prefix_b64", 
+					"title": "Root Merkle tree digest options leaf prefix b64", 
 					"type": "string",
 					"default": "",
 					"examples": [
@@ -68,7 +72,7 @@
 				},
 				"ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64": {
 					"$id": "#root/digestSettings/ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64", 
-					"title": "Root_merkle_tree_digest_options_node_prefix_b64", 
+					"title": "Root Merkle tree digest options node prefix b64", 
 					"type": "string",
 					"default": "",
 					"examples": [
@@ -78,7 +82,7 @@
 				},
 				"COMPONENT_MERKLE_TREE_DIGEST_PROVIDER_NAME": {
 					"$id": "#root/digestSettings/COMPONENT_MERKLE_TREE_DIGEST_PROVIDER_NAME", 
-					"title": "Component_merkle_tree_digest_provider_name", 
+					"title": "Component Merkle tree digest provider name", 
 					"type": "string",
 					"default": "",
 					"examples": [
@@ -88,7 +92,7 @@
 				},
 				"COMPONENT_MERKLE_TREE_DIGEST_ALGORITHM_NAME": {
 					"$id": "#root/digestSettings/COMPONENT_MERKLE_TREE_DIGEST_ALGORITHM_NAME", 
-					"title": "Component_merkle_tree_digest_algorithm_name", 
+					"title": "Component Merkle tree digest algorithm name", 
 					"type": "string",
 					"default": "",
 					"examples": [
@@ -98,7 +102,7 @@
 				},
 				"COMPONENT_MERKLE_TREE_ENTROPY_ALGORITHM_NAME": {
 					"$id": "#root/digestSettings/COMPONENT_MERKLE_TREE_ENTROPY_ALGORITHM_NAME", 
-					"title": "Component_merkle_tree_entropy_algorithm_name", 
+					"title": "Component Merkle tree entropy algorithm name", 
 					"type": "string",
 					"default": "",
 					"examples": [
@@ -111,7 +115,7 @@
 ,
 		"ledgerVersion": {
 			"$id": "#root/ledgerVersion", 
-			"title": "Ledgerversion", 
+			"title": "Ledger version", 
 			"type": "string",
 			"default": "",
 			"examples": [
@@ -121,7 +125,7 @@
 		},
 		"cpiMetadata": {
 			"$id": "#root/cpiMetadata", 
-			"title": "Cpimetadata", 
+			"title": "CPI metadata", 
 			"type": "object",
 			"required": [
 				"name",
@@ -152,7 +156,7 @@
 				},
 				"signerSummaryHash": {
 					"$id": "#root/cpiMetadata/signerSummaryHash", 
-					"title": "Signersummaryhash", 
+					"title": "Signer summary hash", 
 					"type": "string",
 					"default": "",
 					"examples": [
@@ -162,7 +166,7 @@
 				},
 				"fileChecksum": {
 					"$id": "#root/cpiMetadata/fileChecksum", 
-					"title": "Filechecksum", 
+					"title": "File checksum", 
 					"type": "string",
 					"default": "",
 					"examples": [
@@ -175,7 +179,7 @@
 ,
 		"cpkMetadata": {
 			"$id": "#root/cpkMetadata", 
-			"title": "Cpkmetadata", 
+			"title": "CPK metadata", 
 			"type": "array",
 			"default": [],
 			"items":{
@@ -211,7 +215,7 @@
 					},
 					"signerSummaryHash": {
 						"$id": "#root/cpkMetadata/items/signerSummaryHash", 
-						"title": "Signersummaryhash", 
+						"title": "Signer summary hash", 
 						"type": "string",
 						"default": "",
 						"examples": [
@@ -221,7 +225,7 @@
 					},
 					"fileChecksum": {
 						"$id": "#root/cpkMetadata/items/fileChecksum", 
-						"title": "Filechecksum", 
+						"title": "File checksum", 
 						"type": "string",
 						"default": "",
 						"examples": [
