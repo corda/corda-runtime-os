@@ -1,6 +1,7 @@
 package net.corda.internal.serialization.amqp;
 
 import net.corda.internal.serialization.amqp.helper.TestSerializationContext;
+import net.corda.internal.serialization.amqp.testutils.AMQPTestUtilsKt;
 import net.corda.v5.serialization.SerializationCustomSerializer;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
@@ -34,7 +35,10 @@ public class JavaCustomSerializerListProxyTests {
 
     @Test
     public void serializeExample() {
-        SerializerFactory factory = testDefaultFactory();
+        SerializerFactory factory = testDefaultFactory(
+                new DefaultDescriptorBasedSerializerRegistry(),
+                AMQPTestUtilsKt.getMockSandboxGroupWithoutPublicBundles()
+        );
         SerializationOutput ser = new SerializationOutput(factory);
 
         List<Integer> l = new ArrayList<>(2);
