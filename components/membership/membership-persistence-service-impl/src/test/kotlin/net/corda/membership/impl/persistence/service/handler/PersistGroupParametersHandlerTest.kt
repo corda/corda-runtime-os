@@ -61,9 +61,8 @@ class PersistGroupParametersHandlerTest {
     }
     private val transaction = mock<EntityTransaction>()
     private val groupParametersQuery: TypedQuery<GroupParametersEntity> = mock {
-        on { resultList } doReturn listOf(
-            GroupParametersEntity(1, "test".toByteArray())
-        )
+        on { setMaxResults(1) } doReturn mock
+        on { singleResult } doReturn GroupParametersEntity(1, "test".toByteArray())
     }
     private val root = mock<Root<GroupParametersEntity>> {
         on { get<String>("epoch") } doReturn mock<Path<String>>()

@@ -18,7 +18,7 @@ internal class AddNotaryToGroupParametersHandler(
     persistenceHandlerServices: PersistenceHandlerServices
 ) : BasePersistenceHandler<AddNotaryToGroupParameters, PersistGroupParametersResponse>(persistenceHandlerServices) {
     private companion object {
-        val notaryServiceRegex = NOTARY_SERVICE_NAME_KEY.format("[0-9]+").toRegex()
+        val notaryServiceRegex = NOTARY_SERVICE_NAME_KEY.format("([0-9]+)").toRegex()
     }
 
     private val keyValuePairListSerializer: CordaAvroSerializer<KeyValuePairList> =
@@ -59,8 +59,8 @@ internal class AddNotaryToGroupParametersHandler(
                 .select(root)
                 .orderBy(criteriaBuilder.desc(root.get<String>("epoch")))
             val previous = em.createQuery(query)
-                .resultList
-                .firstOrNull()
+                .setMaxResults(1)
+                .singleResult
                 ?: throw MembershipPersistenceException("Cannot add notary to group parameters, no group parameters found.")
 
             val parametersMap = deserializeProperties(previous.parameters).toMap()
@@ -68,15 +68,16 @@ internal class AddNotaryToGroupParametersHandler(
                 ?: throw MembershipPersistenceException("Cannot add notary to group parameters - notary details not found.")
             val notaryServiceName = notary.serviceName.toString()
             val notaryServiceNumber = parametersMap.entries.firstOrNull { it.value == notaryServiceName }?.run {
-                key.split(".")[3].toInt()
+                notaryServiceRegex.find(key)?.groups?.get(1)?.value?.toIntOrNull()
             }
             val entity = if (notaryServiceNumber != null) {
                 // Add notary to existing notary service, or update notary with rotated keys
                 updateExistingNotaryService(parametersMap, notary, notaryServiceNumber)
+                    ?: return@transaction previous.epoch
             } else {
                 // Add new notary service
                 addNewNotaryService(parametersMap, notary)
-            } ?: return@transaction previous.epoch
+            }
 
             em.persist(entity)
 

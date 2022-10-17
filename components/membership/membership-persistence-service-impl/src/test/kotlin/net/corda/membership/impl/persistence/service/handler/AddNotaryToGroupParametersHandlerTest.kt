@@ -87,9 +87,8 @@ class AddNotaryToGroupParametersHandlerTest {
     }
     private val transaction = mock<EntityTransaction>()
     private val groupParametersQuery: TypedQuery<GroupParametersEntity> = mock {
-        on { resultList } doReturn listOf(
-            GroupParametersEntity(EPOCH, "test".toByteArray())
-        )
+        on { setMaxResults(1) } doReturn mock
+        on { singleResult } doReturn GroupParametersEntity(EPOCH, "test".toByteArray())
     }
     private val root = mock<Root<GroupParametersEntity>> {
         on { get<String>("epoch") } doReturn mock<Path<String>>()

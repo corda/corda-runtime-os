@@ -9,6 +9,7 @@ import net.corda.data.membership.db.request.command.UpdateRegistrationRequestSta
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
@@ -87,6 +88,7 @@ class UpdateRegistrationRequestStatusHandlerTest {
         on { getByHoldingIdentityShortHash(eq(ourHoldingIdentity.shortHash)) } doReturn virtualNodeInfo
     }
     private val keyEncodingService: KeyEncodingService = mock()
+    private val platformInfoProvider: PlatformInfoProvider = mock()
 
     private val services = PersistenceHandlerServices(
         clock,
@@ -96,6 +98,7 @@ class UpdateRegistrationRequestStatusHandlerTest {
         cordaAvroSerializationFactory,
         virtualNodeInfoReadService,
         keyEncodingService,
+        platformInfoProvider,
     )
     private lateinit var updateRegistrationRequestStatusHandler: UpdateRegistrationRequestStatusHandler
 

@@ -7,6 +7,7 @@ import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.helper.getConfig
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -56,6 +57,8 @@ class MembershipPersistenceServiceImpl @Activate constructor(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     @Reference(service = KeyEncodingService::class)
     private val keyEncodingService: KeyEncodingService,
+    @Reference(service = PlatformInfoProvider::class)
+    private val platformInfoProvider: PlatformInfoProvider,
 ) : MembershipPersistenceService {
 
     private companion object {
@@ -168,7 +171,8 @@ class MembershipPersistenceServiceImpl @Activate constructor(
                 memberInfoFactory,
                 cordaAvroSerializationFactory,
                 virtualNodeInfoReadService,
-                keyEncodingService
+                keyEncodingService,
+                platformInfoProvider,
             ),
             messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
         ).also {

@@ -9,6 +9,7 @@ import net.corda.data.membership.db.request.command.PersistGroupParametersInitia
 import net.corda.data.membership.db.response.command.PersistGroupParametersResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.GroupParametersEntity
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
@@ -66,12 +67,16 @@ class PersistGroupParametersInitialSnapshotHandlerTest {
         } doReturn entityManagerFactory
     }
     private val clock = TestClock(Instant.ofEpochMilli(10))
+    private val platformInfoProvider: PlatformInfoProvider = mock {
+        on { activePlatformVersion } doReturn 5000
+    }
     private val persistenceHandlerServices = mock<PersistenceHandlerServices> {
         on { cordaAvroSerializationFactory } doReturn serializationFactory
         on { virtualNodeInfoReadService } doReturn nodeInfoReadService
         on { jpaEntitiesRegistry } doReturn registry
         on { dbConnectionManager } doReturn connectionManager
         on { clock } doReturn clock
+        on { platformInfoProvider } doReturn platformInfoProvider
     }
     private val handler = PersistGroupParametersInitialSnapshotHandler(persistenceHandlerServices)
 

@@ -4,6 +4,7 @@ import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.db.request.MembershipRequestContext
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.membership.lib.exceptions.MembershipPersistenceException
 import net.corda.orm.JpaEntitiesRegistry
@@ -36,6 +37,7 @@ internal abstract class BasePersistenceHandler<REQUEST, RESPONSE>(
     val cordaAvroSerializationFactory get() = persistenceHandlerServices.cordaAvroSerializationFactory
     val memberInfoFactory get() = persistenceHandlerServices.memberInfoFactory
     val keyEncodingService get() = persistenceHandlerServices.keyEncodingService
+    val platformInfoProvider get() = persistenceHandlerServices.platformInfoProvider
 
     fun <R> transaction(holdingIdentityShortHash: ShortHash, block: (EntityManager) -> R): R {
         val virtualNodeInfo = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)
@@ -70,4 +72,5 @@ internal data class PersistenceHandlerServices(
     val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     val keyEncodingService: KeyEncodingService,
+    val platformInfoProvider: PlatformInfoProvider,
 )

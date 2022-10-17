@@ -38,8 +38,8 @@ internal class PersistGroupParametersHandler(
                 .select(root)
                 .orderBy(criteriaBuilder.desc(root.get<String>("epoch")))
             em.createQuery(query)
-                .resultList
-                .firstOrNull()
+                .setMaxResults(1)
+                .singleResult
                 ?.epoch?.let {
                 require(epochFromRequest > it) {
                     throw MembershipPersistenceException("Group parameters with epoch=$epochFromRequest already exist.")

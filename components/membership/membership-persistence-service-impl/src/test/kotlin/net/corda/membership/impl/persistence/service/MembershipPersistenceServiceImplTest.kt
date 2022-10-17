@@ -8,6 +8,7 @@ import net.corda.data.membership.db.request.MembershipPersistenceRequest
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.libs.configuration.SmartConfigFactory
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -90,6 +91,7 @@ class MembershipPersistenceServiceImplTest {
     private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock()
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock()
     private val keyEncodingService: KeyEncodingService = mock()
+    private val platformInfoProvider: PlatformInfoProvider = mock()
 
     @BeforeEach
     fun setUp() {
@@ -103,6 +105,7 @@ class MembershipPersistenceServiceImplTest {
             cordaAvroSerializationFactory,
             virtualNodeInfoReadService,
             keyEncodingService,
+            platformInfoProvider,
         )
         verify(coordinatorFactory).createCoordinator(any(), any())
     }

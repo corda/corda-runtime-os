@@ -481,6 +481,19 @@ class MembershipPersistenceTest {
     fun `persistGroupParameters can persist over RPC topic`() {
         vnodeEmf.transaction {
             it.createQuery("DELETE FROM GroupParametersEntity").executeUpdate()
+            val entity = GroupParametersEntity(
+                1,
+                cordaAvroSerializer.serialize(
+                    KeyValuePairList(
+                        listOf(
+                            KeyValuePair(EPOCH_KEY, "1"),
+                            KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
+                            KeyValuePair(MPV_KEY, "5000")
+                        )
+                    )
+                )!!
+            )
+            it.persist(entity)
         }
         val groupParameters = layeredPropertyMapFactory.create<TestGroupParametersImpl>(mapOf(
             EPOCH_KEY to "2",
@@ -527,7 +540,7 @@ class MembershipPersistenceTest {
 
         val groupId = randomUUID().toString()
         val memberx500Name = MemberX500Name.parse("O=Notary, C=GB, L=London")
-        val endpointUrl = "http://localhost:8080"
+        val endpointUrl = "https://localhost:8080"
         val notaryServiceName = "O=New Service, L=London, C=GB"
         val notaryServicePlugin = "Notary Plugin"
         val notaryKey = with(KeyPairGenerator.getInstance("RSA", BouncyCastleProvider())) {
@@ -559,7 +572,7 @@ class MembershipPersistenceTest {
         val notary = memberInfoFactory.create(memberContext.toSortedMap(), mgmContext.toSortedMap())
         val persisted2 = membershipPersistenceClientWrapper.addNotaryToGroupParameters(viewOwningHoldingIdentity, notary)
         assertThat(persisted2).isInstanceOf(MembershipPersistenceResult.Success::class.java)
-        assertThat((persisted2 as? MembershipPersistenceResult.Success<Int>)?.payload!!).isEqualTo(51)
+        assertThat((persisted2 as? MembershipPersistenceResult.Success<Int>)?.payload).isEqualTo(51)
 
         val persistedEntity = vnodeEmf.use {
             it.find(

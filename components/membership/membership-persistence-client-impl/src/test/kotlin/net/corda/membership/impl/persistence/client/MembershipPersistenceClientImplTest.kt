@@ -497,7 +497,6 @@ class MembershipPersistenceClientImplTest {
     inner class PersistGroupParametersInitialSnapshotTests {
         @Test
         fun `persistGroupParametersInitialSnapshot returns the correct epoch`() {
-            ourMemberInfo
             postConfigChangedEvent()
             mockPersistenceResponse(
                 PersistGroupParametersResponse(15),

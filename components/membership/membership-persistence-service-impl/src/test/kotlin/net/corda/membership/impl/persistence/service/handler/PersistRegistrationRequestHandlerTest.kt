@@ -11,6 +11,7 @@ import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.MemberSignatureEntity
 import net.corda.membership.datamodel.RegistrationRequestEntity
 import net.corda.membership.lib.MemberInfoFactory
@@ -92,6 +93,7 @@ class PersistRegistrationRequestHandlerTest {
         on { getByHoldingIdentityShortHash(eq(ourHoldingIdentity.shortHash)) } doReturn virtualNodeInfo
     }
     private val keyEncodingService: KeyEncodingService = mock()
+    private val platformInfoProvider: PlatformInfoProvider = mock()
 
     private val services = PersistenceHandlerServices(
         clock,
@@ -101,6 +103,7 @@ class PersistRegistrationRequestHandlerTest {
         cordaAvroSerializationFactory,
         virtualNodeInfoReadService,
         keyEncodingService,
+        platformInfoProvider,
     )
     private lateinit var persistRegistrationRequestHandler: PersistRegistrationRequestHandler
 

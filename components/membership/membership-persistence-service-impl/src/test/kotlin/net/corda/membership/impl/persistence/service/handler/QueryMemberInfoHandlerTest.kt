@@ -9,6 +9,7 @@ import net.corda.data.membership.db.request.query.QueryMemberInfo
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.lib.MemberInfoFactory
@@ -110,6 +111,7 @@ class QueryMemberInfoHandlerTest {
         on { getByHoldingIdentityShortHash(eq(ourHoldingIdentity.shortHash)) } doReturn virtualNodeInfo
     }
     private val keyEncodingService: KeyEncodingService = mock()
+    private val platformInfoProvider: PlatformInfoProvider = mock()
 
     private val services = PersistenceHandlerServices(
         clock,
@@ -119,6 +121,7 @@ class QueryMemberInfoHandlerTest {
         cordaAvroSerializationFactory,
         virtualNodeInfoReadService,
         keyEncodingService,
+        platformInfoProvider,
     )
     private lateinit var queryMemberInfoHandler: QueryMemberInfoHandler
 

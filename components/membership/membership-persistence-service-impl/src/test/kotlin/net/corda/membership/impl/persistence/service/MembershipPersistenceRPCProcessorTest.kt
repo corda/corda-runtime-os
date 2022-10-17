@@ -21,6 +21,7 @@ import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.GroupPolicyEntity
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.RegistrationRequestEntity
@@ -119,6 +120,7 @@ class MembershipPersistenceRPCProcessorTest {
         on { getByHoldingIdentityShortHash(eq(ourHoldingIdentity.shortHash)) } doReturn virtualNodeInfo
     }
     private val keyEncodingService: KeyEncodingService = mock()
+    private val platformInfoProvider: PlatformInfoProvider = mock()
 
     private lateinit var responseFuture: CompletableFuture<MembershipPersistenceResponse>
     private lateinit var rqContext: MembershipRequestContext
@@ -133,6 +135,7 @@ class MembershipPersistenceRPCProcessorTest {
             cordaAvroSerializationFactory,
             virtualNodeInfoReadService,
             keyEncodingService,
+            platformInfoProvider,
         )
         responseFuture = CompletableFuture()
         rqContext = MembershipRequestContext(

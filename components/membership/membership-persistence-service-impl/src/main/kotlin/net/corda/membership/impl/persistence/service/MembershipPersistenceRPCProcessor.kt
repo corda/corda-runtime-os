@@ -21,6 +21,7 @@ import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.db.connection.manager.DbConnectionManager
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.impl.persistence.service.handler.AddNotaryToGroupParametersHandler
 import net.corda.membership.impl.persistence.service.handler.PersistGroupParametersHandler
 import net.corda.membership.impl.persistence.service.handler.PersistGroupParametersInitialSnapshotHandler
@@ -56,6 +57,7 @@ internal class MembershipPersistenceRPCProcessor(
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     virtualNodeInfoReadService: VirtualNodeInfoReadService,
     keyEncodingService: KeyEncodingService,
+    platformInfoProvider: PlatformInfoProvider,
 ) : RPCResponderProcessor<MembershipPersistenceRequest, MembershipPersistenceResponse> {
 
     private companion object {
@@ -69,7 +71,8 @@ internal class MembershipPersistenceRPCProcessor(
         memberInfoFactory,
         cordaAvroSerializationFactory,
         virtualNodeInfoReadService,
-        keyEncodingService
+        keyEncodingService,
+        platformInfoProvider,
     )
     private val handlerFactories: Map<Class<*>, () -> PersistenceHandler<out Any, out Any>> = mapOf(
         PersistRegistrationRequest::class.java to { PersistRegistrationRequestHandler(persistenceHandlerServices) },
