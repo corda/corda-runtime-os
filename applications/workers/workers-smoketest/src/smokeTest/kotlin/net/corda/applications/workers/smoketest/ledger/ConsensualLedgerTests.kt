@@ -24,6 +24,7 @@ import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
  */
 @Suppress("Unused", "FunctionName")
 @TestInstance(PER_CLASS)
+@Disabled
 class ConsensualLedgerTests {
 
     private val bobHoldingId: String = getHoldingIdShortHash(X500_BOB, GROUP_ID)
@@ -44,7 +45,6 @@ class ConsensualLedgerTests {
     }
 
     @Test
-    @Disabled
     fun `Consensual Ledger - Signed Transaction serialization and deserialization without exceptions`() {
         val requestID =
             startRpcFlow(

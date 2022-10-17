@@ -19,6 +19,7 @@ import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
  */
 @Suppress("Unused", "FunctionName")
 @TestInstance(PER_CLASS)
+@Disabled
 class ConsensualLedgerFullTest {
 
     private val aliceHoldingId: String = getHoldingIdShortHash(CONSENSUAL_X500_ALICE, CONSENSUAL_GROUP_ID)
@@ -44,7 +45,6 @@ class ConsensualLedgerFullTest {
     }
 
     @Test
-    @Disabled
     fun `Consensual Ledger - Demo app - full flow`() {
         val requestID =
             startRpcFlow(
