@@ -14,10 +14,12 @@ import net.corda.flow.rpcops.v1.types.response.FlowStatusResponse
 import net.corda.flow.rpcops.v1.types.response.FlowStatusResponses
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.BadRequestException
+import net.corda.httprpc.exception.ForbiddenException
 import net.corda.httprpc.exception.InvalidInputDataException
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.response.ResponseEntity
+import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.httprpc.ws.DuplexChannel
 import net.corda.httprpc.ws.WebSocketValidationException
 import net.corda.libs.configuration.SmartConfig
@@ -27,6 +29,7 @@ import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
+import net.corda.permissions.validation.PermissionValidationService
 import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.Companion.FLOW_STATUS_TOPIC
 import net.corda.v5.base.util.contextLogger
@@ -38,6 +41,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 
+@Suppress("LongParameterList")
 @Component(service = [FlowRpcOps::class, PluggableRPCOps::class], immediate = true)
 class FlowRPCOpsImpl @Activate constructor(
     @Reference(service = VirtualNodeInfoReadService::class)
@@ -49,12 +53,14 @@ class FlowRPCOpsImpl @Activate constructor(
     @Reference(service = MessageFactory::class)
     private val messageFactory: MessageFactory,
     @Reference(service = CpiInfoReadService::class)
-    private val cpiInfoReadService: CpiInfoReadService
+    private val cpiInfoReadService: CpiInfoReadService,
+    @Reference(service = PermissionValidationService::class)
+    private val permissionValidationService: PermissionValidationService
 ) : FlowRpcOps, PluggableRPCOps<FlowRpcOps>, Lifecycle {
 
-    companion object {
+    private companion object {
         val log: Logger = contextLogger()
-        val PUBLICATION_TIMEOUT_SECONDS = 30L
+        const val PUBLICATION_TIMEOUT_SECONDS = 30L
     }
 
     override val isRunning: Boolean get() = publisher != null
@@ -62,7 +68,7 @@ class FlowRPCOpsImpl @Activate constructor(
     override val targetInterface: Class<FlowRpcOps> = FlowRpcOps::class.java
     override val protocolVersion: Int = 1
 
-    var publisher: Publisher? = null
+    private var publisher: Publisher? = null
 
     override fun initialise(config: SmartConfig) {
         publisher?.close()
@@ -90,6 +96,14 @@ class FlowRPCOpsImpl @Activate constructor(
         val startableFlows = getStartableFlows(holdingIdentityShortHash, vNode)
         if (!startableFlows.contains(flowClassName)) {
             throw InvalidInputDataException("The flow that was requested is not in the list of startable flows for this holding identity.")
+        }
+
+        val rpcContext = CURRENT_RPC_CONTEXT.get()
+        val principal = rpcContext.principal
+
+        if (!permissionValidationService.permissionValidator.authorizeUser(principal,
+                "StartFlow:${startFlow.flowClassName}")) {
+            throw ForbiddenException("User $principal is not allowed to start a flow: ${startFlow.flowClassName}")
         }
 
         // TODO Platform properties to be populated correctly, for now a fixed 'account zero' is the only property
