@@ -38,10 +38,20 @@ class JsonMarshallingServiceImplTest {
     }
 
     @Suppress("EmptyClassBlock")
-    class OtherDto {}
+    class OtherDto() {}
 
     class OtherSerializer : JsonSerializer<OtherDto> {
         override fun serialize(item: OtherDto, jsonWriter: JsonWriter) {}
+    }
+
+    class OtherSimpleDtoSerializer : JsonSerializer<SimpleDto> {
+        override fun serialize(item: SimpleDto, jsonWriter: JsonWriter) {}
+    }
+
+    class OtherSimpleDtoDeserializer : JsonDeserializer<SimpleDto> {
+        override fun deserialize(jsonRoot: JsonNodeReader): SimpleDto {
+            return SimpleDto()
+        }
     }
 
     class OtherDeserializer : JsonDeserializer<OtherDto> {
@@ -50,11 +60,9 @@ class JsonMarshallingServiceImplTest {
         }
     }
 
-    private fun instanceAndType(instanceClass: String, type: String): Pair<Any, Class<*>> {
+    private fun instanceOf(instanceClass: String): Any {
         val serializerClazz = Class.forName(instanceClass)
-        val instance = serializerClazz.getConstructor().newInstance()
-        val serializeType = Class.forName(type)
-        return Pair(instance, serializeType)
+        return serializerClazz.getConstructor().newInstance()
     }
 
     @Test
@@ -127,16 +135,14 @@ class JsonMarshallingServiceImplTest {
 
     @Test
     fun `Serialize with custom serializer`() {
-        // In the real world the serializer and serialized type are instantiated at run time, so we simulate that here
-        // in order to test we never rely on compile time type information passed to generic methods or classes
-        val (instance, serializeType) = instanceAndType(
-            "net.corda.application.impl.services.json.JsonMarshallingServiceImplTest\$SimpleSerializer",
-            "net.corda.application.impl.services.json.JsonMarshallingServiceImplTest\$SimpleDto"
+        // In the real world the serializer is instantiated at run time, so we simulate that here in order to test we
+        // never rely on compile time type information passed to generic methods or classes
+        val instance = instanceOf(
+            "net.corda.application.impl.services.json.JsonMarshallingServiceImplTest\$SimpleSerializer"
         )
 
         val jms = JsonMarshallingServiceImpl()
-        val serializer = instance as SimpleSerializer
-        jms.setSerializer(serializer, serializeType)
+        jms.setSerializer(instance as JsonSerializer<*>)
 
         val dto = SimpleDto(
             name = "n1",
@@ -151,16 +157,14 @@ class JsonMarshallingServiceImplTest {
 
     @Test
     fun `Deserialize with custom serializer`() {
-        // In the real world the deserializer and deserialized type are instantiated at run time, so we simulate that here
-        // in order to test we never rely on compile time type information passed to generic methods or classes
-        val (instance, deserializeType) = instanceAndType(
-            "net.corda.application.impl.services.json.JsonMarshallingServiceImplTest\$SimpleDeserializer",
-            "net.corda.application.impl.services.json.JsonMarshallingServiceImplTest\$SimpleDto"
+        // In the real world the deserializer is instantiated at run time, so we simulate that here in order to test we
+        // never rely on compile time type information passed to generic methods or classes
+        val instance = instanceOf(
+            "net.corda.application.impl.services.json.JsonMarshallingServiceImplTest\$SimpleDeserializer"
         )
 
         val jms = JsonMarshallingServiceImpl()
-        val deserializer = instance as SimpleDeserializer
-        jms.setDeserializer(deserializer, deserializeType)
+        jms.setDeserializer(instance as JsonDeserializer<*>)
 
         val dto = jms.parse("""
             {
@@ -175,16 +179,18 @@ class JsonMarshallingServiceImplTest {
     @Test
     fun `Duplicate serializers are rejected`() {
         val jms = JsonMarshallingServiceImpl()
-        assertTrue(jms.setSerializer(SimpleSerializer(), SimpleDto::class.java))
-        assertTrue(jms.setSerializer(OtherSerializer(), OtherDto::class.java))
-        assertFalse(jms.setSerializer(SimpleSerializer(), SimpleDto::class.java))
+        assertTrue(jms.setSerializer(SimpleSerializer()))
+        assertTrue(jms.setSerializer(OtherSerializer()))
+        assertFalse(jms.setSerializer(SimpleSerializer())) // exact duplicate
+        assertFalse(jms.setSerializer(OtherSimpleDtoSerializer())) // different serializer, same serializing type
     }
 
     @Test
     fun `Duplicate deserializers are rejected`() {
         val jms = JsonMarshallingServiceImpl()
-        assertTrue(jms.setDeserializer(SimpleDeserializer(), SimpleDto::class.java))
-        assertTrue(jms.setDeserializer(OtherDeserializer(), OtherDto::class.java))
-        assertFalse(jms.setDeserializer(SimpleDeserializer(), SimpleDto::class.java))
+        assertTrue(jms.setDeserializer(SimpleDeserializer()))
+        assertTrue(jms.setDeserializer(OtherDeserializer()))
+        assertFalse(jms.setDeserializer(SimpleDeserializer())) // exact duplicate
+        assertFalse(jms.setDeserializer(OtherSimpleDtoDeserializer())) // different deserializer, same deserializing type
     }
 }

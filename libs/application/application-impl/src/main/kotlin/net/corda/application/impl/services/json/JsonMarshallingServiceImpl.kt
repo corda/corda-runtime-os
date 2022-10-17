@@ -79,20 +79,22 @@ class JsonMarshallingServiceImpl : JsonMarshallingService, SingletonSerializeAsT
         }
     }
 
-    override fun setSerializer(serializer: JsonSerializer<*>, clazz: Class<*>): Boolean {
-        if (customSerializableClasses.contains(clazz)) return false
-        customSerializableClasses.add(clazz)
+    override fun setSerializer(serializer: JsonSerializer<*>): Boolean {
+        val jsonSerializerAdaptor = JsonSerializerAdaptor(serializer)
+        if (customSerializableClasses.contains(jsonSerializerAdaptor.serializingType)) return false
+        customSerializableClasses.add(jsonSerializerAdaptor.serializingType)
 
         val module = SimpleModule()
-        module.addSerializer(clazz, JsonSerializerAdaptor(serializer, clazz))
+        module.addSerializer(jsonSerializerAdaptor.serializingType, jsonSerializerAdaptor)
         mapper.registerModule(module)
 
         return true
     }
 
-    override fun setDeserializer(deserializer: JsonDeserializer<*>, clazz: Class<*>): Boolean {
-        if (customDeserializableClasses.contains(clazz)) return false
-        customDeserializableClasses.add(clazz)
+    override fun setDeserializer(deserializer: JsonDeserializer<*>): Boolean {
+        val jsonDeserializerAdaptor = JsonDeserializerAdaptor(deserializer)
+        if (customDeserializableClasses.contains(jsonDeserializerAdaptor.deserializingType)) return false
+        customDeserializableClasses.add(jsonDeserializerAdaptor.deserializingType)
 
         val module = SimpleModule()
         // Here we have to cast from Class<*> to Class<Any> because Jackson generics try to ensure we're not trying to
@@ -100,7 +102,7 @@ class JsonMarshallingServiceImpl : JsonMarshallingService, SingletonSerializeAsT
         // convenient. Because we have no type information available at compile time we need to be very unspecific about
         // what our deserializer can support. This has no effect at runtime because type erasure precludes Jackson
         // knowing anything about these types except via typeless Class objects once the code is compiled.
-        module.addDeserializer(uncheckedCast<Class<*>, Class<Any>>(clazz), JsonDeserializerAdaptor(deserializer, clazz))
+        module.addDeserializer(uncheckedCast(jsonDeserializerAdaptor.deserializingType), jsonDeserializerAdaptor)
         mapper.registerModule(module)
 
         return true

@@ -5,10 +5,12 @@ import com.fasterxml.jackson.databind.module.SimpleModule
 import net.corda.v5.application.marshalling.json.JsonSerializedBase64Config
 import net.corda.v5.application.marshalling.json.JsonSerializer
 import net.corda.v5.application.marshalling.json.JsonWriter
+import net.corda.v5.serialization.SerializationCustomSerializer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Test
 import java.io.InputStream
+import java.lang.reflect.ParameterizedType
 import java.math.BigDecimal
 import java.math.BigInteger
 
@@ -204,10 +206,8 @@ class JsonSerializerAdaptorAndWriterTest {
      * which they will be created at runtime in Corda. We need to make sure no compile time type information is required
      * to register a serializer.
      */
-    private fun testSerializerFactory(): Pair<JsonSerializer<*>, Class<*>> {
-        val newTestSerializer = TestSerializer()
-        val testClassInstance = TestClass()
-        return Pair(newTestSerializer, testClassInstance.javaClass)
+    private fun testSerializerFactory(): JsonSerializer<*> {
+        return TestSerializer()
     }
 
     @Test
@@ -215,8 +215,9 @@ class JsonSerializerAdaptorAndWriterTest {
         val mapper = ObjectMapper()
 
         val module = SimpleModule()
-        val (serializer, clazz) = testSerializerFactory()
-        module.addSerializer(clazz, JsonSerializerAdaptor(serializer, clazz))
+        val serializer = testSerializerFactory()
+        val jsonSerializerAdaptor = JsonSerializerAdaptor(serializer)
+        module.addSerializer(jsonSerializerAdaptor.serializingType, jsonSerializerAdaptor)
         mapper.registerModule(module)
 
         val serialized: String = mapper.writeValueAsString(testClassInstance)
