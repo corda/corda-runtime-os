@@ -102,7 +102,7 @@ class CachingCustomSerializerRegistry private constructor(
     private val externalCustomSerializerAllowed: (Class<*>) -> Boolean = {
         val bundle = FrameworkUtil.getBundle(it)
         // Allow custom serializers for types in CPKs (within main bundles and within libraries).
-        bundle == null || !bundle.location.contains("FLOW/")
+        bundle != null && bundle.location.contains("FLOW/")
     }
 ) : CustomSerializerRegistry {
     constructor(
