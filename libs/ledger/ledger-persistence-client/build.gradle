@@ -18,6 +18,7 @@ dependencies {
     implementation "net.corda:corda-topic-schema"
 
     implementation project(':libs:flows:flow-api')
+    implementation project(":libs:ledger:ledger-common-impl")
     implementation project(":libs:ledger:ledger-consensual-impl")
     implementation project(":libs:serialization:serialization-checkpoint-api")
     implementation project(':libs:virtual-node:virtual-node-info')

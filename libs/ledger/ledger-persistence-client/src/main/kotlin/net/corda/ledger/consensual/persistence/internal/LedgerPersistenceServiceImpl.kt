@@ -1,6 +1,7 @@
 package net.corda.ledger.consensual.persistence.internal
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.ledger.common.impl.transaction.CordaPackageSummary
 import net.corda.ledger.consensual.persistence.LedgerPersistenceService
 import net.corda.ledger.consensual.persistence.external.events.FindTransactionExternalEventFactory
 import net.corda.ledger.consensual.persistence.external.events.FindTransactionParameters
@@ -38,13 +39,13 @@ class LedgerPersistenceServiceImpl @Activate constructor(
         }.firstOrNull()?.let { serializationService.deserialize(it.array()) }
     }
 
-    override fun persist(transaction: ConsensualSignedTransaction) {
-        wrapWithPersistenceException {
+    override fun persist(transaction: ConsensualSignedTransaction): List<CordaPackageSummary> {
+        return wrapWithPersistenceException {
             externalEventExecutor.execute(
                 PersistTransactionExternalEventFactory::class.java,
                 PersistTransactionParameters(serialize(transaction))
             )
-        }
+        }.map { serializationService.deserialize(it.array()) }
     }
 
     private fun serialize(payload: Any): ByteBuffer {

@@ -1,6 +1,7 @@
 package net.corda.ledger.consensual.persistence
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.ledger.common.impl.transaction.CordaPackageSummary
 import net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.ledger.consensual.persistence.external.events.AbstractLedgerExternalEventFactory
 import net.corda.ledger.consensual.persistence.external.events.FindTransactionExternalEventFactory
@@ -48,9 +49,13 @@ class LedgerPersistenceServiceImplTest {
 
     @Test
     fun `persist executes successfully`() {
-        ledgerPersistenceService.persist(mock<ConsensualSignedTransactionImpl>())
+        val expectedObj = mock<CordaPackageSummary>()
+        whenever(serializationService.deserialize<CordaPackageSummary>(any<ByteArray>(), any())).thenReturn(expectedObj)
+
+        assertThat(ledgerPersistenceService.persist(mock<ConsensualSignedTransactionImpl>())).isEqualTo(listOf(expectedObj))
 
         verify(serializationService).serialize(any())
+        verify(serializationService).deserialize<CordaPackageSummary>(any<ByteArray>(), any())
         assertThat(argumentCaptor.firstValue).isEqualTo(PersistTransactionExternalEventFactory::class.java)
     }
 
