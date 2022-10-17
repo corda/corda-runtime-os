@@ -94,13 +94,13 @@ class MGMRpcOpsImpl @Activate constructor(
             return try {
                 mgmOpsClient.generateGroupPolicy(ShortHash.ofOrThrow(holdingIdentityShortHash))
             } catch (e: CouldNotFindMemberException) {
-                throw ResourceNotFoundException("Could not find $holdingIdentityShortHash")
+                throw ResourceNotFoundException("Could not find member with holding identity $holdingIdentityShortHash.")
             } catch (e: MemberNotAnMgmException) {
                 throw InvalidInputDataException(
                     details = mapOf(
                         "holdingIdentityShortHash" to holdingIdentityShortHash
                     ),
-                    message = "Member: $holdingIdentityShortHash is not an MGM!",
+                    message = "Member with holding identity $holdingIdentityShortHash is not an MGM.",
                 )
             }
         }
