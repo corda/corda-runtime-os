@@ -8,6 +8,7 @@ import net.corda.crypto.core.CryptoConsts.Categories.TLS
 import net.corda.crypto.core.CryptoTenants.P2P
 import net.corda.crypto.core.CryptoTenants.RPC_API
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
+import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -224,6 +225,22 @@ class HsmRpcOpsImplTest {
             ops.assignSoftHsm(P2P, "ci")
 
             verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(tenantIdShortHash)
+        }
+
+        @Test
+        fun `assignedHsm will throw resource not found exception for unknown tenant ID`() {
+            whenever(virtualNodeInfoReadService.getByHoldingIdentityShortHash(tenantIdShortHash)).doReturn(null)
+
+            assertThrows<ResourceNotFoundException> {
+                ops.assignedHsm(tenantId, "Notary")
+            }
+        }
+
+        @Test
+        fun `assignedHsm will throw bad input exception for invalid tenant ID`() {
+            assertThrows<BadRequestException> {
+                ops.assignedHsm("12AB$", "Notary")
+            }
         }
     }
 
