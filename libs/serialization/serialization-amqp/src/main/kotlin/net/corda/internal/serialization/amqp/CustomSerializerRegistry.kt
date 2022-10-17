@@ -101,6 +101,7 @@ class CachingCustomSerializerRegistry private constructor(
     private val allowedFor: Set<Class<*>>,
     private val externalCustomSerializerAllowed: (Class<*>) -> Boolean = {
         val bundle = FrameworkUtil.getBundle(it)
+        // Allow custom serializers for types in CPKs (within main bundles and within libraries).
         bundle == null || !bundle.location.contains("FLOW/")
     }
 ) : CustomSerializerRegistry {
@@ -157,7 +158,6 @@ class CachingCustomSerializerRegistry private constructor(
         val customSerializer = CorDappCustomSerializer(serializer, factory)
         val clazz = customSerializer.type.asClass()
         if (!externalCustomSerializerAllowed(clazz)) {
-            // Allow custom serializers for types in CPKs (within main bundles and within libraries).
             logger.warn("Illegal custom serializer external registration for $clazz: ${serializer::class.qualifiedName}")
             throw IllegalCustomSerializerException(serializer, clazz)
         }
