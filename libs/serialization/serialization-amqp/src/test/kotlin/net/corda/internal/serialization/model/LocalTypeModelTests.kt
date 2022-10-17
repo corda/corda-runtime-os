@@ -15,7 +15,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.fail
-import org.mockito.kotlin.mock
 import java.lang.reflect.Type
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -26,7 +25,7 @@ class LocalTypeModelTests {
 
     private val descriptorBasedSerializerRegistry = DefaultDescriptorBasedSerializerRegistry()
     private val customSerializerRegistry: CustomSerializerRegistry =
-        CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry, mock())
+        CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry)
     private val model = ConfigurableLocalTypeModel(LocalTypeModelConfigurationImpl(customSerializerRegistry))
     private val emptyCustomSerializerRegistry = object : CustomSerializerRegistry {
         override val customSerializerNames: List<String> = emptyList()
