@@ -1,5 +1,5 @@
 plugins {
-    id 'net.corda.plugins.cordapp-cpb'
+    id 'net.corda.plugins.cordapp-cpb2'
 }
 
 cordapp {
