@@ -6,6 +6,7 @@ pluginManagement {
             maven {
                 url = "${artifactoryContextUrl}/${cordaUseCache}"
                 name = "R3 Maven remote repositories"
+                
                 authentication {
                     basic(BasicAuthentication)
                 }
