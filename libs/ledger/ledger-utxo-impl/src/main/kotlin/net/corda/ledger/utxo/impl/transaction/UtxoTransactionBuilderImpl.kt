@@ -3,6 +3,7 @@ package net.corda.ledger.utxo.impl.transaction
 import net.corda.ledger.utxo.impl.TimeWindowBetweenImpl
 import net.corda.ledger.utxo.impl.TimeWindowUntilImpl
 import net.corda.ledger.utxo.impl.TransactionStateImpl
+import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.Command
@@ -68,14 +69,17 @@ data class UtxoTransactionBuilderImpl(
         return copy(timeWindow = TimeWindowBetweenImpl(from, until))
     }
 
+    @Suspendable
     override fun sign(): UtxoSignedTransaction {
         TODO("Not yet implemented")
     }
 
+    @Suspendable
     override fun sign(vararg signatories: PublicKey): UtxoSignedTransaction {
         TODO("Not yet implemented")
     }
 
+    @Suspendable
     override fun sign(signatories: Iterable<PublicKey>): UtxoSignedTransaction {
         TODO("Not yet implemented")
     }

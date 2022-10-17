@@ -6,7 +6,7 @@ cordapp {
     targetPlatformVersion platformVersion as Integer
     minimumPlatformVersion platformVersion as Integer
     workflow {
-        name "Consensual states example"
+        name "Consensual Ledger demo app"
         versionId 1
         vendor "R3"
     }
