@@ -2,6 +2,8 @@ package net.corda.membership.impl.httprpc.v1
 
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoTenants.P2P
+import net.corda.crypto.core.CryptoTenants.RPC_API
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.ResourceNotFoundException
@@ -46,16 +48,12 @@ class HsmRpcOpsImpl @Activate constructor(
     }
 
     override fun assignedHsm(tenantId: String, category: String): HsmAssociationInfo? {
-        virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(
-            tenantId
-        ) { "Could not find holding identity '$tenantId' associated with member." }
+        verifyTenantId(tenantId)
         return hsmRegistrationClient.findHSM(tenantId, category.toCategory())?.expose()
     }
 
     override fun assignSoftHsm(tenantId: String, category: String): HsmAssociationInfo {
-        virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(
-            tenantId
-        ) { "Could not find holding identity '$tenantId' associated with member." }
+        verifyTenantId(tenantId)
         return hsmRegistrationClient.assignSoftHSM(
             tenantId,
             category.toCategory()
@@ -63,9 +61,7 @@ class HsmRpcOpsImpl @Activate constructor(
     }
 
     override fun assignHsm(tenantId: String, category: String): HsmAssociationInfo {
-        virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(
-            tenantId
-        ) { "Could not find holding identity '$tenantId' associated with member." }
+        verifyTenantId(tenantId)
         return hsmRegistrationClient.assignHSM(
             tenantId,
             category.toCategory(),
@@ -111,5 +107,14 @@ class HsmRpcOpsImpl @Activate constructor(
 
     override fun stop() {
         coordinator.stop()
+    }
+
+    private fun verifyTenantId(tenantId: String) {
+        if((tenantId == P2P) || (tenantId == RPC_API)) {
+            return
+        }
+        virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(
+            tenantId
+        ) { "Could not find holding identity '$tenantId' associated with member." }
     }
 }

@@ -5,6 +5,8 @@ import net.corda.crypto.core.CryptoConsts.Categories.CI
 import net.corda.crypto.core.CryptoConsts.Categories.LEDGER
 import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
 import net.corda.crypto.core.CryptoConsts.Categories.TLS
+import net.corda.crypto.core.CryptoTenants.P2P
+import net.corda.crypto.core.CryptoTenants.RPC_API
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.lifecycle.LifecycleCoordinator
@@ -23,6 +25,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
@@ -152,6 +155,42 @@ class HsmRpcOpsImplTest {
         }
 
         @Test
+        fun `assignHsm verify the tenantId`() {
+            whenever(hsmRegistrationClient.assignHSM(tenantId, LEDGER, emptyMap())).doReturn(
+                HSMAssociationInfo(
+                    "id1",
+                    tenantId,
+                    "hsm-id",
+                    LEDGER,
+                    "master-key-alias",
+                    0,
+                )
+            )
+
+            ops.assignHsm(tenantId, LEDGER)
+
+            verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(tenantIdShortHash)
+        }
+
+        @Test
+        fun `assignHsm will not verify the tenantId from RPC tenant`() {
+            whenever(hsmRegistrationClient.assignHSM(RPC_API, LEDGER, emptyMap())).doReturn(
+                HSMAssociationInfo(
+                    "id1",
+                    RPC_API,
+                    "hsm-id",
+                    LEDGER,
+                    "master-key-alias",
+                    0,
+                )
+            )
+
+            ops.assignHsm(RPC_API, LEDGER)
+
+            verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(tenantIdShortHash)
+        }
+
+        @Test
         fun `assignSoftHsm verify the tenantId`() {
             whenever(hsmRegistrationClient.assignSoftHSM(tenantId, CI)).doReturn(
                 HSMAssociationInfo(
@@ -167,6 +206,24 @@ class HsmRpcOpsImplTest {
             ops.assignSoftHsm(tenantId, "ci")
 
             verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(tenantIdShortHash)
+        }
+
+        @Test
+        fun `assignSoftHsm will not verify the tenantId for p2p tenant`() {
+            whenever(hsmRegistrationClient.assignSoftHSM(P2P, CI)).doReturn(
+                HSMAssociationInfo(
+                    "id1",
+                    P2P,
+                    "SOFT",
+                    CI,
+                    "master-key-alias",
+                    0
+                ),
+            )
+
+            ops.assignSoftHsm(P2P, "ci")
+
+            verify(virtualNodeInfoReadService, never()).getByHoldingIdentityShortHash(tenantIdShortHash)
         }
     }
 
