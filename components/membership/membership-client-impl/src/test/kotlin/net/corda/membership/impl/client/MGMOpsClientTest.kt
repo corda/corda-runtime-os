@@ -21,6 +21,8 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.client.CouldNotFindMemberException
+import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.MemberInfoExtension
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
@@ -40,6 +42,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.VirtualNodeInfo
@@ -47,6 +50,7 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
@@ -82,12 +86,12 @@ class MGMOpsClientTest {
             holdingIdentity,
             CpiIdentifier("test", "test", SecureHash("algorithm", "1234".toByteArray())),
             null,
-            UUID.randomUUID(),
+            UUID(0, 1),
             null,
-            UUID.randomUUID(),
+            UUID(1, 2),
             null,
-            UUID.randomUUID(),
-            timestamp = Instant.now()
+            UUID(3, 1),
+            timestamp = Instant.ofEpochSecond(1)
         )
     }
 
@@ -430,6 +434,42 @@ class MGMOpsClientTest {
         }
         assertTrue { ex.message!!.contains("Expected class") }
         mgmOpsClient.stop()
+    }
+
+    @Test
+    fun `generateGroupPolicy should fail if the member can not be found`() {
+        mgmOpsClient.start()
+        setUpRpcSender()
+
+        assertThrows<CouldNotFindMemberException> {
+            mgmOpsClient.generateGroupPolicy(ShortHash.of("000000000000"))
+        }
+    }
+
+    @Test
+    fun `generateGroupPolicy should fail if the member can not be read`() {
+        mgmOpsClient.start()
+        setUpRpcSender()
+        whenever(groupReader.lookup(mgmX500Name)).doReturn(null)
+
+        assertThrows<CouldNotFindMemberException> {
+            mgmOpsClient.generateGroupPolicy(shortHash)
+        }
+    }
+
+    @Test
+    fun `generateGroupPolicy should fail if the member is not an mgm`() {
+        mgmOpsClient.start()
+        setUpRpcSender()
+        val mgmContext = mock<MGMContext>()
+        val memberInfo = mock<MemberInfo> {
+            on { mgmProvidedContext } doReturn mgmContext
+        }
+        whenever(groupReader.lookup(mgmX500Name)).doReturn(memberInfo)
+
+        assertThrows<MemberNotAnMgmException> {
+            mgmOpsClient.generateGroupPolicy(shortHash)
+        }
     }
 
     @Test
