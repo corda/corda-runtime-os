@@ -30,6 +30,7 @@ class ConsensualSignedTransactionImpl(
         require(signatures.isNotEmpty()) {
             "Tried to instantiate a ${ConsensualSignedTransactionImpl::class.java.simpleName} without any signatures "
         }
+        // TODO(Check WireTx's metadata's ledger type and allow only the matching ones.)
     }
 
     override fun equals(other: Any?): Boolean {
@@ -44,13 +45,6 @@ class ConsensualSignedTransactionImpl(
     }
 
     override fun hashCode(): Int = wireTransaction.hashCode() + signatures.hashCode() * 31
-
-    init {
-        require(signatures.isNotEmpty()) {
-            "Tried to instantiate a ${ConsensualSignedTransactionImpl::class.java.simpleName} without any signatures "
-        }
-        // TODO(Check WireTx's metadata's ledger type and allow only the matching ones.)
-    }
 
     override val id: SecureHash
         get() = wireTransaction.id
