@@ -33,6 +33,12 @@ fun getConsensualSignedTransaction(
     val digitalSignatureMetadata =
         DigitalSignatureMetadata(Instant.now(), mapOf())
     val signatureWithMetaData = DigitalSignatureAndMetadata(signature, digitalSignatureMetadata)
-    return ConsensualSignedTransactionImpl(serializationService, signingService, digitalSignatureVerificationService, wireTransaction, listOf(signatureWithMetaData))
+    return ConsensualSignedTransactionImpl(
+        serializationService,
+        signingService,
+        digitalSignatureVerificationService,
+        wireTransaction,
+        listOf(signatureWithMetaData)
+    )
 }
 
