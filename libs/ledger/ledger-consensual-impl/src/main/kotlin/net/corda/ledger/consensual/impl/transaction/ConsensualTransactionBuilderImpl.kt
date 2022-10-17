@@ -43,8 +43,12 @@ class ConsensualTransactionBuilderImpl(
     }
 
     @Suspendable
-    override fun sign(vararg signatories: PublicKey): ConsensualSignedTransaction {
-        require(signatories.isNotEmpty()){
+    override fun sign(vararg signatories: PublicKey): ConsensualSignedTransaction =
+        sign(signatories.toList())
+
+    @Suspendable
+    override fun sign(signatories: Iterable<PublicKey>): ConsensualSignedTransaction{
+        require(signatories.toList().isNotEmpty()){
             "At least one key needs to be provided in order to create a signed Transaction!"
         }
         val wireTransaction = buildWireTransaction()
@@ -64,12 +68,7 @@ class ConsensualTransactionBuilderImpl(
             wireTransaction,
             signaturesWithMetaData
         )
-
     }
-
-    @Suspendable
-    override fun sign(signatories: Iterable<PublicKey>): ConsensualSignedTransaction =
-        sign(*(signatories.toList().toTypedArray()))
 
     private fun buildWireTransaction(): WireTransaction {
         // TODO(CORE-5982 more verifications)
