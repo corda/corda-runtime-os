@@ -9,6 +9,7 @@ import net.corda.applications.workers.smoketest.registerMember
 import net.corda.applications.workers.smoketest.startRpcFlow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
@@ -43,6 +44,7 @@ class ConsensualLedgerFullTest {
     }
 
     @Test
+    @Disabled
     fun `Consensual Ledger - Demo app - full flow`() {
         val requestID =
             startRpcFlow(
