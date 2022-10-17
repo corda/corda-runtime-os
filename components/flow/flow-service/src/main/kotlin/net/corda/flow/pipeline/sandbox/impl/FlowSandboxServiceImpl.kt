@@ -16,6 +16,7 @@ import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.sandbox.SandboxGroup
+import net.corda.sandboxgroupcontext.CORDA_SANDBOX_FILTER
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
@@ -234,12 +235,11 @@ class FlowSandboxServiceImpl @Activate constructor(
     }
 
     private fun MutableSandboxGroupContext.registerCustomJsonSerialization() {
-        val serializationCustomizer =
-            sandboxGroup.getOsgiServiceByClass<JsonMarshallingService>() as? SerializationCustomizer
+        val serializationCustomizer = sandboxGroup.getOsgiServiceByClass<JsonMarshallingService>() ?: return
 
-        if (serializationCustomizer == null) {
+        if (serializationCustomizer !is SerializationCustomizer) {
             log.error(
-                "registerCustomJsonSerialization failed: JsonMarshallingService does not exist or does not support custom serialization"
+                "registerCustomJsonSerialization failed: JsonMarshallingService does not support custom serialization"
             )
             return
         }
@@ -266,7 +266,7 @@ class FlowSandboxServiceImpl @Activate constructor(
 
     private inline fun <reified T> SandboxGroup.getOsgiServiceByClass() =
         this.metadata.keys.firstOrNull()?.bundleContext?.let { bundleContext ->
-            bundleContext.getServiceReferences(T::class.java, null)?.firstOrNull()
+            bundleContext.getServiceReferences(T::class.java, CORDA_SANDBOX_FILTER)?.maxOrNull()
                 ?.let { serviceRef ->
                     bundleContext.getService(serviceRef)
                 }
