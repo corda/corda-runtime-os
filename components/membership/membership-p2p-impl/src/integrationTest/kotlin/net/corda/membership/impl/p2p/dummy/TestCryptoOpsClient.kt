@@ -26,7 +26,7 @@ interface TestCryptoOpsClient : CryptoOpsClient
 
 @ServiceRanking(Int.MAX_VALUE)
 @Component(service = [CryptoOpsClient::class, TestCryptoOpsClient::class])
-class TestCryptoOpsClientImpl @Activate constructor(
+internal class TestCryptoOpsClientImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
     @Reference(service = CipherSchemeMetadata::class)

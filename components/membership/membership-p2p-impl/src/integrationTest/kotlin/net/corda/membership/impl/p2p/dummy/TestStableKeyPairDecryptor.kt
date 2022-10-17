@@ -16,7 +16,7 @@ interface TestStableKeyPairDecryptor : StableKeyPairDecryptor
 
 @ServiceRanking(Int.MAX_VALUE)
 @Component(service = [StableKeyPairDecryptor::class, TestStableKeyPairDecryptor::class])
-class TestStableKeyPairDecryptorImpl @Activate constructor(
+internal class TestStableKeyPairDecryptorImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory,
 ) : TestStableKeyPairDecryptor {

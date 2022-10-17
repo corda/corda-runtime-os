@@ -1,7 +1,6 @@
 package net.corda.membership.impl.p2p
 
 import net.corda.crypto.ecies.StableKeyPairDecryptor
-import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.membership.p2p.MembershipPackage
 import net.corda.data.membership.p2p.MembershipSyncRequest
 import net.corda.data.membership.p2p.SetOwnRegistrationStatus
@@ -29,10 +28,9 @@ import java.nio.ByteBuffer
 
 class MembershipP2PProcessor(
     private val avroSchemaRegistry: AvroSchemaRegistry,
-    private val stableKeyPairDecryptor: StableKeyPairDecryptor,
-    private val keyEncodingService: KeyEncodingService,
-    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
-    private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
+    stableKeyPairDecryptor: StableKeyPairDecryptor,
+    keyEncodingService: KeyEncodingService,
+    membershipGroupReaderProvider: MembershipGroupReaderProvider,
 ) : DurableProcessor<String, AppMessage> {
     override val keyClass = String::class.java
     override val valueClass = AppMessage::class.java
@@ -49,7 +47,6 @@ class MembershipP2PProcessor(
                 avroSchemaRegistry,
                 stableKeyPairDecryptor,
                 keyEncodingService,
-                cordaAvroSerializationFactory,
                 membershipGroupReaderProvider,
             )
         },

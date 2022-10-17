@@ -3,7 +3,6 @@ package net.corda.membership.impl.p2p
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.ecies.StableKeyPairDecryptor
-import net.corda.data.CordaAvroSerializationFactory
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.lifecycle.LifecycleCoordinator
@@ -47,8 +46,6 @@ class MembershipP2PReadServiceImpl @Activate constructor(
     private val stableKeyPairDecryptor: StableKeyPairDecryptor,
     @Reference(service = KeyEncodingService::class)
     private val keyEncodingService: KeyEncodingService,
-    @Reference(service = CordaAvroSerializationFactory::class)
-    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = MembershipGroupReaderProvider::class)
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
 ) : MembershipP2PReadService {
@@ -150,7 +147,6 @@ class MembershipP2PReadServiceImpl @Activate constructor(
                     avroSchemaRegistry,
                     stableKeyPairDecryptor,
                     keyEncodingService,
-                    cordaAvroSerializationFactory,
                     membershipGroupReaderProvider
                 ),
                 messagingConfig,

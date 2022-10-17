@@ -90,7 +90,6 @@ class MembershipP2PReadServiceImplTest {
             avroSchemaRegistry,
             stableKeyPairDecryptor,
             keyEncodingService,
-            cordaAvroSerializationFactory,
             membershipGroupReaderProvider,
         )
     }

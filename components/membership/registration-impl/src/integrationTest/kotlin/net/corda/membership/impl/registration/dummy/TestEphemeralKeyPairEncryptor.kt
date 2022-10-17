@@ -1,6 +1,7 @@
 package net.corda.membership.impl.registration.dummy
 
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
 import net.corda.crypto.ecies.EciesParams
 import net.corda.crypto.ecies.EciesParamsProvider
 import net.corda.crypto.ecies.EncryptedDataWithKey
@@ -27,7 +28,7 @@ class TestEphemeralKeyPairEncryptorImpl @Activate constructor(
     ): EncryptedDataWithKey {
         val ephemeralKey = cryptoOpsClient.generateKeyPair(
             "tenantId",
-            "PRE_AUTH",
+            PRE_AUTH,
             "alias",
             ECDSA_SECP256R1_CODE_NAME
         )

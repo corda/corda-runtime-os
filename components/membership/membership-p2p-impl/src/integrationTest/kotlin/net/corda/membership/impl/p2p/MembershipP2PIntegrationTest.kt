@@ -2,6 +2,7 @@ package net.corda.membership.impl.p2p
 
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
 import net.corda.crypto.ecies.EciesParams
 import net.corda.crypto.ecies.StableKeyPairDecryptor
 import net.corda.data.CordaAvroDeserializer
@@ -261,7 +262,7 @@ class MembershipP2PIntegrationTest {
 
         val ecdhKey = cryptoOpsClient.generateKeyPair(
             destination.shortHash.value,
-            "PRE_AUTH",
+            PRE_AUTH,
             destination.shortHash.value + "ecdh",
             ECDSA_SECP256R1_CODE_NAME
         )
@@ -270,7 +271,7 @@ class MembershipP2PIntegrationTest {
             sortedMapOf(
                 GROUP_ID to groupId,
                 PARTY_NAME to destination.x500Name.toString(),
-                Pair(String.format(URL_KEY, "0"), "http://localhost:8080"),
+                Pair(String.format(URL_KEY, "0"), "https://localhost:8080"),
                 Pair(String.format(PROTOCOL_VERSION, "0"), "1"),
                 PLATFORM_VERSION to "1",
                 SOFTWARE_VERSION to "5.0.0",

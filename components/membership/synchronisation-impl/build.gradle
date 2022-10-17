@@ -36,7 +36,7 @@ dependencies {
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation project(':components:crypto:crypto-ecies')
-    testImplementation project(':libs:membership:membership-impl')
+    testImplementation project(":libs:membership:membership-impl")
     testImplementation project(':testing:layered-property-map-testkit')
     testImplementation project(':testing:test-utilities')
 

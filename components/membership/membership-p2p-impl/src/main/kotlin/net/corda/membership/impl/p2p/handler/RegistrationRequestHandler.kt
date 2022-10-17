@@ -1,13 +1,10 @@
 package net.corda.membership.impl.p2p.handler
 
 import net.corda.crypto.ecies.StableKeyPairDecryptor
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
 import net.corda.data.membership.command.registration.RegistrationCommand
 import net.corda.data.membership.command.registration.mgm.StartRegistration
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequest
-import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequestHeader
 import net.corda.membership.lib.MemberInfoExtension.Companion.ecdhKey
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.read.MembershipGroupReaderProvider
@@ -27,15 +24,11 @@ internal class RegistrationRequestHandler(
     private val avroSchemaRegistry: AvroSchemaRegistry,
     private val stableKeyPairDecryptor: StableKeyPairDecryptor,
     private val keyEncodingService: KeyEncodingService,
-    cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider,
 ) : UnauthenticatedMessageHandler() {
     companion object {
         private val logger = contextLogger()
     }
-
-    private val headerSerializer: CordaAvroSerializer<UnauthenticatedRegistrationRequestHeader> =
-        cordaAvroSerializationFactory.createAvroSerializer { logger.error("Failed to serialize header.") }
 
     override fun invokeUnauthenticatedMessage(
         header: UnauthenticatedMessageHeader,
@@ -59,7 +52,7 @@ internal class RegistrationRequestHandler(
                 )
             )
         } catch (e: Exception) {
-            logger.warn("Could not create start registration command. Reason: ${e.message}")
+            logger.warn("Could not create start registration command. Reason: ${e.message}", e)
             return null
         }
     }
@@ -70,15 +63,13 @@ internal class RegistrationRequestHandler(
         val reqHeader = request.header
         val memberKey = keyEncodingService.decodePublicKey(reqHeader.key)
         val mgmKey = getECDHKey(mgm)
-        val serializedReqHeader = headerSerializer.serialize(reqHeader)
-            ?: throw IllegalArgumentException("Serialized header cannot be null.")
         return stableKeyPairDecryptor.decrypt(
             mgm.shortHash.value,
-            serializedReqHeader + keyEncodingService.encodeAsByteArray(mgmKey),
+            reqHeader.salt.array(),
             mgmKey,
             memberKey,
             request.payload.array(),
-            serializedReqHeader
+            reqHeader.aad.array()
         )
     }
 

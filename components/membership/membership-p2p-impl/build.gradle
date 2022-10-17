@@ -35,6 +35,7 @@ dependencies {
     testImplementation project(':testing:test-utilities')
 
     integrationTestImplementation project(':components:crypto:crypto-client')
+    integrationTestImplementation project(':libs:crypto:crypto-core')
     integrationTestImplementation project(':testing:db-testkit')
     integrationTestImplementation project(':testing:db-message-bus-testkit')
 

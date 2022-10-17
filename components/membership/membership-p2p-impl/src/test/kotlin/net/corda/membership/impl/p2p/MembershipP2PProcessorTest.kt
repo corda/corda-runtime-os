@@ -1,8 +1,6 @@
 package net.corda.membership.impl.p2p
 
 import net.corda.crypto.ecies.StableKeyPairDecryptor
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.SecureHash
@@ -47,7 +45,6 @@ import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -65,7 +62,8 @@ class MembershipP2PProcessorTest {
 
         val clock = TestClock(Instant.ofEpochSecond(100))
 
-        val HEADER_BYTES = "4444".toByteArray()
+        val SALT_BYTES = "4444".toByteArray()
+        val AAD_BYTES = "5555".toByteArray()
         val KEY_BYTES = "1234".toByteArray()
     }
 
@@ -85,7 +83,9 @@ class MembershipP2PProcessorTest {
     private val memberKey: PublicKey = mock()
     private val memberKeyPem = "-----BEGIN PUBLIC KEY-----encoded-memberKey-----END PUBLIC KEY-----"
     private val unauthenticatedRegistrationRequest = UnauthenticatedRegistrationRequest(
-        UnauthenticatedRegistrationRequestHeader(1, clock.instant().toEpochMilli(), memberKeyPem),
+        UnauthenticatedRegistrationRequestHeader(
+            ByteBuffer.wrap(SALT_BYTES), ByteBuffer.wrap(AAD_BYTES), memberKeyPem
+        ),
         registrationReqMsgPayload
     )
     private val unauthenticatedRegMsgPayload = unauthenticatedRegistrationRequest.toByteBuffer()
@@ -134,23 +134,17 @@ class MembershipP2PProcessorTest {
         on {
             decrypt(
                 eq(mgm.toCorda().shortHash.value),
-                eq(HEADER_BYTES + KEY_BYTES),
+                eq(SALT_BYTES),
                 eq(mgmKey),
                 eq(memberKey),
                 eq(unauthenticatedRegistrationRequest.payload.array()),
-                eq(HEADER_BYTES)
+                eq(AAD_BYTES)
             )
         } doReturn registrationRequest.toByteBuffer().array()
     }
     private val keyEncodingService: KeyEncodingService = mock {
         on { decodePublicKey(eq(memberKeyPem)) } doReturn memberKey
         on { encodeAsByteArray(eq(mgmKey)) } doReturn KEY_BYTES
-    }
-    private val headerSerializer: CordaAvroSerializer<Any> = mock {
-        on { serialize(any()) } doReturn HEADER_BYTES
-    }
-    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock {
-        on { createAvroSerializer<Any>(any()) } doReturn headerSerializer
     }
     private val groupReader: MembershipGroupReader = mock {
         on { lookup(eq(mgm.toCorda().x500Name)) } doReturn mgmInfo
@@ -165,7 +159,6 @@ class MembershipP2PProcessorTest {
             avroSchemaRegistry,
             stableKeyPairDecryptor,
             keyEncodingService,
-            cordaAvroSerializationFactory,
             membershipGroupReaderProvider,
         )
     }
@@ -236,13 +229,6 @@ class MembershipP2PProcessorTest {
     @Test
     fun `StartRegistration command is not issued when mgm's ecdh key is missing`() {
         whenever(mgmInfo.ecdhKey).thenReturn(null)
-        val result = processUnauthMsgPayload(unauthenticatedRegMsgPayload)
-        assertThat(result).isEmpty()
-    }
-
-    @Test
-    fun `StartRegistration command is not issued when header serialization returns null`() {
-        whenever(headerSerializer.serialize(any())).thenReturn(null)
         val result = processUnauthMsgPayload(unauthenticatedRegMsgPayload)
         assertThat(result).isEmpty()
     }

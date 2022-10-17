@@ -1,6 +1,7 @@
 package net.corda.membership.impl.p2p.dummy
 
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
 import net.corda.crypto.ecies.EciesParams
 import net.corda.crypto.ecies.EciesParamsProvider
 import net.corda.crypto.ecies.EncryptedDataWithKey
@@ -16,7 +17,7 @@ interface TestEphemeralKeyPairEncryptor : EphemeralKeyPairEncryptor
 
 @ServiceRanking(Int.MAX_VALUE)
 @Component(service = [EphemeralKeyPairEncryptor::class, TestEphemeralKeyPairEncryptor::class])
-class TestEphemeralKeyPairEncryptorImpl @Activate constructor(
+internal class TestEphemeralKeyPairEncryptorImpl @Activate constructor(
     @Reference(service = CryptoOpsClient::class)
     private val cryptoOpsClient: CryptoOpsClient
 ) : TestEphemeralKeyPairEncryptor {
@@ -27,7 +28,7 @@ class TestEphemeralKeyPairEncryptorImpl @Activate constructor(
     ): EncryptedDataWithKey {
         val ephemeralKey = cryptoOpsClient.generateKeyPair(
             "tenantId",
-            "PRE_AUTH",
+            PRE_AUTH,
             "alias",
             ECDSA_SECP256R1_CODE_NAME
         )

@@ -24,7 +24,7 @@ interface TestGroupReaderProvider : MembershipGroupReaderProvider {
 
 @ServiceRanking(Int.MAX_VALUE)
 @Component(service = [MembershipGroupReaderProvider::class, TestGroupReaderProvider::class])
-class TestGroupReaderProviderImpl @Activate constructor(
+internal class TestGroupReaderProviderImpl @Activate constructor(
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val coordinatorFactory: LifecycleCoordinatorFactory
 )  : TestGroupReaderProvider {

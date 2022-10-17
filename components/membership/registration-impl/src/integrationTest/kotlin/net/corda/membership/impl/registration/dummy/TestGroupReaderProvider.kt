@@ -1,6 +1,7 @@
 package net.corda.membership.impl.registration.dummy
 
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.CryptoConsts.Categories.PRE_AUTH
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -101,7 +102,7 @@ class TestGroupReader @Activate constructor(
     override fun lookup(): Collection<MemberInfo> {
         val ecdhKey = cryptoOpsClient.generateKeyPair(
             id,
-            "PRE_AUTH",
+            PRE_AUTH,
             id + "ecdh",
             ECDSA_SECP256R1_CODE_NAME
         )
