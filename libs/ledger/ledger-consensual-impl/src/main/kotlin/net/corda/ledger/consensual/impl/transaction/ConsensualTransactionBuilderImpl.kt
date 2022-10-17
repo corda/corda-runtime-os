@@ -117,7 +117,7 @@ class ConsensualTransactionBuilderImpl(
     }
 
     private fun serializeMetadata(): String {
-        return jsonMarshallingService.format(calculateMetaData())
+        return jsonMarshallingService.format(transactionMetaData)
     }
 
     override fun equals(other: Any?): Boolean {
