@@ -3,7 +3,6 @@ package net.corda.applications.workers.workercommon.internal
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.javalin.Javalin
 import io.javalin.core.util.Header
-import io.micrometer.core.instrument.Metrics
 import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics
 import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics
 import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics
@@ -44,12 +43,11 @@ internal class WorkerMonitorImpl @Activate constructor(
     // The use of Javalin is temporary, and will be replaced in the future.
     private var server: Javalin? = null
     private val objectMapper = ObjectMapper()
-    private val prometheusRegistry: PrometheusMeterRegistry
+    private val prometheusRegistry: PrometheusMeterRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 
-    init {
+    private fun setupMetrics(name: String) {
         logger.info("Creating Prometheus metric registry")
-        prometheusRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
-        CordaMetrics.configure("TODO-INSERT-TYPE-OF-WORKER", prometheusRegistry)
+        CordaMetrics.configure(name, prometheusRegistry)
 
         ClassLoaderMetrics().bindTo(CordaMetrics.registry)
         JvmMemoryMetrics().bindTo(CordaMetrics.registry)
@@ -60,7 +58,8 @@ internal class WorkerMonitorImpl @Activate constructor(
     }
 
 
-    override fun listen(port: Int) {
+    override fun listen(port: Int, workerType: String) {
+        setupMetrics(workerType)
         server = Javalin
             .create()
             .apply { startServer(this, port) }

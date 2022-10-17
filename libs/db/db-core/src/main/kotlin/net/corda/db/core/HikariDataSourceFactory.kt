@@ -16,7 +16,7 @@ import javax.sql.DataSource
 class HikariDataSourceFactory(
     private val hikariDataSourceFactory: (c: HikariConfig) -> CloseableDataSource = { c ->
         val ds = HikariDataSource(c)
-        // TODO: this can be enabled when https://github.com/brettwooldridge/HikariCP/pull/1989 is merged
+        // TODO - this can be enabled when https://github.com/brettwooldridge/HikariCP/pull/1989 is released
         //   https://r3-cev.atlassian.net/browse/CORE-7113
         // ds.metricsTrackerFactory = MicrometerMetricsTrackerFactory(MeterFactory.registry)
         DataSourceWrapper(ds)
