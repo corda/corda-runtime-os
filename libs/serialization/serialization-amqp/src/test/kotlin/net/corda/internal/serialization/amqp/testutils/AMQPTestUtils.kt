@@ -28,9 +28,6 @@ import java.io.File.separatorChar
 import java.io.NotSerializableException
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption.REPLACE_EXISTING
-import net.corda.libs.packaging.core.CpkMetadata
-import net.corda.sandbox.SandboxGroup
-import org.osgi.framework.Bundle
 
 /**
  * For tests that want to see inside the serializer registry
