@@ -69,7 +69,7 @@ class ConsensualTransactionBuilderImpl(
 
     @Suspendable
     override fun sign(signatories: Iterable<PublicKey>): ConsensualSignedTransaction =
-        sign(*(signatories.map{it}.toTypedArray()))
+        sign(*(signatories.toList().toTypedArray()))
 
     private fun buildWireTransaction(): WireTransaction {
         // TODO(CORE-5982 more verifications)
