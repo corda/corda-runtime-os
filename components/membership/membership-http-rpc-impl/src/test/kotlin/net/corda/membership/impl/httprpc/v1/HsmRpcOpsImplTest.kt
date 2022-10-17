@@ -13,6 +13,8 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.membership.httprpc.v1.types.response.HsmAssociationInfo
+import net.corda.virtualnode.ShortHash
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -31,9 +33,13 @@ class HsmRpcOpsImplTest {
     private val lifecycleCoordinatorFactory = mock<LifecycleCoordinatorFactory> {
         on { createCoordinator(any(), handler.capture()) } doReturn coordinator
     }
-    private val tenantId = "id"
+    private val tenantId = "000000000000"
+    private val tenantIdShortHash = ShortHash.of((tenantId))
+    private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService> {
+        on { getByHoldingIdentityShortHash(tenantIdShortHash) } doReturn mock()
+    }
 
-    private val ops = HsmRpcOpsImpl(hsmRegistrationClient, lifecycleCoordinatorFactory)
+    private val ops = HsmRpcOpsImpl(hsmRegistrationClient, lifecycleCoordinatorFactory, virtualNodeInfoReadService)
 
     @Nested
     inner class ApiTests {
@@ -54,12 +60,18 @@ class HsmRpcOpsImplTest {
         }
 
         @Test
+        fun `assignedHsm verify the tenantId`() {
+            ops.assignedHsm(tenantId, "Notary")
+
+            verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(tenantIdShortHash)
+        }
+
+        @Test
         fun `assignedHsm throws exception for unexpected category`() {
             assertThrows<ResourceNotFoundException> {
                 ops.assignedHsm(tenantId, "Notary category")
             }
         }
-
 
         @Test
         fun `assignedHsm returns the correct value`() {
@@ -137,6 +149,24 @@ class HsmRpcOpsImplTest {
                     deprecatedAt = 0
                 ),
             )
+        }
+
+        @Test
+        fun `assignSoftHsm verify the tenantId`() {
+            whenever(hsmRegistrationClient.assignSoftHSM(tenantId, CI)).doReturn(
+                HSMAssociationInfo(
+                    "id1",
+                    tenantId,
+                    "SOFT",
+                    CI,
+                    "master-key-alias",
+                    0
+                ),
+            )
+
+            ops.assignSoftHsm(tenantId, "ci")
+
+            verify(virtualNodeInfoReadService).getByHoldingIdentityShortHash(tenantIdShortHash)
         }
     }
 
