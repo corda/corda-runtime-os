@@ -1,12 +1,16 @@
 package net.corda.membership.impl.httprpc.v1
 
 import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.exception.InvalidInputDataException
+import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.exception.ServiceUnavailableException
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
+import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMOpsClient
+import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.httprpc.v1.MGMRpcOps
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
 import net.corda.v5.base.util.contextLogger
@@ -87,7 +91,18 @@ class MGMRpcOpsImpl @Activate constructor(
 
     private inner class ActiveImpl : InnerMGMRpcOps {
         override fun generateGroupPolicy(holdingIdentityShortHash: String): String {
-            return mgmOpsClient.generateGroupPolicy(ShortHash.ofOrThrow(holdingIdentityShortHash))
+            return try {
+                mgmOpsClient.generateGroupPolicy(ShortHash.ofOrThrow(holdingIdentityShortHash))
+            } catch (e: CouldNotFindMemberException) {
+                throw ResourceNotFoundException("Could not find $holdingIdentityShortHash")
+            } catch (e: MemberNotAnMgmException) {
+                throw InvalidInputDataException(
+                    details = mapOf(
+                        "holdingIdentityShortHash" to holdingIdentityShortHash
+                    ),
+                    message = "Member: $holdingIdentityShortHash is not an MGM!",
+                )
+            }
         }
     }
 }
