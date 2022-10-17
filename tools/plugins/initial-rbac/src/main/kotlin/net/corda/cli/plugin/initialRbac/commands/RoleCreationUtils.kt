@@ -16,6 +16,9 @@ import java.time.temporal.ChronoUnit
 
 internal object RoleCreationUtils {
 
+    private const val ALLOWED_CHARS = "[a-fA-F0-9]"
+    const val UUID_REGEX = "$ALLOWED_CHARS{8}-$ALLOWED_CHARS{4}-$ALLOWED_CHARS{4}-$ALLOWED_CHARS{4}-$ALLOWED_CHARS{12}"
+
     /**
      * Checks if role already exists and then does nothing, else:
      * - creates permissions;
