@@ -97,9 +97,10 @@ internal object ContextUtils {
             CordaMetrics.Meters.HttpRequestCount.builder()
                 .withTag(CordaMetrics.Tags.Address, "${ctx.method()} ${ctx.path()}")
                 .build<Counter>(Metrics::counter).increment()
-            CordaMetrics.Meters.HttpRequestTime.builder()
+            val requestTimer = CordaMetrics.Meters.HttpRequestTime.builder()
                 .withTag(CordaMetrics.Tags.Address, "${ctx.method()} ${ctx.path()}")
-                .build<Timer>(Metrics::timer).wrap {
+                .build<Timer>(Metrics::timer)
+            requestTimer.recordCallable {
                 try {
                     validateRequestContentType(this, ctx)
 

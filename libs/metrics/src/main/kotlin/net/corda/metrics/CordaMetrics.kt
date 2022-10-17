@@ -11,14 +11,26 @@ object CordaMetrics {
         /**
          * Number of HTTP Requests.
          */
-        HttpRequestCount("http.server.requestCount"),
+        HttpRequestCount("http.server.request.count"),
         /**
          * HTTP Requests time.
          */
-        HttpRequestTime("http.server.requestTime"),
+        HttpRequestTime("http.server.request.time"),
+        /**
+         * Time it took to create the sandbox
+         */
+        SandboxCreateTime("sandbox.create.time")
     }
 
     enum class Tags(val value: String) {
+        /**
+         * Address for which the metric is applicable.
+         */
+        Address("address"),
+        /**
+         * Type of the SandboxGroup to which the metric applies.
+         */
+        SandboxGroupType("sandboxGroupType"),
         /**
          * Source of metric.
          */
@@ -27,10 +39,6 @@ object CordaMetrics {
          * Virtual Node for which the metric is applicable.
          */
         VirtualNode("virtualNode"),
-        /**
-         * Address for which the metric is applicable..
-         */
-        Address("address")
     }
 
     fun Meters.builder(): MeterBuilder {
@@ -49,9 +57,11 @@ object CordaMetrics {
     ) {
         private val allTags: MutableList<Tag> = mutableListOf()
 
-        // special case for VirtualNode - TODO - is this worth it?
-        fun forVirtualNode(name: String): MeterBuilder {
-            return withTag(Tags.VirtualNode, name)
+        /**
+         * Tag the metric with the Holding ID short hash for the Virtual Node.
+         */
+        fun forVirtualNode(holdingId: String): MeterBuilder {
+            return withTag(Tags.VirtualNode, holdingId)
         }
 
         fun withTag(key: Tags, value: String): MeterBuilder {
