@@ -15,31 +15,32 @@ import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito
 import org.mockito.Mockito.mockConstruction
 import org.mockito.Mockito.verify
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import java.io.ByteArrayInputStream
+import java.security.KeyStore
+import java.security.KeyStoreException
+import java.security.cert.Certificate
+import java.security.cert.CertificateException
+import java.security.cert.CertificateFactory
 
 class ForwardingGroupPolicyProviderTest {
 
     private val alice = createTestHoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group-1")
-    private val groupInfo =
-        GroupPolicyListener.GroupInfo(
-            alice,
-            NetworkType.CORDA_5,
-            setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),
-            listOf(),
-            P2PParameters.SessionPkiMode.NO_PKI,
-            null
-        )
+    private val certificate = "Certificate"
+    private val mockSessionTruststore = listOf(certificate)
     private val p2pParams = mock<GroupPolicy.P2PParameters>().also {
         whenever(it.tlsPki).thenReturn(P2PParameters.TlsPkiMode.STANDARD)
         whenever(it.protocolMode).thenReturn(P2PParameters.ProtocolMode.AUTH_ENCRYPT)
         whenever(it.tlsTrustRoots).thenReturn(emptyList())
         whenever(it.sessionPki).thenReturn(P2PParameters.SessionPkiMode.NO_PKI)
-        whenever(it.sessionTrustRoots).thenReturn(null)
+        whenever(it.sessionTrustRoots).thenReturn(mockSessionTruststore)
     }
     private val groupPolicy = mock<GroupPolicy>().also {
         whenever(it.groupId).thenReturn(alice.groupId)
@@ -64,6 +65,30 @@ class ForwardingGroupPolicyProviderTest {
         whenever(policyProviderTile.toNamedLifecycle()).thenReturn(stubGroupPolicyProviderNamedLifecycle)
         whenever(mock.dominoTile).thenReturn(policyProviderTile)
     }
+    private val mockCertificate = mock<Certificate>()
+    private val certificateFactory = mock<CertificateFactory> {
+        whenever(it.generateCertificate(any())).thenReturn(mockCertificate)
+    }
+    private val certificateFactoryStaticMock = Mockito.mockStatic(CertificateFactory::class.java).also {
+        it.`when`<CertificateFactory> {
+            CertificateFactory.getInstance(any())
+        }.doReturn(certificateFactory)
+    }
+    private val keyStore = mock<KeyStore>()
+    private val keyStoreStaticMock = Mockito.mockStatic(KeyStore::class.java).also {
+        it.`when`<KeyStore> {
+            KeyStore.getInstance(any())
+        }.doReturn(keyStore)
+    }
+    private val groupInfo =
+        GroupPolicyListener.GroupInfo(
+            alice,
+            NetworkType.CORDA_5,
+            setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),
+            listOf(),
+            P2PParameters.SessionPkiMode.NO_PKI,
+            keyStore
+        )
 
     private val realGroupPolicyProvider = mock<GroupPolicyProvider>()
     private val virtualNodeInfoReadService = mock<VirtualNodeInfoReadService>()
@@ -74,6 +99,8 @@ class ForwardingGroupPolicyProviderTest {
     fun cleanUp() {
         dominoTile.close()
         stubGroupPolicyProvider.close()
+        keyStoreStaticMock.close()
+        certificateFactoryStaticMock.close()
     }
 
     @Test
@@ -105,6 +132,9 @@ class ForwardingGroupPolicyProviderTest {
 
         whenever(realGroupPolicyProvider.getGroupPolicy(alice)).thenReturn(groupPolicy)
         assertThat(forwardingGroupPolicyProvider.getGroupInfo(alice)).isEqualTo(groupInfo)
+        ByteArrayInputStream(certificate.toByteArray()).use {
+            verify(certificateFactory).generateCertificate(it)
+        }
     }
 
     @Test
@@ -132,6 +162,24 @@ class ForwardingGroupPolicyProviderTest {
         whenever(groupPolicy.p2pParameters.protocolMode).thenReturn(P2PParameters.ProtocolMode.AUTH)
 
         whenever(realGroupPolicyProvider.getGroupPolicy(alice)).thenReturn(null)
+        assertThat(forwardingGroupPolicyProvider.getGroupInfo(alice)).isNull()
+    }
+
+    @Test
+    fun `get group info returns null if CertificateException is thrown when generating session certificate from byte array `() {
+        whenever(certificateFactory.generateCertificate(any())).thenThrow(CertificateException("Bad cert"))
+        val forwardingGroupPolicyProvider = createForwardingGroupPolicyProvider()
+
+        whenever(realGroupPolicyProvider.getGroupPolicy(alice)).thenReturn(groupPolicy)
+        assertThat(forwardingGroupPolicyProvider.getGroupInfo(alice)).isNull()
+    }
+
+    @Test
+    fun `get group info returns null if KeyStoreException is thrown when loading session certificate`() {
+        whenever(keyStore.setCertificateEntry(any(), any())).thenThrow(KeyStoreException("Could not load cert."))
+        val forwardingGroupPolicyProvider = createForwardingGroupPolicyProvider()
+
+        whenever(realGroupPolicyProvider.getGroupPolicy(alice)).thenReturn(groupPolicy)
         assertThat(forwardingGroupPolicyProvider.getGroupInfo(alice)).isNull()
     }
 

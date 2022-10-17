@@ -11,10 +11,13 @@ import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2
 import net.corda.membership.persistence.client.MembershipQueryClient
 import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode
+import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import java.io.ByteArrayInputStream
 import java.security.KeyStore
+import java.security.KeyStoreException
+import java.security.cert.CertificateException
 import java.security.cert.CertificateFactory
 
 internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordinatorFactory,
@@ -23,7 +26,9 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
                                              cpiInfoReadService: CpiInfoReadService,
                                              membershipQueryClient: MembershipQueryClient): LinkManagerGroupPolicyProvider {
     private companion object {
-        const val LISTENER_NAME = "link.manager.group.policy.listener"
+        private const val LISTENER_NAME = "link.manager.group.policy.listener"
+        private const val KEY_STORE_TYPE = "PKCS12"
+        private val logger = contextLogger()
     }
     private val certificateFactory = CertificateFactory.getInstance("X.509")
 
@@ -54,13 +59,13 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
 
     override fun registerListener(groupPolicyListener: GroupPolicyListener) {
         groupPolicyProvider.registerListener(LISTENER_NAME) { holdingIdentity, groupPolicy ->
-            val groupInfo = toGroupInfo(holdingIdentity, groupPolicy)
-            groupPolicyListener.groupAdded(groupInfo)
+            toGroupInfo(holdingIdentity, groupPolicy)?.let { groupInfo ->
+                groupPolicyListener.groupAdded(groupInfo)
+            }
         }
     }
 
-    @Suppress("ComplexMethod")
-    private fun toGroupInfo(holdingIdentity: HoldingIdentity, groupPolicy: GroupPolicy): GroupPolicyListener.GroupInfo {
+    private fun toGroupInfo(holdingIdentity: HoldingIdentity, groupPolicy: GroupPolicy): GroupPolicyListener.GroupInfo? {
         val networkType = when (groupPolicy.p2pParameters.tlsPki) {
             P2PParameters.TlsPkiMode.STANDARD -> NetworkType.CORDA_5
             P2PParameters.TlsPkiMode.CORDA_4 -> NetworkType.CORDA_4
@@ -76,17 +81,7 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
         val trustedCertificates = groupPolicy.p2pParameters.tlsTrustRoots.toList()
         val sessionPkiMode = groupPolicy.p2pParameters.sessionPki
 
-        val sessionTrustStore = groupPolicy.p2pParameters.sessionTrustRoots?.let { trustRoots ->
-            KeyStore.getInstance("PKCS12").also { keyStore ->
-                keyStore.load(null, null)
-                trustRoots.withIndex().forEach { (index, pemCertificate) ->
-                    val certificate = ByteArrayInputStream(pemCertificate.toByteArray()).use {
-                        certificateFactory.generateCertificate(it)
-                    }
-                    keyStore.setCertificateEntry("session-$index", certificate)
-                }
-            }
-        }
+        val sessionTrustStore = groupPolicy.p2pParameters.sessionTrustRoots?.let { it.toKeyStore() ?: return null }
 
         return GroupPolicyListener.GroupInfo(
             holdingIdentity,
@@ -98,4 +93,25 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
         )
     }
 
+    private fun Collection<String>.toKeyStore(): KeyStore? {
+        return KeyStore.getInstance(KEY_STORE_TYPE).also { keyStore ->
+            keyStore.load(null, null)
+            this.withIndex().forEach { (index, pemCertificate) ->
+                val certificate = ByteArrayInputStream(pemCertificate.toByteArray()).use {
+                    try {
+                        certificateFactory.generateCertificate(it)
+                    } catch (except: CertificateException) {
+                        logger.warn("Could not load session certificate: ${except.message}.")
+                        return null
+                    }
+                }
+                try {
+                    keyStore.setCertificateEntry("session-$index", certificate)
+                } catch (except: KeyStoreException) {
+                    logger.warn("Could not load session certificate into keystore: ${except.message}.")
+                    return null
+                }
+            }
+        }
+    }
 }
