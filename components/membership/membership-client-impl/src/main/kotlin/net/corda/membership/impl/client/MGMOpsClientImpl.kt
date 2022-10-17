@@ -169,13 +169,13 @@ class MGMOpsClientImpl @Activate constructor(
 
             val holdingIdentity =
                 virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
-                    ?: throw CouldNotFindMemberException()
+                    ?: throw CouldNotFindMemberException(holdingIdentityShortHash)
 
             val reader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
 
             val filteredMembers =
                 reader.lookup(holdingIdentity.x500Name)
-                    ?:throw CouldNotFindMemberException()
+                    ?:throw CouldNotFindMemberException(holdingIdentityShortHash)
 
             if(filteredMembers.isMgm) {
 
@@ -190,7 +190,7 @@ class MGMOpsClientImpl @Activate constructor(
                 return generateGroupPolicyResponse(request.sendRequest())
             }
 
-            else throw MemberNotAnMgmException()
+            else throw MemberNotAnMgmException(holdingIdentityShortHash)
 
         }
 

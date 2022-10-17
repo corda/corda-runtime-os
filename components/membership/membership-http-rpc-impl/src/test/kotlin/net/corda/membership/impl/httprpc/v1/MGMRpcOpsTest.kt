@@ -74,7 +74,7 @@ class MGMRpcOpsTest {
     fun `generateGroupPolicy throws resource not found for invalid member`() {
         mgmRpcOps.start()
         mgmRpcOps.activate("")
-        whenever(mgmOpsClient.generateGroupPolicy(any())).doThrow(CouldNotFindMemberException())
+        whenever(mgmOpsClient.generateGroupPolicy(any())).doThrow(mock<CouldNotFindMemberException>())
 
         assertThrows<ResourceNotFoundException> {
             mgmRpcOps.generateGroupPolicy(HOLDING_IDENTITY_ID)
@@ -85,7 +85,7 @@ class MGMRpcOpsTest {
     fun `generateGroupPolicy throws invalid input for non MGM meber`() {
         mgmRpcOps.start()
         mgmRpcOps.activate("")
-        whenever(mgmOpsClient.generateGroupPolicy(any())).doThrow(MemberNotAnMgmException())
+        whenever(mgmOpsClient.generateGroupPolicy(any())).doThrow(mock<MemberNotAnMgmException>())
 
         assertThrows<InvalidInputDataException> {
             mgmRpcOps.generateGroupPolicy(HOLDING_IDENTITY_ID)
