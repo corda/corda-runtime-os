@@ -186,10 +186,11 @@ class AddNotaryToGroupParametersHandlerTest {
             val entity = firstValue as GroupParametersEntity
             assertThat(entity.epoch).isEqualTo(EPOCH + 1)
             val persistedParameters = serializeCaptor.firstValue
-            assertThat(persistedParameters.items.size).isEqualTo(4)
+            assertThat(persistedParameters.items.size).isEqualTo(5)
             assertThat(persistedParameters.items.containsAll(
                 listOf(
-                    KeyValuePair("corda.epoch", "2"),
+                    KeyValuePair(EPOCH_KEY, "2"),
+                    KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
                     KeyValuePair("corda.notary.service.0.name", KNOWN_NOTARY_SERVICE),
                     KeyValuePair("corda.notary.service.0.plugin", KNOWN_NOTARY_PLUGIN),
                     KeyValuePair("corda.notary.service.0.keys.0", "test-key"),
@@ -255,10 +256,11 @@ class AddNotaryToGroupParametersHandlerTest {
             val entity = firstValue as GroupParametersEntity
             assertThat(entity.epoch).isEqualTo(EPOCH + 1)
             val persistedParameters = serializeCaptor.firstValue
-            assertThat(persistedParameters.items.size).isEqualTo(5)
+            assertThat(persistedParameters.items.size).isEqualTo(6)
             assertThat(persistedParameters.items.containsAll(
                 listOf(
-                    KeyValuePair("corda.epoch", "2"),
+                    KeyValuePair(EPOCH_KEY, "2"),
+                    KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString()),
                     KeyValuePair("corda.notary.service.5.name", KNOWN_NOTARY_SERVICE),
                     KeyValuePair("corda.notary.service.5.plugin", KNOWN_NOTARY_PLUGIN),
                     KeyValuePair("corda.notary.service.5.keys.0", "existing-test-key"),

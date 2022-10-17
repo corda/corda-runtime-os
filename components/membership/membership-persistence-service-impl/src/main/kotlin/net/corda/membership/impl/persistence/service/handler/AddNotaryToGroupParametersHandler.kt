@@ -92,6 +92,7 @@ internal class AddNotaryToGroupParametersHandler(
         notaryServiceNumber: Int
     ): GroupParametersEntity? {
         val notaryServiceName = notaryDetails.serviceName.toString()
+        logger.info("Adding notary to group parameters under existing notary service '$notaryServiceName'.")
         notaryDetails.servicePlugin?.let {
             require(currentParameters[String.format(NOTARY_SERVICE_PLUGIN_KEY, notaryServiceNumber)].toString() == it) {
                 throw MembershipPersistenceException("Cannot add notary to notary service " +
@@ -125,8 +126,11 @@ internal class AddNotaryToGroupParametersHandler(
             }
         val newEpoch = currentParameters[EPOCH_KEY]!!.toInt() + 1
         val parametersWithUpdatedEpoch = with(currentParameters) {
-                filterNot { it.key == EPOCH_KEY }
-                .map { KeyValuePair(it.key, it.value) } + listOf(KeyValuePair(EPOCH_KEY, newEpoch.toString()))
+            filterNot { listOf(EPOCH_KEY, MODIFIED_TIME_KEY).contains(it.key) }
+                .map { KeyValuePair(it.key, it.value) } + listOf(
+                KeyValuePair(EPOCH_KEY, newEpoch.toString()),
+                KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString())
+            )
         }
         return GroupParametersEntity(newEpoch, serializeProperties(KeyValuePairList(parametersWithUpdatedEpoch + newKeys)))
     }
@@ -136,6 +140,7 @@ internal class AddNotaryToGroupParametersHandler(
         notaryDetails: MemberNotaryDetails
     ): GroupParametersEntity {
         val notaryServiceName = notaryDetails.serviceName.toString()
+        logger.info("Adding notary to group parameters under new notary service '$notaryServiceName'.")
         requireNotNull(notaryDetails.servicePlugin) {
             throw MembershipPersistenceException("Cannot add notary to group parameters - notary plugin must be" +
                     " specified to create new notary service '$notaryServiceName'.")
@@ -154,8 +159,11 @@ internal class AddNotaryToGroupParametersHandler(
         )
         val newEpoch = currentParameters[EPOCH_KEY]!!.toInt() + 1
         val parametersWithUpdatedEpoch = with(currentParameters) {
-            filterNot { it.key == EPOCH_KEY }
-                .map { KeyValuePair(it.key, it.value) } + listOf(KeyValuePair(EPOCH_KEY, newEpoch.toString()))
+            filterNot { listOf(EPOCH_KEY, MODIFIED_TIME_KEY).contains(it.key) }
+                .map { KeyValuePair(it.key, it.value) } + listOf(
+                KeyValuePair(EPOCH_KEY, newEpoch.toString()),
+                KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString())
+            )
         }
         return GroupParametersEntity(newEpoch, serializeProperties(KeyValuePairList(parametersWithUpdatedEpoch + newService)))
     }
