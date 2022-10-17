@@ -20,8 +20,6 @@ interface ConsensualLedgerService {
 
     /* TODO
     fun fetchTransaction(id: SecureHash)
-    fun finality(sessions)
-    fun receiveFinality( ()-> ... )
     ... Vault ...
     */
 

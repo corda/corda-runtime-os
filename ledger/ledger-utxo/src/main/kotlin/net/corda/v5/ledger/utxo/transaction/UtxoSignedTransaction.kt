@@ -3,6 +3,7 @@ package net.corda.v5.ledger.utxo.transaction
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.DoNotImplement
+import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import java.security.PublicKey
 
@@ -25,6 +26,7 @@ interface UtxoSignedTransaction {
      * @param signatures The signatures and metadata to add to the current [UtxoSignedTransaction].
      * @return Returns a new [UtxoSignedTransaction] containing the applied signatures.
      */
+    @Suspendable
     fun addSignatures(signatures: Iterable<DigitalSignatureAndMetadata>): UtxoSignedTransaction
 
     /**
@@ -33,6 +35,7 @@ interface UtxoSignedTransaction {
      * @param signatures The signatures and metadata to add to the current [UtxoSignedTransaction].
      * @return Returns a new [UtxoSignedTransaction] containing the applied signature.
      */
+    @Suspendable
     fun addSignatures(vararg signatures: DigitalSignatureAndMetadata): UtxoSignedTransaction
 
     /**
@@ -40,6 +43,7 @@ interface UtxoSignedTransaction {
      *
      * @return Returns a [List] of [PublicKey] representing the missing signatories from the current [UtxoSignedTransaction].
      */
+    @Suspendable
     fun getMissingSignatories(): List<PublicKey>
 
     /**

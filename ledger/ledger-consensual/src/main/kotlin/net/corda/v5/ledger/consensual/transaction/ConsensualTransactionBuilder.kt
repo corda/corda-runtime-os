@@ -28,21 +28,49 @@ interface ConsensualTransactionBuilder {
     fun withStates(vararg states: ConsensualState) : ConsensualTransactionBuilder
 
     /**
-     * 1. Verifies the content of the [ConsensualTransactionBuilder]
-     * 2.a Creates
-     * 2.b signs
-     * 2.c and returns a [ConsensualSignedTransaction]
+     * Verifies the content of the [ConsensualTransactionBuilder] and
+     * signs the transaction with any required signatories that belong to the current node.
      *
      * Calling this function once consumes the [ConsensualTransactionBuilder], so it cannot be used again.
      * Therefore, if you want to build two transactions you need two builders.
      *
-     * @param publicKey The private counterpart of the specified public key will be used for signing the
-     *      [ConsensualSignedTransaction].
-     * @return Returns a new [ConsensualSignedTransaction] with the specified details.
+     * @return Returns a [ConsensualSignedTransaction] with signatures for any required signatories that belong to the current node.
      *
      * @throws [UnsupportedOperationException] when called second time on the same object to prevent duplicate
      *      transactions accidentally.
      */
     @Suspendable
-    fun signInitial(publicKey: PublicKey): ConsensualSignedTransaction
+    fun sign(): ConsensualSignedTransaction
+
+    /**
+     * Verifies the content of the [ConsensualTransactionBuilder] and
+     * signs the transaction with the specified signatory keys.
+     *
+     * Calling this function once consumes the [ConsensualTransactionBuilder], so it cannot be used again.
+     * Therefore, if you want to build two transactions you need two builders.
+     *
+     * @param signatories The signatories expected to sign the current transaction.
+     * @return Returns a [ConsensualSignedTransaction] with signatures for the specified signatory keys.
+     *
+     * @throws [UnsupportedOperationException] when called second time on the same object to prevent duplicate
+     *      transactions accidentally.
+     */
+    @Suspendable
+    fun sign(signatories: Iterable<PublicKey>): ConsensualSignedTransaction
+
+    /**
+     * Verifies the content of the [ConsensualTransactionBuilder] and
+     * signs the transaction with the specified signatory keys.
+     *
+     * Calling this function once consumes the [ConsensualTransactionBuilder], so it cannot be used again.
+     * Therefore, if you want to build two transactions you need two builders.
+     *
+     * @param signatories The signatories expected to sign the current transaction.
+     * @return Returns a [ConsensualSignedTransaction] with signatures for the specified signatory keys.
+     *
+     * @throws [UnsupportedOperationException] when called second time on the same object to prevent duplicate
+     *      transactions accidentally.
+     */
+    @Suspendable
+    fun sign(vararg signatories: PublicKey): ConsensualSignedTransaction
 }

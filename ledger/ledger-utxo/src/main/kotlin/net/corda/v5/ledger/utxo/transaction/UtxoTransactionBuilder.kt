@@ -2,6 +2,7 @@ package net.corda.v5.ledger.utxo.transaction
 
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.DoNotImplement
+import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.Command
@@ -127,6 +128,7 @@ interface UtxoTransactionBuilder {
      *
      * @return Returns a [UtxoSignedTransaction] with signatures for any required signatories that belong to the current node.
      */
+    @Suspendable
     fun sign(): UtxoSignedTransaction
 
     /**
@@ -135,6 +137,7 @@ interface UtxoTransactionBuilder {
      * @param signatories The signatories expected to sign the current transaction.
      * @return Returns a [UtxoSignedTransaction] with signatures for the specified signatory keys.
      */
+    @Suspendable
     fun sign(signatories: Iterable<PublicKey>): UtxoSignedTransaction
 
     /**
@@ -143,5 +146,6 @@ interface UtxoTransactionBuilder {
      * @param signatories The signatories expected to sign the current transaction.
      * @return Returns a [UtxoSignedTransaction] with signatures for the specified signatory keys.
      */
+    @Suspendable
     fun sign(vararg signatories: PublicKey): UtxoSignedTransaction
 }
