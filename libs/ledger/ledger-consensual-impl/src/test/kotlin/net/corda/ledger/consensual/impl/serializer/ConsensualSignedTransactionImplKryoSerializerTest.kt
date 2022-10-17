@@ -14,35 +14,22 @@ import net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionI
 import net.corda.ledger.consensual.impl.transaction.serializer.ConsensualSignedTransactionImplKryoSerializer
 import net.corda.ledger.consensual.testkit.getConsensualSignedTransaction
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.application.serialization.SerializationService
-import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
+import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.crypto.DigitalSignature
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
 
 class ConsensualSignedTransactionImplKryoSerializerTest {
-    companion object {
-        private lateinit var digestService: DigestService
-        private lateinit var merkleTreeProvider: MerkleTreeProvider
-        private lateinit var jsonMarshallingService: JsonMarshallingService
-        private lateinit var serializationService: SerializationService
-
-        @BeforeAll
-        @JvmStatic
-        fun setup() {
-            val schemeMetadata = CipherSchemeMetadataImpl()
-            digestService = DigestServiceImpl(schemeMetadata, null)
-            merkleTreeProvider = MerkleTreeProviderImpl(digestService)
-            jsonMarshallingService = JsonMarshallingServiceImpl()
-            serializationService = TestSerializationService.getTestSerializationService({
-                it.register(WireTransactionSerializer(merkleTreeProvider, digestService, jsonMarshallingService), it)
-            }, schemeMetadata)
-        }
-    }
+    private val cipherSchemeMetadata = CipherSchemeMetadataImpl()
+    private val digestService = DigestServiceImpl(cipherSchemeMetadata, null)
+    private val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
+    private val jsonMarshallingService = JsonMarshallingServiceImpl()
+    private val serializationService = TestSerializationService.getTestSerializationService({
+        it.register(WireTransactionSerializer(merkleTreeProvider, digestService, jsonMarshallingService), it)
+    }, cipherSchemeMetadata)
+    private val signingService: SigningService = mock()
 
     @Test
     fun `serialization of a Wire Tx object using the kryo default serialization`() {
@@ -52,14 +39,18 @@ class ConsensualSignedTransactionImplKryoSerializerTest {
             jsonMarshallingService
         )
         val consensualSignedTransactionImplKryoSerializer = ConsensualSignedTransactionImplKryoSerializer(
-            serializationService
+            serializationService,
+            signingService,
+            mock()
         )
 
         val signedTransaction = getConsensualSignedTransaction(
             digestService,
             merkleTreeProvider,
             serializationService,
-            jsonMarshallingService
+            jsonMarshallingService,
+            signingService,
+            mock()
         )
 
         val serializer = createCheckpointSerializer(

@@ -5,7 +5,7 @@ import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TransactionState
-import java.util.*
+import java.util.Objects
 
 /**
  * Represents a composition of a [TransactionState] and a [StateRef].

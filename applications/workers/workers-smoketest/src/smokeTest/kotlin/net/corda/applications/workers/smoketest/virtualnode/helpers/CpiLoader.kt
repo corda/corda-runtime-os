@@ -22,14 +22,15 @@ object CpiLoader {
             ?: throw FileNotFoundException("No such resource: '$resourceName'")
     }
 
-    fun get(resourceName: String, groupId: String) = cpbToCpi(getInputStream(resourceName), groupId)
+    fun get(resourceName: String, groupId: String, staticMemberNames: List<String>, cpiName: String) =
+        cpbToCpi(getInputStream(resourceName), groupId, staticMemberNames, cpiName)
 
     fun getRawResource(resourceName: String) = getInputStream(resourceName)
 
     /** Returns a new input stream
      * Don't use this method when we have actual CPIs
      */
-    private fun cpbToCpi(inputStream: InputStream, groupId: String): InputStream {
+    private fun cpbToCpi(inputStream: InputStream, groupId: String, staticMemberNames: List<String>, cpiNameValue: String): InputStream {
 
         val tempDirectory = createTempDirectory()
         try {
@@ -41,7 +42,7 @@ object CpiLoader {
 
             // Save group policy to disk
             val groupPolicyPath = tempDirectory.resolve("groupPolicy")
-            val networkPolicyStr = getStaticNetworkPolicy(groupId)
+            val networkPolicyStr = getStaticNetworkPolicy(groupId, staticMemberNames)
             Files.newBufferedWriter(groupPolicyPath, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW).use {
                 it.write(networkPolicyStr)
             }
@@ -56,7 +57,7 @@ object CpiLoader {
             val cpiPath = tempDirectory.resolve("cpi")
             CreateCpiV2().apply {
                 cpbFileName = cpbPath.toString()
-                cpiName = "test-cordapp"
+                cpiName = cpiNameValue
                 cpiVersion = "1.0.0.0-SNAPSHOT"
                 cpiUpgrade = false
                 groupPolicyFileName = groupPolicyPath.toString()
@@ -78,6 +79,6 @@ object CpiLoader {
     private fun getKeyStore() = javaClass.classLoader.getResourceAsStream("cordadevcodesign.p12")?.use { it.readAllBytes() }
         ?: throw Exception("cordadevcodesign.p12 not found")
 
-    private fun getStaticNetworkPolicy(groupId: String) =
-        getDefaultStaticNetworkGroupPolicy(groupId, listOf(X500_ALICE, X500_BOB, X500_CHARLIE, X500_DAVID))
+    private fun getStaticNetworkPolicy(groupId: String, staticMemberNames: List<String>) =
+        getDefaultStaticNetworkGroupPolicy(groupId, staticMemberNames)
 }

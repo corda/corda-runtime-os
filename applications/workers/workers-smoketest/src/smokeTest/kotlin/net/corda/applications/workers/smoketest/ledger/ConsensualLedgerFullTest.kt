@@ -1,17 +1,12 @@
 package net.corda.applications.workers.smoketest.ledger
 
-import net.corda.applications.workers.smoketest.GROUP_ID
 import net.corda.applications.workers.smoketest.RPC_FLOW_STATUS_SUCCESS
-import net.corda.applications.workers.smoketest.TEST_CPB_LOCATION
-import net.corda.applications.workers.smoketest.TEST_CPI_NAME
-import net.corda.applications.workers.smoketest.X500_BOB
 import net.corda.applications.workers.smoketest.awaitRpcFlowFinished
 import net.corda.applications.workers.smoketest.conditionallyUploadCordaPackage
 import net.corda.applications.workers.smoketest.getHoldingIdShortHash
 import net.corda.applications.workers.smoketest.getOrCreateVirtualNodeFor
 import net.corda.applications.workers.smoketest.registerMember
 import net.corda.applications.workers.smoketest.startRpcFlow
-import net.corda.applications.workers.smoketest.TEST_STATIC_MEMBER_LIST
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.MethodOrderer
@@ -20,45 +15,52 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.TestMethodOrder
+
 /**
- * This file uses the flow tests' CPI, Group Id and X500 names.
+ * This file uses a dedicated CPI, Group Id and X500 names from ConsensualLedgerConfig.
  */
 
 @Suppress("Unused", "FunctionName")
-@Order(24)
+@Order(25)
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 @TestInstance(Lifecycle.PER_CLASS)
-class ConsensualLedgerTests {
+class ConsensualLedgerFullTest {
 
     companion object {
-        val bobHoldingId: String = getHoldingIdShortHash(X500_BOB, GROUP_ID)
+        val aliceHoldingId: String = getHoldingIdShortHash(CONSENSUAL_X500_ALICE, CONSENSUAL_GROUP_ID)
+        val bobHoldingId: String = getHoldingIdShortHash(CONSENSUAL_X500_BOB, CONSENSUAL_GROUP_ID)
 
         @BeforeAll
         @JvmStatic
         internal fun beforeAll() {
             // Upload test flows if not already uploaded
-            conditionallyUploadCordaPackage(TEST_CPI_NAME, TEST_CPB_LOCATION, GROUP_ID, TEST_STATIC_MEMBER_LIST)
+            conditionallyUploadCordaPackage(CONSENSUAL_TEST_CPI_NAME, CONSENSUAL_TEST_CPB_LOCATION,
+                CONSENSUAL_GROUP_ID, CONSENSUAL_TEST_STATIC_MEMBER_LIST)
 
             // Make sure Virtual Nodes are created
-            val bobActualHoldingId = getOrCreateVirtualNodeFor(X500_BOB)
+            val aliceActualHoldingId = getOrCreateVirtualNodeFor(CONSENSUAL_X500_ALICE, CONSENSUAL_TEST_CPI_NAME)
+            val bobActualHoldingId = getOrCreateVirtualNodeFor(CONSENSUAL_X500_BOB, CONSENSUAL_TEST_CPI_NAME)
 
             // Just validate the function and actual vnode holding ID hash are in sync
             // if this fails the X500_BOB formatting could have changed or the hash implementation might have changed
+            assertThat(aliceActualHoldingId).isEqualTo(aliceHoldingId)
             assertThat(bobActualHoldingId).isEqualTo(bobHoldingId)
 
+            registerMember(aliceHoldingId)
             registerMember(bobHoldingId)
         }
+
     }
 
     @Test
-    fun `Consensual Ledger - Signed Transaction serialization and deserialization without exceptions`() {
+    fun `Consensual Ledger - Demo app - full flow`() {
         val requestID =
             startRpcFlow(
-                bobHoldingId,
+                aliceHoldingId,
                 mapOf(),
-                "net.cordapp.testing.testflows.ledger.ConsensualSignedTransactionSerializationFlow"
+                "net.cordapp.demo.consensual.ConsensualDemoFlow"
             )
-        val result = awaitRpcFlowFinished(bobHoldingId, requestID)
+        val result = awaitRpcFlowFinished(aliceHoldingId, requestID)
         assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
         assertThat(result.flowError).isNull()
     }
