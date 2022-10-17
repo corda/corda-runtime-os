@@ -71,6 +71,8 @@ dependencies {
     e2eTestImplementation "net.corda:corda-topic-schema"
     e2eTestImplementation 'net.corda:corda-cipher-suite'
     e2eTestRuntimeOnly 'org.osgi:osgi.core'
+
+    dockerImage "com.datadoghq:dd-java-agent:$datadogVersion"
 }
 
 tasks.register('e2eTest', Test) {

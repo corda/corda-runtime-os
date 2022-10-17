@@ -69,6 +69,11 @@
                 "Always"
             ]
         },
+        "labels": {
+            "type": "object",
+            "default": {},
+            "title": "common labels to add to all workers"
+        },
         "resources": {
             "type": "object",
             "default": {},
@@ -956,6 +961,8 @@
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
+                                "labels": {},
+                                "extraEnvVars": {},
                                 "replicaCount": {},
                                 "debug": {},
                                 "logging": {},
@@ -993,6 +1000,8 @@
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
+                                "labels": {},
+                                "extraEnvVars": {},
                                 "replicaCount": {},
                                 "debug": {},
                                 "logging": {},
@@ -1078,6 +1087,8 @@
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
+                                "labels": {},
+                                "extraEnvVars": {},
                                 "replicaCount": {},
                                 "debug": {},
                                 "logging": {},
@@ -1134,6 +1145,8 @@
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
+                                "labels": {},
+                                "extraEnvVars": {},
                                 "replicaCount": {},
                                 "debug": {},
                                 "logging": {},
@@ -1156,6 +1169,8 @@
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
+                                "labels": {},
+                                "extraEnvVars": {},
                                 "replicaCount": {},
                                 "debug": {},
                                 "logging": {},
@@ -1271,6 +1286,8 @@
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
+                                "labels": {},
+                                "extraEnvVars": {},
                                 "replicaCount": {},
                                 "debug": {},
                                 "logging": {},
@@ -1332,6 +1349,8 @@
                             "properties": {
                                 "image": {},
                                 "javaOptions": {},
+                                "labels": {},
+                                "extraEnvVars": {},
                                 "replicaCount": {},
                                 "debug": {},
                                 "logging": {},
@@ -1684,6 +1703,17 @@
                 },
                 "javaOptions": {
                     "type": "string"
+                },
+                "extraEnvVars": {
+                    "type": "array",
+                    "default": [],
+                    "title": "extra environment variables",
+                    "items": {
+                        "type":"object"
+                    }
+                },
+                "labels": {
+                    "type": "object"
                 },
                 "replicaCount": {
                     "type": "integer",

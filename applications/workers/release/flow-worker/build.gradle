@@ -40,4 +40,6 @@ dependencies {
         exclude group: 'org.apache.felix'
         exclude group: 'org.osgi'
     }
+
+    dockerImage "com.datadoghq:dd-java-agent:$datadogVersion"
 }

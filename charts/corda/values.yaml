@@ -28,6 +28,9 @@ resources:
   # -- the default CPU/memory resource request for the Corda containers
   requests: {}
 
+# -- common labels to add to all workers
+labels: {}
+
 # Logging configuration
 logging:
   # -- log format; "json" or "text"
@@ -194,6 +197,10 @@ workers:
     replicaCount: 1
     # -- additional Java options for the crypto worker
     javaOptions: "-XX:MaxRAMPercentage=75"
+    # -- extra environment variables
+    extraEnvVars: []
+    # -- Kubernetes labels
+    labels: {}
     # crypto worker debug configuration
     debug:
       # -- run crypto worker with debug enabled
@@ -232,6 +239,10 @@ workers:
     replicaCount: 1
     # -- additional Java options for the DB worker
     javaOptions: "-XX:MaxRAMPercentage=75"
+    # -- extra environment variables
+    extraEnvVars: []
+    # -- Kubernetes labels
+    labels: {}
     # DB worker debug configuration
     debug:
       # -- run DB worker with debug enabled
@@ -274,6 +285,10 @@ workers:
     replicaCount: 1
     # -- additional Java options for the flow worker
     javaOptions: "-XX:MaxRAMPercentage=75"
+    # -- extra environment variables
+    extraEnvVars: []
+    # -- Kubernetes labels
+    labels: {}
     # flow worker debug configuration
     debug:
       # -- run flow worker with debug enabled
@@ -310,6 +325,10 @@ workers:
     replicaCount: 1
     # -- additional Java options for the membership worker
     javaOptions: "-XX:MaxRAMPercentage=75"
+    # -- extra environment variables
+    extraEnvVars: []
+    # -- Kubernetes labels
+    labels: {}
     # membership worker debug configuration
     debug:
       # -- run membership worker with debug enabled
@@ -344,6 +363,10 @@ workers:
     replicaCount: 1
     # -- additional Java options for the rpc worker
     javaOptions: "-XX:MaxRAMPercentage=75"
+    # -- extra environment variables
+    extraEnvVars: []
+    # -- Kubernetes labels
+    labels: {}
     # RPC worker debug configuration
     debug:
       # -- run RPC worker with debug enabled
@@ -388,6 +411,10 @@ workers:
     replicaCount: 1
     # -- additional Java options for the p2p-link-manager worker
     javaOptions: "-XX:MaxRAMPercentage=75"
+    # -- extra environment variables
+    extraEnvVars: []
+    # -- Kubernetes labels
+    labels: {}
     # -- Use stubbed crypto processor, membership group reader and group policy provider
     useStubs: false
     # p2p-link-manager worker debug configuration
@@ -424,6 +451,10 @@ workers:
     replicaCount: 1
     # -- additional Java options for the p2p-gateway worker
     javaOptions: "-XX:MaxRAMPercentage=75"
+    # -- extra environment variables
+    extraEnvVars: []
+    # -- Kubernetes labels
+    labels: {}
     # -- Use stub crypto processor
     useStubs: false
     # p2p-gateway worker debug configuration

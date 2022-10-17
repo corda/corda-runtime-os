@@ -40,6 +40,9 @@ helm.sh/chart: {{ include "corda.chart" . }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- with .Values.labels }}
+  {{- toYaml . | nindent 0 }}
+{{- end }}
 {{- end }}
 
 {{/*
@@ -86,6 +89,9 @@ Worker common labels
 {{- define "corda.workerLabels" -}}
 {{ include "corda.labels" . }}
 {{ include "corda.workerComponentLabel" . }}
+{{- with ( get .Values.workers .worker ).labels }}
+  {{- toYaml . | nindent 0 }}
+{{- end }}
 {{- end }}
 
 {{/*
@@ -216,6 +222,9 @@ Worker environment variables
   value: "log4j2-console{{ if eq .Values.logging.format "json" }}-json{{ end }}.xml"
 - name: CONSOLE_LOG_LEVEL
   value: {{ ( get .Values.workers .worker ).logging.level | default .Values.logging.level }}
+{{- with ( get .Values.workers .worker ).extraEnvVars }}
+  {{- toYaml . | nindent 0 }}
+{{- end }}
 {{- end }}
 
 {{/*

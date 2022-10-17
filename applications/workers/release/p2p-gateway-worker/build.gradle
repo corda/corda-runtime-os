@@ -31,4 +31,6 @@ dependencies {
     runtimeOnly "org.osgi:org.osgi.util.function:$osgiUtilFunctionVersion"
     runtimeOnly "org.osgi:org.osgi.util.promise:$osgiUtilPromiseVersion"
     runtimeOnly "com.typesafe:config:$typeSafeConfigVersion"
+
+    dockerImage "com.datadoghq:dd-java-agent:$datadogVersion"
 }
