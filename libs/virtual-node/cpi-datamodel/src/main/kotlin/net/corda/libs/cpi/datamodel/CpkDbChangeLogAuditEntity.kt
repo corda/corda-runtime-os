@@ -4,6 +4,7 @@ import net.corda.db.schema.DbSchema
 import net.corda.libs.packaging.core.CpiIdentifier
 import java.io.Serializable
 import java.time.Instant
+import java.util.UUID
 import javax.persistence.Column
 import javax.persistence.Embeddable
 import javax.persistence.EmbeddedId
@@ -32,7 +33,7 @@ class CpkDbChangeLogAuditEntity(
         CpkDbChangeLogAuditKey(
             cpkDbChangeLogEntity.id,
             cpkDbChangeLogEntity.fileChecksum,
-            cpkDbChangeLogEntity.entityVersion
+            cpkDbChangeLogEntity.changeUUID
         ),
         cpkDbChangeLogEntity.content,
         cpkDbChangeLogEntity.isDeleted
@@ -49,17 +50,17 @@ data class CpkDbChangeLogAuditKey(
     var cpkSignerSummaryHash: String,
     @Column(name = "cpk_file_checksum", nullable = false)
     val fileChecksum: String,
-    @Column(name = "entity_version", nullable = false)
-    var entityVersion: Int,
+    @Column(name = "change_uuid", nullable = false, length = 32)
+    var changeUUID: String,
     @Column(name = "file_path", nullable = false)
     val filePath: String,
 ) : Serializable {
-    constructor(cpkDbChangeLogKey: CpkDbChangeLogKey, fileChecksum: String, entityVersion: Int) : this(
+    constructor(cpkDbChangeLogKey: CpkDbChangeLogKey, fileChecksum: String, changeUUID: String) : this(
         cpkDbChangeLogKey.cpkName,
         cpkDbChangeLogKey.cpkVersion,
         cpkDbChangeLogKey.cpkSignerSummaryHash,
         fileChecksum,
-        entityVersion,
+        changeUUID,
         cpkDbChangeLogKey.filePath
     )
 }
@@ -85,4 +86,30 @@ fun findDbChangeLogAuditForCpi(
     .setParameter("name", cpi.name)
     .setParameter("version", cpi.version)
     .setParameter("signerSummaryHash", cpi.signerSummaryHash?.toString() ?: "")
+    .resultList
+
+/*
+ * Find all the audit db changelogs for a CPI
+ */
+fun findDbChangeLogAuditForCpi(
+    entityManager: EntityManager,
+    cpi: CpiIdentifier,
+    changeUUIDs: List<String>
+): List<CpkDbChangeLogAuditEntity> = entityManager.createQuery(
+    "SELECT changelog " +
+        "FROM ${CpkDbChangeLogAuditEntity::class.simpleName} AS changelog INNER JOIN " +
+        "${CpiCpkEntity::class.simpleName} AS cpi " +
+        "ON changelog.id.cpkName = cpi.metadata.id.cpkName AND " +
+        "   changelog.id.cpkVersion = cpi.id.cpkVersion AND " +
+        "   changelog.id.cpkSignerSummaryHash = cpi.id.cpkSignerSummaryHash " +
+        "WHERE cpi.id.cpiName = :name AND " +
+        "      cpi.id.cpiVersion = :version AND " +
+        "      cpi.id.cpiSignerSummaryHash = :signerSummaryHash" +
+        "      changelog.changeUUID IN :changeUUIDs",
+    CpkDbChangeLogAuditEntity::class.java
+)
+    .setParameter("name", cpi.name)
+    .setParameter("version", cpi.version)
+    .setParameter("signerSummaryHash", cpi.signerSummaryHash?.toString() ?: "")
+    .setParameter("changeUUIDs", changeUUIDs)
     .resultList

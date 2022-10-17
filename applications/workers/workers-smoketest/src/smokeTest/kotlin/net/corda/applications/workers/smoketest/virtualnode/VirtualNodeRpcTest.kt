@@ -362,6 +362,16 @@ class VirtualNodeRpcTest {
     }
 
     @Test
+    @Order(82)
+    fun `persist dog`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+            runSimplePersistenceCheckFlow("\"Could persist dog\"")
+        }
+    }
+
+    @Test
     @Order(90)
     fun `can force upload CPI with same name and version but a change to ReturnAStringFlow`() {
         cluster {
@@ -396,6 +406,17 @@ class VirtualNodeRpcTest {
 
     @Test
     @Order(92)
+    fun `Sync DB and persist cat`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+            syncVirtualNode(aliceHoldingId)
+
+            runSimplePersistenceCheckFlow("Could persist Cat")
+        }
+    }
+
+    @Test
+    @Order(100)
     fun `can force upload the original CPI check that the original ReturnAStringFlow is available on the flow sandbox cache`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
@@ -421,6 +442,16 @@ class VirtualNodeRpcTest {
 
     private fun runReturnAStringFlow(expectedResult: String) {
         val className = "net.cordapp.testing.smoketests.virtualnode.ReturnAStringFlow"
+
+        val requestId = startRpcFlow(aliceHoldingId, emptyMap(), className)
+
+        val flowStatus = awaitRpcFlowFinished(aliceHoldingId, requestId)
+
+        assertThat(flowStatus.flowResult).isEqualTo(expectedResult)
+    }
+
+    private fun runSimplePersistenceCheckFlow(expectedResult: String) {
+        val className = "net.cordapp.testing.smoketests.virtualnode.SimplePersistenceCheckFlow"
 
         val requestId = startRpcFlow(aliceHoldingId, emptyMap(), className)
 

@@ -224,9 +224,9 @@ internal class LiquibaseExtractorHelpersTest {
         val cpi: Cpi = getInputStream(EXTENDABLE_CPB).use { TestCpbReaderV2.readCpi(it, testDir) }
 
         val obj = LiquibaseExtractor()
-        assertThat(obj.extractLiquibaseEntitiesFromCpi(cpi).isNotEmpty()).isTrue
+        assertThat(obj.extractLiquibaseScriptsFromCpi(cpi).isNotEmpty()).isTrue
 
         val expectedLiquibaseFileCount = 5
-        assertThat(obj.extractLiquibaseEntitiesFromCpi(cpi).size).isEqualTo(expectedLiquibaseFileCount)
+        assertThat(obj.extractLiquibaseScriptsFromCpi(cpi).size).isEqualTo(expectedLiquibaseFileCount)
     }
 }

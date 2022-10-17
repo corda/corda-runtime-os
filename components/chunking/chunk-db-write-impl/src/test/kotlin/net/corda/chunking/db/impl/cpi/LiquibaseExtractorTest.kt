@@ -34,17 +34,17 @@ internal class LiquibaseExtractorTest {
     fun `test real cpb via validation function`() {
         val cpi: Cpi = getInputStream(EXTENDABLE_CPB).use { TestCpbReaderV2.readCpi(it, testDir) }
         val obj = LiquibaseExtractor()
-        assertThat(obj.extractLiquibaseEntitiesFromCpi(cpi).isNotEmpty()).isTrue
+        assertThat(obj.extractLiquibaseScriptsFromCpi(cpi).isNotEmpty()).isTrue
 
         val expectedLiquibaseFileCount = 5
-        assertThat(obj.extractLiquibaseEntitiesFromCpi(cpi).size).isEqualTo(expectedLiquibaseFileCount)
+        assertThat(obj.extractLiquibaseScriptsFromCpi(cpi).size).isEqualTo(expectedLiquibaseFileCount)
     }
 
     @Test
     fun `check content`() {
         val cpi: Cpi = getInputStream(EXTENDABLE_CPB).use { TestCpbReaderV2.readCpi(it, testDir) }
         val obj = LiquibaseExtractor()
-        val entities = obj.extractLiquibaseEntitiesFromCpi(cpi)
+        val entities = obj.extractLiquibaseScriptsFromCpi(cpi)
         assertThat(entities.isNotEmpty()).isTrue
 
         val expectedLiquibaseFileCount = 5

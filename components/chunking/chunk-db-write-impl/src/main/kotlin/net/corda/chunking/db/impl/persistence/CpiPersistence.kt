@@ -1,8 +1,8 @@
 package net.corda.chunking.db.impl.persistence
 
 import net.corda.chunking.RequestId
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogDTO
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.packaging.Cpi
 import net.corda.v5.crypto.SecureHash
 
@@ -36,7 +36,7 @@ interface CpiPersistence {
         checksum: SecureHash,
         requestId: RequestId,
         groupId: String,
-        cpkDbChangeLogEntities: List<CpkDbChangeLogEntity>
+        cpkDbChangeLogDTOs: List<CpkDbChangeLogDTO>
     ): CpiMetadataEntity
 
     /**
@@ -56,7 +56,7 @@ interface CpiPersistence {
         checksum: SecureHash,
         requestId: RequestId,
         groupId: String,
-        cpkDbChangeLogEntities: List<CpkDbChangeLogEntity>
+        cpkDbChangeLogDTOs: List<CpkDbChangeLogDTO>
     ): CpiMetadataEntity
 
     /**

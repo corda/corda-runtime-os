@@ -43,6 +43,7 @@ import net.corda.orm.utils.use
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
 import net.corda.utilities.time.Clock
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -227,10 +228,13 @@ internal class VirtualNodeWriterProcessor(
     ) {
         val em = dbConnectionManager.getClusterEntityManagerFactory().createEntityManager()
         val shortHashes = dbResetRequest.holdingIdentityShortHashes.map { shortHashString ->
+            val newChangeSetUUID = UUID.randomUUID()
             val shortHash = ShortHash.Companion.of(shortHashString)
             em.transaction {
+                val dbConnection = it.findDbConnectionByNameAndPrivilege(VAULT.getConnectionName(shortHash), DDL)
+                    ?: throw CordaRuntimeException("Could not lookup db connection for virtual node $shortHash")
                 val dbConfig = ConfigFactory.parseString(
-                    it.findDbConnectionByNameAndPrivilege(VAULT.getConnectionName(shortHash), DDL)!!.config
+                    dbConnection.config
                 )
                 val connectionConfig = SmartConfigFactory.create(dbConfig).create(dbConfig)
                 val virtualNodeInfo = virtualNodeEntityRepository.getVirtualNode(shortHashString)
@@ -238,15 +242,31 @@ internal class VirtualNodeWriterProcessor(
                     virtualNodeInfo.cpiIdentifier.name,
                     virtualNodeInfo.cpiIdentifier.version
                 )!!
-                val migrations = findDbChangeLogAuditForCpi(em, virtualNodeInfo.cpiIdentifier)
-                // Second last migration will be the one before the last force upload
-                val lastVersion: Int = migrations.maxOf { it.id.entityVersion } - 1
-                val migrationSet = migrations.filter { migration -> migration.id.entityVersion == lastVersion }
-                rollbackVirtualNodeDb(connectionConfig, migrationSet, "${VAULT.name}-system-final")
                 val changelogs = getChangelogs(it, cpiMetadata.id)
+                val systemTerminatorTag = "${VAULT.name}-system-final"
+                @Suppress("UNCHECKED_CAST")
                 dbConnectionManager.getDataSource(connectionConfig).use { dataSource ->
+                    val appliedVersions: List<String> = it.createNativeQuery(
+                        "SELECT tag FROM ${dataSource.connection.schema}.databasechangelog " +
+                            "WHERE tag IS NOT NULL and tag != :systemTerminatorTag " +
+                            "ORDER BY orderexecuted"
+                    )
+                        .setParameter("systemTerminatorTag", systemTerminatorTag)
+                        .resultList
+                        .toList() as List<String>
+                    val migrationSet = findDbChangeLogAuditForCpi(em, virtualNodeInfo.cpiIdentifier, appliedVersions)
+                    migrationSet.forEach { logger.debug { "Will rollback ${it.id.filePath} for cpk checksum ${it.id.fileChecksum} at${it.id.changeUUID}" } }
+                    rollbackVirtualNodeDb(connectionConfig, migrationSet, systemTerminatorTag)
+                    logger.info("Finished rolling back previous migrations, attempting to apply new ones")
+                    changelogs.forEach { cl ->
+                        logger.info("Applying change log ${cl.id.filePath} for cpk checksum ${cl.fileChecksum} at ${newChangeSetUUID}")
+                    }
                     dataSource.connection.use { connection ->
-                        LiquibaseSchemaMigratorImpl().updateDb(connection, VirtualNodeDbChangeLog(changelogs), null)
+                        LiquibaseSchemaMigratorImpl().updateDb(
+                            connection,
+                            VirtualNodeDbChangeLog(changelogs),
+                            tag = newChangeSetUUID.toString()
+                        )
                     }
                 }
             }
@@ -506,8 +526,9 @@ internal class VirtualNodeWriterProcessor(
                 val cpkChangelogs = changelogs.filter { cl2 -> cl2.id.cpkName == cpkName }
                 logger.info("Doing ${cpkChangelogs.size} migrations for $cpkName")
                 val dbChange = VirtualNodeDbChangeLog(cpkChangelogs)
+                val changeUUID = cpkChangelogs.last().changeUUID
                 try {
-                    vaultDb.runCpiMigrations(dbChange)
+                    vaultDb.runCpiMigrations(dbChange, changeUUID)
                 } catch (e: Exception) {
                     logger.error("Virtual node liquibase DB migration failure on CPK $cpkName with error $e")
                     throw VirtualNodeWriteServiceException(

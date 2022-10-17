@@ -83,6 +83,10 @@ class ClusterBuilder {
             cpiName
         )
 
+    /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
+    fun syncVirtualNode(id: String) =
+        post("/api/v1/maintenance/virtualnode/rollbackdb/$id", "")
+
     /** Return the status for the given request id */
     fun cpiStatus(id: String) = client!!.get("/api/v1/cpi/status/$id")
 

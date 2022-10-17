@@ -4,6 +4,7 @@ import net.corda.db.schema.DbSchema
 import net.corda.libs.packaging.core.CpiIdentifier
 import java.io.Serializable
 import java.time.Instant
+import java.util.UUID
 import javax.persistence.Column
 import javax.persistence.Embeddable
 import javax.persistence.EmbeddedId
@@ -24,7 +25,12 @@ class CpkDbChangeLogEntity(
     val fileChecksum: String,
     @Column(name = "content", nullable = false)
     val content: String,
+    @Column(name = "change_uuid", nullable = false)
+    val changeUUID: String,
 ) {
+    constructor(cpkDbChangeLogDTO: CpkDbChangeLogDTO, changeUUID: UUID) : this (
+        cpkDbChangeLogDTO.id, cpkDbChangeLogDTO.cpkFileChecksum, cpkDbChangeLogDTO.content, changeUUID.toString()
+    )
     // This structure does not distinguish the root changelogs from changelog include files
     // (or CSVs, which we do not need to support). So, to find the root, you need to look for a filename
     // convention. See the comment in the companion object of VirtualNodeDbChangeLog.

@@ -91,12 +91,12 @@ class VirtualNodeDb(
         }
     }
 
-    fun runCpiMigrations(dbChange: DbChange) {
+    fun runCpiMigrations(dbChange: DbChange, tag: String) {
         val dbConnection = dbConnections[DDL]
             ?: throw VirtualNodeDbException("No DDL database connection when due to apply CPI migrations")
         dbConnectionManager.getDataSource(dbConnection.config).use { dataSource ->
             dataSource.connection.use { connection ->
-                LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange, null)
+                LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange, tag = tag)
             }
         }
     }
