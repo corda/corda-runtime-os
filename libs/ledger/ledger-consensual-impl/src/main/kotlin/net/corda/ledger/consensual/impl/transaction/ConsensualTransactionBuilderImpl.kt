@@ -38,23 +38,38 @@ class ConsensualTransactionBuilderImpl(
         this.copy(states = this.states + states)
 
     @Suspendable
-    override fun sign(publicKey: PublicKey): ConsensualSignedTransaction {
+    override fun sign(): ConsensualSignedTransaction {
+        TODO("Not yet implemented")
+    }
+
+    @Suspendable
+    override fun sign(vararg signatories: PublicKey): ConsensualSignedTransaction {
+        require(signatories.isNotEmpty()){
+            "At least one key needs to be provided in order to create a signed Transaction!"
+        }
         val wireTransaction = buildWireTransaction()
-        val signatureWithMetaData = createTransactionSignature(
-            signingService,
-            serializationService,
-            getCpiSummary(),
-            wireTransaction.id,
-            publicKey
-        )
+        val signaturesWithMetaData = signatories.map {
+            createTransactionSignature(
+                signingService,
+                serializationService,
+                getCpiSummary(),
+                wireTransaction.id,
+                it
+            )
+        }
         return ConsensualSignedTransactionImpl(
             serializationService,
             signingService,
             digitalSignatureVerificationService,
             wireTransaction,
-            listOf(signatureWithMetaData)
+            signaturesWithMetaData
         )
+
     }
+
+    @Suspendable
+    override fun sign(signatories: Iterable<PublicKey>): ConsensualSignedTransaction =
+        sign(*(signatories.map{it}.toTypedArray()))
 
     private fun buildWireTransaction(): WireTransaction {
         // TODO(CORE-5982 more verifications)
