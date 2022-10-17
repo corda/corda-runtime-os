@@ -417,6 +417,7 @@ if (compositeBuild.toBoolean() && file(cordaApiLocation).exists()) {
             substitute module('net.corda:corda-db-schema') using project(':data:db-schema')
             substitute module('net.corda:corda-membership-schema') using project(':data:membership-schema')
             substitute module('net.corda:corda-topic-schema') using project(':data:topic-schema')
+            substitute module('net.corda:corda-rbac-schema') using project(':data:rbac-schema')
             substitute module('net.corda:corda-ledger-common') using project(':ledger:ledger-common')
             substitute module('net.corda:corda-ledger-consensual') using project(':ledger:ledger-consensual')
             substitute module('net.corda:corda-ledger-utxo') using project(':ledger:ledger-utxo')
