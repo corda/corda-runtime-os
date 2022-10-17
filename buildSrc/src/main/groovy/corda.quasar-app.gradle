@@ -12,7 +12,6 @@ quasar {
     excludePackages = [
         'co.paralleluniverse**',
         'com.esotericsoftware.**',
-        'io.opentelemetry.**',
         'kotlin**',
         'org.apache.**',
         'org.objectweb.asm',

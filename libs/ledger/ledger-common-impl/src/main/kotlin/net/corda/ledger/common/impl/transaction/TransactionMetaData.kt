@@ -1,5 +1,6 @@
 package net.corda.ledger.common.impl.transaction
 
+import net.corda.ledger.common.internal.transaction.CordaPackageSummary
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 

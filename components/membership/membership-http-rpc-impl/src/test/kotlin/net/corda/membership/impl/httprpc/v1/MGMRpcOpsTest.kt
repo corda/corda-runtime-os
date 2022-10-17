@@ -1,19 +1,26 @@
 package net.corda.membership.impl.httprpc.v1
 
+import net.corda.httprpc.exception.InvalidInputDataException
+import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.exception.ServiceUnavailableException
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
+import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMOpsClient
+import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.virtualnode.ShortHash
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
@@ -61,6 +68,28 @@ class MGMRpcOpsTest {
             .generateGroupPolicy(eq((ShortHash.of(HOLDING_IDENTITY_ID))))
         mgmRpcOps.deactivate("")
         mgmRpcOps.stop()
+    }
+
+    @Test
+    fun `generateGroupPolicy throws resource not found for invalid member`() {
+        mgmRpcOps.start()
+        mgmRpcOps.activate("")
+        whenever(mgmOpsClient.generateGroupPolicy(any())).doThrow(mock<CouldNotFindMemberException>())
+
+        assertThrows<ResourceNotFoundException> {
+            mgmRpcOps.generateGroupPolicy(HOLDING_IDENTITY_ID)
+        }
+    }
+
+    @Test
+    fun `generateGroupPolicy throws invalid input for non MGM meber`() {
+        mgmRpcOps.start()
+        mgmRpcOps.activate("")
+        whenever(mgmOpsClient.generateGroupPolicy(any())).doThrow(mock<MemberNotAnMgmException>())
+
+        assertThrows<InvalidInputDataException> {
+            mgmRpcOps.generateGroupPolicy(HOLDING_IDENTITY_ID)
+        }
     }
 
     @Test

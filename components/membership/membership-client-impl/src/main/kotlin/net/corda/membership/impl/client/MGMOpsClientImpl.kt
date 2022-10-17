@@ -17,7 +17,9 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
+import net.corda.membership.client.CouldNotFindMemberException
 import net.corda.membership.client.MGMOpsClient
+import net.corda.membership.client.MemberNotAnMgmException
 import net.corda.membership.lib.MemberInfoExtension.Companion.isMgm
 import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.messaging.api.publisher.RPCSender
@@ -167,13 +169,13 @@ class MGMOpsClientImpl @Activate constructor(
 
             val holdingIdentity =
                 virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityShortHash)?.holdingIdentity
-                    ?: throw CordaRuntimeException("Could not find holding identity associated with member.")
+                    ?: throw CouldNotFindMemberException(holdingIdentityShortHash)
 
             val reader = membershipGroupReaderProvider.getGroupReader(holdingIdentity)
 
             val filteredMembers =
                 reader.lookup(holdingIdentity.x500Name)
-                    ?:throw CordaRuntimeException ("Could not find holding identity associated with member.")
+                    ?:throw CouldNotFindMemberException(holdingIdentityShortHash)
 
             if(filteredMembers.isMgm) {
 
@@ -188,7 +190,7 @@ class MGMOpsClientImpl @Activate constructor(
                 return generateGroupPolicyResponse(request.sendRequest())
             }
 
-            else throw CordaRuntimeException("Holding identity does not represent an MGM virtual node.")
+            else throw MemberNotAnMgmException(holdingIdentityShortHash)
 
         }
 

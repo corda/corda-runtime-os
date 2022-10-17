@@ -23,6 +23,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.membership.impl.registration.KeyDetails
 import net.corda.membership.impl.registration.MemberRole
+import net.corda.membership.impl.registration.MemberRole.Companion.toMemberInfo
 import net.corda.membership.impl.registration.dynamic.verifiers.OrderVerifier
 import net.corda.membership.impl.registration.dynamic.verifiers.P2pEndpointVerifier
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
@@ -234,8 +235,13 @@ class DynamicMemberRegistrationService @Activate constructor(
                 val roles = MemberRole.extractRolesFromContext(context)
                 val notaryKeys = generateNotaryKeys(context, member.shortHash.value)
                 logger.debug("Member roles: {}, notary keys: {}", roles, notaryKeys)
-                val memberContext = buildMemberContext(context, registrationId.toString(), member)
-                    .toSortedMap()
+                val memberContext = buildMemberContext(
+                    context,
+                    registrationId,
+                    member,
+                    roles,
+                    notaryKeys,
+                ).toSortedMap()
                     .toWire()
                 val serializedMemberContext = keyValuePairListSerializer.serialize(memberContext)
                     ?: throw IllegalArgumentException("Failed to serialize the member context for this request.")
@@ -304,8 +310,10 @@ class DynamicMemberRegistrationService @Activate constructor(
 
         private fun buildMemberContext(
             context: Map<String, String>,
-            registrationId: String,
-            member: HoldingIdentity
+            registrationId: UUID,
+            member: HoldingIdentity,
+            roles: Collection<MemberRole>,
+            notaryKeys: List<KeyDetails>,
         ): Map<String, String> {
             return (
                 context.filterNot {
@@ -313,14 +321,14 @@ class DynamicMemberRegistrationService @Activate constructor(
                 } + generateSessionKeyData(context, member.shortHash.value) +
                     generateLedgerKeyData(context, member.shortHash.value) +
                     mapOf(
-                        REGISTRATION_ID to registrationId,
+                        REGISTRATION_ID to registrationId.toString(),
                         PARTY_NAME to member.x500Name.toString(),
                         GROUP_ID to member.groupId,
                         PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),
                         // temporarily hardcoded
                         SOFTWARE_VERSION to SOFTWARE_VERSION_CONST,
                         SERIAL to SERIAL_CONST,
-                    )
+                    ) + roles.toMemberInfo { notaryKeys }
                 )
         }
 

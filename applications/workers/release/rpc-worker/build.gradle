@@ -71,8 +71,6 @@ dependencies {
     e2eTestImplementation "net.corda:corda-topic-schema"
     e2eTestImplementation 'net.corda:corda-cipher-suite'
     e2eTestRuntimeOnly 'org.osgi:osgi.core'
-
-    dockerImage "io.opentelemetry.javaagent:opentelemetry-javaagent:$openTelemetryVersion"
 }
 
 tasks.register('e2eTest', Test) {

@@ -50,7 +50,8 @@ class ConsensualSignedTransactionSerializationFlow : RPCStartableFlow {
             val testConsensualState = TestConsensualState("test", listOf(Party(member.name, member.ledgerKeys.first())))
             val txBuilder = consensualLedgerService.getTransactionBuilder()
             val signedTransaction = txBuilder
-                .withStates(testConsensualState).signInitial(memberLookup.myInfo().ledgerKeys.first())
+                .withStates(testConsensualState)
+                .sign(memberLookup.myInfo().ledgerKeys.first())
 
             log.info("Original signed Tx id: ${signedTransaction.id}")
 
