@@ -10,9 +10,6 @@ class TransactionMetaData(
 
     operator fun get(key: String): Any? = properties[key]
 
-    val entries: Set<Map.Entry<String, Any>>
-        get() = properties.entries
-
     companion object {
         const val LEDGER_MODEL_KEY = "ledgerModel"
         const val LEDGER_VERSION_KEY = "ledgerVersion"

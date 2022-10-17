@@ -103,8 +103,7 @@ class ConsensualTransactionBuilderImpl(
 
     private fun calculateComponentGroupLists(serializer: SerializationService): List<List<ByteArray>> {
         val requiredSigningKeys = states
-            .map { it.participants }
-            .flatten()
+            .flatMap { it.participants }
             .map { it.owningKey }
             .distinct()
 
@@ -113,8 +112,7 @@ class ConsensualTransactionBuilderImpl(
             componentGroupLists += when (componentGroupIndex) {
                 ConsensualComponentGroupEnum.METADATA ->
                     listOf(
-                        jsonMarshallingService.format(calculateMetaData())
-                            .toByteArray(Charsets.UTF_8)
+                        serializeMetadata().toByteArray(Charsets.UTF_8)
                     ) // TODO(update with CORE-5940)
                 ConsensualComponentGroupEnum.TIMESTAMP ->
                     listOf(serializer.serialize(Instant.now()).bytes)
@@ -127,6 +125,10 @@ class ConsensualTransactionBuilderImpl(
             }
         }
         return componentGroupLists
+    }
+
+    private fun serializeMetadata(): String {
+        return jsonMarshallingService.format(calculateMetaData())
     }
 
     private fun calculateMetaData(): TransactionMetaData {

@@ -1,0 +1,237 @@
+{
+	"definitions": {},
+	"$schema": "http://json-schema.org/draft-07/schema#", 
+	"$id": "https://corda.net/schema/ledger/transaction-metadata-v1.json", 
+	"title": "Root", 
+	"type": "object",
+	"required": [
+		"ledgerModel",
+		"digestSettings",
+		"ledgerVersion",
+		"cpiMetadata",
+		"cpkMetadata"
+	],
+	"properties": {
+		"ledgerModel": {
+			"$id": "#root/ledgerModel", 
+			"title": "Ledgermodel", 
+			"type": "string",
+			"default": "",
+			"examples": [
+				"net.corda.ledger.consensual.impl.transaction.ConsensualLedgerTransactionImpl"
+			],
+			"pattern": "^.*$"
+		},
+		"digestSettings": {
+			"$id": "#root/digestSettings", 
+			"title": "Digestsettings", 
+			"type": "object",
+			"required": [
+				"ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME",
+				"ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME",
+				"ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64",
+				"ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64",
+				"COMPONENT_MERKLE_TREE_DIGEST_PROVIDER_NAME",
+				"COMPONENT_MERKLE_TREE_DIGEST_ALGORITHM_NAME",
+				"COMPONENT_MERKLE_TREE_ENTROPY_ALGORITHM_NAME"
+			],
+			"properties": {
+				"ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME": {
+					"$id": "#root/digestSettings/ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME", 
+					"title": "Root_merkle_tree_digest_provider_name", 
+					"type": "string",
+					"default": "",
+					"examples": [
+						"TweakableHashDigestProvider"
+					],
+					"pattern": "^.*$"
+				},
+				"ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME": {
+					"$id": "#root/digestSettings/ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME", 
+					"title": "Root_merkle_tree_digest_algorithm_name", 
+					"type": "string",
+					"default": "",
+					"examples": [
+						"SHA-256D"
+					],
+					"pattern": "^.*$"
+				},
+				"ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64": {
+					"$id": "#root/digestSettings/ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64", 
+					"title": "Root_merkle_tree_digest_options_leaf_prefix_b64", 
+					"type": "string",
+					"default": "",
+					"examples": [
+						"bGVhZg=="
+					],
+					"pattern": "^.*$"
+				},
+				"ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64": {
+					"$id": "#root/digestSettings/ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64", 
+					"title": "Root_merkle_tree_digest_options_node_prefix_b64", 
+					"type": "string",
+					"default": "",
+					"examples": [
+						"bm9kZQ=="
+					],
+					"pattern": "^.*$"
+				},
+				"COMPONENT_MERKLE_TREE_DIGEST_PROVIDER_NAME": {
+					"$id": "#root/digestSettings/COMPONENT_MERKLE_TREE_DIGEST_PROVIDER_NAME", 
+					"title": "Component_merkle_tree_digest_provider_name", 
+					"type": "string",
+					"default": "",
+					"examples": [
+						"NonceHashDigestProvider"
+					],
+					"pattern": "^.*$"
+				},
+				"COMPONENT_MERKLE_TREE_DIGEST_ALGORITHM_NAME": {
+					"$id": "#root/digestSettings/COMPONENT_MERKLE_TREE_DIGEST_ALGORITHM_NAME", 
+					"title": "Component_merkle_tree_digest_algorithm_name", 
+					"type": "string",
+					"default": "",
+					"examples": [
+						"SHA-256D"
+					],
+					"pattern": "^.*$"
+				},
+				"COMPONENT_MERKLE_TREE_ENTROPY_ALGORITHM_NAME": {
+					"$id": "#root/digestSettings/COMPONENT_MERKLE_TREE_ENTROPY_ALGORITHM_NAME", 
+					"title": "Component_merkle_tree_entropy_algorithm_name", 
+					"type": "string",
+					"default": "",
+					"examples": [
+						"SHA-256D"
+					],
+					"pattern": "^.*$"
+				}
+			}
+		}
+,
+		"ledgerVersion": {
+			"$id": "#root/ledgerVersion", 
+			"title": "Ledgerversion", 
+			"type": "string",
+			"default": "",
+			"examples": [
+				"0.001"
+			],
+			"pattern": "^.*$"
+		},
+		"cpiMetadata": {
+			"$id": "#root/cpiMetadata", 
+			"title": "Cpimetadata", 
+			"type": "object",
+			"required": [
+				"name",
+				"version",
+				"signerSummaryHash",
+				"fileChecksum"
+			],
+			"properties": {
+				"name": {
+					"$id": "#root/cpiMetadata/name", 
+					"title": "Name", 
+					"type": "string",
+					"default": "",
+					"examples": [
+						"CPI name"
+					],
+					"pattern": "^.*$"
+				},
+				"version": {
+					"$id": "#root/cpiMetadata/version", 
+					"title": "Version", 
+					"type": "string",
+					"default": "",
+					"examples": [
+						"CPI version"
+					],
+					"pattern": "^.*$"
+				},
+				"signerSummaryHash": {
+					"$id": "#root/cpiMetadata/signerSummaryHash", 
+					"title": "Signersummaryhash", 
+					"type": "string",
+					"default": "",
+					"examples": [
+						"46616B652D76616C7565"
+					],
+					"pattern": "^.*$"
+				},
+				"fileChecksum": {
+					"$id": "#root/cpiMetadata/fileChecksum", 
+					"title": "Filechecksum", 
+					"type": "string",
+					"default": "",
+					"examples": [
+						"0000111122223333444455556666777788889999AAAABBBBCCCCDDDDEEEEFFFF"
+					],
+					"pattern": "^.*$"
+				}
+			}
+		}
+,
+		"cpkMetadata": {
+			"$id": "#root/cpkMetadata", 
+			"title": "Cpkmetadata", 
+			"type": "array",
+			"default": [],
+			"items":{
+				"$id": "#root/cpkMetadata/items", 
+				"title": "Items", 
+				"type": "object",
+				"required": [
+					"name",
+					"version",
+					"signerSummaryHash",
+					"fileChecksum"
+				],
+				"properties": {
+					"name": {
+						"$id": "#root/cpkMetadata/items/name", 
+						"title": "Name", 
+						"type": "string",
+						"default": "",
+						"examples": [
+							"MockCpk"
+						],
+						"pattern": "^.*$"
+					},
+					"version": {
+						"$id": "#root/cpkMetadata/items/version", 
+						"title": "Version", 
+						"type": "string",
+						"default": "",
+						"examples": [
+							"1"
+						],
+						"pattern": "^.*$"
+					},
+					"signerSummaryHash": {
+						"$id": "#root/cpkMetadata/items/signerSummaryHash", 
+						"title": "Signersummaryhash", 
+						"type": "string",
+						"default": "",
+						"examples": [
+							""
+						],
+						"pattern": "^.*$"
+					},
+					"fileChecksum": {
+						"$id": "#root/cpkMetadata/items/fileChecksum", 
+						"title": "Filechecksum", 
+						"type": "string",
+						"default": "",
+						"examples": [
+                            "0000111122223333444455556666777788889999AAAABBBBCCCCDDDDEEEEFFFF"
+						],
+						"pattern": "^.*$"
+					}
+				}
+			}
+
+		}
+	}
+}
