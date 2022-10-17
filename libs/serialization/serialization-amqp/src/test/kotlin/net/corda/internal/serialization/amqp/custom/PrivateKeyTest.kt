@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.fail
 import java.security.PrivateKey
-import net.corda.internal.serialization.amqp.testutils.mockSandboxGroupWithoutPublicBundles
 
 class PrivateKeyTest {
 
@@ -20,7 +19,7 @@ class PrivateKeyTest {
         class PrivateKeyProxy
     }
 
-    val factory = testDefaultFactory(sandboxGroup = mockSandboxGroupWithoutPublicBundles).apply {
+    val factory = testDefaultFactory(externalCustomSerializerAllowed = { true }).apply {
         registerExternal(
             PrivateKeySerializer(),
             this

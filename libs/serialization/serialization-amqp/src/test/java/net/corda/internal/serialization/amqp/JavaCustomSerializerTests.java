@@ -81,7 +81,7 @@ public class JavaCustomSerializerTests {
     public void serializeExample() throws NotSerializableException {
         SerializerFactory factory = testDefaultFactory(
                 new DefaultDescriptorBasedSerializerRegistry(),
-                AMQPTestUtilsKt.getMockSandboxGroupWithoutPublicBundles()
+                aClass -> true
         );
         SerializationOutput ser = new SerializationOutput(factory);
 

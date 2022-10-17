@@ -10,13 +10,12 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import java.io.NotSerializableException
 import kotlin.test.assertFailsWith
-import net.corda.internal.serialization.amqp.testutils.mockSandboxGroupWithoutPublicBundles
 
 class SingletonSerializeAsTokenTest {
 
     private companion object {
-        fun testDefaultFactoryWithSandboxGroup() =
-            testDefaultFactory(sandboxGroup = mockSandboxGroupWithoutPublicBundles)
+        val testDefaultFactory
+            get() = testDefaultFactory(externalCustomSerializerAllowed = { true })
     }
 
     @Test
@@ -29,7 +28,7 @@ class SingletonSerializeAsTokenTest {
 
     @Test
     fun `adding custom serializer for a SingletonSerializeAsToken serializes that SingletonSerializeAsToken`() {
-        val factoryWithSerializersRegistered = testDefaultFactoryWithSandboxGroup().also {
+        val factoryWithSerializersRegistered = testDefaultFactory.also {
             registerCustomSerializers(it)
             it.registerExternal(ServiceSerializer(), it)
         }
@@ -40,7 +39,7 @@ class SingletonSerializeAsTokenTest {
 
     @Test
     fun `SingletonSerializeAsToken fails to serialize if custom serializer is provided for other SingletonSerializeAsToken`() {
-        val factoryWithSerializersRegistered = testDefaultFactoryWithSandboxGroup().also {
+        val factoryWithSerializersRegistered = testDefaultFactory.also {
             registerCustomSerializers(it)
             it.registerExternal(ServiceSerializer(), it)
         }

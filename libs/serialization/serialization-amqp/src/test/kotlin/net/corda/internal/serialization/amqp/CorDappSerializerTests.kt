@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Timeout
 import java.io.NotSerializableException
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
-import net.corda.internal.serialization.amqp.testutils.mockSandboxGroupWithoutPublicBundles
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
@@ -21,8 +20,8 @@ class CorDappSerializerTests {
     data class NeedsProxy(val a: String)
 
     private companion object {
-        fun testDefaultFactoryWithSandboxGroup() =
-            testDefaultFactory(sandboxGroup = mockSandboxGroupWithoutPublicBundles)
+        val testDefaultFactory
+            get() = testDefaultFactory(externalCustomSerializerAllowed = { true })
     }
 
     class NeedsProxyProxySerializer : SerializationCustomSerializer<NeedsProxy, NeedsProxyProxySerializer.Proxy> {
@@ -52,8 +51,8 @@ class CorDappSerializerTests {
 
     @Test
 	fun `type uses proxy`() {
-        val proxyFactory = testDefaultFactoryWithSandboxGroup()
-        val internalProxyFactory = testDefaultFactoryWithSandboxGroup()
+        val proxyFactory = testDefaultFactory
+        val internalProxyFactory = testDefaultFactory
 
         val msg = "help"
 
@@ -77,7 +76,7 @@ class CorDappSerializerTests {
         @CordaSerializable
         data class A(val a: Int, val b: NeedsProxy)
 
-        val factory = testDefaultFactoryWithSandboxGroup()
+        val factory = testDefaultFactory
         factory.registerExternal(NeedsProxyProxySerializer(), factory)
 
         val tv1 = 100
@@ -94,7 +93,7 @@ class CorDappSerializerTests {
 	fun testWithAllowListBlocked() {
         data class A(val a: Int, val b: NeedsProxy)
 
-        val factory = testDefaultFactoryWithSandboxGroup()
+        val factory = testDefaultFactory
         factory.registerExternal(NeedsProxyProxySerializer(), factory)
 
         val tv1 = 100
@@ -117,7 +116,7 @@ class CorDappSerializerTests {
     // Tests CORDA-1747
     @Test
 	fun proxiedGeneric() {
-        val proxyFactory = testDefaultFactoryWithSandboxGroup()
+        val proxyFactory = testDefaultFactory
         proxyFactory.registerExternal(NeedsProxyGenProxySerializer(), proxyFactory)
 
         val msg = "help"
@@ -167,7 +166,7 @@ class CorDappSerializerTests {
     // Tests CORDA-1747 - Finally the actual bound generics test, on failure it will throw
     @Test
 	fun proxiedBoundedGeneric() {
-        val proxyFactory = testDefaultFactoryWithSandboxGroup()
+        val proxyFactory = testDefaultFactory
         proxyFactory.registerExternal(NeedsProxyGenBoundedProxySerializer(), proxyFactory)
         proxyFactory.registerExternal(HasWibbleProxy(), proxyFactory)
 
@@ -191,7 +190,7 @@ class CorDappSerializerTests {
     // Tests CORDA-1747
     @Test
 	fun proxiedGenericContainer() {
-        val proxyFactory = testDefaultFactoryWithSandboxGroup()
+        val proxyFactory = testDefaultFactory
         proxyFactory.registerExternal(NeedsProxyGenContainerProxySerializer(), proxyFactory)
 
         val blob1 = SerializationOutput(proxyFactory).serialize(NeedsProxyGenContainer(listOf(1, 2, 3)))
@@ -232,7 +231,7 @@ class CorDappSerializerTests {
     // Tests CORDA-1747
     @Test
 	fun proxiedInheritableGenerics() {
-        val proxyFactory = testDefaultFactoryWithSandboxGroup()
+        val proxyFactory = testDefaultFactory
         proxyFactory.registerExternal(BaseProxy(), proxyFactory)
         proxyFactory.registerExternal(DerivedProxy(), proxyFactory)
 

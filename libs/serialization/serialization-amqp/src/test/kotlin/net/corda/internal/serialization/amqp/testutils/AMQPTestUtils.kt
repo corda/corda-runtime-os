@@ -52,11 +52,12 @@ class TestDescriptorBasedSerializerRegistry : DescriptorBasedSerializerRegistry 
 fun testDefaultFactory(
     descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
         DefaultDescriptorBasedSerializerRegistry(),
-    sandboxGroup: SandboxGroup = testSerializationContext.currentSandboxGroup()
+    externalCustomSerializerAllowed: ((Class<*>) -> Boolean)? = null
 ) =
     SerializerFactoryBuilder.build(
-        sandboxGroup,
-        descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry
+        testSerializationContext.currentSandboxGroup(),
+        descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry,
+        externalCustomSerializerAllowed = externalCustomSerializerAllowed
     )
 
 @JvmOverloads
@@ -155,25 +156,4 @@ fun <T : Any> SerializationOutput.serializeAndReturnSchema(
 @Throws(NotSerializableException::class)
 fun <T : Any> SerializationOutput.serialize(obj: T, encoding: SerializationEncoding? = null): SerializedBytes<T> {
     return serialize(obj, testSerializationContext.withEncoding(encoding))
-}
-
-val mockSandboxGroupWithoutPublicBundles = object : SandboxGroup {
-    val classLoader = ClassLoader.getSystemClassLoader()
-    override val metadata: Map<Bundle, CpkMetadata> = emptyMap()
-
-    override fun loadClassFromMainBundles(className: String): Class<*> =
-        Class.forName(className, false, classLoader)
-
-    override fun <T : Any> loadClassFromMainBundles(className: String, type: Class<T>): Class<out T> =
-        Class.forName(className, false, classLoader).asSubclass(type)
-
-    override fun getStaticTag(klass: Class<*>): String = "dummyStaticTag"
-
-    override fun getEvolvableTag(klass: Class<*>): String = "dummyEvolvableTag"
-
-    override fun getClass(className: String, serialisedClassTag: String): Class<*> =
-        Class.forName(className)
-
-    // This mock sandbox group impersonates a sandbox group without public bundles.
-    override fun loadClassFromPublicBundles(className: String): Class<*>? = null
 }

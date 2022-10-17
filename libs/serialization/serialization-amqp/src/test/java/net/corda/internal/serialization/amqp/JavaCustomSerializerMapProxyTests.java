@@ -41,7 +41,7 @@ public class JavaCustomSerializerMapProxyTests {
     public void serializeExample() {
         SerializerFactory factory = testDefaultFactory(
                 new DefaultDescriptorBasedSerializerRegistry(),
-                AMQPTestUtilsKt.getMockSandboxGroupWithoutPublicBundles()
+                aClass -> true
         );
         SerializationOutput ser = new SerializationOutput(factory);
 

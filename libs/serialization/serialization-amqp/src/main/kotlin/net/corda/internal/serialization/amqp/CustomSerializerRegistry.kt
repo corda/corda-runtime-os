@@ -17,7 +17,8 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import java.io.NotSerializableException
 import java.lang.reflect.Type
 import java.security.PrivateKey
-import net.corda.sandbox.SandboxGroup
+import net.corda.v5.base.annotations.VisibleForTesting
+import org.osgi.framework.FrameworkUtil
 
 /**
  * Thrown when a [SerializationCustomSerializer] offers to serialize a type for which custom serialization is not permitted, because
@@ -95,15 +96,23 @@ interface CustomSerializerRegistry {
     fun findCustomSerializer(clazz: Class<*>, declaredType: Type): AMQPSerializer<Any>?
 }
 
-class CachingCustomSerializerRegistry(
-        private val descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
-        private val allowedFor: Set<Class<*>>,
-        private val sandboxGroup: SandboxGroup
+class CachingCustomSerializerRegistry private constructor(
+    private val descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
+    private val allowedFor: Set<Class<*>>,
+    private val externalCustomSerializerAllowed: (Class<*>) -> Boolean = {
+        val bundle = FrameworkUtil.getBundle(it)
+        bundle == null || !bundle.location.contains("FLOW/")
+    }
 ) : CustomSerializerRegistry {
     constructor(
+        descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry
+    ) : this(descriptorBasedSerializerRegistry, emptySet())
+
+    @VisibleForTesting
+    constructor(
         descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
-        sandboxGroup: SandboxGroup
-    ) : this(descriptorBasedSerializerRegistry, emptySet(), sandboxGroup)
+        externalCustomSerializerAllowed: (Class<*>) -> Boolean
+    ) : this(descriptorBasedSerializerRegistry, emptySet(), externalCustomSerializerAllowed)
 
     companion object {
         val logger = contextLogger()
@@ -147,8 +156,8 @@ class CachingCustomSerializerRegistry(
     override fun registerExternal(serializer: SerializationCustomSerializer<*, *>, factory: SerializerFactory) {
         val customSerializer = CorDappCustomSerializer(serializer, factory)
         val clazz = customSerializer.type.asClass()
-        if (sandboxGroup.loadClassFromPublicBundles(clazz.name) != null) {
-            // Prevent registering custom serializers targeting Corda platform types
+        if (!externalCustomSerializerAllowed(clazz)) {
+            // Allow custom serializers for types in CPKs (within main bundles and within libraries).
             logger.warn("Illegal custom serializer external registration for $clazz: ${serializer::class.qualifiedName}")
             throw IllegalCustomSerializerException(serializer, clazz)
         }

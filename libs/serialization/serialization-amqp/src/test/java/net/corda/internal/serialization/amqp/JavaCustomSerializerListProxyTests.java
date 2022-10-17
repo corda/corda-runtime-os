@@ -1,5 +1,6 @@
 package net.corda.internal.serialization.amqp;
 
+import kotlin.jvm.functions.Function1;
 import net.corda.internal.serialization.amqp.helper.TestSerializationContext;
 import net.corda.internal.serialization.amqp.testutils.AMQPTestUtilsKt;
 import net.corda.v5.serialization.SerializationCustomSerializer;
@@ -37,7 +38,7 @@ public class JavaCustomSerializerListProxyTests {
     public void serializeExample() {
         SerializerFactory factory = testDefaultFactory(
                 new DefaultDescriptorBasedSerializerRegistry(),
-                AMQPTestUtilsKt.getMockSandboxGroupWithoutPublicBundles()
+                aClass -> true
         );
         SerializationOutput ser = new SerializationOutput(factory);
 
