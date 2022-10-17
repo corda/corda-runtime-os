@@ -5,12 +5,10 @@ import com.fasterxml.jackson.databind.module.SimpleModule
 import net.corda.v5.application.marshalling.json.JsonSerializedBase64Config
 import net.corda.v5.application.marshalling.json.JsonSerializer
 import net.corda.v5.application.marshalling.json.JsonWriter
-import net.corda.v5.serialization.SerializationCustomSerializer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Test
 import java.io.InputStream
-import java.lang.reflect.ParameterizedType
 import java.math.BigDecimal
 import java.math.BigInteger
 

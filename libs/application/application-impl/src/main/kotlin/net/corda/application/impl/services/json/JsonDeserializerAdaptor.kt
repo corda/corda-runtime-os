@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import net.corda.v5.application.marshalling.json.JsonDeserializer
-import net.corda.v5.application.marshalling.json.JsonSerializer
 import net.corda.v5.base.util.uncheckedCast
 import java.lang.reflect.ParameterizedType
 

@@ -38,7 +38,7 @@ class JsonMarshallingServiceImplTest {
     }
 
     @Suppress("EmptyClassBlock")
-    class OtherDto() {}
+    class OtherDto {}
 
     class OtherSerializer : JsonSerializer<OtherDto> {
         override fun serialize(item: OtherDto, jsonWriter: JsonWriter) {}
