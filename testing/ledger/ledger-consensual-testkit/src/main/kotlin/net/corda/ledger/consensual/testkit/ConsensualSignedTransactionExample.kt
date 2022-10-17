@@ -15,6 +15,7 @@ import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 
+@Suppress("Unused", "LongParameterList")
 fun getConsensualSignedTransaction(
     digestService: DigestService,
     merkleTreeProvider: MerkleTreeProvider,
