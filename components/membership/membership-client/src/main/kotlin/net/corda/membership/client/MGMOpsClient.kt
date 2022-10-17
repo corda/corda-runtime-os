@@ -14,7 +14,7 @@ interface MGMOpsClient : Lifecycle {
      *
      * @param holdingIdentityShortHash The ID of the holding identity to be checked.
      * @return [String] Generated Group Policy Response.
-     * @throws [CouldNotFindMemberException] If there is not member with [holdingIdentityShortHash].
+     * @throws [CouldNotFindMemberException] If there is no member with [holdingIdentityShortHash].
      * @throws [MemberNotAnMgmException] If the member [holdingIdentityShortHash] is not an MGM.
      */
     @Throws(CouldNotFindMemberException::class, MemberNotAnMgmException::class)
