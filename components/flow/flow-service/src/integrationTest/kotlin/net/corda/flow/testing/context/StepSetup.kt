@@ -47,8 +47,7 @@ interface StepSetup {
         flowId: String,
         sessionId: String,
         receivedSequenceNum: Int,
-        initiatingIdentity: HoldingIdentity? = null,
-        initiatedIdentity: HoldingIdentity? = null
+        outOfOrderSeqNums: List<Int> = emptyList()
     ): FlowIoRequestSetup
 
     fun sessionDataEventReceived(
@@ -57,8 +56,7 @@ interface StepSetup {
         data: ByteArray,
         sequenceNum: Int,
         receivedSequenceNum: Int,
-        initiatingIdentity: HoldingIdentity? = null,
-        initiatedIdentity: HoldingIdentity? = null
+        outOfOrderSeqNums: List<Int> = emptyList()
     ): FlowIoRequestSetup
 
     fun sessionCloseEventReceived(
