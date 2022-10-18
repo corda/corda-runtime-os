@@ -1,0 +1,7 @@
+{
+  "type": "record",
+  "name": "PersistGroupParametersInitialSnapshot",
+  "namespace": "net.corda.data.membership.db.request.command",
+  "doc": "MGM command to create and persist a new set of group parameters.",
+  "fields": []
+}

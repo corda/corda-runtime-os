@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "PersistGroupParametersResponse",
+  "namespace": "net.corda.data.membership.db.response.command",
+  "doc": "Response to a persist group parameters request",
+  "fields": [
+    {
+      "name": "epoch",
+      "doc": "The version of the persisted set of group parameters.",
+      "type": "int"
+    }
+  ]
+}

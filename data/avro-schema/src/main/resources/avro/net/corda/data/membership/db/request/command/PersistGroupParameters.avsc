@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "PersistGroupParameters",
+  "namespace": "net.corda.data.membership.db.request.command",
+  "doc": "Persist a new set or update an existing set of group parameters as distributed by the MGM.",
+  "fields": [
+    {
+      "name": "groupParameters",
+      "doc": "Parameters which all group members agree to abide by",
+      "type": "net.corda.data.KeyValuePairList"
+    }
+  ]
+}

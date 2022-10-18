@@ -15,6 +15,7 @@
         "null",
         "net.corda.data.membership.db.response.query.MemberInfoQueryResponse",
         "net.corda.data.membership.db.response.command.PersistGroupPolicyResponse",
+        "net.corda.data.membership.db.response.command.PersistGroupParametersResponse",
         "net.corda.data.membership.db.response.query.RegistrationRequestQueryResponse",
         "net.corda.data.membership.db.response.query.RegistrationRequestsQueryResponse",
         "net.corda.data.membership.db.response.query.PersistenceFailedResponse",

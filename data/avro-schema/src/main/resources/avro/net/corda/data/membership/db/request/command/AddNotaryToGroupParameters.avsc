@@ -1,0 +1,13 @@
+{
+  "type": "record",
+  "name": "AddNotaryToGroupParameters",
+  "namespace": "net.corda.data.membership.db.request.command",
+  "doc": "Add a notary virtual node to the notary service in an existing set of group parameters.",
+  "fields": [
+    {
+      "name": "notary",
+      "doc": "Notary virtual node to be added to the group parameters",
+      "type": "net.corda.data.membership.PersistentMemberInfo"
+    }
+  ]
+}
