@@ -12,7 +12,6 @@
 	],
 	"properties": {
 		"ledgerModel": {
-			"$id": "#root/ledgerModel", 
 			"title": "Ledger model", 
 			"type": "string",
 			"description": "The name of the class that implements this type of ledger transaction.",
@@ -23,7 +22,6 @@
 			"pattern": "^.*$"
 		},
 		"digestSettings": {
-			"$id": "#root/digestSettings", 
 			"title": "Digest settings", 
 			"description": "Settings relating to the Merkle tree digest algorithms.",
 			"type": "object",
@@ -38,7 +36,6 @@
 			],
 			"properties": {
 				"ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME": {
-					"$id": "#root/digestSettings/ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME", 
 					"title": "Root Merkle tree digest provider name", 
 					"type": "string",
 					"description": "Class name of the digest provider for the root Merkle tree.",
@@ -49,7 +46,6 @@
 					"pattern": "^.*$"
 				},
 				"ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME": {
-					"$id": "#root/digestSettings/ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME", 
 					"title": "Root Merkle tree digest algorithm name", 
 					"type": "string",
 					"description": "Algorithm name of the digest provider for the root Merkle tree.",
@@ -60,7 +56,6 @@
 					"pattern": "^.*$"
 				},
 				"ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64": {
-					"$id": "#root/digestSettings/ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64", 
 					"title": "Root Merkle tree digest options leaf prefix base64 encoded", 
 					"type": "string",
 					"default": "",
@@ -70,7 +65,6 @@
 					"pattern": "^.*$"
 				},
 				"ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64": {
-					"$id": "#root/digestSettings/ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64", 
 					"title": "Root Merkle tree digest options node prefix base64 encoded", 
 					"type": "string",
 					"default": "",
@@ -80,7 +74,6 @@
 					"pattern": "^.*$"
 				},
 				"COMPONENT_MERKLE_TREE_DIGEST_PROVIDER_NAME": {
-					"$id": "#root/digestSettings/COMPONENT_MERKLE_TREE_DIGEST_PROVIDER_NAME", 
 					"title": "Component Merkle tree digest provider name", 
 					"type": "string",
 					"default": "",
@@ -90,7 +83,6 @@
 					"pattern": "^.*$"
 				},
 				"COMPONENT_MERKLE_TREE_DIGEST_ALGORITHM_NAME": {
-					"$id": "#root/digestSettings/COMPONENT_MERKLE_TREE_DIGEST_ALGORITHM_NAME", 
 					"title": "Component Merkle tree digest algorithm name", 
 					"type": "string",
 					"default": "",
@@ -100,7 +92,6 @@
 					"pattern": "^.*$"
 				},
 				"COMPONENT_MERKLE_TREE_ENTROPY_ALGORITHM_NAME": {
-					"$id": "#root/digestSettings/COMPONENT_MERKLE_TREE_ENTROPY_ALGORITHM_NAME", 
 					"title": "Component Merkle tree entropy algorithm name", 
 					"type": "string",
 					"default": "",
@@ -113,7 +104,6 @@
 		}
 ,
 		"ledgerVersion": {
-			"$id": "#root/ledgerVersion", 
 			"title": "Ledger version", 
 			"type": "string",
 			"default": "",
@@ -123,18 +113,15 @@
 			"pattern": "^.*$"
 		},
 		"cpiMetadata": {
-			"$id": "#root/cpiMetadata", 
 			"title": "CPI metadata", 
 			"$ref": "#/definitions/package_metadata"
 		}
 ,
 		"cpkMetadata": {
-			"$id": "#root/cpkMetadata", 
 			"title": "CPK metadata", 
 			"type": "array",
 			"default": [],
 			"items":{
-				"$id": "#root/cpkMetadata/items", 
 				"title": "Items", 
 				"$ref": "#/definitions/package_metadata"
 			}
@@ -151,27 +138,24 @@
 			],
 			"properties": {
 				"name": {
-					"$id": "#root/cpiMetadata/name", 
 					"title": "Name", 
 					"type": "string",
 					"default": "",
 					"examples": [
-						"CPI name"
+						"TestPackage"
 					],
 					"pattern": "^.*$"
 				},
 				"version": {
-					"$id": "#root/cpiMetadata/version", 
 					"title": "Version", 
 					"type": "string",
 					"default": "",
 					"examples": [
-						"CPI version"
+						"0.0.1-test"
 					],
 					"pattern": "^.*$"
 				},
 				"signerSummaryHash": {
-					"$id": "#root/cpiMetadata/signerSummaryHash", 
 					"title": "Signer summary hash", 
 					"type": "string",
 					"default": "",
@@ -181,7 +165,6 @@
 					"pattern": "^.*$"
 				},
 				"fileChecksum": {
-					"$id": "#root/cpiMetadata/fileChecksum", 
 					"title": "File checksum", 
 					"type": "string",
 					"default": "",
