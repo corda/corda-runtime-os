@@ -19,7 +19,6 @@ class EvolutionObjectBuilderRenamedPropertyTests {
     private val cordappVersionTestValue = 38854445
     private val dataTestValue = "d7af8af0-c10e-45bc-a5f7-92de432be0ef"
     private val xTestValue = 7568055
-    private val yTestValue = 4113687
 
     class TestTransaction(val bob: String)
 
