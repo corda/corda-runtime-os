@@ -1,4 +1,4 @@
-package net.corda.ledger.consensual.impl.converter
+package net.corda.ledger.common.impl.converter
 
 import net.corda.layeredpropertymap.testkit.LayeredPropertyMapMocks
 import net.corda.ledger.common.impl.PartyConverter

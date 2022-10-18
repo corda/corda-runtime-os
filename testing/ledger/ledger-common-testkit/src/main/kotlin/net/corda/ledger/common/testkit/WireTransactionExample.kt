@@ -18,7 +18,7 @@ fun getWireTransaction(
         )
     )
     val componentGroupLists = listOf(
-        listOf(jsonMarshallingService.format(transactionMetaData).toByteArray(Charsets.UTF_8)), // TODO(update with CORE-5940)
+        listOf(jsonMarshallingService.format(transactionMetaData).toByteArray(Charsets.UTF_8)), // TODO(update with CORE-6890)
         listOf(".".toByteArray()),
         listOf("abc d efg".toByteArray()),
     )

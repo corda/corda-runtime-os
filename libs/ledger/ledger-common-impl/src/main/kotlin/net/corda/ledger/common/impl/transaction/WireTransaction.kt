@@ -35,7 +35,7 @@ class WireTransaction(
         check(componentGroupLists.all { i -> i.all { j-> j.isNotEmpty() } }) { "Empty components are not allowed" }
 
         val metadataBytes = componentGroupLists[ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first()
-        // TODO(update with CORE-5940)
+        // TODO(update with CORE-6890)
         metadata = jsonMarshallingService.parse(metadataBytes.decodeToString(), TransactionMetaData::class.java)
 
         check(metadata.getDigestSettings() == WireTransactionDigestSettings.defaultValues) {

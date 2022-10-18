@@ -17,6 +17,8 @@ import net.corda.serialization.SerializationContext
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
+import net.corda.v5.application.crypto.DigitalSignatureVerificationService
+import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
@@ -63,6 +65,12 @@ class ConsensualSignedTransactionAMQPSerializationTest {
 
     @InjectService(timeout = 1000)
     lateinit var jsonMarshallingService: JsonMarshallingService
+
+    @InjectService(timeout = 1000)
+    lateinit var digitalSignatureVerificationService: DigitalSignatureVerificationService
+
+    @InjectService(timeout = 1000)
+    lateinit var signingService: SigningService
 
     private lateinit var emptySandboxGroup: SandboxGroup
     private lateinit var publickeySerializer: InternalCustomSerializer<PublicKey>
@@ -137,7 +145,9 @@ class ConsensualSignedTransactionAMQPSerializationTest {
             digestService,
             merkleTreeProvider,
             serializationService,
-            jsonMarshallingService
+            jsonMarshallingService,
+            signingService,
+            digitalSignatureVerificationService
         )
         val serialised = SerializationOutput(factory1).serialize(signedTransaction, testSerializationContext)
 

@@ -1,10 +1,10 @@
 package net.corda.ledger.consensual.persistence.external.events
 
 import net.corda.data.ledger.consensual.PersistTransaction
-import java.nio.ByteBuffer
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
+import java.nio.ByteBuffer
 import java.time.Clock
 
 @Component(service = [ExternalEventFactory::class])

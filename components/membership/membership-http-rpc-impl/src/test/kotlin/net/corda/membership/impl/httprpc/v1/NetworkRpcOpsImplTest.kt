@@ -1,5 +1,6 @@
 package net.corda.membership.impl.httprpc.v1
 
+import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.lifecycle.LifecycleCoordinator
@@ -119,6 +120,22 @@ class NetworkRpcOpsImplTest {
                 )
             }
         }
+
+        @Test
+        fun `it catches bad request exception exception`() {
+            assertThrows<BadRequestException> {
+                networkOps.setupHostedIdentities(
+                    "id",
+                    HostedIdentitySetupRequest(
+                        "alias",
+                        "tls",
+                        "session-tenant",
+                        "session"
+                    )
+                )
+            }
+        }
+
         @Test
         fun `it catches any other exception exception`() {
             whenever(
@@ -133,7 +150,7 @@ class NetworkRpcOpsImplTest {
 
             assertThrows<InternalServerException> {
                 networkOps.setupHostedIdentities(
-                    "id",
+                    "79ED40726773",
                     HostedIdentitySetupRequest(
                         "alias",
                         "tls",

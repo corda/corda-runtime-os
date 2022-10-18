@@ -204,10 +204,8 @@ class JsonSerializerAdaptorAndWriterTest {
      * which they will be created at runtime in Corda. We need to make sure no compile time type information is required
      * to register a serializer.
      */
-    private fun testSerializerFactory(): Pair<JsonSerializer<*>, Class<*>> {
-        val newTestSerializer = TestSerializer()
-        val testClassInstance = TestClass()
-        return Pair(newTestSerializer, testClassInstance.javaClass)
+    private fun testSerializerFactory(): JsonSerializer<*> {
+        return TestSerializer()
     }
 
     @Test
@@ -215,8 +213,9 @@ class JsonSerializerAdaptorAndWriterTest {
         val mapper = ObjectMapper()
 
         val module = SimpleModule()
-        val (serializer, clazz) = testSerializerFactory()
-        module.addSerializer(clazz, JsonSerializerAdaptor(serializer, clazz))
+        val serializer = testSerializerFactory()
+        val jsonSerializerAdaptor = JsonSerializerAdaptor(serializer)
+        module.addSerializer(jsonSerializerAdaptor.serializingType, jsonSerializerAdaptor)
         mapper.registerModule(module)
 
         val serialized: String = mapper.writeValueAsString(testClassInstance)

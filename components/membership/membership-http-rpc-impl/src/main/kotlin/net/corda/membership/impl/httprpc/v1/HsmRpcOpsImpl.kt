@@ -2,6 +2,8 @@ package net.corda.membership.impl.httprpc.v1
 
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoTenants.P2P
+import net.corda.crypto.core.CryptoTenants.RPC_API
 import net.corda.data.crypto.wire.hsm.HSMAssociationInfo
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.ResourceNotFoundException
@@ -12,6 +14,8 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.httprpc.v1.HsmRpcOps
 import net.corda.membership.httprpc.v1.types.response.HsmAssociationInfo
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import net.corda.virtualnode.read.rpc.extensions.getByHoldingIdentityShortHashOrThrow
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -22,6 +26,8 @@ class HsmRpcOpsImpl @Activate constructor(
     private val hsmRegistrationClient: HSMRegistrationClient,
     @Reference(service = LifecycleCoordinatorFactory::class)
     private val lifecycleCoordinatorFactory: LifecycleCoordinatorFactory,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
 ) : HsmRpcOps, PluggableRPCOps<HsmRpcOps>, Lifecycle {
 
     companion object {
@@ -41,16 +47,27 @@ class HsmRpcOpsImpl @Activate constructor(
         }
     }
 
-    override fun assignedHsm(tenantId: String, category: String) =
-        hsmRegistrationClient.findHSM(tenantId, category.toCategory())?.expose()
+    override fun assignedHsm(tenantId: String, category: String): HsmAssociationInfo? {
+        verifyTenantId(tenantId)
+        return hsmRegistrationClient.findHSM(tenantId, category.toCategory())?.expose()
+    }
 
-    override fun assignSoftHsm(tenantId: String, category: String) = hsmRegistrationClient.assignSoftHSM(
-        tenantId, category.toCategory()
-    ).expose()
+    override fun assignSoftHsm(tenantId: String, category: String): HsmAssociationInfo {
+        verifyTenantId(tenantId)
+        return hsmRegistrationClient.assignSoftHSM(
+            tenantId,
+            category.toCategory()
+        ).expose()
+    }
 
-    override fun assignHsm(tenantId: String, category: String) = hsmRegistrationClient.assignHSM(
-        tenantId, category.toCategory(), emptyMap()
-    ).expose()
+    override fun assignHsm(tenantId: String, category: String): HsmAssociationInfo {
+        verifyTenantId(tenantId)
+        return hsmRegistrationClient.assignHSM(
+            tenantId,
+            category.toCategory(),
+            emptyMap()
+        ).expose()
+    }
 
     override val targetInterface = HsmRpcOps::class.java
 
@@ -76,6 +93,7 @@ class HsmRpcOpsImpl @Activate constructor(
         ::deactivate,
         setOf(
             LifecycleCoordinatorName.forComponent<HSMRegistrationClient>(),
+            LifecycleCoordinatorName.forComponent<VirtualNodeInfoReadService>(),
         )
     )
     private val coordinator = lifecycleCoordinatorFactory.createCoordinator(coordinatorName, lifecycleHandler)
@@ -89,5 +107,14 @@ class HsmRpcOpsImpl @Activate constructor(
 
     override fun stop() {
         coordinator.stop()
+    }
+
+    private fun verifyTenantId(tenantId: String) {
+        if((tenantId == P2P) || (tenantId == RPC_API)) {
+            return
+        }
+        virtualNodeInfoReadService.getByHoldingIdentityShortHashOrThrow(
+            tenantId
+        ) { "Could not find holding identity '$tenantId' associated with member." }
     }
 }
