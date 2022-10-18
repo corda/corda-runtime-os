@@ -29,6 +29,8 @@ import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.permissions.validation.PermissionValidationService
+import net.corda.rbac.schema.RbacKeys.PREFIX_SEPARATOR
+import net.corda.rbac.schema.RbacKeys.START_FLOW_PREFIX
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.VirtualNodeInfo
@@ -391,7 +393,7 @@ class FlowRPCOpsImplTest {
         whenever(
             permissionValidator.authorizeUser(
                 loginName,
-                "StartFlow:$FLOW1"
+                "$START_FLOW_PREFIX$PREFIX_SEPARATOR$FLOW1"
             )
         ).thenReturn(false)
 
