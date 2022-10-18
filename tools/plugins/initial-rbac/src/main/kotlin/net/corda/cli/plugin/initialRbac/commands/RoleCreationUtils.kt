@@ -16,10 +16,10 @@ import java.time.temporal.ChronoUnit
 
 internal object RoleCreationUtils {
 
-    private const val ALLOWED_CHARS = "[a-fA-F0-9]"
-    const val UUID_REGEX = "$ALLOWED_CHARS{8}-$ALLOWED_CHARS{4}-$ALLOWED_CHARS{4}-$ALLOWED_CHARS{4}-$ALLOWED_CHARS{12}"
+    private const val UUID_CHARS = "[a-fA-F0-9]"
+    const val UUID_REGEX = "$UUID_CHARS{8}-$UUID_CHARS{4}-$UUID_CHARS{4}-$UUID_CHARS{4}-$UUID_CHARS{12}"
 
-    const val VNODE_SHORT_HASH_REGEX = "[0-9a-fA-F]{12}"
+    const val VNODE_SHORT_HASH_REGEX = "$UUID_CHARS{12}"
 
     const val USER_REGEX = "[-._@a-zA-Z0-9]{3,250}"
 
