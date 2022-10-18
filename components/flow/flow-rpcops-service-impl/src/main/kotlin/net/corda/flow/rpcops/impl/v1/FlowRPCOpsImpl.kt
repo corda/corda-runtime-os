@@ -30,6 +30,8 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
 import net.corda.permissions.validation.PermissionValidationService
+import net.corda.rbac.schema.RbacKeys.PREFIX_SEPARATOR
+import net.corda.rbac.schema.RbacKeys.START_FLOW_PREFIX
 import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.Companion.FLOW_STATUS_TOPIC
 import net.corda.v5.base.util.contextLogger
@@ -102,7 +104,7 @@ class FlowRPCOpsImpl @Activate constructor(
         val principal = rpcContext.principal
 
         if (!permissionValidationService.permissionValidator.authorizeUser(principal,
-                "StartFlow:${startFlow.flowClassName}")) {
+                "$START_FLOW_PREFIX$PREFIX_SEPARATOR${startFlow.flowClassName}")) {
             throw ForbiddenException("User $principal is not allowed to start a flow: ${startFlow.flowClassName}")
         }
 
