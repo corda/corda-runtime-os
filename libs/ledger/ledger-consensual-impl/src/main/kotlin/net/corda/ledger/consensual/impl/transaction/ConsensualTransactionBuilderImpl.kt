@@ -93,7 +93,6 @@ class ConsensualTransactionBuilderImpl(
     private fun calculateComponentGroupLists(): List<List<ByteArray>> {
         val requiredSigningKeys = states
             .flatMap { it.participants }
-            .map { it.owningKey }
             .distinct()
 
         val componentGroupLists = mutableListOf<List<ByteArray>>()

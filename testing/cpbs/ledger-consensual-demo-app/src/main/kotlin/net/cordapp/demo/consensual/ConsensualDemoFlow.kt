@@ -13,12 +13,12 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransactionVerifier
+import java.security.PublicKey
 
 /**
  * Example consensual flow. Currently, does almost nothing other than verify that
@@ -33,7 +33,7 @@ class ConsensualDemoFlow : RPCStartableFlow {
 
     class TestConsensualState(
         val testField: String,
-        override val participants: List<Party>
+        override val participants: List<PublicKey>
     ) : ConsensualState {
         override fun verify(ledgerTransaction: ConsensualLedgerTransaction) {}
     }
@@ -65,8 +65,8 @@ class ConsensualDemoFlow : RPCStartableFlow {
                 TestConsensualState(
                     "test",
                     listOf(
-                        Party(alice.name, alice.ledgerKeys.first()),
-                        Party(bob.name, bob.ledgerKeys.first()),
+                        alice.ledgerKeys.first(),
+                        bob.ledgerKeys.first(),
                     )
                 )
 

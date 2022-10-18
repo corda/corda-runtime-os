@@ -51,9 +51,7 @@ class ConsensualLedgerTransactionImpl(
      */
     fun verify(){
         val requiredSigningKeysFromStates = states
-            .map{it.participants}
-            .flatten()
-            .map{it.owningKey}
+            .flatMap{it.participants}
         require(requiredSigningKeys == requiredSigningKeysFromStates) {
             "Deserialized required signing keys from WireTx do not match with the ones derived from the states!"
         }
