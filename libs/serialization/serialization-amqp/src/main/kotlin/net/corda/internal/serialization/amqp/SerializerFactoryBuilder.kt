@@ -96,7 +96,9 @@ object SerializerFactoryBuilder {
             allowEvolution = true,
             overrideFingerPrinter = null,
             onlyCustomSerializers = false,
-            mustPreserveDataWhenEvolving = false
+            mustPreserveDataWhenEvolving = false,
+            sandboxGroupSecurityDomain = "",
+            externalCustomSerializerAllowed = null
         )
     }
 
@@ -110,6 +112,7 @@ object SerializerFactoryBuilder {
         overrideFingerPrinter: FingerPrinter? = null,
         onlyCustomSerializers: Boolean = false,
         mustPreserveDataWhenEvolving: Boolean = false,
+        sandboxGroupSecurityDomain: String = "",
         externalCustomSerializerAllowed: ((Class<*>) -> Boolean)? = null): SerializerFactory {
         return makeFactory(
                 sandboxGroup,
@@ -118,6 +121,7 @@ object SerializerFactoryBuilder {
                 overrideFingerPrinter,
                 onlyCustomSerializers,
                 mustPreserveDataWhenEvolving,
+                sandboxGroupSecurityDomain,
                 externalCustomSerializerAllowed)
     }
 
@@ -129,10 +133,11 @@ object SerializerFactoryBuilder {
         overrideFingerPrinter: FingerPrinter?,
         onlyCustomSerializers: Boolean,
         mustPreserveDataWhenEvolving: Boolean,
-        externalCustomSerializerAllowed: ((Class<*>) -> Boolean)? = null): SerializerFactory {
+        sandboxGroupSecurityDomain: String,
+        externalCustomSerializerAllowed: ((Class<*>) -> Boolean)?): SerializerFactory {
         val customSerializerRegistry = externalCustomSerializerAllowed?.let {
             CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry, it)
-        } ?: CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry)
+        } ?: CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry, sandboxGroupSecurityDomain)
 
         val typeModelConfiguration = LocalTypeModelConfigurationImpl(customSerializerRegistry)
         val localTypeModel = ConfigurableLocalTypeModel(typeModelConfiguration)
