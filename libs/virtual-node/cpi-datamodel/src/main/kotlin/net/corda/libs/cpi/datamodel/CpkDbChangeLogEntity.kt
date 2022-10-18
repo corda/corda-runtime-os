@@ -26,10 +26,10 @@ class CpkDbChangeLogEntity(
     @Column(name = "content", nullable = false)
     val content: String,
     @Column(name = "change_uuid", nullable = false)
-    val changeUUID: String,
+    val changeUUID: UUID,
 ) {
     constructor(cpkDbChangeLogDTO: CpkDbChangeLogDTO, changeUUID: UUID) : this (
-        cpkDbChangeLogDTO.id, cpkDbChangeLogDTO.cpkFileChecksum, cpkDbChangeLogDTO.content, changeUUID.toString()
+        cpkDbChangeLogDTO.id, cpkDbChangeLogDTO.cpkFileChecksum, cpkDbChangeLogDTO.content, changeUUID
     )
     // This structure does not distinguish the root changelogs from changelog include files
     // (or CSVs, which we do not need to support). So, to find the root, you need to look for a filename

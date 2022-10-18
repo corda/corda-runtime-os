@@ -50,12 +50,12 @@ data class CpkDbChangeLogAuditKey(
     var cpkSignerSummaryHash: String,
     @Column(name = "cpk_file_checksum", nullable = false)
     val fileChecksum: String,
-    @Column(name = "change_uuid", nullable = false, length = 32)
-    var changeUUID: String,
+    @Column(name = "change_uuid", nullable = false)
+    var changeUUID: UUID,
     @Column(name = "file_path", nullable = false)
     val filePath: String,
 ) : Serializable {
-    constructor(cpkDbChangeLogKey: CpkDbChangeLogKey, fileChecksum: String, changeUUID: String) : this(
+    constructor(cpkDbChangeLogKey: CpkDbChangeLogKey, fileChecksum: String, changeUUID: UUID) : this(
         cpkDbChangeLogKey.cpkName,
         cpkDbChangeLogKey.cpkVersion,
         cpkDbChangeLogKey.cpkSignerSummaryHash,
@@ -94,7 +94,7 @@ fun findDbChangeLogAuditForCpi(
 fun findDbChangeLogAuditForCpi(
     entityManager: EntityManager,
     cpi: CpiIdentifier,
-    changeUUIDs: List<String>
+    changeUUIDs: Set<UUID>
 ): List<CpkDbChangeLogAuditEntity> = entityManager.createQuery(
     "SELECT changelog " +
         "FROM ${CpkDbChangeLogAuditEntity::class.simpleName} AS changelog INNER JOIN " +

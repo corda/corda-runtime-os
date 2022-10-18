@@ -230,26 +230,37 @@ internal class VirtualNodeWriterProcessor(
         respFuture: CompletableFuture<VirtualNodeManagementResponse>
     ) {
         val em = dbConnectionManager.getClusterEntityManagerFactory().createEntityManager()
-        val shortHashes = dbResetRequest.holdingIdentityShortHashes.map { shortHashString ->
-            val startMillis = currentTimeMillis()
-            val shortHash = ShortHash.Companion.of(shortHashString)
-            try {
-                em.transaction { em ->
-                    val dbConnection = em.findDbConnectionByNameAndPrivilege(VAULT.getConnectionName(shortHash), DDL)
+        val shortHashes = em.use {
+            dbResetRequest.holdingIdentityShortHashes.map { shortHashString ->
+                // Start for given vnode and it's vault
+                val startMillis = currentTimeMillis()
+                val shortHash = ShortHash.Companion.of(shortHashString)
+                // Open a TX to find the connection information we need for the virtual nodes vault as it may live on
+                //  another database.
+                it.transaction { tx ->
+                    // Get a DDL connection since we're working with migrations
+                    val dbConnection = tx.findDbConnectionByNameAndPrivilege(VAULT.getConnectionName(shortHash), DDL)
                         ?: throw CordaRuntimeException("Could not lookup db connection for virtual node $shortHash")
                     val dbConfig = ConfigFactory.parseString(
                         dbConnection.config
                     )
+                    // Change the config into a SmartConfig
                     val connectionConfig = SmartConfigFactory.create(dbConfig).create(dbConfig)
+                    // Retrieve virtual node info
                     val virtualNodeInfo = virtualNodeEntityRepository.getVirtualNode(shortHashString)
+                    // Retrieve CPI metadata
                     val cpiMetadata = virtualNodeEntityRepository.getCPIMetadataByNameAndVersion(
                         virtualNodeInfo.cpiIdentifier.name,
                         virtualNodeInfo.cpiIdentifier.version
                     )!!
+                    // Acquire datasource for our virtualnode vault from the config we constructed earlier
                     dbConnectionManager.getDataSource(connectionConfig).use { dataSource ->
-                        val appliedVersions: List<String> = getAppliedVersions(em, dataSource, systemTerminatorTag)
-                        val migrationSet = findDbChangeLogAuditForCpi(em, virtualNodeInfo.cpiIdentifier, appliedVersions)
+                        // Look up the tags(UUIDs) of the applied changelog entries
+                        val appliedVersions: Set<UUID> = getAppliedVersions(tx, dataSource, systemTerminatorTag)
+                        // Look up all audit entries that correspond to the UUID set that we just got
+                        val migrationSet = findDbChangeLogAuditForCpi(tx, virtualNodeInfo.cpiIdentifier, appliedVersions)
                         measureTimeMillis {
+                            // Attempt to rollback the acquired changes
                             rollbackVirtualNodeDb(connectionConfig, migrationSet, systemTerminatorTag)
                         }.also {
                             logger.debug {
@@ -259,6 +270,7 @@ internal class VirtualNodeWriterProcessor(
                         }
                         logger.info("Finished rolling back previous migrations, attempting to apply new ones")
                         measureTimeMillis {
+                            // Attempt to apply the changes from the current CPI
                             val changelogs = getChangelogs(em, cpiMetadata.id)
                             runCpiResyncMigrations(changelogs, connectionConfig)
                         }.also {
@@ -269,12 +281,8 @@ internal class VirtualNodeWriterProcessor(
                         }
                     }
                 }
-            } catch (e: Exception) {
-                when (e) {
-                    is Exception -> handleException(respFuture, e)
-                }
+                shortHash.value
             }
-            shortHash.value
         }
 
         respFuture.complete(
@@ -532,7 +540,7 @@ internal class VirtualNodeWriterProcessor(
                 val dbChange = VirtualNodeDbChangeLog(cpkChangelogs)
                 val changeUUID = cpkChangelogs.last().changeUUID
                 try {
-                    vaultDb.runCpiMigrations(dbChange, changeUUID)
+                    vaultDb.runCpiMigrations(dbChange, changeUUID.toString())
                 } catch (e: Exception) {
                     logger.error("Virtual node liquibase DB migration failure on CPK $cpkName with error $e")
                     throw VirtualNodeWriteServiceException(
@@ -554,7 +562,7 @@ internal class VirtualNodeWriterProcessor(
                 LiquibaseSchemaMigratorImpl().updateDb(
                     connection,
                     VirtualNodeDbChangeLog(cpkChangelogs),
-                    tag = newChangeSetUUID
+                    tag = newChangeSetUUID.toString()
                 )
             }
         }
@@ -633,7 +641,7 @@ internal class VirtualNodeWriterProcessor(
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun getAppliedVersions(em: EntityManager, dataSource: DataSource, systemTerminatorTag: String): List<String> =
+    private fun getAppliedVersions(em: EntityManager, dataSource: DataSource, systemTerminatorTag: String): Set<UUID> = (
         em.createNativeQuery(
             "SELECT tag FROM ${dataSource.connection.schema}.databasechangelog " +
                 "WHERE tag IS NOT NULL and tag != :systemTerminatorTag " +
@@ -641,7 +649,8 @@ internal class VirtualNodeWriterProcessor(
         )
             .setParameter("systemTerminatorTag", systemTerminatorTag)
             .resultList
-            .toList() as List<String>
+            .toSet() as Set<String>
+        ).map { UUID.fromString(it) }.toSet()
 
     private fun sendSuccessfulResponse(
         respFuture: CompletableFuture<VirtualNodeManagementResponse>,
