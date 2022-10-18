@@ -44,6 +44,7 @@ import net.corda.messaging.integration.processors.TestStateEventProcessor
 import net.corda.messaging.integration.processors.TestStateEventProcessorStrings
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.test.util.eventually
+import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.millis
 import net.corda.v5.base.util.seconds
 import org.junit.jupiter.api.Assertions
@@ -66,6 +67,8 @@ class StateAndEventSubscriptionIntegrationTest {
     private lateinit var publisher: Publisher
 
     private companion object {
+        private val log = contextLogger()
+
         const val CLIENT_ID = "integrationTestEventPublisher"
         const val EVENTSTATE_OUTPUT2 = "EventStateOutputTopic2"
         const val EVENTSTATE_OUTPUT3 = "EventStateOutputTopic3"
@@ -98,7 +101,7 @@ class StateAndEventSubscriptionIntegrationTest {
     }
 
     @Test
-    @Timeout(value = 30, unit = TimeUnit.SECONDS)
+    @Timeout(value = 60, unit = TimeUnit.SECONDS)
     fun `create topic with two partitions, start two statevent sub, publish records with two keys, no outputs`() {
         topicUtils.createTopics(getTopicConfig(EVENT_TOPIC1_TEMPLATE))
 
@@ -148,6 +151,7 @@ class StateAndEventSubscriptionIntegrationTest {
         coordinator1.followStatusChangesByName(setOf(stateEventSub1.subscriptionName))
         coordinator2.followStatusChangesByName(setOf(stateEventSub2.subscriptionName))
 
+        log.info("Starting Subscriptions")
         stateEventSub1.start()
         stateEventSub2.start()
 
@@ -155,11 +159,14 @@ class StateAndEventSubscriptionIntegrationTest {
             Assertions.assertEquals(LifecycleStatus.UP, coordinator1.status)
             Assertions.assertEquals(LifecycleStatus.UP, coordinator2.status)
         }
+        log.info("Subscriptions UP")
 
         publisherConfig = PublisherConfig(CLIENT_ID + EVENT_TOPIC1)
         publisher = publisherFactory.createPublisher(publisherConfig, TEST_CONFIG)
+        log.info("Publishing Records")
         publisher.publish(getDemoRecords(EVENT_TOPIC1, 5, 2)).forEach { it.get() }
 
+        log.info("Waiting for subscriptions to receive")
         assertTrue(stateAndEventLatch.await(60, TimeUnit.SECONDS))
 
         stateEventSub1.close()
