@@ -13,14 +13,12 @@ private const val FLOW_EXECUTOR_ROLE = "FlowExecutorRole"
         - Starting any flow
         - Enquire about the status of the running flow"""]
 )
+@Suppress("unused")
 class FlowExecutorSubcommand : HttpRpcCommand(), Callable<Int> {
 
     private companion object {
-        private const val ALLOWED_CHARS = "[a-fA-F0-9]"
-        const val UUID_REGEX =
-            "$ALLOWED_CHARS{8}-$ALLOWED_CHARS{4}-$ALLOWED_CHARS{4}-$ALLOWED_CHARS{4}-$ALLOWED_CHARS{12}"
-
-        const val FLOW_NAME_REGEX = "[.\$a-zA-Z0-9]*"
+        const val CLIENT_REQ_REGEX = "[A-Za-z0-9_-.]{1,250}"
+        const val FLOW_NAME_REGEX = "[.\$a-zA-Z0-9]{1,250}"
     }
 
     @CommandLine.Option(
@@ -34,10 +32,10 @@ class FlowExecutorSubcommand : HttpRpcCommand(), Callable<Int> {
         // Endpoint level commands
         PermissionTemplate("Start Flow endpoint", "POST:/api/v1/flow/$vnodeShortHash", null),
         PermissionTemplate("Get status for all flows", "GET:/api/v1/flow/$vnodeShortHash", null),
-        PermissionTemplate("Get status for a specific flow", "GET:/api/v1/flow/$vnodeShortHash/$UUID_REGEX", null),
+        PermissionTemplate("Get status for a specific flow", "GET:/api/v1/flow/$vnodeShortHash/$CLIENT_REQ_REGEX", null),
         PermissionTemplate(
             "Get status for a specific flow via WebSocket",
-            "WS:/api/v1/flow/$vnodeShortHash/$UUID_REGEX",
+            "WS:/api/v1/flow/$vnodeShortHash/$CLIENT_REQ_REGEX",
             null
         ),
 
