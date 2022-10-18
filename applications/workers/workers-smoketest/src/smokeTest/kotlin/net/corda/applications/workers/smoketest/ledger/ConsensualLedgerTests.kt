@@ -25,6 +25,7 @@ import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
 @Suppress("Unused", "FunctionName")
 @TestInstance(PER_CLASS)
 @Disabled
+@Disabled
 class ConsensualLedgerTests {
 
     private val bobHoldingId: String = getHoldingIdShortHash(X500_BOB, GROUP_ID)

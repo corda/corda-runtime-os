@@ -10,6 +10,7 @@ import net.corda.applications.workers.smoketest.startRpcFlow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
  */
 @Suppress("Unused", "FunctionName")
 @TestInstance(PER_CLASS)
+@Disabled
 @Disabled
 class ConsensualLedgerFullTest {
 
