@@ -296,6 +296,9 @@ internal class SessionManagerImpl(
             sessionReplayer.removeMessageFromReplay(initiatorHandshakeUniqueId(sessionId), counterparties)
             sessionReplayer.removeMessageFromReplay(initiatorHelloUniqueId(sessionId), counterparties)
             val sessionInitMessage = genSessionInitMessages(counterparties, 1)
+            if(sessionInitMessage.isEmpty()) {
+                outboundSessionPool.removeSessions(counterparties)
+            }
             if (!outboundSessionPool.replaceSession(sessionId, sessionInitMessage.single().first)) {
                 // If the session was not replaced do not send a initiatorHello
                 return
