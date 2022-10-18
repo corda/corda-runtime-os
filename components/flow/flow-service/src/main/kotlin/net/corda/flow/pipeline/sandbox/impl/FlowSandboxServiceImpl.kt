@@ -40,6 +40,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceCardinality.MULTIPLE
 import org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC
+import java.lang.reflect.ParameterizedType
 
 @Suppress("LongParameterList")
 @Component(
@@ -254,12 +255,24 @@ class FlowSandboxServiceImpl @Activate constructor(
         buildCorDappSerializers<JsonSerializer<*>>(
             sandboxGroup,
             cpiMetadata.cpksMetadata.flatMap { it.cordappManifest.jsonSerializerClasses }.toSet()
-        ).forEach(serializationCustomizer::setSerializer)
+        ).forEach { serializationCustomizer.setSerializer(it, extractJsonSerializingType(it, sandboxGroup)) }
 
         buildCorDappSerializers<JsonDeserializer<*>>(
             sandboxGroup,
             cpiMetadata.cpksMetadata.flatMap { it.cordappManifest.jsonDeserializerClasses }.toSet()
-        ).forEach(serializationCustomizer::setDeserializer)
+        ).forEach { serializationCustomizer.setDeserializer(it, extractJsonSerializingType(it, sandboxGroup)) }
+    }
+
+    private inline fun <reified T : Any> extractJsonSerializingType(jsonSerializer: T, sandboxGroup: SandboxGroup): Class<*> {
+        val types = jsonSerializer::class.java.genericInterfaces
+            .filterIsInstance<ParameterizedType>()
+            .filter { it.rawType === T::class.java }
+            .flatMap { it.actualTypeArguments.asList() }
+        if (types.size != 1) {
+            throw IllegalStateException("Unable to determine serializing type from ${T::class.java.canonicalName}")
+        }
+
+        return sandboxGroup.loadClassFromMainBundles(types.first().typeName, Any::class.java)
     }
 
     private inline fun <reified T> SandboxGroup.getOsgiServiceByClass() =
