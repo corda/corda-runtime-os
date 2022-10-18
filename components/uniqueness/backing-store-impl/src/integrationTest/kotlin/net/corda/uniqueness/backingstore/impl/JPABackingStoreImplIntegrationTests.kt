@@ -97,8 +97,7 @@ class JPABackingStoreImplIntegrationTests {
 
     class DummyException(message: String) : Exception(message)
 
-    private fun generateRequestInternal(txId: SecureHash = SecureHashUtils.randomSecureHash())
-            : UniquenessCheckRequestInternal =
+    private fun generateRequestInternal(txId: SecureHash = SecureHashUtils.randomSecureHash()) =
         UniquenessCheckRequestInternal(
             txId,
             txId.toString(),
@@ -197,8 +196,8 @@ class JPABackingStoreImplIntegrationTests {
             }
 
             lateinit var txnDetails: Map<SecureHash, UniquenessCheckTransactionDetailsInternal>
-            backingStoreImpl.session(aliceIdentity) {
-                    session -> txnDetails = session.getTransactionDetails(txIds)
+            backingStoreImpl.session(aliceIdentity) { session ->
+                txnDetails = session.getTransactionDetails(txIds)
             }
 
             assertThat(txnDetails.size).isEqualTo(1)
@@ -222,8 +221,8 @@ class JPABackingStoreImplIntegrationTests {
             }
 
             lateinit var txnDetails: Map<SecureHash, UniquenessCheckTransactionDetailsInternal>
-            backingStoreImpl.session(aliceIdentity) {
-                    session -> txnDetails = session.getTransactionDetails(txIds)
+            backingStoreImpl.session(aliceIdentity) { session ->
+                txnDetails = session.getTransactionDetails(txIds)
             }
 
             assertThat(txnDetails.size).isEqualTo(1)
@@ -247,8 +246,8 @@ class JPABackingStoreImplIntegrationTests {
             }
 
             lateinit var txnDetails: Map<SecureHash, UniquenessCheckTransactionDetailsInternal>
-            backingStoreImpl.session(aliceIdentity) {
-                    session -> txnDetails = session.getTransactionDetails(txIds)
+            backingStoreImpl.session(aliceIdentity) { session ->
+                txnDetails = session.getTransactionDetails(txIds)
             }
 
             assertThat(txnDetails.size).isEqualTo(1)
@@ -275,8 +274,8 @@ class JPABackingStoreImplIntegrationTests {
             }
 
             lateinit var txnDetails: Map<SecureHash, UniquenessCheckTransactionDetailsInternal>
-            backingStoreImpl.session(aliceIdentity) {
-                    session -> txnDetails = session.getTransactionDetails(txIds)
+            backingStoreImpl.session(aliceIdentity) { session ->
+                txnDetails = session.getTransactionDetails(txIds)
             }
 
             assertThat(txnDetails.size).isEqualTo(1)
@@ -300,8 +299,8 @@ class JPABackingStoreImplIntegrationTests {
             }
 
             lateinit var txnDetails: Map<SecureHash, UniquenessCheckTransactionDetailsInternal>
-            backingStoreImpl.session(aliceIdentity) {
-                    session -> txnDetails = session.getTransactionDetails(txIds)
+            backingStoreImpl.session(aliceIdentity) { session ->
+                txnDetails = session.getTransactionDetails(txIds)
             }
 
             assertThat(txnDetails.size).isEqualTo(1)
@@ -326,8 +325,8 @@ class JPABackingStoreImplIntegrationTests {
             }
 
             lateinit var txnDetails: Map<SecureHash, UniquenessCheckTransactionDetailsInternal>
-            backingStoreImpl.session(aliceIdentity) {
-                    session -> txnDetails = session.getTransactionDetails(txIds)
+            backingStoreImpl.session(aliceIdentity) { session ->
+                txnDetails = session.getTransactionDetails(txIds)
             }
 
             assertThat(txnDetails.size).isEqualTo(1)
@@ -380,8 +379,8 @@ class JPABackingStoreImplIntegrationTests {
             }
 
             lateinit var txnDetails: Map<SecureHash, UniquenessCheckTransactionDetailsInternal>
-            backingStoreImpl.session(aliceIdentity) {
-                    session -> txnDetails = session.getTransactionDetails(txIds)
+            backingStoreImpl.session(aliceIdentity) { session ->
+                txnDetails = session.getTransactionDetails(txIds)
             }
 
             assertThat(txnDetails.size).isEqualTo(1)
@@ -400,8 +399,8 @@ class JPABackingStoreImplIntegrationTests {
             }
 
             lateinit var stateDetails: Map<UniquenessCheckStateRef, UniquenessCheckStateDetails>
-            backingStoreImpl.session(aliceIdentity) {
-                    session -> stateDetails = session.getStateDetails(stateRefs)
+            backingStoreImpl.session(aliceIdentity) { session ->
+                stateDetails = session.getStateDetails(stateRefs)
             }
 
             assertThat(stateDetails.size).isEqualTo(hashCnt)
@@ -432,8 +431,8 @@ class JPABackingStoreImplIntegrationTests {
 
             // Verify if the target state has been correctly updated.
             lateinit var stateDetails: Map<UniquenessCheckStateRef, UniquenessCheckStateDetails>
-            backingStoreImpl.session(aliceIdentity) {
-                    session -> stateDetails = session.getStateDetails(stateRefs)
+            backingStoreImpl.session(aliceIdentity) { session ->
+                stateDetails = session.getStateDetails(stateRefs)
             }
 
             stateDetails.values.partition { it.consumingTxId == null }.let { (unconsumedStates, consumedStates) ->
@@ -609,7 +608,8 @@ class JPABackingStoreImplIntegrationTests {
 
         val sessionInvokeCnt = 3
         repeat(sessionInvokeCnt) {
-            storeImpl.session(aliceIdentity) { session -> session.executeTransaction { _, _ -> } }
+            storeImpl.session(aliceIdentity) { session ->
+                session.executeTransaction { _, _ -> } }
         }
         Mockito.verify(spyEmFactory, times(sessionInvokeCnt)).createEntityManager()
     }
