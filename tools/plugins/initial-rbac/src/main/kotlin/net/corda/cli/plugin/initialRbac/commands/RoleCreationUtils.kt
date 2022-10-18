@@ -21,7 +21,7 @@ internal object RoleCreationUtils {
 
     const val VNODE_SHORT_HASH_REGEX = "[0-9a-fA-F]{12}"
 
-    const val USER_REGEX = "[-._@a-zA-Z0-9]*"
+    const val USER_REGEX = "[-._@a-zA-Z0-9]{3,250}"
 
     /**
      * Checks if role already exists and then does nothing, else:
