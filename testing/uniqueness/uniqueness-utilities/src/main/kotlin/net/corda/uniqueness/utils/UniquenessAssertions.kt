@@ -6,6 +6,7 @@ import net.corda.test.util.time.AutoTickTestClock
 import net.corda.v5.application.uniqueness.model.*
 import net.corda.uniqueness.datamodel.common.UniquenessConstants
 import net.corda.uniqueness.datamodel.common.toCharacterRepresentation
+import net.corda.uniqueness.datamodel.internal.UniquenessCheckTransactionDetailsInternal
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
@@ -27,6 +28,16 @@ object UniquenessAssertions {
         response: UniquenessCheckResponseAvro,
         clock: AutoTickTestClock? = null
     ) = getResultOfType<UniquenessCheckResultSuccessAvro>(response).run { assertValidTimestamp(commitTimestamp, clock) }
+
+    /**
+     * Checks if the given transaction details has the expected size and the transaction ID.
+     */
+    fun assertSizeAndTxId(expectedSize: Int,
+                          txnDetails: Map<SecureHash, UniquenessCheckTransactionDetailsInternal>,
+                          txIds: List<SecureHash>) {
+        assertThat(txnDetails.size).isEqualTo(expectedSize)
+        assertThat(txIds).contains(txnDetails.entries.single().key)
+    }
 
     /**
      * Checks for an accepted uniqueness check result. If a clock is specified, will additionally
