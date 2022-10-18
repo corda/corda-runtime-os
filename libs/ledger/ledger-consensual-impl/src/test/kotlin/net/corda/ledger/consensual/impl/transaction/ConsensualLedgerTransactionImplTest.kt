@@ -17,6 +17,7 @@ import net.corda.v5.ledger.consensual.ConsensualState
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.mock
 import java.time.Instant
 import kotlin.math.abs
 import kotlin.test.assertIs
@@ -39,11 +40,11 @@ internal class ConsensualLedgerTransactionImplTest {
             merkleTreeProvider,
             serializationService,
             ConsensualTransactionMocks.mockSigningService(),
-            ConsensualTransactionMocks.mockMemberLookup(),
-            ConsensualTransactionMocks.mockSandboxCpks(),
+            mock(),
+            ConsensualTransactionMocks.mockTransactionMetaData()
         )
             .withStates(ConsensualTransactionMocks.testConsensualState)
-            .signInitial(ConsensualTransactionMocks.testPublicKey)
+            .sign(ConsensualTransactionMocks.testPublicKey)
         val ledgerTransaction = signedTransaction.toLedgerTransaction()
         assertTrue(abs(ledgerTransaction.timestamp.toEpochMilli() / 1000 - testTimestamp.toEpochMilli() / 1000) < 5)
         assertIs<List<ConsensualState>>(ledgerTransaction.states)

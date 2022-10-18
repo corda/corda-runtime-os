@@ -20,6 +20,7 @@ dependencies {
     implementation project(":libs:ledger:ledger-consensual-impl")
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
     testImplementation "net.corda:corda-ledger-common"
     testImplementation project(':testing:test-serialization')

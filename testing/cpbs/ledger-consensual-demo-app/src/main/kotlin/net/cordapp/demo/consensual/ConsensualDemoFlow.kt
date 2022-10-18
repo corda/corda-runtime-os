@@ -1,7 +1,6 @@
 package net.cordapp.demo.consensual
 
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.RPCRequestData
@@ -28,7 +27,7 @@ import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransactionVer
  */
 
 @InitiatingFlow("consensual-flow-protocol")
-class ConsensualFlow : RPCStartableFlow {
+class ConsensualDemoFlow : RPCStartableFlow {
     data class InputMessage(val number: Int)
     data class ResultMessage(val text: String)
 
@@ -42,9 +41,6 @@ class ConsensualFlow : RPCStartableFlow {
     private companion object {
         val log = contextLogger()
     }
-
-    @CordaInject
-    lateinit var flowEngine: FlowEngine
 
     @CordaInject
     lateinit var flowMessaging: FlowMessaging
@@ -62,17 +58,26 @@ class ConsensualFlow : RPCStartableFlow {
     override fun call(requestBody: RPCRequestData): String {
         log.info("Consensual flow demo starting...")
         try {
-            val member = memberLookup.lookup(MemberX500Name("Bob", "London", "GB"))!!
+            val alice = memberLookup.myInfo()
+            val bob = memberLookup.lookup(MemberX500Name("Bob", "Consensual", "R3", "London", null, "GB"))!!
 
-            val testConsensualState = TestConsensualState("test", listOf(Party(member.name, member.ledgerKeys.first())))
+            val testConsensualState =
+                TestConsensualState(
+                    "test",
+                    listOf(
+                        Party(alice.name, alice.ledgerKeys.first()),
+                        Party(bob.name, bob.ledgerKeys.first()),
+                    )
+                )
+
             val txBuilder = consensualLedgerService.getTransactionBuilder()
             val signedTransaction = txBuilder
                 .withStates(testConsensualState)
-                .signInitial(memberLookup.myInfo().ledgerKeys.first())
+                .sign(alice.ledgerKeys.first())
 
             val finalizedSignedTransaction = consensualLedgerService.finality(
                 signedTransaction,
-                listOf(flowMessaging.initiateFlow(member.name))
+                listOf(flowMessaging.initiateFlow(bob.name))
             )
 
             val resultMessage = ResultMessage(text = finalizedSignedTransaction.toString())

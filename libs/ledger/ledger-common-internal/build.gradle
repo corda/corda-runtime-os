@@ -12,4 +12,7 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
 
     implementation "net.corda:corda-application"
+    implementation "net.corda:corda-base"
+
+    implementation project(":libs:packaging:packaging-core")
 }
