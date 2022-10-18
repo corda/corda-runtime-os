@@ -62,7 +62,7 @@
 				},
 				"ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64": {
 					"$id": "#root/digestSettings/ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64", 
-					"title": "Root Merkle tree digest options leaf prefix b64", 
+					"title": "Root Merkle tree digest options leaf prefix base64 encoded", 
 					"type": "string",
 					"default": "",
 					"examples": [
