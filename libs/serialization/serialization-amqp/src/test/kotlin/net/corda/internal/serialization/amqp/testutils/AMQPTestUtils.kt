@@ -49,12 +49,12 @@ class TestDescriptorBasedSerializerRegistry : DescriptorBasedSerializerRegistry 
 fun testDefaultFactory(
     descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
         DefaultDescriptorBasedSerializerRegistry(),
-    externalCustomSerializerAllowed: ((Class<*>) -> Boolean)? = null
+    externalCustomSerializerAllowed: ((Class<*>) -> Boolean) = { false }
 ) =
     SerializerFactoryBuilder.build(
         testSerializationContext.currentSandboxGroup(),
-        descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry,
-        externalCustomSerializerAllowed = externalCustomSerializerAllowed
+        externalCustomSerializerAllowed = externalCustomSerializerAllowed,
+        descriptorBasedSerializerRegistry = descriptorBasedSerializerRegistry
     )
 
 @JvmOverloads

@@ -89,7 +89,10 @@ object SerializerFactoryBuilder {
     }) as Map<Class<*>, Class<*>>
 
     @JvmStatic
-    fun build(sandboxGroup: SandboxGroup, sandboxGroupSecurityDomain: String = "FLOW"): SerializerFactory {
+    fun build(
+        sandboxGroup: SandboxGroup,
+        sandboxGroupSecurityDomain: String = "FLOW"
+    ): SerializerFactory {
         return makeFactory(
             sandboxGroup,
             DefaultDescriptorBasedSerializerRegistry(),
@@ -106,7 +109,7 @@ object SerializerFactoryBuilder {
     @JvmStatic
     fun build(
         sandboxGroup: SandboxGroup,
-        sandboxGroupSecurityDomain: String,
+        sandboxGroupSecurityDomain: String = "FLOW",
         descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry = DefaultDescriptorBasedSerializerRegistry(),
         allowEvolution: Boolean = true,
         overrideFingerPrinter: FingerPrinter? = null,
@@ -125,11 +128,12 @@ object SerializerFactoryBuilder {
         )
     }
 
+    // The following function should be used by non OSGi tests.
     @Suppress("LongParameterList")
     @JvmStatic
     fun build(
         sandboxGroup: SandboxGroup,
-        externalCustomSerializerAllowed: ((Class<*>) -> Boolean) = { false },
+        externalCustomSerializerAllowed: ((Class<*>) -> Boolean),
         descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry = DefaultDescriptorBasedSerializerRegistry(),
         allowEvolution: Boolean = true,
         overrideFingerPrinter: FingerPrinter? = null,
