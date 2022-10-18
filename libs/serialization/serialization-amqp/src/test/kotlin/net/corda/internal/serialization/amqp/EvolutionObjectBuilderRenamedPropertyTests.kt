@@ -1,6 +1,7 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.internal.serialization.amqp.helper.testSerializationContext
+import net.corda.internal.serialization.amqp.testutils.serialize
+import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.amqp.testutils.testResourceName
 import net.corda.internal.serialization.amqp.testutils.writeTestResource
@@ -97,7 +98,7 @@ class EvolutionObjectBuilderRenamedPropertyTests {
 
         val serializerFactory: SerializerFactory = testDefaultFactory()
         val deserializedObject = DeserializationInput(serializerFactory)
-            .deserialize(SerializedBytes<TemplateState>(bytes), testSerializationContext)
+            .deserialize(SerializedBytes<TemplateState>(bytes))
 
         Assertions.assertThat(deserializedObject.cordappVersion).isEqualTo(cordappVersionTestValue)
         Assertions.assertThat(deserializedObject.data).isEqualTo(dataTestValue)
@@ -110,5 +111,5 @@ class EvolutionObjectBuilderRenamedPropertyTests {
      * Write serialized object to resources folder
      */
     @Suppress("unused")
-    fun <T : Any> saveSerializedObject(obj: T) = writeTestResource(SerializationOutput(testDefaultFactory()).serialize(obj, testSerializationContext))
+    fun <T : Any> saveSerializedObject(obj: T) = writeTestResource(SerializationOutput(testDefaultFactory()).serialize(obj))
 }

@@ -55,9 +55,9 @@ class EvolutionSerializerFactoryTests {
         // val withNullOriginal = C(1, null)
         // val withoutNullOriginal = C(1, 1)
         // File(URI("$localPath/$withNullResource")).writeBytes(
-        //         SerializationOutput(strictFactory).serialize(withNullOriginal, testSerializationContext).bytes)
+        //         SerializationOutput(strictFactory).serialize(withNullOriginal).bytes)
         // File(URI("$localPath/$withoutNullResource")).writeBytes(
-        //         SerializationOutput(strictFactory).serialize(withoutNullOriginal, testSerializationContext).bytes)
+        //         SerializationOutput(strictFactory).serialize(withoutNullOriginal).bytes)
 
         val withoutNullUrl = javaClass.getResource(withoutNullResource)
         val withNullUrl = javaClass.getResource(withNullResource)

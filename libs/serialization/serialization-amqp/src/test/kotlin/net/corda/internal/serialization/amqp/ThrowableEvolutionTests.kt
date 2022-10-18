@@ -1,6 +1,7 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.internal.serialization.amqp.helper.testSerializationContext
+import net.corda.internal.serialization.amqp.testutils.deserialize
+import net.corda.internal.serialization.amqp.testutils.serialize
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
 import net.corda.internal.serialization.amqp.testutils.testResourceName
 import net.corda.internal.serialization.amqp.testutils.writeTestResource
@@ -49,7 +50,7 @@ class ThrowableEvolutionTests {
 
         val sf = testDefaultFactory().also { registerCustomSerializers(it) }
         val deserializedException = DeserializationInput(sf)
-            .deserialize(SerializedBytes<AddConstructorParametersException>(bytes), testSerializationContext)
+            .deserialize(SerializedBytes<AddConstructorParametersException>(bytes))
 
         assertThat(deserializedException.message).isEqualTo(message)
         assertThat(deserializedException).isInstanceOf(AddConstructorParametersException::class.java)
@@ -65,7 +66,7 @@ class ThrowableEvolutionTests {
 
         val sf = testDefaultFactory().also { registerCustomSerializers(it) }
         val deserializedException = DeserializationInput(sf)
-            .deserialize(SerializedBytes<RemoveConstructorParametersException>(bytes), testSerializationContext)
+            .deserialize(SerializedBytes<RemoveConstructorParametersException>(bytes))
 
         assertThat(deserializedException.message).isEqualTo(message)
         assertThat(deserializedException).isInstanceOf(RemoveConstructorParametersException::class.java)
@@ -80,7 +81,7 @@ class ThrowableEvolutionTests {
 
         val sf = testDefaultFactory().also { registerCustomSerializers(it) }
         val deserializedException = DeserializationInput(sf)
-            .deserialize(SerializedBytes<AddAndRemoveConstructorParametersException>(bytes), testSerializationContext)
+            .deserialize(SerializedBytes<AddAndRemoveConstructorParametersException>(bytes))
 
         assertThat(deserializedException.message).isEqualTo(message)
         assertThat(deserializedException).isInstanceOf(AddAndRemoveConstructorParametersException::class.java)
@@ -93,7 +94,7 @@ class ThrowableEvolutionTests {
     fun <T : Any> saveSerializedObject(obj : T){
 
         val sf = testDefaultFactory().also { registerCustomSerializers(it) }
-        val serializedBytes = SerializationOutput(sf).serialize(obj, testSerializationContext)
+        val serializedBytes = SerializationOutput(sf).serialize(obj)
         writeTestResource(serializedBytes)
     }
 }
