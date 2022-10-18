@@ -131,6 +131,7 @@ object SerializerFactoryBuilder {
     // The following function should be used by non OSGi tests.
     @Suppress("LongParameterList")
     @JvmStatic
+    @JvmOverloads
     fun build(
         sandboxGroup: SandboxGroup,
         externalCustomSerializerAllowed: (Class<*>) -> Boolean,
