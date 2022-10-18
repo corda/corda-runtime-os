@@ -1,6 +1,6 @@
 # Corda Metrics
 
-Corda exposes metrics using Prometheus.
+Corda exposes metrics the Prometheus format.
 
 The docker-compose configuration in this directory can be used to test this in the combined-worker, for example.
 To start Prometheus and Grafana, simply run `docker compose up` in this directory and browse to the grafana dashboard by
