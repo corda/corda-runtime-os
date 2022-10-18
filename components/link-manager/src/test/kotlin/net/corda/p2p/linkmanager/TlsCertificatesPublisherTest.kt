@@ -72,7 +72,7 @@ class TlsCertificatesPublisherTest {
         "id1",
         "id2",
         mock(),
-        null
+        mock()
     )
 
     private val publisher = TlsCertificatesPublisher(

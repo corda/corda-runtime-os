@@ -105,11 +105,30 @@ internal class HostedIdentityEntryFactory(
             actualTlsTenantId,
             tlsCertificateChainAlias,
         )
-        validateTLSCertificates(actualTlsTenantId, nodeInfo.holdingIdentity, tlsCertificates)
+
+        val policy = try {
+            groupPolicyProvider.getGroupPolicy(nodeInfo.holdingIdentity)
+        } catch (e: IllegalStateException) {
+            logger.warn("Could not retrieve group policy for validating TLS trust root certificates.", e)
+            null
+        } ?: throw CordaRuntimeException("No group policy file found for holding identity ID [${nodeInfo.holdingIdentity.shortHash}].")
+        validateCertificates(
+            actualTlsTenantId,
+            nodeInfo.holdingIdentity,
+            tlsCertificates,
+            CertificateType.TlsCertificate(policy.p2pParameters)
+        )
         val sessionCertificate = sessionCertificateChainAlias?.let {
             getCertificates(actualSessionKeyTenantId, sessionCertificateChainAlias)
         }
-        sessionCertificate?.let { validateSessionCertificates(actualSessionKeyTenantId, nodeInfo.holdingIdentity, it) }
+        sessionCertificate?.let {
+            validateCertificates(
+                actualSessionKeyTenantId,
+                nodeInfo.holdingIdentity,
+                it,
+                CertificateType.SessionCertificate(policy.p2pParameters)
+            )
+        }
 
         val hostedIdentityBuilder = HostedIdentityEntry.newBuilder()
             .setHoldingIdentity(nodeInfo.holdingIdentity.toAvro())
@@ -125,40 +144,14 @@ internal class HostedIdentityEntryFactory(
         )
     }
 
-    private sealed class CertificateType(val trustRoots: Collection<String>?) {
-        data class TlsCertificate(val p2PParameters: GroupPolicy.P2PParameters): CertificateType(p2PParameters.tlsTrustRoots)
-        data class SessionCertificate(val p2PParameters: GroupPolicy.P2PParameters): CertificateType(p2PParameters.sessionTrustRoots)
+    private sealed class CertificateType(val parameterName: String, val trustRoots: Collection<String>?) {
+        data class TlsCertificate(val p2PParameters: GroupPolicy.P2PParameters):
+            CertificateType("tlsTrustRoots", p2PParameters.tlsTrustRoots)
+        data class SessionCertificate(val p2PParameters: GroupPolicy.P2PParameters):
+            CertificateType("sessionTrustRoots", p2PParameters.sessionTrustRoots)
     }
 
-    private fun validateTLSCertificates(
-        tenantId: String,
-        holdingIdentity: HoldingIdentity,
-        tlsCertificates: List<String>,
-    ) {
-        val policy = try {
-            groupPolicyProvider.getGroupPolicy(holdingIdentity)
-        } catch (e: IllegalStateException) {
-            logger.warn("Could not retrieve group policy for validating TLS trust root certificates.", e)
-            null
-        } ?: throw CordaRuntimeException("No group policy file found for holding identity ID [${holdingIdentity.shortHash}].")
-        validateCertificates(tenantId, holdingIdentity, tlsCertificates, CertificateType.TlsCertificate(policy.p2pParameters))
-    }
-
-    private fun validateSessionCertificates(
-        tenantId: String,
-        holdingIdentity: HoldingIdentity,
-        sessionCertificates: List<String>,
-    ) {
-        val policy = try {
-            groupPolicyProvider.getGroupPolicy(holdingIdentity)
-        } catch (e: IllegalStateException) {
-            logger.warn("Could not retrieve group policy for validating TLS trust root certificates.", e)
-            null
-        } ?: throw CordaRuntimeException("No group policy file found for holding identity ID [${holdingIdentity.shortHash}].")
-        validateCertificates(tenantId, holdingIdentity, sessionCertificates, CertificateType.SessionCertificate(policy.p2pParameters))
-    }
-
-    @Suppress("ThrowsCount", "ForbiddenComment")
+    @Suppress("ThrowsCount")
     private fun validateCertificates(
         tenantId: String,
         holdingIdentity: HoldingIdentity,
@@ -177,24 +170,26 @@ internal class HostedIdentityEntryFactory(
             ?: throw CordaRuntimeException("This certificate public key is unknown to $tenantId")
 
         if (certificateType.trustRoots == null) {
-            throw CordaRuntimeException("The group ${holdingIdentity.groupId} P2P parameters tlsTrustRoots is empty")
+             throw CordaRuntimeException("The group ${holdingIdentity.groupId} P2P parameters ${certificateType.parameterName} is null")
         }
         if (certificateType.trustRoots.isEmpty()) {
-            throw CordaRuntimeException("The group ${holdingIdentity.groupId} P2P parameters tlsTrustRoots is empty")
+            throw CordaRuntimeException("The group ${holdingIdentity.groupId} P2P parameters ${certificateType.parameterName} is empty")
         }
         certificateType.trustRoots
             .asSequence()
-            .map { tlsRootCertificateStr ->
+            .map { rootCertificateStr ->
                 CertificateFactory.getInstance("X.509")
-                    .generateCertificate(tlsRootCertificateStr.byteInputStream())
-            }.filter { tlsRootCertificate ->
+                    .generateCertificate(rootCertificateStr.byteInputStream())
+            }.filter { rootCertificate ->
                 try {
-                    certificate.verify(tlsRootCertificate.publicKey)
+                    certificate.verify(rootCertificate.publicKey)
                     true
                 } catch (e: InvalidKeyException) {
                     false
                 }
             }.firstOrNull()
-            ?: throw CordaRuntimeException("The certificate was not sign with the group TLS certificate authority")
+            ?: throw CordaRuntimeException(
+                "The ${CertificateType::class.java.simpleName} was not signed by the correct certificate authority"
+            )
     }
 }
