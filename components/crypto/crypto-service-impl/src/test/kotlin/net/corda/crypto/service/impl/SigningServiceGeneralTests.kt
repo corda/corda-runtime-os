@@ -9,6 +9,7 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_AFTER_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_BEFORE_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
+import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningKeyStatus
@@ -151,7 +152,7 @@ class SigningServiceGeneralTests {
     }
 
     @Test
-    fun `Should throw IllegalStateException when generating key with existing alias`() {
+    fun `Should throw KeyAlreadyExistsException when generating key with existing alias`() {
         val existingKey = SigningCachedKey(
             id = UUID.randomUUID().toString(),
             tenantId = UUID.randomUUID().toString(),
@@ -176,7 +177,7 @@ class SigningServiceGeneralTests {
             cryptoServiceFactory = mock(),
             schemeMetadata = schemeMetadata
         )
-        assertThrows(IllegalStateException::class.java) {
+        assertThrows(KeyAlreadyExistsException::class.java) {
             signingService.generateKeyPair(
                 tenantId = UUID.randomUUID().toString(),
                 category = CryptoConsts.Categories.LEDGER,
@@ -185,7 +186,7 @@ class SigningServiceGeneralTests {
                 context = emptyMap()
             )
         }
-        assertThrows(IllegalStateException::class.java) {
+        assertThrows(KeyAlreadyExistsException::class.java) {
             signingService.generateKeyPair(
                 tenantId = UUID.randomUUID().toString(),
                 category = CryptoConsts.Categories.LEDGER,
