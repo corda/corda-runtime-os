@@ -6,7 +6,6 @@ import net.corda.test.util.time.AutoTickTestClock
 import net.corda.v5.application.uniqueness.model.*
 import net.corda.uniqueness.datamodel.common.UniquenessConstants
 import net.corda.uniqueness.datamodel.common.toCharacterRepresentation
-import net.corda.uniqueness.datamodel.impl.UniquenessCheckResultFailureImpl
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
@@ -273,9 +272,9 @@ object UniquenessAssertions {
     /**
      * Casts to a specific uniqueness check error type.
      */
-    inline fun <reified T> getErrorOfType(result: UniquenessCheckResult): T {
-        val failureImpl = result as UniquenessCheckResultFailureImpl
-        return failureImpl.error as T
+    private inline fun <reified T> getErrorOfType(result: UniquenessCheckResult): T {
+        val failure = result as UniquenessCheckResultFailure
+        return failure.error as T
     }
 
     private inline fun<reified T> getResultOfType(response: UniquenessCheckResponseAvro): T {
