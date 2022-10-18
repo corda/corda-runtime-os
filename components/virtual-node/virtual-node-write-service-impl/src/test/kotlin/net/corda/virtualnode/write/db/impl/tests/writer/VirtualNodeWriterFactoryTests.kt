@@ -51,14 +51,7 @@ class VirtualNodeWriterFactoryTests {
 
         val publisherFactory = getPublisherFactory()
         val virtualNodeWriterFactory = VirtualNodeWriterFactory(
-            getSubscriptionFactory(),
-            publisherFactory,
-            getDbConnectionManager(),
-            mock(),
-            mock(),
-            mock(),
-            { mock() },
-            mock()
+            getSubscriptionFactory(), publisherFactory, getDbConnectionManager(), mock(), mock(), mock()
         ) { _, _ ->
             listOf()
         }
@@ -80,16 +73,8 @@ class VirtualNodeWriterFactoryTests {
 
         val subscriptionFactory = getSubscriptionFactory()
         val virtualNodeWriterFactory = VirtualNodeWriterFactory(
-            subscriptionFactory,
-            getPublisherFactory(),
-            getDbConnectionManager(),
-            mock(),
-            mock(),
-            mock(),
-            { mock() },
-            mock()
-        ) { _, _ ->
-            listOf()
+            subscriptionFactory, getPublisherFactory(), getDbConnectionManager(), mock(), mock(), mock()) {
+                _, _ -> listOf()
         }
         virtualNodeWriterFactory.create(expectedConfig)
 

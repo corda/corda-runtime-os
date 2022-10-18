@@ -26,7 +26,6 @@ dependencies {
     implementation project(':components:virtual-node:cpi-info-write-service')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
     implementation project(':components:virtual-node:virtual-node-write-service')
-    implementation project(':components:permissions:permission-management-service')
     implementation project(':components:membership:certificates-service')
     implementation project(':libs:chunking:chunking-datamodel')
     implementation project(':libs:membership:certificates-datamodel')
@@ -81,8 +80,6 @@ dependencies {
     runtimeOnly project(':libs:permissions:permission-storage-writer-impl')
     runtimeOnly project(":libs:sandbox-internal")
     runtimeOnly project(':libs:schema-registry:schema-registry-impl')
-    runtimeOnly project(':libs:permissions:permission-manager-impl')
-    runtimeOnly project(':libs:permissions:permission-validation-impl')
 
     runtimeOnly "com.sun.activation:javax.activation:$activationVersion"
     runtimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"

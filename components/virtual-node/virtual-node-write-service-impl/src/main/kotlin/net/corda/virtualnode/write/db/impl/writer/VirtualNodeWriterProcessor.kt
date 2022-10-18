@@ -1,6 +1,5 @@
 package net.corda.virtualnode.write.db.impl.writer
 
-import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
@@ -22,7 +21,6 @@ import net.corda.layeredpropertymap.toAvro
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.findDbChangeLogForCpi
 import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.libs.permissions.manager.PermissionManager
 import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
@@ -44,15 +42,11 @@ import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.VirtualNodeState
 import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
-import net.corda.virtualnode.write.db.impl.writer.VirtualNodeRbacCreator.createRbacRole
-import net.corda.virtualnode.write.db.impl.writer.VirtualNodeRbacCreator.getFlowNames
 import java.lang.System.currentTimeMillis
 import java.time.Instant
 import java.util.*
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-import java.util.function.Supplier
 import javax.persistence.EntityManager
 import kotlin.system.measureTimeMillis
 
@@ -80,8 +74,6 @@ internal class VirtualNodeWriterProcessor(
     private val vnodeDbFactory: VirtualNodeDbFactory,
     private val groupPolicyParser: GroupPolicyParser,
     private val clock: Clock,
-    private val permissionManagerSupplier: Supplier<PermissionManager>,
-    private val cpiInfoReadService: CpiInfoReadService,
     private val getChangelogs: (EntityManager, CpiIdentifier) -> List<CpkDbChangeLogEntity> = ::findDbChangeLogForCpi
 ) : RPCResponderProcessor<VirtualNodeManagementRequest, VirtualNodeManagementResponse> {
 
@@ -90,11 +82,7 @@ internal class VirtualNodeWriterProcessor(
         const val PUBLICATION_TIMEOUT_SECONDS = 30L
     }
 
-    private val executorService = Executors.newSingleThreadExecutor { runnable ->
-        Thread(runnable, this::class.java.simpleName)
-    }
-
-    @Suppress("ReturnCount", "ComplexMethod", "LongMethod")
+    @Suppress("ReturnCount", "ComplexMethod")
     private fun createVirtualNode(
         instant: Instant,
         create: VirtualNodeCreateRequest,
@@ -211,34 +199,12 @@ internal class VirtualNodeWriterProcessor(
                         "${currentTimeMillis() - startMillis} ms"}
             }
 
-            // Creation of permission and roles may take sometime (> 10 seconds), therefore launching this convenience
-            // operation asynchronously in order not to delay main vNode creation function.
-            executorService.submit {
-                try {
-                    measureTimeMillis {
-                        permissionManagerSupplier.get().createRbacRole(
-                            holdingId,
-                            cpiInfoReadService.getFlowNames(cpiMetadata),
-                            create.updateActor
-                        )
-                    }.also {
-                        logger.debug {
-                            "[Create ${create.x500Name}] creating RBAC role took $it ms"
-                        }
-                    }
-                } catch (th: Throwable) {
-                    logger.error("Unexpected error when creating RBAC role", th)
-                }
-            }
-
             measureTimeMillis {
                 sendSuccessfulResponse(respFuture, instant, holdingId, cpiMetadata, dbConnections)
             }.also {
                 logger.debug {"[Create ${create.x500Name}] send response to RPC gateway took $it ms, elapsed " +
                         "${currentTimeMillis() - startMillis} ms"}
             }
-
-            logger.info("vNode successfully created: ${holdingId}, short hash: ${holdingId.shortHash}.")
         } catch (e: Exception) {
             handleException(respFuture, e)
         }
