@@ -16,13 +16,20 @@ import java.time.temporal.ChronoUnit
 
 internal object RoleCreationUtils {
 
+    fun HttpRpcCommand.checkOrCreateRole(roleName: String, permissionsToCreate: Map<String, String>): Int {
+        return checkOrCreateRole(
+            roleName,
+            permissionsToCreate.map { PermissionTemplate(it.key, it.value, null) }.toSet()
+        )
+    }
+
     /**
      * Checks if role already exists and then does nothing, else:
      * - creates permissions;
      * - creates role;
      * - assigns permissions to the role.
      */
-    fun HttpRpcCommand.checkOrCreateRole(roleName: String, permissionsToCreate: Map<String, String>): Int {
+    fun HttpRpcCommand.checkOrCreateRole(roleName: String, permissionsToCreate: Set<PermissionTemplate>): Int {
 
         val logger: Logger = LoggerFactory.getLogger(this::class.java)
         val sysOut: Logger = LoggerFactory.getLogger("SystemOut")
@@ -47,18 +54,18 @@ internal object RoleCreationUtils {
                 val permissionEndpoint = executeWithRetry(waitDuration, "Start of permissions HTTP endpoint") {
                     permissionEndpointClient.start().proxy
                 }
-                permissionsToCreate.toSortedMap().map { entry ->
-                    executeWithRetry(waitDuration, "Creating permission: ${entry.key}") {
+                permissionsToCreate.sortedBy { it.permissionName }.map { entry ->
+                    executeWithRetry(waitDuration, "Creating permission: ${entry.permissionName}") {
                         permissionEndpoint.createPermission(
                             CreatePermissionType(
                                 PermissionType.ALLOW,
-                                entry.value,
+                                entry.permissionString,
                                 null,
-                                null
+                                entry.vnodeShortHash
                             )
                         )
                     }.responseBody.id.also {
-                        logger.info("Created permission: ${entry.key} with id: $it")
+                        logger.info("Created permission: ${entry.permissionName} with id: $it")
                     }
                 }
             }
