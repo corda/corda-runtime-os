@@ -34,6 +34,7 @@ import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
+import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.Root.MGM_DEFAULT_GROUP_ID
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
@@ -59,6 +60,7 @@ import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import javax.persistence.EntityManager
+import javax.sql.DataSource
 import kotlin.system.measureTimeMillis
 
 /**
@@ -91,6 +93,7 @@ internal class VirtualNodeWriterProcessor(
     companion object {
         private val logger = contextLogger()
         const val PUBLICATION_TIMEOUT_SECONDS = 30L
+        val systemTerminatorTag = "${VAULT.name}-system-final"
     }
 
     @Suppress("ReturnCount", "ComplexMethod")
@@ -228,46 +231,47 @@ internal class VirtualNodeWriterProcessor(
     ) {
         val em = dbConnectionManager.getClusterEntityManagerFactory().createEntityManager()
         val shortHashes = dbResetRequest.holdingIdentityShortHashes.map { shortHashString ->
-            val newChangeSetUUID = UUID.randomUUID()
+            val startMillis = currentTimeMillis()
             val shortHash = ShortHash.Companion.of(shortHashString)
-            em.transaction {
-                val dbConnection = it.findDbConnectionByNameAndPrivilege(VAULT.getConnectionName(shortHash), DDL)
-                    ?: throw CordaRuntimeException("Could not lookup db connection for virtual node $shortHash")
-                val dbConfig = ConfigFactory.parseString(
-                    dbConnection.config
-                )
-                val connectionConfig = SmartConfigFactory.create(dbConfig).create(dbConfig)
-                val virtualNodeInfo = virtualNodeEntityRepository.getVirtualNode(shortHashString)
-                val cpiMetadata = virtualNodeEntityRepository.getCPIMetadataByNameAndVersion(
-                    virtualNodeInfo.cpiIdentifier.name,
-                    virtualNodeInfo.cpiIdentifier.version
-                )!!
-                val changelogs = getChangelogs(it, cpiMetadata.id)
-                val systemTerminatorTag = "${VAULT.name}-system-final"
-                @Suppress("UNCHECKED_CAST")
-                dbConnectionManager.getDataSource(connectionConfig).use { dataSource ->
-                    val appliedVersions: List<String> = it.createNativeQuery(
-                        "SELECT tag FROM ${dataSource.connection.schema}.databasechangelog " +
-                            "WHERE tag IS NOT NULL and tag != :systemTerminatorTag " +
-                            "ORDER BY orderexecuted"
+            try {
+                em.transaction { em ->
+                    val dbConnection = em.findDbConnectionByNameAndPrivilege(VAULT.getConnectionName(shortHash), DDL)
+                        ?: throw CordaRuntimeException("Could not lookup db connection for virtual node $shortHash")
+                    val dbConfig = ConfigFactory.parseString(
+                        dbConnection.config
                     )
-                        .setParameter("systemTerminatorTag", systemTerminatorTag)
-                        .resultList
-                        .toList() as List<String>
-                    val migrationSet = findDbChangeLogAuditForCpi(em, virtualNodeInfo.cpiIdentifier, appliedVersions)
-                    migrationSet.forEach { logger.debug { "Will rollback ${it.id.filePath} for cpk checksum ${it.id.fileChecksum} at${it.id.changeUUID}" } }
-                    rollbackVirtualNodeDb(connectionConfig, migrationSet, systemTerminatorTag)
-                    logger.info("Finished rolling back previous migrations, attempting to apply new ones")
-                    changelogs.forEach { cl ->
-                        logger.info("Applying change log ${cl.id.filePath} for cpk checksum ${cl.fileChecksum} at ${newChangeSetUUID}")
+                    val connectionConfig = SmartConfigFactory.create(dbConfig).create(dbConfig)
+                    val virtualNodeInfo = virtualNodeEntityRepository.getVirtualNode(shortHashString)
+                    val cpiMetadata = virtualNodeEntityRepository.getCPIMetadataByNameAndVersion(
+                        virtualNodeInfo.cpiIdentifier.name,
+                        virtualNodeInfo.cpiIdentifier.version
+                    )!!
+                    dbConnectionManager.getDataSource(connectionConfig).use { dataSource ->
+                        val appliedVersions: List<String> = getAppliedVersions(em, dataSource, systemTerminatorTag)
+                        val migrationSet = findDbChangeLogAuditForCpi(em, virtualNodeInfo.cpiIdentifier, appliedVersions)
+                        measureTimeMillis {
+                            rollbackVirtualNodeDb(connectionConfig, migrationSet, systemTerminatorTag)
+                        }.also {
+                            logger.debug {
+                                "[Rollback of ${virtualNodeInfo.holdingIdentity.x500Name}] reverting migrations took $it ms" +
+                                    ", elapsed " + "${currentTimeMillis() - startMillis} ms"
+                            }
+                        }
+                        logger.info("Finished rolling back previous migrations, attempting to apply new ones")
+                        measureTimeMillis {
+                            val changelogs = getChangelogs(em, cpiMetadata.id)
+                            runCpiResyncMigrations(changelogs, connectionConfig)
+                        }.also {
+                            logger.debug {
+                                "[Rollback of ${virtualNodeInfo.holdingIdentity.x500Name}] applying migrations took $it ms" +
+                                    ", elapsed " + "${currentTimeMillis() - startMillis} ms"
+                            }
+                        }
                     }
-                    dataSource.connection.use { connection ->
-                        LiquibaseSchemaMigratorImpl().updateDb(
-                            connection,
-                            VirtualNodeDbChangeLog(changelogs),
-                            tag = newChangeSetUUID.toString()
-                        )
-                    }
+                }
+            } catch (e: Exception) {
+                when (e) {
+                    is Exception -> handleException(respFuture, e)
                 }
             }
             shortHash.value
@@ -540,6 +544,22 @@ internal class VirtualNodeWriterProcessor(
             }
         }
 
+    private fun runCpiResyncMigrations(changelogs: List<CpkDbChangeLogEntity>, connectionConfig: SmartConfig) {
+        changelogs.map { cl -> cl.id.cpkName }.distinct().sorted().forEach { cpkName ->
+            val cpkChangelogs = changelogs.filter { cl2 -> cl2.id.cpkName == cpkName }
+            val newChangeSetUUID = cpkChangelogs.first().changeUUID
+            logger.info("Applying change logs from $cpkName at $newChangeSetUUID")
+
+            dbConnectionManager.getDataSource(connectionConfig).connection.use { connection ->
+                LiquibaseSchemaMigratorImpl().updateDb(
+                    connection,
+                    VirtualNodeDbChangeLog(cpkChangelogs),
+                    tag = newChangeSetUUID
+                )
+            }
+        }
+    }
+
     private fun createVirtualNodeRecord(
         holdingIdentity: HoldingIdentity,
         cpiMetadata: CpiMetadataLite,
@@ -611,6 +631,17 @@ internal class VirtualNodeWriterProcessor(
             )
         }
     }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun getAppliedVersions(em: EntityManager, dataSource: DataSource, systemTerminatorTag: String): List<String> =
+        em.createNativeQuery(
+            "SELECT tag FROM ${dataSource.connection.schema}.databasechangelog " +
+                "WHERE tag IS NOT NULL and tag != :systemTerminatorTag " +
+                "ORDER BY orderexecuted"
+        )
+            .setParameter("systemTerminatorTag", systemTerminatorTag)
+            .resultList
+            .toList() as List<String>
 
     private fun sendSuccessfulResponse(
         respFuture: CompletableFuture<VirtualNodeManagementResponse>,

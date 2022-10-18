@@ -3,6 +3,7 @@ package net.corda.chunking.db.impl.tests
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogDTO
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
@@ -25,7 +26,7 @@ fun CpiPersistence.storeWithTestDefaults(
     checksum: SecureHash = newRandomSecureHash(),
     requestId: RequestId = UUID.randomUUID().toString(),
     groupId: String = "group-a",
-    cpkDbChangeLogEntities: List<CpkDbChangeLogEntity> = emptyList(),
+    cpkDbChangeLogEntities: List<CpkDbChangeLogDTO> = emptyList(),
     forceCpiUpdate: Boolean = false
 ): CpiMetadataEntity =
     if (forceCpiUpdate) updateMetadataAndCpks(cpi, cpiFileName, checksum, requestId, groupId, cpkDbChangeLogEntities)

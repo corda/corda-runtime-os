@@ -10,8 +10,10 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbChangeLog
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.bouncycastle.asn1.x500.style.RFC4519Style.uid
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.util.UUID
 import javax.persistence.EntityManagerFactory
 
 class VirtualNodeDbChangeLogImplementationTest  {
@@ -53,8 +55,9 @@ class VirtualNodeDbChangeLogImplementationTest  {
             }
         val lbm = LiquibaseSchemaMigratorImpl()
         val primaryContent = primaryTemplate.replace("_INCLUDETARGET_", includeElement)
-        val primary = CpkDbChangeLogEntity(CpkDbChangeLogKey("myCoolCpk", "1", "42", "migration/db.changelog-master.xml"), "42", primaryContent)
-        val secondary = CpkDbChangeLogEntity(CpkDbChangeLogKey("myCoolCpk", "1", "42", "migration/dogs-migration-v1.0.xml"), "42", secondaryContent)
+        val uid = UUID.randomUUID().toString()
+        val primary = CpkDbChangeLogEntity(CpkDbChangeLogKey("myCoolCpk", "1", "42", "migration/db.changelog-master.xml"), "42", primaryContent, uid)
+        val secondary = CpkDbChangeLogEntity(CpkDbChangeLogKey("myCoolCpk", "1", "42", "migration/dogs-migration-v1.0.xml"), "42", secondaryContent, uid)
         val cl = VirtualNodeDbChangeLog(listOf(primary, secondary))
         assertThat(cl.masterChangeLogFiles.size).isEqualTo(1)
         if (failureText != null) {

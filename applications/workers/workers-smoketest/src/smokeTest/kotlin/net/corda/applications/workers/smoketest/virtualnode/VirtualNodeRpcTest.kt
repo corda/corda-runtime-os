@@ -406,12 +406,12 @@ class VirtualNodeRpcTest {
 
     @Test
     @Order(92)
-    fun `Sync DB and persist cat`() {
+    fun `Sync DB and persist fish`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
             syncVirtualNode(aliceHoldingId)
 
-            runSimplePersistenceCheckFlow("Could persist Cat")
+            runSimplePersistenceCheckFlow("\"Could persist fish\"")
         }
     }
 

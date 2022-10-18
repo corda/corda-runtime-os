@@ -14,6 +14,7 @@ import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogAuditEntity
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogDTO
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
 import net.corda.libs.cpi.datamodel.CpkFileEntity
@@ -643,9 +644,9 @@ internal class DatabaseCpiPersistenceTest {
     private fun makeChangeLogs(
         cpks: Array<Cpk>,
         changeLogs: List<String> = listOf(mockChangeLogContent)
-    ): List<CpkDbChangeLogEntity> = cpks.flatMap {
+    ): List<CpkDbChangeLogDTO> = cpks.flatMap {
         changeLogs.map { changeLog ->
-            CpkDbChangeLogEntity(
+            CpkDbChangeLogDTO(
                 CpkDbChangeLogKey(
                     it.metadata.cpkId.name,
                     it.metadata.cpkId.version,

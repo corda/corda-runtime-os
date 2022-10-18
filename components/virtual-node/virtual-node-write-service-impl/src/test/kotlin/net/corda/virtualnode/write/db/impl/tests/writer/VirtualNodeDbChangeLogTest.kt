@@ -5,10 +5,13 @@ import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbChangeLog
 import org.assertj.core.api.Assertions.assertThat
+import org.bouncycastle.asn1.x500.style.RFC4519Style.uid
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import java.util.UUID
 
 class VirtualNodeDbChangeLogTest {
+    private val uid = UUID.randomUUID().toString()
     private val masterFile1 = CpkDbChangeLogEntity(
         CpkDbChangeLogKey(
             "CPK1",
@@ -17,7 +20,8 @@ class VirtualNodeDbChangeLogTest {
             VirtualNodeDbChangeLog.MASTER_CHANGE_LOG
         ),
         "cpk1-checksum",
-        "migration1"
+        "migration1",
+        uid
     )
     private val otherFile1 = CpkDbChangeLogEntity(
         CpkDbChangeLogKey(
@@ -27,7 +31,8 @@ class VirtualNodeDbChangeLogTest {
             "another-one.xml"
         ),
         "cpk1-checksum",
-        "migration2"
+        "migration2",
+        uid
     )
     private val masterFile2 = CpkDbChangeLogEntity(
         CpkDbChangeLogKey(
@@ -37,7 +42,8 @@ class VirtualNodeDbChangeLogTest {
             VirtualNodeDbChangeLog.MASTER_CHANGE_LOG
         ),
         "cpk1-checksum",
-        "migration3"
+        "migration3",
+        uid
     )
 
     @Test

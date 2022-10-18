@@ -139,21 +139,22 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
         return CpiUploadRPCOps.CpiUploadResponse(cpiUploadRequestId.requestId)
     }
 
-    override fun rollbackVirtualNodeDb(virtualNodeShortId: String): List<String> {
-        logger.info("Rolling back the virtual node vault database for the virtual node $virtualNodeShortId")
+    override fun resyncVirtualNodeDb(virtualNodeShortId: String): List<String> = resyncVirtualNodeDbs(listOf(virtualNodeShortId))
+
+    private fun resyncVirtualNodeDbs(virtualNodeShortIds: List<String>): List<String> {
+        logger.info(
+            "Resyncing back the virtual node vault database for the following virtual nodes: " +
+                virtualNodeShortIds.joinToString(", ")
+        )
 
         val instant = clock.instant()
         val actor = CURRENT_RPC_CONTEXT.get().principal
         val request = VirtualNodeManagementRequest(
             instant,
             VirtualNodeDBResetRequest(
-                listOf(virtualNodeShortId),
+                virtualNodeShortIds,
                 actor
             )
-        )
-
-        logger.debug(
-            "Processing request to reset the database for $virtualNodeShortId, triggered by $actor at $instant"
         )
         val resp: VirtualNodeManagementResponse = sendAndReceive(request)
         return when (val resolvedResponse = resp.responseType) {

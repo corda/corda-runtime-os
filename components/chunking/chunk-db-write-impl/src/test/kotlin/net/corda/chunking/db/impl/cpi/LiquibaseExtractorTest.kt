@@ -56,7 +56,7 @@ internal class LiquibaseExtractorTest {
             assertThat(it.id.cpkVersion.isNotEmpty()).isTrue
             assertThat(it.id.filePath.isNotEmpty()).isTrue
             assertThat(it.content.isNotEmpty()).isTrue
-            assertThat(it.fileChecksum.isNotEmpty()).isTrue
+            assertThat(it.cpkFileChecksum.isNotEmpty()).isTrue
 
             //  Cursory check of XML -
             assertThat(it.content).contains("<?xml")
