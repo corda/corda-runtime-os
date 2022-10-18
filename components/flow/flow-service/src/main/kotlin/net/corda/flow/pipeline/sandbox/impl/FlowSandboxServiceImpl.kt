@@ -269,7 +269,7 @@ class FlowSandboxServiceImpl @Activate constructor(
             .filter { it.rawType === T::class.java }
             .flatMap { it.actualTypeArguments.asList() }
         if (types.size != 1) {
-            throw IllegalStateException("Unable to determine serializing type from ${T::class.java.canonicalName}")
+            throw IllegalStateException("Unable to determine serializing type from ${jsonSerializer::class.java.canonicalName}")
         }
 
         return sandboxGroup.loadClassFromMainBundles(types.first().typeName, Any::class.java)

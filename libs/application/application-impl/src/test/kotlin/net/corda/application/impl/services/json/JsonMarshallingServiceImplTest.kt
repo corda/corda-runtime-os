@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.lang.reflect.ParameterizedType
-import javax.print.attribute.standard.MediaSize.Other
 
 class JsonMarshallingServiceImplTest {
 
@@ -198,7 +197,7 @@ class JsonMarshallingServiceImplTest {
         assertTrue(jms.setSerializer(SimpleSerializer(), SimpleDto::class.java))
         assertTrue(jms.setSerializer(OtherSerializer(), OtherDto::class.java))
         assertFalse(jms.setSerializer(SimpleSerializer(), SimpleDto::class.java)) // exact duplicate
-        assertFalse(jms.setSerializer(OtherSimpleDtoSerializer(), SimpleDto::class.java)) // different serializer, same serializing type
+        assertFalse(jms.setSerializer(OtherSimpleDtoSerializer(), SimpleDto::class.java)) // different serializer, same type
     }
 
     @Test
@@ -207,6 +206,6 @@ class JsonMarshallingServiceImplTest {
         assertTrue(jms.setDeserializer(SimpleDeserializer(), SimpleDto::class.java))
         assertTrue(jms.setDeserializer(OtherDeserializer(), OtherDto::class.java))
         assertFalse(jms.setDeserializer(SimpleDeserializer(), SimpleDto::class.java)) // exact duplicate
-        assertFalse(jms.setDeserializer(OtherSimpleDtoDeserializer(), SimpleDto::class.java)) // different deserializer, same deserializing type
+        assertFalse(jms.setDeserializer(OtherSimpleDtoDeserializer(), SimpleDto::class.java)) // different deserializer, same type
     }
 }
