@@ -133,7 +133,7 @@ object SerializerFactoryBuilder {
     @JvmStatic
     fun build(
         sandboxGroup: SandboxGroup,
-        externalCustomSerializerAllowed: ((Class<*>) -> Boolean),
+        externalCustomSerializerAllowed: (Class<*>) -> Boolean,
         descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry = DefaultDescriptorBasedSerializerRegistry(),
         allowEvolution: Boolean = true,
         overrideFingerPrinter: FingerPrinter? = null,
