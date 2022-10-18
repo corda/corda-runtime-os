@@ -1,8 +1,8 @@
 package net.corda.v5.ledger.consensual
 
 import net.corda.v5.base.annotations.CordaSerializable
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
+import java.security.PublicKey
 
 /**
  * A consensual state (or just "state") contains opaque data used by a consensual ledger. It can be thought of as a disk
@@ -22,7 +22,7 @@ interface ConsensualState {
      *
      * The participants list should normally be derived from the contents of the state.
      */
-    val participants: List<Party>
+    val participants: List<PublicKey>
 
     /**
      * An override of this function needs to be provided to:
