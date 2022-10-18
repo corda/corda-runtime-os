@@ -65,7 +65,7 @@ class GenericsTests {
 
         @Suppress("UNUSED")
         var localPath: URI = projectRootDir.toUri().resolve(
-            "serialization-internal/src/test/resources/net/corda/internal/serialization/amqp"
+            "libs/serialization/serialization-amqp/src/test/resources/net/corda/internal/serialization/amqp"
         )
     }
 
