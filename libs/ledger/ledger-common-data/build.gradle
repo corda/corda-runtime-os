@@ -1,0 +1,38 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.osgi-test-conventions'
+    id 'corda.common-library'
+}
+
+description 'Corda ledger common data'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation "net.corda:corda-ledger-common"
+
+    implementation project(":libs:serialization:serialization-internal")
+    implementation project(":libs:crypto:crypto-core")
+
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+
+    testImplementation project(':testing:test-serialization')
+    testImplementation project(':testing:ledger:ledger-common-testkit')
+    testImplementation project(":libs:serialization:serialization-amqp")
+    testImplementation project(":libs:crypto:cipher-suite-impl")
+    testImplementation project(":libs:crypto:merkle-impl")
+    testImplementation project(":libs:application:application-impl")
+
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    integrationTestImplementation project(':testing:sandboxes')
+    integrationTestRuntimeOnly project(':libs:crypto:cipher-suite-impl')
+    integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
+    integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
+    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
+}
