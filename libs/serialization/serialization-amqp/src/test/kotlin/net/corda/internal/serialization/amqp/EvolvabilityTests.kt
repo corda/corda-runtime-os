@@ -483,7 +483,9 @@ class EvolvabilityTests {
         // data class Inner (val a: Int)
         // @CordaSerializable
         // data class Outer (val a: Int, val b: Inner)
-        // File(URI("$localPath/$resource")).writeBytes(SerializationOutput(sf).serialize(Outer(oa, Inner (ia)), testSerializationContext).bytes)
+        // File(URI("$localPath/$resource"))
+        //     .writeBytes(SerializationOutput(sf)
+        //         .serialize(Outer(oa, Inner (ia)),testSerializationContext).bytes)
 
         // Add a parameter to inner but keep outer unchanged
         @CordaSerializable
@@ -536,17 +538,20 @@ class EvolvabilityTests {
         // Version 1:
         // @CordaSerializable
         // data class C (val a: Int, val b: Int, val c: Int)
-        // File(URI("$localPath/$resource1")).writeBytes(SerializationOutput(sf).serialize(C(a, b, c), testSerializationContext).bytes)
+        // File(URI("$localPath/$resource1"))
+        //     .writeBytes(SerializationOutput(sf).serialize(C(a, b, c), testSerializationContext).bytes)
         //
         // Version 2 - remove property a, add property e
         // @CordaSerializable
         // data class C (val b: Int, val c: Int, val d: Int, val e: Int)
-        // File(URI("$localPath/$resource2")).writeBytes(SerializationOutput(sf).serialize(C(b, c, d, e), testSerializationContext).bytes)
+        // File(URI("$localPath/$resource2"))
+        //     .writeBytes(SerializationOutput(sf).serialize(C(b, c, d, e), testSerializationContext).bytes)
         //
         // Version 3 - add param d
         // @CordaSerializable
         // data class C (val b: Int, val c: Int, val d: Int, val e: Int, val f: Int)
-        // File(URI("$localPath/$resource3")).writeBytes(SerializationOutput(sf).serialize(C(b, c, d, e, f), testSerializationContext).bytes)
+        // File(URI("$localPath/$resource3"))
+        //     .writeBytes(SerializationOutput(sf).serialize(C(b, c, d, e, f), testSerializationContext).bytes)
 
         @Suppress("UNUSED")
         @CordaSerializable
@@ -730,7 +735,8 @@ class EvolvabilityTests {
         // Original version of the class as it was serialised
         // @CordaSerializable
         // data class CC(val data: String, val a: Int?)
-        // File(URI("$localPath/$resource")).writeBytes(SerializationOutput(sf).serialize(CC("written", null), testSerializationContext).bytes)
+        // File(URI("$localPath/$resource")).writeBytes(SerializationOutput(sf)
+        //     .serialize(CC("written", null), testSerializationContext).bytes)
 
         @CordaSerializable
         data class CC(val data: String, val b: String) {
@@ -755,7 +761,8 @@ class EvolvabilityTests {
         // Original version of the class as it was serialised
         // @CordaSerializable
         // data class CC(val data: String, val a: Int?)
-        // File(URI("$localPath/$resource")).writeBytes(SerializationOutput(sf).serialize(CC("written", null), testSerializationContext).bytes)
+        // File(URI("$localPath/$resource")).writeBytes(SerializationOutput(sf)
+        //     .serialize(CC("written", null), testSerializationContext).bytes)
 
         @CordaSerializable
         data class CC(val data: String) {

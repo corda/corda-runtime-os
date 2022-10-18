@@ -9,7 +9,6 @@ import net.corda.v5.base.annotations.CordaSerializable
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
-import java.io.File
 import java.io.NotSerializableException
 import java.net.URI
 import java.util.concurrent.TimeUnit
