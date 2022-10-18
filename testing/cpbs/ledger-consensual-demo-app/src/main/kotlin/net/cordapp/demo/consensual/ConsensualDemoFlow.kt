@@ -1,7 +1,6 @@
 package net.cordapp.demo.consensual
 
 import net.corda.v5.application.flows.CordaInject
-import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.flows.InitiatedBy
 import net.corda.v5.application.flows.InitiatingFlow
 import net.corda.v5.application.flows.RPCRequestData
@@ -14,12 +13,12 @@ import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransactionVerifier
+import java.security.PublicKey
 
 /**
  * Example consensual flow. Currently, does almost nothing other than verify that
@@ -28,13 +27,13 @@ import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransactionVer
  */
 
 @InitiatingFlow("consensual-flow-protocol")
-class ConsensualFlow : RPCStartableFlow {
+class ConsensualDemoFlow : RPCStartableFlow {
     data class InputMessage(val number: Int)
     data class ResultMessage(val text: String)
 
     class TestConsensualState(
         val testField: String,
-        override val participants: List<Party>
+        override val participants: List<PublicKey>
     ) : ConsensualState {
         override fun verify(ledgerTransaction: ConsensualLedgerTransaction) {}
     }
@@ -42,9 +41,6 @@ class ConsensualFlow : RPCStartableFlow {
     private companion object {
         val log = contextLogger()
     }
-
-    @CordaInject
-    lateinit var flowEngine: FlowEngine
 
     @CordaInject
     lateinit var flowMessaging: FlowMessaging
@@ -62,17 +58,26 @@ class ConsensualFlow : RPCStartableFlow {
     override fun call(requestBody: RPCRequestData): String {
         log.info("Consensual flow demo starting...")
         try {
-            val member = memberLookup.lookup(MemberX500Name("Bob", "London", "GB"))!!
+            val alice = memberLookup.myInfo()
+            val bob = memberLookup.lookup(MemberX500Name("Bob", "Consensual", "R3", "London", null, "GB"))!!
 
-            val testConsensualState = TestConsensualState("test", listOf(Party(member.name, member.ledgerKeys.first())))
+            val testConsensualState =
+                TestConsensualState(
+                    "test",
+                    listOf(
+                        alice.ledgerKeys.first(),
+                        bob.ledgerKeys.first(),
+                    )
+                )
+
             val txBuilder = consensualLedgerService.getTransactionBuilder()
             val signedTransaction = txBuilder
                 .withStates(testConsensualState)
-                .signInitial(memberLookup.myInfo().ledgerKeys.first())
+                .sign(alice.ledgerKeys.first())
 
             val finalizedSignedTransaction = consensualLedgerService.finality(
                 signedTransaction,
-                listOf(flowMessaging.initiateFlow(member.name))
+                listOf(flowMessaging.initiateFlow(bob.name))
             )
 
             val resultMessage = ResultMessage(text = finalizedSignedTransaction.toString())

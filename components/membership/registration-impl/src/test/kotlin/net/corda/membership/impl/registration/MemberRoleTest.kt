@@ -1,6 +1,5 @@
 package net.corda.membership.impl.registration
 
-import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
 import net.corda.membership.impl.registration.MemberRole.Companion.extractRolesFromContext
 import net.corda.membership.impl.registration.MemberRole.Companion.toMemberInfo
 import net.corda.v5.base.types.MemberX500Name
@@ -123,14 +122,17 @@ class MemberRoleTest {
 
     @Test
     fun `toMemberInfo returns the correct information`() {
-        val keyHash = PublicKeyHash.calculate("test".toByteArray())
-        val key = mock<KeysFactory.Key>() {
-            on { pem } doReturn "pem"
-            on { hash } doReturn keyHash
+        val key1Hash = PublicKeyHash.calculate("test".toByteArray())
+        val key1 = mock<KeyDetails>() {
+            on { pem } doReturn "pem1"
+            on { hash } doReturn key1Hash
             on { spec } doReturn SignatureSpec.RSA_SHA256
         }
-        val keyFactory = mock<KeysFactory> {
-            on { getOrGenerateKeyPair(NOTARY) } doReturn key
+        val key2Hash = PublicKeyHash.calculate("test2".toByteArray())
+        val key2 = mock<KeyDetails>() {
+            on { pem } doReturn "pem2"
+            on { hash } doReturn key2Hash
+            on { spec } doReturn SignatureSpec.ECDSA_SHA512
         }
         val roles = extractRolesFromContext(
             mapOf(
@@ -140,16 +142,21 @@ class MemberRoleTest {
             )
         )
 
-        val info = roles.toMemberInfo(keyFactory)
+        val info = roles.toMemberInfo {
+            listOf(key1, key2)
+        }
 
         assertThat(info)
             .containsExactlyInAnyOrder(
                 "corda.roles.0" to "notary",
                 "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
                 "corda.notary.service.plugin" to "net.corda.notary.MyNotaryService",
-                "corda.notary.keys.0.pem" to "pem",
-                "corda.notary.keys.0.hash" to keyHash.toString(),
+                "corda.notary.keys.0.pem" to "pem1",
+                "corda.notary.keys.0.hash" to key1Hash.toString(),
                 "corda.notary.keys.0.signature.spec" to "SHA256withRSA",
+                "corda.notary.keys.1.pem" to "pem2",
+                "corda.notary.keys.1.hash" to key2Hash.toString(),
+                "corda.notary.keys.1.signature.spec" to "SHA512withECDSA",
             )
     }
 }

@@ -14,6 +14,7 @@ description 'Corda Common JSON serializers'
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
+    implementation "net.corda:corda-application"
     implementation 'net.corda:corda-base'
     implementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

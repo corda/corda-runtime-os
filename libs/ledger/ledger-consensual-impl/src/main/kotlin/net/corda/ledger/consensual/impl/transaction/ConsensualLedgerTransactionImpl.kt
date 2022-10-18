@@ -10,7 +10,7 @@ import java.time.Instant
 
 class ConsensualLedgerTransactionImpl(
     private val wireTransaction: WireTransaction,
-    private val serializer: SerializationService
+    private val serializationService: SerializationService
 ) : ConsensualLedgerTransaction {
 
     override fun equals(other: Any?): Boolean =
@@ -25,24 +25,24 @@ class ConsensualLedgerTransactionImpl(
 
     override val timestamp: Instant by lazy(LazyThreadSafetyMode.PUBLICATION) {
         val timeStampBytes = wireTransaction.getComponentGroupList(ConsensualComponentGroupEnum.TIMESTAMP.ordinal).first()
-        serializer.deserialize(timeStampBytes, Instant::class.java)
+        serializationService.deserialize(timeStampBytes, Instant::class.java)
     }
     override val requiredSigningKeys: Set<PublicKey> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         wireTransaction
             .getComponentGroupList(ConsensualComponentGroupEnum.REQUIRED_SIGNING_KEYS.ordinal)
-            .map{serializer.deserialize(it, PublicKey::class.java)}.toSet()
+            .map{serializationService.deserialize(it, PublicKey::class.java)}.toSet()
     }
     private val consensualStateTypes: List<String> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         wireTransaction
             .getComponentGroupList(ConsensualComponentGroupEnum.OUTPUT_STATE_TYPES.ordinal)
-            .map{serializer.deserialize(it, String::class.java)}
+            .map{serializationService.deserialize(it, String::class.java)}
     }
     override val states: List<ConsensualState> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         wireTransaction
             .getComponentGroupList(ConsensualComponentGroupEnum.OUTPUT_STATES.ordinal)
             .mapIndexed{
                 index, state ->
-                    serializer.deserialize(state, Class.forName(consensualStateTypes[index])) as ConsensualState
+                    serializationService.deserialize(state, Class.forName(consensualStateTypes[index])) as ConsensualState
             }
     }
 
@@ -51,9 +51,7 @@ class ConsensualLedgerTransactionImpl(
      */
     fun verify(){
         val requiredSigningKeysFromStates = states
-            .map{it.participants}
-            .flatten()
-            .map{it.owningKey}
+            .flatMap{it.participants}
         require(requiredSigningKeys == requiredSigningKeysFromStates) {
             "Deserialized required signing keys from WireTx do not match with the ones derived from the states!"
         }

@@ -7,6 +7,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.ledgerKeyHashes
 import net.corda.membership.lib.MemberInfoExtension.Companion.sessionKeyHash
 import net.corda.membership.lib.MemberInfoExtension.Companion.status
 import net.corda.membership.read.MembershipGroupReader
+import net.corda.membership.read.NotaryVirtualNodeLookup
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.membership.GroupParameters
@@ -39,10 +40,13 @@ class MembershipGroupReaderImpl(
     override fun lookupBySessionKey(sessionKeyHash: PublicKeyHash): MemberInfo? =
         memberList.singleOrNull { it.isActiveOrPending() && sessionKeyHash == it.sessionKeyHash }
 
+    override val notaryVirtualNodeLookup: NotaryVirtualNodeLookup by lazy {
+        NotaryVirtualNodeLookupImpl(this)
+    }
+
     override fun lookup(name: MemberX500Name) = memberList.singleOrNull {
         it.isActiveOrPending() && it.name == name
     }
-
 
     private fun MemberInfo.isActiveOrPending(): Boolean {
         return isActive || status == MEMBER_STATUS_PENDING
