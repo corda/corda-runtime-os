@@ -1,9 +1,6 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.internal.serialization.amqp.testutils.deserialize
-import net.corda.internal.serialization.amqp.testutils.serialize
-import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
-import net.corda.internal.serialization.amqp.testutils.writeTestResource
+import net.corda.internal.serialization.amqp.testutils.*
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.DeprecatedConstructorForDeserialization
 import net.corda.v5.serialization.SerializedBytes
@@ -94,8 +91,7 @@ class EvolutionObjectBuilderRenamedPropertyTests {
 //        val step1 = TemplateState(cordappVersionTestValue, dataTestValue, xTestValue)
 //        saveSerializedObject(step1)
 
-        // serialization-internal/src/test/resources/net/corda/internal/serialization/amqp/EvolutionObjectBuilderRenamedPropertyTests.Step1
-        val bytes = this::class.java.getResource("EvolutionObjectBuilderRenamedPropertyTests.Step1").readBytes()
+        val bytes = this::class.java.getResource(testResourceName()).readBytes()
 
         val serializerFactory: SerializerFactory = testDefaultFactory()
         val deserializedObject = DeserializationInput(serializerFactory)

@@ -1,6 +1,7 @@
 package net.corda.internal.serialization.amqp
 
 import net.corda.internal.serialization.amqp.helper.testSerializationContext
+import net.corda.internal.serialization.amqp.testutils.ProjectStructure
 import net.corda.v5.serialization.SerializedBytes
 import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.testName
@@ -8,13 +9,20 @@ import net.corda.v5.base.annotations.CordaSerializable
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.junit.jupiter.api.assertThrows
+import java.io.File
 import java.io.NotSerializableException
+import java.net.URI
 import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
 class EvolutionSerializerFactoryTests {
+
+    @Suppress("UNUSED")
+    var localPath: URI = ProjectStructure.projectRootDir.toUri().resolve(
+        "libs/serialization/serialization-amqp/src/test/resources/net/corda/internal/serialization/amqp"
+    )
 
     private val nonStrictFactory = SerializerFactoryBuilder.build(
         testSerializationContext.currentSandboxGroup(),
@@ -48,9 +56,9 @@ class EvolutionSerializerFactoryTests {
         // val withNullOriginal = C(1, null)
         // val withoutNullOriginal = C(1, 1)
         // File(URI("$localPath/$withNullResource")).writeBytes(
-        //         SerializationOutput(strictFactory).serialize(withNullOriginal).bytes)
+        //         SerializationOutput(strictFactory).serialize(withNullOriginal, testSerializationContext).bytes)
         // File(URI("$localPath/$withoutNullResource")).writeBytes(
-        //         SerializationOutput(strictFactory).serialize(withoutNullOriginal).bytes)
+        //         SerializationOutput(strictFactory).serialize(withoutNullOriginal, testSerializationContext).bytes)
 
         val withoutNullUrl = javaClass.getResource(withoutNullResource)
         val withNullUrl = javaClass.getResource(withNullResource)
