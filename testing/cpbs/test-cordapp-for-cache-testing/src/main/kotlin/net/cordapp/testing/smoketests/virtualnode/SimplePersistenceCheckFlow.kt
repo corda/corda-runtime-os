@@ -28,7 +28,9 @@ class SimplePersistenceCheckFlow : RPCStartableFlow {
     override fun call(requestBody: RPCRequestData): String {
         val fish = Fish(UUID.randomUUID(), "Polly", "Black", Owner(UUID.randomUUID(), "alice", 22))
         persistenceService.persist(fish)
-        log.info("Persisted Cat: $fish")
-        return jsonMarshallingService.format("Could persist fish")
+        return with("Could persist $fish") {
+             log.info(this)
+             jsonMarshallingService.format(this)
+        }
     }
 }
