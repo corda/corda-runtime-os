@@ -1,15 +1,24 @@
 package net.corda.ledger.utxo.impl.transaction
 
+import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import java.security.PublicKey
 
 data class UtxoSignedTransactionImpl(
-    override val id: SecureHash,
-    override val signatures: List<DigitalSignatureAndMetadata>
+    override val signatures: List<DigitalSignatureAndMetadata>,
+    private val serializationService: SerializationService,
+    private val wireTransaction: WireTransaction
 ) : UtxoSignedTransaction {
+
+    init {
+        require(signatures.isNotEmpty()) { "Tried to instantiate a ${javaClass.simpleName} without any signatures." }
+    }
+
+    override val id: SecureHash get() = wireTransaction.id
 
     override fun addSignatures(signatures: Iterable<DigitalSignatureAndMetadata>): UtxoSignedTransaction {
         return copy(signatures = this.signatures + signatures)
@@ -20,10 +29,12 @@ data class UtxoSignedTransactionImpl(
     }
 
     override fun getMissingSignatories(): List<PublicKey> {
-        TODO("Not yet implemented")
+        val appliedSignatories = signatures.map { it.by }.toSet()
+        val requiredSignatories = toLedgerTransaction().signatories
+        return requiredSignatories - appliedSignatories
     }
 
     override fun toLedgerTransaction(): UtxoLedgerTransaction {
-        TODO("Not yet implemented")
+        return UtxoLedgerTransactionImpl(wireTransaction, serializationService)
     }
 }
