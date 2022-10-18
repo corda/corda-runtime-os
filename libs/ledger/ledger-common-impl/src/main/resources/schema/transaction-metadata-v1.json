@@ -72,7 +72,7 @@
 				},
 				"ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64": {
 					"$id": "#root/digestSettings/ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64", 
-					"title": "Root Merkle tree digest options node prefix b64", 
+					"title": "Root Merkle tree digest options node prefix base64 encoded", 
 					"type": "string",
 					"default": "",
 					"examples": [
