@@ -1,5 +1,4 @@
 {
-	"definitions": {},
 	"$schema": "http://json-schema.org/draft-07/schema#", 
 	"$id": "https://corda.net/schema/ledger/transaction-metadata-v1.json", 
 	"title": "Root", 
@@ -126,6 +125,23 @@
 		"cpiMetadata": {
 			"$id": "#root/cpiMetadata", 
 			"title": "CPI metadata", 
+			"$ref": "#/definitions/package_metadata"
+		}
+,
+		"cpkMetadata": {
+			"$id": "#root/cpkMetadata", 
+			"title": "CPK metadata", 
+			"type": "array",
+			"default": [],
+			"items":{
+				"$id": "#root/cpkMetadata/items", 
+				"title": "Items", 
+				"$ref": "#/definitions/package_metadata"
+			}
+		}
+	},
+	"definitions": {
+		"package_metadata": {
 			"type": "object",
 			"required": [
 				"name",
@@ -175,67 +191,6 @@
 					"pattern": "^.*$"
 				}
 			}
-		}
-,
-		"cpkMetadata": {
-			"$id": "#root/cpkMetadata", 
-			"title": "CPK metadata", 
-			"type": "array",
-			"default": [],
-			"items":{
-				"$id": "#root/cpkMetadata/items", 
-				"title": "Items", 
-				"type": "object",
-				"required": [
-					"name",
-					"version",
-					"signerSummaryHash",
-					"fileChecksum"
-				],
-				"properties": {
-					"name": {
-						"$id": "#root/cpkMetadata/items/name", 
-						"title": "Name", 
-						"type": "string",
-						"default": "",
-						"examples": [
-							"MockCpk"
-						],
-						"pattern": "^.*$"
-					},
-					"version": {
-						"$id": "#root/cpkMetadata/items/version", 
-						"title": "Version", 
-						"type": "string",
-						"default": "",
-						"examples": [
-							"1"
-						],
-						"pattern": "^.*$"
-					},
-					"signerSummaryHash": {
-						"$id": "#root/cpkMetadata/items/signerSummaryHash", 
-						"title": "Signer summary hash", 
-						"type": "string",
-						"default": "",
-						"examples": [
-							""
-						],
-						"pattern": "^.*$"
-					},
-					"fileChecksum": {
-						"$id": "#root/cpkMetadata/items/fileChecksum", 
-						"title": "File checksum", 
-						"type": "string",
-						"default": "",
-						"examples": [
-                            "0000111122223333444455556666777788889999AAAABBBBCCCCDDDDEEEEFFFF"
-						],
-						"pattern": "^.*$"
-					}
-				}
-			}
-
 		}
 	}
 }
