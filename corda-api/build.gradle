@@ -19,6 +19,7 @@ dependencies {
         api project(':data:db-schema')
         api project(':data:membership-schema')
         api project(':data:topic-schema')
+        api project(':data:rbac-schema')
         api project(':ledger:ledger-common')
         api project(':ledger:ledger-consensual')
         api project(':ledger:ledger-utxo')
