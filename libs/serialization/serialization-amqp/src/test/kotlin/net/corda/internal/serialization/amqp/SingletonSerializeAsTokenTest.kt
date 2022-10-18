@@ -12,12 +12,6 @@ import java.io.NotSerializableException
 import kotlin.test.assertFailsWith
 
 class SingletonSerializeAsTokenTest {
-
-    private companion object {
-        val testDefaultFactory
-            get() = testDefaultFactory(externalCustomSerializerAllowed = { true })
-    }
-
     @Test
     fun `serializing SingletonSerializeAsToken fails`() {
         val singletonSerializeAsToken = mock(SingletonSerializeAsToken::class.java)
@@ -28,7 +22,7 @@ class SingletonSerializeAsTokenTest {
 
     @Test
     fun `adding custom serializer for a SingletonSerializeAsToken serializes that SingletonSerializeAsToken`() {
-        val factoryWithSerializersRegistered = testDefaultFactory.also {
+        val factoryWithSerializersRegistered = testDefaultFactory().also {
             registerCustomSerializers(it)
             it.registerExternal(ServiceSerializer(), it)
         }
@@ -39,7 +33,7 @@ class SingletonSerializeAsTokenTest {
 
     @Test
     fun `SingletonSerializeAsToken fails to serialize if custom serializer is provided for other SingletonSerializeAsToken`() {
-        val factoryWithSerializersRegistered = testDefaultFactory.also {
+        val factoryWithSerializersRegistered = testDefaultFactory().also {
             registerCustomSerializers(it)
             it.registerExternal(ServiceSerializer(), it)
         }

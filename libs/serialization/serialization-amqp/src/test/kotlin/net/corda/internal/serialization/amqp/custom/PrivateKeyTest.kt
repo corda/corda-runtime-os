@@ -19,7 +19,7 @@ class PrivateKeyTest {
         class PrivateKeyProxy
     }
 
-    val factory = testDefaultFactory(externalCustomSerializerAllowed = { true }).apply {
+    val factory = testDefaultFactory().apply {
         registerExternal(
             PrivateKeySerializer(),
             this
