@@ -190,34 +190,6 @@ class EvolvabilityTests {
 
     @Suppress("UNUSED_VARIABLE")
     @Test
-    fun removeParameterWithCalculatedParameter() {
-        val sf = testDefaultFactory()
-        val resource = "EvolvabilityTests.removeParameterWithCalculatedParameter"
-
-        // Original version of the class as it was serialised
-        // @CordaSerializable
-        // data class CC(val a: Int, val b: String, val c: String, val d: Int) {
-        //     @get:SerializableCalculatedProperty
-        //     val e: String get() = "$b $c"
-        // }
-        // File(URI("$localPath/$resource")).writeBytes(SerializationOutput(sf).serialize(CC(1, "hello", "world", 2)).bytes)
-
-        @CordaSerializable
-        data class CC(val b: String, val d: Int) {
-            val e: String get() = "$b sailor"
-        }
-
-        val url = EvolvabilityTests::class.java.getResource(resource)
-        val sc2 = url.readBytes()
-        val deserializedCC = DeserializationInput(sf).deserialize(SerializedBytes<CC>(sc2))
-
-        assertEquals("hello", deserializedCC.b)
-        assertEquals(2, deserializedCC.d)
-        assertEquals("hello sailor", deserializedCC.e)
-    }
-
-    @Suppress("UNUSED_VARIABLE")
-    @Test
     fun addAndRemoveParameters() {
         val sf = testDefaultFactory()
         val A = 1
