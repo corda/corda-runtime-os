@@ -6,6 +6,7 @@ import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.internal.transaction.CordaPackageSummary
+import net.corda.ledger.common.testkit.mockTransactionMetaData
 import net.corda.ledger.consensual.impl.ConsensualTransactionMocks
 import net.corda.ledger.consensual.impl.TestConsensualState
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -63,7 +64,7 @@ internal class ConsensualTransactionBuilderImplTest {
             .sign(ConsensualTransactionMocks.testPublicKey) as ConsensualSignedTransactionImpl
 
         val metadata = tx.wireTransaction.metadata
-        assertEquals("0.001", metadata.getLedgerVersion())
+        assertEquals("0.0.1", metadata.getLedgerVersion())
 
         val expectedCpiMetadata = CordaPackageSummary(
             "CPI name",
@@ -96,7 +97,7 @@ internal class ConsensualTransactionBuilderImplTest {
             serializationService,
             ConsensualTransactionMocks.mockSigningService(),
             mock(),
-            ConsensualTransactionMocks.mockTransactionMetaData()
+            mockTransactionMetaData()
         )
     }
 }

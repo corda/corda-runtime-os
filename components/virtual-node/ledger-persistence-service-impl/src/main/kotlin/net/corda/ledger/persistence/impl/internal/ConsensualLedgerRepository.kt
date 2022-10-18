@@ -62,7 +62,13 @@ class ConsensualLedgerRepository(
         val firstRowColumns = rows.first() as Array<*>
         val privacySalt = PrivacySaltImpl(firstRowColumns[1] as ByteArray)
         val componentGroupLists = queryRowsToComponentGroupLists(rows)
-        return WireTransaction(merkleTreeProvider, digestService, jsonMarshallingService, privacySalt, componentGroupLists)
+        return WireTransaction(
+            merkleTreeProvider,
+            digestService,
+            jsonMarshallingService,
+            privacySalt,
+            componentGroupLists
+        )
     }
 
     @VisibleForTesting

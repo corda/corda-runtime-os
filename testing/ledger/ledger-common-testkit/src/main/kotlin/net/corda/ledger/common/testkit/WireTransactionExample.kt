@@ -3,20 +3,19 @@ package net.corda.ledger.common.testkit
 import net.corda.ledger.common.impl.transaction.TransactionMetaData
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
+import net.corda.ledger.common.internal.transaction.CordaPackageSummary
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
+import net.corda.v5.crypto.SecureHash
 
 fun getWireTransaction(
     digestService: DigestService,
     merkleTreeProvider: MerkleTreeProvider,
-    jsonMarshallingService: JsonMarshallingService
+    jsonMarshallingService: JsonMarshallingService,
 ): WireTransaction{
-    val transactionMetaData = TransactionMetaData(
-        linkedMapOf(
-            TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues
-        )
-    )
+    val transactionMetaData = mockTransactionMetaData()
+
     val componentGroupLists = listOf(
         listOf(jsonMarshallingService.format(transactionMetaData).toByteArray(Charsets.UTF_8)), // TODO(update with CORE-6890)
         listOf(".".toByteArray()),
@@ -31,3 +30,32 @@ fun getWireTransaction(
     )
 }
 
+fun mockTransactionMetaData() =
+    TransactionMetaData(
+        linkedMapOf(
+            TransactionMetaData.LEDGER_MODEL_KEY to "net.corda.ledger.consensual.impl.transaction.ConsensualLedgerTransactionImpl",
+            TransactionMetaData.LEDGER_VERSION_KEY to "0.0.1",
+            TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
+            TransactionMetaData.PLATFORM_VERSION_KEY to 123,
+            TransactionMetaData.CPI_METADATA_KEY to getCpiSummary(),
+            TransactionMetaData.CPK_METADATA_KEY to listOf(
+                CordaPackageSummary(
+                    "MockCpk",
+                    "1",
+                    "",
+                    "0101010101010101010101010101010101010101010101010101010101010101"),
+                CordaPackageSummary(
+                    "MockCpk",
+                    "3",
+                    "",
+                    "0303030303030303030303030303030303030303030303030303030303030303")
+            )
+        )
+    )
+
+private fun getCpiSummary() = CordaPackageSummary(
+    name = "CPI name",
+    version = "CPI version",
+    signerSummaryHash = SecureHash("SHA-256", "Fake-value".toByteArray()).toHexString(),
+    fileChecksum = SecureHash("SHA-256", "Another-Fake-value".toByteArray()).toHexString()
+)

@@ -1,11 +1,5 @@
 package net.corda.ledger.consensual.impl
 
-import net.corda.ledger.common.impl.transaction.TransactionMetaData
-import net.corda.ledger.common.impl.transaction.WireTransactionDigestSettings
-import net.corda.ledger.common.internal.transaction.CordaPackageSummary
-import net.corda.ledger.consensual.impl.transaction.ConsensualLedgerTransactionImpl
-import net.corda.ledger.consensual.impl.transaction.TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
-import net.corda.ledger.consensual.impl.transaction.factory.getCpiSummary
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.base.types.MemberX500Name
@@ -44,29 +38,6 @@ class ConsensualTransactionMocks {
         val testPublicKey = kpg.genKeyPair().public
         val testParty = Party(testMemberX500Name, testPublicKey)
         val testConsensualState = TestConsensualState("test", listOf(testParty))
-
-        fun mockTransactionMetaData() =
-            TransactionMetaData(
-                linkedMapOf(
-                    TransactionMetaData.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
-                    TransactionMetaData.LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
-                    TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
-                    TransactionMetaData.PLATFORM_VERSION_KEY to 123,
-                    TransactionMetaData.CPI_METADATA_KEY to getCpiSummary(),
-                    TransactionMetaData.CPK_METADATA_KEY to listOf(
-                        CordaPackageSummary(
-                            "MockCpk",
-                            "1",
-                            "",
-                            "0101010101010101010101010101010101010101010101010101010101010101"),
-                        CordaPackageSummary(
-                            "MockCpk",
-                            "3",
-                            "",
-                            "0303030303030303030303030303030303030303030303030303030303030303")
-                    )
-                )
-            )
 
         fun mockSigningService(): SigningService {
             val signingService: SigningService = mock()

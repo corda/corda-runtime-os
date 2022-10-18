@@ -20,6 +20,7 @@ dependencies {
     implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:layered-property-map")
     implementation project(":libs:serialization:serialization-internal")
+    implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"
 
     testImplementation project(":testing:layered-property-map-testkit")
     testImplementation project(":libs:membership:membership-common")

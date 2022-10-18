@@ -36,7 +36,7 @@ class WireTransaction(
 
         val metadataBytes = componentGroupLists[ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first()
         // TODO(update with CORE-6890)
-        metadata = jsonMarshallingService.parse(metadataBytes.decodeToString(), TransactionMetaData::class.java)
+        metadata = parseMetadata(metadataBytes.decodeToString())
 
         check(metadata.getDigestSettings() == WireTransactionDigestSettings.defaultValues) {
             "Only the default digest settings are acceptable now! ${metadata.getDigestSettings()} vs " +
@@ -137,6 +137,16 @@ class WireTransaction(
 
         merkleTreeProvider.createTree(componentGroupRoots, getRootMerkleTreeDigestProvider())
     }
+
+    private fun parseMetadata(json: String): TransactionMetaData {
+        makeJsonValidator().validate(json)
+        return jsonMarshallingService.parse(json, TransactionMetaData::class.java)
+    }
+
+    private fun makeJsonValidator(): JsonValidator {
+        return JsonValidatorImpl(schemaPath = "/schema/transaction-metadata-v1.json")
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is WireTransaction) return false
