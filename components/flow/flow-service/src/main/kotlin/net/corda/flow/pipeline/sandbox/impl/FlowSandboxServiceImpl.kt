@@ -25,6 +25,7 @@ import net.corda.serialization.InternalCustomSerializer
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFactory
 import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.marshalling.json.JsonDeserializer
 import net.corda.v5.application.marshalling.json.JsonSerializer
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.serialization.SerializationCustomSerializer
@@ -162,7 +163,7 @@ class FlowSandboxServiceImpl @Activate constructor(
             flowProtocolStoreFactory.create(sandboxGroup, cpiMetadata)
         )
 
-        registerCustomJsonSerialization(sandboxGroupContext)
+        registerCustomJsonSerialization(sandboxGroupContext, cpiMetadata)
 
         return AutoCloseable {
             cleanupCordaSingletons.forEach(AutoCloseable::close)
@@ -194,7 +195,7 @@ class FlowSandboxServiceImpl @Activate constructor(
         }
         // Build CorDapp serializers
         // Current implementation has unique serializers per CPI
-        val cordappCustomSerializers = buildCorDappSerializers(
+        val cordappCustomSerializers = buildCorDappSerializers<SerializationCustomSerializer<*, *>>(
             sandboxGroup,
             cpiMetadata.cpksMetadata.flatMap { it.cordappManifest.serializers }.toSet()
         )
@@ -203,16 +204,6 @@ class FlowSandboxServiceImpl @Activate constructor(
             log.info("Registering CorDapp serializer {}", customSerializer.javaClass.name)
             factory.registerExternal(customSerializer, factory)
         }
-
-        // Build JsonSerializer/JsonDeserializers
-        val cordappJsonSerializers = buildCorDappSerializers(
-            sandboxGroup,
-            cpiMetadata.cpksMetadata.flatMap { it.cordappManifest.jsonSerializerClasses }.toSet()
-        )
-        val cordappJsonDeserializers = buildCorDappSerializers(
-            sandboxGroup,
-            cpiMetadata.cpksMetadata.flatMap { it.cordappManifest.jsonDeserializerClasses }.toSet()
-        )
 
         val serializationOutput = SerializationOutput(factory)
         val deserializationInput = DeserializationInput(factory)
@@ -226,33 +217,31 @@ class FlowSandboxServiceImpl @Activate constructor(
         putObjectByKey(FlowSandboxGroupContextImpl.AMQP_P2P_SERIALIZATION_SERVICE, p2pSerializationService)
     }
 
-    private fun buildCorDappSerializers(
+    private inline fun <reified T : Any> buildCorDappSerializers(
         sandboxGroup: SandboxGroup,
-        serializerClassNames: Set<String>
-    ): List<SerializationCustomSerializer<*, *>> {
+        serializerClassNames: Set<String>,
+    ): List<T> = buildCorDappSerializers(sandboxGroup, serializerClassNames, T::class.java)
+
+    private fun <T : Any> buildCorDappSerializers(
+        sandboxGroup: SandboxGroup,
+        serializerClassNames: Set<String>,
+        type: Class<T>
+    ): List<T> {
         return serializerClassNames.map { serializerClassName ->
             sandboxGroup.loadClassFromMainBundles(
                 serializerClassName,
-                SerializationCustomSerializer::class.java
+                type
             ).getConstructor().newInstance()
         }
     }
 
-    private fun buildCorDappJsonSerializers(
-        sandboxGroup: SandboxGroup,
-        serializerClassNames: Set<String>
-    ): List<JsonSerializer<*>> {
-        return serializerClassNames.map { serializerClassName ->
-            sandboxGroup.loadClassFromMainBundles(
-                serializerClassName,
-                JsonSerializer::class.java
-            ).getConstructor().newInstance()
-        }
-    }
-
-    private fun registerCustomJsonSerialization(sandboxGroupContext: MutableSandboxGroupContext) {
+    private fun registerCustomJsonSerialization(
+        sandboxGroupContext: MutableSandboxGroupContext,
+        cpiMetadata: CpiMetadata
+    ) {
+        val sandboxGroup = sandboxGroupContext.sandboxGroup
         val serializationCustomizer =
-            sandboxGroupContext.sandboxGroup.getOsgiServiceByClass<JsonMarshallingService>() as? SerializationCustomizer
+            sandboxGroup.getOsgiServiceByClass<JsonMarshallingService>() as? SerializationCustomizer
 
         if (serializationCustomizer == null) {
             log.error(
@@ -261,9 +250,16 @@ class FlowSandboxServiceImpl @Activate constructor(
             return
         }
 
-        // CORE-6985 will add the custom serializers and deserializers declared in the CorDapp code
-        // serializationCustomizer.setSerializer(...)
-        // serializationCustomizer.setDeserializer(...)
+        // Build JsonSerializer/JsonDeserializers
+        buildCorDappSerializers<JsonSerializer<*>>(
+            sandboxGroup,
+            cpiMetadata.cpksMetadata.flatMap { it.cordappManifest.jsonSerializerClasses }.toSet()
+        ).forEach(serializationCustomizer::setSerializer)
+
+        buildCorDappSerializers<JsonDeserializer<*>>(
+            sandboxGroup,
+            cpiMetadata.cpksMetadata.flatMap { it.cordappManifest.jsonDeserializerClasses }.toSet()
+        ).forEach(serializationCustomizer::setDeserializer)
     }
 
     private inline fun <reified T> SandboxGroup.getOsgiServiceByClass() =
