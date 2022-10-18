@@ -19,6 +19,10 @@ internal object RoleCreationUtils {
     private const val ALLOWED_CHARS = "[a-fA-F0-9]"
     const val UUID_REGEX = "$ALLOWED_CHARS{8}-$ALLOWED_CHARS{4}-$ALLOWED_CHARS{4}-$ALLOWED_CHARS{4}-$ALLOWED_CHARS{12}"
 
+    const val VNODE_SHORT_HASH_REGEX = "[0-9a-fA-F]{12}"
+
+    const val USER_REGEX = "[-._@a-zA-Z0-9]*"
+
     /**
      * Checks if role already exists and then does nothing, else:
      * - creates permissions;

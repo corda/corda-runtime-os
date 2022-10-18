@@ -1,5 +1,6 @@
 package net.corda.cli.plugin.initialRbac.commands
 
+import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.USER_REGEX
 import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.UUID_REGEX
 import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.checkOrCreateRole
 import net.corda.cli.plugins.common.HttpRpcCommand
@@ -18,10 +19,6 @@ private const val USER_ADMIN_ROLE = "UserAdminRole"
         - assigning/un-assigning permissions to roles"""]
 )
 class UserAdminSubcommand : HttpRpcCommand(), Callable<Int> {
-
-    companion object {
-        const val USER_REGEX = "[-.@a-zA-Z0-9]*"
-    }
 
     private val permissionsToCreate: Map<String, String> = listOf(
         // User manipulation permissions

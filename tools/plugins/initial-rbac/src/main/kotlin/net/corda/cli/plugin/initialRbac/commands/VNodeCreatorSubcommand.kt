@@ -1,6 +1,7 @@
 package net.corda.cli.plugin.initialRbac.commands
 
 import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.UUID_REGEX
+import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.VNODE_SHORT_HASH_REGEX
 import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.checkOrCreateRole
 import net.corda.cli.plugins.common.HttpRpcCommand
 import picocli.CommandLine
@@ -17,10 +18,6 @@ private const val VNODE_CREATOR_ROLE = "VNodeCreatorRole"
 )
 class VNodeCreatorSubcommand : HttpRpcCommand(), Callable<Int> {
 
-    private companion object {
-        const val SHORT_HASH_REGEX = "[0-9a-fA-F]{12}"
-    }
-
     private val permissionsToCreate: Map<String, String> = listOf(
         // CPI related
         "Get all CPIs" to "GET:/api/v1/cpi",
@@ -30,7 +27,7 @@ class VNodeCreatorSubcommand : HttpRpcCommand(), Callable<Int> {
         // vNode related
         "Create vNode" to "POST:/api/v1/virtualnode",
         "Get all vNodes" to "GET:/api/v1/virtualnode",
-        "Update vNode" to "PUT:/api/v1/virtualnode/$SHORT_HASH_REGEX" // TBC
+        "Update vNode" to "PUT:/api/v1/virtualnode/$VNODE_SHORT_HASH_REGEX" // TBC
     ).toMap()
 
     override fun call(): Int {
