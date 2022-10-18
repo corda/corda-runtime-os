@@ -89,7 +89,7 @@ object SerializerFactoryBuilder {
     }) as Map<Class<*>, Class<*>>
 
     @JvmStatic
-    fun build(sandboxGroup: SandboxGroup): SerializerFactory {
+    fun build(sandboxGroup: SandboxGroup, sandboxGroupSecurityDomain: String = "FLOW"): SerializerFactory {
         return makeFactory(
             sandboxGroup,
             DefaultDescriptorBasedSerializerRegistry(),
@@ -97,7 +97,7 @@ object SerializerFactoryBuilder {
             overrideFingerPrinter = null,
             onlyCustomSerializers = false,
             mustPreserveDataWhenEvolving = false,
-            sandboxGroupSecurityDomain = "",
+            sandboxGroupSecurityDomain = sandboxGroupSecurityDomain,
             externalCustomSerializerAllowed = null
         )
     }
@@ -106,35 +106,59 @@ object SerializerFactoryBuilder {
     @JvmStatic
     fun build(
         sandboxGroup: SandboxGroup,
-        descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
-                    DefaultDescriptorBasedSerializerRegistry(),
+        sandboxGroupSecurityDomain: String,
+        descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry = DefaultDescriptorBasedSerializerRegistry(),
         allowEvolution: Boolean = true,
         overrideFingerPrinter: FingerPrinter? = null,
         onlyCustomSerializers: Boolean = false,
-        mustPreserveDataWhenEvolving: Boolean = false,
-        sandboxGroupSecurityDomain: String = "",
-        externalCustomSerializerAllowed: ((Class<*>) -> Boolean)? = null): SerializerFactory {
+        mustPreserveDataWhenEvolving: Boolean = false
+    ): SerializerFactory {
         return makeFactory(
-                sandboxGroup,
-                descriptorBasedSerializerRegistry,
-                allowEvolution,
-                overrideFingerPrinter,
-                onlyCustomSerializers,
-                mustPreserveDataWhenEvolving,
-                sandboxGroupSecurityDomain,
-                externalCustomSerializerAllowed)
+            sandboxGroup,
+            descriptorBasedSerializerRegistry,
+            sandboxGroupSecurityDomain,
+            allowEvolution,
+            overrideFingerPrinter,
+            onlyCustomSerializers,
+            mustPreserveDataWhenEvolving,
+            null
+        )
+    }
+
+    @Suppress("LongParameterList")
+    @JvmStatic
+    fun build(
+        sandboxGroup: SandboxGroup,
+        externalCustomSerializerAllowed: ((Class<*>) -> Boolean) = { false },
+        descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry = DefaultDescriptorBasedSerializerRegistry(),
+        allowEvolution: Boolean = true,
+        overrideFingerPrinter: FingerPrinter? = null,
+        onlyCustomSerializers: Boolean = false,
+        mustPreserveDataWhenEvolving: Boolean = false
+    ): SerializerFactory {
+        return makeFactory(
+            sandboxGroup,
+            descriptorBasedSerializerRegistry,
+            "",
+            allowEvolution,
+            overrideFingerPrinter,
+            onlyCustomSerializers,
+            mustPreserveDataWhenEvolving,
+            externalCustomSerializerAllowed
+        )
     }
 
     @Suppress("LongParameterList")
     private fun makeFactory(
         sandboxGroup: SandboxGroup,
         descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
+        sandboxGroupSecurityDomain: String,
         allowEvolution: Boolean,
         overrideFingerPrinter: FingerPrinter?,
         onlyCustomSerializers: Boolean,
         mustPreserveDataWhenEvolving: Boolean,
-        sandboxGroupSecurityDomain: String,
-        externalCustomSerializerAllowed: ((Class<*>) -> Boolean)?): SerializerFactory {
+        externalCustomSerializerAllowed: ((Class<*>) -> Boolean)?
+    ): SerializerFactory {
         val customSerializerRegistry = externalCustomSerializerAllowed?.let {
             CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry, it)
         } ?: CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry, sandboxGroupSecurityDomain)

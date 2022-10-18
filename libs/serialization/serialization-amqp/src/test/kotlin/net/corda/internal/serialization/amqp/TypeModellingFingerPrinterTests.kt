@@ -15,7 +15,7 @@ import kotlin.test.assertNotEquals
 class TypeModellingFingerPrinterTests {
 
     val descriptorBasedSerializerRegistry = DefaultDescriptorBasedSerializerRegistry()
-    val customRegistry = CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry, mock())
+    val customRegistry = CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry)
     val fingerprinter = TypeModellingFingerPrinter(
         customRegistry,
         testSerializationContext.currentSandboxGroup(),

@@ -37,7 +37,7 @@ class FingerPrinterTestingTests {
     fun testingTest() {
         val fpt = FingerPrinterTesting()
         val descriptorBasedSerializerRegistry = DefaultDescriptorBasedSerializerRegistry()
-        val customSerializerRegistry: CustomSerializerRegistry = CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry, mock())
+        val customSerializerRegistry: CustomSerializerRegistry = CachingCustomSerializerRegistry(descriptorBasedSerializerRegistry)
         val typeModel = ConfigurableLocalTypeModel(LocalTypeModelConfigurationImpl(customSerializerRegistry))
 
         assertEquals("0", fpt.fingerprint(typeModel.inspect(Integer::class.java)))

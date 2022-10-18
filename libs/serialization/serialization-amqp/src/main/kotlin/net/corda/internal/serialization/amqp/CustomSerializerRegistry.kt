@@ -116,7 +116,7 @@ class CachingCustomSerializerRegistry private constructor(
     @VisibleForTesting
     constructor(
         descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry,
-        externalCustomSerializerAllowed: (Class<*>) -> Boolean
+        externalCustomSerializerAllowed: (Class<*>) -> Boolean = { false }
     ) : this(descriptorBasedSerializerRegistry, emptySet(), "", externalCustomSerializerAllowed)
 
     companion object {
