@@ -431,7 +431,7 @@ class CryptoOperationsTests {
 
     @ParameterizedTest
     @MethodSource("keySchemes")
-    fun `Should return empty collection when looking up for non matching key parameters in all supported schemes`(
+    fun `Should return empty collection when looking up for non-matching key parameters in all supported schemes`(
         scheme: KeyScheme
     ) {
         val info = signingAliasedKeys.getValue(scheme)

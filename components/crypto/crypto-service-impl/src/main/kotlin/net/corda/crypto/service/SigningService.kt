@@ -36,7 +36,7 @@ interface SigningService {
      * @param take the response paging information, number of records to return, the actual number may be less than
      * requested.
      * @param orderBy the order by.
-     *  @param tenantId the tenant's id which the keys belong to.
+     * @param tenantId the tenant's id which the keys belong to.
      * @param filter the layered property map of the filter parameters such as
      * category (the HSM's category which handles the keys),
      * schemeCodeName (the key's signature scheme name),

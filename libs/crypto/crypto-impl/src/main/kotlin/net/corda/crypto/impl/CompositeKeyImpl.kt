@@ -19,7 +19,7 @@ import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import java.security.PublicKey
 import java.util.IdentityHashMap
 
-    // TODO- expose to users?
+// TODO- expose to users?
 val PublicKey.keys: Set<PublicKey> get() = (this as? CompositeKey)?.leafKeys ?: setOf(this)
 
 // TODO- make private
