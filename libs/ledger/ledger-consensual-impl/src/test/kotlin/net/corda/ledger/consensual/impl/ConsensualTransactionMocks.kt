@@ -8,19 +8,18 @@ import net.corda.ledger.consensual.impl.transaction.TRANSACTION_META_DATA_CONSEN
 import net.corda.ledger.consensual.impl.transaction.factory.getCpiSummary
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.v5.application.crypto.SigningService
-import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.DigitalSignature
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.security.KeyPairGenerator
+import java.security.PublicKey
 
 class TestConsensualState(
     val testField: String,
-    override val participants: List<Party>
+    override val participants: List<PublicKey>
 ) : ConsensualState {
     override fun verify(ledgerTransaction: ConsensualLedgerTransaction) {}
     override fun equals(other: Any?): Boolean {
@@ -40,10 +39,8 @@ class ConsensualTransactionMocks {
             it.initialize(512)
         }
 
-        val testMemberX500Name = MemberX500Name("R3", "London", "GB")
-        val testPublicKey = kpg.genKeyPair().public
-        val testParty = Party(testMemberX500Name, testPublicKey)
-        val testConsensualState = TestConsensualState("test", listOf(testParty))
+        val testPublicKey: PublicKey = kpg.genKeyPair().public
+        val testConsensualState = TestConsensualState("test", listOf(testPublicKey))
 
         fun mockTransactionMetaData() =
             TransactionMetaData(
