@@ -20,9 +20,9 @@ import org.osgi.service.component.annotations.Reference
 @Component(service = [ConsensualLedgerProcessorFactory::class])
 @Suppress("LongParameterList")
 class ConsensualLedgerProcessorFactoryImpl @Activate constructor(
-    @Reference
+    @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
-    @Reference
+    @Reference(service = EntitySandboxService::class)
     private val entitySandboxService: EntitySandboxService,
     @Reference(service = ExternalEventResponseFactory::class)
     private val externalEventResponseFactory: ExternalEventResponseFactory,

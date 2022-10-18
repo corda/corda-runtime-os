@@ -1,39 +1,40 @@
 package net.corda.ledger.persistence.impl.tests
 
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.data.CordaAvroDeserializer
+import net.corda.data.CordaAvroSerializationFactory
+import net.corda.data.KeyValuePair
+import net.corda.data.KeyValuePairList
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.external.ExternalEventContext
 import net.corda.data.flow.event.external.ExternalEventResponse
+import net.corda.data.ledger.consensual.FindTransaction
 import net.corda.data.ledger.consensual.PersistTransaction
-import net.corda.data.persistence.*
+import net.corda.data.persistence.ConsensualLedgerRequest
+import net.corda.data.persistence.EntityResponse
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.db.persistence.testkit.components.VirtualNodeService
 import net.corda.db.persistence.testkit.fake.FakeDbConnectionManager
 import net.corda.db.persistence.testkit.helpers.Resources
-import net.corda.db.schema.DbSchema
-import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
-import net.corda.messaging.api.records.Record
-import net.corda.orm.JpaEntitiesSet
-import net.corda.ledger.persistence.impl.tests.helpers.DbTestContext
-import net.corda.sandboxgroupcontext.SandboxGroupContext
-import net.corda.testing.sandboxes.SandboxSetup
-import net.corda.testing.sandboxes.fetchService
-import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
-import net.corda.data.CordaAvroDeserializer
-import net.corda.data.CordaAvroSerializationFactory
-import net.corda.data.KeyValuePair
-import net.corda.data.KeyValuePairList
-import net.corda.data.ledger.consensual.FindTransaction
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getSerializer
+import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
+import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.common.impl.transaction.WireTransaction
 import net.corda.ledger.common.testkit.getWireTransaction
 import net.corda.ledger.persistence.impl.internal.ConsensualLedgerMessageProcessor
+import net.corda.ledger.persistence.impl.tests.helpers.DbTestContext
+import net.corda.messaging.api.records.Record
+import net.corda.orm.JpaEntitiesSet
 import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_SERIALIZER
 import net.corda.persistence.common.EntitySandboxServiceFactory
+import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.serialization.InternalCustomSerializer
+import net.corda.testing.sandboxes.SandboxSetup
+import net.corda.testing.sandboxes.fetchService
+import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.DigestService
@@ -203,8 +204,8 @@ class ConsensualLedgerMessageProcessorTests {
 
         val testId = (0..1000000).random() // keeping this shorter than UUID.
         val schemaName = "consensual_ledger_test_$testId"
-        val animalDbConnection = Pair(virtualNodeInfo.vaultDmlConnectionId, "animals-node-$testId")
-        val dbConnectionManager = FakeDbConnectionManager(listOf(animalDbConnection), schemaName)
+        val dbConnection = Pair(virtualNodeInfo.vaultDmlConnectionId, "connection-1")
+        val dbConnectionManager = FakeDbConnectionManager(listOf(dbConnection), schemaName)
 
         val componentContext = Mockito.mock(ComponentContext::class.java)
         whenever(componentContext.locateServices(INTERNAL_CUSTOM_SERIALIZERS))
@@ -233,16 +234,16 @@ class ConsensualLedgerMessageProcessorTests {
             )
         )
 
-        lbm.updateDb(dbConnectionManager.getDataSource(animalDbConnection.first).connection, vaultSchema)
+        lbm.updateDb(dbConnectionManager.getDataSource(dbConnection.first).connection, vaultSchema)
 
         return DbTestContext(
             virtualNodeInfo,
             entitySandboxService,
             sandbox,
             dbConnectionManager.createEntityManagerFactory(
-                animalDbConnection.first,
+                dbConnection.first,
                 JpaEntitiesSet.create(
-                    animalDbConnection.second,
+                    dbConnection.second,
                     setOf()
                 )
             ),
