@@ -8,7 +8,6 @@ import net.corda.serialization.checkpoint.NonSerializable
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.virtualnode.HoldingIdentity
 
-@Suppress("LongParameterList")
 class FlowFiberExecutionContext(
     val flowCheckpoint: FlowCheckpoint,
     val sandboxGroupContext: FlowSandboxGroupContext,
