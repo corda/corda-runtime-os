@@ -36,10 +36,7 @@ public class JavaCustomSerializerListProxyTests {
 
     @Test
     public void serializeExample() {
-        SerializerFactory factory = testDefaultFactory(
-                new DefaultDescriptorBasedSerializerRegistry(),
-                aClass -> true
-        );
+        SerializerFactory factory = testDefaultFactory(new DefaultDescriptorBasedSerializerRegistry());
         SerializationOutput ser = new SerializationOutput(factory);
 
         List<Integer> l = new ArrayList<>(2);

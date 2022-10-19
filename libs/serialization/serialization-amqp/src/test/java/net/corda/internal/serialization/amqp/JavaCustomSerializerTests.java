@@ -79,10 +79,7 @@ public class JavaCustomSerializerTests {
 
     @Test
     public void serializeExample() throws NotSerializableException {
-        SerializerFactory factory = testDefaultFactory(
-                new DefaultDescriptorBasedSerializerRegistry(),
-                aClass -> true
-        );
+        SerializerFactory factory = testDefaultFactory(new DefaultDescriptorBasedSerializerRegistry());
         SerializationOutput ser = new SerializationOutput(factory);
 
         List<Integer> l = new ArrayList<>(2);
