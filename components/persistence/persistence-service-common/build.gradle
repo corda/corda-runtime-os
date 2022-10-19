@@ -22,6 +22,8 @@ dependencies {
     implementation project(':components:virtual-node:virtual-node-info-read-service')
 
     implementation project(':libs:flows:external-event-responses')
+    implementation project(":libs:crypto:crypto-serialization-impl")
+    implementation project(":libs:crypto:cipher-suite-impl")
     implementation project(":libs:messaging:messaging")
     implementation project(':libs:serialization:serialization-amqp')
     implementation project(':libs:serialization:serialization-internal')

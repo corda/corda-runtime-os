@@ -1,12 +1,13 @@
 package net.corda.ledger.consensual.flow.impl.persistence
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.ledger.common.data.transaction.CordaPackageSummary
+import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionContainer
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.AbstractConsensualLedgerExternalEventFactory
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -48,21 +49,25 @@ class ConsensualLedgerPersistenceServiceImplTest {
 
     @Test
     fun `persist executes successfully`() {
-        consensualLedgerPersistenceService.persist(mock())
+        val expectedObj = mock<CordaPackageSummary>()
+        whenever(serializationService.deserialize<CordaPackageSummary>(any<ByteArray>(), any())).thenReturn(expectedObj)
+
+        assertThat(consensualLedgerPersistenceService.persist(mock(), "V")).isEqualTo(listOf(expectedObj))
 
         verify(serializationService).serialize(any())
+        verify(serializationService).deserialize<CordaPackageSummary>(any<ByteArray>(), any())
         assertThat(argumentCaptor.firstValue).isEqualTo(PersistTransactionExternalEventFactory::class.java)
     }
 
     @Test
     fun `find executes successfully`() {
-        val expectedObj = mock<ConsensualSignedTransaction>()
+        val expectedObj = mock<ConsensualSignedTransactionContainer>()
         val testId = SecureHash.parse("SHA256:1234567890123456")
-        whenever(serializationService.deserialize<ConsensualSignedTransaction>(any<ByteArray>(), any())).thenReturn(expectedObj)
+        whenever(serializationService.deserialize<ConsensualSignedTransactionContainer>(any<ByteArray>(), any())).thenReturn(expectedObj)
 
         assertThat(consensualLedgerPersistenceService.find(testId)).isEqualTo(expectedObj)
 
-        verify(serializationService).deserialize<ConsensualSignedTransaction>(any<ByteArray>(), any())
+        verify(serializationService).deserialize<ConsensualSignedTransactionContainer>(any<ByteArray>(), any())
         assertThat(argumentCaptor.firstValue).isEqualTo(FindTransactionExternalEventFactory::class.java)
     }
 }
