@@ -1,6 +1,8 @@
 package net.corda.ledger.utxo.impl.transaction
 
+import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.utxo.impl.state.filterIsContractStateInstance
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.Attachment
 import net.corda.v5.ledger.utxo.Command
@@ -11,14 +13,37 @@ import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import java.security.PublicKey
 
 data class UtxoLedgerTransactionImpl(
-    override val timeWindow: TimeWindow,
-    override val attachments: List<Attachment>,
-    override val commands: List<Command>,
-    override val signatories: List<PublicKey>,
-    override val inputStateAndRefs: List<StateAndRef<*>>,
-    override val referenceInputStateAndRefs: List<StateAndRef<*>>,
-    override val outputStateAndRefs: List<StateAndRef<*>>
+    private val wireTransaction: WireTransaction,
+    private val serializationService: SerializationService
 ) : UtxoLedgerTransaction {
+
+    override val timeWindow: TimeWindow by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        TODO("Not yet implemented.")
+    }
+
+    override val attachments: List<Attachment> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        TODO("Not yet implemented.")
+    }
+
+    override val commands: List<Command> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        TODO("Not yet implemented.")
+    }
+
+    override val signatories: List<PublicKey> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        TODO("Not yet implemented.")
+    }
+
+    override val inputStateAndRefs: List<StateAndRef<*>> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        TODO("Not yet implemented.")
+    }
+
+    override val referenceInputStateAndRefs: List<StateAndRef<*>> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        TODO("Not yet implemented.")
+    }
+
+    override val outputStateAndRefs: List<StateAndRef<*>> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        TODO("Not yet implemented.")
+    }
 
     override fun getAttachment(id: SecureHash): Attachment {
         return attachments.singleOrNull { it.id == id }

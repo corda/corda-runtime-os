@@ -1,6 +1,6 @@
 package net.corda.ledger.utxo.impl.transaction
 
-import net.corda.ledger.common.impl.transaction.WireTransaction
+import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
