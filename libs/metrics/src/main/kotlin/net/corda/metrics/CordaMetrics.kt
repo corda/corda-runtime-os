@@ -1,28 +1,34 @@
 package net.corda.metrics
 
+import io.micrometer.core.instrument.Meter
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.Metrics
-import io.micrometer.core.instrument.Tag
-import io.micrometer.core.instrument.Tags
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry
+import io.micrometer.core.instrument.Tag as micrometerTag
 
 object CordaMetrics {
-    enum class Meters(val meterName: String) {
+    sealed class Metric (
+        val metricsName: String,
+        private val meter: (String, Iterable<micrometerTag>) -> Meter) {
+
+        fun builder(): MeterBuilder {
+            return MeterBuilder(this.metricsName, this.meter)
+        }
         /**
          * Number of HTTP Requests.
          */
-        HttpRequestCount("http.server.request.count"),
+        object HttpRequestCount : Metric("http.server.request", Metrics::counter)
         /**
          * HTTP Requests time.
          */
-        HttpRequestTime("http.server.request.time"),
+        object HttpRequestTime : Metric("http.server.request.time", Metrics::timer)
         /**
          * Time it took to create the sandbox
          */
-        SandboxCreateTime("sandbox.create.time")
+        object SandboxCreateTime : Metric("sandbox.create.time", Metrics::timer)
     }
 
-    enum class Tags(val value: String) {
+    enum class Tag(val value: String) {
         /**
          * Address for which the metric is applicable.
          */
@@ -34,43 +40,47 @@ object CordaMetrics {
         /**
          * Source of metric.
          */
-        Source("source"),
+        WorkerType("workerType"),
         /**
          * Virtual Node for which the metric is applicable.
          */
         VirtualNode("virtualNode"),
     }
 
-    fun Meters.builder(): MeterBuilder {
-        return MeterBuilder(this.meterName)
-    }
-
     val registry: CompositeMeterRegistry = Metrics.globalRegistry
 
-    fun configure(name: String, registry: MeterRegistry) {
+    /**
+     * Configure the Metrics Registry
+     *
+     * @param workerType Type of Worker, will be tagged to each metric.
+     * @param registry Registry instance
+     */
+    fun configure(workerType: String, registry: MeterRegistry) {
         this.registry.add(registry)
-        this.registry.config().commonTags(Tags.Source.value, name)
+        this.registry.config().commonTags(Tag.WorkerType.value, workerType)
     }
 
     class MeterBuilder(
-        private val name: String
+        val name: String,
+        val func: (String, Iterable<micrometerTag>) -> Any
     ) {
-        private val allTags: MutableList<Tag> = mutableListOf()
+        val allTags: MutableList<io.micrometer.core.instrument.Tag> = mutableListOf()
 
         /**
          * Tag the metric with the Holding ID short hash for the Virtual Node.
          */
         fun forVirtualNode(holdingId: String): MeterBuilder {
-            return withTag(Tags.VirtualNode, holdingId)
+            return withTag(Tag.VirtualNode, holdingId)
         }
 
-        fun withTag(key: Tags, value: String): MeterBuilder {
-            allTags.add(Tag.of(key.value, value))
+        fun withTag(key: Tag, value: String): MeterBuilder {
+            allTags.add(io.micrometer.core.instrument.Tag.of(key.value, value))
             return this
         }
 
-        fun <T> build(func: (name: String, tags: Iterable<Tag>) -> T): T {
-            return func(name, allTags)
+        // NOTE: because T is reified, this has to be inline, which means func, name and allTags needs to be public.
+        inline fun <reified T: Meter> build(): T {
+            return func(name, allTags) as T
         }
     }
 }

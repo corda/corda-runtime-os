@@ -1,7 +1,6 @@
 @file:JvmName("SandboxGroupContextServiceUtils")
 package net.corda.sandboxgroupcontext.service.impl
 
-import io.micrometer.core.instrument.Metrics
 import io.micrometer.core.instrument.Timer
 import java.security.AccessControlContext
 import java.security.AccessControlException
@@ -12,7 +11,6 @@ import java.util.LinkedList
 import net.corda.cpk.read.CpkReadService
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.metrics.CordaMetrics
-import net.corda.metrics.CordaMetrics.builder
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxException
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX
@@ -87,10 +85,10 @@ class SandboxGroupContextServiceImpl(
         initializer: SandboxGroupContextInitializer
     ): SandboxGroupContext {
         return cache.get(virtualNodeContext) {
-            val sandboxTimer = CordaMetrics.Meters.SandboxCreateTime.builder()
+            val sandboxTimer = CordaMetrics.Metric.SandboxCreateTime.builder()
                 .forVirtualNode(virtualNodeContext.holdingIdentity.shortHash.value)
-                .withTag(CordaMetrics.Tags.SandboxGroupType, virtualNodeContext.sandboxGroupType.name)
-                .build<Timer>(Metrics::timer)
+                .withTag(CordaMetrics.Tag.SandboxGroupType, virtualNodeContext.sandboxGroupType.name)
+                .build<Timer>()
             sandboxTimer.recordCallable {
                 val cpks = virtualNodeContext.cpkFileChecksums.mapNotNull { cpkReadService.get(it) }
                 if (cpks.size != virtualNodeContext.cpkFileChecksums.size) {

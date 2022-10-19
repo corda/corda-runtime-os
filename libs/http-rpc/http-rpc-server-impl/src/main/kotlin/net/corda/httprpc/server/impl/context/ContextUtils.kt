@@ -5,7 +5,6 @@ import io.javalin.http.Context
 import io.javalin.http.ForbiddenResponse
 import io.javalin.http.UnauthorizedResponse
 import io.micrometer.core.instrument.Counter
-import io.micrometer.core.instrument.Metrics
 import io.micrometer.core.instrument.Timer
 import net.corda.httprpc.security.Actor
 import net.corda.httprpc.security.AuthorizingSubject
@@ -20,7 +19,6 @@ import net.corda.httprpc.server.impl.internal.ParametersRetrieverContext
 import net.corda.httprpc.server.impl.security.HttpRpcSecurityManager
 import net.corda.httprpc.server.impl.security.provider.credentials.CredentialResolver
 import net.corda.metrics.CordaMetrics
-import net.corda.metrics.CordaMetrics.builder
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
@@ -94,12 +92,12 @@ internal object ContextUtils {
             log.debug { "Invoke method \"${this.method.method.name}\" for route info." }
             log.trace { "Get parameter values." }
 
-            CordaMetrics.Meters.HttpRequestCount.builder()
-                .withTag(CordaMetrics.Tags.Address, "${ctx.method()} ${ctx.path()}")
-                .build<Counter>(Metrics::counter).increment()
-            val requestTimer = CordaMetrics.Meters.HttpRequestTime.builder()
-                .withTag(CordaMetrics.Tags.Address, "${ctx.method()} ${ctx.path()}")
-                .build<Timer>(Metrics::timer)
+            CordaMetrics.Metric.HttpRequestCount.builder()
+                .withTag(CordaMetrics.Tag.Address, "${ctx.method()} ${ctx.path()}")
+                .build<Counter>().increment()
+            val requestTimer = CordaMetrics.Metric.HttpRequestTime.builder()
+                .withTag(CordaMetrics.Tag.Address, "${ctx.method()} ${ctx.path()}")
+                .build<Timer>()
             requestTimer.recordCallable {
                 try {
                     validateRequestContentType(this, ctx)

@@ -13,6 +13,5 @@ interface CacheFactory {
      * @param name Cache name, used for logging and metrics.
      * @param caffeine Caffeine cache builder.
      */
-    fun <K, V> build(
-        name: String, caffeine: Caffeine<in K, in V>): Cache<K, V>
+    fun <K, V> build(name: String, caffeine: Caffeine<in K, in V>): Cache<K, V>
 }

@@ -18,7 +18,7 @@ dependencies {
     // https://r3-cev.atlassian.net/browse/CORE-7168
     //
     // runtimeOnly("org.hibernate:hibernate-micrometer:$hibernateVersion") {
-    //  // TODO - this can probably be removed once we have s table version of micrometer with OSGi support.
+    //  // TODO - this can probably be removed once we have a table version of micrometer with OSGi support.
     //  exclude group: 'io.micrometer', module: 'micrometer-core'
     // }
     implementation("org.hibernate:hibernate-osgi:$hibernateVersion") {
