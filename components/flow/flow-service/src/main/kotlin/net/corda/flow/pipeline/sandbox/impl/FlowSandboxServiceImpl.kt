@@ -59,6 +59,18 @@ import java.lang.reflect.ParameterizedType
             cardinality = MULTIPLE,
             policy = DYNAMIC
         ),
+        Reference(
+            name = FlowSandboxServiceImpl.INTERNAL_CUSTOM_JSON_SERIALIZERS,
+            service = JsonSerializer::class,
+            cardinality = MULTIPLE,
+            policy = DYNAMIC
+        ),
+        Reference(
+            name = FlowSandboxServiceImpl.INTERNAL_CUSTOM_JSON_DESERIALIZERS,
+            service = JsonDeserializer::class,
+            cardinality = MULTIPLE,
+            policy = DYNAMIC
+        )
     ]
 )
 class FlowSandboxServiceImpl @Activate constructor(
@@ -81,6 +93,9 @@ class FlowSandboxServiceImpl @Activate constructor(
         const val INTERNAL_CUSTOM_SERIALIZERS = "internalCustomSerializers"
         const val CHECKPOINT_INTERNAL_CUSTOM_SERIALIZERS = "checkpointInternalCustomSerializers"
         private const val NON_PROTOTYPE_SERVICES = "(!($SERVICE_SCOPE=$SCOPE_PROTOTYPE))"
+
+        const val INTERNAL_CUSTOM_JSON_DESERIALIZERS = "internalCustomJsonDeserializers"
+        const val INTERNAL_CUSTOM_JSON_SERIALIZERS = "internalCustomJsonSerializers"
 
         private fun <T> ComponentContext.fetchServices(refName: String): List<T> {
             @Suppress("unchecked_cast")
@@ -253,6 +268,15 @@ class FlowSandboxServiceImpl @Activate constructor(
             return
         }
 
+        // Add platform serialization support first, so that it takes precedence over user custom serialization
+        componentContext.fetchServices<JsonSerializer<*>>(INTERNAL_CUSTOM_JSON_SERIALIZERS).forEach {
+            serializationCustomizer.setSerializer(it, extractJsonSerializingType(it, sandboxGroup))
+        }
+        componentContext.fetchServices<JsonDeserializer<*>>(INTERNAL_CUSTOM_JSON_DESERIALIZERS).forEach {
+            serializationCustomizer.setDeserializer(it, extractJsonSerializingType(it, sandboxGroup))
+        }
+
+        // User custom serialization support
         getObjectByKey<Iterable<JsonSerializer<*>>>(JsonSerializer::class.java.name)?.forEach {
             serializationCustomizer.setSerializer(it, extractJsonSerializingType(it, sandboxGroup))
         }
@@ -270,7 +294,13 @@ class FlowSandboxServiceImpl @Activate constructor(
             throw IllegalStateException("Unable to determine serializing type from ${jsonSerializer::class.java.canonicalName}")
         }
 
-        return sandboxGroup.loadClassFromMainBundles(types.first().typeName, Any::class.java)
+        return try {
+            // Try to find the target type for serialization in the default class loaders
+            Class.forName(types.first().typeName)
+        } catch (e: ClassNotFoundException) {
+            // Otherwise look for it in the bundles
+            sandboxGroup.loadClassFromMainBundles(types.first().typeName, Any::class.java)
+        }
     }
 
     private inline fun <reified T> SandboxGroup.getOsgiServiceByClass() =

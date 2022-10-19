@@ -1,4 +1,4 @@
-package net.corda.application.impl.services.json
+package net.corda.common.json.serializers
 
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.databind.SerializerProvider
