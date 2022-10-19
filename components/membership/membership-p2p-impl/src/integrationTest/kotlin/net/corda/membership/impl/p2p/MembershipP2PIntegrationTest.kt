@@ -321,8 +321,11 @@ class MembershipP2PIntegrationTest {
             ecdhKey,
             registrationRequestSerializer.serialize(message)!!
         ) { ek, _ ->
-            val timestamp = clock.instant().toEpochMilli()
-            val header = UnauthenticatedRegistrationRequestHeader(1, timestamp, keyEncodingService.encodeAsString(ek))
+            val header = UnauthenticatedRegistrationRequestHeader(
+                ByteBuffer.wrap("salt".toByteArray()),
+                ByteBuffer.wrap("aad".toByteArray()),
+                keyEncodingService.encodeAsString(ek)
+            )
             val serializedHeader = headerSerializer.serialize(header)
                 ?: throw IllegalArgumentException("Serialized header cannot be null.")
             latestHeader = header

@@ -4,7 +4,6 @@ import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.ecies.StableKeyPairDecryptor
-import net.corda.data.CordaAvroSerializationFactory
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -75,7 +74,6 @@ class MembershipP2PReadServiceImplTest {
     private val avroSchemaRegistry: AvroSchemaRegistry = mock()
     private val stableKeyPairDecryptor: StableKeyPairDecryptor = mock()
     private val keyEncodingService: KeyEncodingService = mock()
-    private val cordaAvroSerializationFactory: CordaAvroSerializationFactory = mock()
     private val membershipGroupReaderProvider: MembershipGroupReaderProvider = mock()
 
     private val testConfig =

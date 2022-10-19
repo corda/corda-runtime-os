@@ -3,6 +3,7 @@ package net.corda.membership.impl.registration.dynamic.member
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.core.toByteArray
 import net.corda.crypto.ecies.EciesParams
 import net.corda.crypto.ecies.EphemeralKeyPairEncryptor
 import net.corda.data.CordaAvroSerializationFactory
@@ -11,7 +12,6 @@ import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.common.RegistrationStatus
-import net.corda.data.membership.p2p.ECIESInfo
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequest
 import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequestHeader
@@ -174,9 +174,6 @@ class DynamicMemberRegistrationService @Activate constructor(
     private val orderVerifier = OrderVerifier()
     private val p2pEndpointVerifier = P2pEndpointVerifier(orderVerifier)
 
-    private val eciesSerializer: CordaAvroSerializer<ECIESInfo> =
-        cordaAvroSerializationFactory.createAvroSerializer { logger.error("Failed to serialize information used for ECIES.") }
-
     private val unauthenticatedRegistrationRequestSerializer: CordaAvroSerializer<UnauthenticatedRegistrationRequest> =
         cordaAvroSerializationFactory.createAvroSerializer { logger.error("Failed to serialize registration request.") }
 
@@ -294,14 +291,12 @@ class DynamicMemberRegistrationService @Activate constructor(
                     mgmKey,
                     registrationRequestSerializer.serialize(message)!!
                 ) { ek, sk ->
-                    val eciesInfo = ECIESInfo(1, clock.instant(), keyEncodingService.encodeAsString(ek))
-                    val serializedECIESInfo = eciesSerializer.serialize(eciesInfo)
-                        ?: throw IllegalArgumentException("Serialized data for ECIES cannot be null.")
-                    val salt = serializedECIESInfo + keyEncodingService.encodeAsByteArray(sk)
+                    val aad = 1.toByteArray() + clock.instant().toEpochMilli().toByteArray() + keyEncodingService.encodeAsByteArray(ek)
+                    val salt = aad + keyEncodingService.encodeAsByteArray(sk)
                     latestHeader = UnauthenticatedRegistrationRequestHeader(
-                        ByteBuffer.wrap(salt), ByteBuffer.wrap(serializedECIESInfo), keyEncodingService.encodeAsString(ek)
+                        ByteBuffer.wrap(salt), ByteBuffer.wrap(aad), keyEncodingService.encodeAsString(ek)
                     )
-                    EciesParams( salt, serializedECIESInfo )
+                    EciesParams( salt, aad )
                 }
 
                 val messageHeader = UnauthenticatedMessageHeader(
