@@ -8,6 +8,7 @@ import net.corda.v5.ledger.utxo.Attachment
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
+import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import java.security.PublicKey
@@ -18,27 +19,59 @@ data class UtxoLedgerTransactionImpl(
 ) : UtxoLedgerTransaction {
 
     override val timeWindow: TimeWindow by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        TODO("Not yet implemented.")
+        val timeWindowBytes = wireTransaction.getComponentGroupList(UtxoComponentGroup.NOTARY.ordinal)[2]
+        serializationService.deserialize(timeWindowBytes, TimeWindow::class.java)
     }
 
     override val attachments: List<Attachment> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        TODO("Not yet implemented.")
+        wireTransaction
+            .getComponentGroupList(UtxoComponentGroup.DATA_ATTACHMENTS.ordinal)
+            .map{serializationService.deserialize(it, Attachment::class.java)}
     }
 
     override val commands: List<Command> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        TODO("Not yet implemented.")
+        wireTransaction
+            .getComponentGroupList(UtxoComponentGroup.COMMANDS.ordinal)
+            .map{serializationService.deserialize(it, Command::class.java)}
     }
 
     override val signatories: List<PublicKey> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         TODO("Not yet implemented.")
     }
 
+    val inputStateRefs: List<StateRef> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        wireTransaction
+            .getComponentGroupList(UtxoComponentGroup.INPUTS.ordinal)
+            .map{serializationService.deserialize(it, StateRef::class.java)}
+    }
+
     override val inputStateAndRefs: List<StateAndRef<*>> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         TODO("Not yet implemented.")
     }
 
+    val referenceInputStateRefs: List<StateRef> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        wireTransaction
+            .getComponentGroupList(UtxoComponentGroup.REFERENCES.ordinal)
+            .map{serializationService.deserialize(it, StateRef::class.java)}
+    }
+
     override val referenceInputStateAndRefs: List<StateAndRef<*>> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         TODO("Not yet implemented.")
+    }
+
+    private val outputStateTypes: List<String> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        wireTransaction
+            .getComponentGroupList(UtxoComponentGroup.OUTPUTS_INFO_STATE_TYPE.ordinal)
+            .map{ serializationService.deserialize(it, String::class.java)}
+    }
+
+    val outputStates: List<StateAndRef<*>> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        wireTransaction
+            .getComponentGroupList(UtxoComponentGroup.OUTPUTS.ordinal)
+            .mapIndexed{
+                    index, stateRef ->
+                serializationService.deserialize(stateRef, Class.forName(outputStateTypes[index])) as StateAndRef<*>
+            }
     }
 
     override val outputStateAndRefs: List<StateAndRef<*>> by lazy(LazyThreadSafetyMode.PUBLICATION) {
