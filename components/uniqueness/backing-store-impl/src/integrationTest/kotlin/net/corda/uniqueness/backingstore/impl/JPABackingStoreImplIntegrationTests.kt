@@ -195,9 +195,9 @@ class JPABackingStoreImplIntegrationTests {
                 session.executeTransaction { _, txnOps -> txnOps.commitTransactions(txns) }
             }
 
-            lateinit var txnDetails: Map<SecureHash, UniquenessCheckTransactionDetailsInternal>
+            val txnDetails = mutableMapOf<SecureHash, UniquenessCheckTransactionDetailsInternal>()
             backingStoreImpl.session(aliceIdentity) { session ->
-                txnDetails = session.getTransactionDetails(txIds)
+                txnDetails.putAll(session.getTransactionDetails(txIds))
             }
 
             UniquenessAssertions.assertContainingTxId(txnDetails = txnDetails, txIds = txIds)
@@ -219,9 +219,9 @@ class JPABackingStoreImplIntegrationTests {
                 session.executeTransaction { _, txnOps -> txnOps.commitTransactions(txns) }
             }
 
-            lateinit var txnDetails: Map<SecureHash, UniquenessCheckTransactionDetailsInternal>
+            val txnDetails = mutableMapOf<SecureHash, UniquenessCheckTransactionDetailsInternal>()
             backingStoreImpl.session(aliceIdentity) { session ->
-                txnDetails = session.getTransactionDetails(txIds)
+                txnDetails.putAll(session.getTransactionDetails(txIds))
             }
 
             UniquenessAssertions.assertContainingTxId(txnDetails = txnDetails, txIds = txIds)
@@ -243,9 +243,9 @@ class JPABackingStoreImplIntegrationTests {
                 session.executeTransaction { _, txnOps -> txnOps.commitTransactions(txns) }
             }
 
-            lateinit var txnDetails: Map<SecureHash, UniquenessCheckTransactionDetailsInternal>
+            val txnDetails = mutableMapOf<SecureHash, UniquenessCheckTransactionDetailsInternal>()
             backingStoreImpl.session(aliceIdentity) { session ->
-                txnDetails = session.getTransactionDetails(txIds)
+                txnDetails.putAll(session.getTransactionDetails(txIds))
             }
 
             UniquenessAssertions.assertContainingTxId(txnDetails = txnDetails, txIds = txIds)
@@ -270,9 +270,9 @@ class JPABackingStoreImplIntegrationTests {
                 session.executeTransaction { _, txnOps -> txnOps.commitTransactions(txns) }
             }
 
-            lateinit var txnDetails: Map<SecureHash, UniquenessCheckTransactionDetailsInternal>
+            val txnDetails = mutableMapOf<SecureHash, UniquenessCheckTransactionDetailsInternal>()
             backingStoreImpl.session(aliceIdentity) { session ->
-                txnDetails = session.getTransactionDetails(txIds)
+                txnDetails.putAll(session.getTransactionDetails(txIds))
             }
 
             UniquenessAssertions.assertContainingTxId(txnDetails = txnDetails, txIds = txIds)
@@ -294,9 +294,9 @@ class JPABackingStoreImplIntegrationTests {
                 session.executeTransaction { _, txnOps -> txnOps.commitTransactions(txns) }
             }
 
-            lateinit var txnDetails: Map<SecureHash, UniquenessCheckTransactionDetailsInternal>
+            val txnDetails = mutableMapOf<SecureHash, UniquenessCheckTransactionDetailsInternal>()
             backingStoreImpl.session(aliceIdentity) { session ->
-                txnDetails = session.getTransactionDetails(txIds)
+                txnDetails.putAll(session.getTransactionDetails(txIds))
             }
 
             UniquenessAssertions.assertContainingTxId(txnDetails = txnDetails, txIds = txIds)
@@ -319,9 +319,9 @@ class JPABackingStoreImplIntegrationTests {
                 session.executeTransaction { _, txnOps -> txnOps.commitTransactions(txns) }
             }
 
-            lateinit var txnDetails: Map<SecureHash, UniquenessCheckTransactionDetailsInternal>
+            val txnDetails = mutableMapOf<SecureHash, UniquenessCheckTransactionDetailsInternal>()
             backingStoreImpl.session(aliceIdentity) { session ->
-                txnDetails = session.getTransactionDetails(txIds)
+                txnDetails.putAll(session.getTransactionDetails(txIds))
             }
 
             UniquenessAssertions.assertContainingTxId(txnDetails = txnDetails, txIds = txIds)
@@ -372,9 +372,9 @@ class JPABackingStoreImplIntegrationTests {
                 session.executeTransaction { _, txnOps -> txnOps.commitTransactions(txns) }
             }
 
-            lateinit var txnDetails: Map<SecureHash, UniquenessCheckTransactionDetailsInternal>
+            val txnDetails = mutableMapOf<SecureHash, UniquenessCheckTransactionDetailsInternal>()
             backingStoreImpl.session(aliceIdentity) { session ->
-                txnDetails = session.getTransactionDetails(txIds)
+                txnDetails.putAll(session.getTransactionDetails(txIds))
             }
 
             UniquenessAssertions.assertContainingTxId(txnDetails = txnDetails, txIds = txIds)
@@ -391,9 +391,9 @@ class JPABackingStoreImplIntegrationTests {
                 session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
             }
 
-            lateinit var stateDetails: Map<UniquenessCheckStateRef, UniquenessCheckStateDetails>
+            val stateDetails = mutableMapOf<UniquenessCheckStateRef, UniquenessCheckStateDetails>()
             backingStoreImpl.session(aliceIdentity) { session ->
-                stateDetails = session.getStateDetails(stateRefs)
+                stateDetails.putAll(session.getStateDetails(stateRefs))
             }
 
             assertThat(stateDetails.size).isEqualTo(hashCnt)
@@ -423,9 +423,9 @@ class JPABackingStoreImplIntegrationTests {
             }
 
             // Verify if the target state has been correctly updated.
-            lateinit var stateDetails: Map<UniquenessCheckStateRef, UniquenessCheckStateDetails>
+            val stateDetails = mutableMapOf<UniquenessCheckStateRef, UniquenessCheckStateDetails>()
             backingStoreImpl.session(aliceIdentity) { session ->
-                stateDetails = session.getStateDetails(stateRefs)
+                stateDetails.putAll(session.getStateDetails(stateRefs))
             }
 
             stateDetails.values.partition { it.consumingTxId == null }.let { (unconsumedStates, consumedStates) ->
