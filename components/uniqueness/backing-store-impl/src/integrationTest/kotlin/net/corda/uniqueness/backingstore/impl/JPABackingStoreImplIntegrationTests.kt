@@ -594,11 +594,7 @@ class JPABackingStoreImplIntegrationTests {
 
         // Review with CORE-4983 for different types of exceptions such as PersistenceException.
         @ParameterizedTest
-        @ValueSource(
-            classes = [EntityExistsException::class,
-                RollbackException::class,
-                OptimisticLockException::class]
-        )
+        @ValueSource(classes = [EntityExistsException::class, RollbackException::class, OptimisticLockException::class])
         fun `Persistence errors raised while persisting triggers retry`(e: Class<Exception>) {
             val emFactory = createEntityManagerFactory()
             val spyEmFactory = Mockito.spy(emFactory)

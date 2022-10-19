@@ -100,8 +100,10 @@ class JPABackingStoreImplTests {
         entityManager = mock<EntityManager>().apply {
             whenever(transaction) doReturn entityTransaction
             whenever(
-                createNamedQuery("UniquenessStateDetailEntity.select",
-                    UniquenessStateDetailEntity::class.java)
+                createNamedQuery(
+                    "UniquenessStateDetailEntity.select",
+                    UniquenessStateDetailEntity::class.java
+                )
             ) doReturn stateDetailSelectQuery
             whenever(
                 createNamedQuery(
@@ -255,7 +257,7 @@ class JPABackingStoreImplTests {
             // Expect an exception because no error details is available from the mock.
             assertThrows<IllegalStateException> {
                 backingStoreImpl.session(aliceIdentity) { session ->
-                    session.getTransactionDetails(List(1) { SecureHashUtils.randomSecureHash() } )
+                    session.getTransactionDetails(List(1) { SecureHashUtils.randomSecureHash() })
                 }
             }
         }
