@@ -5,10 +5,13 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.ArgumentMatchers.anyInt
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.sql.Timestamp
+import javax.persistence.Tuple
 
-class ConsensualLedgerRepositoryTest {
+class ComponentGroupListsTuplesMapperTest {
     companion object {
         private const val id = "id1"
         private val privacySalt = ByteArray(32)
@@ -16,16 +19,21 @@ class ConsensualLedgerRepositoryTest {
         private val createdTs = Timestamp(0)
     }
 
+    private fun mockTuple(values: List<Any>) =
+        mock<Tuple>().apply {
+            whenever(this.get(anyInt())).thenAnswer { invocation -> values[invocation.arguments[0] as Int] }
+        }
+
     @Test
     fun `throws if leaf component is missing`() {
         val groupIdx = 1
         val leafIdx = 0
-        val rows = listOf<Any?>(
-            arrayOf(id, privacySalt, accountId, createdTs, groupIdx, leafIdx, ByteArray(16), "hash"),
-            arrayOf(id, privacySalt, accountId, createdTs, groupIdx, leafIdx + 2, ByteArray(16), "hash")
-        )
+        val rows = listOf(
+            listOf(id, privacySalt, accountId, createdTs, groupIdx, leafIdx, ByteArray(16), "hash"),
+            listOf(id, privacySalt, accountId, createdTs, groupIdx, leafIdx + 2, ByteArray(16), "hash")
+        ).map { mockTuple(it) }
         val exception = assertThrows<IllegalStateException> {
-            ConsensualLedgerRepository(mock(), mock(), mock()).queryRowsToComponentGroupLists(rows)
+            rows.mapTuples(ComponentGroupListsTuplesMapper())
         }
         assertEquals("Missing data for transaction with ID: id1, groupIdx: 1, leafIdx: 1", exception.message)
     }
@@ -34,15 +42,15 @@ class ConsensualLedgerRepositoryTest {
     fun `creates valid component group lists`() {
         val leafIdx = 0
         val groupIdx = 0
-        val rows = listOf<Any?>(
-            arrayOf(id, privacySalt, accountId, createdTs, groupIdx, leafIdx, "data00".toByteArray(), "hash00"),
-            arrayOf(id, privacySalt, accountId, createdTs, groupIdx, leafIdx + 1, "data01".toByteArray(), "hash01"),
-            arrayOf(id, privacySalt, accountId, createdTs, groupIdx + 2, leafIdx, "data20".toByteArray(), "hash20"),
-            arrayOf(id, privacySalt, accountId, createdTs, groupIdx + 2, leafIdx + 1, "data21".toByteArray(), "hash21"),
-            arrayOf(id, privacySalt, accountId, createdTs, groupIdx + 2, leafIdx + 2, "data22".toByteArray(), "hash22"),
-        )
+        val rows = listOf(
+            listOf(id, privacySalt, accountId, createdTs, groupIdx, leafIdx, "data00".toByteArray(), "hash00"),
+            listOf(id, privacySalt, accountId, createdTs, groupIdx, leafIdx + 1, "data01".toByteArray(), "hash01"),
+            listOf(id, privacySalt, accountId, createdTs, groupIdx + 2, leafIdx, "data20".toByteArray(), "hash20"),
+            listOf(id, privacySalt, accountId, createdTs, groupIdx + 2, leafIdx + 1, "data21".toByteArray(), "hash21"),
+            listOf(id, privacySalt, accountId, createdTs, groupIdx + 2, leafIdx + 2, "data22".toByteArray(), "hash22"),
+        ).map { mockTuple(it) }
 
-        val componentGroupLists = ConsensualLedgerRepository(mock(), mock(), mock()).queryRowsToComponentGroupLists(rows)
+        val componentGroupLists = rows.mapTuples(ComponentGroupListsTuplesMapper())
 
         val expectedLists = listOf(
             listOf("data00", "data01").toBytes(),
