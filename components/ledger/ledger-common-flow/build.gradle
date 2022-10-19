@@ -1,0 +1,43 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.osgi-test-conventions'
+    id 'corda.common-library'
+}
+
+description 'Corda ledger common - flow implementation'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+
+    implementation "net.corda:corda-ledger-common"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    implementation project(':components:ledger:ledger-common-flow-api')
+
+    implementation project(':libs:layered-property-map')
+    implementation project(":libs:ledger:ledger-common-data")
+    implementation project(":libs:serialization:serialization-checkpoint-api")
+    implementation project(":libs:serialization:serialization-internal")
+    implementation project(":libs:crypto:crypto-core")
+    implementation project(":libs:layered-property-map")
+    implementation project(":libs:serialization:serialization-internal")
+
+    testImplementation project(":libs:application:application-impl")
+    testImplementation project(":libs:crypto:merkle-impl")
+    testImplementation project(":libs:crypto:cipher-suite-impl")
+    testImplementation project(":libs:membership:membership-common")
+    testImplementation project(":libs:serialization:serialization-kryo")
+    testImplementation project(":testing:kryo-serialization-testkit")
+    testImplementation project(":testing:layered-property-map-testkit")
+    testImplementation project(':testing:ledger:ledger-common-testkit')
+    testImplementation "org.mockito:mockito-core:$mockitoVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    integrationTestImplementation project(':testing:sandboxes')
+
+    integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
+    integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
+}

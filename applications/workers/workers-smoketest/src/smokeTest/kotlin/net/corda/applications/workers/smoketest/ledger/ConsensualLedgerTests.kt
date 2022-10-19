@@ -14,6 +14,7 @@ import net.corda.applications.workers.smoketest.startRpcFlow
 import net.corda.applications.workers.smoketest.TEST_STATIC_MEMBER_LIST
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
  */
 @Suppress("Unused", "FunctionName")
 @TestInstance(PER_CLASS)
+@Disabled
 class ConsensualLedgerTests {
 
     private val bobHoldingId: String = getHoldingIdShortHash(X500_BOB, GROUP_ID)

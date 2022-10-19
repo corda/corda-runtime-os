@@ -10,17 +10,17 @@ import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.consensual.ConsensualLedgerService
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
+import java.security.PublicKey
 
 @Suppress("unused")
 class ConsensualSignedTransactionSerializationFlow : RPCStartableFlow {
     data class ResultMessage(val serializedLength: Int)
 
     class TestConsensualState(
-        val testField: String, override val participants: List<Party>
+        val testField: String, override val participants: List<PublicKey>
     ) : ConsensualState {
         override fun verify(ledgerTransaction: ConsensualLedgerTransaction) {}
     }
@@ -47,7 +47,7 @@ class ConsensualSignedTransactionSerializationFlow : RPCStartableFlow {
         try {
             val member = memberLookup.myInfo()
 
-            val testConsensualState = TestConsensualState("test", listOf(Party(member.name, member.ledgerKeys.first())))
+            val testConsensualState = TestConsensualState("test", listOf(member.ledgerKeys.first()))
             val txBuilder = consensualLedgerService.getTransactionBuilder()
             val signedTransaction = txBuilder
                 .withStates(testConsensualState)
