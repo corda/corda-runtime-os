@@ -14,8 +14,8 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.logging.mdc.ExternalEventMDCFields.MDC_EXTERNAL_EVENT_ID
 import net.corda.logging.mdc.FlowMDCFields.MDC_CLIENT_ID
 import net.corda.logging.mdc.FlowMDCFields.MDC_VNODE_ID
-import net.corda.logging.mdc.clearMDCLogging
-import net.corda.logging.mdc.pushMDCLogging
+import net.corda.logging.mdc.clearLoggingMDC
+import net.corda.logging.mdc.pushLoggingMDC
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
@@ -48,7 +48,7 @@ class FlowEventProcessorImpl(
         event: Record<String, FlowEvent>
     ): StateAndEventProcessor.Response<Checkpoint> {
         val flowEvent = event.value
-        pushMDCLogging(getFlowMDCLogging(state, event.value))
+        pushLoggingMDC(getFlowMDCLogging(state, event.value))
 
         if (flowEvent == null) {
             log.error("The incoming event record '${event}' contained a null FlowEvent, this event will be discarded")
@@ -88,7 +88,7 @@ class FlowEventProcessorImpl(
         } catch (t: Throwable) {
             flowEventExceptionProcessor.process(t)
         } finally {
-            clearMDCLogging(setOf(MDC_CLIENT_ID, MDC_VNODE_ID, MDC_EXTERNAL_EVENT_ID))
+            clearLoggingMDC(setOf(MDC_CLIENT_ID, MDC_VNODE_ID, MDC_EXTERNAL_EVENT_ID))
         }
     }
 

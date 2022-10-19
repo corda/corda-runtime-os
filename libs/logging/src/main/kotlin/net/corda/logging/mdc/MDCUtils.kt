@@ -2,11 +2,17 @@ package net.corda.logging.mdc
 
 import org.slf4j.MDC
 
-fun Any.pushMDCLogging(mdcData: Map<String, String>) {
+/**
+ * Push the map of [mdcData] into the logging MDC
+ */
+fun Any.pushLoggingMDC(mdcData: Map<String, String>) {
     MDC.setContextMap(mdcData)
 }
 
-fun Any.clearMDCLogging(mdcDataKeys: Set<String>) {
+/**
+ * Clear the logging MDC of the set of keys in [mdcDataKeys]
+ */
+fun Any.clearLoggingMDC(mdcDataKeys: Set<String>) {
     MDC.getMDCAdapter().apply {
         mdcDataKeys.forEach {
             remove(it)
@@ -14,10 +20,16 @@ fun Any.clearMDCLogging(mdcDataKeys: Set<String>) {
     }
 }
 
-fun Any.clearMDCLogging(mdcData: Map<String, String>) {
-    clearMDCLogging(mdcData.keys)
+/**
+ * Clear the logging MDC of the data stored in [mdcData]
+ */
+fun Any.clearLoggingMDC(mdcData: Map<String, String>) {
+    clearLoggingMDC(mdcData.keys)
 }
 
-fun Any.clearMDCLogging() {
+/**
+ * Clear the Log4j logging MDC of all data stored there.
+ */
+fun Any.clearLoggingMDC() {
     MDC.clear()
 }
