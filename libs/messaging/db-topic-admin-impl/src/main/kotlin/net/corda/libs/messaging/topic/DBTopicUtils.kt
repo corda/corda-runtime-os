@@ -7,6 +7,7 @@ import net.corda.libs.messaging.topic.utils.TopicUtils
 import net.corda.messagebus.db.datamodel.TopicEntry
 import net.corda.orm.utils.transaction
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.trace
 import org.slf4j.Logger
 import javax.persistence.EntityManagerFactory
 
@@ -27,7 +28,7 @@ class DBTopicUtils(
         try {
             topicsTemplate.checkValid(referenceTopicsConfig())
         } catch (e: ConfigException) {
-            log.error("Error validating topic configuration")
+            log.warn("Error validating topic configuration")
         }
 
         val topicTemplateList = topicsTemplate.getObjectList("topics")
@@ -40,12 +41,9 @@ class DBTopicUtils(
             )
 
             entityManagerFactory.transaction { entityManager ->
-                log.info("Attempting to create topic: $topic")
+                log.trace { "Attempting to create topic: $topic" }
                 if (entityManager.find(TopicEntry::class.java, topic.topic) == null) {
                     entityManager.persist(topic)
-                    log.info("$topic created successfully")
-                } else {
-                    log.info("$topic already exists in database")
                 }
             }
         }
