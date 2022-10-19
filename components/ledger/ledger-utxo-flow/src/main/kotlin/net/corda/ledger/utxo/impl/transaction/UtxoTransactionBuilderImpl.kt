@@ -1,21 +1,15 @@
 package net.corda.ledger.utxo.impl.transaction
 
-<<<<<<< HEAD:components/ledger/ledger-utxo-flow/src/main/kotlin/net/corda/ledger/utxo/impl/transaction/UtxoTransactionBuilderImpl.kt
+import net.corda.ledger.common.data.transaction.PrivacySaltImpl
+import net.corda.ledger.common.data.transaction.TransactionMetaData
+import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.utxo.impl.state.TransactionStateImpl
 import net.corda.ledger.utxo.impl.timewindow.TimeWindowBetweenImpl
 import net.corda.ledger.utxo.impl.timewindow.TimeWindowUntilImpl
-import net.corda.ledger.utxo.impl.state.TransactionStateImpl
-=======
-import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
-import net.corda.ledger.common.impl.transaction.TransactionMetaData
-import net.corda.ledger.common.impl.transaction.WireTransaction
-import net.corda.ledger.utxo.impl.TimeWindowBetweenImpl
-import net.corda.ledger.utxo.impl.TimeWindowUntilImpl
-import net.corda.ledger.utxo.impl.TransactionStateImpl
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
->>>>>>> 08c663e5f (CORE-7115 UTXO tx builder/ledger tx WIP):libs/ledger/ledger-utxo-impl/src/main/kotlin/net/corda/ledger/utxo/impl/transaction/UtxoTransactionBuilderImpl.kt
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
@@ -25,7 +19,6 @@ import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
-import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
 import net.corda.v5.ledger.utxo.TransactionState
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
