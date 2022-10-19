@@ -41,7 +41,7 @@ class ThrowableEvolutionTests {
     class AddAndRemoveConstructorParametersException(message: String, val added: String?) : CordaRuntimeException(message)
 
     @Test
-    fun `We can evolve exceptions by adding constructor parameters`() {
+    fun addConstructorParametersException() {
 
 //        val exception = AddConstructorParametersException(message)
 //        saveSerializedObject(exception)
@@ -57,7 +57,7 @@ class ThrowableEvolutionTests {
     }
 
     @Test
-    fun `We can evolve exceptions by removing constructor parameters`() {
+    fun removeConstructorParametersException() {
 
 //        val exception = RemoveConstructorParametersException(message, toBeRemovedValue)
 //        saveSerializedObject(exception)
@@ -73,10 +73,11 @@ class ThrowableEvolutionTests {
     }
 
     @Test
-    fun `We can evolve exceptions by adding and removing constructor parameters`() {
+    fun addAndRemoveConstructorParametersException() {
 
 //        val exception = AddAndRemoveConstructorParametersException(message, toBeRemovedValue)
 //        saveSerializedObject(exception)
+
         val bytes = this::class.java.getResource(testResourceName()).readBytes()
 
         val sf = testDefaultFactory().also { registerCustomSerializers(it) }
