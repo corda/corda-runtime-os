@@ -1,5 +1,6 @@
 package net.corda.crypto.component.impl
 
+import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.v5.crypto.exceptions.CryptoException
 import net.corda.v5.crypto.exceptions.CryptoRetryException
@@ -8,7 +9,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
-import javax.management.openmbean.KeyAlreadyExistsException
 
 class ExceptionsUtilsTests {
     companion object {

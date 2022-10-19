@@ -1,10 +1,10 @@
 package net.corda.crypto.component.impl
 
+import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.v5.crypto.exceptions.CryptoException
 import net.corda.v5.crypto.exceptions.CryptoRetryException
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
-import javax.management.openmbean.KeyAlreadyExistsException
 
 val exceptionFactories = mapOf<String, (String, Throwable) -> Throwable>(
     IllegalArgumentException::class.java.name to { m, e -> IllegalArgumentException(m, e) },

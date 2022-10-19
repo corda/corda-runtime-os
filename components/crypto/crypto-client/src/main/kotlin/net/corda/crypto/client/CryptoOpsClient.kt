@@ -65,9 +65,11 @@ interface CryptoOpsClient : Lifecycle {
      * @param externalId an id associated with the key, the service doesn't use any semantic beyond association.
      * @param scheme the key's scheme code name describing which type of the key to generate.
      * @param context the optional key/value operation context.
+     * @throws [KeyAlreadyExistsException] if a key with that alias already exists in the tenant
      *
      * @return The public part of the pair.
      */
+    @Throws(KeyAlreadyExistsException::class)
     @Suppress("LongParameterList")
     fun generateKeyPair(
         tenantId: String,
