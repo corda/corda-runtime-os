@@ -13,7 +13,8 @@ class FlowFiberExecutionContext(
     val flowCheckpoint: FlowCheckpoint,
     val sandboxGroupContext: FlowSandboxGroupContext,
     val holdingIdentity: HoldingIdentity,
-    val membershipGroupReader: MembershipGroupReader
+    val membershipGroupReader: MembershipGroupReader,
+    val mdcLoggingData: Map<String, String> = emptyMap()
 ) : NonSerializable {
     val memberX500Name: MemberX500Name = holdingIdentity.x500Name
     val flowStackService: FlowStack = flowCheckpoint.flowStack

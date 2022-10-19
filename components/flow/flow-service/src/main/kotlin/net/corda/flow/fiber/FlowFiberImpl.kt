@@ -3,19 +3,19 @@ package net.corda.flow.fiber
 import co.paralleluniverse.fibers.Fiber
 import co.paralleluniverse.fibers.FiberScheduler
 import co.paralleluniverse.fibers.FiberWriter
-import net.corda.data.flow.state.checkpoint.FlowStackItem
-import net.corda.flow.fiber.FlowFiberImpl.SerializableFiberWriter
-import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.debug
-import org.slf4j.Logger
-import org.slf4j.MDC
 import java.io.Serializable
 import java.nio.ByteBuffer
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
+import net.corda.data.flow.state.checkpoint.FlowStackItem
+import net.corda.flow.fiber.FlowFiberImpl.SerializableFiberWriter
+import net.corda.logging.mdc.pushMDCLogging
+import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
+import org.slf4j.Logger
 
 class FlowFiberImpl(
     override val flowId: UUID,
@@ -213,9 +213,9 @@ class FlowFiberImpl(
     }
 
     private fun setLoggingContext() {
-        MDC.put("flow-id", flowId.toString())
-        MDC.put("fiber-id", id.toString())
-        MDC.put("thread-id", Thread.currentThread().id.toString())
+        flowFiberExecutionContext?.mdcLoggingData?.let {
+            pushMDCLogging(it)
+        }
     }
 
     override fun attemptInterrupt() {

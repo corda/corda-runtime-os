@@ -1,6 +1,7 @@
 package net.corda.flow.pipeline.impl
 
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.flow.pipeline.FlowEventExceptionProcessor
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
@@ -10,10 +11,16 @@ import net.corda.flow.pipeline.exceptions.FlowPlatformException
 import net.corda.flow.pipeline.exceptions.FlowTransientException
 import net.corda.flow.pipeline.factory.FlowEventPipelineFactory
 import net.corda.libs.configuration.SmartConfig
+import net.corda.logging.mdc.ExternalEventMDCFields.MDC_EXTERNAL_EVENT_ID
+import net.corda.logging.mdc.FlowMDCFields.MDC_CLIENT_ID
+import net.corda.logging.mdc.FlowMDCFields.MDC_VNODE_ID
+import net.corda.logging.mdc.clearMDCLogging
+import net.corda.logging.mdc.pushMDCLogging
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
 import net.corda.v5.base.util.contextLogger
+import net.corda.virtualnode.toCorda
 
 class FlowEventProcessorImpl(
     private val flowEventPipelineFactory: FlowEventPipelineFactory,
@@ -41,6 +48,7 @@ class FlowEventProcessorImpl(
         event: Record<String, FlowEvent>
     ): StateAndEventProcessor.Response<Checkpoint> {
         val flowEvent = event.value
+        pushMDCLogging(getFlowMDCLogging(state, event.value))
 
         if (flowEvent == null) {
             log.error("The incoming event record '${event}' contained a null FlowEvent, this event will be discarded")
@@ -79,8 +87,52 @@ class FlowEventProcessorImpl(
             flowEventExceptionProcessor.process(e, pipeline.context)
         } catch (t: Throwable) {
             flowEventExceptionProcessor.process(t)
+        } finally {
+            clearMDCLogging(setOf(MDC_CLIENT_ID, MDC_VNODE_ID, MDC_EXTERNAL_EVENT_ID))
         }
     }
+
+    /**
+     * Extract out the MDC logging info from a flow event and checkpoint.
+     * @param checkpoint the checkpoint for a flow. can be null if it is the first flow event for this key.
+     * @param event the flow event received. MDC info can be extracted from the [StartFlow] event when the checkpoint is null.
+     * @return Map of fields to populate within the MDC taken from the flow.
+     */
+    private fun getFlowMDCLogging(checkpoint: Checkpoint?, event: FlowEvent?): Map<String, String> {
+        return if (checkpoint != null) {
+            getMDCFromCheckpoint(checkpoint)
+        } else {
+            getMDCFromEvent(event)
+        }
+    }
+
+    /**
+     * Extract out the MDC logging info from a [flowEvent]. The flow event is expected to be of type [StartFlow].
+     */
+    private fun getMDCFromEvent(flowEvent: FlowEvent?): Map<String, String> {
+        val payload = flowEvent?.payload
+        return if (payload is StartFlow) {
+            val startContext = payload.startContext
+            val startKey = startContext.statusKey
+            val holdingIdentityShortHash = startKey.identity.toCorda().shortHash.toString()
+            return mapOf(MDC_VNODE_ID to holdingIdentityShortHash, MDC_CLIENT_ID to startContext.requestId)
+        } else {
+            //this shouldn't happen
+            val payloadType = if (payload != null) payload::class else null
+            log.warn("Failed to set MDC. Flow event with null state where event payload is of type $payloadType")
+            emptyMap()
+        }
+    }
+
+    /**
+     * Extract out the MDC logging info from the [checkpoint].
+     */
+    private fun getMDCFromCheckpoint(state: Checkpoint): Map<String, String> {
+        val flowState = state.flowState
+        val startContext = flowState.flowStartContext
+        val vNodeShortHash = startContext.identity.toCorda().shortHash.toString()
+        val mdcLogging = mutableMapOf(MDC_VNODE_ID to vNodeShortHash, MDC_CLIENT_ID to startContext.requestId)
+        flowState?.externalEventState?.requestId?.let { mdcLogging.put(MDC_EXTERNAL_EVENT_ID, it) }
+        return mdcLogging
+    }
 }
-
-

@@ -12,6 +12,9 @@ import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.data.persistence.MergeEntities
 import net.corda.data.persistence.PersistEntities
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
+import net.corda.logging.mdc.ExternalEventMDCFields.MDC_EXTERNAL_EVENT_ID
+import net.corda.logging.mdc.clearMDCLogging
+import net.corda.logging.mdc.pushMDCLogging
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
@@ -63,11 +66,14 @@ class EntityMessageProcessor(
                 return@mapNotNull null
             } else {
                 try {
+                    pushMDCLogging(mapOf(MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId))
                     val holdingIdentity = request.holdingIdentity.toCorda()
                     val sandbox = entitySandboxService.get(holdingIdentity)
                     processRequestWithSandbox(sandbox, request)
                 } catch (e: Exception) {
                     responseFactory.errorResponse(request.flowExternalEventContext, e)
+                } finally {
+                    clearMDCLogging(setOf(MDC_EXTERNAL_EVENT_ID))
                 }
             }
         }

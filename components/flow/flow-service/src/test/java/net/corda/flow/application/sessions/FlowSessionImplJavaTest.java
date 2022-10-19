@@ -21,6 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -42,7 +43,8 @@ public class FlowSessionImplJavaTest {
             mock(FlowCheckpoint.class),
             flowSandboxGroupContext,
             createTestHoldingIdentity("CN=Bob, O=Bob Corp, L=LDN, C=GB", "group1"),
-            mock(MembershipGroupReader.class)
+            mock(MembershipGroupReader.class),
+            Collections.emptyMap()
     );
     private final FlowFiber flowFiber = new FakeFiber(flowFiberExecutionContext);
     private final FlowFiberService flowFiberService = mock(FlowFiberService.class);

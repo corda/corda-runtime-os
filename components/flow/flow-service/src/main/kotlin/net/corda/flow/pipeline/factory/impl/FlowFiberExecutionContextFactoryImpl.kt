@@ -10,6 +10,7 @@ import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import org.slf4j.MDC
 
 @Component(service = [FlowFiberExecutionContextFactory::class])
 class FlowFiberExecutionContextFactoryImpl @Activate constructor(
@@ -32,7 +33,8 @@ class FlowFiberExecutionContextFactoryImpl @Activate constructor(
             checkpoint,
             sandbox,
             checkpoint.holdingIdentity,
-            membershipGroupReaderProvider.getGroupReader(checkpoint.holdingIdentity)
+            membershipGroupReaderProvider.getGroupReader(checkpoint.holdingIdentity),
+            MDC.getCopyOfContextMap()
         )
     }
 }
