@@ -6,7 +6,7 @@ plugins {
     id 'corda.common-library'
 }
 
-description "Ledger Persistence Impl"
+description "Entity Processor Impl"
 
 configurations {
     cpis {
@@ -23,27 +23,18 @@ dependencies {
 
     implementation project(':components:configuration:configuration-read-service')
     implementation project(':components:db:db-connection-manager')
-    implementation project(':components:persistence:ledger-persistence-service')
     implementation project(':components:persistence:persistence-service-common')
     implementation project(':components:virtual-node:cpi-info-read-service')
+    implementation project(':components:virtual-node:entity-processor-service')
     implementation project(':components:virtual-node:sandbox-group-context-service')
     implementation project(':components:virtual-node:virtual-node-info-read-service')
 
     implementation project(':libs:flows:external-event-responses')
-    implementation project(':libs:ledger:ledger-common-impl')
     implementation project(":libs:messaging:messaging")
-    implementation project(':libs:utilities')
     implementation project(':libs:virtual-node:sandbox-group-context')
 
-    // TODO This might not be needed if code is refactored so that WireTransactionSerializer is not used and
-    //  WireTransaction's ID is sent over wire (doesn't need to be calculated using MerkleTreeFactory)
-    implementation project(":libs:crypto:cipher-suite-impl")
-    runtimeOnly project(':libs:crypto:merkle-impl')
-    runtimeOnly project(':libs:ledger:ledger-common-serialization')
-
+    implementation 'net.corda:corda-application'
     implementation 'net.corda:corda-config-schema'
-    implementation 'net.corda:corda-db-schema'
-    implementation "net.corda:corda-ledger-common"
     implementation 'net.corda:corda-topic-schema'
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     implementation 'org.slf4j:slf4j-api'
@@ -69,13 +60,10 @@ dependencies {
     // It's not an OSGi bundle, so you will get errors (despite Intellij appearing to allow you to use it).
 
     integrationTestImplementation("org.mockito:mockito-core:$mockitoVersion")
-    integrationTestImplementation("com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion")
+
+    integrationTestImplementation project(":testing:db-message-bus-testkit")
 
     integrationTestImplementation project(':libs:db:db-admin-impl')
-    integrationTestImplementation project(':libs:ledger:ledger-common-serialization')
-    integrationTestImplementation project(':libs:serialization:serialization-internal')
-    integrationTestImplementation project(":testing:db-message-bus-testkit")
-    integrationTestImplementation project(':testing:ledger:ledger-common-testkit')
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation project(':testing:test-utilities')
 
