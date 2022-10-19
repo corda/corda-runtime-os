@@ -87,12 +87,10 @@ class JPABackingStoreImplIntegrationTests {
             JpaEntitiesRegistryImpl()
         )
         private val aliceEmFactory: EntityManagerFactory = databaseInstaller.setupDatabase(
-            TestDbInfo("uniq_test_default", aliceIdentityDbName),
+            TestDbInfo(name = "unique_test_default", schemaName = aliceIdentityDbName),
             "vnode-uniqueness",
             JPABackingStoreEntities.classes
         )
-        private val noDbEmFactory: EntityManagerFactory = EntityManagerFactoryFactoryImpl()
-            .create("test", JPABackingStoreEntities.classes.toList(), dbConfig)
     }
 
     class DummyException(message: String) : Exception(message)
@@ -607,8 +605,13 @@ class JPABackingStoreImplIntegrationTests {
         Mockito.verify(spyEmFactory, times(sessionInvokeCnt)).createEntityManager()
     }
 
+    @Disabled("While it produces an error saying 'user lacks privilege or object not found'," +
+            "the reason is not clearly understood thus it can be misleading. Review with CORE-7201.")
     @Test
-    fun `Persisting with an incorrect identity throws an expected exception`() {
+    fun `Persisting with an incorrect DB set up throws a rollback exception at committing`() {
+        val noDbEmFactory: EntityManagerFactory = EntityManagerFactoryFactoryImpl()
+            .create("testunit", JPABackingStoreEntities.classes.toList(), dbConfig)
+
         val storeImpl = createBackingStoreImpl(noDbEmFactory)
         storeImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
 
