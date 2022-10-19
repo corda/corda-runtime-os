@@ -10,7 +10,7 @@ import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.InitiatorHelloMessage
 import net.corda.p2p.crypto.ProtocolMode
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
-import net.corda.p2p.crypto.protocol.api.PkiMode
+import net.corda.p2p.crypto.protocol.api.CertificateCheckMode
 import net.corda.p2p.linkmanager.GroupPolicyListener
 import net.corda.p2p.linkmanager.LinkManagerGroupPolicyProvider
 import net.corda.p2p.linkmanager.LinkManagerMembershipGroupReader
@@ -104,7 +104,7 @@ class InMemorySessionReplayerTest {
             MAX_MESSAGE_SIZE,
             KEY_PAIR.public,
             GROUP_ID,
-            PkiMode.NoPki,
+            CertificateCheckMode.NoCertificate,
         ).generateInitiatorHello()
 
         setRunning()
@@ -151,7 +151,7 @@ class InMemorySessionReplayerTest {
             MAX_MESSAGE_SIZE,
             KEY_PAIR.public,
             GROUP_ID,
-            PkiMode.NoPki,
+            CertificateCheckMode.NoCertificate,
         ).generateInitiatorHello()
 
         setRunning()
@@ -194,7 +194,7 @@ class InMemorySessionReplayerTest {
             MAX_MESSAGE_SIZE,
             KEY_PAIR.public,
             GROUP_ID,
-            PkiMode.NoPki
+            CertificateCheckMode.NoCertificate
         ).generateInitiatorHello()
 
         setRunning()
@@ -224,7 +224,7 @@ class InMemorySessionReplayerTest {
             MAX_MESSAGE_SIZE,
             KEY_PAIR.public,
             GROUP_ID,
-            PkiMode.NoPki
+            CertificateCheckMode.NoCertificate
         ).generateInitiatorHello()
 
         setRunning()
@@ -244,7 +244,7 @@ class InMemorySessionReplayerTest {
             MAX_MESSAGE_SIZE,
             KEY_PAIR.public,
             GROUP_ID,
-            PkiMode.NoPki
+            CertificateCheckMode.NoCertificate
         ).generateInitiatorHello()
         val replayer = InMemorySessionReplayer(mock(), mock(), mock(), mock(),
             groupsAndMembers.second, groupsAndMembers.first, mockTimeFacilitiesProvider.clock)

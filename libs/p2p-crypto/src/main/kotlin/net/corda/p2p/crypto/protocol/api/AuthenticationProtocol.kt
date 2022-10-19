@@ -47,7 +47,7 @@ import javax.crypto.spec.SecretKeySpec
  *
  * For the detailed spec of the authentication protocol, refer to the corresponding design document.
  */
-abstract class AuthenticationProtocol(pkiMode: PkiMode) {
+abstract class AuthenticationProtocol(certificateCheckMode: CertificateCheckMode) {
     protected var myPrivateDHKey: PrivateKey? = null
     protected var myPublicDHKey: ByteArray? = null
     protected var peerPublicDHKey: PublicKey? = null
@@ -72,9 +72,12 @@ abstract class AuthenticationProtocol(pkiMode: PkiMode) {
     protected val hmac = Mac.getInstance(HMAC_ALGO, provider)
     protected val aesCipher = Cipher.getInstance(CIPHER_ALGO, provider)
     protected val messageDigest = MessageDigest.getInstance(HASH_ALGO, provider)
-    protected val certificateValidator = when(pkiMode) {
-        is PkiMode.NoPki -> null
-        is PkiMode.Standard -> CertificateValidator(pkiMode.revocationCheckMode, pkiMode.truststore)
+    protected val certificateValidator = when(certificateCheckMode) {
+        is CertificateCheckMode.NoCertificate -> null
+        is CertificateCheckMode.CheckCertificate -> CertificateValidator(
+            certificateCheckMode.revocationCheckMode,
+            certificateCheckMode.truststore
+        )
     }
     private val hkdfGenerator = HKDFBytesGenerator(messageDigest.convertToBCDigest())
 

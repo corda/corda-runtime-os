@@ -54,7 +54,8 @@ import kotlin.math.min
 class AuthenticationProtocolResponder(val sessionId: String,
                                       private val supportedModes: Set<ProtocolMode>,
                                       private val ourMaxMessageSize: Int,
-                                      private val pkiMode: PkiMode = PkiMode.NoPki): AuthenticationProtocol(pkiMode) {
+                                      private val certificateCheckMode: CertificateCheckMode = CertificateCheckMode.NoCertificate
+): AuthenticationProtocol(certificateCheckMode) {
 
     init {
         require(supportedModes.isNotEmpty()) { "At least one supported mode must be provided." }
@@ -218,9 +219,9 @@ class AuthenticationProtocolResponder(val sessionId: String,
             val responderRecordHeader = CommonHeader(MessageType.RESPONDER_HANDSHAKE, PROTOCOL_VERSION,
                 sessionId, 1, Instant.now().toEpochMilli())
             val responderRecordHeaderBytes = responderRecordHeader.toByteBuffer().array()
-            val ourCertificates = when(pkiMode) {
-                is PkiMode.NoPki -> null
-                is PkiMode.Standard -> pkiMode.ourCertificates
+            val ourCertificates = when(certificateCheckMode) {
+                is CertificateCheckMode.NoCertificate -> null
+                is CertificateCheckMode.CheckCertificate -> certificateCheckMode.ourCertificates
             }
             val responderHandshakePayload = ResponderHandshakePayload(
                 ResponderEncryptedExtensions(agreedMaxMessageSize, ourCertificates),

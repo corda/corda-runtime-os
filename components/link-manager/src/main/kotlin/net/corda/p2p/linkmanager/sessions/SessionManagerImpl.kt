@@ -32,7 +32,7 @@ import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
 import net.corda.p2p.crypto.protocol.api.InvalidPeerCertificate
-import net.corda.p2p.crypto.protocol.api.PkiMode
+import net.corda.p2p.crypto.protocol.api.CertificateCheckMode
 import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
@@ -370,28 +370,28 @@ internal class SessionManagerImpl(
         groupInfo: GroupPolicyListener.GroupInfo,
         ourIdentityInfo: HostingMapListener.IdentityInfo,
         sessionManagerConfig: SessionManagerConfig
-    ): PkiMode? {
+    ): CertificateCheckMode? {
         return when (groupInfo.sessionPkiMode) {
             STANDARD -> {
                 if (ourIdentityInfo.sessionCertificates == null) {
-                    logger.warn("Expected session certificates to be in hosting map for our identity ${ourIdentityInfo.holdingIdentity}.")
+                    logger.error("Expected session certificates to be in hosting map for our identity ${ourIdentityInfo.holdingIdentity}.")
                     return null
                 }
                 if (groupInfo.sessionTrustStore == null) {
-                    logger.warn("Expected session trust stores to be in group policy for our identity ${ourIdentityInfo.holdingIdentity}.")
+                    logger.error("Expected session trust stores to be in group policy for our identity ${ourIdentityInfo.holdingIdentity}.")
                     return null
                 }
-                PkiMode.Standard(
+                CertificateCheckMode.CheckCertificate(
                     groupInfo.sessionTrustStore,
                     ourIdentityInfo.sessionCertificates,
                     sessionManagerConfig.revocationConfigMode
                 )
             }
             STANDARD_EV3, CORDA_4 -> {
-                logger.warn("PkiMode ${groupInfo.sessionPkiMode} is unsupported by the link manager.")
+                logger.error("PkiMode ${groupInfo.sessionPkiMode} is unsupported by the link manager.")
                 return null
             }
-            NO_PKI -> PkiMode.NoPki
+            NO_PKI -> CertificateCheckMode.NoCertificate
         }
     }
 

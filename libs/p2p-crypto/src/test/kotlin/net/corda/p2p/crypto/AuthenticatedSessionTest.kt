@@ -5,7 +5,7 @@ import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
 import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
 import net.corda.p2p.crypto.protocol.api.InvalidMac
 import net.corda.p2p.crypto.protocol.api.MessageTooLargeError
-import net.corda.p2p.crypto.protocol.api.PkiMode
+import net.corda.p2p.crypto.protocol.api.CertificateCheckMode
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -36,7 +36,7 @@ class AuthenticatedSessionTest {
         partyAMaxMessageSize,
         partyASessionKey.public,
         groupId,
-        PkiMode.NoPki
+        CertificateCheckMode.NoCertificate
     )
 
     // party B

@@ -64,7 +64,7 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
             }
         }
     }
-
+    @Suppress("ComplexMethod")
     private fun toGroupInfo(holdingIdentity: HoldingIdentity, groupPolicy: GroupPolicy): GroupPolicyListener.GroupInfo? {
         val networkType = when (groupPolicy.p2pParameters.tlsPki) {
             P2PParameters.TlsPkiMode.STANDARD -> NetworkType.CORDA_5
@@ -81,7 +81,10 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
         val trustedCertificates = groupPolicy.p2pParameters.tlsTrustRoots.toList()
         val sessionPkiMode = groupPolicy.p2pParameters.sessionPki
 
-        val sessionTrustStore = groupPolicy.p2pParameters.sessionTrustRoots?.let { it.toKeyStore() ?: return null }
+        val sessionTrustStore = groupPolicy.p2pParameters.sessionTrustRoots?.let { convertToKeyStore(it) ?: return null }
+        if (sessionTrustStore == null && sessionPkiMode != P2PParameters.SessionPkiMode.NO_PKI) {
+            logger.warn("Session trust roots is unexpectedly null in the group policy for $holdingIdentity.")
+        }
 
         return GroupPolicyListener.GroupInfo(
             holdingIdentity,
@@ -93,10 +96,10 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
         )
     }
 
-    private fun Collection<String>.toKeyStore(): KeyStore? {
+    private fun convertToKeyStore(pemCertificates: Collection<String>): KeyStore? {
         return KeyStore.getInstance(KEY_STORE_TYPE).also { keyStore ->
             keyStore.load(null, null)
-            this.withIndex().forEach { (index, pemCertificate) ->
+            pemCertificates.withIndex().forEach { (index, pemCertificate) ->
                 val certificate = ByteArrayInputStream(pemCertificate.toByteArray()).use {
                     try {
                         certificateFactory.generateCertificate(it)

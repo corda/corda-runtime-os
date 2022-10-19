@@ -55,7 +55,8 @@ class AuthenticationProtocolInitiator(val sessionId: String,
                                       private val ourMaxMessageSize: Int,
                                       private val ourPublicKey: PublicKey,
                                       private val groupId: String,
-                                      private val pkiMode: PkiMode): AuthenticationProtocol(pkiMode) {
+                                      private val certificateCheckMode: CertificateCheckMode
+): AuthenticationProtocol(certificateCheckMode) {
 
     init {
         require(supportedModes.isNotEmpty()) { "At least one supported mode must be provided." }
@@ -126,9 +127,9 @@ class AuthenticationProtocolInitiator(val sessionId: String,
                 sessionId, 1, Instant.now().toEpochMilli())
             val initiatorRecordHeaderBytes = initiatorRecordHeader.toByteBuffer().array()
             val responderPublicKeyHash = ByteBuffer.wrap(messageDigest.hash(theirPublicKey.encoded))
-            val certificates = when(pkiMode) {
-                is PkiMode.NoPki -> null
-                is PkiMode.Standard -> pkiMode.ourCertificates
+            val certificates = when(certificateCheckMode) {
+                is CertificateCheckMode.NoCertificate -> null
+                is CertificateCheckMode.CheckCertificate -> certificateCheckMode.ourCertificates
             }
             val initiatorHandshakePayload = InitiatorHandshakePayload(
                 InitiatorEncryptedExtensions(responderPublicKeyHash, groupId, ourMaxMessageSize, certificates),
