@@ -101,6 +101,8 @@ class JPABackingStoreImplIntegrationTests {
 
     class DummyException(message: String) : Exception(message)
 
+    private fun now() =  Clock.systemUTC().instant()
+
     private fun generateRequestInternal(txId: SecureHash = SecureHashUtils.randomSecureHash()) =
         UniquenessCheckRequestInternal(
             txId,
@@ -192,7 +194,7 @@ class JPABackingStoreImplIntegrationTests {
             val txId = SecureHashUtils.randomSecureHash()
             val txIds = listOf(txId)
             val txns = listOf<Pair<UniquenessCheckRequestInternal, UniquenessCheckResult>>(
-                Pair(generateRequestInternal(txId), UniquenessCheckResultSuccessImpl(Clock.systemUTC().instant()))
+                Pair(generateRequestInternal(txId), UniquenessCheckResultSuccessImpl(now()))
             )
 
             backingStoreImpl.session(aliceIdentity) { session ->
@@ -217,8 +219,7 @@ class JPABackingStoreImplIntegrationTests {
             val txns = listOf(
                 Pair(
                     generateRequestInternal(txId), UniquenessCheckResultFailureImpl(
-                        Clock.systemUTC().instant(),
-                        UniquenessCheckErrorInputStateUnknownImpl(listOf(UniquenessCheckStateRefImpl(txId, 0)))
+                        now(), UniquenessCheckErrorInputStateUnknownImpl(listOf(UniquenessCheckStateRefImpl(txId, 0)))
                     )
                 )
             )
@@ -244,8 +245,7 @@ class JPABackingStoreImplIntegrationTests {
             val txns = listOf(
                 Pair(
                     generateRequestInternal(txId), UniquenessCheckResultFailureImpl(
-                        Clock.systemUTC().instant(),
-                        UniquenessCheckErrorInputStateConflictImpl(
+                        now(), UniquenessCheckErrorInputStateConflictImpl(
                             listOf(
                                 UniquenessCheckStateDetailsImpl(
                                     UniquenessCheckStateRefImpl(txId, 0), consumingTxId = consumingTxId
@@ -279,7 +279,7 @@ class JPABackingStoreImplIntegrationTests {
             val txns = listOf(
                 Pair(
                     generateRequestInternal(txId), UniquenessCheckResultFailureImpl(
-                        Clock.systemUTC().instant(),
+                        now(),
                         UniquenessCheckErrorReferenceStateConflictImpl(
                             listOf(
                                 UniquenessCheckStateDetailsImpl(
@@ -313,7 +313,7 @@ class JPABackingStoreImplIntegrationTests {
             val txns = listOf(
                 Pair(
                     generateRequestInternal(txId), UniquenessCheckResultFailureImpl(
-                        Clock.systemUTC().instant(),
+                        now(),
                         UniquenessCheckErrorReferenceStateUnknownImpl(
                             listOf(UniquenessCheckStateRefImpl(txId, 0))
                         )
@@ -345,8 +345,7 @@ class JPABackingStoreImplIntegrationTests {
             val txns = listOf(
                 Pair(
                     generateRequestInternal(txId), UniquenessCheckResultFailureImpl(
-                        Clock.systemUTC().instant(),
-                        UniquenessCheckErrorTimeWindowOutOfBoundsImpl(evaluationTime, lowerBound, upperBound)
+                        now(), UniquenessCheckErrorTimeWindowOutOfBoundsImpl(evaluationTime, lowerBound, upperBound)
                     )
                 )
             )
@@ -382,8 +381,7 @@ class JPABackingStoreImplIntegrationTests {
                             listOf(
                                 Pair(
                                     internalRequest, UniquenessCheckResultFailureImpl(
-                                        Clock.systemUTC().instant(),
-                                        UniquenessCheckErrorMalformedRequestImpl(validErrorMessage)
+                                        now(), UniquenessCheckErrorMalformedRequestImpl(validErrorMessage)
                                     )
                                 )
                             )
@@ -401,8 +399,7 @@ class JPABackingStoreImplIntegrationTests {
                             listOf(
                                 Pair(
                                     internalRequest, UniquenessCheckResultFailureImpl(
-                                        Clock.systemUTC().instant(),
-                                        UniquenessCheckErrorMalformedRequestImpl(invalidErrorMessage)
+                                        now(), UniquenessCheckErrorMalformedRequestImpl(invalidErrorMessage)
                                     )
                                 )
                             )
@@ -420,7 +417,7 @@ class JPABackingStoreImplIntegrationTests {
             val txns = listOf(
                 Pair(
                     generateRequestInternal(txId), UniquenessCheckResultFailureImpl(
-                        Clock.systemUTC().instant(), UniquenessCheckErrorMalformedRequestImpl(errorMessage)
+                        now(), UniquenessCheckErrorMalformedRequestImpl(errorMessage)
                     )
                 )
             )
