@@ -7,6 +7,7 @@ import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.createTransactionSignature
 import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroupEnum
 import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionImpl
+import net.corda.sandbox.SandboxGroup
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -32,6 +33,7 @@ class ConsensualTransactionBuilderImpl(
     private val serializationService: SerializationService,
     private val signingService: SigningService,
     private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
+    private val currentSandboxGroup: SandboxGroup,
     // cpi defines what type of signing/hashing is used (related to the digital signature signing and verification stuff)
     private val transactionMetaData: TransactionMetaData,
     override val states: List<ConsensualState> = emptyList(),
@@ -113,7 +115,7 @@ class ConsensualTransactionBuilderImpl(
                 ConsensualComponentGroupEnum.OUTPUT_STATES ->
                     states.map { serializationService.serialize(it).bytes }
                 ConsensualComponentGroupEnum.OUTPUT_STATE_TYPES ->
-                    states.map { serializationService.serialize(it::class.java.name).bytes }
+                    states.map { serializationService.serialize(currentSandboxGroup.getEvolvableTag(it::class.java)).bytes }
             }
         }
         return componentGroupLists
@@ -141,6 +143,7 @@ class ConsensualTransactionBuilderImpl(
             serializationService,
             signingService,
             digitalSignatureVerificationService,
+            currentSandboxGroup,
             transactionMetaData,
             states,
         )

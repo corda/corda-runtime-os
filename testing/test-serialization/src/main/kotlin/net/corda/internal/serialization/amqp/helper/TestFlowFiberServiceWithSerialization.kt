@@ -14,6 +14,7 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.HoldingIdentity
 import org.mockito.Mockito
 import org.mockito.Mockito.mock
+import org.mockito.kotlin.anyOrNull
 
 class TestFlowFiberServiceWithSerialization : FlowFiberService, SingletonSerializeAsToken {
     private val mockFlowFiber: FlowFiber
@@ -26,6 +27,7 @@ class TestFlowFiberServiceWithSerialization : FlowFiberService, SingletonSeriali
         val holdingIdentity =  HoldingIdentity(bobX500Name,"group1")
         val mockSandboxGroup = mock(SandboxGroup::class.java)
         Mockito.`when`(mockSandboxGroup.metadata).thenReturn(emptyMap())
+        Mockito.`when`(mockSandboxGroup.getEvolvableTag(anyOrNull())).thenReturn("E;bundle;sandbox")
         Mockito.`when`(mockFlowSandboxGroupContext.sandboxGroup).thenReturn(mockSandboxGroup)
         val flowFiberExecutionContext = FlowFiberExecutionContext(
             mock(FlowCheckpoint::class.java),

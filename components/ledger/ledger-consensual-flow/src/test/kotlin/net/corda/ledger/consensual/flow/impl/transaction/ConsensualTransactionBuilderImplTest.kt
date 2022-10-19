@@ -4,7 +4,9 @@ import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
+import net.corda.internal.serialization.amqp.currentSandboxGroup
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
+import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionImpl
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -97,6 +99,7 @@ internal class ConsensualTransactionBuilderImplTest {
             serializationService,
             ConsensualTransactionMocks.mockSigningService(),
             mock(),
+            testSerializationContext.currentSandboxGroup(),
             ConsensualTransactionMocks.mockTransactionMetaData()
         )
     }
