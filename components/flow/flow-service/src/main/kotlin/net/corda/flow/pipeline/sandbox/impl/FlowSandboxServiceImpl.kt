@@ -232,7 +232,7 @@ class FlowSandboxServiceImpl @Activate constructor(
 
     private fun buildCorDappSerializers(
         sandboxGroup: SandboxGroup,
-        serializerClassNames: Set<String>,
+        serializerClassNames: Set<String>
     ): List<SerializationCustomSerializer<*, *>> {
         return serializerClassNames.map { serializerClassName ->
             sandboxGroup.loadClassFromMainBundles(
