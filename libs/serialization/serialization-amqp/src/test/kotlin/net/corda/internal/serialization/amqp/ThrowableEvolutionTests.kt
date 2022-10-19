@@ -46,7 +46,7 @@ class ThrowableEvolutionTests {
 //        val exception = AddConstructorParametersException(message)
 //        saveSerializedObject(exception)
 
-        val bytes = this::class.java.getResource(testResourceName()).readBytes()
+        val bytes = requireNotNull(this::class.java.getResource(testResourceName())).readBytes()
 
         val sf = testDefaultFactory().also { registerCustomSerializers(it) }
         val deserializedException = DeserializationInput(sf)
@@ -62,7 +62,7 @@ class ThrowableEvolutionTests {
 //        val exception = RemoveConstructorParametersException(message, toBeRemovedValue)
 //        saveSerializedObject(exception)
 
-        val bytes = this::class.java.getResource(testResourceName()).readBytes()
+        val bytes = requireNotNull(this::class.java.getResource(testResourceName())).readBytes()
 
         val sf = testDefaultFactory().also { registerCustomSerializers(it) }
         val deserializedException = DeserializationInput(sf)
@@ -78,7 +78,7 @@ class ThrowableEvolutionTests {
 //        val exception = AddAndRemoveConstructorParametersException(message, toBeRemovedValue)
 //        saveSerializedObject(exception)
 
-        val bytes = this::class.java.getResource(testResourceName()).readBytes()
+        val bytes = requireNotNull(this::class.java.getResource(testResourceName())).readBytes()
 
         val sf = testDefaultFactory().also { registerCustomSerializers(it) }
         val deserializedException = DeserializationInput(sf)

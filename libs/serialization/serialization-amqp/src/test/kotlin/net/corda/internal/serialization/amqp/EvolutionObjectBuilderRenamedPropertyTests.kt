@@ -94,11 +94,11 @@ class EvolutionObjectBuilderRenamedPropertyTests {
 //        val step1 = TemplateState(cordappVersionTestValue, dataTestValue, xTestValue)
 //        saveSerializedObject(step1)
 
-        val bytes = this::class.java.getResource(testResourceName())?.readBytes()
+        val bytes = requireNotNull(this::class.java.getResource(testResourceName())).readBytes()
 
         val serializerFactory: SerializerFactory = testDefaultFactory()
         val deserializedObject = DeserializationInput(serializerFactory)
-            .deserialize(SerializedBytes<TemplateState>(bytes!!))
+            .deserialize(SerializedBytes<TemplateState>(bytes))
 
         Assertions.assertThat(deserializedObject.cordappVersion).isEqualTo(cordappVersionTestValue)
         Assertions.assertThat(deserializedObject.data).isEqualTo(dataTestValue)
