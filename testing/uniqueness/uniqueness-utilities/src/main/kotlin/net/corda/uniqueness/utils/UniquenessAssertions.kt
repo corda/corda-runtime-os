@@ -32,10 +32,9 @@ object UniquenessAssertions {
     /**
      * Checks if the given transaction details has the expected size and the transaction ID.
      */
-    fun assertSizeAndTxId(expectedSize: Int,
-                          txnDetails: Map<SecureHash, UniquenessCheckTransactionDetailsInternal>,
-                          txIds: List<SecureHash>) {
-        assertThat(txnDetails.size).isEqualTo(expectedSize)
+    fun assertContainingTxId(txnDetails: Map<SecureHash, UniquenessCheckTransactionDetailsInternal>,
+                             txIds: List<SecureHash>) {
+        assertThat(txnDetails.size).isEqualTo(1)
         assertThat(txIds).contains(txnDetails.entries.single().key)
     }
 

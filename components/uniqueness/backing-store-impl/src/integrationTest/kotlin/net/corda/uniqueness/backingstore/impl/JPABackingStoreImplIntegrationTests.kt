@@ -200,7 +200,7 @@ class JPABackingStoreImplIntegrationTests {
                 txnDetails = session.getTransactionDetails(txIds)
             }
 
-            UniquenessAssertions.assertSizeAndTxId(expectedSize = 1, txnDetails = txnDetails, txIds = txIds)
+            UniquenessAssertions.assertContainingTxId(txnDetails = txnDetails, txIds = txIds)
             UniquenessAssertions.assertAcceptedResult<UniquenessCheckResultSuccess>(
                 txnDetails.entries.single().value.result)
         }
@@ -224,7 +224,7 @@ class JPABackingStoreImplIntegrationTests {
                 txnDetails = session.getTransactionDetails(txIds)
             }
 
-            UniquenessAssertions.assertSizeAndTxId(expectedSize = 1, txnDetails = txnDetails, txIds = txIds)
+            UniquenessAssertions.assertContainingTxId(txnDetails = txnDetails, txIds = txIds)
             UniquenessAssertions.assertInputStateUnknownResult(txId, txnDetails.entries.single().value.result)
         }
 
@@ -248,7 +248,7 @@ class JPABackingStoreImplIntegrationTests {
                 txnDetails = session.getTransactionDetails(txIds)
             }
 
-            UniquenessAssertions.assertSizeAndTxId(expectedSize = 1, txnDetails = txnDetails, txIds = txIds)
+            UniquenessAssertions.assertContainingTxId(txnDetails = txnDetails, txIds = txIds)
             UniquenessAssertions.assertInputStateConflictResult(
                 txId, consumingTxId, txnDetails.entries.single().value.result
             )
@@ -275,7 +275,7 @@ class JPABackingStoreImplIntegrationTests {
                 txnDetails = session.getTransactionDetails(txIds)
             }
 
-            UniquenessAssertions.assertSizeAndTxId(expectedSize = 1, txnDetails = txnDetails, txIds = txIds)
+            UniquenessAssertions.assertContainingTxId(txnDetails = txnDetails, txIds = txIds)
             UniquenessAssertions.assertReferenceStateConflictResult(
                 txId, consumingTxId, txnDetails.entries.single().value.result)
         }
@@ -299,7 +299,7 @@ class JPABackingStoreImplIntegrationTests {
                 txnDetails = session.getTransactionDetails(txIds)
             }
 
-            UniquenessAssertions.assertSizeAndTxId(expectedSize = 1, txnDetails = txnDetails, txIds = txIds)
+            UniquenessAssertions.assertContainingTxId(txnDetails = txnDetails, txIds = txIds)
             UniquenessAssertions.assertReferenceStateUnknownResult(txId, txnDetails.entries.single().value.result)
         }
 
@@ -324,7 +324,7 @@ class JPABackingStoreImplIntegrationTests {
                 txnDetails = session.getTransactionDetails(txIds)
             }
 
-            UniquenessAssertions.assertSizeAndTxId(expectedSize = 1, txnDetails = txnDetails, txIds = txIds)
+            UniquenessAssertions.assertContainingTxId(txnDetails = txnDetails, txIds = txIds)
             UniquenessAssertions.assertTimeWindowOutOfBoundsResult(
                 evaluationTime, lowerBound, upperBound, txnDetails.entries.single().value.result)
         }
@@ -377,7 +377,7 @@ class JPABackingStoreImplIntegrationTests {
                 txnDetails = session.getTransactionDetails(txIds)
             }
 
-            UniquenessAssertions.assertSizeAndTxId(expectedSize = 1, txnDetails = txnDetails, txIds = txIds)
+            UniquenessAssertions.assertContainingTxId(txnDetails = txnDetails, txIds = txIds)
             UniquenessAssertions.assertMalformedRequestResult(errorMessage, txnDetails.entries.single().value.result)
         }
 
