@@ -67,6 +67,12 @@ import kotlin.reflect.full.createInstance
 /**
  * Note: To run tests against PostgreSQL, follow the steps in the link below.
  * https://github.com/corda/corda-runtime-os/wiki/Debugging-integration-tests#debugging-integration-tests-with-postgres
+ *
+ * Also, in order to run the Intellij Code Coverage feature, you may need to exclude the following types to avoid
+ * Hibernate related errors.
+ *  org.hibernate.hql.internal.antlr.HqlTokenTypes
+ *  org.hibernate.hql.internal.antlr.SqlTokenTypes
+ *  org.hibernate.sql.ordering.antlr.GeneratedOrderByFragmentRendererTokenTypes
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class JPABackingStoreImplIntegrationTests {
