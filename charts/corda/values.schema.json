@@ -147,6 +147,29 @@
                 "level": "warn"
             }]
         },
+        "metrics": {
+            "type": "object",
+            "title": "Metrics configuration",
+            "additionalProperties": false,
+            "required": [
+                "scrape"
+            ],
+            "properties": {
+                "scrape": {
+                    "type": "boolean",
+                    "default": true,
+                    "title": "enable scraping of worker metrics through Prometheus annotations",
+                    "examples": [
+                        true
+                    ]
+                }
+            },
+            "examples": [
+                {
+                    "scrape": false
+                }
+            ]
+        },
         "dumpHostPath": {
             "type": "string",
             "default": "",
@@ -164,62 +187,6 @@
                 true
             ]
             
-        },
-        "openTelemetry": {
-            "type": "object",
-            "default": {},
-            "title": "open Telemetry configuration",
-            "required": [
-                "enabled"
-            ],
-            "additionalProperties": false,
-            "properties": {
-                "enabled": {
-                    "type": "boolean",
-                    "default": false,
-                    "title": "enables the Open Telemetry Java agent for the Corda workers",
-                    "examples": [
-                        false,
-                        true
-                    ]
-                },
-                "endpoint": {
-                    "type": ["string", "null"],
-                    "default": null,
-                    "title": "the Open Telemetry endpoint to use; telemetry will be logged locally if this is unset",
-                    "examples": [
-                        "https://otel.example.com:4317"
-                    ],
-                    "format": "uri"
-                },
-                "protocol": {
-                    "type": "string",
-                    "default": "",
-                    "title": "the Open Telemetry protocol the endpoint is using",
-                    "examples": [
-                        "grpc"
-                    ],
-                    "enum": ["grpc","http/protobuf"]
-                }
-            },
-            "if": {
-                "properties": {
-                    "enabled": {
-                        "const": true
-                    }
-                }
-            },
-            "then": {
-                "required": [
-                    "endpoint",
-                    "protocol"
-                ]
-            },
-            "examples": [{
-                "enabled": true,
-                "endpoint": "https://otel.example.com:4317",
-                "protocol": "grpc"
-            }]
         },
         "nodeSelector": {
             "type": "object",

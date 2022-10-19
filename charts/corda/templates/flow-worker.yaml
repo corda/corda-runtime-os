@@ -12,6 +12,8 @@ spec:
       {{- include "corda.workerSelectorLabels" . | nindent 6 }}
   template:
     metadata:
+      annotations:
+        {{- include "corda.workerAnnotations" . | nindent 8 }}
       labels:
         {{- include "corda.workerSelectorLabels" . | nindent 8 }}
     spec:

@@ -4,6 +4,7 @@ import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.KeyValuePairList
@@ -253,7 +254,9 @@ class StaticMemberRegistrationService @Activate constructor(
                 *generateLedgerKeys(memberKey.pem).toTypedArray(),
                 *generateLedgerKeyHashes(memberKey.hash).toTypedArray(),
                 *convertEndpoints(staticMemberInfo).toTypedArray(),
-                *roles.toMemberInfo(keysFactory).toTypedArray(),
+                *roles.toMemberInfo {
+                    listOf(keysFactory.getOrGenerateKeyPair(NOTARY))
+                }.toTypedArray(),
                 SESSION_KEY_HASH to memberKey.hash.toString(),
                 SOFTWARE_VERSION to staticMemberInfo.softwareVersion,
                 PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),

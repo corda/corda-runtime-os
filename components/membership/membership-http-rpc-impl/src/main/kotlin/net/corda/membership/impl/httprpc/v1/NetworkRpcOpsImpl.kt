@@ -1,6 +1,7 @@
 package net.corda.membership.impl.httprpc.v1
 
 import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.lifecycle.Lifecycle
@@ -46,6 +47,9 @@ class NetworkRpcOpsImpl @Activate constructor(
             )
         } catch (e: CertificatesResourceNotFoundException) {
             throw ResourceNotFoundException(e.message)
+        } catch (e: BadRequestException) {
+            logger.warn(e.message)
+            throw e
         } catch (e: Throwable) {
             logger.warn("Could not publish to locally hosted identities", e)
             throw InternalServerException("Could not import certificate: ${e.message}")

@@ -1,6 +1,8 @@
 @file:JvmName("FlowSandboxServiceUtils")
+
 package net.corda.flow.pipeline.sandbox.impl
 
+import net.corda.common.json.serializers.SerializationCustomizer
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.flow.pipeline.sandbox.FlowSandboxGroupContext
 import net.corda.flow.pipeline.sandbox.FlowSandboxService
@@ -17,11 +19,15 @@ import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
+import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.sandboxgroupcontext.putObjectByKey
 import net.corda.sandboxgroupcontext.service.SandboxGroupContextComponent
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFactory
+import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.marshalling.json.JsonDeserializer
+import net.corda.v5.application.marshalling.json.JsonSerializer
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.serialization.SerializationCustomSerializer
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -35,6 +41,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceCardinality.MULTIPLE
 import org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC
+import java.lang.reflect.ParameterizedType
 
 @Suppress("LongParameterList")
 @Component(
@@ -87,7 +94,9 @@ class FlowSandboxServiceImpl @Activate constructor(
         get() = componentContext.fetchServices<InternalCustomSerializer<out Any>>(INTERNAL_CUSTOM_SERIALIZERS)
 
     private val checkpointInternalCustomSerializers
-        get() = componentContext.fetchServices<CheckpointInternalCustomSerializer<out Any>>(CHECKPOINT_INTERNAL_CUSTOM_SERIALIZERS)
+        get() = componentContext.fetchServices<CheckpointInternalCustomSerializer<out Any>>(
+            CHECKPOINT_INTERNAL_CUSTOM_SERIALIZERS
+        )
 
     override fun get(holdingIdentity: HoldingIdentity): FlowSandboxGroupContext {
 
@@ -135,16 +144,18 @@ class FlowSandboxServiceImpl @Activate constructor(
         val nonInjectableSingletons = getNonInjectableSingletons(cleanupCordaSingletons)
 
         // Create and configure the checkpoint serializer
-        val checkpointSerializer = checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(sandboxGroup).let { builder ->
-            builder.addSingletonSerializableInstances(injectorService.getRegisteredSingletons())
-            builder.addSingletonSerializableInstances(nonInjectableSingletons)
-            builder.addSingletonSerializableInstances(setOf(sandboxGroup))
-            for (serializer in checkpointInternalCustomSerializers) {
-                log.info("Registering internal checkpoint serializer {}", serializer::class.java.name)
-                builder.addSerializer(serializer.type , serializer)
+        val checkpointSerializer =
+            checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(sandboxGroup).let { builder ->
+                builder.addSingletonSerializableInstances(injectorService.getRegisteredSingletons())
+                builder.addSingletonSerializableInstances(nonInjectableSingletons)
+                builder.addSingletonSerializableInstances(setOf(sandboxGroup))
+                for (serializer in checkpointInternalCustomSerializers) {
+                    log.info("Registering internal checkpoint serializer {}", serializer::class.java.name)
+                    builder.addSerializer(serializer.type, serializer)
+                }
+                builder.build()
             }
-            builder.build()
-        }
+
         sandboxGroupContext.putObjectByKey(FlowSandboxGroupContextImpl.CHECKPOINT_SERIALIZER, checkpointSerializer)
 
         sandboxGroupContext.putAMQPSerializationEnvironment(cpiMetadata)
@@ -153,6 +164,19 @@ class FlowSandboxServiceImpl @Activate constructor(
             FlowSandboxGroupContextImpl.FLOW_PROTOCOL_STORE,
             flowProtocolStoreFactory.create(sandboxGroup, cpiMetadata)
         )
+
+        // Build JsonSerializer/JsonDeserializers
+        sandboxGroupContextComponent.registerMetadataServices(
+            sandboxGroupContext,
+            serviceNames = { metadata -> metadata.cordappManifest.jsonSerializerClasses },
+            serviceMarkerType = JsonSerializer::class.java
+        )
+        sandboxGroupContextComponent.registerMetadataServices(
+            sandboxGroupContext,
+            serviceNames = { metadata -> metadata.cordappManifest.jsonDeserializerClasses },
+            serviceMarkerType = JsonDeserializer::class.java
+        )
+        sandboxGroupContext.registerCustomJsonSerialization()
 
         return AutoCloseable {
             cleanupCordaSingletons.forEach(AutoCloseable::close)
@@ -217,4 +241,43 @@ class FlowSandboxServiceImpl @Activate constructor(
             ).getConstructor().newInstance()
         }
     }
+
+    private fun MutableSandboxGroupContext.registerCustomJsonSerialization() {
+        val serializationCustomizer =
+            sandboxGroup.getOsgiServiceByClass<JsonMarshallingService>() as? SerializationCustomizer
+
+        if (serializationCustomizer == null) {
+            log.error(
+                "registerCustomJsonSerialization failed: JsonMarshallingService does not exist or does not support custom serialization"
+            )
+            return
+        }
+
+        getObjectByKey<Iterable<JsonSerializer<*>>>(JsonSerializer::class.java.name)?.forEach {
+            serializationCustomizer.setSerializer(it, extractJsonSerializingType(it, sandboxGroup))
+        }
+        getObjectByKey<Iterable<JsonDeserializer<*>>>(JsonDeserializer::class.java.name)?.forEach {
+            serializationCustomizer.setDeserializer(it, extractJsonSerializingType(it, sandboxGroup))
+        }
+    }
+
+    private inline fun <reified T : Any> extractJsonSerializingType(jsonSerializer: T, sandboxGroup: SandboxGroup): Class<*> {
+        val types = jsonSerializer::class.java.genericInterfaces
+            .filterIsInstance<ParameterizedType>()
+            .filter { it.rawType === T::class.java }
+            .flatMap { it.actualTypeArguments.asList() }
+        if (types.size != 1) {
+            throw IllegalStateException("Unable to determine serializing type from ${jsonSerializer::class.java.canonicalName}")
+        }
+
+        return sandboxGroup.loadClassFromMainBundles(types.first().typeName, Any::class.java)
+    }
+
+    private inline fun <reified T> SandboxGroup.getOsgiServiceByClass() =
+        this.metadata.keys.firstOrNull()?.bundleContext?.let { bundleContext ->
+            bundleContext.getServiceReferences(T::class.java, null)?.firstOrNull()
+                ?.let { serviceRef ->
+                    bundleContext.getService(serviceRef)
+                }
+        }
 }

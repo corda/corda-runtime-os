@@ -32,8 +32,6 @@ dependencies {
     testRuntimeOnly "org.apache.felix:org.apache.felix.framework:$felixVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
-    dockerImage "io.opentelemetry.javaagent:opentelemetry-javaagent:$openTelemetryVersion"
-
     // This puts the jdbc driver into the docker image in the /opt/jdbc-driver folder
     // this folder can contain many jdbc drivers (and DataSourceFactory provider bundles).
     // Postgres doesn't need a DataSourceFactory provider bundle (e.g. pax-jdbc), because

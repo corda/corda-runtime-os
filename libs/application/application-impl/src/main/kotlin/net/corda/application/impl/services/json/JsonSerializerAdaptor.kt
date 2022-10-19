@@ -15,11 +15,9 @@ import net.corda.v5.base.util.uncheckedCast
  * Because JsonSerializers are created at runtime dynamically, no compile time type information can be referenced in
  * this class in the form of generics. Instead all type information is supplied only via a Class<*> object.
  */
-class JsonSerializerAdaptor(private val jsonSerializer: JsonSerializer<*>, clazz: Class<*>) :
-    StdSerializer<Any>(uncheckedCast<Class<*>, Class<Any>>(clazz)) {
-    override fun serialize(
-        value: Any, jgen: JsonGenerator, provider: SerializerProvider
-    ) {
+class JsonSerializerAdaptor(private val jsonSerializer: JsonSerializer<*>, val serializingType: Class<*>) :
+    StdSerializer<Any>(uncheckedCast<Class<*>, Class<Any>>(serializingType)) {
+    override fun serialize(value: Any, jgen: JsonGenerator, provider: SerializerProvider) {
         serializeAny(jsonSerializer, value, JsonWriterAdaptor(jgen))
     }
 

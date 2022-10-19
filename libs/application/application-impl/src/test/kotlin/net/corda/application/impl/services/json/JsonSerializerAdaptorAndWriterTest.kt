@@ -205,9 +205,7 @@ class JsonSerializerAdaptorAndWriterTest {
      * to register a serializer.
      */
     private fun testSerializerFactory(): Pair<JsonSerializer<*>, Class<*>> {
-        val newTestSerializer = TestSerializer()
-        val testClassInstance = TestClass()
-        return Pair(newTestSerializer, testClassInstance.javaClass)
+        return Pair(TestSerializer(), TestClass::class.java)
     }
 
     @Test
@@ -215,8 +213,9 @@ class JsonSerializerAdaptorAndWriterTest {
         val mapper = ObjectMapper()
 
         val module = SimpleModule()
-        val (serializer, clazz) = testSerializerFactory()
-        module.addSerializer(clazz, JsonSerializerAdaptor(serializer, clazz))
+        val (serializer, type) = testSerializerFactory()
+        val jsonSerializerAdaptor = JsonSerializerAdaptor(serializer, type)
+        module.addSerializer(jsonSerializerAdaptor.serializingType, jsonSerializerAdaptor)
         mapper.registerModule(module)
 
         val serialized: String = mapper.writeValueAsString(testClassInstance)
