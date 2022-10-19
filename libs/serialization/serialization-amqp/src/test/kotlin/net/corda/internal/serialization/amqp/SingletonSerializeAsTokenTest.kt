@@ -12,6 +12,7 @@ import java.io.NotSerializableException
 import kotlin.test.assertFailsWith
 
 class SingletonSerializeAsTokenTest {
+
     @Test
     fun `serializing SingletonSerializeAsToken fails`() {
         val singletonSerializeAsToken = mock(SingletonSerializeAsToken::class.java)

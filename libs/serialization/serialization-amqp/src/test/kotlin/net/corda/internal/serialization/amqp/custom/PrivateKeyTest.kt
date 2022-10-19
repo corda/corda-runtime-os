@@ -19,12 +19,7 @@ class PrivateKeyTest {
         class PrivateKeyProxy
     }
 
-    val factory = testDefaultFactory().apply {
-        registerExternal(
-            PrivateKeySerializer(),
-            this
-        )
-    }
+    val factory = testDefaultFactory().apply { registerExternal(PrivateKeySerializer(), this) }
 
     class MockPrivateKey(private val algorithm: String, private val format: String, private val encoded: ByteArray) : PrivateKey {
         override fun getAlgorithm(): String = algorithm

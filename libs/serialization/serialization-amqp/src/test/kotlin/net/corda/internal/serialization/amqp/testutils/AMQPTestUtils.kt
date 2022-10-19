@@ -48,7 +48,7 @@ class TestDescriptorBasedSerializerRegistry : DescriptorBasedSerializerRegistry 
 @JvmOverloads
 fun testDefaultFactory(
     descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
-        DefaultDescriptorBasedSerializerRegistry(),
+        DefaultDescriptorBasedSerializerRegistry()
 ) =
     SerializerFactoryBuilder.build(
         testSerializationContext.currentSandboxGroup(),
