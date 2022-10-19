@@ -1,6 +1,8 @@
 package net.corda.ledger.utxo.impl.transaction
 
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.utxo.impl.state.StateAndRefImpl
+import net.corda.ledger.utxo.impl.state.TransactionStateImpl
 import net.corda.ledger.utxo.impl.state.filterIsContractStateInstance
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
@@ -10,6 +12,7 @@ import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
+import net.corda.v5.ledger.utxo.TransactionState
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import java.security.PublicKey
 
@@ -17,6 +20,9 @@ data class UtxoLedgerTransactionImpl(
     private val wireTransaction: WireTransaction,
     private val serializationService: SerializationService
 ) : UtxoLedgerTransaction {
+
+    override val id: SecureHash
+        get() = wireTransaction.id
 
     override val timeWindow: TimeWindow by lazy(LazyThreadSafetyMode.PUBLICATION) {
         val timeWindowBytes = wireTransaction.getComponentGroupList(UtxoComponentGroup.NOTARY.ordinal)[2]
@@ -59,23 +65,22 @@ data class UtxoLedgerTransactionImpl(
         TODO("Not yet implemented.")
     }
 
-    private val outputStateTypes: List<String> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    private val outputsInfo: List<UtxoOutputInfoComponent> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         wireTransaction
-            .getComponentGroupList(UtxoComponentGroup.OUTPUTS_INFO_STATE_TYPE.ordinal)
-            .map{ serializationService.deserialize(it, String::class.java)}
-    }
-
-    val outputStates: List<StateAndRef<*>> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        wireTransaction
-            .getComponentGroupList(UtxoComponentGroup.OUTPUTS.ordinal)
-            .mapIndexed{
-                    index, stateRef ->
-                serializationService.deserialize(stateRef, Class.forName(outputStateTypes[index])) as StateAndRef<*>
-            }
+            .getComponentGroupList(UtxoComponentGroup.OUTPUTS_INFO.ordinal)
+            .map{ serializationService.deserialize(it, UtxoOutputInfoComponent::class.java)}
     }
 
     override val outputStateAndRefs: List<StateAndRef<*>> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        TODO("Not yet implemented.")
+        wireTransaction
+            .getComponentGroupList(UtxoComponentGroup.OUTPUTS.ordinal)
+            .mapIndexed { index, state ->
+                val contractState = serializationService.deserialize(state, ContractState::class.java)
+                val stateRef = StateRef(id, index)
+                val outputInfo = outputsInfo[index]
+                val transactionState = TransactionStateImpl(contractState, outputInfo.notary, outputInfo.encumbrance)
+                StateAndRefImpl(transactionState, stateRef)
+            }
     }
 
     override fun getAttachment(id: SecureHash): Attachment {

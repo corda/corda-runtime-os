@@ -17,6 +17,7 @@ dependencies {
     implementation "net.corda:corda-cipher-suite"
     implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:ledger:ledger-common-data")
+    implementation project(":libs:sandbox")
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"

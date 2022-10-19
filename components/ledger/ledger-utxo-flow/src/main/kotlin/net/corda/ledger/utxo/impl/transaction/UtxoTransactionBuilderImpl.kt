@@ -6,6 +6,7 @@ import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.utxo.impl.state.TransactionStateImpl
 import net.corda.ledger.utxo.impl.timewindow.TimeWindowBetweenImpl
 import net.corda.ledger.utxo.impl.timewindow.TimeWindowUntilImpl
+import net.corda.sandbox.SandboxGroup
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -34,6 +35,7 @@ data class UtxoTransactionBuilderImpl(
     private val serializationService: SerializationService,
     private val signingService: SigningService,
     private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
+    private val currentSandboxGroup: SandboxGroup,
     // cpi defines what type of signing/hashing is used (related to the digital signature signing and verification stuff)
     private val transactionMetaData: TransactionMetaData,
 
@@ -128,11 +130,19 @@ data class UtxoTransactionBuilderImpl(
         val notaryGroup = listOf(
             notary,
             timeWindow,
-            /*todo: notaryallowlist*/
+            /*TODO: notaryallowlist*/
         )
+        val outputsInfo = outputTransactionStates.map{
+            UtxoOutputInfoComponent(
+                it.encumbrance,
+                notary,
+                currentSandboxGroup.getEvolvableTag(it.contractStateType),
+                currentSandboxGroup.getEvolvableTag(it.contractType)
+            )
+        }
         val commandsInfo = commands.map{ listOf(
-            0, // todo: signers
-            0, // todo: Type (CPKInfo + ClassName)
+            "", // TODO: signers
+            currentSandboxGroup.getEvolvableTag(it.javaClass), // TODO: Type (CPKInfo + ClassName)
         )}
 
         val componentGroupLists = mutableListOf<List<ByteArray>>()
@@ -145,12 +155,8 @@ data class UtxoTransactionBuilderImpl(
                     ) // TODO(update with CORE-6890)
                 UtxoComponentGroup.NOTARY ->
                     notaryGroup.map { serializationService.serialize(it).bytes }
-                UtxoComponentGroup.OUTPUTS_INFO_ENCUMBRANCE ->
-                    outputTransactionStates.map { serializationService.serialize(it.encumbrance ?: -1).bytes }
-                UtxoComponentGroup.OUTPUTS_INFO_STATE_TYPE ->
-                    outputTransactionStates.map { serializationService.serialize(it.contractStateType::class.java).bytes }
-                UtxoComponentGroup.OUTPUTS_INFO_CONTRACT_TYPE ->
-                    outputTransactionStates.map { serializationService.serialize(it.contractType::class.java).bytes }
+                UtxoComponentGroup.OUTPUTS_INFO ->
+                    outputsInfo.map { serializationService.serialize(it).bytes }
                 UtxoComponentGroup.COMMANDS_INFO ->
                     commandsInfo.map { serializationService.serialize(it).bytes }
                 UtxoComponentGroup.DATA_ATTACHMENTS ->
@@ -158,12 +164,11 @@ data class UtxoTransactionBuilderImpl(
                 UtxoComponentGroup.INPUTS ->
                     inputStateAndRefs.map { serializationService.serialize(it.ref).bytes }
                 UtxoComponentGroup.OUTPUTS ->
-                    outputTransactionStates.map { serializationService.serialize(it).bytes }
+                    outputTransactionStates.map { serializationService.serialize(it.contractState).bytes }
                 UtxoComponentGroup.COMMANDS ->
                     commands.map { serializationService.serialize(it).bytes }
                 UtxoComponentGroup.REFERENCES ->
                     referenceInputStateAndRefs.map { serializationService.serialize(it.ref).bytes }
-
             }
         }
         return componentGroupLists
