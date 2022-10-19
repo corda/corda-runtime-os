@@ -46,11 +46,11 @@ class ThrowableEvolutionTests {
 //        val exception = AddConstructorParametersException(message)
 //        saveSerializedObject(exception)
 
-        val bytes = this::class.java.getResource(testResourceName()).readBytes()
+        val bytes = this::class.java.getResource(testResourceName())?.readBytes()
 
         val sf = testDefaultFactory().also { registerCustomSerializers(it) }
         val deserializedException = DeserializationInput(sf)
-            .deserialize(SerializedBytes<AddConstructorParametersException>(bytes))
+            .deserialize(SerializedBytes<AddConstructorParametersException>(bytes!!))
 
         assertThat(deserializedException.message).isEqualTo(message)
         assertThat(deserializedException).isInstanceOf(AddConstructorParametersException::class.java)
@@ -62,11 +62,11 @@ class ThrowableEvolutionTests {
 //        val exception = RemoveConstructorParametersException(message, toBeRemovedValue)
 //        saveSerializedObject(exception)
 
-        val bytes = this::class.java.getResource(testResourceName()).readBytes()
+        val bytes = this::class.java.getResource(testResourceName())?.readBytes()
 
         val sf = testDefaultFactory().also { registerCustomSerializers(it) }
         val deserializedException = DeserializationInput(sf)
-            .deserialize(SerializedBytes<RemoveConstructorParametersException>(bytes))
+            .deserialize(SerializedBytes<RemoveConstructorParametersException>(bytes!!))
 
         assertThat(deserializedException.message).isEqualTo(message)
         assertThat(deserializedException).isInstanceOf(RemoveConstructorParametersException::class.java)
@@ -78,11 +78,11 @@ class ThrowableEvolutionTests {
 //        val exception = AddAndRemoveConstructorParametersException(message, toBeRemovedValue)
 //        saveSerializedObject(exception)
 
-        val bytes = this::class.java.getResource(testResourceName()).readBytes()
+        val bytes = this::class.java.getResource(testResourceName())?.readBytes()
 
         val sf = testDefaultFactory().also { registerCustomSerializers(it) }
         val deserializedException = DeserializationInput(sf)
-            .deserialize(SerializedBytes<AddAndRemoveConstructorParametersException>(bytes))
+            .deserialize(SerializedBytes<AddAndRemoveConstructorParametersException>(bytes!!))
 
         assertThat(deserializedException.message).isEqualTo(message)
         assertThat(deserializedException).isInstanceOf(AddAndRemoveConstructorParametersException::class.java)
