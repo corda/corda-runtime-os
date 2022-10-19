@@ -8,6 +8,7 @@ import net.corda.crypto.ecies.EncryptedDataWithKey
 import net.corda.crypto.ecies.EphemeralKeyPairEncryptor
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.CordaAvroSerializer
+import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.libs.configuration.SmartConfigFactory
@@ -30,6 +31,7 @@ import net.corda.membership.lib.registration.RegistrationRequest
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidatorFactory
+import net.corda.membership.lib.toMap
 import net.corda.membership.p2p.helpers.Verifier
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
@@ -83,6 +85,8 @@ class DynamicMemberRegistrationServiceTest {
         private const val SESSION_KEY_ID = "1"
         private const val LEDGER_KEY = "5678"
         private const val LEDGER_KEY_ID = "2"
+        private const val NOTARY_KEY = "2020"
+        private const val NOTARY_KEY_ID = "4"
         private const val PUBLISHER_CLIENT_ID = "dynamic-member-registration-service"
         private const val GROUP_NAME = "dummy_group"
 
@@ -123,6 +127,14 @@ class DynamicMemberRegistrationServiceTest {
         on { publicKey } doReturn ByteBuffer.wrap(LEDGER_KEY.toByteArray())
         on { id } doReturn "2"
     }
+    private val notaryKey: PublicKey = mock {
+        on { encoded } doReturn NOTARY_KEY.toByteArray()
+    }
+    private val notaryCryptoSigningKey: CryptoSigningKey = mock {
+        on { publicKey } doReturn ByteBuffer.wrap(NOTARY_KEY.toByteArray())
+        on { id } doReturn NOTARY_KEY_ID
+        on { schemeCodeName } doReturn "CORDA.ECDSA.SECP256R1"
+    }
     private val mockPublisher = mock<Publisher>().apply {
         whenever(publish(any())).thenReturn(listOf(CompletableFuture.completedFuture(Unit)))
     }
@@ -134,6 +146,7 @@ class DynamicMemberRegistrationServiceTest {
         on { decodePublicKey(SESSION_KEY.toByteArray()) } doReturn sessionKey
         on { decodePublicKey(SESSION_KEY) } doReturn sessionKey
         on { decodePublicKey(LEDGER_KEY.toByteArray()) } doReturn ledgerKey
+        on { decodePublicKey(NOTARY_KEY.toByteArray()) } doReturn notaryKey
 
         on { encodeAsString(any()) } doReturn SESSION_KEY
         on { encodeAsString(ledgerKey) } doReturn LEDGER_KEY
@@ -150,6 +163,7 @@ class DynamicMemberRegistrationServiceTest {
     private val cryptoOpsClient: CryptoOpsClient = mock {
         on { lookup(memberId.value, listOf(SESSION_KEY_ID)) } doReturn listOf(sessionCryptoSigningKey)
         on { lookup(memberId.value, listOf(LEDGER_KEY_ID)) } doReturn listOf(ledgerCryptoSigningKey)
+        on { lookup(memberId.value, listOf(NOTARY_KEY_ID)) } doReturn listOf(notaryCryptoSigningKey)
         on {
             sign(
                 any(),
@@ -392,6 +406,92 @@ class DynamicMemberRegistrationServiceTest {
                 )
         }
         registrationService.stop()
+    }
+
+    @Test
+    fun `registration fails when notary keys are numbered incorrectly`() {
+        postConfigChangedEvent()
+        val testProperties =
+            context + mapOf(
+                "corda.roles.0" to "notary",
+                "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
+                "corda.notary.keys.100.id" to LEDGER_KEY_ID,
+            )
+        registrationService.start()
+
+        val result = registrationService.register(registrationResultId, member, testProperties)
+
+        assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+    }
+
+    @Test
+    fun `registration pass when notary keys are numbered correctly`() {
+        postConfigChangedEvent()
+        val testProperties =
+            context + mapOf(
+                "corda.roles.0" to "notary",
+                "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
+                "corda.notary.keys.0.id" to NOTARY_KEY_ID,
+            )
+        registrationService.start()
+
+        val result = registrationService.register(registrationResultId, member, testProperties)
+
+        assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.SUBMITTED)
+    }
+
+    @Test
+    fun `registration adds notary information when notary role is set`() {
+        val memberContext = argumentCaptor<KeyValuePairList>()
+        whenever(keyValuePairListSerializer.serialize(memberContext.capture())).doReturn(MEMBER_CONTEXT_BYTES)
+        postConfigChangedEvent()
+        val testProperties =
+            context + mapOf(
+                "corda.roles.0" to "notary",
+                "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
+                "corda.notary.keys.0.id" to NOTARY_KEY_ID,
+            )
+        registrationService.start()
+
+        registrationService.register(registrationResultId, member, testProperties)
+
+        assertThat(memberContext.firstValue.toMap())
+            .containsEntry("corda.roles.0", "notary")
+            .containsKey("corda.notary.service.name")
+            .containsEntry("corda.notary.keys.0.id", "4")
+            .containsEntry("corda.notary.keys.0.pem", "1234")
+            .containsKey("corda.notary.keys.0.hash")
+            .containsEntry("corda.notary.keys.0.signature.spec", "SHA256withECDSA")
+    }
+
+    @Test
+    fun `registration fails when notary service is invalid`() {
+        postConfigChangedEvent()
+        val testProperties =
+            context + mapOf(
+                "corda.roles" to "notary",
+                "corda.notary.service.name" to "Hello world",
+            )
+        registrationService.start()
+
+        val result = registrationService.register(registrationResultId, member, testProperties)
+
+        assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+    }
+
+    @Test
+    fun `registration pass when notary service is valid`() {
+        postConfigChangedEvent()
+        val testProperties =
+            context + mapOf(
+                "corda.roles.0" to "notary",
+                "corda.notary.service.name" to "O=MyNotaryService, L=London, C=GB",
+            )
+        registrationService.start()
+
+        val result = registrationService.register(registrationResultId, member, testProperties)
+
+        assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.SUBMITTED)
     }
 
     @Test

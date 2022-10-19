@@ -1,6 +1,5 @@
 package net.corda.membership.impl.registration
 
-import net.corda.crypto.core.CryptoConsts.Categories.NOTARY
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_PEM
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
@@ -41,10 +40,10 @@ internal sealed class MemberRole {
         }
 
         fun Collection<MemberRole>.toMemberInfo(
-            keysFactory: KeysFactory,
+            notariesKeysFactory: () -> List<KeyDetails>,
         ): Collection<Pair<String, String>> {
             return this.flatMapIndexed { index, role ->
-                role.toMemberInfo(keysFactory, index)
+                role.toMemberInfo(notariesKeysFactory, index)
             }
         }
 
@@ -59,7 +58,7 @@ internal sealed class MemberRole {
     }
 
     protected abstract fun toMemberInfo(
-        keysFactory: KeysFactory,
+        notariesKeysFactory: () -> List<KeyDetails>,
         index: Int,
     ): Collection<Pair<String, String>>
 
@@ -68,17 +67,20 @@ internal sealed class MemberRole {
         val plugin: String?,
     ) : MemberRole() {
         override fun toMemberInfo(
-            keysFactory: KeysFactory,
+            notariesKeysFactory: () -> List<KeyDetails>,
             index: Int,
         ): Collection<Pair<String, String>> {
-            val key = keysFactory.getOrGenerateKeyPair(NOTARY)
-            return listOf(
+            val keys = notariesKeysFactory().flatMapIndexed { keyIndex, key ->
+                listOf(
+                    String.format(NOTARY_KEY_PEM, keyIndex) to key.pem,
+                    String.format(NOTARY_KEY_HASH, keyIndex) to key.hash.toString(),
+                    String.format(NOTARY_KEY_SPEC, keyIndex) to key.spec.signatureName,
+                )
+            }
+            return keys + listOf(
                 "$ROLES_PREFIX$index" to NOTARY_ROLE,
                 NOTARY_SERVICE_NAME to serviceName.toString(),
-                String.format(NOTARY_KEY_PEM, index) to key.pem,
-                String.format(NOTARY_KEY_HASH, index) to key.hash.toString(),
-                String.format(NOTARY_KEY_SPEC, index) to key.spec.signatureName,
-            ) + if(plugin == null ){
+            ) + if (plugin == null) {
                 emptyList()
             } else {
                 listOf(

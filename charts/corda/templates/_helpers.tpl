@@ -70,6 +70,17 @@ Worker name
 {{- end }}
 
 {{/*
+Worker annotations
+*/}}
+{{- define "corda.workerAnnotations" -}}
+{{ if .Values.metrics.scrape -}}
+prometheus.io/scrape: "true"
+prometheus.io/path: /metrics
+prometheus.io/port: "7000"
+{{- end }}
+{{- end }}
+
+{{/*
 Worker common labels
 */}}
 {{- define "corda.workerLabels" -}}
@@ -183,7 +194,9 @@ Worker environment variables
       apiVersion: v1
       fieldPath: metadata.namespace
 - name: JAVA_TOOL_OPTIONS
-  value: {{- if ( get .Values.workers .worker ).debug.enabled }}
+  value:
+    {{ ( get .Values.workers .worker ).javaOptions }}
+    {{- if ( get .Values.workers .worker ).debug.enabled }}
       -agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend={{ if ( get .Values.workers .worker ).debug.suspend }}y{{ else }}n{{ end }}
     {{- end -}}
     {{- if  ( get .Values.workers .worker ).profiling.enabled }}
@@ -198,19 +211,6 @@ Worker environment variables
     {{- end -}}
     {{- if .Values.kafka.sasl.enabled }}
       -Djava.security.auth.login.config=/etc/config/jaas.conf
-    {{- end -}}
-    {{- if .Values.openTelemetry.enabled }}
-      -javaagent:/opt/override/opentelemetry-javaagent-1.15.0.jar
-      -Dotel.resource.attributes=service.name={{ .worker }}-worker,k8s.namespace.name=$(K8S_NAMESPACE),k8s.node.name=$(K8S_NODE_NAME),k8s.pod.name=$(K8S_POD_NAME),k8s.pod.uid=$(K8S_POD_UID)
-      -Dotel.instrumentation.common.default-enabled=false
-      -Dotel.instrumentation.runtime-metrics.enabled=true
-      {{- if .Values.openTelemetry.endpoint }}
-      -Dotel.exporter.otlp.endpoint={{ .Values.openTelemetry.endpoint }}
-      -Dotel.exporter.otlp.protocol={{ .Values.openTelemetry.protocol }}
-      {{- else }}
-      -Dotel.metrics.exporter=logging
-      -Dotel.traces.exporter=logging
-      {{- end -}}
     {{- end }}
 - name: LOG4J_CONFIG_FILE
   value: "log4j2-console{{ if eq .Values.logging.format "json" }}-json{{ end }}.xml"

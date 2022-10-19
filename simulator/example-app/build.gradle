@@ -1,6 +1,6 @@
 
 plugins {
-    id 'net.corda.plugins.cordapp-cpb'
+    id 'net.corda.plugins.cordapp-cpb2'
     id 'org.jetbrains.kotlin.plugin.jpa'
     id 'org.jetbrains.kotlin.plugin.allopen'
 }

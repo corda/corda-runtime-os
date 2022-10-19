@@ -40,6 +40,4 @@ dependencies {
         exclude group: 'org.apache.felix'
         exclude group: 'org.osgi'
     }
-
-    dockerImage "io.opentelemetry.javaagent:opentelemetry-javaagent:$openTelemetryVersion"
 }

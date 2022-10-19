@@ -1,6 +1,7 @@
 package net.corda.membership.p2p.helpers
 
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.cipher.suite.schemes.EDDSA_ED25519_TEMPLATE
 import net.corda.v5.cipher.suite.schemes.GOST3410_GOST3411_TEMPLATE
@@ -17,8 +18,11 @@ class KeySpecExtractor(
     private val tenantId: String,
     private val cryptoOpsClient: CryptoOpsClient,
 ) {
-    private companion object {
-        val defaultCodeNameToSpec = mapOf(
+    companion object {
+        val CryptoSigningKey.spec: SignatureSpec?
+            get() = defaultCodeNameToSpec[schemeCodeName]
+
+        private val defaultCodeNameToSpec = mapOf(
             ECDSA_SECP256K1_CODE_NAME to SignatureSpec.ECDSA_SHA256,
             ECDSA_SECP256R1_CODE_NAME to SignatureSpec.ECDSA_SHA256,
             EDDSA_ED25519_TEMPLATE to SignatureSpec.EDDSA_ED25519,
@@ -34,7 +38,6 @@ class KeySpecExtractor(
             tenantId,
             listOf(publicKey.publicKeyId()),
         ).firstOrNull() ?: throw CordaRuntimeException("Public key is not owned by $tenantId")
-        return defaultCodeNameToSpec[keyInfo.schemeCodeName]
-            ?: throw CordaRuntimeException("Can not find spec for ${keyInfo.schemeCodeName}")
+        return keyInfo.spec ?: throw CordaRuntimeException("Can not find spec for ${keyInfo.schemeCodeName}")
     }
 }

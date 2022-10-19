@@ -17,6 +17,13 @@ const val X500_ALICE = "CN=Alice, OU=Application, O=R3, L=London, C=GB"
 const val X500_CHARLIE = "CN=Charlie, OU=Application, O=R3, L=Dublin, C=IE"
 const val X500_DAVID = "CN=David, OU=Application, O=R3, L=Dublin, C=IE"
 
+val TEST_STATIC_MEMBER_LIST: List<String> = listOf(
+    X500_ALICE,
+    X500_BOB,
+    X500_CHARLIE,
+    X500_DAVID
+)
+
 const val USERNAME = "admin"
 const val PASSWORD = "admin"
 const val GROUP_ID = "7c5d6948-e17b-44e7-9d1c-fa4a3f667cad"

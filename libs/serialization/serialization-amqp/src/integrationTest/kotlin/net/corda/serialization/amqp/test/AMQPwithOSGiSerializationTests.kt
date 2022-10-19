@@ -141,6 +141,46 @@ class AMQPwithOSGiSerializationTests {
     }
 
     @Test
+    fun `same class gets loaded from different class loaders when deserialized from different sandbox groups`() {
+        val sandboxGroup1 = sandboxFactory.loadSandboxGroup("META-INF/TestSerializable4-workflows.cpb")
+        val sandboxGroup2 = sandboxFactory.loadSandboxGroup("META-INF/TestSerializable4-workflows.cpb")
+        try {
+            // Initialised two serialisation factories to avoid having successful tests due to caching
+            val factory1 = testDefaultFactory(sandboxGroup1)
+            val factory11 = testDefaultFactory(sandboxGroup1)
+            val factory2 = testDefaultFactory(sandboxGroup2)
+
+            // Initialise two different serialization contexts one per sandbox group
+            val testSerializationContext1 = testSerializationContext.withSandboxGroup(sandboxGroup1)
+            val testSerializationContext2 = testSerializationContext.withSandboxGroup(sandboxGroup2)
+
+            // Serialise our object using `sandboxGroup1` context
+            val cashClass = sandboxGroup1.loadClassFromMainBundles("net.cordapp.bundle1.Cash")
+            val cashInstance = cashClass.getConstructor(Int::class.java).newInstance(100)
+            val serialised = SerializationOutput(factory1).serialize(cashInstance, testSerializationContext1)
+
+            // Perform deserialisations and check if the correct classes are deserialised
+            val deserialised1 =
+                DeserializationInput(factory11).deserializeAndReturnEnvelope(serialised, testSerializationContext1)
+            val deserialised2 =
+                DeserializationInput(factory2).deserializeAndReturnEnvelope(serialised, testSerializationContext2)
+
+            val expectedClass2 = sandboxGroup2.loadClassFromMainBundles("net.cordapp.bundle1.Cash")
+            val deserialisedClass1 = deserialised1.obj::class.java
+            val deserialisedClass2 = deserialised2.obj::class.java
+            val classLoader1 = deserialisedClass1.classLoader
+            val classLoader2 = deserialisedClass2.classLoader
+            assertThat(cashClass).isEqualTo(deserialisedClass1)
+            assertThat(expectedClass2).isEqualTo(deserialisedClass2)
+            assertThat(deserialisedClass1).isNotEqualTo(deserialisedClass2)
+            assertThat(classLoader1).isNotEqualTo(classLoader2)
+        } finally {
+            sandboxFactory.unloadSandboxGroup(sandboxGroup1)
+            sandboxFactory.unloadSandboxGroup(sandboxGroup2)
+        }
+    }
+
+    @Test
     fun `amqp to be serialized objects can only live in cpk's main bundle`() {
         val sandboxGroup = sandboxFactory.loadSandboxGroup("META-INF/TestSerializableCpk-using-lib.cpb")
         try {

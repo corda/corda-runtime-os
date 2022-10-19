@@ -9,8 +9,8 @@ description 'Corda Packaging'
 
 allprojects {
     ext {
-        contractSymbolicName = 'net.corda.packaging.test.contract'
-        workflowSymbolicName = 'net.corda.packaging.test.workflow'
+        contractSymbolicName = 'net.cordapp.packaging.test.contract'
+        workflowSymbolicName = 'net.cordapp.packaging.test.workflow'
     }
 }
 
@@ -71,12 +71,12 @@ tasks.named('test', Test) {
 
     doFirst {
         systemProperties([
-            'net.corda.packaging.test.workflow.libs' : configurations.workflowLibs.collect { it.toURI() }.join(' '),
-            'net.corda.packaging.test.contract.cpk' : configurations.contractCPK.singleFile.toURI(),
-            'net.corda.packaging.test.workflow.cpk' : configurations.workflowCPK.singleFile.toURI(),
-            'net.corda.packaging.test.contract.bundle.symbolic.name': contractSymbolicName,
-            'net.corda.packaging.test.contract.bundle.version' : MavenVersion.parseMavenString(version.toString()).OSGiVersion,
-            'net.corda.packaging.test.workflow.cordapp' : configurations.workflow.singleFile.toURI()
+            'net.cordapp.packaging.test.workflow.libs' : configurations.workflowLibs.collect { it.toURI() }.join(' '),
+            'net.cordapp.packaging.test.contract.cpk' : configurations.contractCPK.singleFile.toURI(),
+            'net.cordapp.packaging.test.workflow.cpk' : configurations.workflowCPK.singleFile.toURI(),
+            'net.cordapp.packaging.test.contract.bundle.symbolic.name': contractSymbolicName,
+            'net.cordapp.packaging.test.contract.bundle.version' : MavenVersion.parseMavenString(version.toString()).OSGiVersion,
+            'net.cordapp.packaging.test.workflow.cordapp' : configurations.workflow.singleFile.toURI()
         ])
     }
 }

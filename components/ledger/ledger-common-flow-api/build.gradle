@@ -1,0 +1,19 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Corda ledger common - flow api'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    implementation "net.corda:corda-application"
+    implementation "net.corda:corda-crypto"
+    implementation "net.corda:corda-base"
+
+    implementation project(":libs:ledger:ledger-common-data")
+}
