@@ -41,10 +41,10 @@ class ConsensualLedgerPersistenceServiceImpl  @Activate constructor(
     @Reference(service = CpiInfoReadService::class)
     private val cpiInfoReadService: CpiInfoReadService,
     @Reference(service = ConsensualLedgerProcessorFactory::class)
-    private val entityProcessorFactory: ConsensualLedgerProcessorFactory
+    private val ledgerProcessorFactory: ConsensualLedgerProcessorFactory
 ) : ConsensualLedgerPersistenceService {
     private var configHandle: Resource? = null
-    private var entityProcessor: ConsensualLedgerProcessor? = null
+    private var ledgerProcessor: ConsensualLedgerProcessor? = null
 
     companion object {
         private val logger = contextLogger()
@@ -75,17 +75,17 @@ class ConsensualLedgerPersistenceServiceImpl  @Activate constructor(
                 }
             }
             is ConfigChangedEvent -> {
-                entityProcessor?.stop()
-                val newEntityProcessor = entityProcessorFactory.create(
+                ledgerProcessor?.stop()
+                val newLedgerProcessor = ledgerProcessorFactory.create(
                     event.config.getConfig(MESSAGING_CONFIG)
                 )
                 logger.debug("Starting LedgerPersistenceService.")
-                newEntityProcessor.start()
-                entityProcessor = newEntityProcessor
+                newLedgerProcessor.start()
+                ledgerProcessor = newLedgerProcessor
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
             is StopEvent -> {
-                entityProcessor?.stop()
+                ledgerProcessor?.stop()
                 logger.debug { "Stopping LedgerPersistenceService." }
             }
         }

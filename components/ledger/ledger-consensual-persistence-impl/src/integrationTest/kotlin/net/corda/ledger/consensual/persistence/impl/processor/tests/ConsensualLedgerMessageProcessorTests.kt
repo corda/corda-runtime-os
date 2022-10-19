@@ -207,8 +207,8 @@ class ConsensualLedgerMessageProcessorTests {
 
         val testId = (0..1000000).random() // keeping this shorter than UUID.
         val schemaName = "consensual_ledger_test_$testId"
-        val animalDbConnection = Pair(virtualNodeInfo.vaultDmlConnectionId, "animals-node-$testId")
-        val dbConnectionManager = FakeDbConnectionManager(listOf(animalDbConnection), schemaName)
+        val dbConnection = Pair(virtualNodeInfo.vaultDmlConnectionId, "connection-1")
+        val dbConnectionManager = FakeDbConnectionManager(listOf(dbConnection), schemaName)
 
         val componentContext = Mockito.mock(ComponentContext::class.java)
         whenever(componentContext.locateServices(INTERNAL_CUSTOM_SERIALIZERS))
@@ -237,16 +237,16 @@ class ConsensualLedgerMessageProcessorTests {
             )
         )
 
-        lbm.updateDb(dbConnectionManager.getDataSource(animalDbConnection.first).connection, vaultSchema)
+        lbm.updateDb(dbConnectionManager.getDataSource(dbConnection.first).connection, vaultSchema)
 
         return DbTestContext(
             virtualNodeInfo,
             entitySandboxService,
             sandbox,
             dbConnectionManager.createEntityManagerFactory(
-                animalDbConnection.first,
+                dbConnection.first,
                 JpaEntitiesSet.create(
-                    animalDbConnection.second,
+                    dbConnection.second,
                     setOf()
                 )
             ),
