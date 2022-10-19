@@ -70,9 +70,9 @@ import kotlin.reflect.full.createInstance
  *
  * Also, in order to run the Intellij Code Coverage feature, you may need to exclude the following types to avoid
  * Hibernate related errors.
- *  org.hibernate.hql.internal.antlr.HqlTokenTypes
- *  org.hibernate.hql.internal.antlr.SqlTokenTypes
- *  org.hibernate.sql.ordering.antlr.GeneratedOrderByFragmentRendererTokenTypes
+ *  - org.hibernate.hql.internal.antlr.HqlTokenTypes
+ *  - org.hibernate.hql.internal.antlr.SqlTokenTypes
+ *  - org.hibernate.sql.ordering.antlr.GeneratedOrderByFragmentRendererTokenTypes
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class JPABackingStoreImplIntegrationTests {
@@ -132,7 +132,7 @@ class JPABackingStoreImplIntegrationTests {
             })
     }
 
-    private fun createEntityManagerFactory(persistenceUnitName: String): EntityManagerFactory {
+    private fun createEntityManagerFactory(persistenceUnitName: String = "uniqueness"): EntityManagerFactory {
         return EntityManagerFactoryFactoryImpl().create(
             persistenceUnitName, JPABackingStoreEntities.classes.toList(), dbConfig
         )
@@ -571,7 +571,7 @@ class JPABackingStoreImplIntegrationTests {
         // Review with CORE-4983 for different types of exceptions such as QueryTimeoutException.
         @Test
         fun `Exceptions thrown while querying triggers retry`() {
-            val emFactory = createEntityManagerFactory("uniqueness")
+            val emFactory = createEntityManagerFactory()
             val spyEmFactory = Mockito.spy(emFactory)
             val em = spyEmFactory.createEntityManager()
             val spyEm = Mockito.spy(em)
@@ -603,7 +603,7 @@ class JPABackingStoreImplIntegrationTests {
                 OptimisticLockException::class]
         )
         fun `Persistence errors raised while persisting triggers retry`(e: Class<Exception>) {
-            val emFactory = createEntityManagerFactory("uniqueness")
+            val emFactory = createEntityManagerFactory()
             val spyEmFactory = Mockito.spy(emFactory)
             val em = spyEmFactory.createEntityManager()
             val spyEm = Mockito.spy(em)
@@ -625,7 +625,7 @@ class JPABackingStoreImplIntegrationTests {
 
         @Test
         fun `Transaction rollback gets triggered if transaction is active for an unexpected exception type`() {
-            val emFactory = createEntityManagerFactory("uniqueness")
+            val emFactory = createEntityManagerFactory()
             val spyEmFactory = Mockito.spy(emFactory)
             val em = emFactory.createEntityManager()
             val spyEm = Mockito.spy(em)
@@ -651,7 +651,7 @@ class JPABackingStoreImplIntegrationTests {
 
     @Test
     fun `Session always creates a new entity manager`() {
-        val emFactory = createEntityManagerFactory("uniqueness")
+        val emFactory = createEntityManagerFactory()
         val spyEmFactory = Mockito.spy(emFactory)
 
         val storeImpl = createBackingStoreImpl(spyEmFactory)
