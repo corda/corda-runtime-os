@@ -208,9 +208,9 @@ class FlowSandboxServiceImpl @Activate constructor(
         }
         // Build CorDapp serializers
         // Current implementation has unique serializers per CPI
-        val cordappCustomSerializers = buildCorDappSerializers<SerializationCustomSerializer<*, *>>(
+        val cordappCustomSerializers = buildCorDappSerializers(
             sandboxGroup,
-            cpiMetadata.cpksMetadata.flatMap { it.cordappManifest.serializers }.toSet()
+            serializerClassNames = cpiMetadata.cpksMetadata.flatMap { it.cordappManifest.serializers }.toSet()
         )
         // Register CorDapp serializers
         for (customSerializer in cordappCustomSerializers) {
@@ -230,20 +230,14 @@ class FlowSandboxServiceImpl @Activate constructor(
         putObjectByKey(FlowSandboxGroupContextImpl.AMQP_P2P_SERIALIZATION_SERVICE, p2pSerializationService)
     }
 
-    private inline fun <reified T : Any> buildCorDappSerializers(
+    private fun buildCorDappSerializers(
         sandboxGroup: SandboxGroup,
         serializerClassNames: Set<String>,
-    ): List<T> = buildCorDappSerializers(sandboxGroup, serializerClassNames, T::class.java)
-
-    private fun <T : Any> buildCorDappSerializers(
-        sandboxGroup: SandboxGroup,
-        serializerClassNames: Set<String>,
-        type: Class<T>
-    ): List<T> {
+    ): List<SerializationCustomSerializer<*, *>> {
         return serializerClassNames.map { serializerClassName ->
             sandboxGroup.loadClassFromMainBundles(
                 serializerClassName,
-                type
+                SerializationCustomSerializer::class.java
             ).getConstructor().newInstance()
         }
     }
