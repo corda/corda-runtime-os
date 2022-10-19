@@ -1,5 +1,6 @@
 package net.corda.crypto.client
 
+import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
@@ -47,7 +48,7 @@ interface CryptoOpsClient : Lifecycle {
      *
      * @return The public part of the pair.
      */
-    @Throws(KeyAlreadyExistsException::class)
+    @Throws(KeyAlreadyExistsException::class, InvalidParamsException::class)
     fun generateKeyPair(
         tenantId: String,
         category: String,
@@ -69,7 +70,7 @@ interface CryptoOpsClient : Lifecycle {
      *
      * @return The public part of the pair.
      */
-    @Throws(KeyAlreadyExistsException::class)
+    @Throws(KeyAlreadyExistsException::class, InvalidParamsException::class)
     @Suppress("LongParameterList")
     fun generateKeyPair(
         tenantId: String,
