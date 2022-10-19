@@ -139,12 +139,8 @@ class WireTransaction(
     }
 
     private fun parseMetadata(json: String): TransactionMetaData {
-        makeJsonValidator().validate(json)
+        JsonValidatorImpl().validate(json, schemaPath = "/schema/transaction-metadata-v1.json")
         return jsonMarshallingService.parse(json, TransactionMetaData::class.java)
-    }
-
-    private fun makeJsonValidator(): JsonValidator {
-        return JsonValidatorImpl(schemaPath = "/schema/transaction-metadata-v1.json")
     }
 
     override fun equals(other: Any?): Boolean {

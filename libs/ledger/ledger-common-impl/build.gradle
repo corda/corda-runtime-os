@@ -21,11 +21,12 @@ dependencies {
     implementation project(":libs:layered-property-map")
     implementation project(":libs:serialization:serialization-internal")
     implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"
+    implementation "io.github.erdtman:java-json-canonicalization:$jsonCanonicalizerVersion"
 
     testImplementation project(":testing:layered-property-map-testkit")
     testImplementation project(":libs:membership:membership-common")
     testImplementation project(":testing:kryo-serialization-testkit")
-    testImplementation project(':testing:ledger:ledger-common-testkit')
+    testImplementation project(":testing:ledger:ledger-common-testkit")
     testImplementation project(":libs:serialization:serialization-kryo")
     testImplementation project(":libs:crypto:merkle-impl")
     testImplementation project(":libs:crypto:cipher-suite-impl")

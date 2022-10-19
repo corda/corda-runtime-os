@@ -1,5 +1,7 @@
 package net.corda.ledger.consensual.impl.transaction
 
+import net.corda.ledger.common.impl.transaction.JsonValidator
+import net.corda.ledger.common.impl.transaction.JsonValidatorImpl
 import net.corda.ledger.common.impl.transaction.PrivacySaltImpl
 import net.corda.ledger.common.impl.transaction.TransactionMetaData
 import net.corda.ledger.common.impl.transaction.WireTransaction
@@ -33,6 +35,8 @@ class ConsensualTransactionBuilderImpl(
     private val transactionMetaData: TransactionMetaData,
     override val states: List<ConsensualState> = emptyList(),
 ) : ConsensualTransactionBuilder {
+
+    private val validator: JsonValidator = JsonValidatorImpl()
 
     override fun withStates(vararg states: ConsensualState): ConsensualTransactionBuilder =
         this.copy(states = this.states + states)
@@ -115,9 +119,8 @@ class ConsensualTransactionBuilderImpl(
         return componentGroupLists
     }
 
-    private fun serializeMetadata(): String {
-        return jsonMarshallingService.format(transactionMetaData)
-    }
+    private fun serializeMetadata(): String =
+        validator.canonicalize(jsonMarshallingService.format(transactionMetaData))
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
