@@ -80,9 +80,8 @@ object CordaMetrics {
             return this
         }
 
-        // NOTE: because T is reified, this has to be inline, which means func, name and allTags needs to be public.
-        inline fun build(): T {
-            return func(name, allTags) as T
+        fun build(): T {
+            return func(name, allTags)
         }
     }
 }

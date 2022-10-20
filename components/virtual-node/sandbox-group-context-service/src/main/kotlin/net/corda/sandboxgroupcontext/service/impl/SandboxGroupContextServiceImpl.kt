@@ -1,7 +1,6 @@
 @file:JvmName("SandboxGroupContextServiceUtils")
 package net.corda.sandboxgroupcontext.service.impl
 
-import io.micrometer.core.instrument.Timer
 import java.security.AccessControlContext
 import java.security.AccessControlException
 import java.util.Collections.singleton

@@ -4,8 +4,6 @@ import io.javalin.core.util.Header
 import io.javalin.http.Context
 import io.javalin.http.ForbiddenResponse
 import io.javalin.http.UnauthorizedResponse
-import io.micrometer.core.instrument.Counter
-import io.micrometer.core.instrument.Timer
 import net.corda.httprpc.security.Actor
 import net.corda.httprpc.security.AuthorizingSubject
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
@@ -94,10 +92,10 @@ internal object ContextUtils {
 
             CordaMetrics.Metric.HttpRequestCount.builder()
                 .withTag(CordaMetrics.Tag.Address, "${ctx.method()} ${ctx.path()}")
-                .build<Counter>().increment()
+                .build().increment()
             val requestTimer = CordaMetrics.Metric.HttpRequestTime.builder()
                 .withTag(CordaMetrics.Tag.Address, "${ctx.method()} ${ctx.path()}")
-                .build<Timer>()
+                .build()
             requestTimer.recordCallable {
                 try {
                     validateRequestContentType(this, ctx)

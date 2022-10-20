@@ -1,6 +1,5 @@
 package net.corda.metrics
 
-import io.micrometer.core.instrument.Counter
 import io.micrometer.core.instrument.MeterRegistry
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -27,7 +26,7 @@ class CordaMetricsTest {
         val meter = CordaMetrics.Metric.HttpRequestCount
             .builder()
             .withTag(CordaMetrics.Tag.Address, "blah")
-            .build<Counter>()
+            .build()
         assertThat(meter.id.tags.map { Pair(it.key, it.value) })
             .contains(Pair(CordaMetrics.Tag.Address.value, "blah"))
     }
@@ -37,14 +36,14 @@ class CordaMetricsTest {
         val meter = CordaMetrics.Metric.HttpRequestCount
             .builder()
             .forVirtualNode("ABC")
-            .build<Counter>()
+            .build()
         assertThat(meter.id.tags.map { Pair(it.key, it.value) })
             .contains(Pair(CordaMetrics.Tag.VirtualNode.value, "ABC"))
     }
 
     @Test
     fun `create http counter sets name`() {
-        val meter = CordaMetrics.Metric.HttpRequestCount.builder().build<Counter>()
+        val meter = CordaMetrics.Metric.HttpRequestCount.builder().build()
         assertThat(meter.id.name).isEqualTo(CordaMetrics.Metric.HttpRequestCount.metricsName)
         assertThat(meter.id.tags.map { Pair(it.key, it.value) })
             .contains(Pair(CordaMetrics.Tag.WorkerType.value, meterSourceName))
