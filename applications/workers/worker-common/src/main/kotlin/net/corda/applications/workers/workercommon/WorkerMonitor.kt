@@ -12,7 +12,7 @@ package net.corda.applications.workers.workercommon
  */
 interface WorkerMonitor {
     /** Serves worker health and readiness on [port]. */
-    fun listen(port: Int)
+    fun listen(port: Int, workerType: String)
 
     /** Stops serving worker health and readiness. */
     fun stop()

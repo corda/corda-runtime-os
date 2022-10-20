@@ -3,7 +3,6 @@ package net.corda.applications.workers.workercommon.internal
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.javalin.Javalin
 import io.javalin.core.util.Header
-import io.micrometer.core.instrument.Metrics
 import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics
 import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics
 import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics
@@ -15,6 +14,7 @@ import io.micrometer.prometheus.PrometheusMeterRegistry
 import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.registry.LifecycleRegistry
+import net.corda.metrics.CordaMetrics
 import net.corda.utilities.classload.OsgiClassLoader
 import net.corda.utilities.classload.executeWithThreadContextClassLoader
 import net.corda.utilities.executeWithStdErrSuppressed
@@ -43,25 +43,23 @@ internal class WorkerMonitorImpl @Activate constructor(
     // The use of Javalin is temporary, and will be replaced in the future.
     private var server: Javalin? = null
     private val objectMapper = ObjectMapper()
-    private val prometheusRegistry: PrometheusMeterRegistry
+    private val prometheusRegistry: PrometheusMeterRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 
-    init {
-        val metricsRegistry = Metrics.globalRegistry
-
+    private fun setupMetrics(name: String) {
         logger.info("Creating Prometheus metric registry")
-        prometheusRegistry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
-        metricsRegistry.add(prometheusRegistry)
+        CordaMetrics.configure(name, prometheusRegistry)
 
-        ClassLoaderMetrics().bindTo(metricsRegistry)
-        JvmMemoryMetrics().bindTo(metricsRegistry)
-        JvmGcMetrics().bindTo(metricsRegistry)
-        ProcessorMetrics().bindTo(metricsRegistry)
-        JvmThreadMetrics().bindTo(metricsRegistry)
-        UptimeMetrics().bindTo(metricsRegistry)
+        ClassLoaderMetrics().bindTo(CordaMetrics.registry)
+        JvmMemoryMetrics().bindTo(CordaMetrics.registry)
+        JvmGcMetrics().bindTo(CordaMetrics.registry)
+        ProcessorMetrics().bindTo(CordaMetrics.registry)
+        JvmThreadMetrics().bindTo(CordaMetrics.registry)
+        UptimeMetrics().bindTo(CordaMetrics.registry)
     }
 
 
-    override fun listen(port: Int) {
+    override fun listen(port: Int, workerType: String) {
+        setupMetrics(workerType)
         server = Javalin
             .create()
             .apply { startServer(this, port) }
