@@ -1741,4 +1741,50 @@ class SessionManagerTest {
         sessionManager.stop()
         resourcesHolder.close()
     }
+
+    @Test
+    fun `sessions are refreshed even if groupInfo is missing`() {
+        whenever(outboundSessionPool.constructed().first().getSession(protocolInitiator.sessionId)).thenReturn(
+            OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
+        )
+
+        whenever(protocolInitiator.generateOurHandshakeMessage(eq(PEER_KEY.public), any())).thenReturn(mock())
+
+        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, protocolInitiator.sessionId, 4, Instant.now().toEpochMilli())
+        val responderHello = ResponderHelloMessage(header, ByteBuffer.wrap(PEER_KEY.public.encoded), ProtocolMode.AUTHENTICATED_ENCRYPTION)
+
+        sessionManager.processSessionMessage(LinkInMessage(responderHello))
+        val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
+        val session = mock<Session>()
+
+        whenever(session.sessionId).doAnswer{protocolInitiator.sessionId}
+        whenever(protocolInitiator.getSession()).thenReturn(session)
+        whenever(outboundSessionPool.constructed().last().replaceSession(eq(protocolInitiator.sessionId), any())).thenReturn(true)
+        whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
+
+        assertThat(sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))).isNull()
+        mockTimeFacilitiesProvider.advanceTime(5.days + 1.minutes)
+
+        loggingInterceptor.assertInfoContains("Outbound session sessionId" +
+                " (local=HoldingIdentity(x500Name=CN=Alice, O=Alice Corp, L=LDN, C=GB, groupId=myGroup)," +
+                " remote=HoldingIdentity(x500Name=CN=Bob, O=Bob Corp, L=LDN, C=GB, groupId=myGroup))" +
+                " timed out to refresh ephemeral keys and it will be cleaned up."
+        )
+
+        verify(sessionReplayer, times(2)).removeMessageFromReplay(
+            "${protocolInitiator.sessionId}_${InitiatorHandshakeMessage::class.java.simpleName}",
+            SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY)
+        )
+
+        verify(sessionReplayer, times(2)).removeMessageFromReplay(
+            "${protocolInitiator.sessionId}_${InitiatorHelloMessage::class.java.simpleName}",
+            SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY)
+        )
+
+        verify(outboundSessionPool.constructed().last()).replaceSession(protocolInitiator.sessionId, protocolInitiator)
+        verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
+            .publish(listOf(Record(SESSION_OUT_PARTITIONS, protocolInitiator.sessionId, null))
+            )
+    }
+
 }
