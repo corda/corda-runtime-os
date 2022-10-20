@@ -92,7 +92,7 @@ db:
     # -- tag for image containing a db client, used to set up the db
     tag: "14.4"
 
-# Kafka 
+# Kafka configuration
 kafka:
   # -- comma-separated list of Kafka bootstrap servers (required)
   bootstrapServers: ""
