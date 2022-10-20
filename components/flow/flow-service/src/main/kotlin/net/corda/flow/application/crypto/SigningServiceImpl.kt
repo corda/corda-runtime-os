@@ -33,4 +33,14 @@ class SigningServiceImpl @Activate constructor(
             SignParameters(bytes, keyEncodingService.encodeAsByteArray(publicKey), signatureSpec)
         )
     }
+
+    @Suspendable
+    override fun sign(bytes: ByteArray, publicKey: PublicKey): Pair<DigitalSignature.WithKey, SignatureSpec> {
+        val digitalSignatureWithKey = externalEventExecutor.execute(
+            CreateSignatureExternalEventFactory::class.java,
+            SignParameters(bytes, keyEncodingService.encodeAsByteArray(publicKey), null)
+        )
+
+        return digitalSignatureWithKey to SignatureSpec("")
+    }
 }

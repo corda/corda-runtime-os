@@ -44,7 +44,7 @@ interface CryptoFlowOpsTransformer {
         requestId: String,
         tenantId: String,
         encodedPublicKeyBytes: ByteArray,
-        signatureSpec: SignatureSpec,
+        signatureSpec: SignatureSpec?,
         data: ByteArray,
         context: Map<String, String> = EMPTY_CONTEXT,
         flowExternalEventContext: ExternalEventContext

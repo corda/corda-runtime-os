@@ -70,7 +70,7 @@ class CryptoFlowOpsTransformerImpl(
         requestId: String,
         tenantId: String,
         encodedPublicKeyBytes: ByteArray,
-        signatureSpec: SignatureSpec,
+        signatureSpec: SignatureSpec?,
         data: ByteArray,
         context: Map<String, String>,
         flowExternalEventContext: ExternalEventContext
@@ -80,7 +80,7 @@ class CryptoFlowOpsTransformerImpl(
             tenantId = tenantId,
             request = SignFlowCommand(
                 ByteBuffer.wrap(encodedPublicKeyBytes),
-                signatureSpec.toWire(serializer),
+                signatureSpec?.toWire(serializer),
                 ByteBuffer.wrap(data),
                 context.toWire()
             ),
