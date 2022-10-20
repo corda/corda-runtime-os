@@ -14,6 +14,7 @@ import net.corda.membership.read.MembershipGroupReaderProvider
 import net.corda.serialization.checkpoint.CheckpointSerializer
 import net.corda.virtualnode.toCorda
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.mock
@@ -34,9 +35,14 @@ class FlowFiberExecutionContextFactoryImplTest {
     )
 
     val mdcMock = Mockito.mockStatic(MDC::class.java).also {
-        it.`when`<Map<String,String>> {
+        it.`when`<Map<String, String>> {
             MDC.getCopyOfContextMap()
         }.thenReturn(emptyMap())
+    }
+
+    @AfterEach
+    fun setup() {
+        mdcMock.close()
     }
 
     @Test
