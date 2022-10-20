@@ -28,6 +28,8 @@ import net.corda.serialization.checkpoint.factory.CheckpointSerializerBuilderFac
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.marshalling.json.JsonDeserializer
 import net.corda.v5.application.marshalling.json.JsonSerializer
+import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.loggerFor
 import net.corda.v5.serialization.SerializationCustomSerializer
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -41,7 +43,6 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ReferenceCardinality.MULTIPLE
 import org.osgi.service.component.annotations.ReferencePolicy.DYNAMIC
-import java.lang.reflect.ParameterizedType
 
 @Suppress("LongParameterList")
 @Component(
@@ -258,48 +259,51 @@ class FlowSandboxServiceImpl @Activate constructor(
     }
 
     private fun MutableSandboxGroupContext.registerCustomJsonSerialization() {
-        val serializationCustomizer =
-            sandboxGroup.getOsgiServiceByClass<JsonMarshallingService>() as? SerializationCustomizer
-
-        if (serializationCustomizer == null) {
-            log.error(
-                "registerCustomJsonSerialization failed: JsonMarshallingService does not exist or does not support custom serialization"
-            )
+        val jsonMarshallingService = sandboxGroup.getOsgiServiceByClass<JsonMarshallingService>()
+        if (jsonMarshallingService == null) {
+            log.debug { "JsonMarshallingService not required by this sandbox, skipping custom serialization scanning" }
             return
         }
 
+        val serializationCustomizer = jsonMarshallingService as? SerializationCustomizer
+        if (serializationCustomizer == null) {
+            log.error("registerCustomJsonSerialization failed: JsonMarshallingService does not support custom serialization")
+            return
+        }
+
+        val sandboxJsonSerializationManager = SandboxJsonSerializationManager(this, serializationCustomizer)
+
         // Add platform serialization support first, so that it takes precedence over user custom serialization
-        componentContext.fetchServices<JsonSerializer<*>>(INTERNAL_CUSTOM_JSON_SERIALIZERS).forEach {
-            serializationCustomizer.setSerializer(it, extractJsonSerializingType(it, sandboxGroup))
+        componentContext.fetchServices<JsonSerializer<*>>(INTERNAL_CUSTOM_JSON_SERIALIZERS).forEach { jsonSerializer ->
+            sandboxJsonSerializationManager.setSerializer(jsonSerializer) { errorMessage ->
+                throw CordaRuntimeException(
+                    "registerCustomJsonSerialization failed: ${jsonSerializer::class.java.canonicalName} $errorMessage"
+                )
+            }
         }
-        componentContext.fetchServices<JsonDeserializer<*>>(INTERNAL_CUSTOM_JSON_DESERIALIZERS).forEach {
-            serializationCustomizer.setDeserializer(it, extractJsonSerializingType(it, sandboxGroup))
-        }
+        componentContext.fetchServices<JsonDeserializer<*>>(INTERNAL_CUSTOM_JSON_DESERIALIZERS)
+            .forEach { jsonDeserializer ->
+                sandboxJsonSerializationManager.setDeserializer(jsonDeserializer) { errorMessage ->
+                    throw CordaRuntimeException(
+                        "registerCustomJsonSerialization failed: ${jsonDeserializer::class.java.canonicalName} $errorMessage"
+                    )
+                }
+            }
 
-        // User custom serialization support
-        getObjectByKey<Iterable<JsonSerializer<*>>>(JsonSerializer::class.java.name)?.forEach {
-            serializationCustomizer.setSerializer(it, extractJsonSerializingType(it, sandboxGroup))
+        // User custom serialization support, no exceptions thrown so user code doesn't kill the flow service
+        getObjectByKey<Iterable<JsonSerializer<*>>>(JsonSerializer::class.java.name)?.forEach { jsonSerializer ->
+            sandboxJsonSerializationManager.setSerializer(jsonSerializer) { errorMessage ->
+                log.error(
+                    "registerCustomJsonSerialization failed: ${jsonSerializer::class.java.canonicalName} $errorMessage"
+                )
+            }
         }
-        getObjectByKey<Iterable<JsonDeserializer<*>>>(JsonDeserializer::class.java.name)?.forEach {
-            serializationCustomizer.setDeserializer(it, extractJsonSerializingType(it, sandboxGroup))
-        }
-    }
-
-    private inline fun <reified T : Any> extractJsonSerializingType(jsonSerializer: T, sandboxGroup: SandboxGroup): Class<*> {
-        val types = jsonSerializer::class.java.genericInterfaces
-            .filterIsInstance<ParameterizedType>()
-            .filter { it.rawType === T::class.java }
-            .flatMap { it.actualTypeArguments.asList() }
-        if (types.size != 1) {
-            throw IllegalStateException("Unable to determine serializing type from ${jsonSerializer::class.java.canonicalName}")
-        }
-
-        return try {
-            // Try to find the target type for serialization in the default class loaders
-            Class.forName(types.first().typeName)
-        } catch (e: ClassNotFoundException) {
-            // Otherwise look for it in the bundles
-            sandboxGroup.loadClassFromMainBundles(types.first().typeName, Any::class.java)
+        getObjectByKey<Iterable<JsonDeserializer<*>>>(JsonDeserializer::class.java.name)?.forEach { jsonDeserializer ->
+            sandboxJsonSerializationManager.setDeserializer(jsonDeserializer) { errorMessage ->
+                log.error(
+                    "registerCustomJsonSerialization failed: ${jsonDeserializer::class.java.canonicalName} $errorMessage"
+                )
+            }
         }
     }
 
