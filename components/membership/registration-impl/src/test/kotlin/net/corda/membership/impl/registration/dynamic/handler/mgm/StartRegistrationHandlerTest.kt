@@ -107,7 +107,7 @@ class StartRegistrationHandlerTest {
     private val memberMemberContext: MemberContext = mock {
         on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
         on { parseList(eq(ENDPOINTS), eq(EndpointInfo::class.java)) } doReturn listOf(mock())
-        on { entries } doReturn mapOf("$ROLES_PREFIX.${0}" to "notary").entries
+        on { entries } doReturn mapOf("$ROLES_PREFIX.0" to "notary").entries
     }
     private val memberMgmContext: MGMContext = mock {
         on { parse(eq(MODIFIED_TIME), eq(Instant::class.java)) } doReturn clock.instant()
@@ -391,20 +391,10 @@ class StartRegistrationHandlerTest {
             listOf(mock())
         )
         whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
-        with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
-            assertThat(updatedState).isNotNull
-            assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
-            assertThat(updatedState!!.registeringMember).isEqualTo(holdingIdentity)
-            assertThat(outputStates).isNotEmpty.hasSize(2)
 
-            assertRegistrationStarted()
-        }
-        verifyServices(
-            persistRegistrationRequest = true,
-            verify = true,
-            queryMemberInfo = true,
-            persistMemberInfo = true
-        )
+        val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+
+        result.assertRegistrationStarted()
     }
 
     @Test
@@ -415,19 +405,10 @@ class StartRegistrationHandlerTest {
             emptyList()
         )
         whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
-        with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
-            assertThat(updatedState).isNotNull
-            assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
-            assertThat(updatedState!!.registeringMember).isEqualTo(holdingIdentity)
-            assertThat(outputStates).isNotEmpty.hasSize(1)
 
-            assertDeclinedRegistration()
-        }
-        verifyServices(
-            persistRegistrationRequest = true,
-            verify = true,
-            queryMemberInfo = true,
-        )
+        val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+
+        result.assertDeclinedRegistration()
     }
 
     @Test
@@ -438,19 +419,10 @@ class StartRegistrationHandlerTest {
             listOf(mock())
         )
         whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
-        with(handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))) {
-            assertThat(updatedState).isNotNull
-            assertThat(updatedState!!.registrationId).isEqualTo(registrationId)
-            assertThat(updatedState!!.registeringMember).isEqualTo(holdingIdentity)
-            assertThat(outputStates).isNotEmpty.hasSize(1)
 
-            assertDeclinedRegistration()
-        }
-        verifyServices(
-            persistRegistrationRequest = true,
-            verify = true,
-            queryMemberInfo = true,
-        )
+        val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+
+        result.assertDeclinedRegistration()
     }
 
     private fun RegistrationHandlerResult.assertRegistrationStarted() =
