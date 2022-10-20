@@ -22,7 +22,7 @@ class ConsensualSignedTransactionImpl(
     private val serializationService: SerializationService,
     private val signingService: SigningService,
     private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
-    val wireTransaction: WireTransaction,
+    private val wireTransaction: WireTransaction,
     override val signatures: List<DigitalSignatureAndMetadata>
 ): ConsensualSignedTransaction
 {
