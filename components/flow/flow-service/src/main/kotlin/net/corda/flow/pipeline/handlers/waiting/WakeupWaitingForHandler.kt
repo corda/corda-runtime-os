@@ -5,6 +5,7 @@ import net.corda.flow.fiber.FlowContinuation
 import net.corda.flow.pipeline.FlowEventContext
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.trace
 import org.osgi.service.component.annotations.Component
 
 @Component(service = [FlowWaitingForHandler::class])
@@ -17,7 +18,7 @@ class WakeupWaitingForHandler : FlowWaitingForHandler<Wakeup> {
     override val type = Wakeup::class.java
 
     override fun runOrContinue(context: FlowEventContext<*>, waitingFor: Wakeup): FlowContinuation {
-        log.info("Waking up [${context.checkpoint.flowId}]")
+        log.trace { "Waking up [${context.checkpoint.flowId}]" }
         val pendingPlatformError = context.checkpoint.pendingPlatformError
         return if (pendingPlatformError != null) {
             FlowContinuation.Error(

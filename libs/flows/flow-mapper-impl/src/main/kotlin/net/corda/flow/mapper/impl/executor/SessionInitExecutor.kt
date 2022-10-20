@@ -12,6 +12,7 @@ import net.corda.flow.mapper.executor.FlowMapperEventExecutor
 import net.corda.libs.configuration.SmartConfig
 import net.corda.messaging.api.records.Record
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 
 @Suppress("LongParameterList")
 class SessionInitExecutor(
@@ -35,9 +36,7 @@ class SessionInitExecutor(
             processSessionInit(sessionEvent, sessionInit)
         } else {
             //duplicate
-            log.warn(
-                "Duplicate SessionInit event received. Key: $eventKey, Event: $sessionEvent"
-            )
+            log.debug { "Duplicate SessionInit event received. Key: $eventKey, Event: $sessionEvent" }
             FlowMapperResult(flowMapperState, emptyList())
         }
     }

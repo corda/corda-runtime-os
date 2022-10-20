@@ -12,6 +12,7 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.trace
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -20,7 +21,7 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.security.AccessController
 import java.security.PrivilegedActionException
 import java.security.PrivilegedExceptionAction
-import java.util.UUID
+import java.util.*
 
 @Component(service = [FlowEngine::class, SingletonSerializeAsToken::class], scope = PROTOTYPE)
 class FlowEngineImpl @Activate constructor(
@@ -58,19 +59,19 @@ class FlowEngineImpl @Activate constructor(
         getFiberExecutionContext().flowStackService.push(subFlow)
 
         try {
-            log.debug { "Calling sub-flow('$subFlowClassName')..." }
+            log.trace { "Calling sub-flow('$subFlowClassName')..." }
             val result = subFlow.call()
-            log.debug { "Sub-flow('$subFlowClassName') call completed ..." }
+            log.trace { "Sub-flow('$subFlowClassName') call completed ..." }
             /*
              * TODOs:
              * Once the session management has been implemented we can look at optimising this, only calling
              * suspend for flows that require session cleanup
              */
-            log.debug { "Suspending sub-flow('$subFlowClassName')..." }
+            log.trace { "Suspending sub-flow('$subFlowClassName')..." }
 
             finishSubFlow()
 
-            log.info("Sub-flow [$flowId] ('${subFlow.javaClass.name}') completed successfully")
+            log.debug { "Sub-flow [$flowId] ('${subFlow.javaClass.name}') completed successfully" }
             return result
         } catch (t: Throwable) {
             // Stack trace is filled in on demand. Without prodding that process, calls to suspend the flow will

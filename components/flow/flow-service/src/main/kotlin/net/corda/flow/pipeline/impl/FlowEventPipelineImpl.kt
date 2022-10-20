@@ -13,6 +13,8 @@ import net.corda.flow.pipeline.handlers.requests.FlowRequestHandler
 import net.corda.flow.pipeline.handlers.waiting.FlowWaitingForHandler
 import net.corda.flow.pipeline.runner.FlowRunner
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.trace
 import net.corda.v5.base.util.uncheckedCast
 import java.nio.ByteBuffer
 import java.util.concurrent.TimeUnit
@@ -50,7 +52,7 @@ class FlowEventPipelineImpl(
         }
 
     override fun eventPreProcessing(): FlowEventPipelineImpl {
-        log.info("Preprocessing of ${context.inputEventPayload::class.qualifiedName}...")
+        log.trace { "Preprocessing of ${context.inputEventPayload::class.qualifiedName}..." }
 
         /**
          * If the checkpoint is in a retry step and we receive a Wakeup then we
@@ -82,7 +84,7 @@ class FlowEventPipelineImpl(
 
         val handler = getFlowWaitingForHandler(waitingFor)
 
-        log.info("Run or continue using ${handler::class.java.name} when flow is waiting for $waitingFor")
+        log.debug { "Run or continue using ${handler::class.java.name} when flow is waiting for $waitingFor" }
 
         return when (val outcome = handler.runOrContinue(context, waitingFor)) {
             is FlowContinuation.Run, is FlowContinuation.Error -> {
@@ -110,7 +112,7 @@ class FlowEventPipelineImpl(
 
     override fun requestPostProcessing(): FlowEventPipelineImpl {
         output?.let {
-            log.info("Postprocessing of $output")
+            log.trace { "Postprocessing of $output" }
             context = getFlowRequestHandler(it).postProcess(context, it)
         }
         return this
