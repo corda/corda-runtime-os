@@ -51,7 +51,7 @@ nodeSelector: {}
 
 # Database configuration
 db:
-  # Cluster database configuration
+  # Cluster database 
   cluster:
     # -- the cluster database host (required)
     host: ""
@@ -60,13 +60,30 @@ db:
     # -- the cluster database port
     port: 5432
     # -- the cluster database user
-    user: user
-    # -- the name of the cluster database
-    database: cordacluster
+    user:
+      # -- the cluster username
+      value: user
+      # -- the username secret configuration
+      valueFrom: 
+        # -- the username secret key reference
+        secretkeyRef:
+          # -- the username secret name 
+          name: ""
+          # the username secret key 
+          usernameKey: ""
     # -- the cluster database password (ignored if existingSecret is set, otherwise required)
-    password: ""
-    # -- the name of an existing secret containing the cluster database password with a key of 'password'
-    existingSecret: ""
+    password: 
+      # -- the cluster passowrd
+      value: "" 
+      # -- the password secret configuration
+      valueFrom:
+        # -- the password secret key reference
+        secretkeyRef:
+          # -- the password secret name
+          name: ""
+          # -- the password secret key
+          passwordKey: ""
+    database: cordacluster
   clientImage:
     # -- registry for image containing a db client, used to set up the db
     registry: ""
@@ -75,7 +92,7 @@ db:
     # -- tag for image containing a db client, used to set up the db
     tag: "14.4"
 
-# Kafka configuration
+# Kafka 
 kafka:
   # -- comma-separated list of Kafka bootstrap servers (required)
   bootstrapServers: ""

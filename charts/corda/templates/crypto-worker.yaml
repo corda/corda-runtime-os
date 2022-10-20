@@ -39,12 +39,8 @@ spec:
           allowPrivilegeEscalation: false
         {{- include "corda.workerResources" . | nindent 8 }}
         env:
-        {{- include "corda.workerEnv" . | nindent 10 }}
-          - name: DATABASE_PASS
-            valueFrom:
-              secretKeyRef:
-                name: {{ include "corda.clusterDbSecretName" . }}
-                key: password
+        {{- include "corda.clusterDbUser" . | nindent 10 }}
+        {{- include "corda.clusterDbSecretName" . | nindent 10 }}
           - name: SALT
             valueFrom:
               secretKeyRef:
@@ -59,8 +55,8 @@ spec:
         {{- include "corda.workerKafkaArgs" . | nindent 10 }}
           - -spassphrase=$(PASSPHRASE)
           - -ssalt=$(SALT)
-          - -ddatabase.user={{ .Values.db.cluster.user }}
-          - -ddatabase.pass=$(DATABASE_PASS)
+          - -ddatabase.user=$(PGUSER)
+          - -ddatabase.pass=$(PGPASSWORD)
           - -ddatabase.jdbc.url=jdbc:postgresql://{{ required "Must specify db.cluster.host" .Values.db.cluster.host }}:{{ .Values.db.cluster.port }}/{{ .Values.db.cluster.database }}
           - -ddatabase.jdbc.directory=/opt/jdbc-driver
           - -ddatabase.pool.max_size={{ .Values.workers.crypto.clusterDbConnectionPool.maxSize }}
