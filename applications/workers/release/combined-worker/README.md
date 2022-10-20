@@ -185,8 +185,8 @@ cp ../corda-runtime-os/tools/plugins/topic-config/build/libs/topic-config-cli-pl
 ## Metrics
 
 Corda exposes Prometheus metrics.
-In order to view this metrics, when running the combined worker, you can use the configuration in  `../../../metrics`.
-See `../../../metrics/readme.md` for further documentation.
+In order to view this metrics, when running the combined worker, you can use the configuration in  `../../../../metrics`.
+See [metrics](../../../../metrics/readme.md) for further documentation.
 
 ## Security Manager
 
