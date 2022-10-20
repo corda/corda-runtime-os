@@ -71,7 +71,7 @@ db:
           name: ""
           # the username secret key 
           usernameKey: ""
-    # -- the cluster database password (ignored if existingSecret is set, otherwise required)
+    # the cluster database password configuration
     password: 
       # -- the cluster passowrd
       value: "" 
