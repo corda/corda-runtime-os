@@ -29,6 +29,7 @@ import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import java.security.PublicKey
 import java.time.Instant
 
+@Suppress("TooManyFunctions")
 data class UtxoTransactionBuilderImpl(
     private val cipherSchemeMetadata: CipherSchemeMetadata,
     private val digestService: DigestService,
@@ -147,11 +148,12 @@ data class UtxoTransactionBuilderImpl(
         )
     }
 
+    @Suppress("ComplexMethod")
     private fun calculateComponentGroupLists(): List<List<ByteArray>> {
         val notaryGroup = listOf(
             notary,
             timeWindow,
-            /*TODO: notaryallowlist*/
+            /*TODO notaryallowlist*/
         )
         val outputsInfo = outputTransactionStates.map{
             UtxoOutputInfoComponent(
@@ -162,8 +164,8 @@ data class UtxoTransactionBuilderImpl(
             )
         }
         val commandsInfo = commands.map{ listOf(
-            "", // TODO: signers
-            currentSandboxGroup.getEvolvableTag(it.javaClass), // TODO: Type (CPKInfo + ClassName)
+            "", // TODO signers
+            currentSandboxGroup.getEvolvableTag(it.javaClass), // TODO Type (CPKInfo + ClassName)
         )}
 
         val componentGroupLists = mutableListOf<List<ByteArray>>()

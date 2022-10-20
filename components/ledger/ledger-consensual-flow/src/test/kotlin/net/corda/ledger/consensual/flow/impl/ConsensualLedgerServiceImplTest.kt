@@ -9,7 +9,7 @@ import net.corda.flow.application.services.FlowEngineImpl
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.internal.serialization.amqp.helper.TestFlowFiberServiceWithSerialization
-import net.corda.ledger.common.testkit.mockPlatformInfo
+import net.corda.ledger.common.testkit.mockPlatformInfoProvider
 import net.corda.ledger.common.testkit.mockSigningService
 import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualTransactionBuilderFactory
@@ -54,7 +54,7 @@ class ConsensualLedgerServiceImplTest {
             serializationService,
             mockSigningService(),
             mock(),
-            mockPlatformInfo(),
+            mockPlatformInfoProvider(),
             flowFiberService
         )
 

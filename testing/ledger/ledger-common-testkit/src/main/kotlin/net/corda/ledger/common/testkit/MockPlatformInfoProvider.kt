@@ -8,6 +8,6 @@ class MockPlatformInfoProvider(
     override val localWorkerSoftwareVersion: String = "789"
 ): PlatformInfoProvider
 
-fun mockPlatformInfo(): PlatformInfoProvider {
+fun mockPlatformInfoProvider(): PlatformInfoProvider {
     return MockPlatformInfoProvider()
 }
