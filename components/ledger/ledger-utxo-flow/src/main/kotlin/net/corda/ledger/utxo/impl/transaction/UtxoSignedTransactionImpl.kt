@@ -6,6 +6,7 @@ import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.crypto.isFulfilledBy
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import java.security.PublicKey
@@ -36,7 +37,7 @@ data class UtxoSignedTransactionImpl(
     override fun getMissingSignatories(): List<PublicKey> {
         val appliedSignatories = signatures.map { it.by }.toSet()
         val requiredSignatories = toLedgerTransaction().signatories
-        return requiredSignatories - appliedSignatories
+        return requiredSignatories.filter { !it.isFulfilledBy(appliedSignatories) }
     }
 
     override fun toLedgerTransaction(): UtxoLedgerTransaction {
