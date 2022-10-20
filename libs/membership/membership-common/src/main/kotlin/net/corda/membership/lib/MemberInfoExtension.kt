@@ -101,7 +101,7 @@ class MemberInfoExtension {
         /**
          * PREFIX for notary roles name
          */
-        const val ROLES_PREFIX = "corda.roles."
+        const val ROLES_PREFIX = "corda.roles"
 
         /**
          * Notary role name

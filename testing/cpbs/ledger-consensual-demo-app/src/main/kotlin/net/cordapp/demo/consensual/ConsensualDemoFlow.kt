@@ -61,14 +61,13 @@ class ConsensualDemoFlow : RPCStartableFlow {
             val alice = memberLookup.myInfo()
             val bob = memberLookup.lookup(MemberX500Name("Bob", "Consensual", "R3", "London", null, "GB"))!!
 
-            val testConsensualState =
-                TestConsensualState(
-                    "test",
-                    listOf(
-                        alice.ledgerKeys.first(),
-                        bob.ledgerKeys.first(),
-                    )
+            val testConsensualState = TestConsensualState(
+                "test",
+                listOf(
+                    alice.ledgerKeys.first(),
+                    bob.ledgerKeys.first(),
                 )
+            )
 
             val txBuilder = consensualLedgerService.getTransactionBuilder()
             val signedTransaction = txBuilder

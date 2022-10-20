@@ -29,12 +29,12 @@ import kotlin.test.assertNotNull
 class EnumEvolveTests {
     @Suppress("UNUSED")
     var localPath: URI = projectRootDir.toUri().resolve(
-        "serialization-internal/src/test/resources/net/corda/internal/serialization/amqp"
+        "libs/serialization/serialization-amqp/src/test/resources/net/corda/internal/serialization/amqp"
     )
 
     // Version of the class as it was serialised
     //
-    // @CordaSerializationTransformEnumDefault("D", "C")
+    // @CordaSerializationTransformEnumDefault(newName="D", oldName="C")
     // @CordaSerializable
     // enum class DeserializeNewerSetToUnknown { A, B, C, D }
     //
@@ -64,8 +64,8 @@ class EnumEvolveTests {
     // Version of the class as it was serialised
     //
     // @CordaSerializationTransformEnumDefaults (
-    //         CordaSerializationTransformEnumDefault("D", "C"),
-    //         CordaSerializationTransformEnumDefault("E", "D"))
+    //         CordaSerializationTransformEnumDefault(newName="D", oldName="C"),
+    //         CordaSerializationTransformEnumDefault(newName="E", oldName="D"))
     // @CordaSerializable
     // enum class DeserializeNewerSetToUnknown2 { A, B, C, D, E }
     //
@@ -107,9 +107,11 @@ class EnumEvolveTests {
     // Version of the class as it was serialised, evolve rule purposfuly not included to
     // test failure conditions
     //
+    // @CordaSerializable
     // enum class DeserializeNewerWithNoRule { A, B, C, D }
     //
     // Class as it exists for the test
+    @CordaSerializable
     enum class DeserializeNewerWithNoRule { A, B, C }
 
     // Lets test to see if they forgot to provide an upgrade rule
@@ -118,6 +120,7 @@ class EnumEvolveTests {
         val resource = "${javaClass.simpleName}.${testName()}"
         val sf = testDefaultFactory()
 
+        @CordaSerializable
         data class C(val e: DeserializeNewerWithNoRule)
 
         // Uncomment to re-generate test files
@@ -139,6 +142,7 @@ class EnumEvolveTests {
     // @CordaSerializationTransformRenames (
     //         CordaSerializationTransformRename(from ="A", to = "AA")
     // )
+    // @CordaSerializable
     // enum class DeserializeWithRename { AA, B, C }
     //
     // Second Change
@@ -147,6 +151,7 @@ class EnumEvolveTests {
     //         CordaSerializationTransformRename(from = "B", to = "BB"),
     //         CordaSerializationTransformRename(from = "A", to = "AA")
     // )
+    // @CordaSerializable
     // enum class DeserializeWithRename { AA, BB, C }
     //
     // Third Change
@@ -237,22 +242,22 @@ class EnumEvolveTests {
     // enum class MultiOperations { A, B, C }
     //
     // First alteration, add D
-    // @CordaSerializationTransformEnumDefault(old = "C", new = "D")
+    // @CordaSerializationTransformEnumDefault(oldName = "C", newName = "D")
     // @CordaSerializable
     // enum class MultiOperations { A, B, C, D }
     //
     // Second, add  E
     // @CordaSerializationTransformEnumDefaults(
-    //         CordaSerializationTransformEnumDefault(old = "C", new = "D"),
-    //         CordaSerializationTransformEnumDefault(old = "D", new = "E")
+    //         CordaSerializationTransformEnumDefault(oldName = "C", newName = "D"),
+    //         CordaSerializationTransformEnumDefault(oldName = "D", newName = "E")
     // )
     // @CordaSerializable
     // enum class MultiOperations { A, B, C, D, E }
     //
     // Third, Rename E to BOB
     // @CordaSerializationTransformEnumDefaults(
-    //         CordaSerializationTransformEnumDefault(old = "C", new = "D"),
-    //         CordaSerializationTransformEnumDefault(old = "D", new = "E")
+    //         CordaSerializationTransformEnumDefault(oldName = "C", newName = "D"),
+    //         CordaSerializationTransformEnumDefault(oldName = "D", newName = "E")
     // )
     // @CordaSerializationTransformRename(to = "BOB", from = "E")
     // @CordaSerializable
@@ -260,10 +265,10 @@ class EnumEvolveTests {
     //
     // Fourth, Rename C to CAT, ADD F and G
     // @CordaSerializationTransformEnumDefaults(
-    //         CordaSerializationTransformEnumDefault(old = "F", new = "G"),
-    //         CordaSerializationTransformEnumDefault(old = "BOB", new = "F"),
-    //         CordaSerializationTransformEnumDefault(old = "D", new = "E"),
-    //         CordaSerializationTransformEnumDefault(old = "C", new = "D")
+    //         CordaSerializationTransformEnumDefault(oldName = "F", newName = "G"),
+    //         CordaSerializationTransformEnumDefault(oldName = "BOB", newName = "F"),
+    //         CordaSerializationTransformEnumDefault(oldName = "D", newName = "E"),
+    //         CordaSerializationTransformEnumDefault(oldName = "C", newName = "D")
     // )
     // @CordaSerializationTransformRenames(
     //         CordaSerializationTransformRename(to = "CAT", from = "C"),
@@ -274,10 +279,10 @@ class EnumEvolveTests {
     //
     // Fifth, Rename F to FLUMP, Rename BOB to BBB, Rename A to APPLE
     // @CordaSerializationTransformEnumDefaults(
-    //         CordaSerializationTransformEnumDefault(old = "F", new = "G"),
-    //         CordaSerializationTransformEnumDefault(old = "BOB", new = "F"),
-    //         CordaSerializationTransformEnumDefault(old = "D", new = "E"),
-    //         CordaSerializationTransformEnumDefault(old = "C", new = "D")
+    //         CordaSerializationTransformEnumDefault(oldName = "F", newName = "G"),
+    //         CordaSerializationTransformEnumDefault(oldName = "BOB", newName = "F"),
+    //         CordaSerializationTransformEnumDefault(oldName = "D", newName = "E"),
+    //         CordaSerializationTransformEnumDefault(oldName = "C", newName = "D")
     // )
     // @CordaSerializationTransformRenames (
     //         CordaSerializationTransformRename(to = "APPLE", from = "A"),
@@ -434,6 +439,7 @@ class EnumEvolveTests {
 
     // class as it existed as it was serialized
     //
+    // @CordaSerializable
     // enum class ChangedOrdinality { A, B, C }
     //
     // class as it exists for the tests
@@ -445,6 +451,7 @@ class EnumEvolveTests {
         val resource = "${javaClass.simpleName}.${testName()}"
         val sf = testDefaultFactory()
 
+        @CordaSerializable
         data class C(val e: ChangedOrdinality)
 
         // Uncomment to re-generate test files, needs to be done in three stages
@@ -462,6 +469,7 @@ class EnumEvolveTests {
 
     // Version of the class as it was serialised
     //
+    // @CordaSerializable
     // enum class ExtendedEnum { A, B, C }
     //
     // Version of the class as it's used in the test

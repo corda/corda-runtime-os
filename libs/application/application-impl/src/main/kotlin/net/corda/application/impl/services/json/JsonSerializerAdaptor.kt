@@ -6,8 +6,6 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer
 import net.corda.v5.application.marshalling.json.JsonSerializer
 import net.corda.v5.application.marshalling.json.JsonWriter
 import net.corda.v5.base.util.uncheckedCast
-import java.lang.reflect.ParameterizedType
-import kotlin.IllegalStateException
 
 /**
  * Adaptor between a Jackson serializer and a Corda Json serializer exposed to the public api. Every Json serializer
@@ -17,26 +15,10 @@ import kotlin.IllegalStateException
  * Because JsonSerializers are created at runtime dynamically, no compile time type information can be referenced in
  * this class in the form of generics. Instead all type information is supplied only via a Class<*> object.
  */
-class JsonSerializerAdaptor(
-    private val jsonSerializer: JsonSerializer<*>,
-    val serializingType: Class<*> = extractSerializingType(jsonSerializer)
-) :
+class JsonSerializerAdaptor(private val jsonSerializer: JsonSerializer<*>, val serializingType: Class<*>) :
     StdSerializer<Any>(uncheckedCast<Class<*>, Class<Any>>(serializingType)) {
     override fun serialize(value: Any, jgen: JsonGenerator, provider: SerializerProvider) {
         serializeAny(jsonSerializer, value, JsonWriterAdaptor(jgen))
-    }
-
-    companion object {
-        private fun extractSerializingType(jsonSerializer: JsonSerializer<*>): Class<*> {
-            val types = jsonSerializer::class.java.genericInterfaces
-                .filterIsInstance<ParameterizedType>()
-                .filter { it.rawType === JsonSerializer::class.java }
-                .flatMap { it.actualTypeArguments.asList() }
-            if (types.size != 1) {
-                throw IllegalStateException("Unable to determine serialized type from JsonSerializer")
-            }
-            return Class.forName(types.first().typeName)
-        }
     }
 
     /**

@@ -9,12 +9,15 @@ import net.corda.data.crypto.wire.CryptoSignatureWithKey
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.data.membership.db.request.MembershipPersistenceRequest
+import net.corda.data.membership.db.request.command.AddNotaryToGroupParameters
+import net.corda.data.membership.db.request.command.PersistGroupParameters
 import net.corda.data.membership.db.request.command.PersistGroupPolicy
 import net.corda.data.membership.db.request.command.PersistMemberInfo
 import net.corda.data.membership.db.request.command.PersistRegistrationRequest
 import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationRequestToDeclined
 import net.corda.data.membership.db.response.MembershipPersistenceResponse
 import net.corda.data.membership.db.response.MembershipResponseContext
+import net.corda.data.membership.db.response.command.PersistGroupParametersResponse
 import net.corda.data.membership.db.response.command.PersistGroupPolicyResponse
 import net.corda.data.membership.db.response.query.PersistenceFailedResponse
 import net.corda.data.membership.db.response.query.UpdateMemberAndRegistrationRequestResponse
@@ -41,6 +44,7 @@ import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.membership.GroupParameters
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
 import net.corda.v5.membership.MemberInfo
@@ -457,6 +461,7 @@ class MembershipPersistenceClientImplTest {
 
         assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<Int>("Unexpected response: null"))
     }
+
     @Test
     fun `persistGroupPolicy send the correct data`() {
         val groupPolicyEntries = mapOf("a" to "b").entries
@@ -486,6 +491,173 @@ class MembershipPersistenceClientImplTest {
             RegistrationStatus.DECLINED
         )
         assertThat(result).isInstanceOf(MembershipPersistenceResult.Success::class.java)
+    }
+
+    @Nested
+    inner class PersistGroupParametersInitialSnapshotTests {
+        @Test
+        fun `persistGroupParametersInitialSnapshot returns the correct epoch`() {
+            postConfigChangedEvent()
+            mockPersistenceResponse(
+                PersistGroupParametersResponse(15),
+            )
+
+            val result = membershipPersistenceClient.persistGroupParametersInitialSnapshot(ourHoldingIdentity)
+
+            assertThat(result).isEqualTo(MembershipPersistenceResult.success())
+        }
+
+        @Test
+        fun `persistGroupParametersInitialSnapshot returns error in case of failure`() {
+            postConfigChangedEvent()
+            mockPersistenceResponse(
+                PersistenceFailedResponse("Placeholder error"),
+            )
+
+            val result = membershipPersistenceClient.persistGroupParametersInitialSnapshot(ourHoldingIdentity)
+
+            assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<Int>("Placeholder error"))
+        }
+
+        @Test
+        fun `persistGroupParametersInitialSnapshot returns failure for unexpected result`() {
+            postConfigChangedEvent()
+            mockPersistenceResponse(
+                null,
+            )
+
+            val result = membershipPersistenceClient.persistGroupParametersInitialSnapshot(ourHoldingIdentity)
+
+            assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<Int>("Unexpected response: null"))
+        }
+    }
+
+    @Nested
+    inner class PersistGroupParametersTests {
+        @Test
+        fun `persistGroupParameters returns the correct epoch`() {
+            val groupParameters = mock<GroupParameters>()
+            postConfigChangedEvent()
+            mockPersistenceResponse(
+                PersistGroupParametersResponse(5),
+            )
+
+            val result = membershipPersistenceClient.persistGroupParameters(ourHoldingIdentity, groupParameters)
+
+            assertThat(result).isEqualTo(MembershipPersistenceResult.Success(5))
+        }
+
+        @Test
+        fun `persistGroupParameters returns error in case of failure`() {
+            val groupParameters = mock<GroupParameters>()
+            postConfigChangedEvent()
+            mockPersistenceResponse(
+                PersistenceFailedResponse("Placeholder error"),
+            )
+
+            val result = membershipPersistenceClient.persistGroupParameters(ourHoldingIdentity, groupParameters)
+
+            assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<Int>("Placeholder error"))
+        }
+
+        @Test
+        fun `persistGroupParameters returns failure for unexpected result`() {
+            val groupParameters = mock<GroupParameters>()
+            postConfigChangedEvent()
+            mockPersistenceResponse(
+                null,
+            )
+
+            val result = membershipPersistenceClient.persistGroupParameters(ourHoldingIdentity, groupParameters)
+
+            assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<Int>("Unexpected response: null"))
+        }
+
+        @Test
+        fun `persistGroupParameters sends the correct data`() {
+            val groupParameterEntries = mapOf("a" to "b").entries
+            val groupParameters = mock<GroupParameters> {
+                on { entries } doReturn groupParameterEntries
+            }
+            postConfigChangedEvent()
+            val argument = argumentCaptor<MembershipPersistenceRequest>()
+            val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
+            whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
+
+            membershipPersistenceClient.persistGroupParameters(ourHoldingIdentity, groupParameters)
+
+            val parameters = (argument.firstValue.request as? PersistGroupParameters)?.groupParameters?.items
+            assertThat(parameters).containsExactly(
+                KeyValuePair("a", "b")
+            )
+        }
+    }
+
+    @Nested
+    inner class AddNotaryToGroupParametersTests {
+        @Test
+        fun `addNotaryToGroupParameters returns the correct epoch`() {
+            val notary = ourMemberInfo
+            postConfigChangedEvent()
+            mockPersistenceResponse(
+                PersistGroupParametersResponse(10),
+            )
+
+            val result = membershipPersistenceClient.addNotaryToGroupParameters(ourHoldingIdentity, notary)
+
+            assertThat(result).isEqualTo(MembershipPersistenceResult.Success(10))
+        }
+
+        @Test
+        fun `addNotaryToGroupParameters returns error in case of failure`() {
+            val notary = ourMemberInfo
+            postConfigChangedEvent()
+            mockPersistenceResponse(
+                PersistenceFailedResponse("Placeholder error"),
+            )
+
+            val result = membershipPersistenceClient.addNotaryToGroupParameters(ourHoldingIdentity, notary)
+
+            assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<Int>("Placeholder error"))
+        }
+
+        @Test
+        fun `addNotaryToGroupParameters returns failure for unexpected result`() {
+            val notary = ourMemberInfo
+            postConfigChangedEvent()
+            mockPersistenceResponse(
+                null,
+            )
+
+            val result = membershipPersistenceClient.addNotaryToGroupParameters(ourHoldingIdentity, notary)
+
+            assertThat(result).isEqualTo(MembershipPersistenceResult.Failure<Int>("Unexpected response: null"))
+        }
+
+        @Test
+        fun `addNotaryToGroupParameters sends the correct data`() {
+            val memberContext: MemberContext = mock {
+                on { entries } doReturn mapOf("a" to "b").entries
+            }
+            val mgmContext: MGMContext = mock {
+                on { entries } doReturn mapOf("c" to "d").entries
+            }
+            val notaryInRequest: MemberInfo = mock {
+                on { memberProvidedContext } doReturn memberContext
+                on { mgmProvidedContext } doReturn mgmContext
+            }
+            postConfigChangedEvent()
+            val argument = argumentCaptor<MembershipPersistenceRequest>()
+            val response = CompletableFuture.completedFuture(mock<MembershipPersistenceResponse>())
+            whenever(rpcSender.sendRequest(argument.capture())).thenReturn(response)
+
+            membershipPersistenceClient.addNotaryToGroupParameters(ourHoldingIdentity, notaryInRequest)
+
+            val notary = (argument.firstValue.request as? AddNotaryToGroupParameters)?.notary
+            assertThat(notary?.viewOwningMember).isEqualTo(ourHoldingIdentity.toAvro())
+            assertThat(notary?.memberContext?.items).containsExactly(KeyValuePair("a", "b"))
+            assertThat(notary?.mgmContext?.items).containsExactly(KeyValuePair("c", "d"))
+        }
     }
 
     @Nested
