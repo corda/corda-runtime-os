@@ -8,7 +8,12 @@ import net.corda.internal.serialization.amqp.currentSandboxGroup
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
+import net.corda.ledger.common.testkit.mockSigningService
+import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionImpl
+import net.corda.ledger.consensual.testkit.ConsensualStateClassExample
+import net.corda.ledger.consensual.testkit.consensualStateExample
+import net.corda.ledger.consensual.testkit.consensualTransactionMetaDataExample
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -32,15 +37,15 @@ internal class ConsensualTransactionBuilderImplTest {
     @Test
     fun `can build a simple Transaction`() {
         val tx = makeTransactionBuilder()
-            .withStates(ConsensualTransactionMocks.testConsensualState)
-            .sign(ConsensualTransactionMocks.testPublicKey)
+            .withStates(consensualStateExample)
+            .sign(publicKeyExample)
         assertIs<SecureHash>(tx.id)
     }
 
     @Test
     fun `cannot build Transaction without Consensual States`() {
         val exception = assertThrows(IllegalArgumentException::class.java) {
-            makeTransactionBuilder().sign(ConsensualTransactionMocks.testPublicKey)
+            makeTransactionBuilder().sign(publicKeyExample)
         }
         assertEquals("At least one consensual state is required", exception.message)
     }
@@ -49,9 +54,9 @@ internal class ConsensualTransactionBuilderImplTest {
     fun `cannot build Transaction with Consensual States without participants`() {
         val exception = assertThrows(IllegalArgumentException::class.java) {
             makeTransactionBuilder()
-                .withStates(ConsensualTransactionMocks.testConsensualState)
-                .withStates(TestConsensualState("test", emptyList()))
-                .sign(ConsensualTransactionMocks.testPublicKey)
+                .withStates(consensualStateExample)
+                .withStates(ConsensualStateClassExample("test", emptyList()))
+                .sign(publicKeyExample)
         }
         assertEquals("All consensual states must have participants", exception.message)
     }
@@ -59,8 +64,8 @@ internal class ConsensualTransactionBuilderImplTest {
     @Test
     fun `includes CPI and CPK information in metadata`() {
         val tx = makeTransactionBuilder()
-            .withStates(ConsensualTransactionMocks.testConsensualState)
-            .sign(ConsensualTransactionMocks.testPublicKey) as ConsensualSignedTransactionImpl
+            .withStates(consensualStateExample)
+            .sign(publicKeyExample) as ConsensualSignedTransactionImpl
 
         val metadata = tx.wireTransaction.metadata
         assertEquals("0.001", metadata.getLedgerVersion())
@@ -97,10 +102,10 @@ internal class ConsensualTransactionBuilderImplTest {
             jsonMarshallingService,
             merkleTreeFactory,
             serializationService,
-            ConsensualTransactionMocks.mockSigningService(),
+            mockSigningService(),
             mock(),
             testSerializationContext.currentSandboxGroup(),
-            ConsensualTransactionMocks.mockTransactionMetaData()
+            consensualTransactionMetaDataExample
         )
     }
 }

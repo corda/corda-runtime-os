@@ -33,6 +33,7 @@ dependencies {
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation project(":libs:ledger:ledger-common-data")
     testImplementation project(":components:ledger:ledger-common-flow")
+    testImplementation project(":testing:ledger:ledger-common-testkit")
     testImplementation project(":testing:ledger:ledger-consensual-testkit")
     testImplementation project(":testing:kryo-serialization-testkit")
     testImplementation project(":libs:crypto:cipher-suite-impl")

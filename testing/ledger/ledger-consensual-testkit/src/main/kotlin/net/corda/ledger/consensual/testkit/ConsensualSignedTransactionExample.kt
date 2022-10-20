@@ -24,7 +24,12 @@ fun getConsensualSignedTransaction(
     signingService: SigningService,
     digitalSignatureVerificationService: DigitalSignatureVerificationService
 ): ConsensualSignedTransaction {
-    val wireTransaction = getWireTransaction(digestService, merkleTreeProvider, jsonMarshallingService)
+    val wireTransaction = getWireTransaction(
+        digestService,
+        merkleTreeProvider,
+        jsonMarshallingService,
+        consensualTransactionMetaDataExample
+    )
 
     val kpg = KeyPairGenerator.getInstance("RSA")
     kpg.initialize(512)
