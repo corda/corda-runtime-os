@@ -5,4 +5,3 @@ class TestFlowInput {
     var memberInfoLookup: String? = null
     var throwException: Boolean = false
 }
-
