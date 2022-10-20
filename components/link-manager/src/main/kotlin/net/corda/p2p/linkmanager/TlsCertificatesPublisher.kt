@@ -33,7 +33,7 @@ internal class TlsCertificatesPublisher(
         private const val MISSING_DATA_WRITER_GROUP_NAME = "linkmanager_tlscertificates_writer"
     }
 
-    private val publishedIds = ConcurrentHashMap<String, Set<PemCertificates>>()
+    private val publishedIds = ConcurrentHashMap<String, Set<PemCertificate>>()
     private val toPublish = ConcurrentLinkedQueue<HostingMapListener.IdentityInfo>()
 
     private val publisher = PublisherWithDominoLogic(

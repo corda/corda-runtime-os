@@ -9,6 +9,7 @@ import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.membership.certificate.client.CertificatesResourceNotFoundException
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.grouppolicy.GroupPolicy
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.p2p.HostedIdentityEntry
 import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
 import net.corda.test.util.identity.createTestHoldingIdentity
@@ -106,9 +107,14 @@ class HostedIdentityEntryFactoryTest {
         on { encodeAsString(sessionPublicKey) } doReturn PUBLIC_KEY_PEM
         on { encodeAsString(knownTenantSessionPublicKey) } doReturn KNOWN_TENANT_PUBLIC_KEY_PEM
     }
+    private val p2pParamsSessionPki: GroupPolicy.P2PParameters = mock {
+        on { tlsTrustRoots } doReturn listOf(rootPem)
+        on { sessionPki } doReturn GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.STANDARD
+        on { sessionTrustRoots } doReturn listOf(rootPem)
+    }
     private val p2pParams: GroupPolicy.P2PParameters = mock {
         on { tlsTrustRoots } doReturn listOf(rootPem)
-        on { sessionTrustRoots } doReturn listOf(rootPem)
+        on { sessionPki } doReturn GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI
     }
     private val groupPolicy = mock<GroupPolicy> {
         on { p2pParameters } doReturn p2pParams
@@ -159,6 +165,7 @@ class HostedIdentityEntryFactoryTest {
 
     @Test
     fun `createIdentityRecord create the correct record if session certificate used`() {
+        whenever(groupPolicy.p2pParameters).doReturn(p2pParamsSessionPki)
         val record = factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
             tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
@@ -198,6 +205,20 @@ class HostedIdentityEntryFactoryTest {
         }
     }
 
+    @Test
+    fun `createIdentityRecord will throw an exception if standard session pki and no sessionCertificateChainAlias specified`() {
+        whenever(groupPolicy.p2pParameters).doReturn(p2pParamsSessionPki)
+        assertThrows<CertificatesResourceNotFoundException> {
+            factory.createIdentityRecord(
+                holdingIdentityShortHash = VALID_NODE,
+                tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,
+                tlsTenantId = VALID_NODE.toString(),
+                sessionKeyTenantId = null,
+                sessionKeyId = null,
+                sessionCertificateChainAlias = null
+            )
+        }
+    }
     @Test
     fun `createIdentityRecord will use session tenant ID if provided`() {
         val record = factory.createIdentityRecord(
@@ -330,6 +351,7 @@ class HostedIdentityEntryFactoryTest {
 
     @Test
     fun `createIdentityRecord with another session tenant will call the certificates from that tenant`() {
+        whenever(groupPolicy.p2pParameters).doReturn(p2pParamsSessionPki)
         var tenantId =  mutableListOf<String>()
         whenever(cryptoOpsClient.filterMyKeys(eq(KNOWN_TENANT), any())).doReturn(listOf(certificatePublicKey))
 
@@ -370,6 +392,7 @@ class HostedIdentityEntryFactoryTest {
 
     @Test
     fun `createIdentityRecord with another session tenant will return that ID`() {
+        whenever(groupPolicy.p2pParameters).doReturn(p2pParamsSessionPki)
         whenever(cryptoOpsClient.filterMyKeys(eq(KNOWN_TENANT), any())).doReturn(listOf(certificatePublicKey))
 
         val record = factory.createIdentityRecord(

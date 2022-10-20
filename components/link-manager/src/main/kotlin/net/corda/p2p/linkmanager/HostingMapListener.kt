@@ -6,11 +6,11 @@ import java.security.PublicKey
 interface HostingMapListener {
     data class IdentityInfo(
         val holdingIdentity: HoldingIdentity,
-        val tlsCertificates: List<PemCertificates>,
+        val tlsCertificates: List<PemCertificate>,
         val tlsTenantId: String,
         val sessionKeyTenantId: String,
         val sessionPublicKey: PublicKey,
-        val sessionCertificates: List<PemCertificates>?
+        val sessionCertificates: List<PemCertificate>?
     )
     fun identityAdded(identityInfo: IdentityInfo)
 }

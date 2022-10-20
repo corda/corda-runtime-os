@@ -11,7 +11,7 @@ interface GroupPolicyListener {
         val holdingIdentity: HoldingIdentity,
         val networkType: NetworkType,
         val protocolModes: Set<ProtocolMode>,
-        val trustedCertificates: List<PemCertificates>,
+        val trustedCertificates: List<PemCertificate>,
         val sessionPkiMode: GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode,
         val sessionTrustStore: KeyStore?
     )

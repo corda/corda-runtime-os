@@ -36,7 +36,7 @@ internal class TrustStoresPublisher(
         private const val MISSING_DATA_WRITER_GROUP_NAME = "linkmanager_truststore_writer"
     }
 
-    private val publishedGroups = ConcurrentHashMap<String, Set<PemCertificates>>()
+    private val publishedGroups = ConcurrentHashMap<String, Set<PemCertificate>>()
     private val toPublish = ConcurrentLinkedQueue<GroupPolicyListener.GroupInfo>()
     private val ready = CompletableFuture<Unit>()
     private val publisher = PublisherWithDominoLogic(
@@ -126,7 +126,7 @@ internal class TrustStoresPublisher(
         }
     }
 
-    private fun publishGroupIfNeeded(holdingIdentity: HoldingIdentity, certificates: List<PemCertificates>) {
+    private fun publishGroupIfNeeded(holdingIdentity: HoldingIdentity, certificates: List<PemCertificate>) {
         publishedGroups.compute(holdingIdentity.toKafkaKey()) { _, publishedCertificates ->
             logger.info("Publishing trust roots for $holdingIdentity to the gateway.")
             val certificatesSet = certificates.toSet()

@@ -1,4 +1,4 @@
 package net.corda.p2p.linkmanager
 
-typealias PemCertificates = String
+typealias PemCertificate = String
 typealias EndPoint = String

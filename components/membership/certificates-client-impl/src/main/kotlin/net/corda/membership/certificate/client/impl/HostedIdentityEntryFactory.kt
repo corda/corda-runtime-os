@@ -6,6 +6,7 @@ import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.membership.certificate.client.CertificatesResourceNotFoundException
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.grouppolicy.GroupPolicy
+import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.P2PParameters.SessionPkiMode.NO_PKI
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.HostedIdentityEntry
 import net.corda.schema.Schemas
@@ -118,6 +119,11 @@ internal class HostedIdentityEntryFactory(
             tlsCertificates,
             CertificateType.TlsCertificate(policy.p2pParameters)
         )
+        if (policy.p2pParameters.sessionPki != NO_PKI && sessionCertificateChainAlias == null) {
+            throw CordaRuntimeException("The sessionCertificateChainAlias must be specified when using a group policy with sessionPki: " +
+                    policy.p2pParameters.sessionPki.name
+            )
+        }
         val sessionCertificate = sessionCertificateChainAlias?.let {
             getCertificates(actualSessionKeyTenantId, sessionCertificateChainAlias)
         }

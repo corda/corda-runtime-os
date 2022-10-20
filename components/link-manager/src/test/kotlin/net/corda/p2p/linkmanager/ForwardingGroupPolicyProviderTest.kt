@@ -132,9 +132,7 @@ class ForwardingGroupPolicyProviderTest {
 
         whenever(realGroupPolicyProvider.getGroupPolicy(alice)).thenReturn(groupPolicy)
         assertThat(forwardingGroupPolicyProvider.getGroupInfo(alice)).isEqualTo(groupInfo)
-        ByteArrayInputStream(certificate.toByteArray()).use {
-            verify(certificateFactory).generateCertificate(it)
-        }
+        verify(certificateFactory).generateCertificate(any())
     }
 
     @Test
