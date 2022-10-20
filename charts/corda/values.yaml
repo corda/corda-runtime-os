@@ -61,7 +61,7 @@ db:
     port: 5432
     # -- the cluster database user
     user:
-      # -- the cluster username
+      # -- the cluster db username
       value: user
       # -- the username secret configuration
       valueFrom: 
