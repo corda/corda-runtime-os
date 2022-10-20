@@ -20,16 +20,12 @@ class StaticMember(
 ) : Map<String, Any> by staticMemberData {
 
     private companion object {
-        const val DEFAULT_SOFTWARE_VERSION = "5.0.0"
         const val DEFAULT_SERIAL = "1"
         private val clock = UTCClock()
     }
 
     val name: String?
         get() = getStringValue(StaticMemberTemplateExtension.NAME)
-
-    val softwareVersion: String
-        get() = getStringValue(STATIC_SOFTWARE_VERSION, DEFAULT_SOFTWARE_VERSION)!!
 
     val serial: String
         get() = getIntValueAsString(STATIC_SERIAL, DEFAULT_SERIAL)!!

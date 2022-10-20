@@ -80,19 +80,21 @@ import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
 class DynamicMemberRegistrationServiceTest {
-    companion object {
-        private const val SESSION_KEY = "1234"
-        private const val SESSION_KEY_ID = "1"
-        private const val LEDGER_KEY = "5678"
-        private const val LEDGER_KEY_ID = "2"
-        private const val NOTARY_KEY = "2020"
-        private const val NOTARY_KEY_ID = "4"
-        private const val PUBLISHER_CLIENT_ID = "dynamic-member-registration-service"
-        private const val GROUP_NAME = "dummy_group"
+    private companion object {
+        const val SESSION_KEY = "1234"
+        const val SESSION_KEY_ID = "1"
+        const val LEDGER_KEY = "5678"
+        const val LEDGER_KEY_ID = "2"
+        const val NOTARY_KEY = "2020"
+        const val NOTARY_KEY_ID = "4"
+        const val PUBLISHER_CLIENT_ID = "dynamic-member-registration-service"
+        const val GROUP_NAME = "dummy_group"
+        const val TEST_PLATFORM_VERSION = 5000
+        const val TEST_SOFTWARE_VERSION = "5.0.0.0-SNAPSHOT"
 
-        private val MEMBER_CONTEXT_BYTES = "2222".toByteArray()
-        private val REQUEST_BYTES = "3333".toByteArray()
-        private val UNAUTH_REQUEST_BYTES = "4444".toByteArray()
+        val MEMBER_CONTEXT_BYTES = "2222".toByteArray()
+        val REQUEST_BYTES = "3333".toByteArray()
+        val UNAUTH_REQUEST_BYTES = "4444".toByteArray()
     }
 
     private val ecdhKey: PublicKey = mock()
@@ -239,7 +241,8 @@ class DynamicMemberRegistrationServiceTest {
         on { createValidator() } doReturn membershipSchemaValidator
     }
     private val platformInfoProvider: PlatformInfoProvider = mock {
-        on { activePlatformVersion } doReturn 5000
+        on { activePlatformVersion } doReturn TEST_PLATFORM_VERSION
+        on { localWorkerSoftwareVersion } doReturn TEST_SOFTWARE_VERSION
     }
     private val datawithKey: EncryptedDataWithKey = mock {
         on { cipherText } doReturn "1234".toByteArray()

@@ -128,8 +128,6 @@ class MGMRegistrationService @Activate constructor(
         const val PKI_TLS = "$GROUP_POLICY_PREFIX.pki.tls"
         const val TRUSTSTORE_SESSION = "$GROUP_POLICY_PREFIX.truststore.session.%s"
         const val TRUSTSTORE_TLS = "$GROUP_POLICY_PREFIX.truststore.tls.%s"
-        const val PLATFORM_VERSION_CONST = "5000"
-        const val SOFTWARE_VERSION_CONST = "5.0.0"
         const val SERIAL_CONST = "1"
 
         val keyIdList = listOf(SESSION_KEY_ID, ECDH_KEY_ID)
@@ -263,9 +261,8 @@ class MGMRegistrationService @Activate constructor(
                     PARTY_SESSION_KEY to sessionKey.toPem(),
                     SESSION_KEY_HASH to sessionKey.calculateHash().value,
                     ECDH_KEY to ecdhKey.toPem(),
-                    // temporarily hardcoded
                     PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),
-                    SOFTWARE_VERSION to SOFTWARE_VERSION_CONST,
+                    SOFTWARE_VERSION to platformInfoProvider.localWorkerSoftwareVersion,
                     SERIAL to SERIAL_CONST,
                 )
                 val mgmInfo = memberInfoFactory.create(

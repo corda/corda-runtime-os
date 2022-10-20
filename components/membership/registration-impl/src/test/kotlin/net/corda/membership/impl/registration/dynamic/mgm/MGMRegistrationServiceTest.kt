@@ -94,12 +94,14 @@ import java.util.*
 import java.util.concurrent.CompletableFuture
 
 class MGMRegistrationServiceTest {
-    companion object {
-        private const val SESSION_KEY_STRING = "1234"
-        private const val SESSION_KEY_ID = "1"
-        private const val ECDH_KEY_STRING = "5678"
-        private const val ECDH_KEY_ID = "2"
-        private const val PUBLISHER_CLIENT_ID = "mgm-registration-service"
+    private companion object {
+        const val SESSION_KEY_STRING = "1234"
+        const val SESSION_KEY_ID = "1"
+        const val ECDH_KEY_STRING = "5678"
+        const val ECDH_KEY_ID = "2"
+        const val PUBLISHER_CLIENT_ID = "mgm-registration-service"
+        const val TEST_PLATFORM_VERSION = 5000
+        const val TEST_SOFTWARE_VERSION = "5.0.0.0-SNAPSHOT"
     }
 
     private val groupId = "43b5b6e6-4f2d-498f-8b41-5e2f8f97e7e8"
@@ -202,7 +204,8 @@ class MGMRegistrationServiceTest {
         on { createValidator() } doReturn membershipSchemaValidator
     }
     private val platformInfoProvider: PlatformInfoProvider = mock {
-        on { activePlatformVersion } doReturn 5000
+        on { activePlatformVersion } doReturn TEST_PLATFORM_VERSION
+        on { localWorkerSoftwareVersion } doReturn TEST_SOFTWARE_VERSION
     }
     private val registrationService = MGMRegistrationService(
         publisherFactory,
@@ -347,8 +350,11 @@ class MGMRegistrationServiceTest {
             it.assertThat(getProperty(GROUP_ID)).isEqualTo(groupId)
             it.assertThat(getProperty(STATUS)).isEqualTo(MEMBER_STATUS_ACTIVE)
             it.assertThat(getProperty(IS_MGM)).isEqualTo("true")
+            it.assertThat(getProperty(PLATFORM_VERSION)).isEqualTo(TEST_PLATFORM_VERSION.toString())
+            it.assertThat(getProperty(SOFTWARE_VERSION)).isEqualTo(TEST_SOFTWARE_VERSION)
             it.assertThat(statusUpdate.firstValue.status).isEqualTo(RegistrationStatus.APPROVED)
             it.assertThat(statusUpdate.firstValue.registrationId).isEqualTo(registrationRequest.toString())
+
 
             val membershipEvent = publishedEvent.value as MembershipEvent
             it.assertThat(membershipEvent.event).isInstanceOf(MgmOnboarded::class.java)
@@ -376,8 +382,10 @@ class MGMRegistrationServiceTest {
         assertThat(groupProperties.firstValue.entries)
             .containsExactlyInAnyOrderElementsOf(
                 mapOf(
-                    "protocol.registration" to "net.corda.membership.impl.registration.dynamic.MemberRegistrationService",
-                    "protocol.synchronisation" to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
+                    "protocol.registration"
+                            to "net.corda.membership.impl.registration.dynamic.MemberRegistrationService",
+                    "protocol.synchronisation"
+                            to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
                     "protocol.p2p.mode" to "AUTHENTICATION_ENCRYPTION",
                     "key.session.policy" to "Combined",
                     "pki.session" to "Standard",

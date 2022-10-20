@@ -92,12 +92,14 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class StaticMemberRegistrationServiceTest {
-    companion object {
-        private const val DEFAULT_KEY = "3456"
-        private const val ALICE_KEY = "1234"
-        private const val BOB_KEY = "2345"
-        private const val CHARLIE_KEY = "6789"
-        private const val KEY_SCHEME = "corda.key.scheme"
+    private companion object {
+        const val DEFAULT_KEY = "3456"
+        const val ALICE_KEY = "1234"
+        const val BOB_KEY = "2345"
+        const val CHARLIE_KEY = "6789"
+        const val KEY_SCHEME = "corda.key.scheme"
+        const val TEST_PLATFORM_VERSION = 5000
+        const val TEST_SOFTWARE_VERSION = "5.0.0.0-SNAPSHOT"
     }
 
     private val alice = HoldingIdentity(aliceName, DUMMY_GROUP_ID)
@@ -156,9 +158,15 @@ class StaticMemberRegistrationServiceTest {
 
     private val cryptoOpsClient: CryptoOpsClient = mock {
         on { generateKeyPair(any(), any(), any(), any(), any<Map<String, String>>()) } doReturn defaultKey
-        on { generateKeyPair(any(), any(), eq("${aliceId.value}-LEDGER"), any(), any<Map<String, String>>()) } doReturn aliceKey
-        on { generateKeyPair(any(), any(), eq("${bobId.value}-LEDGER"), any(), any<Map<String, String>>()) } doReturn bobKey
-        on { generateKeyPair(any(), any(), eq("${charlieId.value}-LEDGER"), any(), any<Map<String, String>>()) } doReturn charlieKey
+        on {
+            generateKeyPair(any(), any(), eq("${aliceId.value}-LEDGER"), any(), any<Map<String, String>>())
+        } doReturn aliceKey
+        on {
+            generateKeyPair(any(), any(), eq("${bobId.value}-LEDGER"), any(), any<Map<String, String>>())
+        } doReturn bobKey
+        on {
+            generateKeyPair(any(), any(), eq("${charlieId.value}-LEDGER"), any(), any<Map<String, String>>())
+        } doReturn charlieKey
         on { lookup(any(), any()) } doReturn listOf(cryptoSigningKey)
     }
 
@@ -222,7 +230,8 @@ class StaticMemberRegistrationServiceTest {
         }
     }
     private val platformInfoProvider: PlatformInfoProvider = mock {
-        on { activePlatformVersion } doReturn 5000
+        on { activePlatformVersion } doReturn TEST_PLATFORM_VERSION
+        on { localWorkerSoftwareVersion } doReturn TEST_SOFTWARE_VERSION
     }
 
     private val registrationService = StaticMemberRegistrationService(
@@ -289,8 +298,8 @@ class StaticMemberRegistrationServiceTest {
             persistentMemberPublished.mgmContext.toSortedMap()
         )
         assertEquals(DUMMY_GROUP_ID, memberPublished.groupId)
-        assertNotNull(memberPublished.softwareVersion)
-        assertNotNull(memberPublished.platformVersion)
+        assertEquals(TEST_SOFTWARE_VERSION, memberPublished.softwareVersion)
+        assertEquals(TEST_PLATFORM_VERSION, memberPublished.platformVersion)
         assertNotNull(memberPublished.serial)
         assertNotNull(memberPublished.modifiedTime)
 

@@ -258,7 +258,7 @@ class StaticMemberRegistrationService @Activate constructor(
                     listOf(keysFactory.getOrGenerateKeyPair(NOTARY))
                 }.toTypedArray(),
                 SESSION_KEY_HASH to memberKey.hash.toString(),
-                SOFTWARE_VERSION to staticMemberInfo.softwareVersion,
+                SOFTWARE_VERSION to platformInfoProvider.localWorkerSoftwareVersion,
                 PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),
                 SERIAL to staticMemberInfo.serial,
             ),

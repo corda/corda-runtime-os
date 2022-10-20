@@ -133,7 +133,6 @@ class DynamicMemberRegistrationService @Activate constructor(
         const val NOTARY_KEY_ID = "corda.notary.keys.%s.id"
         const val LEDGER_KEY_SIGNATURE_SPEC = "$LEDGER_KEYS.%s.signature.spec"
         const val MEMBERSHIP_P2P_SUBSYSTEM = "membership"
-        const val SOFTWARE_VERSION_CONST = "5.0.0"
         const val SERIAL_CONST = "1"
 
         val notaryIdRegex = NOTARY_KEY_ID.format("[0-9]+").toRegex()
@@ -362,8 +361,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                         PARTY_NAME to member.x500Name.toString(),
                         GROUP_ID to member.groupId,
                         PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),
-                        // temporarily hardcoded
-                        SOFTWARE_VERSION to SOFTWARE_VERSION_CONST,
+                        SOFTWARE_VERSION to platformInfoProvider.localWorkerSoftwareVersion,
                         SERIAL to SERIAL_CONST,
                     ) + roles.toMemberInfo { notaryKeys }
                 )
