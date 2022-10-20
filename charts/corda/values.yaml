@@ -59,7 +59,7 @@ db:
     type: "postgresql"
     # -- the cluster database port
     port: 5432
-    # -- the cluster database user
+    # the cluster database user configuration
     user:
       # -- the cluster db username
       value: user
