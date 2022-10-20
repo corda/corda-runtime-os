@@ -258,7 +258,7 @@ class FlowSandboxServiceImpl @Activate constructor(
 
         val serializationCustomizer = jsonMarshallingService as? SerializationCustomizer
         if (serializationCustomizer == null) {
-            log.error("registerCustomJsonSerialization failed: JsonMarshallingService does not support custom serialization")
+            log.warn("registerCustomJsonSerialization failed: JsonMarshallingService does not support custom serialization")
             return
         }
 
@@ -284,14 +284,14 @@ class FlowSandboxServiceImpl @Activate constructor(
         // User custom serialization support, no exceptions thrown so user code doesn't kill the flow service
         getObjectByKey<Iterable<JsonSerializer<*>>>(JsonSerializer::class.java.name)?.forEach { jsonSerializer ->
             sandboxJsonSerializationManager.setSerializer(jsonSerializer) { errorMessage ->
-                log.error(
+                log.warn(
                     "registerCustomJsonSerialization failed: ${jsonSerializer::class.java.canonicalName} $errorMessage"
                 )
             }
         }
         getObjectByKey<Iterable<JsonDeserializer<*>>>(JsonDeserializer::class.java.name)?.forEach { jsonDeserializer ->
             sandboxJsonSerializationManager.setDeserializer(jsonDeserializer) { errorMessage ->
-                log.error(
+                log.warn(
                     "registerCustomJsonSerialization failed: ${jsonDeserializer::class.java.canonicalName} $errorMessage"
                 )
             }
