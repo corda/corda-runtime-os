@@ -392,7 +392,7 @@ Cluster DB port
 {{- end -}}
 
 {{/*
-Cluster DB user secret 
+Cluster DB user environment variable 
 */}}
 {{- define "corda.clusterDbUser" -}}
 {{- if .Values.db.cluster.user.valueFrom.secretkeyRef.name }}
