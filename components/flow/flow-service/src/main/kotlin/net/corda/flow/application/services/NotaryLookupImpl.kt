@@ -16,7 +16,6 @@ import java.security.PublicKey
 @Component(
     service = [NotaryLookup::class, SingletonSerializeAsToken::class],
     scope = ServiceScope.PROTOTYPE,
-    property = ["corda.system=true"]
 )
 class NotaryLookupImpl @Activate constructor(
     @Reference(service = FlowFiberService::class)
@@ -29,8 +28,7 @@ class NotaryLookupImpl @Activate constructor(
     override val notaryServices: List<NotaryInfo>
         get() = members.map {
             it.notaryDetails
-        }
-            .filterNotNull()
+        }.filterNotNull()
             .groupBy {
                 it.serviceName
             }.mapNotNull {
