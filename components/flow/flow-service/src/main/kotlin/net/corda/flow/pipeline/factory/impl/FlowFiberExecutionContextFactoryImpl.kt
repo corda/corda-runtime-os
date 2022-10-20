@@ -34,7 +34,7 @@ class FlowFiberExecutionContextFactoryImpl @Activate constructor(
             sandbox,
             checkpoint.holdingIdentity,
             membershipGroupReaderProvider.getGroupReader(checkpoint.holdingIdentity),
-            MDC.getCopyOfContextMap()
+            MDC.getCopyOfContextMap() ?: emptyMap()
         )
     }
 }
