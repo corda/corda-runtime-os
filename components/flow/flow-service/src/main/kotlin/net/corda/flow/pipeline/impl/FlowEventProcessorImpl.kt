@@ -128,11 +128,11 @@ class FlowEventProcessorImpl(
      * Extract out the MDC logging info from the [checkpoint].
      */
     private fun getMDCFromCheckpoint(state: Checkpoint): Map<String, String> {
-        val flowState = state.flowState
+        val flowState = state.flowState ?: return emptyMap()
         val startContext = flowState.flowStartContext
         val vNodeShortHash = startContext.identity.toCorda().shortHash.toString()
         val mdcLogging = mutableMapOf(MDC_VNODE_ID to vNodeShortHash, MDC_CLIENT_ID to startContext.requestId)
-        flowState?.externalEventState?.requestId?.let { mdcLogging.put(MDC_EXTERNAL_EVENT_ID, it) }
+        flowState.externalEventState?.requestId?.let { mdcLogging.put(MDC_EXTERNAL_EVENT_ID, it) }
         return mdcLogging
     }
 }
