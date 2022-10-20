@@ -128,14 +128,14 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
      * @return [Boolean] indicating whether we actually updated any changelogs
      */
     private fun updateChangeLogs(
-        changeLogEntities: List<CpkDbChangeLogEntity>,
+        cpkDbChangeLogEntities: List<CpkDbChangeLogEntity>,
         em: EntityManager,
         cpi: Cpi
     ) {
         // The incoming changelogs will not be marked deleted
-        changeLogEntities.forEach { require(!it.isDeleted) }
+        cpkDbChangeLogEntities.forEach { require(!it.isDeleted) }
         val dbChangelogs = findDbChangeLogForCpi(em, cpi.metadata.cpiId).associateBy { it.id }
-        val changeLogUpdates = changeLogEntities.associateBy { it.id }
+        val changeLogUpdates = cpkDbChangeLogEntities.associateBy { it.id }
 
         // Then, for the currently declared changelogs, we'll save the record and clear any isDeleted flags.
         // This all happens under one transaction so no one will see the isDeleted flags flicker.
@@ -148,8 +148,8 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
                 val ret: CpkDbChangeLogEntity? = if (inDb != null) {
                     changelog.entityVersion = inDb.entityVersion
                     // Check prior to merge
-                    val hasChanged = changelog.fileChecksum != inDb.fileChecksum
-                        || changelog.changeUUID != inDb.changeUUID
+                    val hasChanged = changelog.fileChecksum != inDb.fileChecksum ||
+                        changelog.changeUUID != inDb.changeUUID
                     if (changeLogUpdates.containsKey(changelogId) || hasChanged) {
                         // Mark as not deleted if this is one of the new entries
                         changelog.isDeleted = false

@@ -3,7 +3,7 @@ plugins {
     id 'net.corda.plugins.cordapp-cpk2'
 }
 
-description 'Cats test bundle'
+description 'Fish test bundle'
 
 // IMPORTANT:  We must set the group to anything other than `net.corda`.
 // This is so that we can link this into a CPB without the corda gradle plugin refusing.
@@ -13,7 +13,7 @@ group 'com.r3.testing'
 cordapp {
     targetPlatformVersion platformVersion as Integer
     workflow {
-        name 'Testing Cats CPK'
+        name 'Testing Fish CPK'
         versionId 1
         vendor 'R3'
     }

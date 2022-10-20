@@ -17,7 +17,7 @@ class LiquibaseExtractor {
      *
      * @return list of entities to be inserted into db containing liquibase scripts
      */
-    fun extractLiquibaseScriptsFromCpi(cpi: Cpi) : List<CpkDbChangeLogEntity> {
+    fun extractLiquibaseEntitiesFromCpi(cpi: Cpi) : List<CpkDbChangeLogEntity> {
         log.info("Extracting liquibase files from for CPI: ${cpi.metadata.cpiId}")
 
         val changeUUID = UUID.randomUUID()

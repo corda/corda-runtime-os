@@ -2,7 +2,6 @@ package net.corda.chunking.db.impl.cpi
 
 import net.corda.chunking.db.impl.cpi.liquibase.LiquibaseExtractor
 import net.corda.chunking.db.impl.cpi.liquibase.LiquibaseExtractorHelpers
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogDTO
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
@@ -22,6 +21,7 @@ import java.io.FileNotFoundException
 import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.UUID
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class LiquibaseExtractorHelpersTest {
@@ -94,7 +94,7 @@ internal class LiquibaseExtractorHelpersTest {
         )
 
         val obj = LiquibaseExtractorHelpers()
-        val entities = jarWithLiquibase().inputStream().use { obj.getDTOs(cpk, it) }
+        val entities = jarWithLiquibase().inputStream().use { obj.getEntities(cpk, it, UUID.randomUUID()) }
 
         assertThat(entities.size).isEqualTo(1)
     }
@@ -109,7 +109,7 @@ internal class LiquibaseExtractorHelpersTest {
         )
 
         val obj = LiquibaseExtractorHelpers()
-        val entities = cpkWithNestedJar().inputStream().use { obj.getDTOs(cpk, it) }
+        val entities = cpkWithNestedJar().inputStream().use { obj.getEntities(cpk, it, UUID.randomUUID()) }
 
         assertThat(entities.size).isEqualTo(1)
     }
@@ -124,7 +124,7 @@ internal class LiquibaseExtractorHelpersTest {
         )
 
         val obj = LiquibaseExtractorHelpers()
-        val entities = jarWithoutLiquibase().inputStream().use { obj.getDTOs(cpk, it) }
+        val entities = jarWithoutLiquibase().inputStream().use { obj.getEntities(cpk, it, UUID.randomUUID()) }
 
         assertThat(entities.size).isEqualTo(0)
     }
@@ -139,7 +139,7 @@ internal class LiquibaseExtractorHelpersTest {
         )
 
         val obj = LiquibaseExtractorHelpers()
-        val entities = jarWithBrokenLiquibase().inputStream().use { obj.getDTOs(cpk, it) }
+        val entities = jarWithBrokenLiquibase().inputStream().use { obj.getEntities(cpk, it, UUID.randomUUID()) }
 
         assertThat(entities.size).isEqualTo(0)
     }
@@ -154,7 +154,7 @@ internal class LiquibaseExtractorHelpersTest {
         )
 
         val obj = LiquibaseExtractorHelpers()
-        val entities = jarWithOtherXmlResource().inputStream().use { obj.getDTOs(cpk, it) }
+        val entities = jarWithOtherXmlResource().inputStream().use { obj.getEntities(cpk, it, UUID.randomUUID()) }
 
         assertThat(entities.size).isEqualTo(0)
     }
@@ -194,7 +194,7 @@ internal class LiquibaseExtractorHelpersTest {
         // We're testing a **CPI**, not a *CPK**, so we're persisting
         // the scripts using the "mock cpk" as the db key.
 
-        val entities = getInputStream(EXTENDABLE_CPB).use { obj.getDTOs(cpk, it) }
+        val entities = getInputStream(EXTENDABLE_CPB).use { obj.getEntities(cpk, it, UUID.randomUUID()) }
 
         // "extendable-cpb" contains cats.cpk (3) and dogs.cpk (2) liquibase files.
         val expectedLiquibaseFileCount = 5
@@ -207,10 +207,10 @@ internal class LiquibaseExtractorHelpersTest {
         val obj = LiquibaseExtractorHelpers()
         val cpi: Cpi = getInputStream(EXTENDABLE_CPB).use { TestCpbReaderV2.readCpi(it, testDir) }
 
-        val entities = mutableListOf<CpkDbChangeLogDTO>()
+        val entities = mutableListOf<CpkDbChangeLogEntity>()
         cpi.cpks.forEach { cpk ->
             Files.newInputStream(cpk.path!!).use {
-                entities += obj.getDTOs(cpk, it)
+                entities += obj.getEntities(cpk, it, UUID.randomUUID())
             }
         }
 
@@ -224,9 +224,9 @@ internal class LiquibaseExtractorHelpersTest {
         val cpi: Cpi = getInputStream(EXTENDABLE_CPB).use { TestCpbReaderV2.readCpi(it, testDir) }
 
         val obj = LiquibaseExtractor()
-        assertThat(obj.extractLiquibaseScriptsFromCpi(cpi).isNotEmpty()).isTrue
+        assertThat(obj.extractLiquibaseEntitiesFromCpi(cpi).isNotEmpty()).isTrue
 
         val expectedLiquibaseFileCount = 5
-        assertThat(obj.extractLiquibaseScriptsFromCpi(cpi).size).isEqualTo(expectedLiquibaseFileCount)
+        assertThat(obj.extractLiquibaseEntitiesFromCpi(cpi).size).isEqualTo(expectedLiquibaseFileCount)
     }
 }

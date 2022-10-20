@@ -3,7 +3,6 @@ package net.corda.virtualnode.write.db.impl.writer
 import net.corda.db.admin.DbChange
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import java.io.File
 import java.io.InputStream
 
 /**
@@ -52,4 +51,3 @@ class VirtualNodeDbChangeLog(
             ?: throw CordaRuntimeException("Cannot find changelog file: $path")
     }
 }
-

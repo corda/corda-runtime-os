@@ -229,4 +229,4 @@ fun CpiPersistence.verifyGroupIdIsUniqueForCpi(cpi: Cpi) {
  * @return list of entities containing liquibase scripts ready for insertion into database
  */
 fun Cpi.extractLiquibaseScripts(): List<CpkDbChangeLogEntity> =
-    LiquibaseExtractor().extractLiquibaseScriptsFromCpi(this)
+    LiquibaseExtractor().extractLiquibaseEntitiesFromCpi(this)
