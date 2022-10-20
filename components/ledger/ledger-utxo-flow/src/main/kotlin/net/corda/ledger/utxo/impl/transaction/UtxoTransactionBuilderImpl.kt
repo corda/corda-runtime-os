@@ -1,8 +1,10 @@
 package net.corda.ledger.utxo.impl.transaction
 
+import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.TransactionMetaData
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.data.transaction.createTransactionSignature
 import net.corda.ledger.utxo.impl.state.TransactionStateImpl
 import net.corda.ledger.utxo.impl.timewindow.TimeWindowBetweenImpl
 import net.corda.ledger.utxo.impl.timewindow.TimeWindowUntilImpl
@@ -102,12 +104,31 @@ data class UtxoTransactionBuilderImpl(
 
     @Suspendable
     override fun sign(signatories: Iterable<PublicKey>): UtxoSignedTransaction {
-        TODO("Not yet implemented")
+        require(signatories.toList().isNotEmpty()) {
+            "At least one key needs to be provided in order to create a signed Transaction!"
+        }
+        val wireTransaction = buildWireTransaction()
+        val signaturesWithMetaData = signatories.map {
+            createTransactionSignature(
+                signingService,
+                serializationService,
+                getCpiSummary(),
+                wireTransaction.id,
+                it
+            )
+        }
+        return UtxoSignedTransactionImpl(
+            serializationService,
+            signingService,
+            digitalSignatureVerificationService,
+            wireTransaction,
+            signaturesWithMetaData
+        )
     }
 
     private fun buildWireTransaction(): WireTransaction {
-        // TODO(CORE-5982 more verifications)
-        // TODO(CORE-5982 ? metadata verifications: nulls, order of CPKs, at least one CPK?))
+        // TODO(CORE-5982-? more verifications)
+        // TODO(CORE-5982-? metadata verifications: nulls, order of CPKs, at least one CPK?))
         require(inputStateAndRefs.isNotEmpty() || outputTransactionStates.isNotEmpty()) {
             "At least one input or output state is required"
         }
@@ -189,3 +210,14 @@ data class UtxoTransactionBuilderImpl(
     //todo
     override fun hashCode(): Int = outputTransactionStates.hashCode()
 }
+
+/**
+ * TODO [CORE-7126] Fake values until we can get CPI information properly
+ */
+private fun getCpiSummary(): CordaPackageSummary =
+    CordaPackageSummary(
+        name = "CPI name",
+        version = "CPI version",
+        signerSummaryHash = SecureHash("SHA-256", "Fake-value".toByteArray()).toHexString(),
+        fileChecksum = SecureHash("SHA-256", "Another-Fake-value".toByteArray()).toHexString()
+    )

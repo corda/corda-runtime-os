@@ -25,7 +25,7 @@ data class UtxoLedgerTransactionImpl(
         get() = wireTransaction.id
 
     override val timeWindow: TimeWindow by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        val timeWindowBytes = wireTransaction.getComponentGroupList(UtxoComponentGroup.NOTARY.ordinal)[2]
+        val timeWindowBytes = wireTransaction.getComponentGroupList(UtxoComponentGroup.NOTARY.ordinal)[1]
         serializationService.deserialize(timeWindowBytes, TimeWindow::class.java)
     }
 
@@ -42,7 +42,8 @@ data class UtxoLedgerTransactionImpl(
     }
 
     override val signatories: List<PublicKey> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        TODO("Not yet implemented.")
+        //TODO("Not yet implemented.")
+        emptyList()
     }
 
     val inputStateRefs: List<StateRef> by lazy(LazyThreadSafetyMode.PUBLICATION) {
@@ -52,7 +53,8 @@ data class UtxoLedgerTransactionImpl(
     }
 
     override val inputStateAndRefs: List<StateAndRef<*>> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        TODO("Not yet implemented.")
+        //TODO("Not yet implemented.")
+        emptyList()
     }
 
     val referenceInputStateRefs: List<StateRef> by lazy(LazyThreadSafetyMode.PUBLICATION) {
@@ -62,7 +64,8 @@ data class UtxoLedgerTransactionImpl(
     }
 
     override val referenceInputStateAndRefs: List<StateAndRef<*>> by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        TODO("Not yet implemented.")
+        //TODO("Not yet implemented.")
+        emptyList()
     }
 
     private val outputsInfo: List<UtxoOutputInfoComponent> by lazy(LazyThreadSafetyMode.PUBLICATION) {

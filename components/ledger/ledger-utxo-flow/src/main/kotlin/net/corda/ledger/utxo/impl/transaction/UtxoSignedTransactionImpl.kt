@@ -2,6 +2,8 @@ package net.corda.ledger.utxo.impl.transaction
 
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
+import net.corda.v5.application.crypto.DigitalSignatureVerificationService
+import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
@@ -9,9 +11,12 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import java.security.PublicKey
 
 data class UtxoSignedTransactionImpl(
-    override val signatures: List<DigitalSignatureAndMetadata>,
     private val serializationService: SerializationService,
-    private val wireTransaction: WireTransaction
+    private val signingService: SigningService,
+    private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
+
+    private val wireTransaction: WireTransaction,
+    override val signatures: List<DigitalSignatureAndMetadata>
 ) : UtxoSignedTransaction {
 
     init {
