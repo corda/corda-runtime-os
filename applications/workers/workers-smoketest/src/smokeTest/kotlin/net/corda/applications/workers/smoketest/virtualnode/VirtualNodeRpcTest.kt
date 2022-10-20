@@ -409,7 +409,7 @@ class VirtualNodeRpcTest {
     fun `Sync DB and persist fish`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-            assertThat(syncVirtualNode(aliceHoldingId).code).isEqualTo(200)
+            assertThat(syncVirtualNode(aliceHoldingId).code).isLessThan(400)
 
             runSimplePersistenceCheckFlow("\"Could persist fish\"")
         }

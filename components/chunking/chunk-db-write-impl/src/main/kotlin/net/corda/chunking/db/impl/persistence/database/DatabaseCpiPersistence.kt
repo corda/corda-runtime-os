@@ -1,7 +1,6 @@
 package net.corda.chunking.db.impl.persistence.database
 
 import net.corda.chunking.RequestId
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogDTO
 import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
 import net.corda.chunking.db.impl.persistence.PersistenceUtils.toCpkKey
@@ -11,6 +10,7 @@ import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogAuditEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
 import net.corda.libs.cpi.datamodel.CpkFileEntity
 import net.corda.libs.cpi.datamodel.CpkKey
 import net.corda.libs.cpi.datamodel.CpkMetadataEntity
@@ -72,7 +72,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         checksum: SecureHash,
         requestId: RequestId,
         groupId: String,
-        cpkDbChangeLogDTOs: List<CpkDbChangeLogDTO>
+        cpkDbChangeLogEntities: List<CpkDbChangeLogEntity>
     ): CpiMetadataEntity {
         entityManagerFactory.createEntityManager().transaction { em ->
 
@@ -110,7 +110,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
             createOrUpdateCpkFileEntities(em, cpi.cpks)
 
-            updateChangeLogs(cpkDbChangeLogDTOs, em, cpi)
+            updateChangeLogs(cpkDbChangeLogEntities, em, cpi)
 
             return@persistMetadataAndCpks managedCpiMetadataEntity
         }
@@ -128,14 +128,10 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
      * @return [Boolean] indicating whether we actually updated any changelogs
      */
     private fun updateChangeLogs(
-        cpkDbChangeLogDTOs: List<CpkDbChangeLogDTO>,
+        changeLogEntities: List<CpkDbChangeLogEntity>,
         em: EntityManager,
         cpi: Cpi
     ) {
-        val changeUUID = UUID.randomUUID()
-        val changeLogEntities = cpkDbChangeLogDTOs.map {
-            CpkDbChangeLogEntity(it, changeUUID)
-        }
         // The incoming changelogs will not be marked deleted
         changeLogEntities.forEach { require(!it.isDeleted) }
         val dbChangelogs = findDbChangeLogForCpi(em, cpi.metadata.cpiId).associateBy { it.id }
@@ -153,6 +149,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
                     changelog.entityVersion = inDb.entityVersion
                     // Check prior to merge
                     val hasChanged = changelog.fileChecksum != inDb.fileChecksum
+                        || changelog.changeUUID != inDb.changeUUID
                     if (changeLogUpdates.containsKey(changelogId) || hasChanged) {
                         // Mark as not deleted if this is one of the new entries
                         changelog.isDeleted = false
@@ -193,7 +190,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         checksum: SecureHash,
         requestId: RequestId,
         groupId: String,
-        cpkDbChangeLogDTOs: List<CpkDbChangeLogDTO>
+        cpkDbChangeLogEntities: List<CpkDbChangeLogEntity>
     ): CpiMetadataEntity {
         val cpiId = cpi.metadata.cpiId
         log.info("Performing updateMetadataAndCpks for: ${cpiId.name} v${cpiId.version}")
@@ -225,7 +222,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
 
             createOrUpdateCpkFileEntities(em, cpi.cpks)
 
-            updateChangeLogs(cpkDbChangeLogDTOs, em, cpi)
+            updateChangeLogs(cpkDbChangeLogEntities, em, cpi)
 
             return cpiMetadataEntity
         }

@@ -28,9 +28,6 @@ class CpkDbChangeLogEntity(
     @Column(name = "change_uuid", nullable = false)
     val changeUUID: UUID,
 ) {
-    constructor(cpkDbChangeLogDTO: CpkDbChangeLogDTO, changeUUID: UUID) : this (
-        cpkDbChangeLogDTO.id, cpkDbChangeLogDTO.cpkFileChecksum, cpkDbChangeLogDTO.content, changeUUID
-    )
     // This structure does not distinguish the root changelogs from changelog include files
     // (or CSVs, which we do not need to support). So, to find the root, you need to look for a filename
     // convention. See the comment in the companion object of VirtualNodeDbChangeLog.

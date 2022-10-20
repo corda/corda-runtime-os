@@ -2,13 +2,14 @@ package net.corda.chunking.db.impl.cpi.liquibase
 
 import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
 import net.corda.db.admin.LiquibaseXmlConstants.DB_CHANGE_LOG_ROOT_ELEMENT
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogDTO
+import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
 import net.corda.libs.packaging.Cpk
 import net.corda.v5.base.util.contextLogger
 import java.io.BufferedReader
 import java.io.InputStream
 import java.io.StringReader
+import java.util.UUID
 import javax.xml.stream.XMLInputFactory
 import javax.xml.stream.XMLStreamException
 import javax.xml.stream.events.XMLEvent
@@ -61,13 +62,13 @@ class LiquibaseExtractorHelpers {
      * For the given [Cpk] extract all Liquibase scripts that exist and convert
      * them into entities that we can persist to the database.
      */
-    fun getDTOs(cpk: Cpk, inputStream: InputStream): List<CpkDbChangeLogDTO> {
+    fun getEntities(cpk: Cpk, inputStream: InputStream, changeUUID: UUID): List<CpkDbChangeLogEntity> {
         log.info("Processing ${cpk.metadata.cpkId} for Liquibase files")
-        val entities = mutableListOf<CpkDbChangeLogDTO>()
+        val entities = mutableListOf<CpkDbChangeLogEntity>()
         JarWalker.walk(inputStream) { path, it ->
             if (!isMigrationFile(path)) return@walk
             val content = validateXml(path, it) ?: return@walk
-            entities.add(createDTO(cpk, path, content))
+            entities.add(createEntity(cpk, path, content, changeUUID))
         }
         log.info("Processing ${cpk.metadata.cpkId} for Liquibase files finished")
         return entities
@@ -108,10 +109,10 @@ class LiquibaseExtractorHelpers {
     /**
      * Create db entity containing the Liquibase script for the given [Cpk]
      */
-    private fun createDTO(cpk: Cpk, path: String, xmlContent: String): CpkDbChangeLogDTO {
+    private fun createEntity(cpk: Cpk, path: String, xmlContent: String, changeUUID: UUID): CpkDbChangeLogEntity {
         val cpkId = cpk.metadata.cpkId
         val id = CpkDbChangeLogKey(cpkId.name, cpkId.version, cpkId.signerSummaryHashForDbQuery, path)
-        return CpkDbChangeLogDTO(id, cpk.metadata.fileChecksum.toString(), xmlContent)
+        return CpkDbChangeLogEntity(id, cpk.metadata.fileChecksum.toString(), xmlContent, changeUUID)
     }
 }
 

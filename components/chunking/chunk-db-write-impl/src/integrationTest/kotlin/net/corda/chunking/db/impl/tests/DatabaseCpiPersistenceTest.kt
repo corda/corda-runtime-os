@@ -14,7 +14,6 @@ import net.corda.libs.cpi.datamodel.CpiEntities
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogAuditEntity
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogDTO
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
 import net.corda.libs.cpi.datamodel.CpkFileEntity
@@ -43,6 +42,7 @@ import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
+import org.apache.avro.UnresolvedUnionException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.AfterAll
@@ -644,9 +644,9 @@ internal class DatabaseCpiPersistenceTest {
     private fun makeChangeLogs(
         cpks: Array<Cpk>,
         changeLogs: List<String> = listOf(mockChangeLogContent)
-    ): List<CpkDbChangeLogDTO> = cpks.flatMap {
+    ): List<CpkDbChangeLogEntity> = cpks.flatMap {
         changeLogs.map { changeLog ->
-            CpkDbChangeLogDTO(
+            CpkDbChangeLogEntity(
                 CpkDbChangeLogKey(
                     it.metadata.cpkId.name,
                     it.metadata.cpkId.version,
@@ -654,7 +654,8 @@ internal class DatabaseCpiPersistenceTest {
                     "resources/$changeLog"
                 ),
                 newRandomSecureHash().toString(),
-                changeLog
+                changeLog,
+                UUID.randomUUID()
             )
         }
     }
