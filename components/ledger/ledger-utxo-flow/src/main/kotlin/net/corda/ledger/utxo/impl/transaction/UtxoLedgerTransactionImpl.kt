@@ -21,7 +21,7 @@ data class UtxoLedgerTransactionImpl(
     private val serializationService: SerializationService
 ) : UtxoLedgerTransaction {
 
-    override val id: SecureHash
+    val id: SecureHash
         get() = wireTransaction.id
 
     override val timeWindow: TimeWindow by lazy(LazyThreadSafetyMode.PUBLICATION) {
