@@ -415,7 +415,7 @@ Cluster DB name
 {{- end -}}
 
 {{/*
-Cluster DB password secret 
+Cluster DB password environment variable 
 */}}
 {{- define "corda.clusterDbSecretName" -}}
 - name: PGPASSWORD
