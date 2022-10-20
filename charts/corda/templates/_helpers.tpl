@@ -395,12 +395,12 @@ Cluster DB port
 Cluster DB user environment variable 
 */}}
 {{- define "corda.clusterDbUseEnvr" -}}
-{{- if .Values.db.cluster.user.valueFrom.secretkeyRef.name }}
+{{- if .Values.db.cluster.user.valueFrom.secretKeyRef.name }}
 - name: PGUSER
   valueFrom:
     secretKeyRef:
-      name: {{ .Values.db.cluster.user.valueFrom.secretkeyRef.name }}
-      key: {{ .Values.db.cluster.user.valueFrom.secretkeyRef.usernameKey }}
+      name: {{ .Values.db.cluster.user.valueFrom.secretKeyRef.name }}
+      key: {{ .Values.db.cluster.user.valueFrom.secretKeyRef.key }}
 {{- else }}
 - name: PGUSER
   value: {{ .Values.db.cluster.user.value }}
@@ -421,7 +421,7 @@ Cluster DB password environment variable
 - name: PGPASSWORD
   valueFrom:
     secretKeyRef:
-      name: {{ .Values.db.cluster.password.valueFrom.secretkeyRef.name | default ( printf "%s-cluster-db" (include "corda.fullname" .) ) }}
-      key: {{ .Values.db.cluster.password.valueFrom.secretkeyRef.passwordKey | default "password"}}
+      name: {{ .Values.db.cluster.password.valueFrom.secretKeyRef.name | default ( printf "%s-cluster-db" (include "corda.fullname" .) ) }}
+      key: {{ .Values.db.cluster.password.valueFrom.secretKeyRef.key | default "password"}}
 {{- end -}}
 

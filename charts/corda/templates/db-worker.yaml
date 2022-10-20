@@ -39,8 +39,8 @@ spec:
           allowPrivilegeEscalation: false
         {{- include "corda.workerResources" . | nindent 8 }} 
         env:
-        {{- include "corda.clusterDbUser" . | nindent 10 }}
-        {{- include "corda.clusterDbSecretName" . | nindent 10 }}
+        {{- include "corda.clusterDbUseEnvr" . | nindent 10 }}
+        {{- include "corda.clusterDbPasswordEnv" . | nindent 10 }}
           - name: SALT
             valueFrom:
               secretKeyRef:
