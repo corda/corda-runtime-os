@@ -78,7 +78,7 @@ internal sealed class MemberRole {
                 )
             }
             return keys + listOf(
-                "$ROLES_PREFIX$index" to NOTARY_ROLE,
+                "$ROLES_PREFIX.$index" to NOTARY_ROLE,
                 NOTARY_SERVICE_NAME to serviceName.toString(),
             ) + if (plugin == null) {
                 emptyList()

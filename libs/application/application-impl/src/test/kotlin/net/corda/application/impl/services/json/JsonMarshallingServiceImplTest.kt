@@ -9,6 +9,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.lang.reflect.ParameterizedType
 
 class JsonMarshallingServiceImplTest {
 
@@ -63,6 +64,20 @@ class JsonMarshallingServiceImplTest {
     private fun instanceOf(instanceClass: String): Any {
         val serializerClazz = Class.forName(instanceClass)
         return serializerClazz.getConstructor().newInstance()
+    }
+
+    /**
+     * This simulates how the serializing type is extracted from serializers/deserializers at runtime
+     */
+    private inline fun <reified T : Any> extractSerializingType(jsonSerializer: T): Class<*> {
+        val types = jsonSerializer::class.java.genericInterfaces
+            .filterIsInstance<ParameterizedType>()
+            .filter { it.rawType === T::class.java }
+            .flatMap { it.actualTypeArguments.asList() }
+        if (types.size != 1) {
+            throw IllegalStateException("Unable to determine serialized type from JsonSerializer")
+        }
+        return Class.forName(types.first().typeName)
     }
 
     @Test
@@ -142,7 +157,7 @@ class JsonMarshallingServiceImplTest {
         )
 
         val jms = JsonMarshallingServiceImpl()
-        jms.setSerializer(instance as JsonSerializer<*>)
+        jms.setSerializer(instance as JsonSerializer<*>, extractSerializingType(instance))
 
         val dto = SimpleDto(
             name = "n1",
@@ -164,7 +179,7 @@ class JsonMarshallingServiceImplTest {
         )
 
         val jms = JsonMarshallingServiceImpl()
-        jms.setDeserializer(instance as JsonDeserializer<*>)
+        jms.setDeserializer(instance as JsonDeserializer<*>, extractSerializingType(instance))
 
         val dto = jms.parse("""
             {
@@ -179,18 +194,18 @@ class JsonMarshallingServiceImplTest {
     @Test
     fun `Duplicate serializers are rejected`() {
         val jms = JsonMarshallingServiceImpl()
-        assertTrue(jms.setSerializer(SimpleSerializer()))
-        assertTrue(jms.setSerializer(OtherSerializer()))
-        assertFalse(jms.setSerializer(SimpleSerializer())) // exact duplicate
-        assertFalse(jms.setSerializer(OtherSimpleDtoSerializer())) // different serializer, same serializing type
+        assertTrue(jms.setSerializer(SimpleSerializer(), SimpleDto::class.java))
+        assertTrue(jms.setSerializer(OtherSerializer(), OtherDto::class.java))
+        assertFalse(jms.setSerializer(SimpleSerializer(), SimpleDto::class.java)) // exact duplicate
+        assertFalse(jms.setSerializer(OtherSimpleDtoSerializer(), SimpleDto::class.java)) // different serializer, same type
     }
 
     @Test
     fun `Duplicate deserializers are rejected`() {
         val jms = JsonMarshallingServiceImpl()
-        assertTrue(jms.setDeserializer(SimpleDeserializer()))
-        assertTrue(jms.setDeserializer(OtherDeserializer()))
-        assertFalse(jms.setDeserializer(SimpleDeserializer())) // exact duplicate
-        assertFalse(jms.setDeserializer(OtherSimpleDtoDeserializer())) // different deserializer, same deserializing type
+        assertTrue(jms.setDeserializer(SimpleDeserializer(), SimpleDto::class.java))
+        assertTrue(jms.setDeserializer(OtherDeserializer(), OtherDto::class.java))
+        assertFalse(jms.setDeserializer(SimpleDeserializer(), SimpleDto::class.java)) // exact duplicate
+        assertFalse(jms.setDeserializer(OtherSimpleDtoDeserializer(), SimpleDto::class.java)) // different deserializer, same type
     }
 }

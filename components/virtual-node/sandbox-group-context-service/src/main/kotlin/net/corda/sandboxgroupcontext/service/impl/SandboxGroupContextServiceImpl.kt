@@ -4,7 +4,9 @@ package net.corda.sandboxgroupcontext.service.impl
 import java.security.AccessControlContext
 import java.security.AccessControlException
 import java.util.Collections.singleton
+import java.util.Deque
 import java.util.Hashtable
+import java.util.LinkedList
 import net.corda.cpk.read.CpkReadService
 import net.corda.libs.packaging.core.CpkMetadata
 import net.corda.sandbox.SandboxCreationService
@@ -12,10 +14,12 @@ import net.corda.sandbox.SandboxException
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX_FILTER
 import net.corda.sandboxgroupcontext.CORDA_SYSTEM_FILTER
+import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContextInitializer
 import net.corda.sandboxgroupcontext.SandboxGroupContextService
 import net.corda.sandboxgroupcontext.VirtualNodeContext
+import net.corda.sandboxgroupcontext.putObjectByKey
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.loggerFor
@@ -25,7 +29,6 @@ import org.osgi.framework.Bundle
 import org.osgi.framework.BundleContext
 import org.osgi.framework.Constants.OBJECTCLASS
 import org.osgi.framework.Constants.SCOPE_PROTOTYPE
-import org.osgi.framework.Constants.SCOPE_SINGLETON
 import org.osgi.framework.Constants.SERVICE_SCOPE
 import org.osgi.framework.FrameworkUtil
 import org.osgi.framework.ServiceObjects
@@ -33,7 +36,6 @@ import org.osgi.framework.ServicePermission
 import org.osgi.framework.ServicePermission.GET
 import org.osgi.framework.ServiceRegistration
 import org.osgi.service.component.runtime.ServiceComponentRuntime
-import org.osgi.service.component.runtime.dto.ComponentDescriptionDTO
 
 private typealias ServiceDefinition = Pair<ServiceObjects<out Any>, List<Class<*>>>
 
@@ -70,9 +72,6 @@ class SandboxGroupContextServiceImpl(
                 logger.warn("Ignoring exception", e)
             }
         }
-
-        private fun ComponentDescriptionDTO.toShortString(): String
-            = "Component(class=$implementationClass, services=${serviceInterfaces.joinToString()}, scope=$scope, enabled=$defaultEnabled)"
     }
 
     fun remove(virtualNodeContext: VirtualNodeContext) {
@@ -80,7 +79,6 @@ class SandboxGroupContextServiceImpl(
     }
 
     override fun getOrCreate(
-
         virtualNodeContext: VirtualNodeContext,
         initializer: SandboxGroupContextInitializer
     ): SandboxGroupContext {
@@ -241,7 +239,8 @@ class SandboxGroupContextServiceImpl(
         }
 
         // Register each metadata service as an OSGi service for its host main bundle.
-        val registrations = registerMetadataServices(serviceMarkerType.name, services)
+        val (instances, registrations) = registerMetadataServices(serviceMarkerType.name, services)
+        (sandboxGroupContext as? MutableSandboxGroupContext)?.putObjectByKey(serviceMarkerType.name, instances)
         return AutoCloseable {
             registrations.forEach { registration ->
                 runIgnoringExceptions(registration::close)
@@ -252,35 +251,19 @@ class SandboxGroupContextServiceImpl(
     private fun registerMetadataServices(
         serviceMarkerTypeName: String,
         services: Iterable<Pair<Class<*>, Bundle>>
-    ): List<AutoCloseable> {
-        val extraCloseables = mutableListOf<AutoCloseable>()
-        return services.mapNotNull { (serviceClass, serviceBundle) ->
+    ): Pair<Set<Any>, Deque<AutoCloseable>> {
+        // These are the steps needed to unregister these services afterwards.
+        // We will accumulate these clean-up steps as we go...
+        val allCloseables = LinkedList<AutoCloseable>()
+
+        // Create an instance of each service type, and register it as an OSGi service.
+        return services.mapNotNullTo(LinkedHashSet()) { (serviceClass, serviceBundle) ->
             try {
-                val serviceContext = serviceBundle.bundleContext
-                val component = serviceComponentRuntime.getComponentDescriptionDTOs(serviceBundle).find { description ->
-                    description.implementationClass == serviceClass.name
-                }
-                val serviceInterfaces = mutableSetOf(serviceMarkerTypeName)
-                val serviceObj = if (component == null) {
-                    serviceInterfaces += serviceClass.name
-                    serviceClass.getConstructor().newInstance()
-                } else if (component.defaultEnabled
-                    && component.scope == SCOPE_SINGLETON
-                    && component.implementationClass in component.serviceInterfaces) {
-                    serviceInterfaces += component.serviceInterfaces
-                    serviceContext.getServiceReference(component.implementationClass)?.let { reference ->
-                        serviceContext.getService(reference)?.also {
-                            // Ensure we can "unget" this service later.
-                            extraCloseables.add(AutoCloseable { serviceContext.ungetService(reference) })
-                        }
-                    } ?: throw IllegalStateException("No ${component.toShortString()} active for bundle $serviceBundle")
-                } else {
-                    logger.warn("Ignoring misconfigured OSGi ${component.toShortString()} for service ${serviceClass.name}")
-                    return@mapNotNull null
-                }
+                val serviceInterfaces = mutableSetOf(serviceMarkerTypeName, serviceClass.name)
+                val serviceObj = serviceClass.getConstructor().newInstance()
 
                 // Register this service object with the OSGi framework.
-                val registration = serviceContext.registerService(
+                val registration = serviceBundle.bundleContext.registerService(
                     serviceInterfaces.toTypedArray(),
                     serviceObj,
                     sandboxServiceProperties
@@ -289,13 +272,16 @@ class SandboxGroupContextServiceImpl(
                 logger.info("Registered Metadata Service [{}] for bundle [{}][{}]",
                     serviceInterfaces.joinToString(), serviceBundle.symbolicName, serviceBundle.bundleId)
 
-                // Return an AutoCloseable that can unregister this service.
-                AutoCloseable(registration::unregister)
+                // Add an AutoCloseable that can unregister this service.
+                allCloseables.addFirst(AutoCloseable(registration::unregister))
+
+                // Return this service instance.
+                serviceObj
             } catch (e: Exception) {
                 logger.warn("Cannot create service ${serviceClass.name}", e)
                 null
             }
-        } + extraCloseables
+        } to allCloseables
     }
 
     override fun registerCustomCryptography(sandboxGroupContext: SandboxGroupContext): AutoCloseable {
