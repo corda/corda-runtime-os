@@ -45,7 +45,7 @@ class AuthenticatedEncryptionSessionTest {
     private val authenticationProtocolB =
         AuthenticationProtocolResponder(
             sessionId,
-            setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION), partyBMaxMessageSize
+            setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION), partyBMaxMessageSize, CertificateCheckMode.NoCertificate
         )
 
     @Test

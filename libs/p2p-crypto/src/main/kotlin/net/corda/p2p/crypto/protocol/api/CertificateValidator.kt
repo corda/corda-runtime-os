@@ -20,7 +20,7 @@ class CertificateValidator(
     private val revocationCheckMode: RevocationCheckMode,
     private val trustStore: KeyStore) {
 
-    companion object {
+    private companion object {
         const val certificateAlgorithm = "PKIX"
         const val certificateFactoryType = "X.509"
     }
@@ -76,7 +76,6 @@ class CertificateValidator(
     }
 
     object AllowAllRevocationChecker : PKIXRevocationChecker() {
-
         private val logger = LoggerFactory.getLogger(AllowAllRevocationChecker::class.java)
 
         override fun check(cert: Certificate?, unresolvedCritExts: MutableCollection<String>?) {

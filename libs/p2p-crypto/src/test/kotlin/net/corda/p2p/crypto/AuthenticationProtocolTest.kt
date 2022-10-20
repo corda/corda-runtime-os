@@ -80,7 +80,12 @@ class AuthenticationProtocolTest {
             groupId,
             CertificateCheckMode.NoCertificate
         )
-        val protocolResponder = AuthenticationProtocolResponder(sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize)
+        val protocolResponder = AuthenticationProtocolResponder(
+            sessionId,
+            setOf(ProtocolMode.AUTHENTICATION_ONLY),
+            partyBMaxMessageSize,
+            CertificateCheckMode.NoCertificate
+        )
 
         // Step 1: initiator sending hello message to responder.
         val initiatorHelloMsg = protocolInitiator.generateInitiatorHello()

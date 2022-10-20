@@ -47,7 +47,7 @@ class AuthenticationProtocolFailureTest {
     private val authenticationProtocolB =
         AuthenticationProtocolResponder(
             sessionId,
-            setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize
+            setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize, CertificateCheckMode.NoCertificate
         )
 
     @Test
@@ -201,7 +201,7 @@ class AuthenticationProtocolFailureTest {
             CertificateCheckMode.NoCertificate
         )
         val authenticationProtocolB = AuthenticationProtocolResponder(
-            sessionId, setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION), partyBMaxMessageSize
+            sessionId, setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION), partyBMaxMessageSize, CertificateCheckMode.NoCertificate
         )
 
         // Step 1: initiator sending hello message to responder.

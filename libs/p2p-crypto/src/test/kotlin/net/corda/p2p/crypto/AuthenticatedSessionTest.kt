@@ -43,7 +43,7 @@ class AuthenticatedSessionTest {
     private val partyBMaxMessageSize = 1_500_000
     private val partyBSessionKey = keyPairGenerator.generateKeyPair()
     private val authenticationProtocolB = AuthenticationProtocolResponder(
-        sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize
+        sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize, CertificateCheckMode.NoCertificate
     )
 
     @Test

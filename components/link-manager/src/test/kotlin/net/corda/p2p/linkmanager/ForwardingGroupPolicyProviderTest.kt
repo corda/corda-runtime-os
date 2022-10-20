@@ -23,7 +23,6 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import java.io.ByteArrayInputStream
 import java.security.KeyStore
 import java.security.KeyStoreException
 import java.security.cert.Certificate

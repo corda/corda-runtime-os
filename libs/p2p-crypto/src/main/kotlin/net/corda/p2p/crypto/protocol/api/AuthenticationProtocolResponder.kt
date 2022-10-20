@@ -54,7 +54,7 @@ import kotlin.math.min
 class AuthenticationProtocolResponder(val sessionId: String,
                                       private val supportedModes: Set<ProtocolMode>,
                                       private val ourMaxMessageSize: Int,
-                                      private val certificateCheckMode: CertificateCheckMode = CertificateCheckMode.NoCertificate
+                                      private val certificateCheckMode: CertificateCheckMode
 ): AuthenticationProtocol(certificateCheckMode) {
 
     init {
