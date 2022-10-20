@@ -8,12 +8,14 @@ import net.corda.data.membership.db.request.query.QueryGroupPolicy
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.GroupPolicyEntity
 import net.corda.membership.lib.MemberInfoFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.test.util.identity.createTestHoldingIdentity
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
@@ -85,6 +87,8 @@ class QueryGroupPolicyHandlerTest {
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { getByHoldingIdentityShortHash(eq(holdingIdentity.shortHash)) } doReturn virtualNodeInfo
     }
+    private val keyEncodingService: KeyEncodingService = mock()
+    private val platformInfoProvider: PlatformInfoProvider = mock()
 
     private val services = PersistenceHandlerServices(
         clock,
@@ -92,7 +96,9 @@ class QueryGroupPolicyHandlerTest {
         jpaEntitiesRegistry,
         memberInfoFactory,
         cordaAvroSerializationFactory,
-        virtualNodeInfoReadService
+        virtualNodeInfoReadService,
+        keyEncodingService,
+        platformInfoProvider,
     )
 
     private lateinit var queryGroupPolicyHandler: QueryGroupPolicyHandler

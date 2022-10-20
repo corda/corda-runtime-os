@@ -3,7 +3,6 @@ package net.corda.ledger.consensual.persistence.impl.repository
 import net.corda.data.persistence.EntityResponse
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.utilities.VisibleForTesting
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.base.util.contextLogger
@@ -14,7 +13,12 @@ import net.corda.v5.crypto.SecureHash
 import java.security.MessageDigest
 import java.time.Instant
 import javax.persistence.EntityManager
+import javax.persistence.Query
+import javax.persistence.Tuple
 
+/**
+ * Reads and writes ledger transaction data to and from the virtual node vault database.
+ */
 class ConsensualLedgerRepository(
     private val merkleTreeProvider: MerkleTreeProvider,
     private val digestService: DigestService,
@@ -22,6 +26,7 @@ class ConsensualLedgerRepository(
 ) {
     companion object {
         private val logger = contextLogger()
+        private val componentGroupListsTuplesMapper = ComponentGroupListsTuplesMapper()
     }
 
     // TODO This should probably take a ConsensualSignedTransactionImpl which includes WireTransaction and signers.
@@ -43,6 +48,7 @@ class ConsensualLedgerRepository(
         return EntityResponse(emptyList())
     }
 
+    /** Reads [WireTransaction] with given [id] from database. */
     fun findTransaction(entityManager: EntityManager, id: String): WireTransaction? {
 
         val rows = entityManager.createNativeQuery(
@@ -52,45 +58,20 @@ class ConsensualLedgerRepository(
                 JOIN {h-schema}consensual_transaction_component AS txc ON tx.id = txc.transaction_id
                 WHERE tx.id = :id
                 ORDER BY txc.group_idx, txc.leaf_idx
-                """
-        )
+                """,
+            Tuple::class.java)
             .setParameter("id", id)
-            .resultList
+            .resultListAsTuples()
 
         if (rows.isEmpty()) return null
 
-        val firstRowColumns = rows.first() as Array<*>
+        val firstRowColumns = rows.first()
         val privacySalt = PrivacySaltImpl(firstRowColumns[1] as ByteArray)
-        val componentGroupLists = queryRowsToComponentGroupLists(rows)
+        val componentGroupLists = rows.mapTuples(componentGroupListsTuplesMapper)
         return WireTransaction(merkleTreeProvider, digestService, jsonMarshallingService, privacySalt, componentGroupLists)
     }
 
-    @VisibleForTesting
-    internal fun queryRowsToComponentGroupLists(rows: List<Any?>): List<List<ByteArray>> {
-        val componentGroupLists: MutableList<MutableList<ByteArray>> = mutableListOf()
-        var componentsList: MutableList<ByteArray> = mutableListOf()
-        var expectedGroupIdx = 0
-        rows.forEach {
-            val columns = it as Array<*>
-            val groupIdx = (columns[4] as Number).toInt()   // txc.group_idx
-            val leafIdx = (columns[5] as Number).toInt()    // txc.leaf_idx
-            val data = columns[6] as ByteArray              // txc.data
-            while (groupIdx > expectedGroupIdx) {
-                // add empty lists for skipped group indices
-                componentGroupLists.add(componentsList)
-                componentsList = mutableListOf()
-                expectedGroupIdx++
-            }
-            check(componentsList.size == leafIdx) {
-                val id = columns[0] as String   // tx.id
-                "Missing data for transaction with ID: $id, groupIdx: $groupIdx, leafIdx: ${componentsList.size}"
-            }
-            componentsList.add(data)
-        }
-        componentGroupLists.add(componentsList)
-        return componentGroupLists
-    }
-
+    /** Persists [tx] data to database. */
     private fun persistTransaction(entityManager: EntityManager, timestamp: Instant, tx: WireTransaction, account: String) {
         entityManager.createNativeQuery(
             """
@@ -104,6 +85,7 @@ class ConsensualLedgerRepository(
             .executeUpdate()
     }
 
+    /** Persists component's leaf [data] to database. */
     @Suppress("LongParameterList")
     private fun persistComponentLeaf(
         entityManager: EntityManager,
@@ -130,6 +112,7 @@ class ConsensualLedgerRepository(
             .executeUpdate()
     }
 
+    /** Persists transaction's [status] to database. */
     private fun persistTransactionStatus(
         entityManager: EntityManager,
         timestamp: Instant,
@@ -147,6 +130,7 @@ class ConsensualLedgerRepository(
             .executeUpdate()
     }
 
+    /** Persists CPK to database. */
     private fun persistCpk(
         entityManager: EntityManager,
         timestamp: Instant,
@@ -173,6 +157,7 @@ class ConsensualLedgerRepository(
             .executeUpdate()
     }
 
+    /** Persists link between [tx] and it's CPK data to database. */
     private fun persistTransactionCpk(
         entityManager: EntityManager,
         tx: WireTransaction
@@ -188,4 +173,6 @@ class ConsensualLedgerRepository(
             .executeUpdate()
     }
 
+    @Suppress("UNCHECKED_CAST")
+    private fun Query.resultListAsTuples() = resultList as List<Tuple>
 }
