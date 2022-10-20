@@ -298,6 +298,7 @@ internal class SessionManagerImpl(
             val sessionInitMessage = genSessionInitMessages(counterparties, 1)
             if(sessionInitMessage.isEmpty()) {
                 outboundSessionPool.removeSessions(counterparties)
+                return
             }
             if (!outboundSessionPool.replaceSession(sessionId, sessionInitMessage.single().first)) {
                 // If the session was not replaced do not send a initiatorHello
