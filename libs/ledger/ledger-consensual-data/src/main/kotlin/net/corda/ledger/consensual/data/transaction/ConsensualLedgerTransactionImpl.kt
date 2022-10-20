@@ -2,6 +2,7 @@ package net.corda.ledger.consensual.data.transaction
 
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
@@ -27,7 +28,7 @@ class ConsensualLedgerTransactionImpl(
 
     override val timestamp: Instant by lazy(LazyThreadSafetyMode.PUBLICATION) {
         val timeStampBytes = wireTransaction.getComponentGroupList(ConsensualComponentGroupEnum.TIMESTAMP.ordinal).first()
-        serializationService.deserialize(timeStampBytes, Instant::class.java)
+        serializationService.deserialize(timeStampBytes)
     }
     override val requiredSigningKeys: Set<PublicKey> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         wireTransaction
@@ -37,13 +38,13 @@ class ConsensualLedgerTransactionImpl(
     private val consensualStateTypes: List<String> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         wireTransaction
             .getComponentGroupList(ConsensualComponentGroupEnum.OUTPUT_STATE_TYPES.ordinal)
-            .map { serializationService.deserialize(it, String::class.java) }
+            .map { serializationService.deserialize(it) }
     }
     override val states: List<ConsensualState> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         wireTransaction
             .getComponentGroupList(ConsensualComponentGroupEnum.OUTPUT_STATES.ordinal)
             .map { state ->
-                serializationService.deserialize(state, ConsensualState::class.java)
+                serializationService.deserialize(state)
             }
     }
 
