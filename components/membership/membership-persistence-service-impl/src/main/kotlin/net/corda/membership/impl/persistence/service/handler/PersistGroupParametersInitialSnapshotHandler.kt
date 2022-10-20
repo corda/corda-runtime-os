@@ -30,11 +30,10 @@ internal class PersistGroupParametersInitialSnapshotHandler(
     ): PersistGroupParametersResponse {
         val epoch = transaction(context.holdingIdentity.toCorda().shortHash) { em ->
             // Create initial snapshot of group parameters.
-            val a = platformInfoProvider.activePlatformVersion
             val groupParameters = KeyValuePairList(
                 listOf(
                     KeyValuePair(EPOCH_KEY, "1"),
-                    KeyValuePair(MPV_KEY, a.toString()),
+                    KeyValuePair(MPV_KEY, platformInfoProvider.activePlatformVersion.toString()),
                     KeyValuePair(MODIFIED_TIME_KEY, clock.instant().toString())
                 )
             )
