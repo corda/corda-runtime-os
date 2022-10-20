@@ -1,5 +1,6 @@
 package net.corda.crypto.component.impl
 
+import java.util.concurrent.atomic.AtomicInteger
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -9,9 +10,9 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.v5.base.util.trace
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.concurrent.atomic.AtomicInteger
 
 abstract class AbstractComponent<IMPL : AbstractComponent.AbstractImpl>(
     coordinatorFactory: LifecycleCoordinatorFactory,
@@ -45,12 +46,12 @@ abstract class AbstractComponent<IMPL : AbstractComponent.AbstractImpl>(
         get() = lifecycleCoordinator.isRunning
 
     override fun start() {
-        logger.info("Starting...")
+        logger.trace { "Starting..." }
         lifecycleCoordinator.start()
     }
 
     override fun stop() {
-        logger.info("Stopping...")
+        logger.trace  { "Stopping..." }
         lifecycleCoordinator.stop()
     }
 
@@ -68,14 +69,14 @@ abstract class AbstractComponent<IMPL : AbstractComponent.AbstractImpl>(
                 if (upstream.handle(event) == DependenciesTracker.EventHandling.HANDLED) {
                     if(_impl != null) {
                         val status = if(upstream.isUp) LifecycleStatus.UP else LifecycleStatus.DOWN
-                        logger.info("RegistrationStatusChangeEvent - setting as {}.", status)
+                        logger.trace { "RegistrationStatusChangeEvent - setting as $status."}
                         coordinator.updateStatus(status)
                         _impl?.onRegistrationStatusChange(upstream.isUp)
                     } else {
                         if (upstream.isUp) {
                             doActivate(coordinator)
                         } else {
-                            logger.info("RegistrationStatusChangeEvent - setting as DOWN.")
+                            logger.trace { "RegistrationStatusChangeEvent - setting as DOWN." }
                             coordinator.updateStatus(LifecycleStatus.DOWN)
                         }
                     }
@@ -86,10 +87,10 @@ abstract class AbstractComponent<IMPL : AbstractComponent.AbstractImpl>(
                     doActivate(coordinator)
                 } else {
                     if(upstream.isUp) {
-                        logger.info("TryAgainCreateActiveImpl - setting as UP.")
+                        logger.trace { "TryAgainCreateActiveImpl - setting as UP." }
                         coordinator.updateStatus(LifecycleStatus.UP)
                     } else {
-                        logger.info("TryAgainCreateActiveImpl - skipping as stale as _impl already created.")
+                        logger.trace { "TryAgainCreateActiveImpl - skipping as stale as _impl already created." }
                     }
                 }
             }
