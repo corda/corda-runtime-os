@@ -88,7 +88,7 @@ class SandboxGroupContextServiceImpl(
             val sandboxTimer = CordaMetrics.Metric.SandboxCreateTime.builder()
                 .forVirtualNode(virtualNodeContext.holdingIdentity.shortHash.value)
                 .withTag(CordaMetrics.Tag.SandboxGroupType, virtualNodeContext.sandboxGroupType.name)
-                .build<Timer>()
+                .build()
             sandboxTimer.recordCallable {
                 val cpks = virtualNodeContext.cpkFileChecksums.mapNotNull { cpkReadService.get(it) }
                 if (cpks.size != virtualNodeContext.cpkFileChecksums.size) {
