@@ -21,8 +21,7 @@ import org.osgi.service.component.annotations.ServiceScope
 
 @Component(
     service = [MerkleTreeProvider::class, SingletonSerializeAsToken::class],
-    scope = ServiceScope.PROTOTYPE,
-    property=["corda.system=true"])
+    scope = ServiceScope.PROTOTYPE)
 class MerkleTreeProviderImpl @Activate constructor(
     @Reference(service = DigestService::class)
     private val digestService: DigestService,
