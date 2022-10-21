@@ -51,7 +51,7 @@ class CryptoWorker @Activate constructor(
         if (params.hsmId.isBlank()) {
             throw IllegalStateException("Please specify which HSM the worker must handle, like --hsm-id SOFT")
         }
-        setupMonitor(workerMonitor, params.defaultParams)
+        setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
         processor.start(
             buildBoostrapConfig(params, configurationValidatorFactory)
         )

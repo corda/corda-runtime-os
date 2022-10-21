@@ -125,6 +125,7 @@ class CryptoConnectionsFactoryImpl @Activate constructor(
                 config.expireAfterAccessMins
             )
             return CacheFactoryImpl().build(
+                "Crypto-Db-Connections-Cache",
                 Caffeine.newBuilder()
                     .expireAfterAccess(config.expireAfterAccessMins, TimeUnit.MINUTES)
                     .maximumSize(config.maximumSize)

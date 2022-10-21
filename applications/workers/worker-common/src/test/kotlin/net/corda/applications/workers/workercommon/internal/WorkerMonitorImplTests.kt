@@ -103,7 +103,7 @@ class WorkerMonitorImplTests {
     private fun startHealthMonitor(componentStatuses: Map<LifecycleCoordinatorName, CoordinatorStatus>): WorkerMonitor {
         val lifecycleRegistry = TestLifecycleRegistry(componentStatuses)
         val healthMonitor = WorkerMonitorImpl(lifecycleRegistry)
-        healthMonitor.listen(0)
+        healthMonitor.listen(0, this.javaClass.simpleName)
         return healthMonitor
     }
 

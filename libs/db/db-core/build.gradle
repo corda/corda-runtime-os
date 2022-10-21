@@ -14,6 +14,7 @@ dependencies {
 
     // OSGi interface definition for DataSourceFactory, and needed as a bundle
     implementation "org.osgi:org.osgi.service.jdbc:$osgiJdbcServiceVersion"
+    implementation project(':libs:metrics')
 
     api "com.zaxxer:HikariCP:$hikariCpVersion"
 
