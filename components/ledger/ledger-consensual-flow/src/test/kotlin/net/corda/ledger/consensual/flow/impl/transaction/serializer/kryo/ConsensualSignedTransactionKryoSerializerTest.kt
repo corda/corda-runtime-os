@@ -30,7 +30,7 @@ class ConsensualSignedTransactionKryoSerializerTest {
     }, cipherSchemeMetadata)
 
     @Test
-    fun `serialization of a Wire Tx object using the kryo default serialization`() {
+    fun `serialization of a Consensual Signed Tx object using the kryo default serialization`() {
         val wireTransactionKryoSerializer = WireTransactionKryoSerializer(
             merkleTreeProvider,
             digestService,
