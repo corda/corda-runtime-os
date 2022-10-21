@@ -58,7 +58,7 @@ class ConsensualSignedTransactionAMQPSerializationTest {
     lateinit var digestService: DigestService
 
     @InjectService(timeout = 1000)
-    lateinit var schemeMetadata: CipherSchemeMetadata
+    lateinit var cipherSchemeMetadata: CipherSchemeMetadata
 
     @InjectService(timeout = 1000)
     lateinit var merkleTreeProvider: MerkleTreeProvider
@@ -132,7 +132,7 @@ class ConsensualSignedTransactionAMQPSerializationTest {
         val serializationService = TestSerializationService.getTestSerializationService({
             it.register(wireTransactionSerializer, it)
             it.register(consensualSignedTransactionSerializer, it)
-        }, schemeMetadata)
+        }, cipherSchemeMetadata)
 
         // Initialised two serialisation factories to avoid having successful tests due to caching
         val factory1 = testDefaultFactory(emptySandboxGroup)

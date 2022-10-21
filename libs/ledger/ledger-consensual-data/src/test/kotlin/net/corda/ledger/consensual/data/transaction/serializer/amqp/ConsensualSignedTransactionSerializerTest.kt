@@ -15,19 +15,19 @@ import org.mockito.kotlin.mock
 import kotlin.test.assertEquals
 
 class ConsensualSignedTransactionSerializerTest {
-    private val schemeMetadata = CipherSchemeMetadataImpl()
-    private val digestService = DigestServiceImpl(schemeMetadata, null)
+    private val cipherSchemeMetadata = CipherSchemeMetadataImpl()
+    private val digestService = DigestServiceImpl(cipherSchemeMetadata, null)
     private val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
     private val jsonMarshallingService = JsonMarshallingServiceImpl()
-    private val serializationServiceNullCfg = TestSerializationService.getTestSerializationService({}, schemeMetadata)
+    private val serializationServiceNullCfg = TestSerializationService.getTestSerializationService({}, cipherSchemeMetadata)
     private val serializationService = TestSerializationService.getTestSerializationService({
         it.register(WireTransactionSerializer(
             merkleTreeProvider,
             digestService,
             jsonMarshallingService
         ), it)
-    }, schemeMetadata)
         it.register(ConsensualSignedTransactionSerializer(serializationServiceNullCfg, mockSigningService(), mock()), it)
+    }, cipherSchemeMetadata)
 
     @Test
     fun `Should serialize and then deserialize wire Tx`() {

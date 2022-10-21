@@ -49,7 +49,7 @@ class ConsensualSignedTransactionKryoSerializationTest {
     lateinit var merkleTreeProvider: MerkleTreeProvider
 
     @InjectService(timeout = 1000)
-    lateinit var schemeMetadata: CipherSchemeMetadata
+    lateinit var cipherSchemeMetadata: CipherSchemeMetadata
 
     @InjectService(timeout = 1000)
     lateinit var jsonMarshallingService: JsonMarshallingService
@@ -95,7 +95,7 @@ class ConsensualSignedTransactionKryoSerializationTest {
     @Test
     @Suppress("FunctionName")
     fun `correct serialization of a consensual Signed Transaction`() {
-        val serializationService = TestSerializationService.getTestSerializationService({ }, schemeMetadata)
+        val serializationService = TestSerializationService.getTestSerializationService({ }, cipherSchemeMetadata)
 
         val builder = checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(emptySandboxGroup)
         val kryoSerializer = builder
