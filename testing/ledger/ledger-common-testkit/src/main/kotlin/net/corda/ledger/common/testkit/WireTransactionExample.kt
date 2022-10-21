@@ -12,7 +12,7 @@ private val minimalTransactionMetaData = TransactionMetaData(
         TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues
     )
 )
-fun getWireTransaction(
+fun getWireTransactionExample(
     digestService: DigestService,
     merkleTreeProvider: MerkleTreeProvider,
     jsonMarshallingService: JsonMarshallingService,

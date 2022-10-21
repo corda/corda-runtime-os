@@ -9,7 +9,7 @@ import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.consensual.testkit.getConsensualSignedTransaction
+import net.corda.ledger.consensual.testkit.getConsensualSignedTransactionExample
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.InternalCustomSerializer
@@ -141,7 +141,7 @@ class ConsensualSignedTransactionAMQPSerializationTest {
         // Initialise the serialisation context
         val testSerializationContext = testSerializationContext.withSandboxGroup(emptySandboxGroup)
 
-        val signedTransaction = getConsensualSignedTransaction(
+        val signedTransaction = getConsensualSignedTransactionExample(
             digestService,
             merkleTreeProvider,
             serializationService,

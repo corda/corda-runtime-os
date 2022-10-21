@@ -6,7 +6,7 @@ import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.data.transaction.serializer.amqp.WireTransactionSerializer
-import net.corda.ledger.consensual.testkit.getConsensualSignedTransaction
+import net.corda.ledger.consensual.testkit.getConsensualSignedTransactionExample
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.deserialize
 import org.junit.jupiter.api.Assertions
@@ -33,7 +33,7 @@ class ConsensualSignedTransactionSerializerTest {
     @Test
     fun `Should serialize and then deserialize wire Tx`() {
 
-        val signedTransaction = getConsensualSignedTransaction(
+        val signedTransaction = getConsensualSignedTransactionExample(
             digestService,
             merkleTreeProvider,
             serializationService,

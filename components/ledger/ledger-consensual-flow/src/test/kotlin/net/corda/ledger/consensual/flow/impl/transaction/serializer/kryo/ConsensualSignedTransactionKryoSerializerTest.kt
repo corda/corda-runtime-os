@@ -11,7 +11,7 @@ import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.serializer.amqp.WireTransactionSerializer
 import net.corda.ledger.common.flow.impl.transaction.serializer.kryo.WireTransactionKryoSerializer
 import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionImpl
-import net.corda.ledger.consensual.testkit.getConsensualSignedTransaction
+import net.corda.ledger.consensual.testkit.getConsensualSignedTransactionExample
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.crypto.DigitalSignature
@@ -43,7 +43,7 @@ class ConsensualSignedTransactionKryoSerializerTest {
             mock()
         )
 
-        val signedTransaction = getConsensualSignedTransaction(
+        val signedTransaction = getConsensualSignedTransactionExample(
             digestService,
             merkleTreeProvider,
             serializationService,
