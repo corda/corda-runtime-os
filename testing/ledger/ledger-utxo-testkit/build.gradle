@@ -14,5 +14,5 @@ dependencies {
 
     implementation project(":libs:ledger:ledger-common-data")
     implementation project(":components:ledger:ledger-utxo-flow")
-    implementation project(":testing:ledger:ledger-common-testkit")
+    api project(":testing:ledger:ledger-common-testkit")
 }

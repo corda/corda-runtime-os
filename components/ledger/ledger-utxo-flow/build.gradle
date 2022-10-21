@@ -28,6 +28,5 @@ dependencies {
     testImplementation project(':testing:test-serialization')
     testImplementation project(":libs:serialization:serialization-internal")
     testImplementation project(":libs:serialization:serialization-amqp")
-    testImplementation project(":testing:ledger:ledger-common-testkit")
     testImplementation project(":testing:ledger:ledger-utxo-testkit")
 }
