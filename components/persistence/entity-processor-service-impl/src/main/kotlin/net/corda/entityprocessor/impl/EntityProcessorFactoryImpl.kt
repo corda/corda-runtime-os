@@ -18,11 +18,11 @@ import org.osgi.service.component.annotations.Reference
 @Suppress("UNUSED")
 @Component(service = [EntityProcessorFactory::class])
 class EntityProcessorFactoryImpl @Activate constructor(
-    @Reference
+    @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
-    @Reference
+    @Reference(service = PublisherFactory::class)
     private val publisherFactory: PublisherFactory,
-    @Reference
+    @Reference(service = EntitySandboxService::class)
     private val entitySandboxService: EntitySandboxService,
     @Reference(service = ExternalEventResponseFactory::class)
     private val externalEventResponseFactory: ExternalEventResponseFactory

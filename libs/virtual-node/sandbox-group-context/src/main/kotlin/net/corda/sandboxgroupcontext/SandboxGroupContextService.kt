@@ -55,7 +55,7 @@ interface SandboxGroupContextService: AutoCloseable {
      *       ctx!!.getUniqueObject<AnotherObject>()!!.doSomethingElse()
      *    }
      *
-     * @throws Exception or "something" if the requested [CPK]s cannot be found in the local package cache.
+     * @throws Exception or "something" if the requested CPKs cannot be found in the local package cache.
      *
      * @return a non-null [SandboxGroupContext] instance
      */

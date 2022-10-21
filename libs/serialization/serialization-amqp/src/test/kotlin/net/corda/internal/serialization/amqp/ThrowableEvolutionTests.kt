@@ -3,6 +3,7 @@ package net.corda.internal.serialization.amqp
 import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.serialize
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
+import net.corda.internal.serialization.amqp.testutils.testResourceName
 import net.corda.internal.serialization.amqp.testutils.writeTestResource
 import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.v5.base.annotations.CordaSerializable
@@ -40,46 +41,48 @@ class ThrowableEvolutionTests {
     class AddAndRemoveConstructorParametersException(message: String, val added: String?) : CordaRuntimeException(message)
 
     @Test
-    fun `We can evolve exceptions by adding constructor parameters`() {
+    fun addConstructorParametersException() {
 
 //        val exception = AddConstructorParametersException(message)
 //        saveSerializedObject(exception)
 
-        val bytes = ThrowableEvolutionTests::class.java.getResource("ThrowableEvolutionTests.AddConstructorParametersException").readBytes()
+        val bytes = requireNotNull(this::class.java.getResource(testResourceName())).readBytes()
 
         val sf = testDefaultFactory().also { registerCustomSerializers(it) }
-        val deserializedException = DeserializationInput(sf).deserialize(SerializedBytes<AddConstructorParametersException>(bytes))
+        val deserializedException = DeserializationInput(sf)
+            .deserialize(SerializedBytes<AddConstructorParametersException>(bytes))
 
         assertThat(deserializedException.message).isEqualTo(message)
         assertThat(deserializedException).isInstanceOf(AddConstructorParametersException::class.java)
     }
 
     @Test
-    fun `We can evolve exceptions by removing constructor parameters`() {
+    fun removeConstructorParametersException() {
 
 //        val exception = RemoveConstructorParametersException(message, toBeRemovedValue)
 //        saveSerializedObject(exception)
 
-        val bytes = ThrowableEvolutionTests::class.java.getResource(
-            "ThrowableEvolutionTests.RemoveConstructorParametersException").readBytes()
+        val bytes = requireNotNull(this::class.java.getResource(testResourceName())).readBytes()
+
         val sf = testDefaultFactory().also { registerCustomSerializers(it) }
-        val deserializedException = DeserializationInput(sf).deserialize(SerializedBytes<RemoveConstructorParametersException>(bytes))
+        val deserializedException = DeserializationInput(sf)
+            .deserialize(SerializedBytes<RemoveConstructorParametersException>(bytes))
 
         assertThat(deserializedException.message).isEqualTo(message)
         assertThat(deserializedException).isInstanceOf(RemoveConstructorParametersException::class.java)
     }
 
     @Test
-    fun `We can evolve exceptions by adding and removing constructor parameters`() {
+    fun addAndRemoveConstructorParametersException() {
 
 //        val exception = AddAndRemoveConstructorParametersException(message, toBeRemovedValue)
 //        saveSerializedObject(exception)
 
-        val bytes = ThrowableEvolutionTests::class.java.getResource(
-            "ThrowableEvolutionTests.AddAndRemoveConstructorParametersException").readBytes()
+        val bytes = requireNotNull(this::class.java.getResource(testResourceName())).readBytes()
 
         val sf = testDefaultFactory().also { registerCustomSerializers(it) }
-        val deserializedException = DeserializationInput(sf).deserialize(SerializedBytes<AddAndRemoveConstructorParametersException>(bytes))
+        val deserializedException = DeserializationInput(sf)
+            .deserialize(SerializedBytes<AddAndRemoveConstructorParametersException>(bytes))
 
         assertThat(deserializedException.message).isEqualTo(message)
         assertThat(deserializedException).isInstanceOf(AddAndRemoveConstructorParametersException::class.java)

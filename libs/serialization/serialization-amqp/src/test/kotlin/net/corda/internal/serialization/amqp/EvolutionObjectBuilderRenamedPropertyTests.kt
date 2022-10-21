@@ -1,8 +1,9 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.serialize
+import net.corda.internal.serialization.amqp.testutils.deserialize
 import net.corda.internal.serialization.amqp.testutils.testDefaultFactory
+import net.corda.internal.serialization.amqp.testutils.testResourceName
 import net.corda.internal.serialization.amqp.testutils.writeTestResource
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.annotations.DeprecatedConstructorForDeserialization
@@ -19,7 +20,6 @@ class EvolutionObjectBuilderRenamedPropertyTests {
     private val cordappVersionTestValue = 38854445
     private val dataTestValue = "d7af8af0-c10e-45bc-a5f7-92de432be0ef"
     private val xTestValue = 7568055
-    private val yTestValue = 4113687
 
     class TestTransaction(val bob: String)
 
@@ -86,7 +86,7 @@ class EvolutionObjectBuilderRenamedPropertyTests {
     }
 
     @Test
-    fun `Step 1 to Step 3`() {
+    fun step1ToStep3() {
 
         // The next two commented lines are how the serialized data is generated. To regenerate the data, uncomment these along
         // with the correct version of the class and rerun the test. This will generate a new file in the project resources.
@@ -94,8 +94,7 @@ class EvolutionObjectBuilderRenamedPropertyTests {
 //        val step1 = TemplateState(cordappVersionTestValue, dataTestValue, xTestValue)
 //        saveSerializedObject(step1)
 
-        // serialization-internal/src/test/resources/net/corda/internal/serialization/amqp/EvolutionObjectBuilderRenamedPropertyTests.Step1
-        val bytes = this::class.java.getResource("EvolutionObjectBuilderRenamedPropertyTests.Step1").readBytes()
+        val bytes = requireNotNull(this::class.java.getResource(testResourceName())).readBytes()
 
         val serializerFactory: SerializerFactory = testDefaultFactory()
         val deserializedObject = DeserializationInput(serializerFactory)
