@@ -1,7 +1,7 @@
-package net.corda.ledger.consensual.data.transaction.serializer.amqp
+package net.corda.ledger.consensual.flow.impl.transaction.amqp
 
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionImpl
+import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.serialization.BaseProxySerializer
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata

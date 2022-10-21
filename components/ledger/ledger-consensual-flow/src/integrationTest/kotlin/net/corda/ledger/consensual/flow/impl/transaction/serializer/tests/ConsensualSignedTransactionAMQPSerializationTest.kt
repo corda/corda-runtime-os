@@ -1,4 +1,4 @@
-package net.corda.ledger.consensual.data.transaction.serializer.amqp.tests
+package net.corda.ledger.consensual.flow.impl.transaction.serializer.tests
 
 import net.corda.internal.serialization.AMQP_STORAGE_CONTEXT
 import net.corda.internal.serialization.amqp.DeserializationInput
@@ -104,7 +104,7 @@ class ConsensualSignedTransactionAMQPSerializationTest {
             )
 
             consensualSignedTransactionSerializer = setup.fetchService(
-                "(component.name=net.corda.ledger.consensual.data.transaction.serializer.amqp.ConsensualSignedTransactionSerializer)",
+                "(component.name=net.corda.ledger.consensual.flow.impl.transaction.amqp.ConsensualSignedTransactionSerializer)",
                 1500
             )
         }
@@ -157,7 +157,7 @@ class ConsensualSignedTransactionAMQPSerializationTest {
             DeserializationInput(factory2).deserializeAndReturnEnvelope(serialised, testSerializationContext)
 
         assertThat(deserialized.obj.javaClass.name)
-            .isEqualTo("net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionImpl")
+            .isEqualTo("net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl")
 
         assertThat(deserialized.obj)
             .isInstanceOf(ConsensualSignedTransaction::class.java)

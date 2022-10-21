@@ -6,7 +6,6 @@ import net.corda.ledger.common.data.transaction.TransactionMetaData
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.createTransactionSignature
 import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroupEnum
-import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionImpl
 import net.corda.sandbox.SandboxGroup
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService

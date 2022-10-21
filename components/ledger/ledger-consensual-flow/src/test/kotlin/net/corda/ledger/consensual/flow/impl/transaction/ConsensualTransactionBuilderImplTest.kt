@@ -10,7 +10,6 @@ import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.common.testkit.mockSigningService
 import net.corda.ledger.common.testkit.publicKeyExample
-import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionImpl
 import net.corda.ledger.consensual.testkit.ConsensualStateClassExample
 import net.corda.ledger.consensual.testkit.consensualStateExample
 import net.corda.ledger.consensual.testkit.consensualTransactionMetaDataExample
