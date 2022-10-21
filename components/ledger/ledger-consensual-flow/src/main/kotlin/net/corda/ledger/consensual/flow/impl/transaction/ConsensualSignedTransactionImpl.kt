@@ -73,14 +73,14 @@ class ConsensualSignedTransactionImpl(
         ConsensualSignedTransactionImpl(serializationService, signingService, digitalSignatureVerificationService,
             wireTransaction, signatures + signature)
 
-    override fun getMissingSigningKeys(): Set<PublicKey> {
+    override fun getMissingSignatories(): Set<PublicKey> {
         val alreadySigned = signatures.map{it.by}.toSet()
         val requiredSigningKeys = this.toLedgerTransaction().requiredSigningKeys
         return requiredSigningKeys.filter { !it.isFulfilledBy(alreadySigned) }.toSet()
     }
 
     override fun verifySignatures() {
-        if (getMissingSigningKeys().isNotEmpty())
+        if (getMissingSignatories().isNotEmpty())
             throw TransactionVerificationException(id, "There are missing signatures", null)
         for (signature in signatures) {
             try {
