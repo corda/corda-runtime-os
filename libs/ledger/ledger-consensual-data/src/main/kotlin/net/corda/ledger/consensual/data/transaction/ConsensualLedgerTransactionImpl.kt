@@ -9,7 +9,6 @@ import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import java.security.PublicKey
 import java.time.Instant
 
-// TODO Break dependency on implementation from outside this module (needs a factory)
 class ConsensualLedgerTransactionImpl(
     private val wireTransaction: WireTransaction,
     private val serializationService: SerializationService

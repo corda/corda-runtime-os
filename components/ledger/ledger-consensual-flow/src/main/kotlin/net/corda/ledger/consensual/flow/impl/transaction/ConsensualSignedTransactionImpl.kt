@@ -18,7 +18,6 @@ import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import java.security.PublicKey
 
-// TODO Break dependency on implementation from outside this module (needs a factory)
 class ConsensualSignedTransactionImpl(
     private val serializationService: SerializationService,
     private val signingService: SigningService,
