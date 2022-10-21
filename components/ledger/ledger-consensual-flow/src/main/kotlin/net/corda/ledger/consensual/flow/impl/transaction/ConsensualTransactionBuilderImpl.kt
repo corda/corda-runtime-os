@@ -5,7 +5,7 @@ import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.TransactionMetaData
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.createTransactionSignature
-import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroupEnum
+import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
 import net.corda.sandbox.SandboxGroup
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
@@ -100,20 +100,20 @@ class ConsensualTransactionBuilderImpl(
             .distinct()
 
         val componentGroupLists = mutableListOf<List<ByteArray>>()
-        for (componentGroupIndex in ConsensualComponentGroupEnum.values()) {
+        for (componentGroupIndex in ConsensualComponentGroup.values()) {
             componentGroupLists += when (componentGroupIndex) {
-                ConsensualComponentGroupEnum.METADATA ->
+                ConsensualComponentGroup.METADATA ->
                     listOf(
                         jsonMarshallingService.format(transactionMetaData)
                             .toByteArray(Charsets.UTF_8)
                     ) // TODO(update with CORE-6890)
-                ConsensualComponentGroupEnum.TIMESTAMP ->
+                ConsensualComponentGroup.TIMESTAMP ->
                     listOf(serializationService.serialize(Instant.now()).bytes)
-                ConsensualComponentGroupEnum.REQUIRED_SIGNING_KEYS ->
+                ConsensualComponentGroup.REQUIRED_SIGNING_KEYS ->
                     requiredSigningKeys.map { serializationService.serialize(it).bytes }
-                ConsensualComponentGroupEnum.OUTPUT_STATES ->
+                ConsensualComponentGroup.OUTPUT_STATES ->
                     states.map { serializationService.serialize(it).bytes }
-                ConsensualComponentGroupEnum.OUTPUT_STATE_TYPES ->
+                ConsensualComponentGroup.OUTPUT_STATE_TYPES ->
                     states.map { serializationService.serialize(currentSandboxGroup.getEvolvableTag(it::class.java)).bytes }
             }
         }

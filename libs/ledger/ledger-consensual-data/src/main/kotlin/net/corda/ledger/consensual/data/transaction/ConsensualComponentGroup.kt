@@ -13,7 +13,7 @@ package net.corda.ledger.consensual.data.transaction
  * @property OUTPUT_STATE_TYPES The output state types component group. Ordinal = 4.
  */
 
-enum class ConsensualComponentGroupEnum {
+enum class ConsensualComponentGroup {
     METADATA, // needs to be in sync with
               // [net.corda.ledger.common.impl.transaction.WireTransactionImplKt.ALL_LEDGER_METADATA_COMPONENT_GROUP_ID]
     TIMESTAMP,
