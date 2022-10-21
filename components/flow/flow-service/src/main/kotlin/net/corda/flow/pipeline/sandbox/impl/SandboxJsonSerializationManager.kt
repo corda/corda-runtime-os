@@ -1,12 +1,12 @@
 package net.corda.flow.pipeline.sandbox.impl
 
 import net.corda.common.json.serializers.SerializationCustomizer
+import net.corda.common.json.serializers.serializableClassNameFromJsonSerializer
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.v5.application.marshalling.json.JsonDeserializer
 import net.corda.v5.application.marshalling.json.JsonSerializer
 import java.lang.Exception
-import java.lang.reflect.ParameterizedType
 
 /**
  * Manages the details of applying Json serializers and deserializers to a sandbox context.
@@ -60,20 +60,14 @@ class SandboxJsonSerializationManager(
     }
 
     private inline fun <reified T : Any> extractJsonSerializingType(jsonSerializer: T): Class<*> {
-        val types = jsonSerializer::class.java.genericInterfaces
-            .filterIsInstance<ParameterizedType>()
-            .filter { it.rawType === T::class.java }
-            .flatMap { it.actualTypeArguments.asList() }
-        if (types.size != 1) {
-            throw IllegalStateException("Unable to determine serializing type from ${jsonSerializer::class.java.canonicalName}")
-        }
+        val className = serializableClassNameFromJsonSerializer(jsonSerializer)
 
         return try {
             // Try to find the target type for serialization in the default class loaders
-            Class.forName(types.first().typeName)
+            Class.forName(className)
         } catch (e: ClassNotFoundException) {
             // Otherwise look for it in the bundles
-            sandboxGroup.loadClassFromMainBundles(types.first().typeName, Any::class.java)
+            sandboxGroup.loadClassFromMainBundles(className, Any::class.java)
         }
     }
 }
