@@ -11,6 +11,7 @@ dependencies {
     implementation "net.corda:corda-ledger-utxo"
 
     implementation project(":libs:ledger:ledger-common-data")
+    implementation project(":libs:ledger:ledger-utxo-data")
     implementation project(":components:ledger:ledger-utxo-flow")
     api project(":testing:ledger:ledger-common-testkit")
 }

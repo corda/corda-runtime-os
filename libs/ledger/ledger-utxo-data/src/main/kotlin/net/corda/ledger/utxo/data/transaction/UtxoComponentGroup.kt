@@ -1,4 +1,4 @@
-package net.corda.ledger.utxo.impl.transaction
+package net.corda.ledger.utxo.data.transaction
 
 import net.corda.v5.base.annotations.CordaSerializable
 

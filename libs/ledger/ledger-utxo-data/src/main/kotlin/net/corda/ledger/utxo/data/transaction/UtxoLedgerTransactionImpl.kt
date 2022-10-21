@@ -1,9 +1,9 @@
-package net.corda.ledger.utxo.impl.transaction
+package net.corda.ledger.utxo.data.transaction
 
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.utxo.impl.state.StateAndRefImpl
-import net.corda.ledger.utxo.impl.state.TransactionStateImpl
-import net.corda.ledger.utxo.impl.state.filterIsContractStateInstance
+import net.corda.ledger.utxo.data.state.StateAndRefImpl
+import net.corda.ledger.utxo.data.state.TransactionStateImpl
+import net.corda.ledger.utxo.data.state.filterIsContractStateInstance
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.crypto.SecureHash

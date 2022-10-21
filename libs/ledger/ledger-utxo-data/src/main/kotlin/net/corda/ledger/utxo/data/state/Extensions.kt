@@ -1,4 +1,4 @@
-package net.corda.ledger.utxo.impl.state
+package net.corda.ledger.utxo.data.state
 
 import net.corda.v5.base.util.uncheckedCast
 import net.corda.v5.ledger.utxo.BelongsToContract
