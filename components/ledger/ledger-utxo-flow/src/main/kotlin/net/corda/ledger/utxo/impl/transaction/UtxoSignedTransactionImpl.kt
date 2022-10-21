@@ -35,10 +35,10 @@ data class UtxoSignedTransactionImpl(
         return addSignatures(signatures.toList())
     }
 
-    override fun getMissingSignatories(): List<PublicKey> {
+    override fun getMissingSignatories(): Set<PublicKey> {
         val appliedSignatories = signatures.map { it.by }.toSet()
         val requiredSignatories = toLedgerTransaction().signatories
-        return requiredSignatories.filter { !it.isFulfilledBy(appliedSignatories) }
+        return requiredSignatories.filter { !it.isFulfilledBy(appliedSignatories) }.toSet()
     }
 
     override fun toLedgerTransaction(): UtxoLedgerTransaction {
