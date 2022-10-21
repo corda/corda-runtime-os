@@ -6,8 +6,8 @@ import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.data.transaction.serializer.amqp.WireTransactionSerializer
+import net.corda.ledger.common.testkit.mockSigningService
 import net.corda.ledger.consensual.testkit.getConsensualSignedTransactionExample
-import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.deserialize
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
@@ -20,15 +20,14 @@ class ConsensualSignedTransactionSerializerTest {
     private val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
     private val jsonMarshallingService = JsonMarshallingServiceImpl()
     private val serializationServiceNullCfg = TestSerializationService.getTestSerializationService({}, schemeMetadata)
-    private val signingService: SigningService = mock()
     private val serializationService = TestSerializationService.getTestSerializationService({
         it.register(WireTransactionSerializer(
             merkleTreeProvider,
             digestService,
             jsonMarshallingService
         ), it)
-        it.register(ConsensualSignedTransactionSerializer(serializationServiceNullCfg, signingService, mock()), it)
     }, schemeMetadata)
+        it.register(ConsensualSignedTransactionSerializer(serializationServiceNullCfg, mockSigningService(), mock()), it)
 
     @Test
     fun `Should serialize and then deserialize wire Tx`() {
@@ -38,7 +37,7 @@ class ConsensualSignedTransactionSerializerTest {
             merkleTreeProvider,
             serializationService,
             jsonMarshallingService,
-            signingService,
+            mockSigningService(),
             mock()
         )
 
