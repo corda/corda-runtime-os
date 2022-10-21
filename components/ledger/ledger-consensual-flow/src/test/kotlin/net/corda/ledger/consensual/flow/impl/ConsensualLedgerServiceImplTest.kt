@@ -9,6 +9,7 @@ import net.corda.flow.application.services.FlowEngineImpl
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.internal.serialization.amqp.helper.TestFlowFiberServiceWithSerialization
+import net.corda.ledger.common.data.validation.impl.JsonValidatorImpl
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualTransactionMocks
 import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualTransactionBuilderFactory
 import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualTransactionBuilderFactoryImpl
@@ -35,6 +36,7 @@ class TestFlowFiberServiceWithSerializationProxy constructor(
 
 class ConsensualLedgerServiceImplTest {
     private val jsonMarshallingService = JsonMarshallingServiceImpl()
+    private val jsonValidator = JsonValidatorImpl()
     private val cipherSchemeMetadata = CipherSchemeMetadataImpl()
     private val digestService = DigestServiceImpl(cipherSchemeMetadata, null)
     private val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
@@ -47,6 +49,7 @@ class ConsensualLedgerServiceImplTest {
             cipherSchemeMetadata,
             digestService,
             jsonMarshallingService,
+            jsonValidator,
             merkleTreeProvider,
             serializationService,
             ConsensualTransactionMocks.mockSigningService(),

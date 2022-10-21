@@ -1,10 +1,18 @@
 plugins {
+    id 'biz.aQute.bnd.builder'
+    id 'corda.common-library'
     id 'corda.common-publishing'
     id 'corda.osgi-test-conventions'
-    id 'corda.common-library'
 }
 
 description 'Corda ledger common data'
+
+configurations {
+    bundle {
+        canBeResolved = false
+    }
+    bundle.extendsFrom runtimeClasspath
+}
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
@@ -37,4 +45,24 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
+}
+
+def jar = tasks.named('jar', Jar) {
+    archiveBaseName = 'corda-ledger-common-data'
+
+    bundle {
+        bnd """\
+Bundle-Name: Corda ledger common data
+Bundle-SymbolicName: \${project.group}.ledger-common-data
+Import-Package:\
+    !org.apache.hadoop.io.compress,\
+    sun.misc;resolution:=optional,\
+    *
+-includeresource: @java-json-canonicalization-${jsonCanonicalizerVersion}.jar
+"""
+    }
+}
+
+artifacts {
+    bundle jar
 }

@@ -7,6 +7,7 @@ import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.data.validation.JsonValidator
 import net.corda.ledger.common.testkit.getWireTransaction
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
@@ -56,6 +57,9 @@ class WireTransactionSerializerTest {
     @InjectService(timeout = 1000)
     lateinit var jsonMarshallingService: JsonMarshallingService
 
+    @InjectService(timeout = 1000)
+    lateinit var jsonValidator: JsonValidator
+
     private lateinit var emptySandboxGroup: SandboxGroup
 
     private lateinit var wireTransactionSerializer: InternalCustomSerializer<WireTransaction>
@@ -103,7 +107,7 @@ class WireTransactionSerializerTest {
         // Initialise the serialisation context
         val testSerializationContext = testSerializationContext.withSandboxGroup(emptySandboxGroup)
 
-            val wireTransaction = getWireTransaction(digestService, merkleTreeProvider, jsonMarshallingService)
+            val wireTransaction = getWireTransaction(digestService, merkleTreeProvider, jsonMarshallingService, jsonValidator)
 
         val serialised = SerializationOutput(factory1).serialize(wireTransaction, testSerializationContext)
 

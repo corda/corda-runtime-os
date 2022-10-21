@@ -4,7 +4,7 @@ import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.TransactionMetaData
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
-import net.corda.ledger.common.data.validation.JsonValidatorImpl
+import net.corda.ledger.common.data.validation.JsonValidator
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
@@ -14,10 +14,11 @@ fun getWireTransaction(
     digestService: DigestService,
     merkleTreeProvider: MerkleTreeProvider,
     jsonMarshallingService: JsonMarshallingService,
+    jsonValidator: JsonValidator
 ): WireTransaction{
     val transactionMetaData = mockTransactionMetaData()
     val metadataJson = jsonMarshallingService.format(transactionMetaData)
-    val canonicalJson = JsonValidatorImpl().canonicalize(metadataJson)
+    val canonicalJson = jsonValidator.canonicalize(metadataJson)
 
     val componentGroupLists = listOf(
         listOf(canonicalJson.toByteArray(Charsets.UTF_8)), // TODO(update with CORE-6890)
@@ -28,6 +29,7 @@ fun getWireTransaction(
         merkleTreeProvider,
         digestService,
         jsonMarshallingService,
+        jsonValidator,
         getPrivacySalt(),
         componentGroupLists
     )

@@ -1,6 +1,7 @@
 package net.corda.ledger.common.flow.impl.transaction.serializer.kryo
 
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.data.validation.JsonValidator
 import net.corda.serialization.checkpoint.CheckpointInput
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import net.corda.serialization.checkpoint.CheckpointOutput
@@ -17,7 +18,8 @@ import org.osgi.service.component.annotations.Reference
 class WireTransactionKryoSerializer @Activate constructor(
     @Reference(service = MerkleTreeProvider::class) private val merkleTreeProvider: MerkleTreeProvider,
     @Reference(service = DigestService::class) private val digestService: DigestService,
-    @Reference(service = JsonMarshallingService::class) private val jsonMarshallingService: JsonMarshallingService
+    @Reference(service = JsonMarshallingService::class) private val jsonMarshallingService: JsonMarshallingService,
+    @Reference(service = JsonValidator::class) private val jsonValidator: JsonValidator
 ) : CheckpointInternalCustomSerializer<WireTransaction> {
     override val type = WireTransaction::class.java
 
@@ -33,6 +35,7 @@ class WireTransactionKryoSerializer @Activate constructor(
             merkleTreeProvider,
             digestService,
             jsonMarshallingService,
+            jsonValidator,
             privacySalt,
             componentGroupLists,
         )

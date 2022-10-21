@@ -7,6 +7,7 @@ import net.corda.data.persistence.ConsensualLedgerRequest
 import net.corda.data.persistence.EntityResponse
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.data.validation.JsonValidator
 import net.corda.ledger.consensual.persistence.impl.repository.ConsensualLedgerRepository
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
@@ -39,6 +40,7 @@ class ConsensualLedgerMessageProcessor(
     private val merkleTreeProvider: MerkleTreeProvider,
     private val digestService: DigestService,
     private val jsonMarshallingService: JsonMarshallingService,
+    private val jsonValidator: JsonValidator,
     private val payloadCheck: (bytes: ByteBuffer) -> ByteBuffer,
 ) : DurableProcessor<String, ConsensualLedgerRequest> {
     private companion object {
@@ -82,7 +84,12 @@ class ConsensualLedgerMessageProcessor(
         // get the per-sandbox entity manager and serialization services
         val entityManagerFactory = sandbox.getEntityManagerFactory()
         val serializationService = sandbox.getSerializationService()
-        val consensualLedgerRepository = ConsensualLedgerRepository(merkleTreeProvider, digestService, jsonMarshallingService)
+        val consensualLedgerRepository = ConsensualLedgerRepository(
+            merkleTreeProvider,
+            digestService,
+            jsonMarshallingService,
+            jsonValidator
+        )
 
         return entityManagerFactory.createEntityManager().transaction { em ->
             when (val req = request.request) {

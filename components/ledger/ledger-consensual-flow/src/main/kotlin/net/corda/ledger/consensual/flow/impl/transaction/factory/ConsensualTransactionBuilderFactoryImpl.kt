@@ -4,6 +4,7 @@ import net.corda.flow.fiber.FlowFiberService
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.TransactionMetaData
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
+import net.corda.ledger.common.data.validation.JsonValidator
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualTransactionBuilderImpl
 import net.corda.ledger.consensual.flow.impl.transaction.TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
@@ -31,6 +32,8 @@ class ConsensualTransactionBuilderFactoryImpl @Activate constructor(
     private val digestService: DigestService,
     @Reference(service = JsonMarshallingService::class)
     private val jsonMarshallingService: JsonMarshallingService,
+    @Reference(service = JsonValidator::class)
+    private val jsonValidator: JsonValidator,
     @Reference(service = MerkleTreeProvider::class)
     private val merkleTreeProvider: MerkleTreeProvider,
     @Reference(service = SerializationService::class)
@@ -50,6 +53,7 @@ class ConsensualTransactionBuilderFactoryImpl @Activate constructor(
             cipherSchemeMetadata,
             digestService,
             jsonMarshallingService,
+            jsonValidator,
             merkleTreeProvider,
             serializationService,
             signingService,

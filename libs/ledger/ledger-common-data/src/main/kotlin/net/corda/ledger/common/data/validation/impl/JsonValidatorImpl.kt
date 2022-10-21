@@ -1,12 +1,16 @@
-package net.corda.ledger.common.data.validation
+package net.corda.ledger.common.data.validation.impl
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.networknt.schema.JsonSchemaFactory
 import com.networknt.schema.SpecVersion
 import com.networknt.schema.ValidationMessage
+import net.corda.ledger.common.data.validation.JsonValidator
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import org.erdtman.jcs.JsonCanonicalizer
+import org.osgi.service.component.annotations.Component
+import org.osgi.service.component.annotations.ServiceScope
 
+@Component(service = [JsonValidator::class], scope = ServiceScope.PROTOTYPE)
 class JsonValidatorImpl: JsonValidator {
     private val mapper = ObjectMapper()
 

@@ -9,6 +9,7 @@ import net.corda.kryoserialization.testkit.createCheckpointSerializer
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.serializer.amqp.WireTransactionSerializer
+import net.corda.ledger.common.data.validation.impl.JsonValidatorImpl
 import net.corda.ledger.common.flow.impl.transaction.serializer.kryo.WireTransactionKryoSerializer
 import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionImpl
 import net.corda.ledger.consensual.testkit.getConsensualSignedTransaction
@@ -25,8 +26,9 @@ class ConsensualSignedTransactionKryoSerializerTest {
     private val digestService = DigestServiceImpl(cipherSchemeMetadata, null)
     private val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
     private val jsonMarshallingService = JsonMarshallingServiceImpl()
+    private val jsonValidator = JsonValidatorImpl()
     private val serializationService = TestSerializationService.getTestSerializationService({
-        it.register(WireTransactionSerializer(merkleTreeProvider, digestService, jsonMarshallingService), it)
+        it.register(WireTransactionSerializer(merkleTreeProvider, digestService, jsonMarshallingService, jsonValidator), it)
     }, cipherSchemeMetadata)
     private val signingService: SigningService = mock()
 
@@ -35,7 +37,8 @@ class ConsensualSignedTransactionKryoSerializerTest {
         val wireTransactionKryoSerializer = WireTransactionKryoSerializer(
             merkleTreeProvider,
             digestService,
-            jsonMarshallingService
+            jsonMarshallingService,
+            jsonValidator
         )
         val consensualSignedTransactionKryoSerializer = ConsensualSignedTransactionKryoSerializer(
             serializationService,
@@ -48,6 +51,7 @@ class ConsensualSignedTransactionKryoSerializerTest {
             merkleTreeProvider,
             serializationService,
             jsonMarshallingService,
+            jsonValidator,
             signingService,
             mock()
         )

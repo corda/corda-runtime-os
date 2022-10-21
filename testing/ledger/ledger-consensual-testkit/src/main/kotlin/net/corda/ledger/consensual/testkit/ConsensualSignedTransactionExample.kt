@@ -1,5 +1,6 @@
 package net.corda.ledger.consensual.testkit
 
+import net.corda.ledger.common.data.validation.JsonValidator
 import java.security.KeyPairGenerator
 import java.time.Instant
 import net.corda.ledger.common.testkit.getWireTransaction
@@ -21,10 +22,11 @@ fun getConsensualSignedTransaction(
     merkleTreeProvider: MerkleTreeProvider,
     serializationService: SerializationService,
     jsonMarshallingService: JsonMarshallingService,
+    jsonValidator: JsonValidator,
     signingService: SigningService,
     digitalSignatureVerificationService: DigitalSignatureVerificationService
 ): ConsensualSignedTransaction {
-    val wireTransaction = getWireTransaction(digestService, merkleTreeProvider, jsonMarshallingService)
+    val wireTransaction = getWireTransaction(digestService, merkleTreeProvider, jsonMarshallingService, jsonValidator)
 
     val kpg = KeyPairGenerator.getInstance("RSA")
     kpg.initialize(512)

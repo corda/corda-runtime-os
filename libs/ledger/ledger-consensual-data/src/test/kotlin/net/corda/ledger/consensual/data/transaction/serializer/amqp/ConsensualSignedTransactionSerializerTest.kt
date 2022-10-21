@@ -6,6 +6,7 @@ import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.data.transaction.serializer.amqp.WireTransactionSerializer
+import net.corda.ledger.common.data.validation.impl.JsonValidatorImpl
 import net.corda.ledger.consensual.testkit.getConsensualSignedTransaction
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.deserialize
@@ -19,13 +20,15 @@ class ConsensualSignedTransactionSerializerTest {
     private val digestService = DigestServiceImpl(schemeMetadata, null)
     private val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
     private val jsonMarshallingService = JsonMarshallingServiceImpl()
+    private val jsonValidator = JsonValidatorImpl()
     private val serializationServiceNullCfg = TestSerializationService.getTestSerializationService({}, schemeMetadata)
     private val signingService: SigningService = mock()
     private val serializationService = TestSerializationService.getTestSerializationService({
         it.register(WireTransactionSerializer(
             merkleTreeProvider,
             digestService,
-            jsonMarshallingService
+            jsonMarshallingService,
+            jsonValidator
         ), it)
         it.register(ConsensualSignedTransactionSerializer(serializationServiceNullCfg, signingService, mock()), it)
     }, schemeMetadata)
@@ -38,6 +41,7 @@ class ConsensualSignedTransactionSerializerTest {
             merkleTreeProvider,
             serializationService,
             jsonMarshallingService,
+            jsonValidator,
             signingService,
             mock()
         )

@@ -6,6 +6,8 @@ import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.data.transaction.serializer.amqp.WireTransactionSerializer
+import net.corda.ledger.common.data.validation.JsonValidator
+import net.corda.ledger.common.data.validation.impl.JsonValidatorImpl
 import net.corda.ledger.common.testkit.getWireTransaction
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
@@ -22,6 +24,7 @@ class WireTransactionAMQPSerializerTest {
         private lateinit var digestService: DigestService
         private lateinit var merkleTreeProvider: MerkleTreeProvider
         private lateinit var jsonMarshallingService: JsonMarshallingService
+        private lateinit var jsonValidator: JsonValidator
         private lateinit var serializationService: SerializationService
 
         @BeforeAll
@@ -31,15 +34,16 @@ class WireTransactionAMQPSerializerTest {
             digestService = DigestServiceImpl(schemeMetadata, null)
             merkleTreeProvider = MerkleTreeProviderImpl(digestService)
             jsonMarshallingService = JsonMarshallingServiceImpl()
+            jsonValidator = JsonValidatorImpl()
             serializationService = TestSerializationService.getTestSerializationService({
-                it.register(WireTransactionSerializer(merkleTreeProvider, digestService, jsonMarshallingService), it)
+                it.register(WireTransactionSerializer(merkleTreeProvider, digestService, jsonMarshallingService, jsonValidator), it)
             }, schemeMetadata)
         }
     }
 
     @Test
     fun `Should serialize and then deserialize wire Tx`() {
-        val wireTransaction = getWireTransaction(digestService, merkleTreeProvider, jsonMarshallingService)
+        val wireTransaction = getWireTransaction(digestService, merkleTreeProvider, jsonMarshallingService, jsonValidator)
         val bytes = serializationService.serialize(wireTransaction)
         val deserialized = serializationService.deserialize(bytes)
         assertEquals(wireTransaction, deserialized)

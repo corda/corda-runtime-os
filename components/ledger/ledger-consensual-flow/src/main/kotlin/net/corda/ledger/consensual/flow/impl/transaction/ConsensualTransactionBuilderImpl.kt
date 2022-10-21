@@ -1,7 +1,6 @@
 package net.corda.ledger.consensual.flow.impl.transaction
 
 import net.corda.ledger.common.data.validation.JsonValidator
-import net.corda.ledger.common.data.validation.JsonValidatorImpl
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.TransactionMetaData
@@ -30,6 +29,7 @@ class ConsensualTransactionBuilderImpl(
     private val cipherSchemeMetadata: CipherSchemeMetadata,
     private val digestService: DigestService,
     private val jsonMarshallingService: JsonMarshallingService,
+    private val jsonValidator: JsonValidator,
     private val merkleTreeProvider: MerkleTreeProvider,
     private val serializationService: SerializationService,
     private val signingService: SigningService,
@@ -38,8 +38,6 @@ class ConsensualTransactionBuilderImpl(
     private val transactionMetaData: TransactionMetaData,
     override val states: List<ConsensualState> = emptyList(),
 ) : ConsensualTransactionBuilder {
-
-    private val validator: JsonValidator = JsonValidatorImpl()
 
     override fun withStates(vararg states: ConsensualState): ConsensualTransactionBuilder =
         this.copy(states = this.states + states)
@@ -92,6 +90,7 @@ class ConsensualTransactionBuilderImpl(
             merkleTreeProvider,
             digestService,
             jsonMarshallingService,
+            jsonValidator,
             privacySalt,
             componentGroupLists
         )
@@ -123,7 +122,7 @@ class ConsensualTransactionBuilderImpl(
     }
 
     private fun serializeMetadata(): String =
-        validator.canonicalize(jsonMarshallingService.format(transactionMetaData))
+        jsonValidator.canonicalize(jsonMarshallingService.format(transactionMetaData))
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -143,6 +142,7 @@ class ConsensualTransactionBuilderImpl(
             cipherSchemeMetadata,
             digestService,
             jsonMarshallingService,
+            jsonValidator,
             merkleTreeProvider,
             serializationService,
             signingService,

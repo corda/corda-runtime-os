@@ -1,6 +1,7 @@
 package net.corda.ledger.common.data.transaction.serializer.amqp
 
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.data.validation.JsonValidator
 import net.corda.serialization.BaseProxySerializer
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -17,7 +18,8 @@ import org.osgi.service.component.annotations.Reference
 class WireTransactionSerializer @Activate constructor(
     @Reference(service = MerkleTreeProvider::class) private val merkleTreeProvider: MerkleTreeProvider,
     @Reference(service = DigestService::class) private val digestService: DigestService,
-    @Reference(service = JsonMarshallingService::class) private val jsonMarshallingService: JsonMarshallingService
+    @Reference(service = JsonMarshallingService::class) private val jsonMarshallingService: JsonMarshallingService,
+    @Reference(service = JsonValidator::class) private val jsonValidator: JsonValidator
 ) : BaseProxySerializer<WireTransaction, WireTransactionProxy>() {
 
     override val type = WireTransaction::class.java
@@ -40,6 +42,7 @@ class WireTransactionSerializer @Activate constructor(
                 merkleTreeProvider,
                 digestService,
                 jsonMarshallingService,
+                jsonValidator,
                 proxy.privacySalt,
                 proxy.componentGroupLists
             )

@@ -7,6 +7,8 @@ import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.kryoserialization.testkit.createCheckpointSerializer
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.data.validation.JsonValidator
+import net.corda.ledger.common.data.validation.impl.JsonValidatorImpl
 import net.corda.ledger.common.testkit.getWireTransaction
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.DigestService
@@ -22,6 +24,7 @@ class WireTransactionKryoSerializerTest {
         private lateinit var digestService: DigestService
         private lateinit var merkleTreeProvider: MerkleTreeProvider
         private lateinit var jsonMarshallingService: JsonMarshallingService
+        private lateinit var jsonValidator: JsonValidator
 
         @BeforeAll
         @JvmStatic
@@ -30,6 +33,7 @@ class WireTransactionKryoSerializerTest {
             digestService = DigestServiceImpl(schemeMetadata, null)
             merkleTreeProvider = MerkleTreeProviderImpl(digestService)
             jsonMarshallingService = JsonMarshallingServiceImpl()
+            jsonValidator = JsonValidatorImpl()
         }
     }
 
@@ -38,12 +42,14 @@ class WireTransactionKryoSerializerTest {
         val wireTransaction = getWireTransaction(
             digestService,
             merkleTreeProvider,
-            jsonMarshallingService
+            jsonMarshallingService,
+            jsonValidator
         )
         val wireTransactionKryoSerializer = WireTransactionKryoSerializer(
             merkleTreeProvider,
             digestService,
-            jsonMarshallingService
+            jsonMarshallingService,
+            jsonValidator
         )
 
         val serializer = createCheckpointSerializer(

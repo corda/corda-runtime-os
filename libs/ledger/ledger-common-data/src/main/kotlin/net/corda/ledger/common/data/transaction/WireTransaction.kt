@@ -2,7 +2,7 @@ package net.corda.ledger.common.data.transaction
 
 import net.corda.crypto.core.concatByteArrays
 import net.corda.crypto.core.toByteArray
-import net.corda.ledger.common.data.validation.JsonValidatorImpl
+import net.corda.ledger.common.data.validation.JsonValidator
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
@@ -18,10 +18,12 @@ import java.util.Base64
 
 const val ALL_LEDGER_METADATA_COMPONENT_GROUP_ID = 0
 
+@Suppress("LongParameterList")
 class WireTransaction(
     private val merkleTreeProvider: MerkleTreeProvider,
     private val digestService: DigestService,
     private val jsonMarshallingService: JsonMarshallingService,
+    private val jsonValidator: JsonValidator,
     val privacySalt: PrivacySalt,
     val componentGroupLists: List<List<ByteArray>>
 ){
@@ -140,7 +142,7 @@ class WireTransaction(
     }
 
     private fun parseMetadata(json: String): TransactionMetaData {
-        JsonValidatorImpl().validate(json, schemaPath = "/schema/transaction-metadata-v1.json")
+        jsonValidator.validate(json, schemaPath = "/schema/transaction-metadata-v1.json")
         return jsonMarshallingService.parse(json, TransactionMetaData::class.java)
     }
 

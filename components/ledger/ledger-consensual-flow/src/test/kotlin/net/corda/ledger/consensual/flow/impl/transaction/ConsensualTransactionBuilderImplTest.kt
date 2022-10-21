@@ -6,6 +6,8 @@ import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
+import net.corda.ledger.common.data.validation.JsonValidator
+import net.corda.ledger.common.data.validation.impl.JsonValidatorImpl
 import net.corda.ledger.common.testkit.mockTransactionMetaData
 import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionImpl
 import net.corda.v5.application.marshalling.JsonMarshallingService
@@ -23,6 +25,7 @@ import kotlin.test.assertIs
 
 internal class ConsensualTransactionBuilderImplTest {
     private val jsonMarshallingService: JsonMarshallingService = JsonMarshallingServiceImpl()
+    private val jsonValidator: JsonValidator = JsonValidatorImpl()
     private val cipherSchemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
     private val digestService: DigestService = DigestServiceImpl(cipherSchemeMetadata, null)
     private val merkleTreeFactory: MerkleTreeProvider = MerkleTreeProviderImpl(digestService)
@@ -94,6 +97,7 @@ internal class ConsensualTransactionBuilderImplTest {
             cipherSchemeMetadata,
             digestService,
             jsonMarshallingService,
+            jsonValidator,
             merkleTreeFactory,
             serializationService,
             ConsensualTransactionMocks.mockSigningService(),

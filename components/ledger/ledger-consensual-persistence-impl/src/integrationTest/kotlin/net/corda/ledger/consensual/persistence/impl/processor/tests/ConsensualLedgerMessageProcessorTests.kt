@@ -23,6 +23,7 @@ import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.data.validation.JsonValidator
 import net.corda.ledger.common.testkit.getWireTransaction
 import net.corda.ledger.consensual.persistence.impl.processor.ConsensualLedgerMessageProcessor
 import net.corda.messaging.api.records.Record
@@ -105,6 +106,10 @@ class ConsensualLedgerMessageProcessorTests {
 
     @InjectService
     lateinit var jsonMarshallingService: JsonMarshallingService
+
+    @InjectService
+    lateinit var jsonValidator: JsonValidator
+
     private lateinit var wireTransactionSerializer: InternalCustomSerializer<WireTransaction>
     private lateinit var ctx: DbTestContext
 
@@ -165,7 +170,7 @@ class ConsensualLedgerMessageProcessorTests {
         Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
 
         // create ConsensualSignedTransactionImpl instance (or WireTransaction at first)
-        val tx = getWireTransaction(digestService, merkleTreeProvider, jsonMarshallingService)
+        val tx = getWireTransaction(digestService, merkleTreeProvider, jsonMarshallingService, jsonValidator)
         logger.info("WireTransaction: ", tx)
 
         // serialise tx into bytebuffer and add to PersistTransaction payload
@@ -180,6 +185,7 @@ class ConsensualLedgerMessageProcessorTests {
             merkleTreeProvider,
             digestService,
             jsonMarshallingService,
+            jsonValidator,
             this::noOpPayloadCheck
         )
         val requestId = UUID.randomUUID().toString()

@@ -1,6 +1,7 @@
 package net.corda.ledger.consensual.persistence.impl.processor.factory
 
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
+import net.corda.ledger.common.data.validation.JsonValidator
 import net.corda.ledger.consensual.persistence.impl.processor.ConsensualLedgerMessageProcessor
 import net.corda.ledger.consensual.persistence.impl.processor.ConsensualLedgerProcessorImpl
 import net.corda.ledger.consensual.persistence.processor.ConsensualLedgerProcessor
@@ -32,7 +33,9 @@ class ConsensualLedgerProcessorFactoryImpl @Activate constructor(
     @Reference(service = DigestService::class)
     private val digestService: DigestService,
     @Reference(service = JsonMarshallingService::class)
-    private val jsonMarshallingService: JsonMarshallingService
+    private val jsonMarshallingService: JsonMarshallingService,
+    @Reference(service = JsonValidator::class)
+    private val jsonValidator: JsonValidator
 ) : ConsensualLedgerProcessorFactory {
     companion object {
         internal const val GROUP_NAME = "persistence.ledger.processor"
@@ -48,6 +51,7 @@ class ConsensualLedgerProcessorFactoryImpl @Activate constructor(
             merkleTreeProvider,
             digestService,
             jsonMarshallingService,
+            jsonValidator,
             PayloadChecker(config)::checkSize
         )
 

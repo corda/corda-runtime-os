@@ -3,6 +3,7 @@ package net.corda.ledger.consensual.persistence.impl.repository
 import net.corda.data.persistence.EntityResponse
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.data.validation.JsonValidator
 import net.corda.utilities.VisibleForTesting
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.types.toHexString
@@ -18,7 +19,8 @@ import javax.persistence.EntityManager
 class ConsensualLedgerRepository(
     private val merkleTreeProvider: MerkleTreeProvider,
     private val digestService: DigestService,
-    private val jsonMarshallingService: JsonMarshallingService
+    private val jsonMarshallingService: JsonMarshallingService,
+    private val jsonValidator: JsonValidator
 ) {
     companion object {
         private val logger = contextLogger()
@@ -66,6 +68,7 @@ class ConsensualLedgerRepository(
             merkleTreeProvider,
             digestService,
             jsonMarshallingService,
+            jsonValidator,
             privacySalt,
             componentGroupLists
         )
