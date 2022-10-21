@@ -7,10 +7,7 @@ description 'Corda ledger consensual test objects'
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
-    implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation "net.corda:corda-cipher-suite"
-    implementation "net.corda:corda-application"
     implementation "net.corda:corda-ledger-consensual"
 
     implementation project(":libs:ledger:ledger-common-data")
