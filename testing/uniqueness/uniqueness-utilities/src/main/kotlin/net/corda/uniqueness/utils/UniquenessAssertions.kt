@@ -285,7 +285,7 @@ object UniquenessAssertions {
     }
 
     /**
-     * Checks if the given transaction details has the expected size and the transaction ID.
+     * Checks if the given transaction details has the single and expected transaction ID.
      */
     fun assertContainingTxId(txnDetails: Map<SecureHash, UniquenessCheckTransactionDetailsInternal>,
                              txIds: List<SecureHash>) {
