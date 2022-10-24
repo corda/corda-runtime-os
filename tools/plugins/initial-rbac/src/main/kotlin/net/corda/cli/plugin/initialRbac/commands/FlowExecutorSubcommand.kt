@@ -27,7 +27,7 @@ class FlowExecutorSubcommand : HttpRpcCommand(), Callable<Int> {
     )
     lateinit var vnodeShortHash: String
 
-    private val permissionsToCreate: Set<PermissionTemplate> = setOf(
+    private val permissionsToCreate: Set<PermissionTemplate> get() = setOf(
         // Endpoint level commands
         PermissionTemplate("Start Flow endpoint", "POST:/api/v1/flow/$vnodeShortHash", null),
         PermissionTemplate("Get status for all flows", "GET:/api/v1/flow/$vnodeShortHash", null),
@@ -44,6 +44,6 @@ class FlowExecutorSubcommand : HttpRpcCommand(), Callable<Int> {
     )
 
     override fun call(): Int {
-        return checkOrCreateRole(FLOW_EXECUTOR_ROLE, permissionsToCreate)
+        return checkOrCreateRole("$FLOW_EXECUTOR_ROLE-$vnodeShortHash", permissionsToCreate)
     }
 }

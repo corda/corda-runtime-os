@@ -5,18 +5,13 @@ import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.FLOW_NAME_REG
 import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.USER_REGEX
 import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.UUID_REGEX
 import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.VNODE_SHORT_HASH_REGEX
+import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.wildcardMatch
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.util.UUID
 
 class TestPatternsMatch {
-
-    companion object {
-        private fun wildcardMatch(input: String, regex: String): Boolean {
-            return input.matches(regex.toRegex(RegexOption.IGNORE_CASE))
-        }
-    }
 
     @Test
     fun testUUID() {

@@ -27,6 +27,10 @@ internal object RoleCreationUtils {
 
     const val FLOW_NAME_REGEX = "[._\$a-zA-Z0-9]{1,250}"
 
+    fun wildcardMatch(input: String, regex: String): Boolean {
+        return input.matches(regex.toRegex(RegexOption.IGNORE_CASE))
+    }
+
     fun HttpRpcCommand.checkOrCreateRole(roleName: String, permissionsToCreate: Map<String, String>): Int {
         return checkOrCreateRole(
             roleName,
@@ -50,7 +54,7 @@ internal object RoleCreationUtils {
 
         createHttpRpcClient(RoleEndpoint::class).use { roleEndpointClient ->
             val waitDuration = Duration.of(waitDurationSeconds.toLong(), ChronoUnit.SECONDS)
-            val roleEndpoint = executeWithRetry(waitDuration, "Start of role HTTP endpoint") {
+            val roleEndpoint = executeWithRetry(waitDuration, "Connect to role HTTP endpoint") {
                 roleEndpointClient.start().proxy
             }
             val allRoles = executeWithRetry(waitDuration, "Obtain list of available roles") {
