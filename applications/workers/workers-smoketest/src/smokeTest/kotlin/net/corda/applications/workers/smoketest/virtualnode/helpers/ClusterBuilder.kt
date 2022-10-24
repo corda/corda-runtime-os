@@ -1,5 +1,6 @@
 package net.corda.applications.workers.smoketest.virtualnode.helpers
 
+import net.corda.data.certificates.CertificateType
 import net.corda.httprpc.JsonObject
 import java.io.FileNotFoundException
 import java.net.URI
@@ -60,8 +61,8 @@ class ClusterBuilder {
         this::class.java.getResource(resourceName)?.openStream()
             ?: throw FileNotFoundException("No such resource: '$resourceName'")
 
-    fun importCertificate(resourceName: String, tenant: String, alias: String) =
-        uploadCertificateResource("/api/v1/certificates/${tenant}", resourceName, alias)
+    fun importCertificate(resourceName: String, type: CertificateType, alias: String) =
+        uploadCertificateResource("/api/v1/certificates/${type}", resourceName, alias)
 
     /** Assumes the resource *is* a CPB */
     fun cpbUpload(resourceName: String) = uploadUnmodifiedResource("/api/v1/cpi/", resourceName)

@@ -1,6 +1,6 @@
 package net.corda.membership.certificate.service.impl
 
-import net.corda.crypto.core.CryptoTenants
+import net.corda.data.certificates.CertificateType
 import net.corda.data.certificates.rpc.request.CertificateRpcRequest
 import net.corda.data.certificates.rpc.request.ImportCertificateRpcRequest
 import net.corda.data.certificates.rpc.request.RetrieveCertificateRpcRequest
@@ -9,6 +9,7 @@ import net.corda.data.certificates.rpc.response.CertificateRetrievalRpcResponse
 import net.corda.data.certificates.rpc.response.CertificateRpcResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
+import net.corda.membership.certificates.CertificateUsage.Companion.publicName
 import net.corda.membership.certificates.datamodel.Certificate
 import net.corda.membership.certificates.datamodel.ClusterCertificate
 import net.corda.membership.certificates.datamodel.ClusterCertificatePrimaryKey
@@ -75,31 +76,35 @@ class CertificatesProcessorTest {
     @Test
     fun `onNext merge the certificate into the p2p tenant`() {
         val request = CertificateRpcRequest(
-            CryptoTenants.P2P,
+            CertificateType.P2P,
             ImportCertificateRpcRequest("alias", "certificate")
         )
 
         processor.onNext(request, response)
 
-        verify(clusterEntityManager).merge(ClusterCertificate(CryptoTenants.P2P, "alias", "certificate"))
+        verify(clusterEntityManager).merge(
+            ClusterCertificate(CertificateType.P2P.publicName, "alias", "certificate")
+        )
     }
 
     @Test
     fun `onNext merge the certificate into the RPC API tenant`() {
         val request = CertificateRpcRequest(
-            CryptoTenants.RPC_API,
+            CertificateType.RPC_API,
             ImportCertificateRpcRequest("alias", "certificate")
         )
 
         processor.onNext(request, response)
 
-        verify(clusterEntityManager).merge(ClusterCertificate(CryptoTenants.RPC_API, "alias", "certificate"))
+        verify(clusterEntityManager).merge(ClusterCertificate(
+            CertificateType.RPC_API.publicName, "alias", "certificate")
+        )
     }
 
     @Test
     fun `onNext find the certificate from the RPC API tenant`() {
         val request = CertificateRpcRequest(
-            CryptoTenants.RPC_API,
+            CertificateType.RPC_API,
             RetrieveCertificateRpcRequest("alias")
         )
 
@@ -107,14 +112,16 @@ class CertificatesProcessorTest {
 
         verify(clusterEntityManager).find(
             ClusterCertificate::class.java,
-            ClusterCertificatePrimaryKey(CryptoTenants.RPC_API, "alias")
+            ClusterCertificatePrimaryKey(
+                CertificateType.RPC_API.publicName, "alias"
+            )
         )
     }
 
     @Test
     fun `onNext find the certificate from the P2P tenant`() {
         val request = CertificateRpcRequest(
-            CryptoTenants.P2P,
+            CertificateType.P2P,
             RetrieveCertificateRpcRequest("alias")
         )
 
@@ -122,7 +129,10 @@ class CertificatesProcessorTest {
 
         verify(clusterEntityManager).find(
             ClusterCertificate::class.java,
-            ClusterCertificatePrimaryKey(CryptoTenants.P2P, "alias")
+            ClusterCertificatePrimaryKey(
+                CertificateType.P2P.publicName,
+                "alias",
+            )
         )
     }
 
@@ -156,7 +166,7 @@ class CertificatesProcessorTest {
     @Test
     fun `onNext will not close the node factory`() {
         val request = CertificateRpcRequest(
-            CryptoTenants.P2P,
+            CertificateType.P2P,
             RetrieveCertificateRpcRequest("alias")
         )
 
@@ -206,7 +216,7 @@ class CertificatesProcessorTest {
     @Test
     fun `onNext will return CertificateImportedRpcResponse`() {
         val request = CertificateRpcRequest(
-            CryptoTenants.RPC_API,
+            CertificateType.RPC_API,
             ImportCertificateRpcRequest("alias", "certificate")
         )
 
@@ -219,7 +229,7 @@ class CertificatesProcessorTest {
     fun `onNext will throw an error if there are any`() {
         whenever(clusterEntityManager.merge(any<ClusterCertificate>())).doThrow(RuntimeException("OOPs"))
         val request = CertificateRpcRequest(
-            CryptoTenants.RPC_API,
+            CertificateType.RPC_API,
             ImportCertificateRpcRequest("alias", "certificate")
         )
 
@@ -231,7 +241,7 @@ class CertificatesProcessorTest {
     @Test
     fun `onNext will throw an error for unexpected request`() {
         val request = CertificateRpcRequest(
-            CryptoTenants.RPC_API,
+            CertificateType.RPC_API,
             null
         )
 

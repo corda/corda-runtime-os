@@ -200,7 +200,7 @@ fun E2eCluster.setUpNetworkIdentity(
             holdingId,
             HostedIdentitySetupRequest(
                 TLS_CERT_ALIAS,
-                P2P_TENANT_ID,
+                true,
                 null,
                 sessionKeyId
             )

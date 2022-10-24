@@ -17,6 +17,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.certificate.service.CertificatesService
+import net.corda.membership.certificates.CertificateUsage
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.orm.JpaEntitiesRegistry
@@ -61,18 +62,27 @@ class CertificatesServiceImpl @Activate constructor(
     )
     private val coordinator = coordinatorFactory.createCoordinator<CertificatesService>(::handleEvent)
 
-    override fun importCertificates(tenantId: String, alias: String, certificates: String) =
-        processor.useCertificateProcessor(tenantId) { p -> p.saveCertificates(alias, certificates) }
+    override fun importCertificates(
+        typeOrHoldingId: CertificateUsage,
+        alias: String,
+        certificates: String,
+    ) =
+        processor.useCertificateProcessor(typeOrHoldingId) { p -> p.saveCertificates(alias, certificates) }
 
-    override fun retrieveCertificates(tenantId: String, alias: String): String? {
+    override fun retrieveCertificates(
+        typeOrHoldingId: CertificateUsage,
+        alias: String,
+    ): String? {
         var certificates: String? = null
-        processor.useCertificateProcessor(tenantId) { p -> certificates = p.readCertificates(alias) }
+        processor.useCertificateProcessor(typeOrHoldingId) { p -> certificates = p.readCertificates(alias) }
         return certificates
     }
 
-    override fun retrieveAllCertificates(tenantId: String): List<String> {
+    override fun retrieveAllCertificates(
+        typeOrHoldingId: CertificateUsage,
+    ): List<String> {
         var certificates = emptyList<String>()
-        processor.useCertificateProcessor(tenantId) { p -> certificates = p.readAllCertificates() }
+        processor.useCertificateProcessor(typeOrHoldingId) { p -> certificates = p.readAllCertificates() }
         return certificates
     }
 

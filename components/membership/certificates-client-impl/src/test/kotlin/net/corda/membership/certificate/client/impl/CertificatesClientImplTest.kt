@@ -3,6 +3,7 @@ package net.corda.membership.certificate.client.impl
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.data.certificates.CertificateType
 import net.corda.data.certificates.rpc.request.CertificateRpcRequest
 import net.corda.data.certificates.rpc.request.ImportCertificateRpcRequest
 import net.corda.data.certificates.rpc.request.RetrieveCertificateRpcRequest
@@ -18,6 +19,8 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.certificates.CertificateUsage
+import net.corda.membership.certificates.CertificateUsage.Companion.fromAvro
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
@@ -60,10 +63,10 @@ class CertificatesClientImplTest {
         on { createPublisher(any(), any()) } doReturn publisher
     }
     private val configurationReadService = mock<ConfigurationReadService>()
-    private var retrieveCertificates: ((String, String) -> String?)? = null
+    private var retrieveCertificates: ((CertificateUsage, String) -> String?)? = null
     private val mockHostedIdentityEntryFactory = mockConstruction(HostedIdentityEntryFactory::class.java) { _, settings ->
         @Suppress("UNCHECKED_CAST")
-        retrieveCertificates = settings.arguments()[4] as? ((String, String) -> String?)
+        retrieveCertificates = settings.arguments()[4] as? ((CertificateUsage, String) -> String?)
     }
     private val shortHash = ShortHash.of("AF77BF2471F3")
 
@@ -93,12 +96,12 @@ class CertificatesClientImplTest {
             )
             handler.firstValue.processEvent(event, coordinator)
 
-            client.importCertificates("tenantId", "alias", "certificate")
+            client.importCertificates(CertificateType.RPC_API.fromAvro, "alias", "certificate")
 
             verify(sender)
                 .sendRequest(
                     CertificateRpcRequest(
-                        "tenantId",
+                        CertificateType.RPC_API,
                         ImportCertificateRpcRequest(
                             "alias",
                             "certificate"
@@ -117,7 +120,7 @@ class CertificatesClientImplTest {
             handler.firstValue.processEvent(event, coordinator)
 
             val exception = assertThrows<Exception> {
-                client.importCertificates("tenantId", "alias", "certificate")
+                client.importCertificates(CertificateType.P2P.fromAvro, "alias", "certificate")
             }
 
             assertThat(exception).hasMessage("Failure")
@@ -126,7 +129,7 @@ class CertificatesClientImplTest {
         @Test
         fun `importCertificates throws exception if client is not ready`() {
             val exception = assertThrows<Exception> {
-                client.importCertificates("tenantId", "alias", "certificate")
+                client.importCertificates(CertificateType.CODE_SIGNER.fromAvro, "alias", "certificate")
             }
 
             assertThat(exception).hasMessage("Certificates client is not ready")
@@ -147,7 +150,7 @@ class CertificatesClientImplTest {
             client.setupLocallyHostedIdentity(
                 shortHash,
                 "Alias",
-                "tlsTenantId",
+                true,
                 "sessionKeyTenantId",
                 "sessionAlias"
             )
@@ -157,7 +160,7 @@ class CertificatesClientImplTest {
             ).createIdentityRecord(
                 shortHash,
                 "Alias",
-                "tlsTenantId",
+                true,
                 "sessionKeyTenantId",
                 "sessionAlias"
             )
@@ -172,12 +175,12 @@ class CertificatesClientImplTest {
             )
             handler.firstValue.processEvent(event, coordinator)
 
-            retrieveCertificates?.invoke("tenantId", "alias")
+            retrieveCertificates?.invoke(CertificateType.P2P.fromAvro, "alias")
 
             verify(sender)
                 .sendRequest(
                     CertificateRpcRequest(
-                        "tenantId",
+                        CertificateType.P2P,
                         RetrieveCertificateRpcRequest(
                             "alias",
                         )
@@ -191,7 +194,7 @@ class CertificatesClientImplTest {
                 client.setupLocallyHostedIdentity(
                     shortHash,
                     "Alias",
-                    "tlsTenantId",
+                    true,
                     "sessionKeyTenantId",
                     "sessionAlias"
                 )
@@ -211,7 +214,7 @@ class CertificatesClientImplTest {
                 client.setupLocallyHostedIdentity(
                     shortHash,
                     "Alias",
-                    "tlsTenantId",
+                    false,
                     "sessionKeyTenantId",
                     "sessionAlias"
                 )
@@ -234,7 +237,7 @@ class CertificatesClientImplTest {
             client.setupLocallyHostedIdentity(
                 shortHash,
                 "Alias",
-                "tlsTenantId",
+                false,
                 "sessionKeyTenantId",
                 "sessionAlias"
             )

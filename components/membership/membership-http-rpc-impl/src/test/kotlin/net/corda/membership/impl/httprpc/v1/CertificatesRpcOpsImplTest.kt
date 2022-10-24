@@ -1,6 +1,7 @@
 package net.corda.membership.impl.httprpc.v1
 
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.data.certificates.CertificateType
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.exception.InvalidInputDataException
@@ -11,6 +12,7 @@ import net.corda.lifecycle.LifecycleEventHandler
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.membership.certificate.client.CertificatesClient
+import net.corda.membership.certificates.CertificateUsage.Companion.fromAvro
 import net.corda.membership.httprpc.v1.CertificatesRpcOps.Companion.SIGNATURE_SPEC
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature
@@ -295,7 +297,7 @@ class CertificatesRpcOpsImplTest {
             }
 
             assertThrows<InvalidInputDataException> {
-                certificatesOps.importCertificateChain("tenant", "alias", listOf(certificate))
+                certificatesOps.importCertificateChain("rpc-api", "alias", listOf(certificate))
             }
         }
         @Test
@@ -305,15 +307,15 @@ class CertificatesRpcOpsImplTest {
                 on { content } doReturn certificateText.byteInputStream()
             }
 
-            certificatesOps.importCertificateChain("tenant", "alias", listOf(certificate))
+            certificatesOps.importCertificateChain("p2p", "alias", listOf(certificate))
 
-            verify(certificatesClient).importCertificates("tenant", "alias", certificateText)
+            verify(certificatesClient).importCertificates(CertificateType.P2P.fromAvro, "alias", certificateText)
         }
 
         @Test
         fun `no certificates throws an exception`() {
             assertThrows<InvalidInputDataException> {
-                certificatesOps.importCertificateChain("tenant", "alias", emptyList())
+                certificatesOps.importCertificateChain("rpc-api", "alias", emptyList())
             }
         }
 
@@ -325,7 +327,7 @@ class CertificatesRpcOpsImplTest {
             }
 
             val details = assertThrows<InvalidInputDataException> {
-                certificatesOps.importCertificateChain("tenant", "", listOf(certificate))
+                certificatesOps.importCertificateChain("rpc-api", "", listOf(certificate))
             }.details
             assertThat(details).containsKey("alias")
         }
@@ -340,10 +342,10 @@ class CertificatesRpcOpsImplTest {
                 on { content } doReturn ("$certificateText\n$certificateText").byteInputStream()
             }
 
-            certificatesOps.importCertificateChain("tenant", "alias", listOf(certificate1, certificate2))
+            certificatesOps.importCertificateChain("rpc-api", "alias", listOf(certificate1, certificate2))
 
             verify(certificatesClient).importCertificates(
-                "tenant", "alias", "$certificateText\n$certificateText\n$certificateText"
+                CertificateType.RPC_API.fromAvro, "alias", "$certificateText\n$certificateText\n$certificateText"
             )
         }
     }

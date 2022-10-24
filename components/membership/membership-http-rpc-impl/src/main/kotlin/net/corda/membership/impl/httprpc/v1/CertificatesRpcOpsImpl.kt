@@ -13,6 +13,7 @@ import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.certificate.client.CertificatesClient
+import net.corda.membership.certificates.CertificateUsage
 import net.corda.membership.httprpc.v1.CertificatesRpcOps
 import net.corda.membership.httprpc.v1.CertificatesRpcOps.Companion.SIGNATURE_SPEC
 import net.corda.membership.impl.httprpc.v1.lifecycle.RpcOpsLifecycleHandler
@@ -131,7 +132,11 @@ class CertificatesRpcOpsImpl @Activate constructor(
         }
     }
 
-    override fun importCertificateChain(tenantId: String, alias: String, certificates: List<HttpFileUpload>) {
+    override fun importCertificateChain(
+        usage: String,
+        alias: String,
+        certificates: List<HttpFileUpload>,
+    ) {
         if (alias.isBlank()) {
             throw InvalidInputDataException(
                 details = mapOf("alias" to "Empty alias")
@@ -163,9 +168,10 @@ class CertificatesRpcOpsImpl @Activate constructor(
                 details = mapOf("certificate" to "Not a valid certificate: ${e.message}")
             )
         }
+        val type = CertificateUsage.fromString(usage)
 
         try {
-            certificatesClient.importCertificates(tenantId, alias, rawCertificates.joinToString(separator = "\n"))
+            certificatesClient.importCertificates(type, alias, rawCertificates.joinToString(separator = "\n"))
         } catch (e: Exception) {
             logger.warn("Could not import certificate", e)
             throw InternalServerException("Could not import certificate: ${e.message}")

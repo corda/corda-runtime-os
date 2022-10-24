@@ -20,6 +20,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.certificate.client.CertificatesClient
+import net.corda.membership.certificates.CertificateUsage
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.RPCSender
@@ -77,24 +78,31 @@ class CertificatesClientImpl @Activate constructor(
         retrieveCertificates = ::retrieveCertificates,
     )
 
-    override fun importCertificates(tenantId: String, alias: String, certificates: String) {
-        send<CertificateImportedRpcResponse>(tenantId, ImportCertificateRpcRequest(alias, certificates))
+    override fun importCertificates(
+        usage: CertificateUsage,
+        alias: String,
+        certificates: String,
+    ) {
+        send<CertificateImportedRpcResponse>(usage, ImportCertificateRpcRequest(alias, certificates))
     }
 
-    private fun retrieveCertificates(tenantId: String, alias: String): String? {
-        return send<CertificateRetrievalRpcResponse>(tenantId, RetrieveCertificateRpcRequest(alias))?.certificates
+    private fun retrieveCertificates(usage: CertificateUsage, alias: String): String? {
+        return send<CertificateRetrievalRpcResponse>(usage, RetrieveCertificateRpcRequest(alias))?.certificates
     }
 
     override fun setupLocallyHostedIdentity(
         holdingIdentityShortHash: ShortHash,
         p2pTlsCertificateChainAlias: String,
-        p2pTlsTenantId: String?,
+        useClusterLevelCertificateAndKey: Boolean,
         sessionKeyTenantId: String?,
         sessionKeyId: String?,
     ) {
-
         val record = hostedIdentityEntryFactory.createIdentityRecord(
-            holdingIdentityShortHash, p2pTlsCertificateChainAlias, p2pTlsTenantId, sessionKeyTenantId, sessionKeyId
+            holdingIdentityShortHash,
+            p2pTlsCertificateChainAlias,
+            useClusterLevelCertificateAndKey,
+            sessionKeyTenantId,
+            sessionKeyId,
         )
 
         val futures = publisher?.publish(
@@ -120,12 +128,17 @@ class CertificatesClientImpl @Activate constructor(
         logger.info("Stopping component.")
         coordinator.stop()
     }
-    private inline fun <reified R> send(tenantId: String, payload: Any): R? {
+    private inline fun <reified R> send(usage: CertificateUsage, payload: Any): R? {
         val currentSender = sender
         return if (currentSender == null) {
             throw IllegalStateException("Certificates client is not ready")
         } else {
-            currentSender.sendRequest(CertificateRpcRequest(tenantId, payload)).getOrThrow()?.response as? R
+            currentSender.sendRequest(
+                CertificateRpcRequest(
+                    usage.asAvro,
+                    payload
+                )
+            ).getOrThrow()?.response as? R
         }
     }
 
