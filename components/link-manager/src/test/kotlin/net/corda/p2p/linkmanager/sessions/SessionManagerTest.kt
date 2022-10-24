@@ -1743,7 +1743,7 @@ class SessionManagerTest {
     }
 
     @Test
-    fun `sessions are refreshed even if groupInfo is missing`() {
+    fun `sessions are removed even if groupInfo is missing`() {
         whenever(outboundSessionPool.constructed().first().getSession(protocolInitiator.sessionId)).thenReturn(
             OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
         )
@@ -1761,6 +1761,7 @@ class SessionManagerTest {
         whenever(protocolInitiator.getSession()).thenReturn(session)
         whenever(outboundSessionPool.constructed().last().replaceSession(eq(protocolInitiator.sessionId), any())).thenReturn(true)
         whenever(protocolInitiator.generateInitiatorHello()).thenReturn(mock())
+        whenever(groups.getGroupInfo(OUR_PARTY)).thenReturn(null)
 
         assertThat(sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))).isNull()
         mockTimeFacilitiesProvider.advanceTime(5.days + 1.minutes)
@@ -1781,10 +1782,8 @@ class SessionManagerTest {
             SessionManager.SessionCounterparties(OUR_PARTY, PEER_PARTY)
         )
 
-        verify(outboundSessionPool.constructed().last()).replaceSession(protocolInitiator.sessionId, protocolInitiator)
-        verify(publisherWithDominoLogicByClientId["session-manager"]!!.last())
-            .publish(listOf(Record(SESSION_OUT_PARTITIONS, protocolInitiator.sessionId, null))
-            )
+        verify(outboundSessionPool.constructed().last()).removeSessions(counterparties)
+
     }
 
 }
