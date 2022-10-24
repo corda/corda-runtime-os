@@ -148,8 +148,7 @@ object UniquenessAssertions {
      * Checks for an accepted uniqueness check result. If a clock is specified, will additionally
      * check the result timestamp is valid with respect to the provider.
      */
-    inline fun <reified T> assertAcceptedResult(result: UniquenessCheckResult, clock: AutoTickTestClock? = null) {
-        assertInstanceOf(T::class.java, result)
+    fun assertAcceptedResult(result: UniquenessCheckResult, clock: AutoTickTestClock? = null) {
         assertThat(result.toCharacterRepresentation()).isEqualTo(UniquenessConstants.RESULT_ACCEPTED_REPRESENTATION)
         assertValidTimestamp(result.resultTimestamp, clock)
     }

@@ -207,9 +207,7 @@ class JPABackingStoreImplIntegrationTests {
             }
 
             UniquenessAssertions.assertContainingTxId(txnDetails, txIds.single())
-            UniquenessAssertions.assertAcceptedResult<UniquenessCheckResultSuccess>(
-                txnDetails.entries.single().value.result
-            )
+            UniquenessAssertions.assertAcceptedResult(txnDetails.entries.single().value.result)
         }
 
         @Test
