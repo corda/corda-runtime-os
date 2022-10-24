@@ -36,12 +36,112 @@ object UniquenessAssertions {
     ) = getResultOfType<UniquenessCheckResultSuccessAvro>(response).run { assertValidTimestamp(commitTimestamp, clock) }
 
     /**
-     * Checks if the given transaction details has the expected size and the transaction ID.
+     * Checks for a malformed request response with the specified error text
      */
-    fun assertContainingTxId(txnDetails: Map<SecureHash, UniquenessCheckTransactionDetailsInternal>,
-                             txIds: List<SecureHash>) {
-        assertThat(txnDetails.size).isEqualTo(1)
-        assertThat(txIds).contains(txnDetails.entries.single().key)
+    fun assertMalformedRequestResponse(
+        response: UniquenessCheckResponseAvro,
+        expectedErrorText: String
+    ) {
+        getResultOfType<UniquenessCheckResultMalformedRequestAvro>(response).run {
+            assertThat(errorText).isEqualTo(expectedErrorText)
+        }
+    }
+
+    /**
+     * Checks for an unhandled exception response with the specified exception type
+     */
+    fun assertUnhandledExceptionResponse(
+        response: UniquenessCheckResponseAvro,
+        expectedExceptionType: String
+    ) {
+        getResultOfType<UniquenessCheckResultUnhandledExceptionAvro>(response).run {
+            assertThat(exception.errorType).isEqualTo(expectedExceptionType)
+        }
+    }
+
+    /**
+     * Checks for an unknown input state response, ensuring that all specified unknown states
+     *  are captured.
+     */
+    fun assertUnknownInputStateResponse(
+        response: UniquenessCheckResponseAvro,
+        expectedUnknownStates: List<String>
+    ) {
+        getResultOfType<UniquenessCheckResultInputStateUnknownAvro>(response).run {
+            assertThat(unknownStates)
+                .containsExactlyInAnyOrder(*expectedUnknownStates.toTypedArray())
+        }
+    }
+
+    /**
+     * Checks for an input state conflict response, ensuring that all specified conflicting
+     * states are captured.
+     */
+    fun assertInputStateConflictResponse(
+        response: UniquenessCheckResponseAvro,
+        expectedConflictingStates: List<String>
+    ) {
+        getResultOfType<UniquenessCheckResultInputStateConflictAvro>(response).run {
+            assertThat(conflictingStates)
+                .containsExactlyInAnyOrder(*expectedConflictingStates.toTypedArray())
+        }
+    }
+
+    /**
+     * Checks for an unknown reference state response, ensuring that all specified unknown states
+     *  are captured.
+     */
+    fun assertUnknownReferenceStateResponse(
+        response: UniquenessCheckResponseAvro,
+        expectedUnknownStates: List<String>
+    ) {
+        getResultOfType<UniquenessCheckResultReferenceStateUnknownAvro>(response).run {
+            assertThat(unknownStates)
+                .containsExactlyInAnyOrder(*expectedUnknownStates.toTypedArray())
+        }
+    }
+
+    /**
+     * Checks for a reference state conflict response, ensuring that all specified conflicting
+     * states are captured.
+     */
+    fun assertReferenceStateConflictResponse(
+        response: UniquenessCheckResponseAvro,
+        expectedConflictingStates: List<String>
+    ) {
+        getResultOfType<UniquenessCheckResultReferenceStateConflictAvro>(response).run {
+            assertThat(conflictingStates)
+                .containsExactlyInAnyOrder(*expectedConflictingStates.toTypedArray())
+        }
+    }
+
+    /**
+     * Checks for a time window out of bounds response, ensuring that the response contains
+     * the expected (optional) lower and (mandatory) upper bound.
+     */
+    fun assertTimeWindowOutOfBoundsResponse(
+        response: UniquenessCheckResponseAvro,
+        expectedLowerBound: Instant? = null,
+        expectedUpperBound: Instant)
+    {
+        getResultOfType<UniquenessCheckResultTimeWindowOutOfBoundsAvro>(response).run {
+            assertAll(
+                { assertEquals(expectedLowerBound, timeWindowLowerBound, "Lower bound") },
+                { assertEquals(expectedUpperBound, timeWindowUpperBound, "Upper bound") }
+            )
+        }
+    }
+
+    /**
+     * Checks that all commit timestamps within a list of responses are unique
+     */
+    fun assertUniqueCommitTimestamps(responses: Collection<UniquenessCheckResponseAvro>) {
+        assertEquals(
+            responses.size,
+            responses.distinctBy {
+                (it.result as UniquenessCheckResultSuccessAvro).commitTimestamp
+            }.size
+        )
     }
 
     /**
@@ -51,19 +151,6 @@ object UniquenessAssertions {
     inline fun <reified T> assertAcceptedResult(result: UniquenessCheckResult, clock: AutoTickTestClock? = null) {
         assertInstanceOf(T::class.java, result)
         assertThat(result.toCharacterRepresentation()).isEqualTo(UniquenessConstants.RESULT_ACCEPTED_REPRESENTATION)
-        assertValidTimestamp(result.resultTimestamp, clock)
-    }
-
-    /**
-     * Performs common checks for a reject result. If a clock is specified, will additionally
-     * check the result timestamp is valid with respect to the provider.
-     */
-    private inline fun <reified T> assertRejectedResultCommon(
-        result: UniquenessCheckResult,
-        clock: AutoTickTestClock? = null
-    ) {
-        assertInstanceOf(T::class.java, getErrorOfType<T>(result))
-        assertThat(result.toCharacterRepresentation()).isEqualTo(UniquenessConstants.RESULT_REJECTED_REPRESENTATION)
         assertValidTimestamp(result.resultTimestamp, clock)
     }
 
@@ -177,112 +264,16 @@ object UniquenessAssertions {
     }
 
     /**
-     * Checks for a malformed request response with the specified error text
+     * Performs common checks for a reject result. If a clock is specified, will additionally
+     * check the result timestamp is valid with respect to the provider.
      */
-    fun assertMalformedRequestResponse(
-        response: UniquenessCheckResponseAvro,
-        expectedErrorText: String
+    private inline fun <reified T> assertRejectedResultCommon(
+        result: UniquenessCheckResult,
+        clock: AutoTickTestClock? = null
     ) {
-        getResultOfType<UniquenessCheckResultMalformedRequestAvro>(response).run {
-            assertThat(errorText).isEqualTo(expectedErrorText)
-        }
-    }
-
-    /**
-     * Checks for an unhandled exception response with the specified exception type
-     */
-    fun assertUnhandledExceptionResponse(
-        response: UniquenessCheckResponseAvro,
-        expectedExceptionType: String
-    ) {
-        getResultOfType<UniquenessCheckResultUnhandledExceptionAvro>(response).run {
-            assertThat(exception.errorType).isEqualTo(expectedExceptionType)
-        }
-    }
-
-    /**
-     * Checks for an unknown input state response, ensuring that all specified unknown states
-     *  are captured.
-     */
-    fun assertUnknownInputStateResponse(
-        response: UniquenessCheckResponseAvro,
-        expectedUnknownStates: List<String>
-    ) {
-        getResultOfType<UniquenessCheckResultInputStateUnknownAvro>(response).run {
-            assertThat(unknownStates)
-                .containsExactlyInAnyOrder(*expectedUnknownStates.toTypedArray())
-        }
-    }
-
-    /**
-     * Checks for an input state conflict response, ensuring that all specified conflicting
-     * states are captured.
-     */
-    fun assertInputStateConflictResponse(
-        response: UniquenessCheckResponseAvro,
-        expectedConflictingStates: List<String>
-    ) {
-        getResultOfType<UniquenessCheckResultInputStateConflictAvro>(response).run {
-            assertThat(conflictingStates)
-                .containsExactlyInAnyOrder(*expectedConflictingStates.toTypedArray())
-        }
-    }
-
-    /**
-     * Checks for an unknown reference state response, ensuring that all specified unknown states
-     *  are captured.
-     */
-    fun assertUnknownReferenceStateResponse(
-        response: UniquenessCheckResponseAvro,
-        expectedUnknownStates: List<String>
-    ) {
-        getResultOfType<UniquenessCheckResultReferenceStateUnknownAvro>(response).run {
-            assertThat(unknownStates)
-                .containsExactlyInAnyOrder(*expectedUnknownStates.toTypedArray())
-        }
-    }
-
-    /**
-     * Checks for a reference state conflict response, ensuring that all specified conflicting
-     * states are captured.
-     */
-    fun assertReferenceStateConflictResponse(
-        response: UniquenessCheckResponseAvro,
-        expectedConflictingStates: List<String>
-    ) {
-        getResultOfType<UniquenessCheckResultReferenceStateConflictAvro>(response).run {
-            assertThat(conflictingStates)
-                .containsExactlyInAnyOrder(*expectedConflictingStates.toTypedArray())
-        }
-    }
-
-    /**
-     * Checks for a time window out of bounds response, ensuring that the response contains
-     * the expected (optional) lower and (mandatory) upper bound.
-     */
-    fun assertTimeWindowOutOfBoundsResponse(
-        response: UniquenessCheckResponseAvro,
-        expectedLowerBound: Instant? = null,
-        expectedUpperBound: Instant)
-    {
-        getResultOfType<UniquenessCheckResultTimeWindowOutOfBoundsAvro>(response).run {
-            assertAll(
-                { assertEquals(expectedLowerBound, timeWindowLowerBound, "Lower bound") },
-                { assertEquals(expectedUpperBound, timeWindowUpperBound, "Upper bound") }
-            )
-        }
-    }
-
-    /**
-     * Checks that all commit timestamps within a list of responses are unique
-     */
-    fun assertUniqueCommitTimestamps(responses: Collection<UniquenessCheckResponseAvro>) {
-        assertEquals(
-            responses.size,
-            responses.distinctBy {
-                (it.result as UniquenessCheckResultSuccessAvro).commitTimestamp
-            }.size
-        )
+        assertInstanceOf(T::class.java, getErrorOfType<T>(result))
+        assertThat(result.toCharacterRepresentation()).isEqualTo(UniquenessConstants.RESULT_REJECTED_REPRESENTATION)
+        assertValidTimestamp(result.resultTimestamp, clock)
     }
 
     /**
@@ -291,6 +282,15 @@ object UniquenessAssertions {
     private inline fun <reified T> getErrorOfType(result: UniquenessCheckResult): T {
         val failure = result as UniquenessCheckResultFailure
         return failure.error as T
+    }
+
+    /**
+     * Checks if the given transaction details has the expected size and the transaction ID.
+     */
+    fun assertContainingTxId(txnDetails: Map<SecureHash, UniquenessCheckTransactionDetailsInternal>,
+                             txIds: List<SecureHash>) {
+        assertThat(txnDetails.size).isEqualTo(1)
+        assertThat(txIds).contains(txnDetails.entries.single().key)
     }
 
     private inline fun<reified T> getResultOfType(response: UniquenessCheckResponseAvro): T {
