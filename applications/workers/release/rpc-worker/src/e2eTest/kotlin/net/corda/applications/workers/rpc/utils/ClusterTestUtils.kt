@@ -21,12 +21,13 @@ import net.corda.membership.httprpc.v1.types.response.RegistrationStatus
 import net.corda.test.util.eventually
 import net.corda.v5.base.util.minutes
 import net.corda.v5.base.util.seconds
+import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import org.assertj.core.api.Assertions.assertThat
 
 const val GATEWAY_CONFIG = "corda.p2p.gateway"
-const val KEY_SCHEME = "CORDA.ECDSA.SECP256R1"
 const val P2P_TENANT_ID = "p2p"
 const val HSM_CAT_SESSION = "SESSION_INIT"
+const val HSM_CAT_PRE_AUTH = "PRE_AUTH"
 const val HSM_CAT_LEDGER = "LEDGER"
 const val HSM_CAT_TLS = "TLS"
 
@@ -141,7 +142,7 @@ fun E2eCluster.generateKeyPairIfNotExists(
                         tenantId,
                         keyAlias,
                         cat,
-                        KEY_SCHEME
+                        ECDSA_SECP256R1_CODE_NAME
                     ).id
             }
         }
@@ -287,14 +288,17 @@ fun E2eCluster.onboardMgm(
     val cpiChecksum = uploadCpi(createMGMGroupPolicyJson(), true)
     createVirtualNode(mgm, cpiChecksum)
     assignSoftHsm(mgm.holdingId, HSM_CAT_SESSION)
+    assignSoftHsm(mgm.holdingId, HSM_CAT_PRE_AUTH)
 
     val mgmSessionKeyId = generateKeyPairIfNotExists(mgm.holdingId, HSM_CAT_SESSION)
+    val mgmECDHKeyId = generateKeyPairIfNotExists(mgm.holdingId, HSM_CAT_PRE_AUTH)
 
     register(
         mgm.holdingId,
         createMgmRegistrationContext(
             tlsTrustRoot = getCa().caCertificate.toPem(),
             sessionKeyId = mgmSessionKeyId,
+            ecdhKeyId = mgmECDHKeyId,
             p2pUrl = p2pUrl
         )
     )
@@ -320,7 +324,7 @@ fun E2eCluster.onboardStaticMembers(groupPolicy: ByteArray) {
         register(
             member.holdingId,
             mapOf(
-                "corda.key.scheme" to KEY_SCHEME
+                "corda.key.scheme" to ECDSA_SECP256R1_CODE_NAME
             )
         )
 

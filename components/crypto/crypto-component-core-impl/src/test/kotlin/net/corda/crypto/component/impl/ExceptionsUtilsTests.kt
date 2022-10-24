@@ -1,60 +1,66 @@
 package net.corda.crypto.component.impl
 
+import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.v5.crypto.exceptions.CryptoException
 import net.corda.v5.crypto.exceptions.CryptoRetryException
 import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.MethodSource
-import java.util.UUID
 
 class ExceptionsUtilsTests {
     companion object {
         @JvmStatic
         fun knownWrappedExceptions() = listOf(
-            Pair(IllegalArgumentException::class.java.name, IllegalArgumentException::class.java),
-            Pair(IllegalStateException::class.java.name, IllegalStateException::class.java),
-            Pair(CryptoSignatureException::class.java.name, CryptoSignatureException::class.java),
-            Pair(CryptoRetryException::class.java.name, CryptoRetryException::class.java)
+            IllegalArgumentException::class.java,
+            IllegalStateException::class.java,
+            CryptoSignatureException::class.java,
+            CryptoRetryException::class.java,
+            KeyAlreadyExistsException::class.java,
         )
     }
 
     @ParameterizedTest
     @MethodSource("knownWrappedExceptions")
     fun `toClientException should return known wrapped exception`(
-        error: Pair<String, Class<out Throwable>>
+        error: Class<out Throwable>
     ) {
         val responderException = CordaRPCAPIResponderException(
-            errorType = error.first,
-            message = UUID.randomUUID().toString()
+            errorType = error.name,
+            message = "Error: ${error.name}"
         )
+
         val actual = responderException.toClientException()
-        assertThat(actual).isInstanceOf(error.second)
-        assertEquals(responderException.message, actual.message)
+
+        assertThat(actual)
+            .hasMessage(responderException.message)
+            .isInstanceOf(error)
     }
 
     @Test
     fun `toClientException should return CryptoException for unknown wrapped exception`() {
         val responderException = CordaRPCAPIResponderException(
             errorType = RuntimeException::class.java.name,
-            message = UUID.randomUUID().toString()
+            message = "Unknown"
         )
+
         val actual = responderException.toClientException()
-        assertEquals(CryptoException::class.java, actual::class.java)
-        assertEquals(responderException.message, actual.message)
+
+        assertThat(actual)
+            .hasMessage(responderException.message)
+            .isInstanceOf(CryptoException::class.java)
     }
 
     @Test
     fun `exceptionFactories should contain only known exceptions`() {
-        assertThat(exceptionFactories).hasSize(4)
-        assertThat(exceptionFactories.keys).contains(
-            IllegalArgumentException::class.java.name,
-            IllegalStateException::class.java.name,
-            CryptoSignatureException::class.java.name,
-            CryptoRetryException::class.java.name
-        )
+        assertThat(exceptionFactories)
+            .containsOnlyKeys(
+                knownWrappedExceptions()
+                    .map {
+                        it.name
+                    }
+            )
     }
 }
