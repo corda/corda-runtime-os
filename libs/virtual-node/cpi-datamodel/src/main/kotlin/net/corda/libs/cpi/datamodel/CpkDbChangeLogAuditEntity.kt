@@ -91,29 +91,3 @@ fun findDbChangeLogAuditForCpi(
     .setParameter("version", cpi.version)
     .setParameter("signerSummaryHash", cpi.signerSummaryHash?.toString() ?: "")
     .resultList
-
-/*
- * Find all the audit db changelogs for a CPI
- */
-fun findDbChangeLogAuditForCpi(
-    entityManager: EntityManager,
-    cpi: CpiIdentifier,
-    changeUUIDs: Set<UUID>
-): List<CpkDbChangeLogAuditEntity> = entityManager.createQuery(
-    "SELECT changelog " +
-        "FROM ${CpkDbChangeLogAuditEntity::class.simpleName} AS changelog INNER JOIN " +
-        "${CpiCpkEntity::class.simpleName} AS cpi " +
-        "ON changelog.id.cpkName = cpi.metadata.id.cpkName AND " +
-        "   changelog.id.cpkVersion = cpi.id.cpkVersion AND " +
-        "   changelog.id.cpkSignerSummaryHash = cpi.id.cpkSignerSummaryHash " +
-        "WHERE cpi.id.cpiName = :name AND " +
-        "      cpi.id.cpiVersion = :version AND " +
-        "      cpi.id.cpiSignerSummaryHash = :signerSummaryHash AND " +
-        "      changelog.id.changeUUID IN :changeUUIDs",
-    CpkDbChangeLogAuditEntity::class.java
-)
-    .setParameter("name", cpi.name)
-    .setParameter("version", cpi.version)
-    .setParameter("signerSummaryHash", cpi.signerSummaryHash?.toString() ?: "")
-    .setParameter("changeUUIDs", changeUUIDs)
-    .resultList
