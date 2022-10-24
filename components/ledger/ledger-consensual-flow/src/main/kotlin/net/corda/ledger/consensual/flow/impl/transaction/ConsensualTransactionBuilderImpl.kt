@@ -107,7 +107,7 @@ class ConsensualTransactionBuilderImpl(
                 ConsensualComponentGroupEnum.METADATA ->
                     listOf(
                         serializeMetadata().toByteArray(Charsets.UTF_8)
-                    ) // TODO(update with CORE-5940)
+                    )
                 ConsensualComponentGroupEnum.TIMESTAMP ->
                     listOf(serializationService.serialize(Instant.now()).bytes)
                 ConsensualComponentGroupEnum.REQUIRED_SIGNING_KEYS ->
