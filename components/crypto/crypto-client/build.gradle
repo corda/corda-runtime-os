@@ -16,8 +16,6 @@ dependencies {
     api "net.corda:corda-avro-schema"
 
     api project(":libs:lifecycle:lifecycle")
-
-    implementation project(':libs:crypto:crypto-core')
 }
 
 
