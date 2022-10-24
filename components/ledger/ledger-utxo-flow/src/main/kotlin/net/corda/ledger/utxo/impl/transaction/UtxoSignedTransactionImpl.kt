@@ -23,6 +23,7 @@ data class UtxoSignedTransactionImpl(
 
     init {
         require(signatures.isNotEmpty()) { "Tried to instantiate a ${javaClass.simpleName} without any signatures." }
+        // TODO(CORE-7237 Check WireTx's metadata's ledger type and allow only the matching ones.)
     }
 
     override val id: SecureHash get() = wireTransaction.id
