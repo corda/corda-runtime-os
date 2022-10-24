@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "TokenAmount",
+  "namespace": "net.corda.data.ledger.utxo.token.selection.data",
+  "doc": "The amount of a given token",
+  "fields": [
+      {
+        "name": "scale",
+        "type": "int",
+        "doc": "The scale of the token amount"
+      },
+      {
+        "name": "unscaledValue",
+        "type": "bytes",
+        "doc": "The unscaled token amount"
+      }
+    ]
+}

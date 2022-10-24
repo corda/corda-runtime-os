@@ -1,0 +1,35 @@
+{
+  "type": "record",
+  "name": "TokenClaimQueryResult",
+  "namespace": "net.corda.data.ledger.utxo.token.selection.data",
+  "doc": "Represents the result of a claim query, sent back to the flow",
+  "fields": [
+      {
+        "name": "poolKey",
+        "type": "net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey",
+        "doc": "Key for the pool the tokens were claimed from"
+      },
+      {
+       "name": "claimId",
+       "type": "string",
+       "doc": "Unique identifier for the claim"
+      },
+      {
+        "name": "resultType",
+        "type": {
+          "name": "TokenClaimResultStatus",
+          "type": "enum",
+          "symbols": ["SUCCESS","NONE_AVAILABLE"]
+        },
+        "doc": "The type of result for the claim query"
+      },
+      {
+        "name": "claimedTokens",
+        "type": {
+          "type": "array",
+          "items": "net.corda.data.ledger.utxo.token.selection.data.Token",
+          "doc": "List of tokens in this claim"
+         }
+      }
+  ]
+}

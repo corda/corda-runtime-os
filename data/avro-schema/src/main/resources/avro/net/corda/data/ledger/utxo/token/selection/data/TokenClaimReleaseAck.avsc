@@ -1,0 +1,7 @@
+{
+  "type": "record",
+  "name": "TokenClaimReleaseAck",
+  "namespace": "net.corda.data.ledger.utxo.token.selection.data",
+  "doc": "Represents an acknowledgement for a completed claim release.",
+  "fields": []
+}

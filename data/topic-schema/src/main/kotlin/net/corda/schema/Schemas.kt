@@ -86,6 +86,17 @@ class Schemas {
     }
 
     /**
+     * Corda Services topic schema
+     */
+    class Services{
+        companion object {
+            const val TOKEN_CACHE_EVENT = "services.token.event"
+            const val TOKEN_CACHE_EVENT_STATE = "services.token.event.state"
+            const val TOKEN_CACHE_EVENT_DLQ = "services.token.event.dlq"
+        }
+    }
+
+    /**
      * Membership topic schema
      */
     class Membership {

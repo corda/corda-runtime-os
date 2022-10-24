@@ -1,0 +1,29 @@
+{
+  "type": "record",
+  "name": "TokenPoolCacheState",
+  "namespace": "net.corda.data.ledger.utxo.token.selection.state",
+  "doc": "The current state of a token cache pool",
+  "fields": [
+      {
+        "name": "poolKey",
+        "type": "net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey",
+        "doc": "The key of the cache pool the state is for"
+      },
+      {
+        "name": "tokenClaims",
+        "type": {
+          "type": "array",
+          "items": "net.corda.data.ledger.utxo.token.selection.data.TokenClaim"
+         },
+         "doc": "List of active token claims for the cache pool"
+      },
+      {
+        "name": "availableTokens",
+        "type": {
+          "type": "array",
+          "items": "net.corda.data.ledger.utxo.token.selection.data.Token",
+          "doc": "List of all available unclaimed tokens"
+         }
+      }
+    ]
+}

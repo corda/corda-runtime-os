@@ -1,0 +1,35 @@
+{
+  "type": "record",
+  "name": "TokenClaimQuery",
+  "namespace": "net.corda.data.ledger.utxo.token.selection.data",
+  "doc": "Represents the query criteria for a query against a token cache pool",
+  "fields": [
+      {
+        "name": "requestContext",
+        "type": "net.corda.data.flow.event.external.ExternalEventContext",
+        "doc": "Flow request context data for the query"
+      },
+      {
+        "name": "poolKey",
+        "type": "net.corda.data.ledger.utxo.token.selection.key.TokenPoolCacheKey",
+        "doc": "Token cache pool the query is for"
+      },
+      {
+        "name": "targetAmount",
+        "type": "net.corda.data.ledger.utxo.token.selection.data.TokenAmount",
+        "doc": "The target amount to be claimed."
+      },
+      {
+        "name": "ownerHash",
+        "type": ["null", "string"],
+        "default": null,
+        "doc": "Optional owner hash to match on, null will match all"
+      },
+      {
+        "name": "tagRegex",
+        "type": ["null", "string"],
+        "default": null,
+        "doc": "Optional regular expression used to match a tag, null will match all"
+      }
+    ]
+}
