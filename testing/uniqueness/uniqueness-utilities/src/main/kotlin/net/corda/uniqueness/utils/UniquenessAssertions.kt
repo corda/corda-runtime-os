@@ -267,7 +267,6 @@ object UniquenessAssertions {
      * Performs common checks for a reject result. If a clock is specified, will additionally
      * check the result timestamp is valid with respect to the provider.
      */
-//    private inline fun <reified T> assertRejectedResultCommon(
     private fun assertRejectedResultCommon(result: UniquenessCheckResult, clock: AutoTickTestClock? = null) {
         assertThat(result.toCharacterRepresentation()).isEqualTo(UniquenessConstants.RESULT_REJECTED_REPRESENTATION)
         assertValidTimestamp(result.resultTimestamp, clock)
@@ -276,10 +275,9 @@ object UniquenessAssertions {
     /**
      * Checks if the given transaction details has the single and expected transaction ID.
      */
-    fun assertContainingTxId(txnDetails: Map<SecureHash, UniquenessCheckTransactionDetailsInternal>,
-                             txIds: List<SecureHash>) {
+    fun assertContainingTxId(txnDetails: Map<SecureHash, UniquenessCheckTransactionDetailsInternal>, txId: SecureHash) {
         assertThat(txnDetails.size).isEqualTo(1)
-        assertThat(txIds).contains(txnDetails.entries.single().key)
+        assertThat(txId).isEqualTo(txnDetails.entries.single().key)
     }
 
     /**

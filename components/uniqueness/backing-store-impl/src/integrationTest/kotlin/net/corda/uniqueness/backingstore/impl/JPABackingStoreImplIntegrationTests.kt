@@ -206,7 +206,7 @@ class JPABackingStoreImplIntegrationTests {
                 txnDetails.putAll(session.getTransactionDetails(txIds))
             }
 
-            UniquenessAssertions.assertContainingTxId(txnDetails = txnDetails, txIds = txIds)
+            UniquenessAssertions.assertContainingTxId(txnDetails, txIds.single())
             UniquenessAssertions.assertAcceptedResult<UniquenessCheckResultSuccess>(
                 txnDetails.entries.single().value.result
             )
@@ -233,7 +233,7 @@ class JPABackingStoreImplIntegrationTests {
                 txnDetails.putAll(session.getTransactionDetails(txIds))
             }
 
-            UniquenessAssertions.assertContainingTxId(txnDetails = txnDetails, txIds = txIds)
+            UniquenessAssertions.assertContainingTxId(txnDetails, txIds.single())
             UniquenessAssertions.assertInputStateUnknownResult(txId, txnDetails.entries.single().value.result)
         }
 
@@ -265,7 +265,7 @@ class JPABackingStoreImplIntegrationTests {
                 txnDetails.putAll(session.getTransactionDetails(txIds))
             }
 
-            UniquenessAssertions.assertContainingTxId(txnDetails = txnDetails, txIds = txIds)
+            UniquenessAssertions.assertContainingTxId(txnDetails, txIds.single())
             UniquenessAssertions.assertInputStateConflictResult(
                 txId, consumingTxId, txnDetails.entries.single().value.result
             )
@@ -300,7 +300,7 @@ class JPABackingStoreImplIntegrationTests {
                 txnDetails.putAll(session.getTransactionDetails(txIds))
             }
 
-            UniquenessAssertions.assertContainingTxId(txnDetails = txnDetails, txIds = txIds)
+            UniquenessAssertions.assertContainingTxId(txnDetails, txIds.single())
             UniquenessAssertions.assertReferenceStateConflictResult(
                 txId, consumingTxId, txnDetails.entries.single().value.result
             )
@@ -330,7 +330,7 @@ class JPABackingStoreImplIntegrationTests {
                 txnDetails.putAll(session.getTransactionDetails(txIds))
             }
 
-            UniquenessAssertions.assertContainingTxId(txnDetails = txnDetails, txIds = txIds)
+            UniquenessAssertions.assertContainingTxId(txnDetails, txIds.single())
             UniquenessAssertions.assertReferenceStateUnknownResult(txId, txnDetails.entries.single().value.result)
         }
 
@@ -359,7 +359,7 @@ class JPABackingStoreImplIntegrationTests {
                 txnDetails.putAll(session.getTransactionDetails(txIds))
             }
 
-            UniquenessAssertions.assertContainingTxId(txnDetails = txnDetails, txIds = txIds)
+            UniquenessAssertions.assertContainingTxId(txnDetails, txIds.single())
             UniquenessAssertions.assertTimeWindowOutOfBoundsResult(
                 evaluationTime, lowerBound, upperBound, txnDetails.entries.single().value.result
             )
@@ -431,7 +431,7 @@ class JPABackingStoreImplIntegrationTests {
                 txnDetails.putAll(session.getTransactionDetails(txIds))
             }
 
-            UniquenessAssertions.assertContainingTxId(txnDetails = txnDetails, txIds = txIds)
+            UniquenessAssertions.assertContainingTxId(txnDetails, txIds.single())
             UniquenessAssertions.assertMalformedRequestResult(errorMessage, txnDetails.entries.single().value.result)
         }
 
