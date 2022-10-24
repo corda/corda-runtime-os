@@ -568,10 +568,8 @@ class JPABackingStoreImplIntegrationTests {
         // Review with CORE-4983 for different types of exceptions such as QueryTimeoutException.
         @Test
         fun `Exceptions thrown while querying triggers retry`() {
-            val emFactory = createEntityManagerFactory()
-            val spyEmFactory = Mockito.spy(emFactory)
-            val em = spyEmFactory.createEntityManager()
-            val spyEm = Mockito.spy(em)
+            val spyEmFactory = Mockito.spy(createEntityManagerFactory())
+            val spyEm = Mockito.spy(spyEmFactory.createEntityManager())
             Mockito.doReturn(spyEm).whenever(spyEmFactory).createEntityManager()
 
             val queryName = "UniquenessTransactionDetailEntity.select"
@@ -596,10 +594,8 @@ class JPABackingStoreImplIntegrationTests {
         @ParameterizedTest
         @ValueSource(classes = [EntityExistsException::class, RollbackException::class, OptimisticLockException::class])
         fun `Persistence errors raised while persisting triggers retry`(e: Class<Exception>) {
-            val emFactory = createEntityManagerFactory()
-            val spyEmFactory = Mockito.spy(emFactory)
-            val em = spyEmFactory.createEntityManager()
-            val spyEm = Mockito.spy(em)
+            val spyEmFactory = Mockito.spy(createEntityManagerFactory())
+            val spyEm = Mockito.spy(spyEmFactory.createEntityManager())
             Mockito.doThrow(e.kotlin.createInstance()).whenever(spyEm).persist(any())
             Mockito.doReturn(spyEm).whenever(spyEmFactory).createEntityManager()
 
@@ -618,12 +614,9 @@ class JPABackingStoreImplIntegrationTests {
 
         @Test
         fun `Transaction rollback gets triggered if transaction is active for an unexpected exception type`() {
-            val emFactory = createEntityManagerFactory()
-            val spyEmFactory = Mockito.spy(emFactory)
-            val em = emFactory.createEntityManager()
-            val spyEm = Mockito.spy(em)
-            val emTransaction = em.transaction
-            val spyEmTransaction = Mockito.spy(emTransaction)
+            val spyEmFactory = Mockito.spy(createEntityManagerFactory())
+            val spyEm = Mockito.spy(spyEmFactory.createEntityManager())
+            val spyEmTransaction = Mockito.spy(spyEm.transaction)
             Mockito.doReturn(spyEm).whenever(spyEmFactory).createEntityManager()
             Mockito.doReturn(spyEmTransaction).whenever(spyEm).transaction
 
@@ -644,9 +637,7 @@ class JPABackingStoreImplIntegrationTests {
 
     @Test
     fun `Session always creates a new entity manager`() {
-        val emFactory = createEntityManagerFactory()
-        val spyEmFactory = Mockito.spy(emFactory)
-
+        val spyEmFactory = Mockito.spy(createEntityManagerFactory())
         val storeImpl = createBackingStoreImpl(spyEmFactory)
         storeImpl.eventHandler(RegistrationStatusChangeEvent(mock(), LifecycleStatus.UP), mock())
 
