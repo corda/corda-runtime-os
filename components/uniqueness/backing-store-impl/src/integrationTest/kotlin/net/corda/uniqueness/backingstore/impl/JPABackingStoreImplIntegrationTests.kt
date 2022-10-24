@@ -543,13 +543,6 @@ class JPABackingStoreImplIntegrationTests {
 
         @Test
         fun `Attempt to consume an unknown state fails with an exception`() {
-            val stateRefs = List(2) { UniquenessCheckStateRefImpl(SecureHashUtils.randomSecureHash(), 0) }
-
-            // Generate unconsumed states in DB.
-            backingStoreImpl.session(aliceIdentity) { session ->
-                session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
-            }
-
             val consumingTxId: SecureHash = SecureHashUtils.randomSecureHash()
             val consumingStateRefs = listOf<UniquenessCheckStateRef>(UniquenessCheckStateRefImpl(consumingTxId, 0))
 
