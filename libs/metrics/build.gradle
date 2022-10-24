@@ -1,0 +1,25 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+description 'Metrics Library'
+
+
+dependencies {
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    compileOnly 'org.osgi:osgi.core'
+    compileOnly "org.osgi:osgi.annotation"
+
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation 'org.slf4j:slf4j-api'
+
+    api ("io.micrometer:micrometer-core:$micrometerVersion") {
+        // we don't need these in classpath, so excluding them to reduce dependencies.
+        exclude group: 'org.hdrhistogram', module: 'HdrHistogram'
+        exclude group: 'org.latencyutils', module: 'LatencyUtils'
+    }
+
+    testImplementation "org.assertj:assertj-core:$assertjVersion"
+    testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+}

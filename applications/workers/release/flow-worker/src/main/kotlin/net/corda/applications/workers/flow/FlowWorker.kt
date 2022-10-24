@@ -47,7 +47,7 @@ class FlowWorker @Activate constructor(
 
         val params = getParams(args, FlowWorkerParams())
         if (printHelpOrVersion(params.defaultParams, FlowWorker::class.java, shutDownService)) return
-        setupMonitor(workerMonitor, params.defaultParams)
+        setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
         val config = getBootstrapConfig(params.defaultParams, configurationValidatorFactory.createConfigValidator())
 
