@@ -45,6 +45,7 @@ interface CryptoOpsClient : Lifecycle {
      * @param scheme the key's scheme code name describing which type of the key to generate.
      * @param context the optional key/value operation context.
      * @throws [KeyAlreadyExistsException] if a key with the provided alias already exists for the tenant.
+     * @throws [InvalidParamsException] If the tenant is not configured for the given category.
      *
      * @return The public part of the pair.
      */
@@ -67,6 +68,7 @@ interface CryptoOpsClient : Lifecycle {
      * @param scheme the key's scheme code name describing which type of the key to generate.
      * @param context the optional key/value operation context.
      * @throws [KeyAlreadyExistsException] if a key with the provided alias already exists for the tenant.
+     * @throws [InvalidParamsException] If the tenant is not configured for the given category.
      *
      * @return The public part of the pair.
      */

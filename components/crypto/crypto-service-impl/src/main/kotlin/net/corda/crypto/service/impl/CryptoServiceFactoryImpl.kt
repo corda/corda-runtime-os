@@ -148,13 +148,13 @@ class CryptoServiceFactoryImpl @Activate constructor(
         }
 
         fun findInstance(tenantId: String, category: String): CryptoServiceRef {
-            logger.debug { "Getting the crypto service for tenantId=$tenantId, category=$category)" }
+            logger.debug { "Getting the crypto service for tenantId '$tenantId', category '$category'." }
             val association = hsmService.findAssignedHSM(tenantId, category)
-                ?: throw InvalidParamsException("The tenant=$tenantId is not configured for category=$category")
+                ?: throw InvalidParamsException("The tenant '$tenantId' is not configured for category '$category'.")
             if(association.hsmId != hsmId) {
                 throw InvalidParamsException(
-                    "This hsmId=$hsmId is not configured to handle tenant=$tenantId " +
-                            "with category=$category and association=$association"
+                    "This hsmId '$hsmId' is not configured to handle tenant '$tenantId' " +
+                            "with category '$category' and association '$association'."
                 )
             }
             logger.info("Creating {}: association={}", CryptoServiceRef::class.simpleName, association)

@@ -271,10 +271,10 @@ class KeysRpcOpsImplTest {
 
             assertThrows<ResourceAlreadyExistsException> {
                 keysOps.generateKeyPair(
-                    tenantId = "tenantId",
-                    alias = "alias",
-                    hsmCategory = "category",
-                    scheme = "scheme",
+                    tenantId = TENANT_ID,
+                    alias = ALIAS,
+                    hsmCategory = CATEGORY,
+                    scheme = SCHEME,
                 )
             }
         }
