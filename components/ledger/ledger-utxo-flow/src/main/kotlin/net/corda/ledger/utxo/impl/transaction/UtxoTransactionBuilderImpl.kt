@@ -130,8 +130,8 @@ data class UtxoTransactionBuilderImpl(
     }
 
     private fun buildWireTransaction(): WireTransaction {
-        // TODO(CORE-5982-? more verifications)
-        // TODO(CORE-5982-? metadata verifications: nulls, order of CPKs, at least one CPK?))
+        // TODO(CORE-7116 more verifications)
+        // TODO(CORE-7116 metadata verifications: nulls, order of CPKs, at least one CPK?))
         require(inputStateAndRefs.isNotEmpty() || outputTransactionStates.isNotEmpty()) {
             "At least one input or output state is required"
         }
@@ -167,7 +167,7 @@ data class UtxoTransactionBuilderImpl(
         }
         val commandsInfo = commands.map{ listOf(
             "", // TODO signers
-            currentSandboxGroup.getEvolvableTag(it.javaClass), // TODO Type (CPKInfo + ClassName)
+            currentSandboxGroup.getEvolvableTag(it.javaClass),
         )}
 
         val componentGroupLists = mutableListOf<List<ByteArray>>()
@@ -203,16 +203,51 @@ data class UtxoTransactionBuilderImpl(
         if (this === other) return true
         if (other !is UtxoTransactionBuilderImpl) return false
         if (other.transactionMetaData != transactionMetaData) return false
-        //todo add other fields
-        if (other.outputTransactionStates.size != outputTransactionStates.size) return false
+        if (other.notary != notary) return false
+        if (other.timeWindow != timeWindow) return false
 
-        return other.outputTransactionStates.withIndex().all {
+        if (other.attachments.size != attachments.size) return false
+        other.attachments.withIndex().all {
+            it.value == attachments[it.index]
+        } || return false
+
+        if (other.commands.size != commands.size) return false
+        other.commands.withIndex().all {
+            it.value == commands[it.index]
+        } || return false
+
+        if (other.inputStateAndRefs.size != inputStateAndRefs.size) return false
+        other.inputStateAndRefs.withIndex().all {
+            it.value == inputStateAndRefs[it.index]
+        } || return false
+
+        if (other.referenceInputStateAndRefs.size != referenceInputStateAndRefs.size) return false
+        other.referenceInputStateAndRefs.withIndex().all {
+            it.value == referenceInputStateAndRefs[it.index]
+        } || return false
+
+        if (other.outputTransactionStates.size != outputTransactionStates.size) return false
+        other.outputTransactionStates.withIndex().all {
             it.value == outputTransactionStates[it.index]
-        }
+        } || return false
+
+        if (other.signatories != signatories) return false
+
+        return true
     }
 
-    //todo
-    override fun hashCode(): Int = outputTransactionStates.hashCode()
+    override fun hashCode(): Int {
+        var result = transactionMetaData.hashCode()
+        result = 31 * result + notary.hashCode()
+        result = 31 * result + timeWindow.hashCode()
+        result = 31 * result + attachments.hashCode()
+        result = 31 * result + commands.hashCode()
+        result = 31 * result + signatories.hashCode()
+        result = 31 * result + inputStateAndRefs.hashCode()
+        result = 31 * result + referenceInputStateAndRefs.hashCode()
+        result = 31 * result + outputTransactionStates.hashCode()
+        return result
+    }
 }
 
 /**
