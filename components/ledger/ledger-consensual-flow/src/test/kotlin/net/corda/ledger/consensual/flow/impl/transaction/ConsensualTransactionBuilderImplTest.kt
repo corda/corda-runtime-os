@@ -3,11 +3,11 @@ package net.corda.ledger.consensual.flow.impl.transaction
 import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
+import net.corda.common.json.validation.JsonValidator
+import net.corda.common.json.validation.impl.JsonValidatorImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
-import net.corda.ledger.common.data.validation.JsonValidator
-import net.corda.ledger.common.data.validation.impl.JsonValidatorImpl
 import net.corda.ledger.common.testkit.mockTransactionMetaData
 import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionImpl
 import net.corda.v5.application.marshalling.JsonMarshallingService

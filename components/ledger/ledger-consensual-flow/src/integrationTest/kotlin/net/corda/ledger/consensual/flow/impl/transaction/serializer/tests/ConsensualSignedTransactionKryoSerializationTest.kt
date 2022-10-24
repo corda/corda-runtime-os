@@ -1,8 +1,8 @@
 package net.corda.ledger.consensual.flow.impl.transaction.serializer.tests
 
+import net.corda.common.json.validation.JsonValidator
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.data.validation.JsonValidator
 import net.corda.ledger.consensual.testkit.getConsensualSignedTransaction
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup

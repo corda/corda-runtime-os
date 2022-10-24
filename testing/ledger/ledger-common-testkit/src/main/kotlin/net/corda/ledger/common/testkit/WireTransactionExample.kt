@@ -1,10 +1,10 @@
 package net.corda.ledger.common.testkit
 
+import net.corda.common.json.validation.JsonValidator
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.TransactionMetaData
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
-import net.corda.ledger.common.data.validation.JsonValidator
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider

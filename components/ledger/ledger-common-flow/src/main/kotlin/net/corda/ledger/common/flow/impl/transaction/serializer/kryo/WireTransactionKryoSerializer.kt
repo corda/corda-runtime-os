@@ -1,7 +1,7 @@
 package net.corda.ledger.common.flow.impl.transaction.serializer.kryo
 
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.data.validation.JsonValidator
+import net.corda.common.json.validation.JsonValidator
 import net.corda.serialization.checkpoint.CheckpointInput
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import net.corda.serialization.checkpoint.CheckpointOutput

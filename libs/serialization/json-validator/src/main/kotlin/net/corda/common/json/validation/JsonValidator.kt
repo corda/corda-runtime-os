@@ -1,4 +1,4 @@
-package net.corda.ledger.common.data.validation
+package net.corda.common.json.validation
 
 interface JsonValidator {
     fun validate(json: String, schemaPath: String)

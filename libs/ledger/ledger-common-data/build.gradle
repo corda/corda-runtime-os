@@ -1,18 +1,10 @@
 plugins {
-    id 'biz.aQute.bnd.builder'
     id 'corda.common-library'
     id 'corda.common-publishing'
     id 'corda.osgi-test-conventions'
 }
 
 description 'Corda ledger common data'
-
-configurations {
-    bundle {
-        canBeResolved = false
-    }
-    bundle.extendsFrom runtimeClasspath
-}
 
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
@@ -22,20 +14,19 @@ dependencies {
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation "net.corda:corda-ledger-common"
 
-    implementation project(":libs:serialization:serialization-internal")
     implementation project(":libs:crypto:crypto-core")
-    implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"
-    implementation "io.github.erdtman:java-json-canonicalization:$jsonCanonicalizerVersion"
-
-    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+    implementation project(":libs:serialization:json-validator")
+    implementation project(":libs:serialization:serialization-internal")
 
     testImplementation project(':testing:test-serialization')
     testImplementation project(':testing:ledger:ledger-common-testkit')
-    testImplementation project(":libs:serialization:serialization-amqp")
     testImplementation project(":libs:crypto:cipher-suite-impl")
     testImplementation project(":libs:crypto:merkle-impl")
     testImplementation project(":libs:application:application-impl")
+    testImplementation project(":libs:serialization:serialization-amqp")
+    testImplementation project(":libs:serialization:json-validator")
 
+    testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
@@ -45,24 +36,4 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
-}
-
-def jar = tasks.named('jar', Jar) {
-    archiveBaseName = 'corda-ledger-common-data'
-
-    bundle {
-        bnd """\
-Bundle-Name: Corda ledger common data
-Bundle-SymbolicName: \${project.group}.ledger-common-data
-Import-Package:\
-    !org.apache.hadoop.io.compress,\
-    sun.misc;resolution:=optional,\
-    *
--includeresource: @java-json-canonicalization-${jsonCanonicalizerVersion}.jar
-"""
-    }
-}
-
-artifacts {
-    bundle jar
 }

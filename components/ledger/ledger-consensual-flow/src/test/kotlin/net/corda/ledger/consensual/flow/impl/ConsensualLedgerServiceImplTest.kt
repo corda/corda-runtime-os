@@ -3,13 +3,13 @@ package net.corda.ledger.consensual.flow.impl
 import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
+import net.corda.common.json.validation.impl.JsonValidatorImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.flow.application.serialization.SerializationServiceImpl
 import net.corda.flow.application.services.FlowEngineImpl
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.internal.serialization.amqp.helper.TestFlowFiberServiceWithSerialization
-import net.corda.ledger.common.data.validation.impl.JsonValidatorImpl
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualTransactionMocks
 import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualTransactionBuilderFactory
 import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualTransactionBuilderFactoryImpl

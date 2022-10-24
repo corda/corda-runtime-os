@@ -1,7 +1,7 @@
 package net.corda.ledger.consensual.persistence.impl.processor.factory
 
+import net.corda.common.json.validation.JsonValidator
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
-import net.corda.ledger.common.data.validation.JsonValidator
 import net.corda.ledger.consensual.persistence.impl.processor.ConsensualLedgerMessageProcessor
 import net.corda.ledger.consensual.persistence.impl.processor.ConsensualLedgerProcessorImpl
 import net.corda.ledger.consensual.persistence.processor.ConsensualLedgerProcessor

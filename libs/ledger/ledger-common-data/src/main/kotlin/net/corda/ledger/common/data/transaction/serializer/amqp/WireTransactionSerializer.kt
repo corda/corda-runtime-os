@@ -1,7 +1,7 @@
 package net.corda.ledger.common.data.transaction.serializer.amqp
 
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.data.validation.JsonValidator
+import net.corda.common.json.validation.JsonValidator
 import net.corda.serialization.BaseProxySerializer
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.application.marshalling.JsonMarshallingService

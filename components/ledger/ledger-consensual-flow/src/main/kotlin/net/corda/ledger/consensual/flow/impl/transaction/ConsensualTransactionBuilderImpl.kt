@@ -1,6 +1,6 @@
 package net.corda.ledger.consensual.flow.impl.transaction
 
-import net.corda.ledger.common.data.validation.JsonValidator
+import net.corda.common.json.validation.JsonValidator
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.TransactionMetaData

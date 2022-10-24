@@ -1,5 +1,6 @@
 package net.corda.ledger.consensual.persistence.impl.processor.tests
 
+import net.corda.common.json.validation.JsonValidator
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
@@ -23,7 +24,6 @@ import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.data.validation.JsonValidator
 import net.corda.ledger.common.testkit.getWireTransaction
 import net.corda.ledger.consensual.persistence.impl.processor.ConsensualLedgerMessageProcessor
 import net.corda.messaging.api.records.Record

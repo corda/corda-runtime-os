@@ -1,4 +1,4 @@
 @Export
-package net.corda.ledger.common.data.validation;
+package net.corda.common.json.validation;
 
 import org.osgi.annotation.bundle.Export;

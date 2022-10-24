@@ -7,7 +7,7 @@ import net.corda.data.persistence.ConsensualLedgerRequest
 import net.corda.data.persistence.EntityResponse
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.data.validation.JsonValidator
+import net.corda.common.json.validation.JsonValidator
 import net.corda.ledger.consensual.persistence.impl.repository.ConsensualLedgerRepository
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record

@@ -1,8 +1,6 @@
 package net.corda.ledger.consensual.testkit
 
-import net.corda.ledger.common.data.validation.JsonValidator
-import java.security.KeyPairGenerator
-import java.time.Instant
+import net.corda.common.json.validation.JsonValidator
 import net.corda.ledger.common.testkit.getWireTransaction
 import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionImpl
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -15,6 +13,8 @@ import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
+import java.security.KeyPairGenerator
+import java.time.Instant
 
 @Suppress("Unused", "LongParameterList")
 fun getConsensualSignedTransaction(

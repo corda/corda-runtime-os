@@ -28,6 +28,7 @@ dependencies {
 
     implementation project(":libs:ledger:ledger-consensual-data")
     implementation project(":libs:ledger:ledger-common-data")
+    implementation project(":libs:serialization:json-validator")
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"

@@ -1,7 +1,7 @@
 package net.corda.ledger.common.flow.impl.transaction.serializer.kryo.tests
 
+import net.corda.common.json.validation.JsonValidator
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.data.validation.JsonValidator
 import net.corda.ledger.common.testkit.getWireTransaction
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup

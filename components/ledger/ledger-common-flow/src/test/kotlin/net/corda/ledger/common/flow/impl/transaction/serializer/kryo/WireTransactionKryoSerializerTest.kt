@@ -3,12 +3,12 @@ package net.corda.ledger.common.flow.impl.transaction.serializer.kryo
 import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
+import net.corda.common.json.validation.JsonValidator
+import net.corda.common.json.validation.impl.JsonValidatorImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.kryoserialization.testkit.createCheckpointSerializer
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.data.validation.JsonValidator
-import net.corda.ledger.common.data.validation.impl.JsonValidatorImpl
 import net.corda.ledger.common.testkit.getWireTransaction
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.DigestService

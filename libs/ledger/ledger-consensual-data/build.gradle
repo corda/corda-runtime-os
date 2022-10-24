@@ -14,9 +14,10 @@ dependencies {
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation "net.corda:corda-ledger-consensual"
 
-    implementation project(":libs:serialization:serialization-internal")
     implementation project(":libs:crypto:crypto-core")
     implementation project(":libs:ledger:ledger-common-data")
+    implementation project(":libs:serialization:json-validator")
+    implementation project(":libs:serialization:serialization-internal")
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"

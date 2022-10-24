@@ -101,8 +101,7 @@
 					"pattern": "^.*$"
 				}
 			}
-		}
-,
+		},
 		"ledgerVersion": {
 			"title": "Ledger version", 
 			"type": "string",
@@ -116,7 +115,7 @@
 			"title": "CPI metadata", 
 			"$ref": "#/definitions/package_metadata"
 		}
-,
+		,
 		"cpkMetadata": {
 			"title": "CPK metadata", 
 			"type": "array",

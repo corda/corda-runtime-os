@@ -1,9 +1,9 @@
 package net.corda.ledger.consensual.persistence.impl.repository
 
+import net.corda.common.json.validation.JsonValidator
 import net.corda.data.persistence.EntityResponse
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.data.validation.JsonValidator
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.base.util.contextLogger

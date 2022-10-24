@@ -1,11 +1,11 @@
-package net.corda.ledger.common.data.validation.impl
+package net.corda.common.json.validation.impl
 
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.networknt.schema.JsonSchemaFactory
 import com.networknt.schema.SpecVersion
 import com.networknt.schema.ValidationMessage
-import net.corda.ledger.common.data.validation.JsonValidator
-import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.common.json.validation.JsonValidator
 import org.erdtman.jcs.JsonCanonicalizer
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.ServiceScope
@@ -25,6 +25,7 @@ class JsonValidatorImpl: JsonValidator {
 
     private fun validateSchema(json: String, schemaPath: String): Set<ValidationMessage> {
         val data = mapper.readTree(json)
+
         val schema = JsonSchemaFactory
             .getInstance(SpecVersion.VersionFlag.V7)
             .getSchema(
