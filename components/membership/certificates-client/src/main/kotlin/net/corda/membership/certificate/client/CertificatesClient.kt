@@ -25,7 +25,7 @@ interface CertificatesClient : Lifecycle {
      *
      * @param holdingIdentityShortHash ID of the holding identity to be published.
      * @param p2pTlsCertificateChainAlias The certificates chain alias.
-     * @param useClusterLevelCertificateAndKey Should we use the P2P cluster level certificate type and P2P key or
+     * @param useClusterLevelTlsCertificateAndKey Should we use the P2P cluster level TLS certificate type and P2P key or
      *   the virtual node cluster and key.
      * @param sessionKeyTenantId The tenant ID under which the session initiation key is stored (defaults to [holdingIdentityShortHash]).
      * @param sessionKeyId The session key ID (will use the first one if null).
@@ -34,7 +34,7 @@ interface CertificatesClient : Lifecycle {
     fun setupLocallyHostedIdentity(
         holdingIdentityShortHash: ShortHash,
         p2pTlsCertificateChainAlias: String,
-        useClusterLevelCertificateAndKey: Boolean,
+        useClusterLevelTlsCertificateAndKey: Boolean,
         sessionKeyTenantId: String?,
         sessionKeyId: String?
     )

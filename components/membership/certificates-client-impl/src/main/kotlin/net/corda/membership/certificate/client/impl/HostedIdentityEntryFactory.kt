@@ -95,14 +95,14 @@ internal class HostedIdentityEntryFactory(
     fun createIdentityRecord(
         holdingIdentityShortHash: ShortHash,
         certificateChainAlias: String,
-        useClusterLevelCertificateAndKey: Boolean,
+        useClusterLevelTlsCertificateAndKey: Boolean,
         sessionKeyTenantId: String?,
         sessionKeyId: String?,
     ): Record<String, HostedIdentityEntry> {
         val nodeInfo = getNode(holdingIdentityShortHash)
         val actualSessionKeyTenantId = sessionKeyTenantId ?: holdingIdentityShortHash.toString()
         val sessionPublicKey = getKey(actualSessionKeyTenantId, sessionKeyId)
-        val (keyTenantId, certificateType) = if (useClusterLevelCertificateAndKey) {
+        val (keyTenantId, certificateType) = if (useClusterLevelTlsCertificateAndKey) {
             P2P to CertificateType.P2P.fromAvro
         } else {
             holdingIdentityShortHash.value to CertificateUsage.HoldingIdentityId(holdingIdentityShortHash)

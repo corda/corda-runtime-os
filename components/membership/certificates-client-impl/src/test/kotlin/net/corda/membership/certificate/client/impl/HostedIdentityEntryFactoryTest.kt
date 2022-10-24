@@ -137,7 +137,7 @@ class HostedIdentityEntryFactoryTest {
         val record = factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
             certificateChainAlias = VALID_CERTIFICATE_ALIAS,
-            useClusterLevelCertificateAndKey = false,
+            useClusterLevelTlsCertificateAndKey = false,
             sessionKeyTenantId = null,
             sessionKeyId = null
         )
@@ -163,7 +163,7 @@ class HostedIdentityEntryFactoryTest {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = INVALID_NODE,
                 certificateChainAlias = VALID_CERTIFICATE_ALIAS,
-                useClusterLevelCertificateAndKey = false,
+                useClusterLevelTlsCertificateAndKey = false,
                 sessionKeyTenantId = null,
                 sessionKeyId = null
             )
@@ -175,7 +175,7 @@ class HostedIdentityEntryFactoryTest {
         val record = factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
             certificateChainAlias = VALID_CERTIFICATE_ALIAS,
-            useClusterLevelCertificateAndKey = false,
+            useClusterLevelTlsCertificateAndKey = false,
             sessionKeyTenantId = KNOWN_TENANT,
             sessionKeyId = "id1"
         )
@@ -189,7 +189,7 @@ class HostedIdentityEntryFactoryTest {
         val record = factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
             certificateChainAlias = VALID_CERTIFICATE_ALIAS,
-            useClusterLevelCertificateAndKey = false,
+            useClusterLevelTlsCertificateAndKey = false,
             sessionKeyTenantId = null,
             sessionKeyId = "id1"
         )
@@ -203,7 +203,7 @@ class HostedIdentityEntryFactoryTest {
         factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
             certificateChainAlias = VALID_CERTIFICATE_ALIAS,
-            useClusterLevelCertificateAndKey = false,
+            useClusterLevelTlsCertificateAndKey = false,
             sessionKeyTenantId = null,
             sessionKeyId = "id1"
         )
@@ -218,7 +218,7 @@ class HostedIdentityEntryFactoryTest {
         factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
             certificateChainAlias = VALID_CERTIFICATE_ALIAS,
-            useClusterLevelCertificateAndKey = false,
+            useClusterLevelTlsCertificateAndKey = false,
             sessionKeyTenantId = null,
             sessionKeyId = null
         )
@@ -235,7 +235,7 @@ class HostedIdentityEntryFactoryTest {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = VALID_NODE,
                 certificateChainAlias = VALID_CERTIFICATE_ALIAS,
-                useClusterLevelCertificateAndKey = false,
+                useClusterLevelTlsCertificateAndKey = false,
                 sessionKeyTenantId = null,
                 sessionKeyId = null
             )
@@ -248,7 +248,7 @@ class HostedIdentityEntryFactoryTest {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = VALID_NODE,
                 certificateChainAlias = "NOP",
-                useClusterLevelCertificateAndKey = false,
+                useClusterLevelTlsCertificateAndKey = false,
                 sessionKeyTenantId = null,
                 sessionKeyId = null
             )
@@ -271,7 +271,7 @@ class HostedIdentityEntryFactoryTest {
         factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
             certificateChainAlias = VALID_CERTIFICATE_ALIAS,
-            useClusterLevelCertificateAndKey = true,
+            useClusterLevelTlsCertificateAndKey = true,
             sessionKeyTenantId = null,
             sessionKeyId = null
         )
@@ -284,7 +284,7 @@ class HostedIdentityEntryFactoryTest {
         val record = factory.createIdentityRecord(
             holdingIdentityShortHash = VALID_NODE,
             certificateChainAlias = VALID_CERTIFICATE_ALIAS,
-            useClusterLevelCertificateAndKey = true,
+            useClusterLevelTlsCertificateAndKey = true,
             sessionKeyTenantId = null,
             sessionKeyId = null
         )
@@ -307,7 +307,7 @@ class HostedIdentityEntryFactoryTest {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = VALID_NODE,
                 certificateChainAlias = VALID_CERTIFICATE_ALIAS,
-                useClusterLevelCertificateAndKey = false,
+                useClusterLevelTlsCertificateAndKey = false,
                 sessionKeyTenantId = null,
                 sessionKeyId = null
             )
@@ -322,7 +322,7 @@ class HostedIdentityEntryFactoryTest {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = VALID_NODE,
                 certificateChainAlias = VALID_CERTIFICATE_ALIAS,
-                useClusterLevelCertificateAndKey = false,
+                useClusterLevelTlsCertificateAndKey = false,
                 sessionKeyTenantId = null,
                 sessionKeyId = null
             )
@@ -340,7 +340,7 @@ class HostedIdentityEntryFactoryTest {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = VALID_NODE,
                 certificateChainAlias = VALID_CERTIFICATE_ALIAS,
-                useClusterLevelCertificateAndKey = false,
+                useClusterLevelTlsCertificateAndKey = false,
                 sessionKeyTenantId = null,
                 sessionKeyId = null
             )
@@ -358,7 +358,7 @@ class HostedIdentityEntryFactoryTest {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = VALID_NODE,
                 certificateChainAlias = VALID_CERTIFICATE_ALIAS,
-                useClusterLevelCertificateAndKey = false,
+                useClusterLevelTlsCertificateAndKey = false,
                 sessionKeyTenantId = null,
                 sessionKeyId = null
             )

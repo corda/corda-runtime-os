@@ -3044,7 +3044,7 @@
             "nullable" : true,
             "example" : "string"
           },
-          "useClusterLevelCertificateAndKey" : {
+          "useClusterLevelTlsCertificateAndKey" : {
             "type" : "boolean",
             "nullable" : true,
             "example" : true

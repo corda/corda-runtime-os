@@ -40,7 +40,7 @@ class NetworkRpcOpsImpl @Activate constructor(
             certificatesClient.setupLocallyHostedIdentity(
                 ShortHash.ofOrThrow(holdingIdentityShortHash),
                 request.p2pTlsCertificateChainAlias,
-                request.useClusterLevelCertificateAndKey == true,
+                request.useClusterLevelTlsCertificateAndKey == true,
                 request.sessionKeyTenantId,
                 request.sessionKeyId,
             )

@@ -93,14 +93,14 @@ class CertificatesClientImpl @Activate constructor(
     override fun setupLocallyHostedIdentity(
         holdingIdentityShortHash: ShortHash,
         p2pTlsCertificateChainAlias: String,
-        useClusterLevelCertificateAndKey: Boolean,
+        useClusterLevelTlsCertificateAndKey: Boolean,
         sessionKeyTenantId: String?,
         sessionKeyId: String?,
     ) {
         val record = hostedIdentityEntryFactory.createIdentityRecord(
             holdingIdentityShortHash,
             p2pTlsCertificateChainAlias,
-            useClusterLevelCertificateAndKey,
+            useClusterLevelTlsCertificateAndKey,
             sessionKeyTenantId,
             sessionKeyId,
         )
