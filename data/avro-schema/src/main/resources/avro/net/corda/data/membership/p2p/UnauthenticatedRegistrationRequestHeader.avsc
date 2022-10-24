@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "UnauthenticatedRegistrationRequestHeader",
+  "namespace": "net.corda.data.membership.p2p",
+  "doc": "Registration request header containing information required for ECIES encryption/decryption.",
+  "fields": [
+    {
+      "name": "salt",
+      "doc": "Salt value as bytes that needs to be used for encryption/decryption.",
+      "type": "bytes"
+    },
+    {
+      "name": "aad",
+      "doc": "Additional information as bytes that needs to be used for encryption/decryption.",
+      "type": "bytes"
+    },
+    {
+      "name": "key",
+      "doc": "Member's public ephemeral key encoded in PEM format.",
+      "type": "string"
+    }
+  ]
+}

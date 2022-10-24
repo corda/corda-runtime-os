@@ -1,0 +1,18 @@
+{
+  "type": "record",
+  "name": "UnauthenticatedRegistrationRequest",
+  "namespace": "net.corda.data.membership.p2p",
+  "doc": "The unauthenticated registration request which is required as a first step to establish secure connection between member and MGM.",
+  "fields": [
+    {
+      "name": "header",
+      "doc": "Header of the request used later for decrypting the payload.",
+      "type": "UnauthenticatedRegistrationRequestHeader"
+    },
+    {
+      "name": "payload",
+      "doc": "The registration request encrypted using ECIES encryption.",
+      "type": "bytes"
+    }
+  ]
+}
