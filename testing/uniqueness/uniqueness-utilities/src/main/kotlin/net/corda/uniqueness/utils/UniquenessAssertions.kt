@@ -163,7 +163,7 @@ object UniquenessAssertions {
         result: UniquenessCheckResult,
         clock: AutoTickTestClock? = null
     ) {
-        assertRejectedResultCommon<UniquenessCheckErrorInputStateUnknown>(result, clock)
+        assertRejectedResultCommon(result, clock)
 
         val unknownStates = (getErrorOfType<UniquenessCheckErrorInputStateUnknown>(result)).unknownStates
         assertAll(
@@ -182,7 +182,7 @@ object UniquenessAssertions {
         result: UniquenessCheckResult,
         clock: AutoTickTestClock? = null
     ) {
-        assertRejectedResultCommon<UniquenessCheckErrorInputStateConflict>(result, clock)
+        assertRejectedResultCommon(result, clock)
 
         val conflicts = (getErrorOfType<UniquenessCheckErrorInputStateConflict>(result)).conflictingStates
         assertAll(
@@ -202,7 +202,7 @@ object UniquenessAssertions {
         result: UniquenessCheckResult,
         clock: AutoTickTestClock? = null
     ) {
-        assertRejectedResultCommon<UniquenessCheckErrorReferenceStateConflict>(result, clock)
+        assertRejectedResultCommon(result, clock)
 
         val conflicts = (getErrorOfType<UniquenessCheckErrorReferenceStateConflict>(result)).conflictingStates
         assertAll(
@@ -221,7 +221,7 @@ object UniquenessAssertions {
         result: UniquenessCheckResult,
         clock: AutoTickTestClock? = null
     ) {
-        assertRejectedResultCommon<UniquenessCheckErrorReferenceStateUnknown>(result, clock)
+        assertRejectedResultCommon(result, clock)
 
         val unknownStates = (getErrorOfType<UniquenessCheckErrorReferenceStateUnknown>(result)).unknownStates
         assertAll(
@@ -241,7 +241,7 @@ object UniquenessAssertions {
         result: UniquenessCheckResult,
         clock: AutoTickTestClock? = null
     ) {
-        assertRejectedResultCommon<UniquenessCheckErrorTimeWindowOutOfBounds>(result, clock)
+        assertRejectedResultCommon(result, clock)
 
         val error = getErrorOfType<UniquenessCheckErrorTimeWindowOutOfBounds>(result)
         assertAll(
@@ -259,7 +259,7 @@ object UniquenessAssertions {
         result: UniquenessCheckResult,
         clock: AutoTickTestClock? = null
     ) {
-        assertRejectedResultCommon<UniquenessCheckErrorMalformedRequest>(result, clock)
+        assertRejectedResultCommon(result, clock)
         assertThat((getErrorOfType<UniquenessCheckErrorMalformedRequest>(result)).errorText).isEqualTo(errorMessage)
     }
 
@@ -267,21 +267,10 @@ object UniquenessAssertions {
      * Performs common checks for a reject result. If a clock is specified, will additionally
      * check the result timestamp is valid with respect to the provider.
      */
-    private inline fun <reified T> assertRejectedResultCommon(
-        result: UniquenessCheckResult,
-        clock: AutoTickTestClock? = null
-    ) {
-        assertInstanceOf(T::class.java, getErrorOfType<T>(result))
+//    private inline fun <reified T> assertRejectedResultCommon(
+    private fun assertRejectedResultCommon(result: UniquenessCheckResult, clock: AutoTickTestClock? = null) {
         assertThat(result.toCharacterRepresentation()).isEqualTo(UniquenessConstants.RESULT_REJECTED_REPRESENTATION)
         assertValidTimestamp(result.resultTimestamp, clock)
-    }
-
-    /**
-     * Casts to a specific uniqueness check error type.
-     */
-    private inline fun <reified T> getErrorOfType(result: UniquenessCheckResult): T {
-        val failure = result as UniquenessCheckResultFailure
-        return failure.error as T
     }
 
     /**
@@ -291,6 +280,14 @@ object UniquenessAssertions {
                              txIds: List<SecureHash>) {
         assertThat(txnDetails.size).isEqualTo(1)
         assertThat(txIds).contains(txnDetails.entries.single().key)
+    }
+
+    /**
+     * Gets the error from a result and casts it to a specific uniqueness check error type.
+     */
+    private inline fun <reified T> getErrorOfType(result: UniquenessCheckResult): T {
+        val failure = result as UniquenessCheckResultFailure
+        return failure.error as T
     }
 
     private inline fun<reified T> getResultOfType(response: UniquenessCheckResponseAvro): T {
