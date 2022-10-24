@@ -5,6 +5,7 @@ import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.DigitalSignatureWithSpec
 import net.corda.v5.crypto.SignatureSpec
 
 /**
@@ -50,4 +51,7 @@ class SimWithJsonSigningService(
         return DigitalSignature.WithKey(publicKey, opaqueBytes, mapOf())
     }
 
+    override fun sign(bytes: ByteArray, publicKey: PublicKey): DigitalSignatureWithSpec {
+        TODO("Not yet implemented")
+    }
 }

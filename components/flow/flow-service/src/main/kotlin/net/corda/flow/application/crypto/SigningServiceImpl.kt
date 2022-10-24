@@ -2,12 +2,14 @@ package net.corda.flow.application.crypto
 
 import java.security.PublicKey
 import net.corda.flow.application.crypto.external.events.CreateSignatureExternalEventFactory
+import net.corda.flow.application.crypto.external.events.CreateSignatureWithoutSignatureSpecExternalEventFactory
 import net.corda.flow.application.crypto.external.events.SignParameters
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.DigitalSignatureWithSpec
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
@@ -35,12 +37,10 @@ class SigningServiceImpl @Activate constructor(
     }
 
     @Suspendable
-    override fun sign(bytes: ByteArray, publicKey: PublicKey): Pair<DigitalSignature.WithKey, SignatureSpec> {
-        val digitalSignatureWithKey = externalEventExecutor.execute(
-            CreateSignatureExternalEventFactory::class.java,
+    override fun sign(bytes: ByteArray, publicKey: PublicKey): DigitalSignatureWithSpec {
+        return externalEventExecutor.execute(
+            CreateSignatureWithoutSignatureSpecExternalEventFactory::class.java,
             SignParameters(bytes, keyEncodingService.encodeAsByteArray(publicKey), null)
         )
-
-        return digitalSignatureWithKey to SignatureSpec("")
     }
 }

@@ -26,6 +26,9 @@ import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
+import net.corda.data.crypto.wire.CryptoSignatureWithSignatureSpec
+import net.corda.v5.crypto.DigitalSignatureWithSpec
+import net.corda.v5.crypto.SecureHash
 
 /**
  * The crypto operations client to generate messages for flows.
@@ -104,7 +107,13 @@ class CryptoFlowOpsTransformerImpl(
             throw IllegalStateException("Response is no longer valid, expired at $expireAt")
         }
         return when (inferRequestType(response)) {
-            SignFlowCommand::class.java -> transformCryptoSignatureWithKey(response)
+            SignFlowCommand::class.java -> when (response.response) {
+                is CryptoSignatureWithKey -> transformCryptoSignatureWithKey(response)
+                is CryptoSignatureWithSignatureSpec -> transformCryptoSignatureWithSignatureSpec(response)
+                else -> throw IllegalArgumentException(
+                    "Unknown response type: ${response.response}"
+                )
+            }
             FilterMyKeysFlowQuery::class.java -> transformCryptoSigningKeys(response)
             else -> throw IllegalArgumentException(
                 "Unknown request type: $REQUEST_OP_KEY=${response.getContextValue(REQUEST_OP_KEY)}"
@@ -125,12 +134,23 @@ class CryptoFlowOpsTransformerImpl(
     /**
      * Transforms [CryptoSignatureWithKey]
      */
-    private fun transformCryptoSignatureWithKey(response: FlowOpsResponse): DigitalSignature.WithKey {
+    private fun transformCryptoSignatureWithKey(response: FlowOpsResponse): Any {
         val resp = response.validateAndGet<CryptoSignatureWithKey>()
         return DigitalSignature.WithKey(
             by = keyEncodingService.decodePublicKey(resp.publicKey.array()),
             bytes = resp.bytes.array(),
             context = resp.context.toMap()
+        )
+    }
+
+    private fun transformCryptoSignatureWithSignatureSpec(response: FlowOpsResponse): Any {
+        val resp = response.validateAndGet<CryptoSignatureWithSignatureSpec>()
+        return DigitalSignatureWithSpec(
+            bytes = ByteArray(resp.bytes.remaining()).also {
+                resp.bytes.get(it)
+            },
+            spec = SignatureSpec(resp.spec),
+            publicKeyHash = SecureHash(resp.publicKeyHash.algorithm, resp.publicKeyHash.serverHash.array())
         )
     }
 
