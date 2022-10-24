@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.crypto.utils.PemCertificate
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants
 import net.corda.p2p.NetworkType
 import net.corda.p2p.crypto.ProtocolMode

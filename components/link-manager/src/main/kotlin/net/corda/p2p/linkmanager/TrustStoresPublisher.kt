@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.crypto.utils.PemCertificate
 import net.corda.libs.configuration.SmartConfig
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.domino.logic.BlockingDominoTile

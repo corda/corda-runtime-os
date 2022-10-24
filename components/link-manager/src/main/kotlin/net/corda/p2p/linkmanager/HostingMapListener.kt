@@ -1,5 +1,6 @@
 package net.corda.p2p.linkmanager
 
+import net.corda.crypto.utils.PemCertificate
 import net.corda.virtualnode.HoldingIdentity
 import java.security.PublicKey
 
