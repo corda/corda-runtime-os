@@ -3,11 +3,17 @@ package net.corda.uniqueness.utils
 
 import net.corda.data.uniqueness.*
 import net.corda.test.util.time.AutoTickTestClock
-import net.corda.v5.application.uniqueness.model.*
 import net.corda.uniqueness.datamodel.common.UniquenessConstants
 import net.corda.uniqueness.datamodel.common.toCharacterRepresentation
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckTransactionDetailsInternal
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorInputStateConflict
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorInputStateUnknown
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorMalformedRequest
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateConflict
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorReferenceStateUnknown
+import net.corda.v5.application.uniqueness.model.UniquenessCheckErrorTimeWindowOutOfBounds
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
+import net.corda.v5.application.uniqueness.model.UniquenessCheckResultFailure
 import net.corda.v5.crypto.SecureHash
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
