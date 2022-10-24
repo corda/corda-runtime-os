@@ -1,4 +1,4 @@
-package net.corda.p2p.linkmanager
+package net.corda.crypto.utils
 
 import java.io.ByteArrayInputStream
 import java.security.KeyStore
@@ -9,8 +9,8 @@ import org.slf4j.LoggerFactory
 
 private const val KEY_STORE_TYPE = "PKCS12"
 
-internal fun convertToKeyStore(certificateFactory: CertificateFactory, pemCertificates: Collection<String>): KeyStore? {
-    val logger = LoggerFactory.getLogger(" net.corda.p2p.linkmanager.CertificateUtils")
+fun convertToKeyStore(certificateFactory: CertificateFactory, pemCertificates: Collection<String>, alias: String): KeyStore? {
+    val logger = LoggerFactory.getLogger("net.corda.crypto.utils.CertificateUtils")
     return KeyStore.getInstance(KEY_STORE_TYPE).also { keyStore ->
         keyStore.load(null, null)
         pemCertificates.withIndex().forEach { (index, pemCertificate) ->
@@ -23,7 +23,7 @@ internal fun convertToKeyStore(certificateFactory: CertificateFactory, pemCertif
                 }
             }
             try {
-                keyStore.setCertificateEntry("session-$index", certificate)
+                keyStore.setCertificateEntry("$alias-$index", certificate)
             } catch (except: KeyStoreException) {
                 logger.warn("Could not load certificate into keystore: ${except.message}.")
                 return null

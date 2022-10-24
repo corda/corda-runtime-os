@@ -1,8 +1,7 @@
 package net.corda.p2p.crypto.protocol.api
 
 import net.corda.v5.base.types.MemberX500Name
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
+import net.corda.v5.base.util.contextLogger
 import java.io.ByteArrayInputStream
 import java.lang.IllegalArgumentException
 import java.security.KeyStore
@@ -27,7 +26,7 @@ class CertificateValidator(
     private companion object {
         const val certificateAlgorithm = "PKIX"
         const val certificateFactoryType = "X.509"
-        val logger: Logger = LoggerFactory.getLogger(AllowAllRevocationChecker::class.java)
+        val logger = contextLogger()
     }
 
     @Suppress("ThrowsCount")

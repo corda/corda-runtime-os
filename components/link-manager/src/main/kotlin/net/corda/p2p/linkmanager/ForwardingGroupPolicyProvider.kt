@@ -1,6 +1,7 @@
 package net.corda.p2p.linkmanager
 
 import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.crypto.utils.convertToKeyStore
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.domino.logic.ComplexDominoTile
@@ -14,6 +15,7 @@ import net.corda.p2p.crypto.ProtocolMode
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
+import java.security.KeyStore
 import java.security.cert.CertificateFactory
 
 @Suppress("LongParameterList")
@@ -62,7 +64,7 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
             }
         }
     }
-    @Suppress("ComplexMethod")
+
     private fun toGroupInfo(holdingIdentity: HoldingIdentity, groupPolicy: GroupPolicy): GroupPolicyListener.GroupInfo? {
         val networkType = when (groupPolicy.p2pParameters.tlsPki) {
             P2PParameters.TlsPkiMode.STANDARD -> NetworkType.CORDA_5
@@ -80,12 +82,9 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
         val sessionPkiMode = groupPolicy.p2pParameters.sessionPki
 
         val sessionTrustStore = groupPolicy.p2pParameters.sessionTrustRoots?.let {
-            convertToKeyStore(certificateFactory, it) ?: return null
+            convertToKeyStore(certificateFactory, it, "session") ?: return null
         }
-        if (sessionTrustStore == null && sessionPkiMode != P2PParameters.SessionPkiMode.NO_PKI) {
-            logger.warn("Session trust roots is unexpectedly null in the group policy for $holdingIdentity. This can be caused by using " +
-                    "the wrong PKI mode.")
-        }
+        validateTrustStoreUsingPkiMode(sessionTrustStore, sessionPkiMode, holdingIdentity)
 
         return GroupPolicyListener.GroupInfo(
             holdingIdentity,
@@ -96,4 +95,16 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
             sessionTrustStore
         )
     }
+
+    private fun validateTrustStoreUsingPkiMode(
+        sessionTrustStore: KeyStore?,
+        sessionPkiMode: P2PParameters.SessionPkiMode,
+        holdingIdentity: HoldingIdentity
+    ) {
+        if (sessionTrustStore == null && sessionPkiMode != P2PParameters.SessionPkiMode.NO_PKI) {
+            logger.warn("Session trust roots is unexpectedly null in the group policy for $holdingIdentity. This can be caused by using " +
+                    "the wrong PKI mode.")
+        }
+    }
+
 }
