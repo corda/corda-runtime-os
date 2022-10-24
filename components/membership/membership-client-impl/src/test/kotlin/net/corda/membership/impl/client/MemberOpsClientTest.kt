@@ -153,6 +153,7 @@ class MemberOpsClientTest {
             "Registration-ID",
             clock.instant(),
             RegistrationRpcStatus.SUBMITTED,
+            "",
             1,
             KeyValuePairList(listOf(KeyValuePair("key", "value"))),
             KeyValuePairList(emptyList())
@@ -292,6 +293,7 @@ class MemberOpsClientTest {
                         "RegistrationID",
                         clock.instant(),
                         RegistrationRpcStatus.SUBMITTED,
+                        "",
                         1,
                         KeyValuePairList(listOf(KeyValuePair("key", "value"))),
                         KeyValuePairList(emptyList())
@@ -323,6 +325,7 @@ class MemberOpsClientTest {
                         "RegistrationID",
                         clock.instant(),
                         RegistrationRpcStatus.SUBMITTED,
+                        "",
                         1,
                         KeyValuePairList(listOf(KeyValuePair("key", "value"))),
                         KeyValuePairList(emptyList())

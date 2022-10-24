@@ -219,6 +219,7 @@ class MemberOpsClientImpl @Activate constructor(
                     requestId,
                     null,
                     RegistrationRpcStatus.NOT_SUBMITTED.toString(),
+                    e.message,
                     MemberInfoSubmittedDto(emptyMap())
                 )
             }
@@ -297,6 +298,7 @@ class MemberOpsClientImpl @Activate constructor(
                 this.registrationId,
                 this.registrationSent,
                 this.registrationStatus.toString(),
+                this.reason.toString(),
                 MemberInfoSubmittedDto(
                     mapOf(
                         "registrationProtocolVersion" to this.registrationProtocolVersion.toString(),
