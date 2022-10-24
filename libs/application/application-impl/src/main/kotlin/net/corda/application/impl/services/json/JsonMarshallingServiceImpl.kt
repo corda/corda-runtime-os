@@ -79,8 +79,8 @@ class JsonMarshallingServiceImpl : JsonMarshallingService, SingletonSerializeAsT
         }
     }
 
-    override fun setSerializer(serializer: JsonSerializer<*>): Boolean {
-        val jsonSerializerAdaptor = JsonSerializerAdaptor(serializer)
+    override fun setSerializer(serializer: JsonSerializer<*>, type: Class<*>): Boolean {
+        val jsonSerializerAdaptor = JsonSerializerAdaptor(serializer, type)
         if (customSerializableClasses.contains(jsonSerializerAdaptor.serializingType)) return false
         customSerializableClasses.add(jsonSerializerAdaptor.serializingType)
 
@@ -91,8 +91,8 @@ class JsonMarshallingServiceImpl : JsonMarshallingService, SingletonSerializeAsT
         return true
     }
 
-    override fun setDeserializer(deserializer: JsonDeserializer<*>): Boolean {
-        val jsonDeserializerAdaptor = JsonDeserializerAdaptor(deserializer)
+    override fun setDeserializer(deserializer: JsonDeserializer<*>, type: Class<*>): Boolean {
+        val jsonDeserializerAdaptor = JsonDeserializerAdaptor(deserializer, type)
         if (customDeserializableClasses.contains(jsonDeserializerAdaptor.deserializingType)) return false
         customDeserializableClasses.add(jsonDeserializerAdaptor.deserializingType)
 

@@ -238,21 +238,21 @@ class JsonDeserializerAdaptorAndNodeReaderTest {
      * which they will be created at runtime in Corda. We need to make sure no compile time type information is required
      * to register a serializer.
      */
-    private fun testDeserializerFactory(): JsonDeserializer<*> {
-        return TestDeserializer()
+    private fun testDeserializerFactory(): Pair<JsonDeserializer<*>, Class<*>> {
+        return Pair(TestDeserializer(), TestClass::class.java)
     }
 
     @Test
     fun `validate deserializer adaptor and JsonNodeReaderAdaptor`() {
         val mapper = ObjectMapper()
         val module = SimpleModule()
-        val deserializer = testDeserializerFactory()
+        val (deserializer, type) = testDeserializerFactory()
         // Note that the deserializing type is passed in as a Class<Any> not a Class<*>. This is required because the
         // Jackson api type parameter of the Class is restricted to types or subtypes of the type the StdDeserializer
         // understands, and in our case that is an Any. Because of erasure all this is irrelevant internally, Jackson
         // cannot track types except those that the clazz represents, which is always the specific type we want
         // deserializing.
-        val jsonDeserializerAdaptor = JsonDeserializerAdaptor(deserializer)
+        val jsonDeserializerAdaptor = JsonDeserializerAdaptor(deserializer, type)
         module.addDeserializer(uncheckedCast(jsonDeserializerAdaptor.deserializingType), jsonDeserializerAdaptor)
         mapper.registerModule(module)
         mapper.readValue(JSON_TO_PARSE, TestClass::class.java)

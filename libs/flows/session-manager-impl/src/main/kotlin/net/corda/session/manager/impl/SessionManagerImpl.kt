@@ -237,7 +237,9 @@ class SessionManagerImpl : SessionManager {
      */
     private fun generateAck(sessionState: SessionState, instant: Instant, identity: HoldingIdentity): SessionEvent {
         val receivedEventsState = sessionState.receivedEventsState
-        val outOfOrderSeqNums = receivedEventsState.undeliveredMessages.map { it.sequenceNum }
+        val outOfOrderSeqNums = receivedEventsState.undeliveredMessages
+            .filter { it.sequenceNum > receivedEventsState.lastProcessedSequenceNum }
+            .map { it.sequenceNum }
         val (initiatingIdentity, initiatedIdentity) = getInitiatingAndInitiatedParties(sessionState, identity)
         return SessionEvent.newBuilder()
             .setMessageDirection(MessageDirection.OUTBOUND)

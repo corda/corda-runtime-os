@@ -27,6 +27,11 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
 
     private companion object {
 
+        val DATA_MESSAGE_3 = byteArrayOf(3)
+        val DATA_MESSAGE_4 = byteArrayOf(4)
+        val DATA_MESSAGE_5 = byteArrayOf(5)
+        val DATA_MESSAGE_6 = byteArrayOf(6)
+
         @JvmStatic
         fun wakeupAndSessionAck(): Stream<Arguments> {
             return Stream.of(
@@ -576,6 +581,76 @@ class ReceiveAcceptanceTest : FlowServiceTestBase() {
             expectOutputForFlow(FLOW_ID1) {
                 flowResumedWith(mapOf(SESSION_ID_1 to DATA_MESSAGE_1))
                 sessionAckEvents(SESSION_ID_1)
+            }
+        }
+    }
+
+    @Test
+    fun `Complex messaging flow executing multiple sends and receives with 2 sessions, receives arrive non-sequentially`() {
+        given {
+            startFlowEventReceived(FLOW_ID1, REQUEST_ID1, ALICE_HOLDING_IDENTITY, CPI1, "flow start data")
+                .suspendsWith(FlowIORequest.Send(mapOf(
+                    FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to DATA_MESSAGE_0,
+                    FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to DATA_MESSAGE_0),
+                ))
+
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 1)
+
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 1)
+                .suspendsWith(FlowIORequest.Send(
+                    mapOf(
+                        FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_1,
+                        FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to  DATA_MESSAGE_1,
+                    )))
+
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_1, receivedSequenceNum = 2)
+                .suspendsWith(FlowIORequest.Send(
+                    mapOf(
+                        FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName) to  DATA_MESSAGE_2,
+                    )))
+
+            wakeupEventReceived(FLOW_ID1)
+                .suspendsWith(FlowIORequest.Send(
+                    mapOf(
+                        FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName) to  DATA_MESSAGE_2,
+                    )))
+
+
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 2)
+                .suspendsWith(FlowIORequest.Receive(
+                    setOf(
+                        FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
+                        FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName),
+                    )))
+
+
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_3, 1, 2, listOf())
+
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_3, 1, 2, listOf())
+                .suspendsWith(FlowIORequest.Receive(
+                    setOf(
+                        FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName),
+                        FlowIORequest.SessionInfo(SESSION_ID_2, initiatedIdentityMemberName),
+                    )))
+
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_4, 2, 3, listOf())
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_5, 3, 3, listOf())
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_1, DATA_MESSAGE_6, 4, 3, listOf())
+
+            sessionDataEventReceived(FLOW_ID1, SESSION_ID_2, DATA_MESSAGE_4, 2, 3, listOf())
+                .suspendsWith(FlowIORequest.Receive(
+                    setOf(
+                        FlowIORequest.SessionInfo(SESSION_ID_1, initiatedIdentityMemberName)
+                    )))
+        }
+
+        `when` {
+            sessionAckEventReceived(FLOW_ID1, SESSION_ID_2, receivedSequenceNum = 4, outOfOrderSeqNums = listOf(4))
+        }
+
+        then {
+            expectOutputForFlow(FLOW_ID1) {
+                flowResumedWith(mapOf(SESSION_ID_1 to DATA_MESSAGE_5))
             }
         }
     }
