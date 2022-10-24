@@ -51,8 +51,8 @@ data class CpkDbChangeLogAuditKey(
     var cpkSignerSummaryHash: String,
     @Column(name = "cpk_file_checksum", nullable = false)
     val fileChecksum: String,
-    @Column(name = "change_uuid", nullable = false)
-    var changeUUID: UUID,
+    @Column(name = "changeset_id", nullable = false)
+    val changesetId: UUID,
     @Column(name = "entity_version", nullable = false)
     var entityVersion: Int,
     @Column(name = "file_path", nullable = false)
