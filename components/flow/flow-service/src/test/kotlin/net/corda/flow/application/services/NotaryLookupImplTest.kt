@@ -92,9 +92,11 @@ class NotaryLookupImplTest {
         assertThat(notaries).anySatisfy {
             assertThat(it.party).isEqualTo(alice)
             assertThat(it.pluginClass).isEqualTo("net.corda.Plugin1")
+            assertThat(it.publicKeys).containsExactly(alicePublicKey)
         }.anySatisfy {
             assertThat(it.party).isEqualTo(carol)
             assertThat(it.pluginClass).isEqualTo("net.corda.Plugin2")
+            assertThat(it.publicKeys).containsExactly(carolPublicKey)
         }.hasSize(2)
     }
 
@@ -125,20 +127,6 @@ class NotaryLookupImplTest {
         whenever(groupReader.lookup(alice)).thenReturn(null)
 
         assertThat(lookup.isNotaryVirtualNode(alice)).isFalse
-    }
-
-    @Test
-    fun `lookup by public key return the correct node`() {
-        val info = lookup.lookup(carolPublicKey)
-
-        assertThat(info?.party).isEqualTo(carol)
-    }
-
-    @Test
-    fun `lookup by public key return the null when there is no such key`() {
-        val info = lookup.lookup(mock<PublicKey>())
-
-        assertThat(info).isNull()
     }
 
     @Test

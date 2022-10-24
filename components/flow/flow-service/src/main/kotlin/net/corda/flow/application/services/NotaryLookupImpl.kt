@@ -38,9 +38,15 @@ class NotaryLookupImpl @Activate constructor(
                 if (plugin == null) {
                     null
                 } else {
+                    val keys =  it.value.flatMap { notaryDetails ->
+                        notaryDetails.keys.map { notaryKey ->
+                            notaryKey.publicKey
+                        }
+                    }
                     NotaryInfoImpl(
                         party = it.key,
-                        pluginClass = plugin
+                        pluginClass = plugin,
+                        publicKeys = keys,
                     )
                 }
             }
@@ -50,21 +56,6 @@ class NotaryLookupImpl @Activate constructor(
         groupReader.lookup(virtualNodeName)?.notaryDetails?.let {
             lookup(it.serviceName)
         } != null
-
-    @Suspendable
-    override fun lookup(publicKey: PublicKey): NotaryInfo? {
-        val serviceName = members.map {
-            it.notaryDetails
-        }.filterNotNull()
-            .filter {
-                it.keys.any { key ->
-                    key.publicKey == publicKey
-                }
-            }.map {
-                it.serviceName
-            }.firstOrNull() ?: return null
-        return lookup(serviceName)
-    }
 
     @Suspendable
     override fun lookup(notaryServiceName: MemberX500Name): NotaryInfo? {
@@ -83,6 +74,7 @@ class NotaryLookupImpl @Activate constructor(
 
     private data class NotaryInfoImpl(
         override val party: MemberX500Name,
-        override val pluginClass: String
+        override val pluginClass: String,
+        override val publicKeys: Collection<PublicKey>,
     ) : NotaryInfo
 }
