@@ -1,5 +1,7 @@
 package net.corda.cli.plugin.initialRbac.commands
 
+import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.CLIENT_REQ_REGEX
+import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.FLOW_NAME_REGEX
 import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.USER_REGEX
 import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.UUID_REGEX
 import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.VNODE_SHORT_HASH_REGEX
@@ -39,5 +41,23 @@ class TestPatternsMatch {
         assertTrue(wildcardMatch(validUserName, USER_REGEX))
         assertFalse(wildcardMatch("joe/bloggs", VNODE_SHORT_HASH_REGEX))
         assertFalse(wildcardMatch("0", VNODE_SHORT_HASH_REGEX))
+    }
+
+    @Test
+    fun testClientRequestId() {
+        val validClientRequestId = "My-Request_Id.1"
+
+        assertTrue(wildcardMatch(validClientRequestId, CLIENT_REQ_REGEX))
+        assertFalse(wildcardMatch("client/request", CLIENT_REQ_REGEX))
+        assertFalse(wildcardMatch("#client@request", CLIENT_REQ_REGEX))
+    }
+
+    @Test
+    fun testFlowName() {
+        val validFlowName = "com.company.MyFlow_1$2"
+
+        assertTrue(wildcardMatch(validFlowName, FLOW_NAME_REGEX))
+        assertFalse(wildcardMatch("flow/name", FLOW_NAME_REGEX))
+        assertFalse(wildcardMatch("#flow@name", FLOW_NAME_REGEX))
     }
 }

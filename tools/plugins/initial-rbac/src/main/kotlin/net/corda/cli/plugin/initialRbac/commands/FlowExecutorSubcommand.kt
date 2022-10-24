@@ -1,7 +1,11 @@
 package net.corda.cli.plugin.initialRbac.commands
 
+import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.CLIENT_REQ_REGEX
+import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.FLOW_NAME_REGEX
 import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.checkOrCreateRole
 import net.corda.cli.plugins.common.HttpRpcCommand
+import net.corda.rbac.schema.RbacKeys.PREFIX_SEPARATOR
+import net.corda.rbac.schema.RbacKeys.START_FLOW_PREFIX
 import picocli.CommandLine
 import java.util.concurrent.Callable
 
@@ -15,11 +19,6 @@ private const val FLOW_EXECUTOR_ROLE = "FlowExecutorRole"
 )
 @Suppress("unused")
 class FlowExecutorSubcommand : HttpRpcCommand(), Callable<Int> {
-
-    private companion object {
-        const val CLIENT_REQ_REGEX = "[A-Za-z0-9_-.]{1,250}"
-        const val FLOW_NAME_REGEX = "[.\$a-zA-Z0-9]{1,250}"
-    }
 
     @CommandLine.Option(
         names = ["-v", "--vNodeId"],
@@ -40,7 +39,8 @@ class FlowExecutorSubcommand : HttpRpcCommand(), Callable<Int> {
         ),
 
         // Flow start related
-        PermissionTemplate("Start any flow", "StartFlow:$FLOW_NAME_REGEX", vnodeShortHash)
+        PermissionTemplate("Start any flow",
+            "$START_FLOW_PREFIX$PREFIX_SEPARATOR$FLOW_NAME_REGEX", vnodeShortHash)
     )
 
     override fun call(): Int {

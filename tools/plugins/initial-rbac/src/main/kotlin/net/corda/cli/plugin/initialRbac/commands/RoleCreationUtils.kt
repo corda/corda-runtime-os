@@ -23,6 +23,10 @@ internal object RoleCreationUtils {
 
     const val USER_REGEX = "[-._@a-zA-Z0-9]{3,255}"
 
+    const val CLIENT_REQ_REGEX = "[-._A-Za-z0-9]{1,250}"
+
+    const val FLOW_NAME_REGEX = "[._\$a-zA-Z0-9]{1,250}"
+
     fun HttpRpcCommand.checkOrCreateRole(roleName: String, permissionsToCreate: Map<String, String>): Int {
         return checkOrCreateRole(
             roleName,
