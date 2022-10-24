@@ -68,16 +68,9 @@ class NotaryLookupImpl @Activate constructor(
 
     @Suspendable
     override fun lookup(notaryServiceName: MemberX500Name): NotaryInfo? {
-        val plugin = members.map {
-            it.notaryDetails
-        }.filterNotNull()
-            .filter { it.serviceName == notaryServiceName }
-            .firstNotNullOfOrNull { it.servicePlugin }
-            ?: return null
-        return NotaryInfoImpl(
-            notaryServiceName,
-            plugin
-        )
+        return notaryServices.firstOrNull {
+            it.party == notaryServiceName
+        }
     }
 
     @Suspendable
