@@ -22,6 +22,7 @@ import net.corda.v5.cipher.suite.GeneratedPublicKey
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -346,7 +347,7 @@ class SigningServiceGeneralTests {
             scheme = scheme,
             alias = expectedAlias
         )
-        assertSame(generatedKey.publicKey, result)
+        assertThat(generatedKey.publicKey).isEqualTo(result)
         val expectedExternalId = UUID.randomUUID().toString()
         result = signingService.generateKeyPair(
             tenantId = tenantId,
@@ -355,7 +356,7 @@ class SigningServiceGeneralTests {
             scheme = scheme,
             alias = expectedAlias
         )
-        assertSame(generatedKey.publicKey, result)
+        assertThat(generatedKey.publicKey).isEqualTo(result)
         Mockito.verify(store, times(1)).save(
             eq(tenantId),
             argThat {

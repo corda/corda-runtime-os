@@ -97,7 +97,7 @@ class OnboardMgm : Runnable, BaseOnboard() {
     override val registrationContext by lazy {
         mapOf(
             "corda.session.key.id" to sessionKeyId,
-            "corda.ecdh.key.id" to sessionKeyId,
+            "corda.ecdh.key.id" to ecdhKeyId,
             "corda.group.protocol.registration"
                 to "net.corda.membership.impl.registration.dynamic.member.DynamicMemberRegistrationService",
             "corda.group.protocol.synchronisation"

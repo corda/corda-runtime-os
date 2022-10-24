@@ -12,7 +12,6 @@ import org.bouncycastle.asn1.ASN1ObjectIdentifier
 import org.bouncycastle.asn1.DERNull
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
-import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter
@@ -175,7 +174,6 @@ class CipherSchemeMetadataProvider : KeyEncodingService {
 
     override fun toSupportedPublicKey(key: PublicKey): PublicKey {
         return when {
-            key::class.java.`package` == BCECPublicKey::class.java.`package` -> key
             key is CompositeKey -> key
             else -> decodePublicKey(key.encoded)
         }

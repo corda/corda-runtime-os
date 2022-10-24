@@ -3,12 +3,14 @@ package net.corda.membership.impl.registration
 import com.typesafe.config.ConfigFactory
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
+import net.corda.crypto.ecies.EphemeralKeyPairEncryptor
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializationFactory
 import net.corda.data.KeyValuePairList
 import net.corda.data.config.Configuration
 import net.corda.data.config.ConfigurationSchemaVersion
 import net.corda.data.membership.p2p.MembershipRegistrationRequest
+import net.corda.data.membership.p2p.UnauthenticatedRegistrationRequest
 import net.corda.db.messagebus.testkit.DBSetup
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -19,6 +21,7 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.impl.registration.dummy.TestCryptoOpsClient
+import net.corda.membership.impl.registration.dummy.TestEphemeralKeyPairEncryptor
 import net.corda.membership.impl.registration.dummy.TestGroupPolicy
 import net.corda.membership.impl.registration.dummy.TestGroupPolicyProvider
 import net.corda.membership.impl.registration.dummy.TestGroupReaderProvider
@@ -46,6 +49,7 @@ import net.corda.test.util.lifecycle.usingLifecycle
 import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.publicKeyId
 import net.corda.virtualnode.HoldingIdentity
 import org.assertj.core.api.Assertions.assertThat
@@ -93,6 +97,10 @@ class MemberRegistrationIntegrationTest {
 
         lateinit var keyValuePairListDeserializer: CordaAvroDeserializer<KeyValuePairList>
         lateinit var requestDeserializer: CordaAvroDeserializer<MembershipRegistrationRequest>
+        lateinit var unauthRequestDeserializer: CordaAvroDeserializer<UnauthenticatedRegistrationRequest>
+
+        @InjectService(timeout = 5000)
+        lateinit var ephemeralKeyPairEncryptor: TestEphemeralKeyPairEncryptor
 
         val logger = contextLogger()
         val bootConfig = SmartConfigFactory.create(ConfigFactory.empty())
@@ -153,6 +161,8 @@ class MemberRegistrationIntegrationTest {
             keyValuePairListDeserializer = serializationFactory.createAvroDeserializer({}, KeyValuePairList::class.java)
             requestDeserializer =
                 serializationFactory.createAvroDeserializer({}, MembershipRegistrationRequest::class.java)
+            unauthRequestDeserializer =
+                serializationFactory.createAvroDeserializer({}, UnauthenticatedRegistrationRequest::class.java)
 
             setupConfig()
             groupPolicyProvider.start()
@@ -231,9 +241,10 @@ class MemberRegistrationIntegrationTest {
                 it.assertThat(this.header.destination.groupId).isEqualTo(groupId)
                 it.assertThat(this.header.source.x500Name).isEqualTo(memberName.toString())
                 it.assertThat(this.header.source.groupId).isEqualTo(groupId)
-                val deserializedContext = requestDeserializer.deserialize(payload.array())!!.run {
-                    keyValuePairListDeserializer.deserialize(memberContext.array())!!
-                }
+                val deserializedUnauthenticatedRegistrationRequest = unauthRequestDeserializer.deserialize(payload.array())!!
+                val deserializedContext =
+                    requestDeserializer.deserialize(deserializedUnauthenticatedRegistrationRequest.payload.array())!!
+                        .run { keyValuePairListDeserializer.deserialize(memberContext.array())!! }
                 with(deserializedContext.items) {
                     it.assertThat(first { pair -> pair.key == URL_KEY }.value).isEqualTo(URL_VALUE)
                     it.assertThat(first { pair -> pair.key == PROTOCOL_KEY }.value).isEqualTo(PROTOCOL_VALUE)
@@ -256,7 +267,7 @@ class MemberRegistrationIntegrationTest {
                 member.shortHash.value,
                 "SESSION_INIT",
                 member.shortHash.value + "session",
-                "CORDA.ECDSA.SECP256R1"
+                ECDSA_SECP256R1_CODE_NAME
             )
                 .publicKeyId()
         val ledgerKeyId =
@@ -264,16 +275,16 @@ class MemberRegistrationIntegrationTest {
                 member.shortHash.value,
                 "LEDGER",
                 member.shortHash.value + "ledger",
-                "CORDA.ECDSA.SECP256R1"
+                ECDSA_SECP256R1_CODE_NAME
             )
                 .publicKeyId()
         return mapOf(
             "corda.session.key.id" to sessionKeyId,
-            "corda.session.key.signature.spec" to "CORDA.ECDSA.SECP256R1",
+            "corda.session.key.signature.spec" to ECDSA_SECP256R1_CODE_NAME,
             URL_KEY to URL_VALUE,
             PROTOCOL_KEY to PROTOCOL_VALUE,
             "corda.ledger.keys.0.id" to ledgerKeyId,
-            "corda.ledger.keys.0.signature.spec" to "CORDA.ECDSA.SECP256R1",
+            "corda.ledger.keys.0.signature.spec" to ECDSA_SECP256R1_CODE_NAME,
         )
     }
 
