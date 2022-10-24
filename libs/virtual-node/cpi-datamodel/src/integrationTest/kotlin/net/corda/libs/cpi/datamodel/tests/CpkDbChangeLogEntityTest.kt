@@ -4,12 +4,7 @@ import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
-import net.corda.libs.cpi.datamodel.CpiEntities
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogAuditEntity
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
-import net.corda.libs.cpi.datamodel.findDbChangeLogAuditForCpi
-import net.corda.libs.cpi.datamodel.findDbChangeLogForCpi
+import net.corda.libs.cpi.datamodel.*
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.orm.EntityManagerConfiguration
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
@@ -20,10 +15,12 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import java.util.*
 import javax.persistence.EntityManager
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CpkDbChangeLogEntityTest {
+    private val fakeId = UUID.randomUUID()
     private val dbConfig: EntityManagerConfiguration =
         DbUtils.getEntityManagerConfiguration("cpk_changelog_db")
 
@@ -65,13 +62,15 @@ class CpkDbChangeLogEntityTest {
             CpkDbChangeLogKey(cpk.metadata.id.cpkName, cpk.metadata.id.cpkVersion,
                 cpk.metadata.id.cpkSignerSummaryHash, "master"),
             "master-checksum",
-            "master-content"
+            "master-content",
+            fakeId
         )
         val changeLog2 = CpkDbChangeLogEntity(
             CpkDbChangeLogKey(cpk.metadata.id.cpkName, cpk.metadata.id.cpkVersion,
                 cpk.metadata.id.cpkSignerSummaryHash, "other"),
             "other-checksum",
-            "other-content"
+            "other-content",
+            fakeId
         )
 
         transaction {
@@ -100,7 +99,8 @@ class CpkDbChangeLogEntityTest {
             CpkDbChangeLogKey(cpk.metadata.id.cpkName, cpk.metadata.id.cpkVersion,
                 cpk.metadata.id.cpkSignerSummaryHash, "master"),
             "master-checksum",
-            "master-content"
+            "master-content",
+            fakeId
         )
 
         val changeLog1Audit = CpkDbChangeLogAuditEntity(changeLog1)
@@ -156,7 +156,8 @@ class CpkDbChangeLogEntityTest {
             CpkDbChangeLogKey(cpk.metadata.id.cpkName, cpk.metadata.id.cpkVersion,
                 cpk.metadata.id.cpkSignerSummaryHash, "master"),
             "master-checksum",
-            "master-content"
+            "master-content",
+            fakeId
         )
 
         val changeLog1Audit = CpkDbChangeLogAuditEntity(changeLog1)
@@ -216,7 +217,8 @@ class CpkDbChangeLogEntityTest {
         val changeLog1 = CpkDbChangeLogEntity(
             CpkDbChangeLogKey(cpk.metadata.id.cpkName, cpk.metadata.id.cpkVersion, cpk.metadata.id.cpkSignerSummaryHash, "master"),
             "master-checksum",
-            "master-content"
+            "master-content",
+            fakeId
         )
 
         transaction {
@@ -261,7 +263,8 @@ class CpkDbChangeLogEntityTest {
             </column>
         </createTable>
     </changeSet>
-</databaseChangeLog>"""
+</databaseChangeLog>""",
+            fakeId
         )
         val changeLog1b = CpkDbChangeLogEntity(
             CpkDbChangeLogKey(cpk1b.metadata.id.cpkName, cpk1b.metadata.id.cpkVersion, cpk1b.metadata.id.cpkSignerSummaryHash, "master"),
@@ -277,17 +280,20 @@ class CpkDbChangeLogEntityTest {
             </addColumn>  
         </createTable>
     </changeSet>
-</databaseChangeLog>"""
+</databaseChangeLog>""",
+            fakeId
         )
         val changeLog2 = CpkDbChangeLogEntity(
             CpkDbChangeLogKey(cpk1.metadata.id.cpkName, cpk1.metadata.id.cpkVersion, cpk1.metadata.id.cpkSignerSummaryHash, "other"),
             "other-checksum",
-            "other-content"
+            "other-content",
+            fakeId
         )
         val changeLog3 = CpkDbChangeLogEntity(
             CpkDbChangeLogKey(cpk2.metadata.id.cpkName, cpk2.metadata.id.cpkVersion, cpk2.metadata.id.cpkSignerSummaryHash, "master"),
             "master-checksum",
-            "master-content"
+            "master-content",
+            fakeId
         )
 
         transaction {
