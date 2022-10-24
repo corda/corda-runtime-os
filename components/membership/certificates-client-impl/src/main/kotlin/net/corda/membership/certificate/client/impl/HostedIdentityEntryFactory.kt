@@ -136,16 +136,15 @@ internal class HostedIdentityEntryFactory(
                     policy.p2pParameters.sessionPki.name
             )
         }
-        val sessionCertificate = sessionCertificateChainAlias?.let {
-            getCertificates(sessionKeyTenantId, sessionCertificateChainAlias)
-        }
-        sessionCertificate?.let {
+        val sessionCertificate = sessionCertificateChainAlias?.run {
+            val certificate = getCertificates(sessionKeyTenantId, sessionCertificateChainAlias)
             validateCertificates(
                 sessionKeyTenantId,
                 nodeInfo.holdingIdentity,
-                it,
+                certificate,
                 CertificateType.SessionCertificate(policy.p2pParameters)
             )
+            certificate
         }
         return sessionCertificate
     }
@@ -165,8 +164,6 @@ internal class HostedIdentityEntryFactory(
         )
         return tlsCertificates
     }
-
-
 
     private sealed class CertificateType(val parameterName: String, val trustRoots: Collection<String>?) {
         data class TlsCertificate(val p2PParameters: GroupPolicy.P2PParameters):

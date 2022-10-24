@@ -208,7 +208,7 @@ class HostedIdentityEntryFactoryTest {
     @Test
     fun `createIdentityRecord will throw an exception if standard session pki and no sessionCertificateChainAlias specified`() {
         whenever(groupPolicy.p2pParameters).doReturn(p2pParamsSessionPki)
-        assertThrows<CertificatesResourceNotFoundException> {
+        assertThrows<CordaRuntimeException> {
             factory.createIdentityRecord(
                 holdingIdentityShortHash = VALID_NODE,
                 tlsCertificateChainAlias = VALID_CERTIFICATE_ALIAS,

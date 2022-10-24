@@ -68,11 +68,6 @@ class ForwardingGroupPolicyProviderTest {
     private val certificateFactory = mock<CertificateFactory> {
         whenever(it.generateCertificate(any())).thenReturn(mockCertificate)
     }
-    private val certificateFactoryStaticMock = Mockito.mockStatic(CertificateFactory::class.java).also {
-        it.`when`<CertificateFactory> {
-            CertificateFactory.getInstance(any())
-        }.doReturn(certificateFactory)
-    }
     private val keyStore = mock<KeyStore>()
     private val keyStoreStaticMock = Mockito.mockStatic(KeyStore::class.java).also {
         it.`when`<KeyStore> {
@@ -99,7 +94,6 @@ class ForwardingGroupPolicyProviderTest {
         dominoTile.close()
         stubGroupPolicyProvider.close()
         keyStoreStaticMock.close()
-        certificateFactoryStaticMock.close()
     }
 
     @Test
@@ -195,7 +189,7 @@ class ForwardingGroupPolicyProviderTest {
 
     private fun createForwardingGroupPolicyProvider(): ForwardingGroupPolicyProvider {
         return ForwardingGroupPolicyProvider(
-            mock(), realGroupPolicyProvider, virtualNodeInfoReadService, cpiInfoReadService, membershipQueryClient
+            mock(), realGroupPolicyProvider, virtualNodeInfoReadService, cpiInfoReadService, membershipQueryClient, certificateFactory
         )
     }
 

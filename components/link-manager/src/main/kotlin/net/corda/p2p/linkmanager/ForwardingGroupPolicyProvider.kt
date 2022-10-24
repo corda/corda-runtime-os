@@ -14,23 +14,21 @@ import net.corda.p2p.crypto.ProtocolMode
 import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
-import java.io.ByteArrayInputStream
-import java.security.KeyStore
-import java.security.KeyStoreException
-import java.security.cert.CertificateException
 import java.security.cert.CertificateFactory
 
+@Suppress("LongParameterList")
 internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordinatorFactory,
                                              private val groupPolicyProvider: GroupPolicyProvider,
                                              virtualNodeInfoReadService: VirtualNodeInfoReadService,
                                              cpiInfoReadService: CpiInfoReadService,
-                                             membershipQueryClient: MembershipQueryClient): LinkManagerGroupPolicyProvider {
+                                             membershipQueryClient: MembershipQueryClient,
+                                             private val certificateFactory: CertificateFactory
+                                                = CertificateFactory.getInstance("X.509"),
+): LinkManagerGroupPolicyProvider {
     private companion object {
-        private const val LISTENER_NAME = "link.manager.group.policy.listener"
-        private const val KEY_STORE_TYPE = "PKCS12"
-        private val logger = contextLogger()
+        const val LISTENER_NAME = "link.manager.group.policy.listener"
+        val logger = contextLogger()
     }
-    private val certificateFactory = CertificateFactory.getInstance("X.509")
 
     private val dependentChildren = setOf(
         LifecycleCoordinatorName.forComponent<GroupPolicyProvider>(),
@@ -81,9 +79,12 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
         val trustedCertificates = groupPolicy.p2pParameters.tlsTrustRoots.toList()
         val sessionPkiMode = groupPolicy.p2pParameters.sessionPki
 
-        val sessionTrustStore = groupPolicy.p2pParameters.sessionTrustRoots?.let { convertToKeyStore(it) ?: return null }
+        val sessionTrustStore = groupPolicy.p2pParameters.sessionTrustRoots?.let {
+            convertToKeyStore(certificateFactory, it) ?: return null
+        }
         if (sessionTrustStore == null && sessionPkiMode != P2PParameters.SessionPkiMode.NO_PKI) {
-            logger.warn("Session trust roots is unexpectedly null in the group policy for $holdingIdentity.")
+            logger.warn("Session trust roots is unexpectedly null in the group policy for $holdingIdentity. This can be caused by using " +
+                    "the wrong PKI mode.")
         }
 
         return GroupPolicyListener.GroupInfo(
@@ -94,27 +95,5 @@ internal class ForwardingGroupPolicyProvider(coordinatorFactory: LifecycleCoordi
             sessionPkiMode,
             sessionTrustStore
         )
-    }
-
-    private fun convertToKeyStore(pemCertificates: Collection<String>): KeyStore? {
-        return KeyStore.getInstance(KEY_STORE_TYPE).also { keyStore ->
-            keyStore.load(null, null)
-            pemCertificates.withIndex().forEach { (index, pemCertificate) ->
-                val certificate = ByteArrayInputStream(pemCertificate.toByteArray()).use {
-                    try {
-                        certificateFactory.generateCertificate(it)
-                    } catch (except: CertificateException) {
-                        logger.warn("Could not load session certificate: ${except.message}.")
-                        return null
-                    }
-                }
-                try {
-                    keyStore.setCertificateEntry("session-$index", certificate)
-                } catch (except: KeyStoreException) {
-                    logger.warn("Could not load session certificate into keystore: ${except.message}.")
-                    return null
-                }
-            }
-        }
     }
 }

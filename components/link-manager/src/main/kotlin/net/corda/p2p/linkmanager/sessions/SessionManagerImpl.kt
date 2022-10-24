@@ -171,7 +171,7 @@ internal class SessionManagerImpl(
     internal data class SessionManagerConfig(
         val maxMessageSize: Int,
         val sessionsPerCounterparties: Int,
-        val revocationConfigMode: RevocationCheckMode
+        val revocationConfigMode: RevocationCheckMode,
     )
 
     internal inner class SessionManagerConfigChangeHandler : ConfigurationChangeHandler<SessionManagerConfig>(

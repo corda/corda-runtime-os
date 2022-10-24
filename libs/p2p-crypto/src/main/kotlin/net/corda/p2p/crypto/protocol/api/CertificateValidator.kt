@@ -1,6 +1,7 @@
 package net.corda.p2p.crypto.protocol.api
 
 import net.corda.v5.base.types.MemberX500Name
+import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.ByteArrayInputStream
 import java.lang.IllegalArgumentException
@@ -18,14 +19,16 @@ import java.util.LinkedList
 
 class CertificateValidator(
     private val revocationCheckMode: RevocationCheckMode,
-    private val trustStore: KeyStore) {
+    private val trustStore: KeyStore,
+    private val certPathValidator: CertPathValidator = CertPathValidator.getInstance(certificateAlgorithm),
+    private val certificateFactory: CertificateFactory = CertificateFactory.getInstance(certificateFactoryType),
+) {
 
     private companion object {
         const val certificateAlgorithm = "PKIX"
         const val certificateFactoryType = "X.509"
+        val logger: Logger = LoggerFactory.getLogger(AllowAllRevocationChecker::class.java)
     }
-    private val certPathValidator = CertPathValidator.getInstance(certificateAlgorithm)
-    private val certificateFactory: CertificateFactory = CertificateFactory.getInstance(certificateFactoryType)
 
     @Suppress("ThrowsCount")
     fun validate(cert: List<String>, expectedX500Name: MemberX500Name) {
@@ -37,7 +40,7 @@ class CertificateValidator(
         //By convention, the certificates in a CertPath object of type X.509 are ordered starting with the target certificate
         //and ending with a certificate issued by the trust anchor. So we check the subjectX500Principal of the first certificate
         //matches the x500Name of the peer's identity.
-        val x500PrincipalFromCert = (certificateChain.certificates.first() as? X509Certificate)?.subjectX500Principal ?:
+        val x500PrincipalFromCert = (certificateChain.certificates.firstOrNull() as? X509Certificate)?.subjectX500Principal ?:
             throw InvalidPeerCertificate("Session certificate is not an X509 certificate.")
         val x500NameFromCert = try {
             MemberX500Name.build(x500PrincipalFromCert)
@@ -76,7 +79,6 @@ class CertificateValidator(
     }
 
     object AllowAllRevocationChecker : PKIXRevocationChecker() {
-        private val logger = LoggerFactory.getLogger(AllowAllRevocationChecker::class.java)
 
         override fun check(cert: Certificate?, unresolvedCritExts: MutableCollection<String>?) {
             logger.debug("Passing certificate check for: $cert")
