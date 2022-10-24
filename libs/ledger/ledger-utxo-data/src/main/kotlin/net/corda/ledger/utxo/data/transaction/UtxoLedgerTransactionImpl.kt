@@ -32,13 +32,13 @@ data class UtxoLedgerTransactionImpl(
     override val attachments: List<Attachment> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         wireTransaction
             .getComponentGroupList(UtxoComponentGroup.DATA_ATTACHMENTS.ordinal)
-            .map{serializationService.deserialize(it)}
+            .map { serializationService.deserialize(it) }
     }
 
     override val commands: List<Command> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         wireTransaction
             .getComponentGroupList(UtxoComponentGroup.COMMANDS.ordinal)
-            .map{serializationService.deserialize(it)}
+            .map { serializationService.deserialize(it) }
     }
 
     override val signatories: List<PublicKey> by lazy(LazyThreadSafetyMode.PUBLICATION) {
@@ -49,7 +49,7 @@ data class UtxoLedgerTransactionImpl(
     val inputStateRefs: List<StateRef> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         wireTransaction
             .getComponentGroupList(UtxoComponentGroup.INPUTS.ordinal)
-            .map{serializationService.deserialize(it)}
+            .map { serializationService.deserialize(it) }
     }
 
     override val inputStateAndRefs: List<StateAndRef<*>> by lazy(LazyThreadSafetyMode.PUBLICATION) {
@@ -60,7 +60,7 @@ data class UtxoLedgerTransactionImpl(
     val referenceInputStateRefs: List<StateRef> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         wireTransaction
             .getComponentGroupList(UtxoComponentGroup.REFERENCES.ordinal)
-            .map{serializationService.deserialize(it)}
+            .map { serializationService.deserialize(it) }
     }
 
     override val referenceInputStateAndRefs: List<StateAndRef<*>> by lazy(LazyThreadSafetyMode.PUBLICATION) {
@@ -71,7 +71,7 @@ data class UtxoLedgerTransactionImpl(
     private val outputsInfo: List<UtxoOutputInfoComponent> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         wireTransaction
             .getComponentGroupList(UtxoComponentGroup.OUTPUTS_INFO.ordinal)
-            .map{ serializationService.deserialize(it)}
+            .map { serializationService.deserialize(it) }
     }
 
     override val outputStateAndRefs: List<StateAndRef<*>> by lazy(LazyThreadSafetyMode.PUBLICATION) {

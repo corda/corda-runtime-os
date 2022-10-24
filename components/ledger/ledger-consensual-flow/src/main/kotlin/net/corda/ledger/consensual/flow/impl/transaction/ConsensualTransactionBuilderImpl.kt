@@ -99,9 +99,11 @@ class ConsensualTransactionBuilderImpl(
             .flatMap { it.participants }
             .distinct()
 
-        val componentGroupLists = mutableListOf<List<ByteArray>>()
-        for (componentGroupIndex in ConsensualComponentGroup.values()) {
-            componentGroupLists += when (componentGroupIndex) {
+        return ConsensualComponentGroup
+            .values()
+            .sorted()
+            .map { componentGroupIndex ->
+            when (componentGroupIndex) {
                 ConsensualComponentGroup.METADATA ->
                     listOf(
                         jsonMarshallingService.format(transactionMetaData)
@@ -117,7 +119,6 @@ class ConsensualTransactionBuilderImpl(
                     states.map { serializationService.serialize(currentSandboxGroup.getEvolvableTag(it::class.java)).bytes }
             }
         }
-        return componentGroupLists
     }
 
     override fun equals(other: Any?): Boolean {

@@ -43,7 +43,6 @@ data class UtxoTransactionBuilderImpl(
     private val currentSandboxGroup: SandboxGroup,
     // cpi defines what type of signing/hashing is used (related to the digital signature signing and verification stuff)
     private val transactionMetaData: TransactionMetaData,
-
     override val notary: Party,
     private val timeWindow: TimeWindow,
     private val attachments: List<SecureHash> = emptyList(),
@@ -157,7 +156,7 @@ data class UtxoTransactionBuilderImpl(
             timeWindow,
             /*TODO notaryallowlist*/
         )
-        val outputsInfo = outputTransactionStates.map{
+        val outputsInfo = outputTransactionStates.map {
             UtxoOutputInfoComponent(
                 it.encumbrance,
                 notary,
@@ -165,38 +164,48 @@ data class UtxoTransactionBuilderImpl(
                 currentSandboxGroup.getEvolvableTag(it.contractType)
             )
         }
-        val commandsInfo = commands.map{ listOf(
-            "", // TODO signers
-            currentSandboxGroup.getEvolvableTag(it.javaClass),
-        )}
-
-        val componentGroupLists = mutableListOf<List<ByteArray>>()
-        for (componentGroupIndex in UtxoComponentGroup.values()) {
-            componentGroupLists += when (componentGroupIndex) {
-                UtxoComponentGroup.METADATA ->
-                    listOf(
-                        jsonMarshallingService.format(transactionMetaData)
-                            .toByteArray(Charsets.UTF_8)
-                    ) // TODO(update with CORE-6890)
-                UtxoComponentGroup.NOTARY ->
-                    notaryGroup.map { serializationService.serialize(it).bytes }
-                UtxoComponentGroup.OUTPUTS_INFO ->
-                    outputsInfo.map { serializationService.serialize(it).bytes }
-                UtxoComponentGroup.COMMANDS_INFO ->
-                    commandsInfo.map { serializationService.serialize(it).bytes }
-                UtxoComponentGroup.DATA_ATTACHMENTS ->
-                    attachments.map { serializationService.serialize(it).bytes }
-                UtxoComponentGroup.INPUTS ->
-                    inputStateAndRefs.map { serializationService.serialize(it.ref).bytes }
-                UtxoComponentGroup.OUTPUTS ->
-                    outputTransactionStates.map { serializationService.serialize(it.contractState).bytes }
-                UtxoComponentGroup.COMMANDS ->
-                    commands.map { serializationService.serialize(it).bytes }
-                UtxoComponentGroup.REFERENCES ->
-                    referenceInputStateAndRefs.map { serializationService.serialize(it.ref).bytes }
-            }
+        val commandsInfo = commands.map {
+            listOf(
+                "", // TODO signers
+                currentSandboxGroup.getEvolvableTag(it.javaClass),
+            )
         }
-        return componentGroupLists
+
+        return UtxoComponentGroup
+            .values()
+            .sorted()
+            .map { componentGroupIndex ->
+                when (componentGroupIndex) {
+                    UtxoComponentGroup.METADATA ->
+                        listOf(
+                            jsonMarshallingService.format(transactionMetaData)
+                                .toByteArray(Charsets.UTF_8)
+                        ) // TODO(update with CORE-6890)
+                    UtxoComponentGroup.NOTARY ->
+                        notaryGroup.map { serializationService.serialize(it).bytes }
+
+                    UtxoComponentGroup.OUTPUTS_INFO ->
+                        outputsInfo.map { serializationService.serialize(it).bytes }
+
+                    UtxoComponentGroup.COMMANDS_INFO ->
+                        commandsInfo.map { serializationService.serialize(it).bytes }
+
+                    UtxoComponentGroup.DATA_ATTACHMENTS ->
+                        attachments.map { serializationService.serialize(it).bytes }
+
+                    UtxoComponentGroup.INPUTS ->
+                        inputStateAndRefs.map { serializationService.serialize(it.ref).bytes }
+
+                    UtxoComponentGroup.OUTPUTS ->
+                        outputTransactionStates.map { serializationService.serialize(it.contractState).bytes }
+
+                    UtxoComponentGroup.COMMANDS ->
+                        commands.map { serializationService.serialize(it).bytes }
+
+                    UtxoComponentGroup.REFERENCES ->
+                        referenceInputStateAndRefs.map { serializationService.serialize(it.ref).bytes }
+                }
+        }
     }
 
     @Suppress("ComplexMethod")
