@@ -76,7 +76,7 @@ fun createStaticMemberGroupPolicyJson(
 fun createMgmRegistrationContext(
     tlsTrustRoot: String,
     sessionKeyId: String,
-    ecdhKeyId: String = sessionKeyId,
+    ecdhKeyId: String,
     p2pUrl: String,
 ) = mapOf(
     "corda.session.key.id" to sessionKeyId,

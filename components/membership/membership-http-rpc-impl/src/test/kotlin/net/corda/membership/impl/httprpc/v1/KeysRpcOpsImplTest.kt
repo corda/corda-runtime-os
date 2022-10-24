@@ -7,9 +7,11 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_AFTER_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_BEFORE_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
+import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.httprpc.exception.InvalidInputDataException
+import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -27,6 +29,7 @@ import org.junit.jupiter.api.assertThrows
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -250,6 +253,21 @@ class KeysRpcOpsImplTest {
                 keysOps.generateKeyPair(tenantId = "tenantId", alias = "", hsmCategory = "category", scheme = "scheme")
             }.details
             assertThat(exceptionDetails).containsKey("alias")
+        }
+
+        @Test
+        fun `generateKeyPair throws exception for duplicate key`() {
+            whenever(cryptoOpsClient.generateKeyPair(any(), any(), any(), any(), any<Map<String, String>>()))
+                .doThrow(KeyAlreadyExistsException(""))
+
+            assertThrows<ResourceAlreadyExistsException> {
+                keysOps.generateKeyPair(
+                    tenantId = "tenantId",
+                    alias = "alias",
+                    hsmCategory = "category",
+                    scheme = "scheme",
+                )
+            }
         }
 
         @Test

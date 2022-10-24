@@ -1,5 +1,6 @@
 package net.corda.crypto.service.impl
 
+import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyOrderBy
 import net.corda.crypto.persistence.SigningKeyStore
@@ -236,7 +237,7 @@ class SigningServiceImpl(
         logger.info("generateKeyPair(tenant={}, category={}, alias={}))", tenantId, category, alias)
         val ref = cryptoServiceFactory.findInstance(tenantId = tenantId, category = category)
         if (alias != null && store.find(tenantId, alias) != null) {
-            throw IllegalStateException("The key with alias $alias already exist for tenant $tenantId")
+            throw KeyAlreadyExistsException("The key with alias $alias already exists for tenant $tenantId")
         }
         val generatedKey = ref.instance.generateKeyPair(
             KeyGenerationSpec(

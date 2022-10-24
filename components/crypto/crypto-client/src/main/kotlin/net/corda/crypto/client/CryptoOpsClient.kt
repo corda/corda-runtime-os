@@ -1,5 +1,6 @@
 package net.corda.crypto.client
 
+import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.lifecycle.Lifecycle
@@ -9,6 +10,7 @@ import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.SignatureSpec
 import java.security.KeyPair
 import java.security.PublicKey
+import kotlin.jvm.Throws
 
 /**
  * The crypto operations client to generate fresh keys, sign, find or filter public keys, some HSM related queries.
@@ -41,9 +43,11 @@ interface CryptoOpsClient : Lifecycle {
      * @param alias the tenant defined key alias for the key pair to be generated.
      * @param scheme the key's scheme code name describing which type of the key to generate.
      * @param context the optional key/value operation context.
+     * @throws [KeyAlreadyExistsException] if a key with the provided alias already exists for the tenant.
      *
      * @return The public part of the pair.
      */
+    @Throws(KeyAlreadyExistsException::class)
     fun generateKeyPair(
         tenantId: String,
         category: String,
@@ -61,9 +65,11 @@ interface CryptoOpsClient : Lifecycle {
      * @param externalId an id associated with the key, the service doesn't use any semantic beyond association.
      * @param scheme the key's scheme code name describing which type of the key to generate.
      * @param context the optional key/value operation context.
+     * @throws [KeyAlreadyExistsException] if a key with the provided alias already exists for the tenant.
      *
      * @return The public part of the pair.
      */
+    @Throws(KeyAlreadyExistsException::class)
     @Suppress("LongParameterList")
     fun generateKeyPair(
         tenantId: String,

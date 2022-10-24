@@ -4,5 +4,5 @@ import net.corda.messaging.api.records.Record
 import java.nio.ByteBuffer
 
 internal interface MessageHandler {
-    fun invoke(header: Any, payload: ByteBuffer): Record<*, *>
+    fun invoke(header: Any, payload: ByteBuffer): Record<*, *>?
 }
