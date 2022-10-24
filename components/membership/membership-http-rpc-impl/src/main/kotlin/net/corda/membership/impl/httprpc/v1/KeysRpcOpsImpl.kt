@@ -7,10 +7,12 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_AFTER_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_BEFORE_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
+import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.httprpc.PluggableRPCOps
 import net.corda.httprpc.exception.InvalidInputDataException
+import net.corda.httprpc.exception.ResourceAlreadyExistsException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
@@ -148,12 +150,18 @@ class KeysRpcOpsImpl @Activate constructor(
                 details = mapOf("alias" to "Empty alias")
             )
         }
-        return KeyPairIdentifier(cryptoOpsClient.generateKeyPair(
-            tenantId = tenantId,
-            category = hsmCategory.uppercase(),
-            alias = alias,
-            scheme = scheme
-        ).publicKeyId())
+        return try {
+            KeyPairIdentifier(
+                cryptoOpsClient.generateKeyPair(
+                    tenantId = tenantId,
+                    category = hsmCategory.uppercase(),
+                    alias = alias,
+                    scheme = scheme,
+                ).publicKeyId()
+            )
+        } catch (e: KeyAlreadyExistsException) {
+            throw ResourceAlreadyExistsException(e.message!!)
+        }
     }
 
     override fun generateKeyPem(

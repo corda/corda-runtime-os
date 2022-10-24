@@ -1,5 +1,6 @@
 package net.corda.crypto.component.impl
 
+import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.v5.crypto.exceptions.CryptoException
 import net.corda.v5.crypto.exceptions.CryptoRetryException
@@ -10,6 +11,7 @@ val exceptionFactories = mapOf<String, (String, Throwable) -> Throwable>(
     IllegalStateException::class.java.name to { m, e -> IllegalStateException(m, e) },
     CryptoSignatureException::class.java.name to { m, e -> CryptoSignatureException(m, e) },
     CryptoRetryException::class.java.name to { m, e -> CryptoRetryException(m, e) },
+    KeyAlreadyExistsException::class.java.name to { m, _ -> KeyAlreadyExistsException(m) },
 )
 
 fun CordaRPCAPIResponderException.toClientException() =

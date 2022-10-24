@@ -20,4 +20,5 @@ dependencies {
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:lifecycle:lifecycle")
     implementation project(":libs:messaging:messaging")
+    implementation project(':libs:crypto:crypto-core')
 }
