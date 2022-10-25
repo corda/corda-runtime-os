@@ -248,7 +248,7 @@
                         "user": {
                             "type": "object",
                             "default": {},
-                            "title": "the cluster database username",
+                            "title": "the cluster database user",
                             "required": [
                                 "value",
                                 "valueFrom"
@@ -258,7 +258,7 @@
                                 "value": {
                                     "type": "string",
                                     "default": "user",
-                                    "title": "the cluster db username",
+                                    "title": "the cluster database user value",
                                     "example": [{
                                         "value": "user"
                                     }]
@@ -266,34 +266,34 @@
                                 "valueFrom": {
                                     "type": "object",
                                     "default": {},
-                                    "title": "the username secret configuration",
+                                    "title": "the database user secret configuration; used in preference to value if name is set",
                                     "required": [
-                                        "secretkeyRef"
+                                        "secretKeyRef"
                                     ],
                                     "additionalProperties": false,
                                     "properties": {
-                                        "secretkeyRef": {
+                                        "secretKeyRef": {
                                             "type": "object",
                                             "default": {},
-                                            "title": "the username secret key reference",
+                                            "title": "the cluster database user secret key reference",
                                             "required": [
                                                 "name",
-                                                "usernameKey"
+                                                "key"
                                             ],
                                             "additionalProperties": false,
                                             "properties": {
                                                 "name": {
                                                     "type": "string",
                                                     "default": "",
-                                                    "title": "the username secret name",
+                                                    "title": "the cluster database user secret name",
                                                     "examples": [
                                                         ""
                                                     ]
                                                 },
-                                                "usernameKey": {
+                                                "key": {
                                                     "type": "string",
                                                     "default": "",
-                                                    "title": "the username secret key ",
+                                                    "title": "the cluster database user secret key  ",
                                                     "examples": [
                                                         ""
                                                     ]
@@ -303,9 +303,9 @@
                                     },
                                     "examples": [{
                                         "valueFrom:": {
-                                          "secretkeyRef": {
+                                          "secretKeyRef": {
                                               "name": "",
-                                              "usernameKey": ""
+                                              "key": ""
                                           }
                                         }
                                     }]
@@ -324,7 +324,7 @@
                         "password": {
                             "type": "object",
                             "default": {},
-                            "title": "the cluster database password",
+                            "title": "the cluster database password configuration",
                             "required": [
                                 "value",
                                 "valueFrom"
@@ -334,7 +334,7 @@
                                 "value": {
                                     "type": "string",
                                     "default": "user",
-                                    "title": "the cluster db password",
+                                    "title": "the cluster database password",
                                     "example": [{
                                         "value": "password"
                                     }]
@@ -342,34 +342,34 @@
                                 "valueFrom": {
                                     "type": "object",
                                     "default": {},
-                                    "title": "the password secret configuration",
+                                    "title": "the cluster database password secret configuration; used in preference to value if name is set",
                                     "required": [
-                                        "secretkeyRef"
+                                        "secretKeyRef"
                                     ],
                                     "additionalProperties": false,
                                     "properties": {
-                                        "secretkeyRef": {
+                                        "secretKeyRef": {
                                             "type": "object",
                                             "default": {},
-                                            "title": "the password secret key reference",
+                                            "title": "the cluster database password secret key reference",
                                             "required": [
                                                 "name",
-                                                "passwordKey"
+                                                "key"
                                             ],
                                             "additionalProperties": false,
                                             "properties": {
                                                 "name": {
                                                     "type": "string",
                                                     "default": "",
-                                                    "title": "the password secret name",
+                                                    "title": "the cluster database password secret name",
                                                     "examples": [
                                                         ""
                                                     ]
                                                 },
-                                                "passwordKey": {
+                                                "key": {
                                                     "type": "string",
                                                     "default": "",
-                                                    "title": "the password secret key ",
+                                                    "title": "the cluster database password secret key",
                                                     "examples": [
                                                         ""
                                                     ]
@@ -379,9 +379,9 @@
                                     },
                                     "examples": [{
                                         "valueFrom:": {
-                                          "secretkeyRef": {
+                                          "secretKeyRef": {
                                               "name": "",
-                                              "usernameKey": ""
+                                              "key": ""
                                           }
                                         }
                                     }]

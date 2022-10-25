@@ -399,12 +399,8 @@ Cluster DB user environment variable
 - name: PGUSER
   valueFrom:
     secretKeyRef:
-      name: {{ .Values.db.cluster.user.valueFrom.secretKeyRef.name }}
-      key: {{ .Values.db.cluster.user.valueFrom.secretKeyRef.key }}
-{{- else }}
-- name: PGUSER
-  value: {{ .Values.db.cluster.user.value }}
-{{- end }}
+      name: {{ .Values.db.cluster.user.valueFrom.secretKeyRef.name | default ( printf "%s-cluster-db" (include "corda.fullname" .) ) }}
+      key: {{ .Values.db.cluster.user.valueFrom.secretKeyRef.key | default "username"}}
 {{- end -}}
 
 {{/*
