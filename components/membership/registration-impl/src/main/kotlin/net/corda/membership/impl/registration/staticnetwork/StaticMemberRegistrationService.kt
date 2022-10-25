@@ -1,5 +1,7 @@
 package net.corda.membership.impl.registration.staticnetwork
 
+import java.nio.ByteBuffer
+import java.util.UUID
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.client.hsm.HSMRegistrationClient
@@ -74,8 +76,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.nio.ByteBuffer
-import java.util.UUID
 
 @Suppress("LongParameterList")
 @Component(service = [MemberRegistrationService::class])
@@ -139,12 +139,10 @@ class StaticMemberRegistrationService @Activate constructor(
         get() = coordinator.isRunning
 
     override fun start() {
-        logger.info("StaticMemberRegistrationService started.")
         coordinator.start()
     }
 
     override fun stop() {
-        logger.info("StaticMemberRegistrationService stopped.")
         coordinator.stop()
     }
 

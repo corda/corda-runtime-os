@@ -1,5 +1,6 @@
 package net.corda.membership.impl.grouppolicy
 
+import java.util.concurrent.ConcurrentHashMap
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpiinfo.read.CpiInfoReadService
@@ -35,6 +36,7 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
@@ -42,7 +44,6 @@ import net.corda.virtualnode.toCorda
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("LongParameterList")
 @Component(service = [GroupPolicyProvider::class])
@@ -110,10 +111,8 @@ class GroupPolicyProviderImpl @Activate constructor(
      */
     @Suppress("ComplexMethod")
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.info("Group policy provider received event $event.")
         when (event) {
             is StartEvent -> {
-                logger.info("Processing start event.")
                 dependencyServiceRegistration?.close()
                 dependencyServiceRegistration = coordinator.followStatusChangesByName(
                     setOf(
@@ -125,7 +124,6 @@ class GroupPolicyProviderImpl @Activate constructor(
                 )
             }
             is StopEvent -> {
-                logger.info("Processing stop event.")
                 deactivate("Stopping component.")
                 dependencyServiceRegistration?.close()
                 dependencyServiceRegistration = null
@@ -136,9 +134,7 @@ class GroupPolicyProviderImpl @Activate constructor(
                 configHandle = null
             }
             is RegistrationStatusChangeEvent -> {
-                logger.info("Group policy provider handling registration change. Event status: ${event.status}")
                 if (event.status == LifecycleStatus.UP) {
-                    logger.info("Dependency services are UP. Registering to receive configuration.")
                     configHandle?.close()
                     configHandle = configurationReadService.registerComponentForUpdates(
                         coordinator,
@@ -196,10 +192,10 @@ class GroupPolicyProviderImpl @Activate constructor(
         ) = try {
             groupPolicies.computeIfAbsent(holdingIdentity) { parseGroupPolicy(it) }
         } catch (e: BadGroupPolicyException) {
-            logger.error("Could not parse group policy file for holding identity [$holdingIdentity].", e)
+            logger.warn("Could not parse group policy file for holding identity [$holdingIdentity].", e)
             null
         } catch (e: Throwable) {
-            logger.error("Unexpected exception occurred when retrieving group policy file for " +
+            logger.warn("Unexpected exception occurred when retrieving group policy file for " +
                     "holding identity [$holdingIdentity].", e)
             null
         }
@@ -224,7 +220,7 @@ class GroupPolicyProviderImpl @Activate constructor(
                     val groupPolicyToStore = try {
                         parseGroupPolicy(it, virtualNodeInfo = snapshot[it])
                     } catch (e: Exception) {
-                        logger.error(
+                        logger.warn(
                             "Failure to parse group policy after change in virtual node info. " +
                                     "Check the format of the group policy in use for virtual node with ID [${it.shortHash}]. " +
                                     "Caught exception: ", e
@@ -238,12 +234,12 @@ class GroupPolicyProviderImpl @Activate constructor(
                     if(groupPolicyToStore == null) {
                         groupPolicies.remove(it)
                     } else if (groupPolicyToStore !is MGMGroupPolicy) {
-                        logger.info("Caching group policy for member.")
+                        logger.debug("Caching group policy for member.")
                         groupPolicies[it] = groupPolicyToStore
                         listeners.values.forEach { listener ->
                             listener.callBack(it, groupPolicies[it]!!)
                         }
-                        logger.info("Returning new group policy after change in virtual node information.")
+                        logger.debug("Returning new group policy after change in virtual node information.")
                     }
                 }
             }
@@ -307,14 +303,14 @@ class GroupPolicyProviderImpl @Activate constructor(
         : DurableProcessor<String, MembershipEvent> {
         @Suppress("NestedBlockDepth")
         override fun onNext(events: List<Record<String, MembershipEvent>>): List<Record<*, *>> {
-            logger.info("Received event after mgm registration.")
+            logger.debug { "Received event after mgm registration." }
             events.forEach {record ->
                 try {
                     record.value
                         ?: throw CordaRuntimeException("MembershipEvent with record key: ${record.key} was null.")
                     when(record.value!!.event) {
                         is MgmOnboarded -> {
-                            logger.info("Processing mgm onboarded event.")
+                            logger.debug { "Processing mgm onboarded event." }
                             val event = record.value!!.event as MgmOnboarded
                             val holdingIdentity = event.onboardedMgm.toCorda()
                             val gp = parseGroupPolicy(holdingIdentity)
@@ -325,7 +321,7 @@ class GroupPolicyProviderImpl @Activate constructor(
                                             "we didn't receive an MGM group policy."
                                 )
                             }
-                            logger.info("Caching group policy for MGM.")
+                            logger.debug { "Caching group policy for MGM." }
                             groupPolicies[holdingIdentity] = gp
                             callBack(holdingIdentity, gp)
                         }

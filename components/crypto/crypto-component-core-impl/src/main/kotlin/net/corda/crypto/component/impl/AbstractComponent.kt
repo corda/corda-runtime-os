@@ -57,7 +57,6 @@ abstract class AbstractComponent<IMPL : AbstractComponent.AbstractImpl>(
 
     @Suppress("ComplexMethod", "NestedBlockDepth")
     protected open fun eventHandler(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.info("LifecycleEvent received: $event")
         when (event) {
             is StartEvent -> {
                 upstream.follow(coordinator)
@@ -69,14 +68,12 @@ abstract class AbstractComponent<IMPL : AbstractComponent.AbstractImpl>(
                 if (upstream.handle(event) == DependenciesTracker.EventHandling.HANDLED) {
                     if(_impl != null) {
                         val status = if(upstream.isUp) LifecycleStatus.UP else LifecycleStatus.DOWN
-                        logger.trace { "RegistrationStatusChangeEvent - setting as $status."}
                         coordinator.updateStatus(status)
                         _impl?.onRegistrationStatusChange(upstream.isUp)
                     } else {
                         if (upstream.isUp) {
                             doActivate(coordinator)
                         } else {
-                            logger.trace { "RegistrationStatusChangeEvent - setting as DOWN." }
                             coordinator.updateStatus(LifecycleStatus.DOWN)
                         }
                     }
@@ -104,7 +101,7 @@ abstract class AbstractComponent<IMPL : AbstractComponent.AbstractImpl>(
     }
 
     private fun doActivate(coordinator: LifecycleCoordinator) {
-        logger.info("Creating active implementation")
+        logger.trace { "Creating active implementation" }
         try {
             _impl = createActiveImpl()
             activationFailureCounter.set(0)
@@ -114,7 +111,7 @@ abstract class AbstractComponent<IMPL : AbstractComponent.AbstractImpl>(
             return
         } catch (e: Throwable) {
             if(activationFailureCounter.incrementAndGet() <= 5) {
-                logger.warn("Failed activate..., will try again", e)
+                logger.debug("Failed activate..., will try again", e)
                 coordinator.postEvent(TryAgainCreateActiveImpl())
             } else {
                 logger.error("Failed activate, giving up", e)
