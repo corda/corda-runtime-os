@@ -7,6 +7,7 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_AFTER_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_BEFORE_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
+import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
@@ -38,6 +39,14 @@ import java.security.PublicKey
 import java.time.Instant
 
 class KeysRpcOpsImplTest {
+    private companion object {
+        val TENANT_ID = "tenantId"
+        val CATEGORY = "CATEGORY"
+        val ALIAS = "alias"
+        val SCHEME = "scheme"
+        val EXCEPTION_MSG = "exception happened"
+    }
+
     private val cryptoOpsClient = mock<CryptoOpsClient>()
     private val keyEncodingService = mock<KeyEncodingService>()
     private val coordinator = mock<LifecycleCoordinator>()
@@ -68,13 +77,13 @@ class KeysRpcOpsImplTest {
                     on { masterKeyAlias } doReturn mka
                 }
             }
-            whenever(cryptoOpsClient.lookup("id", 4, 400, CryptoKeyOrderBy.ALIAS, emptyMap())).doReturn(keys)
+            whenever(cryptoOpsClient.lookup(TENANT_ID, 4, 400, CryptoKeyOrderBy.ALIAS, emptyMap())).doReturn(keys)
 
             val list = keysOps.listKeys(
-                tenantId = "id",
+                tenantId = TENANT_ID,
                 skip = 4,
                 take = 400,
-                orderBy = "alias",
+                orderBy = ALIAS,
                 category = null,
                 alias = null,
                 masterKeyAlias = null,
@@ -119,10 +128,10 @@ class KeysRpcOpsImplTest {
             whenever(cryptoOpsClient.lookup(any(), any())).doReturn(keys)
 
             val list = keysOps.listKeys(
-                tenantId = "id",
+                tenantId = TENANT_ID,
                 skip = 4,
                 take = 400,
-                orderBy = "alias",
+                orderBy = ALIAS,
                 category = null,
                 alias = null,
                 masterKeyAlias = null,
@@ -149,7 +158,7 @@ class KeysRpcOpsImplTest {
         fun `listKeys with invalid order by will throw an exception`() {
             assertThrows<ResourceNotFoundException> {
                 keysOps.listKeys(
-                    tenantId = "id",
+                    tenantId = TENANT_ID,
                     skip = 4,
                     take = 400,
                     orderBy = "nopp",
@@ -170,10 +179,10 @@ class KeysRpcOpsImplTest {
             whenever(cryptoOpsClient.lookup(any(), any(), any(), any(), filterMap.capture())).doReturn(emptyList())
 
             keysOps.listKeys(
-                tenantId = "id",
+                tenantId = TENANT_ID,
                 skip = 4,
                 take = 400,
-                orderBy = "alias",
+                orderBy = ALIAS,
                 category = "c1",
                 alias = "a1",
                 masterKeyAlias = "mka1",
@@ -196,10 +205,10 @@ class KeysRpcOpsImplTest {
         fun `listKeys will throw an exception for invalid before time`() {
             assertThrows<ResourceNotFoundException> {
                 keysOps.listKeys(
-                    tenantId = "id",
+                    tenantId = TENANT_ID,
                     skip = 4,
                     take = 400,
-                    orderBy = "alias",
+                    orderBy = ALIAS,
                     category = null,
                     alias = null,
                     masterKeyAlias = null,
@@ -215,10 +224,10 @@ class KeysRpcOpsImplTest {
         fun `listKeys will throw an exception for invalid after time`() {
             assertThrows<ResourceNotFoundException> {
                 keysOps.listKeys(
-                    tenantId = "id",
+                    tenantId = TENANT_ID,
                     skip = 4,
                     take = 400,
-                    orderBy = "alias",
+                    orderBy = ALIAS,
                     category = null,
                     alias = null,
                     masterKeyAlias = null,
@@ -235,9 +244,9 @@ class KeysRpcOpsImplTest {
             val publicKey = mock<PublicKey> {
                 on { encoded } doReturn byteArrayOf(1, 2, 3)
             }
-            whenever(cryptoOpsClient.generateKeyPair("tenantId", "CATEGORY", "alias", "scheme")).doReturn(publicKey)
+            whenever(cryptoOpsClient.generateKeyPair(TENANT_ID, CATEGORY.uppercase(), ALIAS, SCHEME)).doReturn(publicKey)
 
-            val id = keysOps.generateKeyPair(tenantId = "tenantId", alias = "alias", hsmCategory = "category", scheme = "scheme")
+            val id = keysOps.generateKeyPair(tenantId = TENANT_ID, alias = ALIAS, hsmCategory = CATEGORY, scheme = SCHEME)
 
             assertThat(id).isEqualTo(KeyPairIdentifier(publicKey.publicKeyId()))
         }
@@ -247,12 +256,12 @@ class KeysRpcOpsImplTest {
             val publicKey = mock<PublicKey> {
                 on { encoded } doReturn byteArrayOf(1, 2, 3)
             }
-            whenever(cryptoOpsClient.generateKeyPair("tenantId", "CATEGORY", "alias", "scheme")).doReturn(publicKey)
+            whenever(cryptoOpsClient.generateKeyPair(TENANT_ID, CATEGORY.uppercase(), ALIAS, SCHEME)).doReturn(publicKey)
 
             val exceptionDetails = assertThrows<InvalidInputDataException> {
-                keysOps.generateKeyPair(tenantId = "tenantId", alias = "", hsmCategory = "category", scheme = "scheme")
+                keysOps.generateKeyPair(tenantId = TENANT_ID, alias = "", hsmCategory = CATEGORY, scheme = SCHEME)
             }.details
-            assertThat(exceptionDetails).containsKey("alias")
+            assertThat(exceptionDetails).containsKey(ALIAS)
         }
 
         @Test
@@ -262,10 +271,10 @@ class KeysRpcOpsImplTest {
 
             assertThrows<ResourceAlreadyExistsException> {
                 keysOps.generateKeyPair(
-                    tenantId = "tenantId",
-                    alias = "alias",
-                    hsmCategory = "category",
-                    scheme = "scheme",
+                    tenantId = TENANT_ID,
+                    alias = ALIAS,
+                    hsmCategory = CATEGORY,
+                    scheme = SCHEME,
                 )
             }
         }
@@ -301,11 +310,21 @@ class KeysRpcOpsImplTest {
 
         @Test
         fun `listSchemes return list of schemes`() {
-            whenever(cryptoOpsClient.getSupportedSchemes("id", "CATEGORY")).doReturn(listOf("one", "two"))
+            whenever(cryptoOpsClient.getSupportedSchemes(TENANT_ID, CATEGORY.uppercase())).doReturn(listOf("one", "two"))
 
-            val schemes = keysOps.listSchemes("id", "category")
+            val schemes = keysOps.listSchemes(TENANT_ID, CATEGORY)
 
             assertThat(schemes).containsExactlyInAnyOrder("one", "two")
+        }
+
+        @Test
+        fun `InvalidParamsException is mapped to InvalidInputException`() {
+            whenever(cryptoOpsClient.generateKeyPair(TENANT_ID, CATEGORY, ALIAS, SCHEME))
+                .thenThrow(InvalidParamsException(EXCEPTION_MSG))
+            val ex = assertThrows<InvalidInputDataException> {
+                keysOps.generateKeyPair(TENANT_ID, ALIAS, CATEGORY, SCHEME)
+            }
+            assertThat(ex.message).contains(EXCEPTION_MSG)
         }
     }
 
