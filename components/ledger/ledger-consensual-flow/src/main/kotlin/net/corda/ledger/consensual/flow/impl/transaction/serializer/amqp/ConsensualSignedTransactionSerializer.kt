@@ -1,4 +1,4 @@
-package net.corda.ledger.consensual.flow.impl.transaction.amqp
+package net.corda.ledger.consensual.flow.impl.transaction.serializer.amqp
 
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl

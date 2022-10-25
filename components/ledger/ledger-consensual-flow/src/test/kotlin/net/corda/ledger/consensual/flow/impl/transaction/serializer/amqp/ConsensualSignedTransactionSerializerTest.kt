@@ -7,7 +7,7 @@ import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.data.transaction.serializer.amqp.WireTransactionSerializer
 import net.corda.ledger.common.testkit.mockSigningService
-import net.corda.ledger.consensual.flow.impl.transaction.amqp.ConsensualSignedTransactionSerializer
+import net.corda.ledger.consensual.flow.impl.transaction.serializer.amqp.ConsensualSignedTransactionSerializer
 import net.corda.ledger.consensual.testkit.getConsensualSignedTransactionExample
 import net.corda.v5.application.serialization.deserialize
 import org.junit.jupiter.api.Assertions
