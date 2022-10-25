@@ -98,7 +98,10 @@ class MembershipP2PReadServiceImpl @Activate constructor(
                         coordinator.updateStatus(LifecycleStatus.UP, "Started subscription for incoming P2P messages.")
                     }
                 } else {
-                    coordinator.updateStatus(LifecycleStatus.DOWN, "Setting deactive state due to receiving registration status ${event.status}")
+                    coordinator.updateStatus(
+                        LifecycleStatus.DOWN,
+                        "Setting deactive state due to receiving registration status ${event.status}"
+                    )
                     stopSubscriptions()
                 }
             }
