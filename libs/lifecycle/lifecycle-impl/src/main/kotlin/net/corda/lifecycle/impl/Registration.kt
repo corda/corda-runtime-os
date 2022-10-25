@@ -69,8 +69,8 @@ internal class Registration(
             coordinatorStatusMap[coordinator] = status
             val newState = currentStatus
             if (!isClosed.get() && oldState != newState) {
-                val message = "RegistrationStatusChangeEvent: Coordinator ${registeringCoordinator.name} registration status changing from " +
-                        "$oldState to $newState due to ${coordinator.name} changing to state $status"
+                val message = "RegistrationStatusChangeEvent: Coordinator ${registeringCoordinator.name} " +
+                        "registration status changing from $oldState to $newState due to ${coordinator.name} changing to state $status"
                 //TODO - should this be error if newState is ERROR?
                 if (newState == LifecycleStatus.ERROR) { logger.error(message) } else { logger.info(message) }
                 registeringCoordinator.postEvent(RegistrationStatusChangeEvent(this, newState))

@@ -124,7 +124,8 @@ abstract class AbstractConfigurableComponent<IMPL : AbstractConfigurableComponen
                 } else {
                     bootConfig = event.config
                     if(unprocessedConfigChanges.isNotEmpty()) {
-                        logger.trace { "Processing ${event::class.java.simpleName} as the component is ready and already received the ${event::class.java.simpleName}" }
+                        logger.trace { "Processing ${event::class.java.simpleName} as the component is ready " +
+                                "and already received the ${event::class.java.simpleName}" }
                         unprocessedConfigChanges.forEach {
                             onConfigChange(it, coordinator)
                         }
