@@ -259,8 +259,10 @@ class VirtualNodeWriterProcessorTests {
 
     @Test
     fun `runs empty CPI DB Migrations`() {
+        val fakeId = UUID.randomUUID()
         val changeLog = mock<CpkDbChangeLogEntity> {
             on { id } doReturn CpkDbChangeLogKey("alpha", "1", "0", "stuff.xml")
+            on { changesetId } doReturn fakeId
         }
         Mockito.mockConstruction(VirtualNodeDbChangeLog::class.java).use { vndcl ->
             Mockito.mockConstruction(LiquibaseSchemaMigratorImpl::class.java).use { liquibaseSchemaMigratorImpl ->
@@ -279,7 +281,7 @@ class VirtualNodeWriterProcessorTests {
                 assertEquals(liquibaseSchemaMigratorImpl.constructed().size, 1)
                 verify(liquibaseSchemaMigratorImpl.constructed().first()).updateDb(any(), argThat { dbChange ->
                     dbChange.masterChangeLogFiles.isEmpty()
-                }, eq(null))
+                }, eq(fakeId?.toString()))
             }
         }
     }
