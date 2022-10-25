@@ -115,4 +115,3 @@ class LiquibaseExtractorHelpers {
         return CpkDbChangeLogEntity(id, cpk.metadata.fileChecksum.toString(), xmlContent, changesetID)
     }
 }
-

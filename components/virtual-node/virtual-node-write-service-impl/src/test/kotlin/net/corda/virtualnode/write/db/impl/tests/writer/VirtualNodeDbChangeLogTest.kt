@@ -5,7 +5,6 @@ import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbChangeLog
 import org.assertj.core.api.Assertions.assertThat
-import org.bouncycastle.asn1.x500.style.RFC4519Style.uid
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.util.UUID

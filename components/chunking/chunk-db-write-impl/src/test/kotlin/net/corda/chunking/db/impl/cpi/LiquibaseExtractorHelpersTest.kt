@@ -154,6 +154,7 @@ internal class LiquibaseExtractorHelpersTest {
             SecureHash.parse("ALGO:0987654321")
         )
 
+
         val obj = LiquibaseExtractorHelpers()
         val entities = jarWithOtherXmlResource().inputStream().use { obj.getEntities(cpk, it, fakeId) }
 

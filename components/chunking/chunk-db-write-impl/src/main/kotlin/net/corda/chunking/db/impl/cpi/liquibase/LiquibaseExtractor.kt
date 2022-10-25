@@ -42,6 +42,7 @@ class LiquibaseExtractor {
             LiquibaseExtractorHelpers().getEntities(cpk, it, changesetId)
         }
         log.info("Extracting liquibase files finished for ${cpk.metadata.cpkId}")
+
         return entities
     }
 }

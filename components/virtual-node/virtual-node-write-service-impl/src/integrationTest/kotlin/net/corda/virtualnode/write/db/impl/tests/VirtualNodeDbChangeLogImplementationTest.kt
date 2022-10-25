@@ -8,7 +8,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbChangeLog
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
-import org.bouncycastle.asn1.x500.style.RFC4519Style.uid
 import org.junit.jupiter.api.Test
 import java.util.UUID
 
