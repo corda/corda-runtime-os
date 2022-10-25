@@ -4,7 +4,7 @@ import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.TransactionMetaData
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.data.transaction.createTransactionSignature
+import net.corda.ledger.common.flow.impl.transaction.createTransactionSignature
 import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
 import net.corda.sandbox.SandboxGroup
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
