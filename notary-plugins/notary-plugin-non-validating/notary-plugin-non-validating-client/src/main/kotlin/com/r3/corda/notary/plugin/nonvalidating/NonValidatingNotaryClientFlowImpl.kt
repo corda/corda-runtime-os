@@ -12,9 +12,9 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.ledger.common.Party
-import net.corda.v5.ledger.notary.pluggable.NotarisationRequestSignature
-import net.corda.v5.ledger.notary.pluggable.NotarisationResponse
-import net.corda.v5.ledger.notary.pluggable.PluggableNotaryClientFlow
+import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
+import net.corda.v5.ledger.notary.plugin.core.NotarisationRequestSignature
+import net.corda.v5.ledger.notary.plugin.core.NotarisationResponse
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import org.slf4j.LoggerFactory
 

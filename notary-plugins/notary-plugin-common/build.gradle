@@ -1,0 +1,23 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+    id 'corda.osgi-test-conventions'
+}
+
+description 'Corda Notary Plugins Common Functionality'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
+
+    implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+
+    api "net.corda:corda-application"
+    api "net.corda:corda-cipher-suite"
+    api "net.corda:corda-notary-plugin"
+    api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+}
+
+
+

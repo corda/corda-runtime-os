@@ -1,8 +1,8 @@
 package com.r3.corda.notary.plugin.common
 
 import net.corda.v5.base.annotations.CordaSerializable
-import net.corda.v5.ledger.notary.pluggable.NotarisationPayload
-import net.corda.v5.ledger.notary.pluggable.NotarisationRequestSignature
+import net.corda.v5.ledger.notary.plugin.api.NotarisationPayload
+import net.corda.v5.ledger.notary.plugin.core.NotarisationRequestSignature
 
 /**
  * A generic [NotarisationPayload] implementation that acts as a "base" class for multiple notarisation payloads.

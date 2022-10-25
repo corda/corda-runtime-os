@@ -2,7 +2,7 @@ package com.r3.corda.notary.plugin.common
 
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.uniqueness.model.UniquenessCheckError
-import net.corda.v5.ledger.notary.pluggable.NotarisationResponse
+import net.corda.v5.ledger.notary.plugin.core.NotarisationResponse
 
 data class NotarisationResponseImpl(
     override val signatures: List<DigitalSignatureAndMetadata>,
