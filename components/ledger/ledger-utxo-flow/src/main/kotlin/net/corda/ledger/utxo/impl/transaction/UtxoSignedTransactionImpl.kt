@@ -1,5 +1,6 @@
 package net.corda.ledger.utxo.impl.transaction
 
+import net.corda.ledger.common.data.transaction.SignableData
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -7,6 +8,7 @@ import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.isFulfilledBy
 import net.corda.v5.ledger.utxo.transaction.UtxoLedgerTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
@@ -37,9 +39,25 @@ data class UtxoSignedTransactionImpl(
     }
 
     override fun getMissingSignatories(): Set<PublicKey> {
-        val appliedSignatories = signatures.map { it.by }.toSet()
+        val appliedSignatories = signatures.filter{
+            try {
+                // TODO Signature spec to be determined internally by crypto code
+                val signedData = SignableData(id, it.metadata)
+                digitalSignatureVerificationService.verify(
+                    publicKey = it.by,
+                    signatureSpec = SignatureSpec.ECDSA_SHA256,
+                    signatureData = it.signature.bytes,
+                    clearData = serializationService.serialize(signedData).bytes
+                )
+                true
+            } catch (e: Exception) {
+                false
+            }
+        }.map { it.by }.toSet()
         val requiredSignatories = toLedgerTransaction().signatories
-        return requiredSignatories.filter { !it.isFulfilledBy(appliedSignatories) }.toSet()
+        return requiredSignatories.filter {
+            !it.isFulfilledBy(appliedSignatories) // isFulfilledBy() helps to make this working with CompositeKeys.
+        }.toSet()
     }
 
     override fun toLedgerTransaction(): UtxoLedgerTransaction {

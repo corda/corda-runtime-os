@@ -73,9 +73,25 @@ class ConsensualSignedTransactionImpl(
             wireTransaction, signatures + signature)
 
     override fun getMissingSignatories(): Set<PublicKey> {
-        val alreadySigned = signatures.map{it.by}.toSet()
-        val requiredSigningKeys = this.toLedgerTransaction().requiredSigningKeys
-        return requiredSigningKeys.filter { !it.isFulfilledBy(alreadySigned) }.toSet()
+        val appliedSignatories = signatures.filter{
+            try {
+                // TODO Signature spec to be determined internally by crypto code
+                val signedData = SignableData(id, it.metadata)
+                digitalSignatureVerificationService.verify(
+                    publicKey = it.by,
+                    signatureSpec = SignatureSpec.ECDSA_SHA256,
+                    signatureData = it.signature.bytes,
+                    clearData = serializationService.serialize(signedData).bytes
+                )
+                true
+            } catch (e: Exception) {
+                false
+            }
+        }.map { it.by }.toSet()
+        val requiredSignatories = this.toLedgerTransaction().requiredSignatories
+        return requiredSignatories.filter {
+            !it.isFulfilledBy(appliedSignatories) // isFulfilledBy() helps to make this working with CompositeKeys.
+        }.toSet()
     }
 
     override fun verifySignatures() {
