@@ -1,5 +1,6 @@
 package net.corda.permissions.storage.reader.internal
 
+import javax.persistence.EntityManagerFactory
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.db.connection.manager.DbConnectionManager
@@ -29,7 +30,6 @@ import net.corda.schema.configuration.ReconciliationConfig.RECONCILIATION_PERMIS
 import net.corda.utilities.VisibleForTesting
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.trace
-import javax.persistence.EntityManagerFactory
 
 @Suppress("LongParameterList")
 class PermissionStorageReaderServiceEventHandler(
@@ -81,7 +81,6 @@ class PermissionStorageReaderServiceEventHandler(
     }
 
     private fun onStartEvent(coordinator: LifecycleCoordinator) {
-        log.info("Start event received, following dependencies for status updates.")
         registrationHandle?.close()
         registrationHandle = coordinator.followStatusChangesByName(
             setOf(
@@ -96,7 +95,6 @@ class PermissionStorageReaderServiceEventHandler(
     }
 
     private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent, coordinator: LifecycleCoordinator) {
-        log.info("Registration status change event received: ${event.status}.")
         when (event.status) {
             LifecycleStatus.UP -> {
                 crsSub = configurationReadService.registerComponentForUpdates(
@@ -137,7 +135,6 @@ class PermissionStorageReaderServiceEventHandler(
     }
 
     private fun onStopEvent(coordinator: LifecycleCoordinator) {
-        log.info("Stop Event received")
         permissionValidationCacheService.stop()
         permissionManagementCacheService.stop()
         publisher?.close()
