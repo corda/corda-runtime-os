@@ -127,11 +127,8 @@ java -jar -Dco.paralleluniverse.fibers.verifyInstrumentation=true \
 
 ### From IntelliJ IDE
 
-Use one of the following run configuratons:
-
-- `Combined Worker Local (no debug)` (no debug agent attached)
-- `Combined Worker Local (debug agent 5005)` (debug agent attached and exposed on port 5005)
-- `Combined Worker Local (suspend debug agent 5005)` (debug agent attached, exposed on port 5005 and suspended on start)
+Run or debug the `Combined Worker Local` target. If you want to break into the debugger at startup, set a breakpoint
+on the [CombinerWorker.kt startup method](src/main/kotlin/net/corda/applications/workers/combined/CombinedWorker.kt).
 
 ## Interact with the worker
 
