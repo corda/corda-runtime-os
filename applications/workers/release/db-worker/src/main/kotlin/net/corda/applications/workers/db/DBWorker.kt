@@ -1,14 +1,13 @@
 package net.corda.applications.workers.db
 
-import net.corda.applications.workers.workercommon.DefaultWorkerParams
-import net.corda.applications.workers.workercommon.WorkerMonitor
-import net.corda.applications.workers.workercommon.JavaSerialisationFilter
-import net.corda.applications.workers.workercommon.PathAndConfig
+import net.corda.applications.workers.workercommon.*
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBootstrapConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
+import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.loggerStartupInfo
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupMonitor
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.db.DBProcessor
@@ -34,7 +33,9 @@ class DBWorker @Activate constructor(
     @Reference(service = WorkerMonitor::class)
     private val workerMonitor: WorkerMonitor,
     @Reference(service = ConfigurationValidatorFactory::class)
-    private val configurationValidatorFactory: ConfigurationValidatorFactory
+    private val configurationValidatorFactory: ConfigurationValidatorFactory,
+    @Reference(service = PlatformInfoProvider::class)
+    val platformInfoProvider: PlatformInfoProvider
 ) : Application {
 
     private companion object {
@@ -44,6 +45,8 @@ class DBWorker @Activate constructor(
     /** Parses the arguments, then initialises and starts the [processor]. */
     override fun startup(args: Array<String>) {
         logger.info("DB worker starting.")
+        logger.loggerStartupInfo(args, platformInfoProvider)
+
         JavaSerialisationFilter.install()
 
         val params = getParams(args, DBWorkerParams())

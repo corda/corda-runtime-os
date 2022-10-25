@@ -7,11 +7,13 @@ import net.corda.applications.workers.workercommon.JavaSerialisationFilter
 import net.corda.applications.workers.workercommon.PathAndConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBootstrapConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
+import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.loggerStartupInfo
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupMonitor
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.crypto.core.CryptoConsts.SOFT_HSM_ID
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.crypto.CryptoProcessor
@@ -57,7 +59,9 @@ class CombinedWorker @Activate constructor(
     @Reference(service = WorkerMonitor::class)
     private val workerMonitor: WorkerMonitor,
     @Reference(service = ConfigurationValidatorFactory::class)
-    private val configurationValidatorFactory: ConfigurationValidatorFactory
+    private val configurationValidatorFactory: ConfigurationValidatorFactory,
+    @Reference(service = PlatformInfoProvider::class)
+    val platformInfoProvider: PlatformInfoProvider
 ) : Application {
 
     private companion object {
@@ -68,6 +72,7 @@ class CombinedWorker @Activate constructor(
     @Suppress("ComplexMethod")
     override fun startup(args: Array<String>) {
         logger.info("Combined worker starting.")
+        logger.loggerStartupInfo(args, platformInfoProvider)
 
         if (System.getProperty("co.paralleluniverse.fibers.verifyInstrumentation") == true.toString()) {
             logger.info("Quasar's instrumentation verification is enabled")

@@ -6,11 +6,13 @@ import net.corda.applications.workers.workercommon.JavaSerialisationFilter
 import net.corda.applications.workers.workercommon.PathAndConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBootstrapConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
+import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.loggerStartupInfo
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupMonitor
 import net.corda.crypto.config.impl.createCryptoBootstrapParamsMap
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Application
 import net.corda.osgi.api.Shutdown
 import net.corda.processors.crypto.CryptoProcessor
@@ -34,7 +36,9 @@ class CryptoWorker @Activate constructor(
     @Reference(service = WorkerMonitor::class)
     private val workerMonitor: WorkerMonitor,
     @Reference(service = ConfigurationValidatorFactory::class)
-    private val configurationValidatorFactory: ConfigurationValidatorFactory
+    private val configurationValidatorFactory: ConfigurationValidatorFactory,
+    @Reference(service = PlatformInfoProvider::class)
+    val platformInfoProvider: PlatformInfoProvider
 ) : Application {
 
     private companion object {
@@ -43,6 +47,8 @@ class CryptoWorker @Activate constructor(
 
     override fun startup(args: Array<String>) {
         logger.info("Crypto worker starting.")
+        logger.loggerStartupInfo(args, platformInfoProvider)
+
         JavaSerialisationFilter.install()
         val params = getParams(args, CryptoWorkerParams())
         if (printHelpOrVersion(params.defaultParams, CryptoWorker::class.java, shutDownService)) {

@@ -2,10 +2,10 @@ package net.corda.applications.workers.workercommon
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
-import java.io.InputStream
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.validation.ConfigurationValidator
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Shutdown
 import net.corda.schema.configuration.BootConfig.BOOT_DB
 import net.corda.schema.configuration.BootConfig.BOOT_KAFKA_COMMON
@@ -16,7 +16,11 @@ import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.osgi.framework.FrameworkUtil
+import org.slf4j.Logger
 import picocli.CommandLine
+import java.io.InputStream
+import java.lang.management.ManagementFactory
+
 
 /** Associates a configuration key/value map with the path at which the configuration should be stored. */
 data class PathAndConfig(val path: String, val config: Map<String, String>)
@@ -131,6 +135,37 @@ class WorkerHelpers {
             }
 
             return false
+        }
+
+        /**
+         * Logs info about Worker startup process, from worker [args] and [PlatformInfoProvider].
+         */
+        fun Logger.loggerStartupInfo(args: Array<String>, platformInfoProvider: PlatformInfoProvider) {
+            info("ActivePlatformVersion ${platformInfoProvider.activePlatformVersion}")
+            info("LocalWorkerPlatformVersion ${platformInfoProvider.localWorkerPlatformVersion}")
+            info("LocalWorkerSoftwareVersion ${platformInfoProvider.localWorkerSoftwareVersion}")
+
+            val info = ManagementFactory.getRuntimeMXBean()
+            info("PID: ${info.name.split("@").firstOrNull()}")  // TODO Java 9 has better support for this
+            info("CommandLine Args: ${info.inputArguments.joinToString(" ")}")
+
+            // JDK 11 (bootclasspath no longer supported from JDK 9)
+            if (info.isBootClassPathSupported) logger.info("bootclasspath: ${info.bootClassPath}")
+            info("classpath: ${info.classPath}")
+            info("VM ${info.vmName} ${info.vmVendor} ${info.vmVersion}")
+
+            val params = getParams(args, DefaultWorkerParams())
+            info("Worker Params:")
+            info("Messaging Params: ${params.messagingParams}")
+            info("Help Requested: ${params.helpRequested}")
+            info("disableWorkerMonitor: ${params.disableWorkerMonitor}")
+            info("secretParams: ${params.secretsParams}")
+            info("workerMonitorPort: ${params.workerMonitorPort}")
+            info("instanceId: ${params.instanceId}")
+            info("tempDir: ${params.tempDir}")
+            info("topicPrefix: ${params.topicPrefix}")
+            info("versionRequested: ${params.versionRequested}")
+            info("workspaceDir: ${params.workspaceDir}")
         }
     }
 }
