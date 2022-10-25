@@ -158,8 +158,9 @@ object UniquenessAssertions {
      * check the result timestamp is valid with respect to the provider.
      */
     fun assertInputStateUnknownResult(
-        txId: SecureHash,
         result: UniquenessCheckResult,
+        txId: SecureHash,
+        stateIdx: Int,
         clock: AutoTickTestClock? = null
     ) {
         assertRejectedResultCommon(result, clock)
@@ -167,7 +168,7 @@ object UniquenessAssertions {
         val unknownStates = (getErrorOfType<UniquenessCheckErrorInputStateUnknown>(result)).unknownStates
         assertAll(
             { assertThat(unknownStates.size).isEqualTo(1) },
-            { assertThat(unknownStates.single().stateIndex).isEqualTo(0) },
+            { assertThat(unknownStates.single().stateIndex).isEqualTo(stateIdx) },
             { assertThat(unknownStates.single().txHash).isEqualTo(txId) })
     }
 
@@ -176,9 +177,9 @@ object UniquenessAssertions {
      * check the result timestamp is valid with respect to the provider.
      */
     fun assertInputStateConflictResult(
+        result: UniquenessCheckResult,
         txId: SecureHash,
         consumingTxId: SecureHash,
-        result: UniquenessCheckResult,
         clock: AutoTickTestClock? = null
     ) {
         assertRejectedResultCommon(result, clock)
@@ -196,9 +197,9 @@ object UniquenessAssertions {
      * check the result timestamp is valid with respect to the provider.
      */
     fun assertReferenceStateConflictResult(
+        result: UniquenessCheckResult,
         txId: SecureHash,
         consumingTxId: SecureHash,
-        result: UniquenessCheckResult,
         clock: AutoTickTestClock? = null
     ) {
         assertRejectedResultCommon(result, clock)
@@ -216,8 +217,8 @@ object UniquenessAssertions {
      * check the result timestamp is valid with respect to the provider.
      */
     fun assertReferenceStateUnknownResult(
-        txId: SecureHash,
         result: UniquenessCheckResult,
+        txId: SecureHash,
         clock: AutoTickTestClock? = null
     ) {
         assertRejectedResultCommon(result, clock)
@@ -234,10 +235,10 @@ object UniquenessAssertions {
      * timestamp is valid with respect to the provider.
      */
     fun assertTimeWindowOutOfBoundsResult(
+        result: UniquenessCheckResult,
         evaluationTime: Instant,
         lowerBound: Instant,
         upperBound: Instant,
-        result: UniquenessCheckResult,
         clock: AutoTickTestClock? = null
     ) {
         assertRejectedResultCommon(result, clock)
@@ -254,8 +255,8 @@ object UniquenessAssertions {
      * check the result timestamp is valid with respect to the provider.
      */
     fun assertMalformedRequestResult(
-        errorMessage: String,
         result: UniquenessCheckResult,
+        errorMessage: String,
         clock: AutoTickTestClock? = null
     ) {
         assertRejectedResultCommon(result, clock)

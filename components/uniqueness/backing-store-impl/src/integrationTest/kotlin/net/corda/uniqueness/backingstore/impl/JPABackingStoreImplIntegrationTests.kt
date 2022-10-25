@@ -214,10 +214,12 @@ class JPABackingStoreImplIntegrationTests {
         fun `Persisting rejected transaction due to input state unknown error succeeds`() {
             val txId = SecureHashUtils.randomSecureHash()
             val txIds = listOf(txId)
+            val stateIdx = 0
             val txns = listOf(
                 Pair(
                     generateRequestInternal(txId), UniquenessCheckResultFailureImpl(
-                        now(), UniquenessCheckErrorInputStateUnknownImpl(listOf(UniquenessCheckStateRefImpl(txId, 0)))
+                        now(),
+                        UniquenessCheckErrorInputStateUnknownImpl(listOf(UniquenessCheckStateRefImpl(txId, stateIdx)))
                     )
                 )
             )
@@ -232,7 +234,7 @@ class JPABackingStoreImplIntegrationTests {
             }
 
             UniquenessAssertions.assertContainingTxId(txnDetails, txIds.single())
-            UniquenessAssertions.assertInputStateUnknownResult(txId, txnDetails.entries.single().value.result)
+            UniquenessAssertions.assertInputStateUnknownResult(txnDetails.entries.single().value.result, txId, stateIdx)
         }
 
         @Test
@@ -265,7 +267,7 @@ class JPABackingStoreImplIntegrationTests {
 
             UniquenessAssertions.assertContainingTxId(txnDetails, txIds.single())
             UniquenessAssertions.assertInputStateConflictResult(
-                txId, consumingTxId, txnDetails.entries.single().value.result
+                txnDetails.entries.single().value.result, txId, consumingTxId
             )
         }
 
@@ -300,7 +302,7 @@ class JPABackingStoreImplIntegrationTests {
 
             UniquenessAssertions.assertContainingTxId(txnDetails, txIds.single())
             UniquenessAssertions.assertReferenceStateConflictResult(
-                txId, consumingTxId, txnDetails.entries.single().value.result
+                txnDetails.entries.single().value.result, txId, consumingTxId,
             )
         }
 
@@ -329,7 +331,7 @@ class JPABackingStoreImplIntegrationTests {
             }
 
             UniquenessAssertions.assertContainingTxId(txnDetails, txIds.single())
-            UniquenessAssertions.assertReferenceStateUnknownResult(txId, txnDetails.entries.single().value.result)
+            UniquenessAssertions.assertReferenceStateUnknownResult(txnDetails.entries.single().value.result, txId)
         }
 
         @Test
@@ -359,7 +361,7 @@ class JPABackingStoreImplIntegrationTests {
 
             UniquenessAssertions.assertContainingTxId(txnDetails, txIds.single())
             UniquenessAssertions.assertTimeWindowOutOfBoundsResult(
-                evaluationTime, lowerBound, upperBound, txnDetails.entries.single().value.result
+                txnDetails.entries.single().value.result, evaluationTime, lowerBound, upperBound
             )
         }
 
@@ -430,7 +432,7 @@ class JPABackingStoreImplIntegrationTests {
             }
 
             UniquenessAssertions.assertContainingTxId(txnDetails, txIds.single())
-            UniquenessAssertions.assertMalformedRequestResult(errorMessage, txnDetails.entries.single().value.result)
+            UniquenessAssertions.assertMalformedRequestResult(txnDetails.entries.single().value.result, errorMessage)
         }
 
         @Test
