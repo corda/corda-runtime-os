@@ -73,16 +73,16 @@ db:
           key: ""
     # the cluster database password configuration
     password: 
-      # -- the cluster passowrd
+      # -- the cluster database password
       value: "" 
-      # -- the password secret configuration
+      # the cluster database password secret configuration; used in preference to value if name is set
       valueFrom:
-        # -- the password secret key reference
-        secretkeyRef:
-          # -- the password secret name
+        # the cluster database password secret key reference
+        secretKeyRef:
+          # -- the cluster database password secret name
           name: ""
-          # -- the password secret key
-          passwordKey: ""
+          # -- the cluster database password secret key
+          key: ""
     database: cordacluster
   clientImage:
     # -- registry for image containing a db client, used to set up the db
