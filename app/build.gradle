@@ -98,6 +98,9 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
     environment = Map.of(
             "CORDA_CLI_HOME_DIR", "/opt/override/home"
     )
+    if (project.hasProperty('multiArchSupport')) {
+        multiArch = multiArchSupport.toBoolean()
+    }
     setEntry = true
 }
 
