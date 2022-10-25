@@ -10,7 +10,7 @@ enum class UtxoComponentGroup {
     COMMANDS_INFO,
     DATA_ATTACHMENTS,
     INPUTS,
+    REFERENCES,
     OUTPUTS,
     COMMANDS,
-    REFERENCES
 }

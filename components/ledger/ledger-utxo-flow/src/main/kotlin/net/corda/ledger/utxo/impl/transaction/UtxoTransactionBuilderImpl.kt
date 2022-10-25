@@ -40,7 +40,7 @@ data class UtxoTransactionBuilderImpl(
     private val serializationService: SerializationService,
     private val signingService: SigningService,
     private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
-    private val currentSandboxGroup: SandboxGroup,
+    private val currentSandboxGroup: SandboxGroup, // TODO CORE-7101 use CurrentSandboxService when it gets available
     // cpi defines what type of signing/hashing is used (related to the digital signature signing and verification stuff)
     private val transactionMetaData: TransactionMetaData,
     override val notary: Party,
