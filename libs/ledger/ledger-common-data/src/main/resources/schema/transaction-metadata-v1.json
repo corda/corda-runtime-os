@@ -1,178 +1,178 @@
 {
-	"$schema": "http://json-schema.org/draft-07/schema#", 
-	"$id": "https://corda.net/schema/ledger/transaction-metadata-v1.json", 
-	"title": "Root", 
-	"type": "object",
-	"required": [
-		"ledgerModel",
-		"ledgerVersion",
-		"cpiMetadata",
-		"cpkMetadata",
-		"digestSettings"
-	],
-	"properties": {
-		"ledgerModel": {
-			"title": "Ledger model", 
-			"type": "string",
-			"description": "The name of the class that implements this type of ledger transaction.",
-			"default": "",
-			"examples": [
-				"net.corda.ledger.consensual.impl.transaction.ConsensualLedgerTransactionImpl"
-			],
-			"pattern": "^.*$"
-		},
-		"digestSettings": {
-			"title": "Digest settings", 
-			"description": "Settings relating to the Merkle tree digest algorithms.",
-			"type": "object",
-			"required": [
-				"ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME",
-				"ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME",
-				"ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64",
-				"ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64",
-				"COMPONENT_MERKLE_TREE_DIGEST_PROVIDER_NAME",
-				"COMPONENT_MERKLE_TREE_DIGEST_ALGORITHM_NAME",
-				"COMPONENT_MERKLE_TREE_ENTROPY_ALGORITHM_NAME"
-			],
-			"properties": {
-				"ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME": {
-					"title": "Root Merkle tree digest provider name", 
-					"type": "string",
-					"description": "Class name of the digest provider for the root Merkle tree.",
-					"default": "",
-					"examples": [
-						"TweakableHashDigestProvider"
-					],
-					"pattern": "^.*$"
-				},
-				"ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME": {
-					"title": "Root Merkle tree digest algorithm name", 
-					"type": "string",
-					"description": "Algorithm name of the digest provider for the root Merkle tree.",
-					"default": "",
-					"examples": [
-						"SHA-256D"
-					],
-					"pattern": "^.*$"
-				},
-				"ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64": {
-					"title": "Root Merkle tree digest options leaf prefix base64 encoded", 
-					"type": "string",
-					"default": "",
-					"examples": [
-						"bGVhZg=="
-					],
-					"pattern": "^.*$"
-				},
-				"ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64": {
-					"title": "Root Merkle tree digest options node prefix base64 encoded", 
-					"type": "string",
-					"default": "",
-					"examples": [
-						"bm9kZQ=="
-					],
-					"pattern": "^.*$"
-				},
-				"COMPONENT_MERKLE_TREE_DIGEST_PROVIDER_NAME": {
-					"title": "Component Merkle tree digest provider name", 
-					"type": "string",
-					"default": "",
-					"examples": [
-						"NonceHashDigestProvider"
-					],
-					"pattern": "^.*$"
-				},
-				"COMPONENT_MERKLE_TREE_DIGEST_ALGORITHM_NAME": {
-					"title": "Component Merkle tree digest algorithm name", 
-					"type": "string",
-					"default": "",
-					"examples": [
-						"SHA-256D"
-					],
-					"pattern": "^.*$"
-				},
-				"COMPONENT_MERKLE_TREE_ENTROPY_ALGORITHM_NAME": {
-					"title": "Component Merkle tree entropy algorithm name", 
-					"type": "string",
-					"default": "",
-					"examples": [
-						"SHA-256D"
-					],
-					"pattern": "^.*$"
-				}
-			}
-		},
-		"ledgerVersion": {
-			"title": "Ledger version", 
-			"type": "string",
-			"default": "",
-			"examples": [
-				"0.001"
-			],
-			"pattern": "^.*$"
-		},
-		"cpiMetadata": {
-			"title": "CPI metadata", 
-			"$ref": "#/definitions/package_metadata"
-		}
-		,
-		"cpkMetadata": {
-			"title": "CPK metadata", 
-			"type": "array",
-			"default": [],
-			"items":{
-				"title": "Items", 
-				"$ref": "#/definitions/package_metadata"
-			}
-		}
-	},
-	"definitions": {
-		"package_metadata": {
-			"type": "object",
-			"required": [
-				"name",
-				"version",
-				"signerSummaryHash",
-				"fileChecksum"
-			],
-			"properties": {
-				"name": {
-					"title": "Name", 
-					"type": "string",
-					"default": "",
-					"examples": [
-						"TestPackage"
-					],
-					"pattern": "^.*$"
-				},
-				"version": {
-					"title": "Version", 
-					"type": "string",
-					"default": "",
-					"examples": [
-						"0.0.1-test"
-					],
-					"pattern": "^.*$"
-				},
-				"signerSummaryHash": {
-					"title": "Signer summary hash", 
-					"type": "string",
-					"default": "",
-					"examples": [
-						"46616B652D76616C7565"
-					],
-					"pattern": "^.*$"
-				},
-				"fileChecksum": {
-					"title": "File checksum", 
-					"type": "string",
-					"default": "",
-					"examples": [
-						"0000111122223333444455556666777788889999AAAABBBBCCCCDDDDEEEEFFFF"
-					],
-					"pattern": "^.*$"
-				}
-			}
-		}
-	}
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://corda.net/schema/ledger/transaction-metadata-v1.json",
+  "title": "Root",
+  "type": "object",
+  "required": [
+    "ledgerModel",
+    "ledgerVersion",
+    "cpiMetadata",
+    "cpkMetadata",
+    "digestSettings"
+  ],
+  "properties": {
+    "ledgerModel": {
+      "title": "Ledger model",
+      "type": "string",
+      "description": "The name of the class that implements this type of ledger transaction.",
+      "default": "",
+      "examples": [
+        "net.corda.ledger.consensual.impl.transaction.ConsensualLedgerTransactionImpl"
+      ],
+      "pattern": "^.*$"
+    },
+    "digestSettings": {
+      "title": "Digest settings",
+      "description": "Settings relating to the Merkle tree digest algorithms.",
+      "type": "object",
+      "required": [
+        "ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME",
+        "ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME",
+        "ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64",
+        "ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64",
+        "COMPONENT_MERKLE_TREE_DIGEST_PROVIDER_NAME",
+        "COMPONENT_MERKLE_TREE_DIGEST_ALGORITHM_NAME",
+        "COMPONENT_MERKLE_TREE_ENTROPY_ALGORITHM_NAME"
+      ],
+      "properties": {
+        "ROOT_MERKLE_TREE_DIGEST_PROVIDER_NAME": {
+          "title": "Root Merkle tree digest provider name",
+          "type": "string",
+          "description": "Class name of the digest provider for the root Merkle tree.",
+          "default": "",
+          "examples": [
+            "TweakableHashDigestProvider"
+          ],
+          "pattern": "^.*$"
+        },
+        "ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME": {
+          "title": "Root Merkle tree digest algorithm name",
+          "type": "string",
+          "description": "Algorithm name of the digest provider for the root Merkle tree.",
+          "default": "",
+          "examples": [
+            "SHA-256D"
+          ],
+          "pattern": "^.*$"
+        },
+        "ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64": {
+          "title": "Root Merkle tree digest options leaf prefix base64 encoded",
+          "type": "string",
+          "default": "",
+          "examples": [
+            "bGVhZg=="
+          ],
+          "pattern": "^.*$"
+        },
+        "ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64": {
+          "title": "Root Merkle tree digest options node prefix base64 encoded",
+          "type": "string",
+          "default": "",
+          "examples": [
+            "bm9kZQ=="
+          ],
+          "pattern": "^.*$"
+        },
+        "COMPONENT_MERKLE_TREE_DIGEST_PROVIDER_NAME": {
+          "title": "Component Merkle tree digest provider name",
+          "type": "string",
+          "default": "",
+          "examples": [
+            "NonceHashDigestProvider"
+          ],
+          "pattern": "^.*$"
+        },
+        "COMPONENT_MERKLE_TREE_DIGEST_ALGORITHM_NAME": {
+          "title": "Component Merkle tree digest algorithm name",
+          "type": "string",
+          "default": "",
+          "examples": [
+            "SHA-256D"
+          ],
+          "pattern": "^.*$"
+        },
+        "COMPONENT_MERKLE_TREE_ENTROPY_ALGORITHM_NAME": {
+          "title": "Component Merkle tree entropy algorithm name",
+          "type": "string",
+          "default": "",
+          "examples": [
+            "SHA-256D"
+          ],
+          "pattern": "^.*$"
+        }
+      }
+    },
+    "ledgerVersion": {
+      "title": "Ledger version",
+      "type": "string",
+      "default": "",
+      "examples": [
+        "0.001"
+      ],
+      "pattern": "^.*$"
+    },
+    "cpiMetadata": {
+      "title": "CPI metadata",
+      "$ref": "#/definitions/package_metadata"
+    }
+    ,
+    "cpkMetadata": {
+      "title": "CPK metadata",
+      "type": "array",
+      "default": [],
+      "items":{
+        "title": "Items",
+        "$ref": "#/definitions/package_metadata"
+      }
+    }
+  },
+  "definitions": {
+    "package_metadata": {
+      "type": "object",
+      "required": [
+        "name",
+        "version",
+        "signerSummaryHash",
+        "fileChecksum"
+      ],
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string",
+          "default": "",
+          "examples": [
+            "TestPackage"
+          ],
+          "pattern": "^.*$"
+        },
+        "version": {
+          "title": "Version",
+          "type": "string",
+          "default": "",
+          "examples": [
+            "0.0.1-test"
+          ],
+          "pattern": "^.*$"
+        },
+        "signerSummaryHash": {
+          "title": "Signer summary hash",
+          "type": "string",
+          "default": "",
+          "examples": [
+            "46616B652D76616C7565"
+          ],
+          "pattern": "^.*$"
+        },
+        "fileChecksum": {
+          "title": "File checksum",
+          "type": "string",
+          "default": "",
+          "examples": [
+            "0000111122223333444455556666777788889999AAAABBBBCCCCDDDDEEEEFFFF"
+          ],
+          "pattern": "^.*$"
+        }
+      }
+    }
+  }
 }
