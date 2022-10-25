@@ -16,8 +16,10 @@ import java.io.OutputStream;
 import java.security.PublicKey;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.zip.ZipInputStream;
 
 public class AbstractMockTestHarness {
@@ -45,6 +47,7 @@ public class AbstractMockTestHarness {
     protected final Instant midpoint = Instant.EPOCH;
     protected final SecureHash hash = SecureHash.parse("SHA256:0000000000000000000000000000000000000000000000000000000000000000");
     protected final List<PublicKey> keys = List.of(aliceKey, bobKey);
+    protected final Set<PublicKey> setOfKeys = Set.of(aliceKey,bobKey);
     protected final MemberX500Name notaryName = new MemberX500Name("Notary", "Zurich", "CH");
     protected final DigitalSignatureAndMetadata aliceSignature = createDigitalSignature(aliceKey);
     protected final DigitalSignatureAndMetadata bobSignature = createDigitalSignature(bobKey);
@@ -168,7 +171,7 @@ public class AbstractMockTestHarness {
         Mockito.when(utxoSignedTransaction.getSignatures()).thenReturn(signatures);
         Mockito.when(utxoSignedTransaction.addSignatures(List.of(aliceSignature, bobSignature))).thenReturn(utxoSignedTransaction);
         Mockito.when(utxoSignedTransaction.addSignatures(aliceSignature, bobSignature)).thenReturn(utxoSignedTransaction);
-        Mockito.when(utxoSignedTransaction.getMissingSignatories()).thenReturn(keys);
+        Mockito.when(utxoSignedTransaction.getMissingSignatories()).thenReturn(setOfKeys);
         Mockito.when(utxoSignedTransaction.toLedgerTransaction()).thenReturn(utxoLedgerTransaction);
     }
 

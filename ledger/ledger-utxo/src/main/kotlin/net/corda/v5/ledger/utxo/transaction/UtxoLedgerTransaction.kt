@@ -31,6 +31,11 @@ import java.security.PublicKey
 @Suppress("TooManyFunctions")
 interface UtxoLedgerTransaction {
 
+    /**
+     * @property id The ID of the transaction.
+     */
+    val id: SecureHash
+
     val timeWindow: TimeWindow
     val attachments: List<Attachment>
     val commands: List<Command>

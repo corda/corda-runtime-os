@@ -17,7 +17,7 @@ import java.time.Instant
 @DoNotImplement
 @CordaSerializable
 interface TimeWindow {
-    val from: Instant
+    val from: Instant?
     val until: Instant
 
     /**

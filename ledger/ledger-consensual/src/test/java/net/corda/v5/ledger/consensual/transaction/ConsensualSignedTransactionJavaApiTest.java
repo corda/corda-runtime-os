@@ -87,14 +87,14 @@ public class ConsensualSignedTransactionJavaApiTest {
     }
 
     @Test
-    public void getMissingSigningKeys() {
+    public void getMissingSignatories() {
         final Set<PublicKey> publicKeys = Set.of(mock(PublicKey.class));
-        when(consensualSignedTransaction.getMissingSigningKeys()).thenReturn(publicKeys);
+        when(consensualSignedTransaction.getMissingSignatories()).thenReturn(publicKeys);
 
-        final Set<PublicKey> result = consensualSignedTransaction.getMissingSigningKeys();
+        final Set<PublicKey> result = consensualSignedTransaction.getMissingSignatories();
 
         Assertions.assertThat(result).isNotNull();
         Assertions.assertThat(result).isEqualTo(publicKeys);
-        verify(consensualSignedTransaction, times(1)).getMissingSigningKeys();
+        verify(consensualSignedTransaction, times(1)).getMissingSignatories();
     }
 }

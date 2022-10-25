@@ -41,10 +41,10 @@ interface UtxoSignedTransaction {
     /**
      * Gets the missing signatories from the current [UtxoSignedTransaction].
      *
-     * @return Returns a [List] of [PublicKey] representing the missing signatories from the current [UtxoSignedTransaction].
+     * @return Returns a [Set] of [PublicKey] representing the missing signatories from the current [UtxoSignedTransaction].
      */
     @Suspendable
-    fun getMissingSignatories(): List<PublicKey>
+    fun getMissingSignatories(): Set<PublicKey>
 
     /**
      * Converts the current [UtxoSignedTransaction] into a [UtxoLedgerTransaction].

@@ -7,21 +7,12 @@ plugins {
 description 'Corda Ledger Common'
 
 dependencies {
-    api platform(project(':corda-api'))
-
-    api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
-    api 'javax.persistence:javax.persistence-api'
-    api 'org.slf4j:slf4j-api'
-
     compileOnly 'org.osgi:osgi.annotation'
 
+    api platform(project(':corda-api'))
+    api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
     api project(":application")
-    api project(":crypto")
-    implementation project(":membership")
-    implementation project(":serialization")
 
-    testImplementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
-    testImplementation "com.fasterxml.jackson.module:jackson-module-kotlin:$jacksonVersion"
+    testImplementation project(':crypto')
     testImplementation "org.assertj:assertj-core:$assertjVersion"
 }
-

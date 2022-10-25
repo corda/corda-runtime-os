@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import java.security.PublicKey;
 import java.util.List;
+import java.util.Set;
 
 public final class UtxoSignedTransactionJavaApiTests extends AbstractMockTestHarness {
 
@@ -38,8 +39,8 @@ public final class UtxoSignedTransactionJavaApiTests extends AbstractMockTestHar
 
     @Test
     public void getMissingSignatoriesShouldReturnTheExpectedValue() {
-        List<PublicKey> value = utxoSignedTransaction.getMissingSignatories();
-        Assertions.assertEquals(keys, value);
+        Set<PublicKey> value = utxoSignedTransaction.getMissingSignatories();
+        Assertions.assertEquals(setOfKeys, value);
     }
 
     @Test

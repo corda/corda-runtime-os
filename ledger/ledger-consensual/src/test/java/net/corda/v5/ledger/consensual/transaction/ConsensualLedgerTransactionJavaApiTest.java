@@ -31,15 +31,15 @@ public class ConsensualLedgerTransactionJavaApiTest {
     }
 
     @Test
-    public void getRequiredSigningKeys() {
+    public void getRequiredSignatories() {
         PublicKey publicKey = mock(PublicKey.class);
-        when(consensualLedgerTransaction.getRequiredSigningKeys()).thenReturn(Set.of(publicKey));
+        when(consensualLedgerTransaction.getRequiredSignatories()).thenReturn(Set.of(publicKey));
 
-        Set<PublicKey> result = consensualLedgerTransaction.getRequiredSigningKeys();
+        Set<PublicKey> result = consensualLedgerTransaction.getRequiredSignatories();
 
         Assertions.assertThat(result).isNotNull();
         Assertions.assertThat(result).isEqualTo(Set.of(publicKey));
-        verify(consensualLedgerTransaction, times(1)).getRequiredSigningKeys();
+        verify(consensualLedgerTransaction, times(1)).getRequiredSignatories();
     }
 
     @Test

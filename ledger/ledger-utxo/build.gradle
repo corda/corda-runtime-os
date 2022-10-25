@@ -7,17 +7,9 @@ plugins {
 description 'Corda UTXO Ledger'
 
 dependencies {
-    api 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
-
-    api platform(project(':corda-api'))
-
-    api project(':application')
-    api project(':base')
-    api project(':crypto')
-    api project(":ledger:ledger-common")
-
-    compileOnly 'org.osgi:osgi.core'
     compileOnly 'org.osgi:osgi.annotation'
+
+    api project(':ledger:ledger-common')
 
     testImplementation "org.assertj:assertj-core:$assertjVersion"
 }
