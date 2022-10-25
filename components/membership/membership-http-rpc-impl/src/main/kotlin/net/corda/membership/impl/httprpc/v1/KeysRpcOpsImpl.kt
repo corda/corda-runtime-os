@@ -7,6 +7,7 @@ import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_AFTER_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CREATED_BEFORE_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.MASTER_KEY_ALIAS_FILTER
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.SCHEME_CODE_NAME_FILTER
+import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
@@ -161,6 +162,8 @@ class KeysRpcOpsImpl @Activate constructor(
             )
         } catch (e: KeyAlreadyExistsException) {
             throw ResourceAlreadyExistsException(e.message!!)
+        } catch (e: InvalidParamsException) {
+            throw InvalidInputDataException(e.message!!)
         }
     }
 
