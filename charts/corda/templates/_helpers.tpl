@@ -394,7 +394,7 @@ Cluster DB port
 {{/*
 Cluster DB user environment variable 
 */}}
-{{- define "corda.clusterDbUser" -}}
+{{- define "corda.clusterDbUseEnvr" -}}
 {{- if .Values.db.cluster.user.valueFrom.secretkeyRef.name }}
 - name: PGUSER
   valueFrom:
