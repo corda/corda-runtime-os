@@ -10,7 +10,6 @@ import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpiMetadataEntityKey
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogAuditEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
-import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
 import net.corda.libs.cpi.datamodel.CpkFileEntity
 import net.corda.libs.cpi.datamodel.CpkKey
 import net.corda.libs.cpi.datamodel.CpkMetadataEntity
@@ -29,7 +28,6 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.crypto.SecureHash
 import java.nio.file.Files
-import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.LockModeType
@@ -149,7 +147,7 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
                     changelog.entityVersion = inDb.entityVersion
                     // Check prior to merge
                     val hasChanged = changelog.fileChecksum != inDb.fileChecksum ||
-                        changelog.changeUUID != inDb.changeUUID
+                        changelog.changesetId != inDb.changesetId
                     if (changeLogUpdates.containsKey(changelogId) || hasChanged) {
                         // Mark as not deleted if this is one of the new entries
                         changelog.isDeleted = false

@@ -538,9 +538,9 @@ internal class VirtualNodeWriterProcessor(
                 val cpkChangelogs = changelogs.filter { cl2 -> cl2.id.cpkName == cpkName }
                 logger.info("Doing ${cpkChangelogs.size} migrations for $cpkName")
                 val dbChange = VirtualNodeDbChangeLog(cpkChangelogs)
-                val changeUUID = cpkChangelogs.last().changeUUID
+                val changesetId = cpkChangelogs.last().changesetId
                 try {
-                    vaultDb.runCpiMigrations(dbChange, changeUUID.toString())
+                    vaultDb.runCpiMigrations(dbChange, changesetId.toString())
                 } catch (e: Exception) {
                     logger.error("Virtual node liquibase DB migration failure on CPK $cpkName with error $e")
                     throw VirtualNodeWriteServiceException(
@@ -555,14 +555,14 @@ internal class VirtualNodeWriterProcessor(
     private fun runCpiResyncMigrations(changelogs: List<CpkDbChangeLogEntity>, connectionConfig: SmartConfig) {
         changelogs.map { cl -> cl.id.cpkName }.distinct().sorted().forEach { cpkName ->
             val cpkChangelogs = changelogs.filter { cl2 -> cl2.id.cpkName == cpkName }
-            val newChangeSetUUID = cpkChangelogs.first().changeUUID
-            logger.info("Applying change logs from $cpkName at $newChangeSetUUID")
+            val newChangeSetId = cpkChangelogs.first().changesetId
+            logger.info("Applying change logs from $cpkName at $newChangeSetId")
 
             dbConnectionManager.getDataSource(connectionConfig).connection.use { connection ->
                 LiquibaseSchemaMigratorImpl().updateDb(
                     connection,
                     VirtualNodeDbChangeLog(cpkChangelogs),
-                    tag = newChangeSetUUID.toString()
+                    tag = newChangeSetId.toString()
                 )
             }
         }

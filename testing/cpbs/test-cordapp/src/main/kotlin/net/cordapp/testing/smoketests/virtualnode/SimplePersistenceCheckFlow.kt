@@ -11,7 +11,6 @@ import net.corda.v5.base.util.contextLogger
 import net.cordapp.testing.bundles.dogs.Dog
 import java.time.Instant
 import java.util.UUID
-import javax.persistence.PersistenceException
 
 @Suppress("unused")
 class SimplePersistenceCheckFlow : RPCStartableFlow {
