@@ -95,24 +95,29 @@ class ConsensualSignedTransactionImpl(
     }
 
     override fun verifySignatures() {
-        if (getMissingSignatories().isNotEmpty())
-            throw TransactionVerificationException(id, "There are missing signatures", null)
-        for (signature in signatures) {
+        val appliedSignatories = signatures.filter{
             try {
                 // TODO Signature spec to be determined internally by crypto code
-                val signedData = SignableData(id, signature.metadata)
+                val signedData = SignableData(id, it.metadata)
                 digitalSignatureVerificationService.verify(
-                    publicKey = signature.by,
+                    publicKey = it.by,
                     signatureSpec = SignatureSpec.ECDSA_SHA256,
-                    signatureData = signature.signature.bytes,
+                    signatureData = it.signature.bytes,
                     clearData = serializationService.serialize(signedData).bytes
                 )
+                true
             } catch (e: Exception) {
                 throw TransactionVerificationException(id,
-                    "Failed to verify signature of ${signature.signature}. " +
+                    "Failed to verify signature of ${it.signature}. " +
                             "Message: ${e.message}", e
                 )
             }
+        }.map { it.by }.toSet()
+        val requiredSignatories = this.toLedgerTransaction().requiredSignatories
+        if (requiredSignatories.any {
+            !it.isFulfilledBy(appliedSignatories) // isFulfilledBy() helps to make this working with CompositeKeys.
+        }){
+            throw TransactionVerificationException(id, "There are missing signatures", null)
         }
     }
 
