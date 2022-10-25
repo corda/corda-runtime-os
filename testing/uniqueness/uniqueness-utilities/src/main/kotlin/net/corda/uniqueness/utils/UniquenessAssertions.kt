@@ -165,7 +165,9 @@ object UniquenessAssertions {
     ) {
         assertRejectedResultCommon(result, clock)
 
-        val unknownStates = (getErrorOfType<UniquenessCheckErrorInputStateUnknown>(result)).unknownStates
+        val unknownStates = (getErrorOfType<UniquenessCheckErrorInputStateUnknown>(
+            result as UniquenessCheckResultFailure
+        )).unknownStates
         assertAll(
             { assertThat(unknownStates.size).isEqualTo(1) },
             { assertThat(unknownStates.single().stateIndex).isEqualTo(stateIdx) },
@@ -184,7 +186,9 @@ object UniquenessAssertions {
     ) {
         assertRejectedResultCommon(result, clock)
 
-        val conflicts = (getErrorOfType<UniquenessCheckErrorInputStateConflict>(result)).conflictingStates
+        val conflicts = (getErrorOfType<UniquenessCheckErrorInputStateConflict>(
+            result as UniquenessCheckResultFailure
+        )).conflictingStates
         assertAll(
             { assertThat(conflicts.size).isEqualTo(1) },
             { assertThat(conflicts.single().consumingTxId).isEqualTo(consumingTxId) },
@@ -204,7 +208,9 @@ object UniquenessAssertions {
     ) {
         assertRejectedResultCommon(result, clock)
 
-        val conflicts = (getErrorOfType<UniquenessCheckErrorReferenceStateConflict>(result)).conflictingStates
+        val conflicts = (getErrorOfType<UniquenessCheckErrorReferenceStateConflict>(
+            result as UniquenessCheckResultFailure
+        )).conflictingStates
         assertAll(
             { assertThat(conflicts.size).isEqualTo(1) },
             { assertThat(conflicts.single().consumingTxId).isEqualTo(consumingTxId) },
@@ -223,7 +229,9 @@ object UniquenessAssertions {
     ) {
         assertRejectedResultCommon(result, clock)
 
-        val unknownStates = (getErrorOfType<UniquenessCheckErrorReferenceStateUnknown>(result)).unknownStates
+        val unknownStates = (getErrorOfType<UniquenessCheckErrorReferenceStateUnknown>(
+            result as UniquenessCheckResultFailure
+        )).unknownStates
         assertAll(
             { assertThat(unknownStates.size).isEqualTo(1) },
             { assertThat(unknownStates.single().stateIndex).isEqualTo(0) },
@@ -243,7 +251,7 @@ object UniquenessAssertions {
     ) {
         assertRejectedResultCommon(result, clock)
 
-        val error = getErrorOfType<UniquenessCheckErrorTimeWindowOutOfBounds>(result)
+        val error = getErrorOfType<UniquenessCheckErrorTimeWindowOutOfBounds>(result as UniquenessCheckResultFailure)
         assertAll(
             { assertThat(error.evaluationTimestamp).isEqualTo(evaluationTime) },
             { assertThat(error.timeWindowLowerBound).isEqualTo(lowerBound) },
@@ -260,7 +268,9 @@ object UniquenessAssertions {
         clock: AutoTickTestClock? = null
     ) {
         assertRejectedResultCommon(result, clock)
-        assertThat((getErrorOfType<UniquenessCheckErrorMalformedRequest>(result)).errorText).isEqualTo(errorMessage)
+        assertThat(
+            (getErrorOfType<UniquenessCheckErrorMalformedRequest>(result as UniquenessCheckResultFailure)).errorText
+        ).isEqualTo(errorMessage)
     }
 
     /**
@@ -283,18 +293,19 @@ object UniquenessAssertions {
     /**
      * Gets the error from a result and casts it to a specific uniqueness check error type.
      */
-    private inline fun <reified T> getErrorOfType(result: UniquenessCheckResult): T {
-        val failure = result as UniquenessCheckResultFailure
-        return failure.error as T
+    private inline fun <reified T> getErrorOfType(result: UniquenessCheckResultFailure): T {
+        assertInstanceOf(T::class.java, result.error)
+        return result.error as T
     }
 
-    private inline fun<reified T> getResultOfType(response: UniquenessCheckResponseAvro): T {
+
+    private inline fun <reified T> getResultOfType(response: UniquenessCheckResponseAvro): T {
         assertInstanceOf(T::class.java, response.result)
         @Suppress("UNCHECKED_CAST")
         return response.result as T
     }
 
-    fun assertValidTimestamp(timestamp: Instant, clock: AutoTickTestClock? = null) {
+    private fun assertValidTimestamp(timestamp: Instant, clock: AutoTickTestClock? = null) {
         assertThat(timestamp).isAfter(Instant.MIN)
         if (clock != null) {
             assertThat(timestamp).isBeforeOrEqualTo(clock.peekTime())
