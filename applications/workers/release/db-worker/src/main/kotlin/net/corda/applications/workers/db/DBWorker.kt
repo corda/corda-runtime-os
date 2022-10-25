@@ -1,11 +1,14 @@
 package net.corda.applications.workers.db
 
-import net.corda.applications.workers.workercommon.*
+import net.corda.applications.workers.workercommon.DefaultWorkerParams
+import net.corda.applications.workers.workercommon.JavaSerialisationFilter
+import net.corda.applications.workers.workercommon.PathAndConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getBootstrapConfig
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.getParams
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.loggerStartupInfo
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.printHelpOrVersion
 import net.corda.applications.workers.workercommon.WorkerHelpers.Companion.setupMonitor
+import net.corda.applications.workers.workercommon.WorkerMonitor
 import net.corda.libs.configuration.validation.ConfigurationValidatorFactory
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.osgi.api.Application
@@ -21,7 +24,7 @@ import picocli.CommandLine.Mixin
 import picocli.CommandLine.Option
 
 /** The worker for interacting with the database. */
-@Suppress("Unused")
+@Suppress("Unused", "LongParameterList")
 @Component(service = [Application::class])
 class DBWorker @Activate constructor(
     @Reference(service = DBProcessor::class)
