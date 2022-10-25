@@ -417,7 +417,7 @@ Cluster DB name
 {{/*
 Cluster DB password environment variable 
 */}}
-{{- define "corda.clusterDbSecretName" -}}
+{{- define "corda.clusterDbPasswordEnv" -}}
 - name: PGPASSWORD
   valueFrom:
     secretKeyRef:
