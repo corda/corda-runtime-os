@@ -643,8 +643,13 @@ class JPABackingStoreImplIntegrationTests {
         Mockito.verify(spyEmFactory, times(sessionInvokeCnt)).createEntityManager()
     }
 
-    @Disabled("While it produces an error saying 'user lacks privilege or object not found'," +
-              "the reason is not clearly understood thus it can be misleading. Review with CORE-7201.")
+    @Disabled(
+        "Review with CORE-7201. While this test produces an error saying 'user lacks privilege or object not found'," +
+        "the reason is not clearly understood thus it can be misleading. Knowing exactly what exception will be " +
+        "thrown due to lack of privilege will be useful. But at the same time, reproducing it with the DB testing" +
+        "framework is not straightforward, and such scenario is less likely to happen in real life. Therefore there " +
+        "is a low risk and this shouldn't be a blocker to deliver other tests."
+    )
     @Test
     fun `Persisting with an incorrect DB set up throws a rollback exception at committing`() {
         val noDbEmFactory: EntityManagerFactory = EntityManagerFactoryFactoryImpl()
