@@ -61,6 +61,6 @@ data class UtxoSignedTransactionImpl(
     }
 
     override fun toLedgerTransaction(): UtxoLedgerTransaction {
-        return UtxoLedgerTransactionImpl(wireTransaction, serializationService)
+        TODO("Not yet implemented.")
     }
 }
