@@ -1,5 +1,6 @@
 package net.corda.libs.virtualnode.maintenance.rpcops.impl.v1
 
+import java.time.Duration
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
@@ -37,7 +38,6 @@ import net.corda.virtualnode.rpcops.common.VirtualNodeSenderFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.time.Duration
 
 @Suppress("unused")
 @Component(service = [PluggableRPCOps::class])
@@ -84,7 +84,6 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
                 }
                 dependentComponents.registerAndStartAll(coordinator)
                 coordinator.updateStatus(LifecycleStatus.UP)
-                logger.info("${this::javaClass.name} is now Up")
             }
             is StopEvent -> coordinator.updateStatus(LifecycleStatus.DOWN)
             is RegistrationStatusChangeEvent -> {
@@ -105,7 +104,6 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
                     else -> logger.debug { "Unexpected status: ${event.status}" }
                 }
                 coordinator.updateStatus(event.status)
-                logger.info("${this::javaClass.name} is now ${event.status}")
             }
             is ConfigChangedEvent -> {
                 if (requiredKeys.all { it in event.config.keys } and event.keys.any { it in requiredKeys }) {

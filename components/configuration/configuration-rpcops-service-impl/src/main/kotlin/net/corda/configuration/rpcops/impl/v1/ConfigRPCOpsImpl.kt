@@ -1,12 +1,13 @@
 package net.corda.configuration.rpcops.impl.v1
 
 import com.typesafe.config.ConfigFactory
+import java.time.Duration
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationGetService
 import net.corda.configuration.read.ConfigurationReadService
-import net.corda.configuration.rpcops.impl.exception.ConfigRPCOpsException
 import net.corda.configuration.rpcops.impl.CLIENT_NAME_HTTP
 import net.corda.configuration.rpcops.impl.GROUP_NAME
+import net.corda.configuration.rpcops.impl.exception.ConfigRPCOpsException
 import net.corda.configuration.rpcops.impl.exception.ConfigVersionException
 import net.corda.data.config.ConfigurationManagementRequest
 import net.corda.data.config.ConfigurationManagementResponse
@@ -41,15 +42,14 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.schema.Schemas.Config.Companion.CONFIG_MGMT_REQUEST_TOPIC
 import net.corda.schema.configuration.ConfigKeys
-import net.corda.utilities.concurrent.getOrThrow
 import net.corda.utilities.VisibleForTesting
+import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.versioning.Version
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import java.time.Duration
 
 /** An implementation of [ConfigRPCOps]. */
 @Suppress("Unused")
@@ -106,7 +106,6 @@ internal class ConfigRPCOpsImpl @Activate constructor(
                         )
                     }
                     coordinator.updateStatus(LifecycleStatus.UP)
-                    logger.info("${this.javaClass.name} is now Up")
                 }
                 is StopEvent -> coordinator.updateStatus(LifecycleStatus.DOWN)
                 is RegistrationStatusChangeEvent -> {
@@ -127,7 +126,6 @@ internal class ConfigRPCOpsImpl @Activate constructor(
                         else -> logger.debug { "Unexpected status: ${event.status}" }
                     }
                     coordinator.updateStatus(event.status)
-                    logger.info("${this::javaClass.name} is now ${event.status}")
                 }
                 is ConfigChangedEvent -> {
                     val rpcConfig = event.config.getConfig(ConfigKeys.RPC_CONFIG)

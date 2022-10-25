@@ -1,5 +1,7 @@
 package net.corda.lifecycle.impl
 
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ScheduledFuture
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.ErrorEvent
 import net.corda.lifecycle.LifecycleCoordinator
@@ -16,8 +18,6 @@ import net.corda.lifecycle.registry.LifecycleRegistryException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ScheduledFuture
 
 /**
  * Perform processing of lifecycle events.
@@ -73,6 +73,7 @@ internal class LifecycleProcessor(
         coordinator: LifecycleCoordinatorInternal,
         timerGenerator: (TimerEvent, Long) -> ScheduledFuture<*>
     ): Boolean {
+        logger.info("LifecycleEvent received for ${coordinator.name}: $event")
         return when (event) {
             is StartEvent -> {
                 processStartEvent(event, coordinator)
@@ -145,7 +146,6 @@ internal class LifecycleProcessor(
     }
 
     private fun processStartEvent(event: StartEvent, coordinator: LifecycleCoordinatorInternal): Boolean {
-        logger.trace { "Processing start event for ${coordinator.name}" }
         return if (!state.isRunning) {
             state.isRunning = true
             state.trackedRegistrations.forEach { it.notifyCurrentStatus() }
@@ -160,7 +160,6 @@ internal class LifecycleProcessor(
     }
 
     private fun processStopEvent(event: StopEvent, coordinator: LifecycleCoordinatorInternal): Boolean {
-        logger.trace { "Processing stop event for ${coordinator.name}" }
         if (state.isRunning) {
             state.isRunning = false
             val (newStatus, reason) = if (event.errored) {
@@ -203,7 +202,6 @@ internal class LifecycleProcessor(
     }
 
     private fun processClose(coordinator: LifecycleCoordinatorInternal): Boolean {
-        logger.trace { "Closing coordinator ${coordinator.name}" }
         state.isRunning = false
         state.trackedRegistrations.forEach {
             logger.trace { "Closing $it on ${coordinator.name}." }
@@ -225,6 +223,9 @@ internal class LifecycleProcessor(
      * coordinators of the status change and informing the registry.
      */
     private fun updateStatus(coordinator: LifecycleCoordinatorInternal, newStatus: LifecycleStatus, reason: String) {
+        if (state.status != newStatus) {
+            logger.info("Updating coordinator ${coordinator.name} from status ${state.status} to $newStatus. Reason: $reason")
+        }
         state.status = newStatus
         state.registrations.forEach { it.updateCoordinatorStatus(coordinator, newStatus) }
         registry.updateStatus(coordinator.name, newStatus, reason)

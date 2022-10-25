@@ -1,5 +1,9 @@
 package net.corda.membership.impl.registration.dynamic.mgm
 
+import java.nio.ByteBuffer
+import java.security.PublicKey
+import java.util.UUID
+import java.util.concurrent.TimeUnit
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
@@ -69,10 +73,6 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
-import java.nio.ByteBuffer
-import java.security.PublicKey
-import java.util.UUID
-import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList")
 @Component(service = [MemberRegistrationService::class])
@@ -180,12 +180,10 @@ class MGMRegistrationService @Activate constructor(
         get() = coordinator.isRunning
 
     override fun start() {
-        logger.info("MGMRegistrationService started.")
         coordinator.start()
     }
 
     override fun stop() {
-        logger.info("MGMRegistrationService stopped.")
         coordinator.stop()
     }
 
@@ -389,7 +387,6 @@ class MGMRegistrationService @Activate constructor(
     }
 
     private fun handleEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
-        logger.info("Received event $event.")
         when (event) {
             is StartEvent -> handleStartEvent(coordinator)
             is StopEvent -> handleStopEvent(coordinator)
@@ -399,7 +396,6 @@ class MGMRegistrationService @Activate constructor(
     }
 
     private fun handleStartEvent(coordinator: LifecycleCoordinator) {
-        logger.info("Handling start event.")
         componentHandle?.close()
         componentHandle = coordinator.followStatusChangesByName(
             setOf(
@@ -410,7 +406,6 @@ class MGMRegistrationService @Activate constructor(
     }
 
     private fun handleStopEvent(coordinator: LifecycleCoordinator) {
-        logger.info("Handling stop event.")
         deactivate(coordinator)
         componentHandle?.close()
         componentHandle = null
@@ -424,7 +419,6 @@ class MGMRegistrationService @Activate constructor(
         event: RegistrationStatusChangeEvent,
         coordinator: LifecycleCoordinator
     ) {
-        logger.info("Handling registration changed event.")
         when (event.status) {
             LifecycleStatus.UP -> {
                 configHandle?.close()
