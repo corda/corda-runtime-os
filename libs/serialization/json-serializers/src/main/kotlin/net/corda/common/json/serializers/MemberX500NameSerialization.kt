@@ -8,6 +8,9 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import org.osgi.service.component.annotations.Component
 
+/**
+ * This serializer is global scope, the same instance will be provided to all sandboxes.
+ */
 @Component
 class MemberX500NameDeserializer : JsonDeserializer<MemberX500Name> {
     override fun deserialize(jsonRoot: JsonNodeReader): MemberX500Name {
@@ -20,6 +23,9 @@ class MemberX500NameDeserializer : JsonDeserializer<MemberX500Name> {
     }
 }
 
+/**
+ * This serializer is global scope, the same instance will be provided to all sandboxes.
+ */
 @Component
 class MemberX500NameSerializer : JsonSerializer<MemberX500Name> {
     override fun serialize(item: MemberX500Name, jsonWriter: JsonWriter) = jsonWriter.writeString(item.toString())

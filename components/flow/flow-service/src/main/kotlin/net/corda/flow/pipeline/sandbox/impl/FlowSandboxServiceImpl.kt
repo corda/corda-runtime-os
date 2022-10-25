@@ -188,17 +188,6 @@ class FlowSandboxServiceImpl @Activate constructor(
             flowProtocolStoreFactory.create(sandboxGroup, cpiMetadata)
         )
 
-        // Build JsonSerializer/JsonDeserializers
-        sandboxGroupContextComponent.registerMetadataServices(
-            sandboxGroupContext,
-            serviceNames = { metadata -> metadata.cordappManifest.jsonSerializerClasses },
-            serviceMarkerType = JsonSerializer::class.java
-        )
-        sandboxGroupContextComponent.registerMetadataServices(
-            sandboxGroupContext,
-            serviceNames = { metadata -> metadata.cordappManifest.jsonDeserializerClasses },
-            serviceMarkerType = JsonDeserializer::class.java
-        )
         sandboxGroupContext.registerCustomJsonSerialization()
 
         return AutoCloseable {
@@ -282,6 +271,17 @@ class FlowSandboxServiceImpl @Activate constructor(
             }
 
         // User custom serialization support, no exceptions thrown so user code doesn't kill the flow service
+        sandboxGroupContextComponent.registerMetadataServices(
+            this,
+            serviceNames = { metadata -> metadata.cordappManifest.jsonSerializerClasses },
+            serviceMarkerType = JsonSerializer::class.java
+        )
+        sandboxGroupContextComponent.registerMetadataServices(
+            this,
+            serviceNames = { metadata -> metadata.cordappManifest.jsonDeserializerClasses },
+            serviceMarkerType = JsonDeserializer::class.java
+        )
+
         getObjectByKey<Iterable<JsonSerializer<*>>>(JsonSerializer::class.java.name)?.forEach { jsonSerializer ->
             sandboxJsonSerializationManager.setSerializer(jsonSerializer) { errorMessage ->
                 log.warn(
