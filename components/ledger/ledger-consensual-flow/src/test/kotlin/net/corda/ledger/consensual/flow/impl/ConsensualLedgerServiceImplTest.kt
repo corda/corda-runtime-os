@@ -9,9 +9,12 @@ import net.corda.flow.application.services.FlowEngineImpl
 import net.corda.flow.fiber.FlowFiber
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.internal.serialization.amqp.helper.TestFlowFiberServiceWithSerialization
-import net.corda.ledger.consensual.flow.impl.transaction.ConsensualTransactionMocks
+import net.corda.ledger.common.testkit.mockPlatformInfoProvider
+import net.corda.ledger.common.testkit.mockSigningService
+import net.corda.ledger.common.testkit.publicKeyExample
 import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualTransactionBuilderFactory
 import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualTransactionBuilderFactoryImpl
+import net.corda.ledger.consensual.testkit.consensualStateExample
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -49,9 +52,9 @@ class ConsensualLedgerServiceImplTest {
             jsonMarshallingService,
             merkleTreeProvider,
             serializationService,
-            ConsensualTransactionMocks.mockSigningService(),
+            mockSigningService(),
             mock(),
-            ConsensualTransactionMocks.mockPlatformInfoProvider(),
+            mockPlatformInfoProvider(),
             flowFiberService
         )
 
@@ -68,8 +71,8 @@ class ConsensualLedgerServiceImplTest {
         val service = ConsensualLedgerServiceImpl(consensualTransactionBuilderFactory, flowEngine)
         val transactionBuilder = service.getTransactionBuilder()
         val signedTransaction = transactionBuilder
-            .withStates(ConsensualTransactionMocks.testConsensualState)
-            .sign(ConsensualTransactionMocks.testPublicKey)
+            .withStates(consensualStateExample)
+            .sign(publicKeyExample)
         assertIs<ConsensualSignedTransaction>(signedTransaction)
         assertIs<SecureHash>(signedTransaction.id)
     }

@@ -2,13 +2,13 @@ package net.corda.ledger.consensual.data.transaction
 
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualLedgerTransaction
 import java.security.PublicKey
 import java.time.Instant
 
-// TODO Break dependency on implementation from outside this module (needs a factory)
 class ConsensualLedgerTransactionImpl(
     private val wireTransaction: WireTransaction,
     private val serializationService: SerializationService
@@ -26,35 +26,33 @@ class ConsensualLedgerTransactionImpl(
         get() = wireTransaction.id
 
     override val timestamp: Instant by lazy(LazyThreadSafetyMode.PUBLICATION) {
-        val timeStampBytes = wireTransaction.getComponentGroupList(ConsensualComponentGroupEnum.TIMESTAMP.ordinal).first()
-        serializationService.deserialize(timeStampBytes, Instant::class.java)
+        val timeStampBytes = wireTransaction.getComponentGroupList(ConsensualComponentGroup.TIMESTAMP.ordinal).first()
+        serializationService.deserialize(timeStampBytes)
     }
-    override val requiredSigningKeys: Set<PublicKey> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    override val requiredSignatories: Set<PublicKey> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         wireTransaction
-            .getComponentGroupList(ConsensualComponentGroupEnum.REQUIRED_SIGNING_KEYS.ordinal)
+            .getComponentGroupList(ConsensualComponentGroup.REQUIRED_SIGNING_KEYS.ordinal)
             .map { serializationService.deserialize(it, PublicKey::class.java) }.toSet()
     }
     private val consensualStateTypes: List<String> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         wireTransaction
-            .getComponentGroupList(ConsensualComponentGroupEnum.OUTPUT_STATE_TYPES.ordinal)
-            .map { serializationService.deserialize(it, String::class.java) }
+            .getComponentGroupList(ConsensualComponentGroup.OUTPUT_STATE_TYPES.ordinal)
+            .map { serializationService.deserialize(it) }
     }
     override val states: List<ConsensualState> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         wireTransaction
-            .getComponentGroupList(ConsensualComponentGroupEnum.OUTPUT_STATES.ordinal)
-            .mapIndexed { index, state ->
-                serializationService.deserialize(state, Class.forName(consensualStateTypes[index])) as ConsensualState
-            }
+            .getComponentGroupList(ConsensualComponentGroup.OUTPUT_STATES.ordinal)
+            .map { serializationService.deserialize(it) }
     }
 
     /**
      * WIP CORE-5982
      */
     fun verify() {
-        val requiredSigningKeysFromStates = states
+        val requiredSignatoriesFromStates = states
             .flatMap { it.participants }
-        require(requiredSigningKeys == requiredSigningKeysFromStates) {
-            "Deserialized required signing keys from WireTx do not match with the ones derived from the states!"
+        require(requiredSignatories == requiredSignatoriesFromStates) {
+            "Deserialized required signatories from WireTx do not match with the ones derived from the states!"
         }
     }
 }

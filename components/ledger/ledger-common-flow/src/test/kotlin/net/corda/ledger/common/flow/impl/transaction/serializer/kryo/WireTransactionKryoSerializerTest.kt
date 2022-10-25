@@ -7,7 +7,7 @@ import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.kryoserialization.testkit.createCheckpointSerializer
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.testkit.getWireTransaction
+import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
@@ -35,7 +35,7 @@ class WireTransactionKryoSerializerTest {
 
     @Test
     fun `serialization of a Wire Tx object using the kryo default serialization`() {
-        val wireTransaction = getWireTransaction(
+        val wireTransaction = getWireTransactionExample(
             digestService,
             merkleTreeProvider,
             jsonMarshallingService
