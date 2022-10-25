@@ -104,7 +104,7 @@ class ConsensualSignedTransactionAMQPSerializationTest {
             )
 
             consensualSignedTransactionSerializer = setup.fetchService(
-                "(component.name=net.corda.ledger.consensual.flow.impl.transaction.amqp.ConsensualSignedTransactionSerializer)",
+                "(component.name=net.corda.ledger.consensual.flow.impl.transaction.serializer.amqp.ConsensualSignedTransactionSerializer)",
                 1500
             )
         }
