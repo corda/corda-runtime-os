@@ -1,4 +1,4 @@
-package net.corda.application.impl.services.json
+package net.corda.common.json.serializers
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
