@@ -1,5 +1,6 @@
 package net.corda.ledger.common.data.transaction
 
+import net.corda.common.json.validation.JsonSchemas
 import net.corda.crypto.core.concatByteArrays
 import net.corda.crypto.core.toByteArray
 import net.corda.common.json.validation.JsonValidator
@@ -14,7 +15,6 @@ import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_LEAF_PREFIX_OPTION
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NODE_PREFIX_OPTION
 import net.corda.v5.crypto.merkle.MerkleTree
 import net.corda.v5.ledger.common.transaction.PrivacySalt
-import java.io.InputStream
 import java.util.Base64
 
 const val ALL_LEDGER_METADATA_COMPONENT_GROUP_ID = 0
@@ -142,14 +142,8 @@ class WireTransaction(
     }
 
     private fun parseMetadata(json: String): TransactionMetaData {
-        val schema = getSchema()
-        jsonValidator.validate(json, schema)
+        jsonValidator.validate(json, JsonSchemas.CONSENSUAL_LEDGER_METADATA)
         return jsonMarshallingService.parse(json, TransactionMetaData::class.java)
-    }
-
-    private fun getSchema(): InputStream {
-        val path = "/schema/transaction-metadata-v1.json"
-        return checkNotNull(this::class.java.getResourceAsStream(path)) { "Failed to load JSON schema from $path" }
     }
 
     override fun equals(other: Any?): Boolean {
