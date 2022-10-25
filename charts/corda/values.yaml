@@ -61,16 +61,16 @@ db:
     port: 5432
     # the cluster database user configuration
     user:
-      # -- the cluster db username
+      # -- the cluster database user
       value: user
-      # -- the username secret configuration
+      # the cluster database user secret configuration; used in preference to value if name is set
       valueFrom: 
-        # -- the username secret key reference
-        secretkeyRef:
-          # -- the username secret name 
+        # the cluster database user secret key reference
+        secretKeyRef:
+          # -- the cluster database user secret name 
           name: ""
-          # the username secret key 
-          usernameKey: ""
+          # -- the cluster database user secret key 
+          key: ""
     # the cluster database password configuration
     password: 
       # -- the cluster passowrd
