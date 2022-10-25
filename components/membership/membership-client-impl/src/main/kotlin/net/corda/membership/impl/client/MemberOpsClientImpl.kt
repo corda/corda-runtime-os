@@ -298,7 +298,7 @@ class MemberOpsClientImpl @Activate constructor(
                 this.registrationId,
                 this.registrationSent,
                 this.registrationStatus.toString(),
-                this.reason.toString(),
+                this.reason ?: "",
                 MemberInfoSubmittedDto(
                     mapOf(
                         "registrationProtocolVersion" to this.registrationProtocolVersion.toString(),
