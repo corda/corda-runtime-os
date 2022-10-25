@@ -48,7 +48,7 @@ class DBWorker @Activate constructor(
 
         val params = getParams(args, DBWorkerParams())
         if (printHelpOrVersion(params.defaultParams, DBWorker::class.java, shutDownService)) return
-        setupMonitor(workerMonitor, params.defaultParams)
+        setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
         val databaseConfig = PathAndConfig(BOOT_DB_PARAMS, params.databaseParams)
         val config = getBootstrapConfig(

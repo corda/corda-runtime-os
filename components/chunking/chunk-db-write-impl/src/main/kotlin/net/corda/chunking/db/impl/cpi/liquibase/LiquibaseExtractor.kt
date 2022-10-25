@@ -17,11 +17,11 @@ class LiquibaseExtractor {
      *
      * @return list of entities to be inserted into db containing liquibase scripts
      */
-    fun extractLiquibaseEntitiesFromCpi(cpi: Cpi) : List<CpkDbChangeLogEntity> {
+    fun extractLiquibaseEntitiesFromCpi(cpi: Cpi): List<CpkDbChangeLogEntity> {
         log.info("Extracting liquibase files from for CPI: ${cpi.metadata.cpiId}")
 
-        val changeUUID = UUID.randomUUID()
-        val entities = cpi.cpks.flatMap { extractLiquibaseFromCpk(it, changeUUID) }
+        val changesetId = UUID.randomUUID()
+        val entities = cpi.cpks.flatMap { extractLiquibaseFromCpk(it, changesetId) }
 
         if (entities.isEmpty()) {
             log.warn("Extracting liquibase finished although none were found for ${cpi.metadata.cpiId}")
@@ -35,11 +35,11 @@ class LiquibaseExtractor {
      *
      * @return the extracted entities containing the liquibase scripts
      */
-    private fun extractLiquibaseFromCpk(cpk: Cpk, changeUUID: UUID) : List<CpkDbChangeLogEntity> {
+    private fun extractLiquibaseFromCpk(cpk: Cpk, changesetId: UUID): List<CpkDbChangeLogEntity> {
         log.info("Extracting liquibase files from ${cpk.metadata.cpkId}")
         // We expect [Cpk.path] to be non-null here because it has been previously extracted to local disk above.
         val entities = Files.newInputStream(cpk.path!!).use {
-            LiquibaseExtractorHelpers().getEntities(cpk, it, changeUUID)
+            LiquibaseExtractorHelpers().getEntities(cpk, it, changesetId)
         }
         log.info("Extracting liquibase files finished for ${cpk.metadata.cpkId}")
         return entities

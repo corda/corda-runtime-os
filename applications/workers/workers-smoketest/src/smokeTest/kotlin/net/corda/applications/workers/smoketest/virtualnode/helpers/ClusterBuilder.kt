@@ -1,6 +1,5 @@
 package net.corda.applications.workers.smoketest.virtualnode.helpers
 
-import net.corda.httprpc.JsonObject
 import java.io.FileNotFoundException
 import java.net.URI
 import java.nio.file.Paths
@@ -132,6 +131,9 @@ class ClusterBuilder {
     /** Get status of multiple flows */
     fun runnableFlowClasses(holdingIdentityShortHash: String) =
         get("/api/v1/flowclass/$holdingIdentityShortHash")
+
+    /** Get all RBAC roles */
+    fun getRbacRoles() = get("/api/v1/role")
 
     /** Start a flow */
     fun flowStart(

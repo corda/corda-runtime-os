@@ -181,3 +181,15 @@ cp ../corda-runtime-os/tools/plugins/topic-config/build/libs/topic-config-cli-pl
  ./build/generatedScripts/corda-cli.sh topic -b=localhost:9092 create connect
  cd ../corda-runtime-os/
 ```
+
+## Metrics
+
+Corda exposes Prometheus metrics.
+In order to view this metrics, when running the combined worker, you can use the configuration in  `../../../../metrics`.
+See [metrics](../../../../metrics/readme.md) for further documentation.
+
+## Security Manager
+
+Security Manager can get in the way when debugging the code that runs inside the sandbox. For example, evaluating an expression while debugging a flow might result with access denied error. 
+To initialize Security Manager with all permissions enabled, start the worker with command line argument `-DsecurityPolicyAllPermissions=true`.
+Note that this argument should be used only for development purposes.  

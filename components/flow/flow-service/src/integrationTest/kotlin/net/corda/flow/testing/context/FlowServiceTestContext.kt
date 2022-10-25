@@ -259,17 +259,17 @@ class FlowServiceTestContext @Activate constructor(
         flowId: String,
         sessionId: String,
         receivedSequenceNum: Int,
-        initiatingIdentity: HoldingIdentity?,
-        initiatedIdentity: HoldingIdentity?
+        outOfOrderSeqNums: List<Int>
     ): FlowIoRequestSetup {
         return createAndAddSessionEvent(
             flowId,
             sessionId,
-            initiatingIdentity,
-            initiatedIdentity,
+            null,
+            null,
             SessionAck(),
             sequenceNum = null,
             receivedSequenceNum,
+            outOfOrderSeqNums
         )
     }
 
@@ -279,17 +279,17 @@ class FlowServiceTestContext @Activate constructor(
         data: ByteArray,
         sequenceNum: Int,
         receivedSequenceNum: Int,
-        initiatingIdentity: HoldingIdentity?,
-        initiatedIdentity: HoldingIdentity?
+        outOfOrderSeqNums: List<Int>
     ): FlowIoRequestSetup {
         return createAndAddSessionEvent(
             flowId,
             sessionId,
-            initiatingIdentity,
-            initiatedIdentity,
+            null,
+            null,
             SessionData(ByteBuffer.wrap(data)),
             sequenceNum,
             receivedSequenceNum,
+            outOfOrderSeqNums
         )
     }
 
@@ -434,7 +434,8 @@ class FlowServiceTestContext @Activate constructor(
         initiatedIdentity: HoldingIdentity?,
         payload: Any,
         sequenceNum: Int?,
-        receivedSequenceNum: Int?
+        receivedSequenceNum: Int?,
+        outOfOrderSeqNums: List<Int> = emptyList()
     ): FlowIoRequestSetup {
         val sessionEvent = buildSessionEvent(
             MessageDirection.INBOUND,
@@ -442,7 +443,7 @@ class FlowServiceTestContext @Activate constructor(
             sequenceNum,
             payload,
             receivedSequenceNum ?: sequenceNum ?: 0,
-            listOf(0),
+            outOfOrderSeqNums,
             Instant.now(),
             initiatingIdentity ?: sessionInitiatingIdentity!!,
             initiatedIdentity ?: sessionInitiatedIdentity!!

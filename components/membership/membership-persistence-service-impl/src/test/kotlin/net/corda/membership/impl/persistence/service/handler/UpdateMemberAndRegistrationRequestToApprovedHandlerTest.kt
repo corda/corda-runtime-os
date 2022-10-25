@@ -13,6 +13,7 @@ import net.corda.data.membership.db.request.command.UpdateMemberAndRegistrationR
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
 import net.corda.libs.packaging.core.CpiIdentifier
+import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.datamodel.MemberInfoEntity
 import net.corda.membership.datamodel.MemberInfoEntityPrimaryKey
 import net.corda.membership.datamodel.RegistrationRequestEntity
@@ -25,6 +26,7 @@ import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
+import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.VirtualNodeInfo
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toCorda
@@ -93,6 +95,8 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
             )
         } doReturn factory
     }
+    private val keyEncodingService: KeyEncodingService = mock()
+    private val platformInfoProvider: PlatformInfoProvider = mock()
     private val service = PersistenceHandlerServices(
         clock,
         dbConnectionManager,
@@ -100,6 +104,8 @@ class UpdateMemberAndRegistrationRequestToApprovedHandlerTest {
         memberInfoFactory,
         cordaAvroSerializationFactory,
         virtualNodeInfoReadService,
+        keyEncodingService,
+        platformInfoProvider,
     )
     private val handler = UpdateMemberAndRegistrationRequestToApprovedHandler(service)
 

@@ -1,0 +1,15 @@
+plugins {
+    id 'corda.common-publishing'
+    id 'corda.common-library'
+}
+
+description 'Corda ledger consensual - persistence api'
+
+dependencies {
+    compileOnly 'org.osgi:osgi.annotation'
+
+    api project(':libs:lifecycle:lifecycle')
+    api project(':libs:configuration:configuration-core')
+
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+}

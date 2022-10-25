@@ -11,7 +11,7 @@ import org.junit.jupiter.api.assertThrows
 import java.util.UUID
 
 class VirtualNodeDbChangeLogTest {
-    private val uid = UUID.randomUUID().toString()
+    private val fakeId = UUID.randomUUID()
     private val masterFile1 = CpkDbChangeLogEntity(
         CpkDbChangeLogKey(
             "CPK1",
@@ -21,7 +21,7 @@ class VirtualNodeDbChangeLogTest {
         ),
         "cpk1-checksum",
         "migration1",
-        uid
+        fakeId
     )
     private val otherFile1 = CpkDbChangeLogEntity(
         CpkDbChangeLogKey(
@@ -32,7 +32,7 @@ class VirtualNodeDbChangeLogTest {
         ),
         "cpk1-checksum",
         "migration2",
-        uid
+        fakeId
     )
     private val masterFile2 = CpkDbChangeLogEntity(
         CpkDbChangeLogKey(
@@ -43,7 +43,7 @@ class VirtualNodeDbChangeLogTest {
         ),
         "cpk1-checksum",
         "migration3",
-        uid
+        fakeId
     )
 
     @Test

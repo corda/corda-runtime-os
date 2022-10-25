@@ -1,8 +1,6 @@
 package net.corda.virtualnode.write.db.impl.tests
 
-import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
-import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogKey
@@ -12,9 +10,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.bouncycastle.asn1.x500.style.RFC4519Style.uid
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import java.util.UUID
-import javax.persistence.EntityManagerFactory
 
 class VirtualNodeDbChangeLogImplementationTest  {
     // It hardly seems worth bringing in a template system for one expansion, so we'll just do string replacement on _INCLUDETARGET_
@@ -46,6 +42,7 @@ class VirtualNodeDbChangeLogImplementationTest  {
     companion object {
         private val logger = contextLogger()
         private val dbConfig = DbUtils.getEntityManagerConfiguration("test")
+        private val fakeId = UUID.randomUUID()
     }
 
     private final fun doMigration(includeElement: String, failureText: String? = null) {
@@ -55,9 +52,8 @@ class VirtualNodeDbChangeLogImplementationTest  {
             }
         val lbm = LiquibaseSchemaMigratorImpl()
         val primaryContent = primaryTemplate.replace("_INCLUDETARGET_", includeElement)
-        val uid = UUID.randomUUID().toString()
-        val primary = CpkDbChangeLogEntity(CpkDbChangeLogKey("myCoolCpk", "1", "42", "migration/db.changelog-master.xml"), "42", primaryContent, uid)
-        val secondary = CpkDbChangeLogEntity(CpkDbChangeLogKey("myCoolCpk", "1", "42", "migration/dogs-migration-v1.0.xml"), "42", secondaryContent, uid)
+        val primary = CpkDbChangeLogEntity(CpkDbChangeLogKey("myCoolCpk", "1", "42", "migration/db.changelog-master.xml"), "42", primaryContent, fakeId)
+        val secondary = CpkDbChangeLogEntity(CpkDbChangeLogKey("myCoolCpk", "1", "42", "migration/dogs-migration-v1.0.xml"), "42", secondaryContent, fakeId)
         val cl = VirtualNodeDbChangeLog(listOf(primary, secondary))
         assertThat(cl.masterChangeLogFiles.size).isEqualTo(1)
         if (failureText != null) {

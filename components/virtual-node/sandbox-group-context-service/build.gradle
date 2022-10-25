@@ -32,7 +32,7 @@ dependencies {
     implementation project(":libs:cache:cache-caffeine")
     implementation project(":libs:configuration:configuration-core")
     implementation project(":libs:crypto:crypto-core")
-
+    implementation project(":libs:metrics")
     implementation project(':libs:packaging:packaging-core')
     implementation project(':libs:virtual-node:sandbox-group-context')
     implementation project(':libs:sandbox')

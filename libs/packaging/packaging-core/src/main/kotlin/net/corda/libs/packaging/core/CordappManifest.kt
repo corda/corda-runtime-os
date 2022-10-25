@@ -45,6 +45,8 @@ data class CordappManifest(
         const val CORDAPP_SUBFLOW_FLOWS = "Corda-Subflow-Classes"
         const val CORDAPP_SCHEMAS = "Corda-MappedSchema-Classes"
         const val CORDAPP_SERIALIZERS = "Corda-SerializationCustomSerializer-Classes"
+        const val CORDAPP_JSON_SERIALIZER_CLASSES = "Corda-JsonSerializer-Classes"
+        const val CORDAPP_JSON_DESERIALIZER_CLASSES = "Corda-JsonDeserializer-Classes"
         const val CORDAPP_CHECKPOINT_SERIALIZERS = "Corda-CheckpointCustomSerializer-Classes"
         const val CORDAPP_STATE_AND_REF_PROCESSORS = "Corda-StateAndRefPostProcessor-Classes"
         const val CORDAPP_CUSTOM_QUERY_PROCESSORS = "Corda-CustomQueryPostProcessor-Classes"
@@ -170,6 +172,8 @@ data class CordappManifest(
     val subflows: Set<String> get() = parseSet(CORDAPP_SUBFLOW_FLOWS)
     val schemas: Set<String> get() = parseSet(CORDAPP_SCHEMAS)
     val serializers: Set<String> get() = parseSet(CORDAPP_SERIALIZERS)
+    val jsonSerializerClasses: Set<String> get() = parseSet(CORDAPP_JSON_SERIALIZER_CLASSES)
+    val jsonDeserializerClasses: Set<String> get() = parseSet(CORDAPP_JSON_DESERIALIZER_CLASSES)
     val checkpointSerializers: Set<String> get() = parseSet(CORDAPP_CHECKPOINT_SERIALIZERS)
     val queryPostProcessors: Set<String>
         get() = parseSet(CORDAPP_STATE_AND_REF_PROCESSORS) + parseSet(CORDAPP_CUSTOM_QUERY_PROCESSORS)

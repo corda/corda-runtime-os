@@ -3,7 +3,7 @@ package net.corda.ledger.consensual.testkit
 import java.security.KeyPairGenerator
 import java.time.Instant
 import net.corda.ledger.common.testkit.getWireTransaction
-import net.corda.ledger.consensual.impl.transaction.ConsensualSignedTransactionImpl
+import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionImpl
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService

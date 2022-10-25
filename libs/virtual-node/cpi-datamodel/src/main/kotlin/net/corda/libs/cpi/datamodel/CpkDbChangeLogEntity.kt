@@ -25,8 +25,8 @@ class CpkDbChangeLogEntity(
     val fileChecksum: String,
     @Column(name = "content", nullable = false)
     val content: String,
-    @Column(name = "change_uuid", nullable = false)
-    val changeUUID: UUID,
+    @Column(name = "changeset_id", nullable = false)
+    val changesetId: UUID
 ) {
     // This structure does not distinguish the root changelogs from changelog include files
     // (or CSVs, which we do not need to support). So, to find the root, you need to look for a filename

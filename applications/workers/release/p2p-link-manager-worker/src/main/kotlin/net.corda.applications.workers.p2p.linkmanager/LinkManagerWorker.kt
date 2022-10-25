@@ -35,7 +35,7 @@ class LinkManagerWorker @Activate constructor(
 
         val params = WorkerHelpers.getParams(args, LinkManagerWorkerParams())
         if (WorkerHelpers.printHelpOrVersion(params.defaultParams, this::class.java, shutDownService)) return
-        WorkerHelpers.setupMonitor(workerMonitor, params.defaultParams)
+        WorkerHelpers.setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
         val config = WorkerHelpers.getBootstrapConfig(
             params.defaultParams,

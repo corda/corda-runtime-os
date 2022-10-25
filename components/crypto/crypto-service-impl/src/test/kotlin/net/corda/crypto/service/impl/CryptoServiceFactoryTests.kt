@@ -1,6 +1,7 @@
 package net.corda.crypto.service.impl
 
 import net.corda.crypto.core.CryptoConsts
+import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.service.impl.infra.TestServicesFactory
 import net.corda.crypto.softhsm.SoftCryptoServiceConfig
 import net.corda.lifecycle.LifecycleStatus
@@ -138,10 +139,10 @@ class CryptoServiceFactoryTests {
             assertTrue(component.isRunning)
             assertEquals(LifecycleStatus.UP, component.lifecycleCoordinator.status)
         }
-        assertThrows<IllegalStateException> {
+        assertThrows<InvalidParamsException> {
             component.findInstance(tenantId2, CryptoConsts.Categories.LEDGER)
         }
-        assertThrows<IllegalStateException> {
+        assertThrows<InvalidParamsException> {
             component.findInstance(UUID.randomUUID().toString(), CryptoConsts.Categories.LEDGER)
         }
     }

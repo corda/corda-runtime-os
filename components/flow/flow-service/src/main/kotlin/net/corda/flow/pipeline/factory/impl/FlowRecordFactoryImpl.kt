@@ -1,18 +1,14 @@
 package net.corda.flow.pipeline.factory.impl
 
-import net.corda.data.crypto.wire.ops.flow.FlowOpsRequest
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.mapper.FlowMapperEvent
 import net.corda.data.flow.output.FlowStatus
-import net.corda.data.persistence.EntityRequest
 import net.corda.flow.pipeline.factory.FlowRecordFactory
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas
 import net.corda.schema.Schemas.Flow.Companion.FLOW_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.Companion.FLOW_MAPPER_EVENT_TOPIC
 import net.corda.schema.Schemas.Flow.Companion.FLOW_STATUS_TOPIC
-import net.corda.schema.Schemas.Persistence.Companion.PERSISTENCE_ENTITY_PROCESSOR_TOPIC
 import org.osgi.service.component.annotations.Component
 
 @Component(service = [FlowRecordFactory::class])
@@ -23,22 +19,6 @@ class FlowRecordFactoryImpl : FlowRecordFactory {
             topic = FLOW_EVENT_TOPIC,
             key = flowId,
             value = FlowEvent(flowId, payload)
-        )
-    }
-
-    override fun createFlowOpsRequestRecord(flowId: String, payload: FlowOpsRequest): Record<String, FlowOpsRequest> {
-        return Record(
-            topic = Schemas.Crypto.FLOW_OPS_MESSAGE_TOPIC,
-            key = flowId,
-            value = payload
-        )
-    }
-
-    override fun createEntityRequestRecord(requestId: String, payload: EntityRequest): Record<String, EntityRequest> {
-        return Record(
-            topic = PERSISTENCE_ENTITY_PROCESSOR_TOPIC,
-            key = requestId,
-            value = payload
         )
     }
 
