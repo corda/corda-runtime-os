@@ -115,7 +115,7 @@ class CombinedWorker @Activate constructor(
             secretsPassphrase
         ).run()
 
-        setupMonitor(workerMonitor, params.defaultParams)
+        setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
         JavaSerialisationFilter.install()
 

@@ -48,7 +48,7 @@ class RPCWorker @Activate constructor(
 
         val params = getParams(args, RPCWorkerParams())
         if (printHelpOrVersion(params.defaultParams, RPCWorker::class.java, shutDownService)) return
-        setupMonitor(workerMonitor, params.defaultParams)
+        setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
         val config =
             getBootstrapConfig(params.defaultParams, configurationValidatorFactory.createConfigValidator(), listOf())

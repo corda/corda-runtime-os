@@ -1,4 +1,4 @@
-package net.corda.application.impl.services.json
+package net.corda.common.json.serializers
 
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.DeserializationContext
@@ -11,7 +11,7 @@ import java.math.BigDecimal
 import java.math.BigInteger
 
 @Suppress("TooManyFunctions")
-class JsonNodeReaderAdaptor(
+internal class JsonNodeReaderAdaptor(
     private val jsonNode: JsonNode,
     private val deserializationContext: DeserializationContext
 ) : JsonNodeReader {
@@ -112,7 +112,7 @@ class JsonNodeReaderAdaptor(
     override fun <T> parse(clazz: Class<T>): T? = deserializationContext.readValue(jsonNode.toParser(), clazz)
 }
 
-fun JsonNodeReaderAdaptor(
+internal fun JsonNodeReaderAdaptor(
     jsonParser: JsonParser,
     deserializationContext: DeserializationContext
 ): JsonNodeReaderAdaptor {

@@ -5,6 +5,7 @@ import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
 import net.corda.v5.base.util.contextLogger
 import java.nio.file.Files
+import java.util.UUID
 
 class LiquibaseExtractor {
     companion object {
@@ -16,10 +17,11 @@ class LiquibaseExtractor {
      *
      * @return list of entities to be inserted into db containing liquibase scripts
      */
-    fun extractLiquibaseEntitiesFromCpi(cpi: Cpi) : List<CpkDbChangeLogEntity> {
-        val entities = mutableListOf<CpkDbChangeLogEntity>()
+    fun extractLiquibaseEntitiesFromCpi(cpi: Cpi): List<CpkDbChangeLogEntity> {
         log.info("Extracting liquibase files from for CPI: ${cpi.metadata.cpiId}")
-        cpi.cpks.forEach { entities += extractLiquibaseFromCpk(it) }
+
+        val changesetId = UUID.randomUUID()
+        val entities = cpi.cpks.flatMap { extractLiquibaseFromCpk(it, changesetId) }
 
         if (entities.isEmpty()) {
             log.warn("Extracting liquibase finished although none were found for ${cpi.metadata.cpiId}")
@@ -33,13 +35,11 @@ class LiquibaseExtractor {
      *
      * @return the extracted entities containing the liquibase scripts
      */
-    private fun extractLiquibaseFromCpk(cpk: Cpk) : List<CpkDbChangeLogEntity> {
-        val entities = mutableListOf<CpkDbChangeLogEntity>()
-
+    private fun extractLiquibaseFromCpk(cpk: Cpk, changesetId: UUID): List<CpkDbChangeLogEntity> {
         log.info("Extracting liquibase files from ${cpk.metadata.cpkId}")
         // We expect [Cpk.path] to be non-null here because it has been previously extracted to local disk above.
-        Files.newInputStream(cpk.path!!).use {
-            entities += LiquibaseExtractorHelpers().getEntities(cpk, it)
+        val entities = Files.newInputStream(cpk.path!!).use {
+            LiquibaseExtractorHelpers().getEntities(cpk, it, changesetId)
         }
         log.info("Extracting liquibase files finished for ${cpk.metadata.cpkId}")
 

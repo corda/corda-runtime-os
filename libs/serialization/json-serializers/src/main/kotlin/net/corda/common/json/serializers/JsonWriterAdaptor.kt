@@ -1,4 +1,4 @@
-package net.corda.application.impl.services.json
+package net.corda.common.json.serializers
 
 import com.fasterxml.jackson.core.Base64Variants
 import com.fasterxml.jackson.core.JsonGenerator
@@ -13,7 +13,7 @@ import java.math.BigInteger
  * writing Json without exposing Jackson to the public api.
  */
 @Suppress("TooManyFunctions")
-class JsonWriterAdaptor(private val jsonGenerator: JsonGenerator) : JsonWriter {
+internal class JsonWriterAdaptor(private val jsonGenerator: JsonGenerator) : JsonWriter {
 
     private fun jacksonConfigFor(config: JsonSerializedBase64Config) = when (config) {
         JsonSerializedBase64Config.MIME -> Base64Variants.MIME

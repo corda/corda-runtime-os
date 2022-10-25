@@ -409,6 +409,16 @@ class MGMRegistrationServiceTest {
     }
 
     @Test
+    fun `registration persists initial group parameters snapshot`() {
+        postConfigChangedEvent()
+        registrationService.start()
+
+        registrationService.register(registrationRequest, mgm, properties)
+
+        verify(membershipPersistenceClient).persistGroupParametersInitialSnapshot(eq(mgm))
+    }
+
+    @Test
     fun `registration failure to persist return an error`() {
         postConfigChangedEvent()
         registrationService.start()

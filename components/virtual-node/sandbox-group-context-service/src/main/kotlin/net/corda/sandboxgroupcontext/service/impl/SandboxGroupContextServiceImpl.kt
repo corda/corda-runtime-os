@@ -9,6 +9,7 @@ import java.util.Hashtable
 import java.util.LinkedList
 import net.corda.cpk.read.CpkReadService
 import net.corda.libs.packaging.core.CpkMetadata
+import net.corda.metrics.CordaMetrics
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxException
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX
@@ -83,45 +84,52 @@ class SandboxGroupContextServiceImpl(
         initializer: SandboxGroupContextInitializer
     ): SandboxGroupContext {
         return cache.get(virtualNodeContext) {
-            val cpks = virtualNodeContext.cpkFileChecksums.mapNotNull { cpkReadService.get(it) }
-            if (cpks.size != virtualNodeContext.cpkFileChecksums.size) {
-                logger.error("Not all CPKs could be retrieved for this virtual node context ($virtualNodeContext)")
-                logger.error("Wanted all of:  ${virtualNodeContext.cpkFileChecksums}")
-                val receivedIdentifiers = cpks.map { it.metadata.cpkId }
-                val missing = setOf(virtualNodeContext.cpkFileChecksums) - setOf(receivedIdentifiers)
-                logger.error("Returned:  $receivedIdentifiers")
-                logger.error("Missing:  $missing")
-                throw CordaRuntimeException("Not all CPKs could be retrieved for this virtual node context ($virtualNodeContext)\"")
-            }
-
-            val sandboxGroup = sandboxCreationService.createSandboxGroup(cpks, virtualNodeContext.sandboxGroupType.name)
-
-            // Default implementation doesn't do anything on close()`
-            val sandboxGroupContext = SandboxGroupContextImpl(virtualNodeContext, sandboxGroup)
-
-            // Register common OSGi services for use within this sandbox.
-            val commonServiceRegistrations = registerCommonServices(virtualNodeContext, sandboxGroup.metadata.keys)
-
-            // Run the caller's initializer.
-            val initializerAutoCloseable =
-                initializer.initializeSandboxGroupContext(virtualNodeContext.holdingIdentity, sandboxGroupContext)
-
-            // Wrapped SandboxGroupContext, specifically to set closeable and forward on all other calls.
-
-            // Calling close also removes us from the contexts map and unloads the [SandboxGroup].
-            val newContext = CloseableSandboxGroupContextImpl(sandboxGroupContext) {
-                // These objects might still be in a sandbox, so close them whilst the sandbox is still valid.
-                initializerAutoCloseable.close()
-
-                // Remove this sandbox's common services.
-                commonServiceRegistrations?.forEach { closeable ->
-                    runIgnoringExceptions(closeable::close)
+            val sandboxTimer = CordaMetrics.Metric.SandboxCreateTime.builder()
+                .forVirtualNode(virtualNodeContext.holdingIdentity.shortHash.value)
+                .withTag(CordaMetrics.Tag.SandboxGroupType, virtualNodeContext.sandboxGroupType.name)
+                .build()
+            sandboxTimer.recordCallable {
+                val cpks = virtualNodeContext.cpkFileChecksums.mapNotNull { cpkReadService.get(it) }
+                if (cpks.size != virtualNodeContext.cpkFileChecksums.size) {
+                    logger.error("Not all CPKs could be retrieved for this virtual node context ($virtualNodeContext)")
+                    logger.error("Wanted all of:  ${virtualNodeContext.cpkFileChecksums}")
+                    val receivedIdentifiers = cpks.map { it.metadata.cpkId }
+                    val missing = setOf(virtualNodeContext.cpkFileChecksums) - setOf(receivedIdentifiers)
+                    logger.error("Returned:  $receivedIdentifiers")
+                    logger.error("Missing:  $missing")
+                    throw CordaRuntimeException("Not all CPKs could be retrieved for this virtual node context ($virtualNodeContext)\"")
                 }
 
-                // And unload the (OSGi) sandbox group
-                sandboxCreationService.unloadSandboxGroup(sandboxGroupContext.sandboxGroup)
-            }
-            newContext
+                val sandboxGroup =
+                    sandboxCreationService.createSandboxGroup(cpks, virtualNodeContext.sandboxGroupType.name)
+
+                // Default implementation doesn't do anything on close()`
+                val sandboxGroupContext = SandboxGroupContextImpl(virtualNodeContext, sandboxGroup)
+
+                // Register common OSGi services for use within this sandbox.
+                val commonServiceRegistrations = registerCommonServices(virtualNodeContext, sandboxGroup.metadata.keys)
+
+                // Run the caller's initializer.
+                val initializerAutoCloseable =
+                    initializer.initializeSandboxGroupContext(virtualNodeContext.holdingIdentity, sandboxGroupContext)
+
+                // Wrapped SandboxGroupContext, specifically to set closeable and forward on all other calls.
+
+                // Calling close also removes us from the contexts map and unloads the [SandboxGroup].
+                val newContext: CloseableSandboxGroupContext = CloseableSandboxGroupContextImpl(sandboxGroupContext) {
+                    // These objects might still be in a sandbox, so close them whilst the sandbox is still valid.
+                    initializerAutoCloseable.close()
+
+                    // Remove this sandbox's common services.
+                    commonServiceRegistrations?.forEach { closeable ->
+                        runIgnoringExceptions(closeable::close)
+                    }
+
+                    // And unload the (OSGi) sandbox group
+                    sandboxCreationService.unloadSandboxGroup(sandboxGroupContext.sandboxGroup)
+                }
+                newContext
+            }!!
         }
     }
 
