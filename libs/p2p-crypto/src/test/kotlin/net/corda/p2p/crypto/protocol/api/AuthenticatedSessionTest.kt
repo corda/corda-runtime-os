@@ -1,23 +1,21 @@
-package net.corda.p2p.crypto
+package net.corda.p2p.crypto.protocol.api
 
-import net.corda.p2p.crypto.protocol.api.AuthenticatedEncryptionSession
-import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolInitiator
-import net.corda.p2p.crypto.protocol.api.AuthenticationProtocolResponder
-import net.corda.p2p.crypto.protocol.api.DecryptionFailedError
-import net.corda.p2p.crypto.protocol.api.MessageTooLargeError
-import net.corda.p2p.crypto.protocol.api.CertificateCheckMode
+import net.corda.p2p.crypto.AuthenticatedDataMessage
+import net.corda.p2p.crypto.CommonHeader
+import net.corda.p2p.crypto.MessageType
+import net.corda.p2p.crypto.ProtocolMode
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.crypto.SignatureSpec
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.bouncycastle.jce.provider.BouncyCastleProvider
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.Signature
+import java.time.Instant
 import java.util.UUID
 
-class AuthenticatedEncryptionSessionTest {
+class AuthenticatedSessionTest {
 
     private val provider = BouncyCastleProvider()
     private val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
@@ -25,14 +23,14 @@ class AuthenticatedEncryptionSessionTest {
 
     private val sessionId = UUID.randomUUID().toString()
     private val groupId = "some-group-id"
-    private val aliceX500Name =  MemberX500Name.parse("CN=alice, OU=MyUnit, O=MyOrg, L=London, S=London, C=GB")
+    private val aliceX500Name = MemberX500Name.parse("CN=alice, OU=MyUnit, O=MyOrg, L=London, S=London, C=GB")
 
     // party A
     private val partyAMaxMessageSize = 1_000_000
     private val partyASessionKey = keyPairGenerator.generateKeyPair()
     private val authenticationProtocolA = AuthenticationProtocolInitiator(
         sessionId,
-        setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION),
+        setOf(ProtocolMode.AUTHENTICATION_ONLY),
         partyAMaxMessageSize,
         partyASessionKey.public,
         groupId,
@@ -42,14 +40,12 @@ class AuthenticatedEncryptionSessionTest {
     // party B
     private val partyBMaxMessageSize = 1_500_000
     private val partyBSessionKey = keyPairGenerator.generateKeyPair()
-    private val authenticationProtocolB =
-        AuthenticationProtocolResponder(
-            sessionId,
-            setOf(ProtocolMode.AUTHENTICATED_ENCRYPTION), partyBMaxMessageSize, CertificateCheckMode.NoCertificate
-        )
+    private val authenticationProtocolB = AuthenticationProtocolResponder(
+        sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize, CertificateCheckMode.NoCertificate
+    )
 
     @Test
-    fun `session can be established between two parties and used for transmission of authenticated and encrypted data successfully`() {
+    fun `session can be established between two parties and used for transmission of authenticated data successfully`() {
         // Step 1: initiator sending hello message to responder.
         val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
         authenticationProtocolB.receiveInitiatorHello(initiatorHelloMsg)
@@ -93,44 +89,37 @@ class AuthenticatedEncryptionSessionTest {
         )
 
         // Both sides generate session secrets
-        val authenticatedSessionOnA = authenticationProtocolA.getSession() as AuthenticatedEncryptionSession
-        val authenticatedSessionOnB = authenticationProtocolB.getSession() as AuthenticatedEncryptionSession
+        val authenticatedSessionOnA = authenticationProtocolA.getSession() as AuthenticatedSession
+        val authenticatedSessionOnB = authenticationProtocolB.getSession() as AuthenticatedSession
 
         for (i in 1..3) {
             // Data exchange: A sends message to B, which decrypts and validates it
             val payload = "ping $i".toByteArray(Charsets.UTF_8)
-            val encryptionResult = authenticatedSessionOnA.encryptData(payload)
-            val initiatorMsg = AuthenticatedEncryptedDataMessage(
-                encryptionResult.header,
-                ByteBuffer.wrap(encryptionResult.encryptedPayload), ByteBuffer.wrap(encryptionResult.authTag)
+            val authenticationResult = authenticatedSessionOnA.createMac(payload)
+            val initiatorMsg = AuthenticatedDataMessage(
+                authenticationResult.header, ByteBuffer.wrap(payload),
+                ByteBuffer.wrap(authenticationResult.mac)
             )
 
-            val decryptedPayload = authenticatedSessionOnB.decryptData(
-                initiatorMsg.header, initiatorMsg.encryptedPayload.array(),
-                initiatorMsg.authTag.array()
-            )
-            assertTrue(decryptedPayload.contentEquals(payload))
+            authenticatedSessionOnB.validateMac(initiatorMsg.header, initiatorMsg.payload.array(), initiatorMsg.authTag.array())
         }
 
         for (i in 1..3) {
             // Data exchange: B -> A
             val payload = "pong $i".toByteArray(Charsets.UTF_8)
-            val encryptionResult = authenticatedSessionOnB.encryptData(payload)
-            val responderMsg = AuthenticatedEncryptedDataMessage(
-                encryptionResult.header,
-                ByteBuffer.wrap(encryptionResult.encryptedPayload), ByteBuffer.wrap(encryptionResult.authTag)
-            )
+            val authenticationResult = authenticatedSessionOnB.createMac(payload)
+            val responderMsg =
+                AuthenticatedDataMessage(
+                    authenticationResult.header,
+                    ByteBuffer.wrap(payload), ByteBuffer.wrap(authenticationResult.mac)
+                )
 
-            val decryptedPayload = authenticatedSessionOnA.decryptData(
-                responderMsg.header, responderMsg.encryptedPayload.array(),
-                responderMsg.authTag.array()
-            )
-            assertTrue(decryptedPayload.contentEquals(payload))
+            authenticatedSessionOnA.validateMac(responderMsg.header, responderMsg.payload.array(), responderMsg.authTag.array())
         }
     }
 
     @Test
-    fun `when data message is altered during transmission, decryption fails with an error`() {
+    fun `when MAC on data message is altered during transmission, validation fails with an error`() {
         // Step 1: initiator sending hello message to responder.
         val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
         authenticationProtocolB.receiveInitiatorHello(initiatorHelloMsg)
@@ -174,50 +163,28 @@ class AuthenticatedEncryptionSessionTest {
         )
 
         // Both sides generate session secrets
-        val authenticatedSessionOnA = authenticationProtocolA.getSession() as AuthenticatedEncryptionSession
-        val authenticatedSessionOnB = authenticationProtocolB.getSession() as AuthenticatedEncryptionSession
+        val authenticatedSessionOnA = authenticationProtocolA.getSession() as AuthenticatedSession
+        val authenticatedSessionOnB = authenticationProtocolB.getSession() as AuthenticatedSession
 
         // Data exchange: A sends message to B, B receives corrupted data which fail validation.
         val payload = "ping".toByteArray(Charsets.UTF_8)
-        val encryptionResult = authenticatedSessionOnA.encryptData(payload)
-        val initiatorMsg =
-            AuthenticatedDataMessage(
-                encryptionResult.header,
-                ByteBuffer.wrap(encryptionResult.encryptedPayload), ByteBuffer.wrap(encryptionResult.authTag)
-            )
+        val authenticationResult = authenticatedSessionOnA.createMac(payload)
+        val initiatorMsg = AuthenticatedDataMessage(
+            authenticationResult.header, ByteBuffer.wrap(payload),
+            ByteBuffer.wrap(authenticationResult.mac)
+        )
 
-        Assertions.assertThatThrownBy {
-            val modifiedHeader = initiatorMsg.header
-            modifiedHeader.sessionId = "some-other-session"
-            authenticatedSessionOnB.decryptData(
-                modifiedHeader,
-                initiatorMsg.payload.array(),
-                initiatorMsg.authTag.array() + "0".toByteArray(Charsets.UTF_8)
-            )
-        }.isInstanceOf(DecryptionFailedError::class.java)
-            .hasMessageContaining("Decryption failed due to bad authentication tag.")
-
-        Assertions.assertThatThrownBy {
-            authenticatedSessionOnB.decryptData(
+        assertThatThrownBy {
+            authenticatedSessionOnB.validateMac(
                 initiatorMsg.header,
-                initiatorMsg.payload.array() + "0".toByteArray(Charsets.UTF_8),
-                initiatorMsg.authTag.array()
+                initiatorMsg.payload.array() + "0".toByteArray(Charsets.UTF_8), initiatorMsg.authTag.array()
             )
-        }.isInstanceOf(DecryptionFailedError::class.java)
-            .hasMessageContaining("Decryption failed due to bad authentication tag.")
-
-        Assertions.assertThatThrownBy {
-            authenticatedSessionOnB.decryptData(
-                initiatorMsg.header,
-                initiatorMsg.payload.array(),
-                initiatorMsg.authTag.array() + "0".toByteArray(Charsets.UTF_8)
-            )
-        }.isInstanceOf(DecryptionFailedError::class.java)
-            .hasMessageContaining("Decryption failed due to bad authentication tag.")
+        }
+            .isInstanceOf(InvalidMac::class.java)
     }
 
     @Test
-    fun `when trying to encrypt message larger than the agreed max message size, an exception is thrown`() {
+    fun `when trying to create MAC for message larger than the agreed max message size, an exception is thrown`() {
         // Step 1: initiator sending hello message to responder.
         val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
         authenticationProtocolB.receiveInitiatorHello(initiatorHelloMsg)
@@ -261,13 +228,23 @@ class AuthenticatedEncryptionSessionTest {
         )
 
         // Both sides generate session secrets
-        val authenticatedSessionOnA = authenticationProtocolA.getSession() as AuthenticatedEncryptionSession
+        val authenticatedSessionOnA = authenticationProtocolA.getSession() as AuthenticatedSession
+        val authenticatedSessionOnB = authenticationProtocolB.getSession() as AuthenticatedSession
 
-        Assertions.assertThatThrownBy { authenticatedSessionOnA.encryptData(ByteArray(partyAMaxMessageSize + 1)) }
+        assertThatThrownBy { authenticatedSessionOnA.createMac(ByteArray(partyAMaxMessageSize + 1)) }
             .isInstanceOf(MessageTooLargeError::class.java)
             .hasMessageContaining(
                 "Message's size (${partyAMaxMessageSize + 1} bytes) was larger than the max message " +
                     "size of the session ($partyAMaxMessageSize bytes)"
+            )
+
+        val payload = ByteArray(partyAMaxMessageSize + 1)
+        val header = CommonHeader(MessageType.DATA, 1, "some-session-id", 4, Instant.now().toEpochMilli())
+        assertThatThrownBy { authenticatedSessionOnB.validateMac(header, payload, ByteArray(0)) }
+            .isInstanceOf(MessageTooLargeError::class.java)
+            .hasMessageContaining(
+                "Message's size (${partyAMaxMessageSize + 1} bytes) was larger than the max message" +
+                    " size of the session ($partyAMaxMessageSize bytes)"
             )
     }
 }

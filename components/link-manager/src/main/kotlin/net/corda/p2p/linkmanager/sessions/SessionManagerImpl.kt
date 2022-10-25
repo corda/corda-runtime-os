@@ -33,6 +33,7 @@ import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
 import net.corda.p2p.crypto.protocol.api.InvalidPeerCertificate
 import net.corda.p2p.crypto.protocol.api.CertificateCheckMode
+import net.corda.p2p.crypto.protocol.api.HandshakeIdentityData
 import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.crypto.protocol.api.Session
 import net.corda.p2p.crypto.protocol.api.WrongPublicKeyHashException
@@ -564,21 +565,7 @@ internal class SessionManagerImpl(
             return null
         }
 
-        try {
-            session.validatePeerHandshakeMessage(
-                message,
-                sessionCounterparties.counterpartyId.x500Name,
-                memberInfo.sessionPublicKey,
-                memberInfo.publicKeyAlgorithm.getSignatureSpec()
-            )
-        } catch (exception: InvalidHandshakeResponderKeyHash) {
-            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
-            return null
-        } catch (exception: InvalidHandshakeMessageException) {
-            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
-            return null
-        } catch (exception: InvalidPeerCertificate) {
-            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
+        if (!session.validatePeerHandshakeMessageHandleError(message, memberInfo, sessionCounterparties)) {
             return null
         }
         val authenticatedSession = session.getSession()
@@ -658,7 +645,6 @@ internal class SessionManagerImpl(
         return createLinkOutMessage(responderHello, hostedIdentityInSameGroup, peer, groupInfo.networkType)
     }
 
-    @Suppress("ComplexMethod")
     private fun processInitiatorHandshake(message: InitiatorHandshakeMessage): LinkOutMessage? {
         logger.info("Processing ${message::class.java.simpleName} for session ${message.header.sessionId}.")
         val session = pendingInboundSessions[message.header.sessionId]
@@ -690,23 +676,7 @@ internal class SessionManagerImpl(
         }
 
         session.generateHandshakeSecrets()
-        val ourIdentityData = try {
-            session.validatePeerHandshakeMessage(
-                message,
-                peer.holdingIdentity.x500Name,
-                peer.sessionPublicKey,
-                peer.publicKeyAlgorithm.getSignatureSpec()
-            )
-        } catch (exception: WrongPublicKeyHashException) {
-            logger.error("The message was discarded. ${exception.message}")
-            return null
-        } catch (exception: InvalidHandshakeMessageException) {
-            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
-            return null
-        } catch (exception: InvalidPeerCertificate) {
-            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
-            return null
-        }
+        val ourIdentityData = session.validatePeerHandshakeMessageHandleError(message, peer,) ?: return null
         // Find the correct Holding Identity to use (using the public key hash).
         val ourIdentityInfo = linkManagerHostingMap.getInfo(ourIdentityData.responderPublicKeyHash, ourIdentityData.groupId)
         if (ourIdentityInfo == null) {
@@ -758,6 +728,53 @@ internal class SessionManagerImpl(
          * the other side (Initiator) might replay [InitiatorHandshakeMessage] in the case where the [ResponderHandshakeMessage] was lost.
          * */
         return createLinkOutMessage(response, ourIdentityInfo.holdingIdentity, peer, groupInfo.networkType)
+    }
+
+    private fun AuthenticationProtocolResponder.validatePeerHandshakeMessageHandleError(
+        message: InitiatorHandshakeMessage,
+        peer: LinkManagerMembershipGroupReader.MemberInfo): HandshakeIdentityData? {
+        return try {
+            this.validatePeerHandshakeMessage(
+                message,
+                peer.holdingIdentity.x500Name,
+                peer.sessionPublicKey,
+                peer.publicKeyAlgorithm.getSignatureSpec()
+            )
+        } catch (exception: WrongPublicKeyHashException) {
+            logger.error("The message was discarded. ${exception.message}")
+            null
+        } catch (exception: InvalidHandshakeMessageException) {
+            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
+            null
+        } catch (exception: InvalidPeerCertificate) {
+            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
+            null
+        }
+    }
+
+    private fun AuthenticationProtocolInitiator.validatePeerHandshakeMessageHandleError(
+        message: ResponderHandshakeMessage,
+        memberInfo: LinkManagerMembershipGroupReader.MemberInfo,
+        sessionCounterparties: SessionCounterparties,
+    ): Boolean {
+        return try {
+            this.validatePeerHandshakeMessage(
+                message,
+                sessionCounterparties.counterpartyId.x500Name,
+                memberInfo.sessionPublicKey,
+                memberInfo.publicKeyAlgorithm.getSignatureSpec()
+            )
+            true
+        } catch (exception: InvalidHandshakeResponderKeyHash) {
+            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
+            false
+        } catch (exception: InvalidHandshakeMessageException) {
+            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
+            false
+        } catch (exception: InvalidPeerCertificate) {
+            logger.validationFailedWarning(message::class.java.simpleName, message.header.sessionId, exception.message)
+            false
+        }
     }
 
     class HeartbeatManager(

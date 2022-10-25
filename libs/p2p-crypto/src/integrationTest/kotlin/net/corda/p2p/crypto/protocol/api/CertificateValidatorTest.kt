@@ -1,16 +1,11 @@
-package net.corda.p2p.crypto
+package net.corda.p2p.crypto.protocol.api
 
-import net.corda.p2p.crypto.protocol.api.CertificateValidator
-import net.corda.p2p.crypto.protocol.api.InvalidPeerCertificate
-import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.v5.base.types.MemberX500Name
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.io.ByteArrayInputStream
 import java.security.KeyStore
 import java.security.cert.CertificateFactory
-import javax.security.auth.x500.X500Principal
 
 class CertificateValidatorTest {
 
