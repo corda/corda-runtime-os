@@ -43,7 +43,7 @@ class ConsensualReceiveFinalityFlow(
 
         // We check which of our keys are required.
         val myExpectedSigningKeys = signedTransaction
-            .getMissingSigningKeys()
+            .getMissingSignatories()
             .intersect(
                     memberLookup
                         .myInfo()

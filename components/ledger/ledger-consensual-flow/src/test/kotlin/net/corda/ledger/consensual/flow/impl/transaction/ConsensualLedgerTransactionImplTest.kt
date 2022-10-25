@@ -4,7 +4,14 @@ import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
+import net.corda.internal.serialization.amqp.currentSandboxGroup
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
+import net.corda.internal.serialization.amqp.helper.testSerializationContext
+import net.corda.ledger.common.testkit.mockSigningService
+import net.corda.ledger.common.testkit.publicKeyExample
+import net.corda.ledger.consensual.testkit.ConsensualStateClassExample
+import net.corda.ledger.consensual.testkit.consensualStateExample
+import net.corda.ledger.consensual.testkit.consensualTransactionMetaDataExample
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -37,18 +44,19 @@ internal class ConsensualLedgerTransactionImplTest {
             jsonMarshallingService,
             merkleTreeProvider,
             serializationService,
-            ConsensualTransactionMocks.mockSigningService(),
+            mockSigningService(),
             mock(),
-            ConsensualTransactionMocks.mockTransactionMetaData()
+            testSerializationContext.currentSandboxGroup(),
+            consensualTransactionMetaDataExample
         )
-            .withStates(ConsensualTransactionMocks.testConsensualState)
-            .sign(ConsensualTransactionMocks.testPublicKey)
+            .withStates(consensualStateExample)
+            .sign(publicKeyExample)
         val ledgerTransaction = signedTransaction.toLedgerTransaction()
         assertTrue(abs(ledgerTransaction.timestamp.toEpochMilli() / 1000 - testTimestamp.toEpochMilli() / 1000) < 5)
         assertIs<List<ConsensualState>>(ledgerTransaction.states)
         assertEquals(1, ledgerTransaction.states.size)
-        assertEquals(ConsensualTransactionMocks.testConsensualState, ledgerTransaction.states.first())
-        assertIs<TestConsensualState>(ledgerTransaction.states.first())
+        assertEquals(consensualStateExample, ledgerTransaction.states.first())
+        assertIs<ConsensualStateClassExample>(ledgerTransaction.states.first())
 
         assertIs<SecureHash>(ledgerTransaction.id)
     }
