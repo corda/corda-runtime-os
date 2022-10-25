@@ -134,7 +134,7 @@ class CryptoFlowOpsTransformerImpl(
     /**
      * Transforms [CryptoSignatureWithKey]
      */
-    private fun transformCryptoSignatureWithKey(response: FlowOpsResponse): Any {
+    private fun transformCryptoSignatureWithKey(response: FlowOpsResponse): DigitalSignature.WithKey {
         val resp = response.validateAndGet<CryptoSignatureWithKey>()
         return DigitalSignature.WithKey(
             by = keyEncodingService.decodePublicKey(resp.publicKey.array()),
@@ -143,7 +143,7 @@ class CryptoFlowOpsTransformerImpl(
         )
     }
 
-    private fun transformCryptoSignatureWithSignatureSpec(response: FlowOpsResponse): Any {
+    private fun transformCryptoSignatureWithSignatureSpec(response: FlowOpsResponse): DigitalSignatureWithSpec {
         val resp = response.validateAndGet<CryptoSignatureWithSignatureSpec>()
         return DigitalSignatureWithSpec(
             bytes = ByteArray(resp.bytes.remaining()).also {
