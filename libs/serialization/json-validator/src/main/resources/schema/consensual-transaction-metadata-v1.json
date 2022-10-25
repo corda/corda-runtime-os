@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://corda.net/schema/ledger/transaction-metadata-v1.json",
+  "$id": "https://corda.net/schema/consensual-transaction-metadata-v1.json",
   "title": "Root",
   "type": "object",
   "required": [
@@ -100,7 +100,8 @@
           ],
           "pattern": "^.*$"
         }
-      }
+      },
+      "additionalProperties": false
     },
     "ledgerVersion": {
       "title": "Ledger version",
@@ -126,6 +127,7 @@
       }
     }
   },
+  "additionalProperties": false,
   "definitions": {
     "package_metadata": {
       "type": "object",
@@ -172,7 +174,8 @@
           ],
           "pattern": "^.*$"
         }
-      }
+      },
+      "additionalProperties": false
     }
   }
 }
