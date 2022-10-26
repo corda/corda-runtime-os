@@ -29,6 +29,8 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.CREATED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
@@ -59,11 +61,13 @@ import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.membership.MembershipSchema.RegistrationContextSchema
 import net.corda.utilities.time.UTCClock
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.versioning.Version
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.calculateHash
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -96,9 +100,11 @@ class MGMRegistrationService @Activate constructor(
     @Reference(service = CordaAvroSerializationFactory::class)
     cordaAvroSerializationFactory: CordaAvroSerializationFactory,
     @Reference(service = MembershipSchemaValidatorFactory::class)
-    val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
+    private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory,
     @Reference(service = PlatformInfoProvider::class)
-    val platformInfoProvider: PlatformInfoProvider,
+    private val platformInfoProvider: PlatformInfoProvider,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService
 ) : MemberRegistrationService {
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
@@ -248,6 +254,8 @@ class MGMRegistrationService @Activate constructor(
                 )
             }
             try {
+                val cpi = virtualNodeInfoReadService.get(member)?.cpiIdentifier
+                    ?: throw CordaRuntimeException("Could not find virtual node info for member: [$member]")
                 val sessionKey = getKeyFromId(context[SESSION_KEY_ID]!!, member.shortHash.value)
                 val ecdhKey = getKeyFromId(context[ECDH_KEY_ID]!!, member.shortHash.value)
                 val now = clock.instant().toString()
@@ -263,6 +271,8 @@ class MGMRegistrationService @Activate constructor(
                     ECDH_KEY to ecdhKey.toPem(),
                     PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),
                     SOFTWARE_VERSION to platformInfoProvider.localWorkerSoftwareVersion,
+                    MEMBER_CPI_NAME to cpi.name,
+                    MEMBER_CPI_VERSION to cpi.version,
                     SERIAL to SERIAL_CONST,
                 )
                 val mgmInfo = memberInfoFactory.create(

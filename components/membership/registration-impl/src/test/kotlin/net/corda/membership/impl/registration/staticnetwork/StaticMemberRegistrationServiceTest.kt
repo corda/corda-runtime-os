@@ -15,11 +15,14 @@ import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.membership.common.RegistrationStatus
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
-import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.grouppolicy.GroupPolicyProvider
+import net.corda.membership.impl.registration.TEST_PLATFORM_VERSION
+import net.corda.membership.impl.registration.TEST_SOFTWARE_VERSION
+import net.corda.membership.impl.registration.buildMockPlatformInfoProvider
+import net.corda.membership.impl.registration.buildTestVirtualNodeInfo
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.DUMMY_GROUP_ID
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.aliceName
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.bobName
@@ -70,6 +73,7 @@ import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.calculateHash
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions
 import org.assertj.core.api.SoftAssertions.assertSoftly
@@ -98,8 +102,6 @@ class StaticMemberRegistrationServiceTest {
         const val BOB_KEY = "2345"
         const val CHARLIE_KEY = "6789"
         const val KEY_SCHEME = "corda.key.scheme"
-        const val TEST_PLATFORM_VERSION = 5000
-        const val TEST_SOFTWARE_VERSION = "5.0.0.0-SNAPSHOT"
     }
 
     private val alice = HoldingIdentity(aliceName, DUMMY_GROUP_ID)
@@ -229,9 +231,11 @@ class StaticMemberRegistrationServiceTest {
             }
         }
     }
-    private val platformInfoProvider: PlatformInfoProvider = mock {
-        on { activePlatformVersion } doReturn TEST_PLATFORM_VERSION
-        on { localWorkerSoftwareVersion } doReturn TEST_SOFTWARE_VERSION
+    private val platformInfoProvider = buildMockPlatformInfoProvider()
+
+    private val virtualNodeInfo = buildTestVirtualNodeInfo(alice)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
+        on { get(eq(alice)) } doReturn virtualNodeInfo
     }
 
     private val registrationService = StaticMemberRegistrationService(
@@ -247,7 +251,8 @@ class StaticMemberRegistrationServiceTest {
         cordaAvroSerializationFactory,
         membershipSchemaValidatorFactory,
         endpointInfoFactory,
-        platformInfoProvider
+        platformInfoProvider,
+        virtualNodeInfoReadService
     )
 
     private fun setUpPublisher() {
@@ -555,7 +560,7 @@ class StaticMemberRegistrationServiceTest {
 
         registrationService.start()
         val result = registrationService.register(registrationId, alice, mockContext)
-        SoftAssertions.assertSoftly {
+        assertSoftly {
             it.assertThat(result.outcome).isEqualTo(NOT_SUBMITTED)
             it.assertThat(result.message).contains(err)
             it.assertThat(result.message).contains(errReason)

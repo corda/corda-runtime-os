@@ -25,6 +25,8 @@ import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
@@ -61,6 +63,7 @@ import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -97,7 +100,9 @@ class StaticMemberRegistrationService @Activate constructor(
     @Reference(service = EndpointInfoFactory::class)
     private val endpointInfoFactory: EndpointInfoFactory,
     @Reference(service = PlatformInfoProvider::class)
-    private val platformInfoProvider: PlatformInfoProvider
+    private val platformInfoProvider: PlatformInfoProvider,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
 ) : MemberRegistrationService {
     companion object {
         private val logger: Logger = contextLogger()
@@ -245,6 +250,9 @@ class StaticMemberRegistrationService @Activate constructor(
         )
         val memberKey = keysFactory.getOrGenerateKeyPair(CryptoConsts.Categories.LEDGER)
 
+        val cpi = virtualNodeInfoReadService.get(registeringMember)?.cpiIdentifier
+            ?: throw CordaRuntimeException("Could not find virtual node info for member: [$registeringMember]")
+
         @Suppress("SpreadOperator")
         val memberInfo = memberInfoFactory.create(
             sortedMapOf(
@@ -260,6 +268,8 @@ class StaticMemberRegistrationService @Activate constructor(
                 SESSION_KEY_HASH to memberKey.hash.toString(),
                 SOFTWARE_VERSION to platformInfoProvider.localWorkerSoftwareVersion,
                 PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),
+                MEMBER_CPI_NAME to cpi.name,
+                MEMBER_CPI_VERSION to cpi.version,
                 SERIAL to staticMemberInfo.serial,
             ),
             sortedMapOf(

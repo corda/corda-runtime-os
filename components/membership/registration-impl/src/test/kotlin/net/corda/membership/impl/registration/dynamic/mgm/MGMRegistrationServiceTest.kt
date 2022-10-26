@@ -17,7 +17,6 @@ import net.corda.data.membership.event.registration.MgmOnboarded
 import net.corda.layeredpropertymap.LayeredPropertyMapFactory
 import net.corda.layeredpropertymap.impl.LayeredPropertyMapFactoryImpl
 import net.corda.libs.configuration.SmartConfigFactory
-import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.lifecycle.LifecycleCoordinator
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
@@ -28,10 +27,16 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.impl.registration.TEST_PLATFORM_VERSION
+import net.corda.membership.impl.registration.TEST_SOFTWARE_VERSION
+import net.corda.membership.impl.registration.buildMockPlatformInfoProvider
+import net.corda.membership.impl.registration.buildTestVirtualNodeInfo
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
@@ -69,6 +74,7 @@ import net.corda.v5.base.types.LayeredPropertyMap
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
@@ -100,8 +106,6 @@ class MGMRegistrationServiceTest {
         const val ECDH_KEY_STRING = "5678"
         const val ECDH_KEY_ID = "2"
         const val PUBLISHER_CLIENT_ID = "mgm-registration-service"
-        const val TEST_PLATFORM_VERSION = 5000
-        const val TEST_SOFTWARE_VERSION = "5.0.0.0-SNAPSHOT"
     }
 
     private val groupId = "43b5b6e6-4f2d-498f-8b41-5e2f8f97e7e8"
@@ -203,9 +207,10 @@ class MGMRegistrationServiceTest {
     private val membershipSchemaValidatorFactory: MembershipSchemaValidatorFactory = mock {
         on { createValidator() } doReturn membershipSchemaValidator
     }
-    private val platformInfoProvider: PlatformInfoProvider = mock {
-        on { activePlatformVersion } doReturn TEST_PLATFORM_VERSION
-        on { localWorkerSoftwareVersion } doReturn TEST_SOFTWARE_VERSION
+    private val platformInfoProvider = buildMockPlatformInfoProvider()
+    private val virtualNodeInfo = buildTestVirtualNodeInfo(mgm)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
+        on { get(eq(mgm)) } doReturn virtualNodeInfo
     }
     private val registrationService = MGMRegistrationService(
         publisherFactory,
@@ -218,14 +223,17 @@ class MGMRegistrationServiceTest {
         layeredPropertyMapFactory,
         cordaAvroSerializationFactory,
         membershipSchemaValidatorFactory,
-        platformInfoProvider
+        platformInfoProvider,
+        virtualNodeInfoReadService
     )
 
     private val properties = mapOf(
         "corda.session.key.id" to SESSION_KEY_ID,
         "corda.ecdh.key.id" to ECDH_KEY_ID,
-        "corda.group.protocol.registration" to "net.corda.membership.impl.registration.dynamic.MemberRegistrationService",
-        "corda.group.protocol.synchronisation" to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
+        "corda.group.protocol.registration"
+                to "net.corda.membership.impl.registration.dynamic.MemberRegistrationService",
+        "corda.group.protocol.synchronisation"
+                to "net.corda.membership.impl.synchronisation.MemberSynchronisationServiceImpl",
         "corda.group.protocol.p2p.mode" to "AUTHENTICATION_ENCRYPTION",
         "corda.group.key.session.policy" to "Combined",
         "corda.group.pki.session" to "Standard",
@@ -322,6 +330,8 @@ class MGMRegistrationServiceTest {
                         ECDH_KEY,
                         PLATFORM_VERSION,
                         SOFTWARE_VERSION,
+                        MEMBER_CPI_NAME,
+                        MEMBER_CPI_VERSION,
                         SERIAL,
                         String.format(URL_KEY, 0),
                         String.format(PROTOCOL_VERSION, 0),

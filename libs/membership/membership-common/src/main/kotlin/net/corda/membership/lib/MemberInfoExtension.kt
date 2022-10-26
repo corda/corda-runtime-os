@@ -28,6 +28,9 @@ class MemberInfoExtension {
         const val LEDGER_KEY_HASHES = "corda.ledger.keys"
         const val LEDGER_KEY_HASHES_KEY = "corda.ledger.keys.%s.hash"
 
+        /** Key name for ledger key signature spec property. */
+        const val LEDGER_KEY_SIGNATURE_SPEC = "corda.ledger.keys.%s.signature.spec"
+
         /** Key name for platform version property. */
         const val PLATFORM_VERSION = "corda.platformVersion"
 
@@ -37,6 +40,9 @@ class MemberInfoExtension {
 
         /** Key name for the session key hash **/
         const val SESSION_KEY_HASH = "corda.session.key.hash"
+
+        /** Key name for the session key signature spec **/
+        const val SESSION_KEY_SIGNATURE_SPEC = "corda.session.key.signature.spec"
 
         /** Key name for notary service property. */
         const val NOTARY_SERVICE_PARTY_NAME = "corda.notaryService.name"
@@ -80,6 +86,12 @@ class MemberInfoExtension {
 
         /** Key name for the ID of the registration in which the current member info was approved. */
         const val REGISTRATION_ID = "corda.registration.id"
+
+        /** Key name for the CPI name **/
+        const val MEMBER_CPI_NAME = "corda.cpi.name"
+
+        /** Key name for the CPI version **/
+        const val MEMBER_CPI_VERSION = "corda.cpi.version"
 
         /** Active nodes can transact in the Membership Group with the other nodes. **/
         const val MEMBER_STATUS_ACTIVE = "ACTIVE"

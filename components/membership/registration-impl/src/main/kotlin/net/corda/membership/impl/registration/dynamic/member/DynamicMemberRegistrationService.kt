@@ -35,6 +35,8 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_KEY
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
@@ -70,12 +72,14 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.schema.membership.MembershipSchema.RegistrationContextSchema
 import net.corda.utilities.time.Clock
 import net.corda.utilities.time.UTCClock
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.versioning.Version
 import net.corda.v5.cipher.suite.KeyEncodingService
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.calculateHash
 import net.corda.virtualnode.HoldingIdentity
+import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -110,6 +114,8 @@ class DynamicMemberRegistrationService @Activate constructor(
     val platformInfoProvider: PlatformInfoProvider,
     @Reference(service = EphemeralKeyPairEncryptor::class)
     private val ephemeralKeyPairEncryptor: EphemeralKeyPairEncryptor,
+    @Reference(service = VirtualNodeInfoReadService::class)
+    private val virtualNodeInfoReadService: VirtualNodeInfoReadService
 ) : MemberRegistrationService {
     /**
      * Private interface used for implementation swapping in response to lifecycle events.
@@ -290,7 +296,9 @@ class DynamicMemberRegistrationService @Activate constructor(
                     mgmKey,
                     registrationRequestSerializer.serialize(message)!!
                 ) { ek, sk ->
-                    val aad = 1.toByteArray() + clock.instant().toEpochMilli().toByteArray() + keyEncodingService.encodeAsByteArray(ek)
+                    val aad = 1.toByteArray() +
+                            clock.instant().toEpochMilli().toByteArray() +
+                            keyEncodingService.encodeAsByteArray(ek)
                     val salt = aad + keyEncodingService.encodeAsByteArray(sk)
                     latestHeader = UnauthenticatedRegistrationRequestHeader(
                         ByteBuffer.wrap(salt), ByteBuffer.wrap(aad), keyEncodingService.encodeAsString(ek)
@@ -351,6 +359,8 @@ class DynamicMemberRegistrationService @Activate constructor(
             roles: Collection<MemberRole>,
             notaryKeys: List<KeyDetails>,
         ): Map<String, String> {
+            val cpi = virtualNodeInfoReadService.get(member)?.cpiIdentifier
+                ?: throw CordaRuntimeException("Could not find virtual node info for member: [$member]")
             return (
                 context.filterNot {
                     it.key.startsWith(LEDGER_KEYS) || it.key.startsWith(PARTY_SESSION_KEY)
@@ -362,6 +372,8 @@ class DynamicMemberRegistrationService @Activate constructor(
                         GROUP_ID to member.groupId,
                         PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),
                         SOFTWARE_VERSION to platformInfoProvider.localWorkerSoftwareVersion,
+                        MEMBER_CPI_NAME to cpi.name,
+                        MEMBER_CPI_VERSION to cpi.version,
                         SERIAL to SERIAL_CONST,
                     ) + roles.toMemberInfo { notaryKeys }
                 )
