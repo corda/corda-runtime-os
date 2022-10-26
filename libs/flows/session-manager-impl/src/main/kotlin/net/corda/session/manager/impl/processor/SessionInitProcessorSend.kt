@@ -7,7 +7,7 @@ import net.corda.data.flow.state.session.SessionStateType
 import net.corda.session.manager.impl.SessionEventProcessor
 import net.corda.session.manager.impl.processor.helper.generateErrorEvent
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.trace
 import java.time.Instant
 
 /**
@@ -28,7 +28,7 @@ class SessionInitProcessorSend(
 
     override fun execute(): SessionState {
         if (sessionState != null) {
-            logger.error("Tried to send SessionInit on key $key for session which was not null: $sessionState")
+            logger.warn("Tried to send SessionInit on key $key for session which was not null: $sessionState")
             return sessionState.apply {
                 status = SessionStateType.ERROR
                 sendEventsState.undeliveredMessages = sendEventsState.undeliveredMessages.plus(
@@ -62,7 +62,7 @@ class SessionInitProcessorSend(
             .setHasScheduledCleanup(false)
             .build()
 
-        logger.debug { "Creating new session with id $newSessionId on key $key for SessionInit sent. sessionState $newSessionState" }
+        logger.trace { "Creating new session with id $newSessionId on key $key for SessionInit sent. sessionState $newSessionState" }
 
         return newSessionState
     }

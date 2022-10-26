@@ -75,7 +75,7 @@ class FlowEventExceptionProcessorImpl @Activate constructor(
             }
 
             log.debug {
-                "A transient exception was thrown the event that failed will be retried. event='${context.inputEvent}', $exception"
+                "A transient exception was thrown the event that failed will be retried. event='${context.inputEvent}',  $exception"
             }
 
             val records = createStatusRecord(context.checkpoint.flowId) {
