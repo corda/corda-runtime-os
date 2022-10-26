@@ -1,4 +1,4 @@
-package net.corda.ledger.utxo.impl.transaction.factory
+package net.corda.ledger.utxo.flow.impl.transaction.factory
 
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 

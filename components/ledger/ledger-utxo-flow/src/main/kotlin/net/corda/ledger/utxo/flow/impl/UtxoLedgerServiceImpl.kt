@@ -1,6 +1,6 @@
-package net.corda.ledger.utxo.impl
+package net.corda.ledger.utxo.flow.impl
 
-import net.corda.ledger.utxo.impl.transaction.factory.UtxoTransactionBuilderFactory
+import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoTransactionBuilderFactory
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef

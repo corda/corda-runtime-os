@@ -1,4 +1,4 @@
-package net.corda.ledger.utxo.impl.state.transaction
+package net.corda.ledger.utxo.flow.impl.transaction
 
 import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
@@ -9,7 +9,7 @@ import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.ledger.common.testkit.mockSigningService
 import net.corda.ledger.common.testkit.publicKeyExample
-import net.corda.ledger.utxo.impl.transaction.UtxoTransactionBuilderImpl
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.UtxoStateClassExample
 import net.corda.ledger.utxo.testkit.getUtxoInvalidStateAndRef

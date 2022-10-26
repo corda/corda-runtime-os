@@ -1,4 +1,4 @@
-package net.corda.ledger.utxo.impl.transaction
+package net.corda.ledger.utxo.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
@@ -8,8 +8,8 @@ import net.corda.ledger.common.flow.impl.transaction.createTransactionSignature
 import net.corda.ledger.utxo.data.state.TransactionStateImpl
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
-import net.corda.ledger.utxo.impl.timewindow.TimeWindowBetweenImpl
-import net.corda.ledger.utxo.impl.timewindow.TimeWindowUntilImpl
+import net.corda.ledger.utxo.flow.impl.timewindow.TimeWindowBetweenImpl
+import net.corda.ledger.utxo.flow.impl.timewindow.TimeWindowUntilImpl
 import net.corda.sandbox.SandboxGroup
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService

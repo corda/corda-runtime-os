@@ -1,4 +1,4 @@
-package net.corda.ledger.utxo.impl.transaction
+package net.corda.ledger.utxo.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.SignableData
 import net.corda.ledger.common.data.transaction.WireTransaction

@@ -1,4 +1,4 @@
-package net.corda.ledger.utxo.impl.timewindow
+package net.corda.ledger.utxo.flow.impl.timewindow
 
 import net.corda.v5.ledger.utxo.TimeWindow
 import java.time.Instant
