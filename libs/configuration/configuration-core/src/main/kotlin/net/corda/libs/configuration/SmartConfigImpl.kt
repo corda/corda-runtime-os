@@ -220,9 +220,3 @@ class SmartConfigImpl(
         SmartConfigImpl(typeSafeConfig.withValue(path, value), factory, secretsLookupService)
 }
 
-fun Config.diff(other: Config): String {
-    val missingLeft = (root().entries - other.root().entries).associate { it.key to "-${it.value}" }
-    val missingRight = (other.root().entries - root().entries).associate { it.key to "+${it.value}" }
-    return (missingLeft + missingRight).entries.joinToString()
-}
-

@@ -308,30 +308,6 @@ class SmartConfigTest {
     }
 
     @Test
-    fun `equals smart and typesafe config`() {
-        val configString2 = """
-        foo: bar,
-        fred.configSecret {
-            token: secure-fred
-        },
-        bob: $sub,
-        test_long: ${Double.MAX_VALUE},
-        test_number: 10,
-        test_donuts: DONUTS,
-        test_double: 1.33,
-        test_duration: 10ms,
-        test_durations: [10ms,15ms],
-        test_bytes: 128kB,
-        test_object {
-            a: b,
-            c: d,
-        },
-        """.trimIndent()
-        val test = ConfigFactory.parseString(configString2).resolve()
-        println(config.diff(test))
-    }
-
-    @Test
     fun `withFallback still works when fallback is smart`() {
         val smartFallback = SmartConfigImpl(fallbackConfig, smartConfigFactory, secretsLookupService)
         val c = smartConfig
@@ -339,7 +315,6 @@ class SmartConfigTest {
 
         assertThat(c.getString("jon")).isEqualTo("fallback-secret")
     }
-
 
     enum class Snack {
         DONUTS,
