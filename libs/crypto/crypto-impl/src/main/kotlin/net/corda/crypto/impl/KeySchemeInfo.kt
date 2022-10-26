@@ -22,11 +22,16 @@ import java.security.Provider
  * Scroll down to "Signature Algorithms" / "Schemes" (or search for "SHA256withECDDSA")
  */
 abstract class KeySchemeInfo private constructor(
-    val scheme: KeyScheme, val digestToSignatureSpecMap: Map<DigestAlgorithmName, SignatureSpec>
+    val scheme: KeyScheme,
+    val digestToSignatureSpecMap: Map<DigestAlgorithmName, SignatureSpec>,
+    val defaultSignatureSpec: SignatureSpec?
 ) {
     constructor(
-        provider: Provider, template: KeySchemeTemplate, signatureNameMap: Map<DigestAlgorithmName, SignatureSpec>
-    ) : this(template.makeScheme(provider.name), signatureNameMap)
+        provider: Provider,
+        template: KeySchemeTemplate,
+        signatureNameMap: Map<DigestAlgorithmName, SignatureSpec>,
+        defaultSignatureSpec: SignatureSpec? = null
+    ) : this(template.makeScheme(provider.name), signatureNameMap, defaultSignatureSpec)
 
     fun getSignatureSpec(digest: DigestAlgorithmName): SignatureSpec? = digestToSignatureSpecMap[digest]
 }
@@ -38,7 +43,8 @@ class RSAKeySchemeInfo(
         DigestAlgorithmName.SHA2_256 to SignatureSpec.RSA_SHA256,
         DigestAlgorithmName.SHA2_384 to SignatureSpec.RSA_SHA384,
         DigestAlgorithmName.SHA2_512 to SignatureSpec.RSA_SHA512
-    )
+    ),
+    SignatureSpec.RSA_SHA256
 )
 
 abstract class ECDSAKeySchemeInfo(
@@ -48,7 +54,8 @@ abstract class ECDSAKeySchemeInfo(
         DigestAlgorithmName.SHA2_256 to SignatureSpec.ECDSA_SHA256,
         DigestAlgorithmName.SHA2_384 to SignatureSpec.ECDSA_SHA384,
         DigestAlgorithmName.SHA2_512 to SignatureSpec.ECDSA_SHA512
-    )
+    ),
+    SignatureSpec.ECDSA_SHA256
 )
 
 class ECDSAR1KeySchemeInfo(
@@ -64,7 +71,8 @@ class EDDSAKeySchemeInfo(
 ) : KeySchemeInfo(
     provider, EDDSA_ED25519_TEMPLATE, mapOf(
         DigestAlgorithmName("NONE") to SignatureSpec.EDDSA_ED25519
-    )
+    ),
+    SignatureSpec.EDDSA_ED25519
 )
 
 class X25519KeySchemeInfo(
@@ -78,7 +86,8 @@ class SM2KeySchemeInfo(
     provider, SM2_TEMPLATE, mapOf(
         DigestAlgorithmName("SM3") to SignatureSpec.SM2_SM3,
         DigestAlgorithmName.SHA2_256 to SignatureSpec.SM2_SHA256
-    )
+    ),
+    SignatureSpec.SM2_SM3
 )
 
 class GOST3410GOST3411KeySchemeInfo(
@@ -86,7 +95,8 @@ class GOST3410GOST3411KeySchemeInfo(
 ) : KeySchemeInfo(
     provider, GOST3410_GOST3411_TEMPLATE, mapOf(
         DigestAlgorithmName("GOST3411") to SignatureSpec.GOST3410_GOST3411
-    )
+    ),
+    SignatureSpec.GOST3410_GOST3411
 )
 
 class SPHINCS256KeySchemeInfo(
@@ -94,5 +104,6 @@ class SPHINCS256KeySchemeInfo(
 ) : KeySchemeInfo(
     provider, SPHINCS256_TEMPLATE, mapOf(
         DigestAlgorithmName.SHA2_512 to SignatureSpec.SPHINCS256_SHA512
-    )
+    ),
+    SignatureSpec.SPHINCS256_SHA512
 )

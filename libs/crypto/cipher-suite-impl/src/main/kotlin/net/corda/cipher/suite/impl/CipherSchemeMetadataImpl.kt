@@ -101,6 +101,9 @@ class CipherSchemeMetadataImpl : CipherSchemeMetadata, SingletonSerializeAsToken
     override fun inferSignatureSpec(publicKey: PublicKey, digest: DigestAlgorithmName): SignatureSpec? =
         metadataProvider.keySchemeInfoMap[findKeyScheme(publicKey)]?.getSignatureSpec(digest)
 
+    override fun inferSignatureSpec(publicKey: PublicKey): SignatureSpec? =
+        metadataProvider.keySchemeInfoMap[findKeyScheme(publicKey)]?.defaultSignatureSpec
+
     override fun supportedSignatureSpec(scheme: KeyScheme): List<SignatureSpec> =
         metadataProvider.keySchemeInfoMap[scheme]?.digestToSignatureSpecMap?.values?.toList() ?: emptyList()
 
