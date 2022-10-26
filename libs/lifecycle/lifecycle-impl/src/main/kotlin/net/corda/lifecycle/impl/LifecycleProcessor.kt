@@ -146,7 +146,7 @@ internal class LifecycleProcessor(
     }
 
     private fun processStartEvent(event: StartEvent, coordinator: LifecycleCoordinatorInternal): Boolean {
-        logger.info("Processing start event for ${coordinator.name}")
+        logger.debug { "Processing start event for ${coordinator.name}" }
         return if (!state.isRunning) {
             state.isRunning = true
             state.trackedRegistrations.forEach { it.notifyCurrentStatus() }
@@ -161,7 +161,7 @@ internal class LifecycleProcessor(
     }
 
     private fun processStopEvent(event: StopEvent, coordinator: LifecycleCoordinatorInternal): Boolean {
-        logger.info("Processing stop event for ${coordinator.name}")
+        logger.debug { "Processing stop event for ${coordinator.name}" }
         if (state.isRunning) {
             state.isRunning = false
             val (newStatus, reason) = if (event.errored) {
@@ -204,7 +204,7 @@ internal class LifecycleProcessor(
     }
 
     private fun processClose(coordinator: LifecycleCoordinatorInternal): Boolean {
-        logger.info("Closing coordinator ${coordinator.name}")
+        logger.debug  { "Closing coordinator ${coordinator.name}" }
         state.isRunning = false
         state.trackedRegistrations.forEach {
             logger.trace { "Closing $it on ${coordinator.name}." }
