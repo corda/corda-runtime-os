@@ -14,6 +14,8 @@ const val TEST_CPI_VERSION = "1.1"
 const val TEST_PLATFORM_VERSION = 5000
 const val TEST_SOFTWARE_VERSION = "5.0.0.0-SNAPSHOT"
 
+fun String.addIndex(arg: Int) = String.format(this, arg)
+
 fun buildTestVirtualNodeInfo(member: HoldingIdentity) = VirtualNodeInfo(
     holdingIdentity = member,
     cpiIdentifier = CpiIdentifier(TEST_CPI_NAME, TEST_CPI_VERSION, null),

@@ -131,10 +131,6 @@ class MemberInfoExtension {
         const val NOTARY_KEY_SPEC = "corda.notary.keys.%s.signature.spec"
 
         /** Identity certificate or null for non-PKI option. Certificate subject and key should match party */
-        // TODO we will need a CertPath converter somewhere
-        /*@JvmStatic
-        val MemberInfo.certificate: CertPath?
-            get() = memberProvidedContext.readAs(CERTIFICATE)*/
         @JvmStatic
         val MemberInfo.certificate: List<String>
             get() = memberProvidedContext.parseList(CERTIFICATE)
@@ -232,5 +228,15 @@ class MemberInfoExtension {
         @JvmStatic
         val MemberInfo.ecdhKey: PublicKey?
             get() = memberProvidedContext.parseOrNull(ECDH_KEY)
+
+        /** The CPI name included in the member's member info **/
+        @JvmStatic
+        val MemberInfo.cpiName: String
+            get() = memberProvidedContext.parse(MEMBER_CPI_NAME)
+
+        /** The CPI version included in the member's member info **/
+        @JvmStatic
+        val MemberInfo.cpiVersion: String
+            get() = memberProvidedContext.parse(MEMBER_CPI_VERSION)
     }
 }
