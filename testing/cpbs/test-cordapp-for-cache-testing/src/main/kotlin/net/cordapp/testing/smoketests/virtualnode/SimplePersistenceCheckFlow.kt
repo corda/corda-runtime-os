@@ -30,7 +30,7 @@ class SimplePersistenceCheckFlow : RPCStartableFlow {
         persistenceService.persist(fish)
         return with("Could persist ${fish.name}") {
             log.info(this)
-            jsonMarshallingService.format(this)
+            this
         }
     }
 }

@@ -68,9 +68,12 @@ class VirtualNodeDb(
     }
 
     /**
-     * Runs DB migration
+     * runDBMigration
+     *
+     * @param migrationTagToApply [string?] is an optional tag to be added to the liquibase migration.
+     *  See: https://docs.liquibase.com/change-types/tag-database.html
      */
-    fun runDbMigration(tagToUse: String?) {
+    fun runDbMigration(migrationTagToApply: String?) {
         val dbConnection = dbConnections[DDL]
             ?: throw VirtualNodeDbException("No DDL database connection when due to apply system migrations")
         dbConnectionManager.getDataSource(dbConnection.config).use { dataSource ->
@@ -83,20 +86,29 @@ class VirtualNodeDb(
             dataSource.connection.use { connection ->
                 if (isClusterDb) {
                     val dbSchema = dbType.getSchemaName(holdingIdentityShortHash)
-                    schemaMigrator.updateDb(connection, dbChange, dbSchema, tagToUse)
+                    schemaMigrator.updateDb(connection, dbChange, dbSchema, migrationTagToApply)
                 } else {
-                    schemaMigrator.updateDb(connection, dbChange, tagToUse)
+                    schemaMigrator.updateDb(connection, dbChange, migrationTagToApply)
                 }
             }
         }
     }
 
-    fun runCpiMigrations(dbChange: DbChange, tag: String) {
+    /**
+     * runCpiMigrations: runs a changeset represented as a [DbChange], with the [migrationTagToApply] tagged to each
+     *  change within that changeset.
+     *
+     * These migrations come from the CPI and so are user created.
+     *
+     * @param dbChange
+     * @param migrationTagToApply
+     */
+    fun runCpiMigrations(dbChange: DbChange, migrationTagToApply: String) {
         val dbConnection = dbConnections[DDL]
             ?: throw VirtualNodeDbException("No DDL database connection when due to apply CPI migrations")
         dbConnectionManager.getDataSource(dbConnection.config).use { dataSource ->
             dataSource.connection.use { connection ->
-                LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange, tag = tag)
+                LiquibaseSchemaMigratorImpl().updateDb(connection, dbChange, tag = migrationTagToApply)
             }
         }
     }

@@ -520,7 +520,7 @@ internal class VirtualNodeWriterProcessor(
 
     private fun runDbMigrations(holdingIdentity: HoldingIdentity, vNodeDbs: Collection<VirtualNodeDb>) {
         try {
-            vNodeDbs.forEach { it.runDbMigration("${it.dbType.name}-system-final") }
+            vNodeDbs.forEach { it.runDbMigration(systemTerminatorTag) }
         } catch (e: Exception) {
             throw VirtualNodeWriteServiceException(
                 "Error running virtual node DB migration for holding identity $holdingIdentity",
@@ -643,7 +643,7 @@ internal class VirtualNodeWriterProcessor(
     @Suppress("UNCHECKED_CAST")
     private fun getAppliedVersions(em: EntityManager, dataSource: DataSource, systemTerminatorTag: String): Set<UUID> = (
         em.createNativeQuery(
-            "SELECT tag FROM ${dataSource.connection.schema}.databasechangelog " +
+            "SELECT DISTINCT tag FROM ${dataSource.connection.schema}.databasechangelog " +
                 "WHERE tag IS NOT NULL and tag != :systemTerminatorTag " +
                 "ORDER BY orderexecuted"
         )

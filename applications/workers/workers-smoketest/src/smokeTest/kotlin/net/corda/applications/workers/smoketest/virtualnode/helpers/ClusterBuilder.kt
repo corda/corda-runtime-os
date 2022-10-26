@@ -83,8 +83,8 @@ class ClusterBuilder {
         )
 
     /** Assumes the resource is a CPB and converts it to CPI by adding a group policy file */
-    fun syncVirtualNode(vNodeShortHashId: String) =
-        post("/api/v1/maintenance/virtualnode/resyncvault/$vNodeShortHashId", "")
+    fun syncVirtualNode(virtualNodeShortId: String) =
+        post("/api/v1/maintenance/virtualnode/$virtualNodeShortId/vault-schema/force-resync", "")
 
     /** Return the status for the given request id */
     fun cpiStatus(id: String) = client!!.get("/api/v1/cpi/status/$id")

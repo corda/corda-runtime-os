@@ -33,9 +33,9 @@ class SimplePersistenceCheckFlow : RPCStartableFlow {
             persistenceService.persist(dog)
         } catch (ex: CordaPersistenceException) {
             log.error("exception $ex")
-            return jsonMarshallingService.format("Could not persist dog")
+            return "Could not persist dog"
         }
         log.info("Persisted Dog: $dog")
-        return jsonMarshallingService.format("Could persist dog")
+        return "Could persist dog"
     }
 }

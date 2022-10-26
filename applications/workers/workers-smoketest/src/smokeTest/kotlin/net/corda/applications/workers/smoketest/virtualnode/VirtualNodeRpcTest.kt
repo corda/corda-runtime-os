@@ -367,7 +367,7 @@ class VirtualNodeRpcTest {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
 
-            runSimplePersistenceCheckFlow("\"Could persist dog\"")
+            runSimplePersistenceCheckFlow("Could persist dog")
         }
     }
 
@@ -411,7 +411,7 @@ class VirtualNodeRpcTest {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
             assertThat(syncVirtualNode(aliceHoldingId).code).isEqualTo(200)
 
-            runSimplePersistenceCheckFlow("\"Could persist Floaty\"")
+            runSimplePersistenceCheckFlow("Could persist Floaty")
         }
     }
 

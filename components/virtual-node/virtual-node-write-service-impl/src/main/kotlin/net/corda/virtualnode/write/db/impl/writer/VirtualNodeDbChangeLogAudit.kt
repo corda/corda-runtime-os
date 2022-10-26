@@ -4,6 +4,7 @@ import net.corda.db.admin.DbChange
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogAuditEntity
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import java.io.InputStream
+
 class VirtualNodeDbChangeLogAudit(
     private val changeLogs: List<CpkDbChangeLogAuditEntity>
 ) : DbChange {

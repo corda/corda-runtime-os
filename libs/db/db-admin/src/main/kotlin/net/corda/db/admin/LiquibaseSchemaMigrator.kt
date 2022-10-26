@@ -31,6 +31,7 @@ interface LiquibaseSchemaMigrator {
      *
      * @param datasource
      * @param dbChange
+     * @param tagToRollbackTo
      */
     fun rollBackDb(datasource: Connection, dbChange: DbChange, tagToRollbackTo: String)
 
@@ -40,6 +41,7 @@ interface LiquibaseSchemaMigrator {
      * @param datasource
      * @param dbChange
      * @param controlTablesSchema schema for the databasechangelog tables
+     * @param tagToRollbackTo
      */
     fun rollBackDb(datasource: Connection, dbChange: DbChange, controlTablesSchema: String, tagToRollbackTo: String)
 

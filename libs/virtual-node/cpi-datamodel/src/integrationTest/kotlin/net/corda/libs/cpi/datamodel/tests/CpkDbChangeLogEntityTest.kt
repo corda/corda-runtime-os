@@ -216,6 +216,62 @@ class CpkDbChangeLogEntityTest {
     }
 
     @Test
+    fun `can get changelogs based on changesetId`() {
+        val anotherFakeId = UUID.randomUUID()
+        val (cpi, cpks) = TestObject.createCpiWithCpks()
+        val cpk = cpks.first()
+        val changeset1 = (1..3).map {
+            CpkDbChangeLogEntity(
+                CpkDbChangeLogKey(cpk.metadata.id.cpkName, cpk.metadata.id.cpkVersion,
+                    cpk.metadata.id.cpkSignerSummaryHash, "master-$it"),
+                "master-checksum",
+                "master-content",
+                anotherFakeId
+            )
+        }
+
+        transaction {
+            persist(cpi)
+            changeset1.forEach { persist(it) }
+            changeset1.forEach { persist(CpkDbChangeLogAuditEntity(it)) }
+            flush()
+        }
+
+        val changeLog2 = CpkDbChangeLogEntity(
+            CpkDbChangeLogKey(cpk.metadata.id.cpkName, cpk.metadata.id.cpkVersion,
+                cpk.metadata.id.cpkSignerSummaryHash, "master"),
+            "master-checksum",
+            "master-content",
+            UUID.randomUUID()
+        )
+
+        transaction {
+            persist(changeLog2)
+            persist(CpkDbChangeLogAuditEntity(changeLog2))
+            flush()
+        }
+
+        transaction {
+//            val loadedDbLogEntity = find(
+//                CpkDbChangeLogEntity::class.java,
+//                CpkDbChangeLogKey(cpk.metadata.id.cpkName, cpk.metadata.id.cpkVersion,
+//                    cpk.metadata.id.cpkSignerSummaryHash, "master")
+//            )
+            val loadedDbLogAuditEntities = findDbChangeLogAuditForCpi(
+                this,
+                CpiIdentifier(
+                    cpi.name,
+                    cpi.version,
+                    SecureHash.parse(cpi.signerSummaryHash)
+                ),
+                setOf(anotherFakeId)
+            ).sortedBy { it.insertTimestamp }
+
+            assertThat(loadedDbLogAuditEntities.size).isEqualTo(3)
+        }
+    }
+
+    @Test
     fun `can persist changelogs to existing CPI`() {
         val (cpi, cpks) = TestObject.createCpiWithCpks()
         val cpk = cpks.first()
