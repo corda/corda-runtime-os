@@ -19,7 +19,7 @@ data class UtxoSignedTransactionImpl(
     private val signingService: SigningService,
     private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
 
-    private val wireTransaction: WireTransaction,
+    val wireTransaction: WireTransaction,
     override val signatures: List<DigitalSignatureAndMetadata>
 ) : UtxoSignedTransaction {
 
