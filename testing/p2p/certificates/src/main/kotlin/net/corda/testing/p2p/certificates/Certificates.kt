@@ -5,7 +5,7 @@ class Certificates {
         val truststoreCertificatePem = this::class.java.classLoader.getResource("truststore/certificate.pem")!!
         val c4TruststoreCertificatePem = this::class.java.classLoader.getResource("truststore_c4/cordarootca.pem")!!
         val aliceKeyStoreFile = this::class.java.classLoader.getResource("sslkeystore_alice.jks")!!
-        val bobKeyStoreFile = this::class.java.classLoader.getResource("sslkeystore_alice.jks")!!
+        val bobKeyStoreFile = this::class.java.classLoader.getResource("sslkeystore_bob.jks")!!
         val chipKeyStoreFile = this::class.java.classLoader.getResource("sslkeystore_chip.jks")!!
         val daleKeyStoreFile = this::class.java.classLoader.getResource("sslkeystore_dale.jks")!!
         val c4KeyStoreFile = this::class.java.classLoader.getResource("sslkeystore_c4.jks")!!
