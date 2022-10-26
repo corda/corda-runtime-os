@@ -37,7 +37,8 @@ class SessionEventProcessorFactory {
             SessionEventProcessor {
         val messageDirection = sessionEvent.messageDirection
         if (messageDirection != MessageDirection.INBOUND) {
-            throw SessionManagerException("MessageDirection $messageDirection must be set to ${MessageDirection.INBOUND} for factory method createReceivedEventProcessor()")
+            throw SessionManagerException("MessageDirection $messageDirection must be set to ${MessageDirection.INBOUND}" +
+                    " for factory method createReceivedEventProcessor()")
         }
 
         return when (val payload = sessionEvent.payload) {
@@ -63,7 +64,8 @@ class SessionEventProcessorFactory {
         val messageDirection = sessionEvent.messageDirection
 
         if (messageDirection != MessageDirection.OUTBOUND) {
-            throw SessionManagerException("MessageDirection $messageDirection must be set to ${MessageDirection.OUTBOUND} for factory method createEventToSendProcessor()")
+            throw SessionManagerException("MessageDirection $messageDirection must be set to ${MessageDirection.OUTBOUND} " +
+                    "for factory method createEventToSendProcessor()")
         }
         return when (val payload = sessionEvent.payload) {
             is SessionInit -> SessionInitProcessorSend(key, sessionState, sessionEvent, instant)
