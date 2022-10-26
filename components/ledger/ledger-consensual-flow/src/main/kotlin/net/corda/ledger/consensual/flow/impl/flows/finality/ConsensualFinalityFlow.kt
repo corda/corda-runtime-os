@@ -59,7 +59,7 @@ class ConsensualFinalityFlow(
         }
 
         // Should this also be a [CordaRuntimeException]? Or make the others [IllegalArgumentException]s?
-        val missingSigningKeys = signedTransaction.getMissingSigningKeys()
+        val missingSigningKeys = signedTransaction.getMissingSignatories()
         // Check if all missing signing keys are covered by the sessions.
         require(sessionPublicKeys.values.flatten().containsAll(missingSigningKeys)) {
             "Required signatures $missingSigningKeys but ledger keys for the passed in sessions are $sessionPublicKeys"

@@ -13,6 +13,7 @@ description 'Corda Common JSON serializers'
 
 dependencies {
     compileOnly "org.osgi:osgi.annotation"
+    compileOnly "org.osgi:org.osgi.service.component.annotations"
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-application"
     implementation 'net.corda:corda-base'

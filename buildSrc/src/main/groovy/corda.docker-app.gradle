@@ -60,4 +60,8 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
     if (project.hasProperty('multiArchSupport')) {
         multiArch = multiArchSupport.toBoolean()
     }
+
+    if (project.hasProperty('workerBaseImageTag')) {
+        baseImageTag = workerBaseImageTag
+    }
 }
