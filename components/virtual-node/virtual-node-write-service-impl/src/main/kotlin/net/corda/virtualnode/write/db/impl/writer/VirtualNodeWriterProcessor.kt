@@ -643,7 +643,7 @@ internal class VirtualNodeWriterProcessor(
     @Suppress("UNCHECKED_CAST")
     private fun getAppliedVersions(em: EntityManager, dataSource: DataSource, systemTerminatorTag: String): Set<UUID> = (
         em.createNativeQuery(
-            "SELECT DISTINCT tag FROM ${dataSource.connection.schema}.databasechangelog " +
+            "SELECT tag FROM ${dataSource.connection.schema}.databasechangelog " +
                 "WHERE tag IS NOT NULL and tag != :systemTerminatorTag " +
                 "ORDER BY orderexecuted"
         )
