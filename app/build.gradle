@@ -95,6 +95,9 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
     if (project.hasProperty('isNightly')) {
         nightlyBuild = isNightly.toBoolean()
     }
+    if (project.hasProperty('workerBaseImageTag')) {
+        baseImageTag = workerBaseImageTag
+    }
     environment = Map.of(
             "CORDA_CLI_HOME_DIR", "/opt/override/home"
     )
