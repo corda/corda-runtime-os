@@ -54,6 +54,10 @@ data class UtxoTransactionBuilderImpl(
     private val outputTransactionStates: List<TransactionState<*>> = emptyList()
 ) : UtxoTransactionBuilder {
 
+    override fun setNotary(notary: Party): UtxoTransactionBuilder {
+        return copy(notary = notary)
+    }
+
     override fun addAttachment(attachmentId: SecureHash): UtxoTransactionBuilder {
         return copy(attachments = attachments + attachmentId)
     }
