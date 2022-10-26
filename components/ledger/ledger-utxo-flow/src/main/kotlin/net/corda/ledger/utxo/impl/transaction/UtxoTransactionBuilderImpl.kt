@@ -16,6 +16,7 @@ import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
+import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
@@ -43,8 +44,8 @@ data class UtxoTransactionBuilderImpl(
     private val currentSandboxGroup: SandboxGroup, // TODO CORE-7101 use CurrentSandboxService when it gets available
     // cpi defines what type of signing/hashing is used (related to the digital signature signing and verification stuff)
     private val transactionMetaData: TransactionMetaData,
-    override val notary: Party,
-    private val timeWindow: TimeWindow,
+    override val notary: Party? = null,
+    private val timeWindow: TimeWindow? = null,
     private val attachments: List<SecureHash> = emptyList(),
     private val commands: List<Command> = emptyList(),
     private val signatories: Set<PublicKey> = emptySet(),
@@ -52,7 +53,6 @@ data class UtxoTransactionBuilderImpl(
     private val referenceInputStateAndRefs: List<StateAndRef<*>> = emptyList(),
     private val outputTransactionStates: List<TransactionState<*>> = emptyList()
 ) : UtxoTransactionBuilder {
-
 
     override fun addAttachment(attachmentId: SecureHash): UtxoTransactionBuilder {
         return copy(attachments = attachments + attachmentId)
@@ -83,6 +83,9 @@ data class UtxoTransactionBuilderImpl(
     }
 
     override fun addOutputState(contractState: ContractState, encumbrance: Int?): UtxoTransactionBuilder {
+        if (notary == null) {
+            throw(CordaRuntimeException("Adding Output states is not possible until the notary is not set!"))
+        }
         val transactionState = TransactionStateImpl(contractState, notary, encumbrance)
         return copy(outputTransactionStates = outputTransactionStates + transactionState)
     }
@@ -151,6 +154,9 @@ data class UtxoTransactionBuilderImpl(
 
     @Suppress("ComplexMethod")
     private fun calculateComponentGroupLists(): List<List<ByteArray>> {
+        if (notary == null) {
+            throw(CordaRuntimeException("Finalising the transaction is not possible until the notary is not set!"))
+        }
         val notaryGroup = listOf(
             notary,
             timeWindow,
@@ -182,7 +188,7 @@ data class UtxoTransactionBuilderImpl(
                                 .toByteArray(Charsets.UTF_8)
                         ) // TODO(update with CORE-6890)
                     UtxoComponentGroup.NOTARY ->
-                        notaryGroup.map { serializationService.serialize(it).bytes }
+                        notaryGroup.map { serializationService.serialize(it!!).bytes }
 
                     UtxoComponentGroup.OUTPUTS_INFO ->
                         outputsInfo.map { serializationService.serialize(it).bytes }
