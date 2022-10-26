@@ -155,9 +155,9 @@ class WorkerHelpers {
             info("processInfo.startInstant: ${processInfo.startInstant()}")
             info("processInfo.javaClass: ${processInfo.javaClass}")
 
-            val info = ManagementFactory.getRuntimeMXBean()
-            info("classpath: ${info.classPath}")
-            info("VM ${info.vmName} ${info.vmVendor} ${info.vmVersion}")
+            val mxBeanInfo = ManagementFactory.getRuntimeMXBean()
+            info("classpath: ${mxBeanInfo.classPath}")
+            info("VM ${mxBeanInfo.vmName} ${mxBeanInfo.vmVendor} ${mxBeanInfo.vmVersion}")
         }
     }
 }
