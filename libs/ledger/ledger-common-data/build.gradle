@@ -10,8 +10,6 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
-    implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation "net.corda:corda-ledger-common"
 
     implementation project(":libs:crypto:crypto-core")
@@ -24,7 +22,6 @@ dependencies {
     testImplementation project(":libs:crypto:merkle-impl")
     testImplementation project(":libs:application:application-impl")
     testImplementation project(":libs:serialization:serialization-amqp")
-    testImplementation project(":libs:serialization:json-validator")
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
     testImplementation "org.mockito:mockito-core:$mockitoVersion"

@@ -653,7 +653,8 @@ internal class DatabaseCpiPersistenceTest {
                     "resources/$changeLog"
                 ),
                 newRandomSecureHash().toString(),
-                changeLog
+                changeLog,
+                UUID.randomUUID()
             )
         }
     }

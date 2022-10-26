@@ -326,6 +326,15 @@ class MGMRegistrationService @Activate constructor(
                     )
                 }
 
+                // Persist group parameters snapshot
+                val groupParametersPersistenceResult = membershipPersistenceClient.persistGroupParametersInitialSnapshot(member)
+                if (groupParametersPersistenceResult is MembershipPersistenceResult.Failure) {
+                    return MembershipRequestRegistrationResult(
+                        MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
+                        "Registration failed, persistence error. Reason: ${groupParametersPersistenceResult.errorMsg}"
+                    )
+                }
+
                 val mgmRecord = Record(
                     MEMBER_LIST_TOPIC,
                     "${member.shortHash}-${member.shortHash}",

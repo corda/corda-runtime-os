@@ -58,6 +58,7 @@ class ConsensualTransactionBuilderFactoryImpl @Activate constructor(
             serializationService,
             signingService,
             digitalSignatureVerificationService,
+            flowFiberService.getExecutingFiber().getExecutionContext().sandboxGroupContext.sandboxGroup,
             calculateMetaData(),
         )
 

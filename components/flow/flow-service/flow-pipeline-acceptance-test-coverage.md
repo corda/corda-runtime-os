@@ -61,7 +61,7 @@ This document should be maintained so that we can ensure that we have quick visi
 - Given two sessions receiving session close events for both sessions resumes the flow with an error ✅
 - Given two sessions receiving a session data and then close event for one session and a session data event for the other resumes the flow  ✅
 - Given a session, if it receives an out of order close and then an ordered data event, the flow resumes  ✅
-
+  Complex messaging flow executing multiple sends and receives with 2 sessions, receives arrive non-sequentially ✅
 ## Closing
 
 - Calling 'close' on initiated sessions sends session close events ✅

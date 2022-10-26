@@ -1,37 +1,31 @@
 package net.corda.common.json.serializers
 
-import com.fasterxml.jackson.core.JsonGenerator
-import com.fasterxml.jackson.core.JsonParseException
-import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.databind.DeserializationContext
-import com.fasterxml.jackson.databind.JsonDeserializer
-import com.fasterxml.jackson.databind.JsonSerializer
-import com.fasterxml.jackson.databind.Module
-import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.module.SimpleModule
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.base.util.uncheckedCast
 
-internal object MemberX500NameDeserializer : JsonDeserializer<MemberX500Name>() {
-    override fun deserialize(parser: JsonParser, ctxt: DeserializationContext?): MemberX500Name {
-        return try {
-            MemberX500Name.parse(parser.text)
-        } catch (e: Exception) {
-            throw JsonParseException(parser, e.message, e)
-        }
-    }
-}
-internal object MemberX500NameSerializer : JsonSerializer<MemberX500Name>() {
-    override fun serialize(
-        value: MemberX500Name,
-        gen: JsonGenerator,
-        serializers: SerializerProvider?
-    ) {
-        gen.writeString(value.toString())
-    }
-}
+/**
+ * Static entry point to stock platform serialization providers defined in this library and only in this library. This
+ * is for components which use Jackson directly but want to make use of any generic Corda platform serializers created
+ * in this library to avoid duplication. This entry point is not to be used for components which dynamically discover
+ * platform serializers across the entire codebase. For those use cases, the platform serializers are annotated as OSGi
+ * components so they are runtime discoverable.
+ */
+fun standardTypesModule() = SimpleModule("Standard types").apply {
+    // Our serializers are based around the Corda api not the Jackson one. As we use Jackson underneath the abstraction
+    // we are already able to turn Corda serializers into Jackson ones using adaptors. For exposing the Jackson versions
+    // of our serializers we can return a module pre-populated with these adaptors. Thus no matter how you use these
+    // serializers, Jackson or Corda abstraction, you get the benefit of not having to write multiple versions of the
+    // same serializers.
 
-fun standardTypesModule(): Module {
-    return SimpleModule("Standard types")
-        .addDeserializer(MemberX500Name::class.java, MemberX500NameDeserializer)
-        .addSerializer(MemberX500Name::class.java, MemberX500NameSerializer)
+    val memberX500NameDeserializer = JsonDeserializerAdaptor(MemberX500NameDeserializer(), MemberX500Name::class.java)
+    // Jackson api tries to defend against adding a deserializer at compile time which is not typed the same as the
+    // class it's registered against, although at runtime it doesn't make any difference. Here we have to suggest we
+    // are serialising Any types because the adaptors (generally being constructed at run time) do not retain type
+    // information outside a Class<*> object.
+    addDeserializer(uncheckedCast(memberX500NameDeserializer.deserializingType), memberX500NameDeserializer)
+    addSerializer(
+        MemberX500Name::class.java,
+        JsonSerializerAdaptor(MemberX500NameSerializer(), MemberX500Name::class.java)
+    )
 }

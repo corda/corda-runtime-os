@@ -30,7 +30,6 @@ import net.corda.schema.configuration.MessagingConfig.MAX_ALLOWED_MSG_SIZE
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
@@ -478,7 +477,6 @@ class FlowTests {
             .isEqualTo("${X500_BOB}=echo:m1; ${X500_CHARLIE}=echo:m2")
     }
 
-    @Disabled
     @Test
     fun `Flow Session - Initiate multiple sessions and exercise the flow messaging apis`() {
 

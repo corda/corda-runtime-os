@@ -2,7 +2,7 @@ package net.corda.ledger.common.flow.impl.transaction.serializer.kryo.tests
 
 import net.corda.common.json.validation.JsonValidator
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.testkit.getWireTransaction
+import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
@@ -83,7 +83,7 @@ class WireTransactionKryoSerializationTest {
             .addSerializer(WireTransaction::class.java, wireTransactionKryoSerializer)
             .build()
 
-        val wireTransaction = getWireTransaction(digestService, merkleTreeProvider, jsonMarshallingService, jsonValidator)
+        val wireTransaction = getWireTransactionExample(digestService, merkleTreeProvider, jsonMarshallingService, jsonValidator)
         val bytes = kryoSerializer.serialize(wireTransaction)
         val deserialized = kryoSerializer.deserialize(bytes, WireTransaction::class.java)
 

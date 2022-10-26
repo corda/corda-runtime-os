@@ -20,9 +20,8 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda:corda-base'
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
-    implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"
     implementation "io.github.erdtman:java-json-canonicalization:$jsonCanonicalizerVersion"
-
+    implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 }
 

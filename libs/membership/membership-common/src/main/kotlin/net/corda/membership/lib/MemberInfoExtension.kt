@@ -13,6 +13,7 @@ import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
 import net.corda.virtualnode.HoldingIdentity
 import java.net.URL
+import java.security.PublicKey
 import java.time.Instant
 
 class MemberInfoExtension {
@@ -214,5 +215,10 @@ class MemberInfoExtension {
             } else {
                 null
             }
+
+        /** Return the key used for ECIES encryption. Only MGMs should have a value set for ecdh key. */
+        @JvmStatic
+        val MemberInfo.ecdhKey: PublicKey?
+            get() = memberProvidedContext.parseOrNull(ECDH_KEY)
     }
 }

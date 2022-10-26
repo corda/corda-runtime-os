@@ -10,14 +10,19 @@ import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.SecureHash
 
-fun getWireTransaction(
+private val minimalTransactionMetaData = TransactionMetaData(
+    linkedMapOf(
+        TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues
+    )
+)
+fun getWireTransactionExample(
     digestService: DigestService,
     merkleTreeProvider: MerkleTreeProvider,
     jsonMarshallingService: JsonMarshallingService,
-    jsonValidator: JsonValidator
-): WireTransaction{
-    val transactionMetaData = mockTransactionMetaData()
-    val metadataJson = jsonMarshallingService.format(transactionMetaData)
+    jsonValidator: JsonValidator,
+    metaData: TransactionMetaData = minimalTransactionMetaData
+): WireTransaction {
+    val metadataJson = jsonMarshallingService.format(metaData)
     val canonicalJson = jsonValidator.canonicalize(metadataJson)
 
     val componentGroupLists = listOf(
