@@ -81,8 +81,8 @@ class JPABackingStoreImplIntegrationTests {
     private lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
 
     companion object {
-        private val DEFAULT_TIME_WINDOW_UPPER_BOUND = LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
         private const val MAX_ATTEMPTS = 10
+        private val defaultTimeWindowUpperBound = LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
 
         private val aliceIdentity = createTestHoldingIdentity("C=GB, L=London, O=Alice", "Test Group")
         private val aliceIdentityDbName = VirtualNodeDbType.UNIQUENESS.getSchemaName(aliceIdentity.shortHash)
@@ -111,7 +111,7 @@ class JPABackingStoreImplIntegrationTests {
             emptyList(),
             0,
             null,
-            DEFAULT_TIME_WINDOW_UPPER_BOUND
+            defaultTimeWindowUpperBound
         )
 
     @BeforeEach
@@ -365,7 +365,8 @@ class JPABackingStoreImplIntegrationTests {
             )
         }
 
-        @Disabled("This test fails because it fails to persist an error message with 1024 bytes.")
+        @Disabled("Review with CORE-7278. This test fails because it fails to persist an error message with " +
+                  "1024 bytes.")
         @Test
         fun `Persisting an error throws if the size is bigger than the maximum`() {
             val txId = SecureHashUtils.randomSecureHash()
@@ -437,8 +438,7 @@ class JPABackingStoreImplIntegrationTests {
 
         @Test
         fun `Persisting unconsumed states succeeds`() {
-            val hashCnt = 3
-            val secureHashes = List(hashCnt) { SecureHashUtils.randomSecureHash() }
+            val secureHashes = List(3) { SecureHashUtils.randomSecureHash() }
             val stateRefs = secureHashes.map { UniquenessCheckStateRefImpl(it, 0) }
 
             backingStoreImpl.session(aliceIdentity) { session ->
@@ -450,7 +450,7 @@ class JPABackingStoreImplIntegrationTests {
                 stateDetails.putAll(session.getStateDetails(stateRefs))
             }
 
-            assertThat(stateDetails.size).isEqualTo(hashCnt)
+            assertThat(stateDetails.size).isEqualTo(secureHashes.size)
             stateDetails.forEach { (stateRef, stateDetail) ->
                 assertAll(
                     { assertThat(secureHashes).contains(stateRef.txHash) },
@@ -468,7 +468,7 @@ class JPABackingStoreImplIntegrationTests {
             }
 
             // Consume one of unconsumed states in DB.
-            val consumingTxId: SecureHash = SecureHashUtils.randomSecureHash()
+            val consumingTxId = SecureHashUtils.randomSecureHash()
             val consumingStateRef = stateRefs[0] // Consume the first out of two items.
             backingStoreImpl.session(aliceIdentity) { session ->
                 session.executeTransaction { _, txnOps ->
@@ -503,19 +503,20 @@ class JPABackingStoreImplIntegrationTests {
                 session.executeTransaction { _, txnOps -> txnOps.createUnconsumedStates(stateRefs) }
             }
 
-            val consumingTxId = SecureHashUtils.randomSecureHash()
             val consumingStateRefs = listOf<UniquenessCheckStateRef>(stateRefs[0])
 
             assertDoesNotThrow {
                 backingStoreImpl.session(aliceIdentity) { session ->
-                    session.executeTransaction { _, txnOps -> txnOps.consumeStates(consumingTxId, consumingStateRefs) }
+                    session.executeTransaction { _, txnOps ->
+                        txnOps.consumeStates(SecureHashUtils.randomSecureHash(), consumingStateRefs) }
                 }
             }
 
             // An attempt to spend an already spent state should fail.
             assertThrows<IllegalStateException> {
                 backingStoreImpl.session(aliceIdentity) { session ->
-                    session.executeTransaction { _, txnOps -> txnOps.consumeStates(consumingTxId, consumingStateRefs) }
+                    session.executeTransaction { _, txnOps ->
+                        txnOps.consumeStates(SecureHashUtils.randomSecureHash(), consumingStateRefs) }
                 }
             }
         }
@@ -543,7 +544,7 @@ class JPABackingStoreImplIntegrationTests {
 
         @Test
         fun `Attempt to consume an unknown state fails with an exception`() {
-            val consumingTxId: SecureHash = SecureHashUtils.randomSecureHash()
+            val consumingTxId = SecureHashUtils.randomSecureHash()
             val consumingStateRefs = listOf<UniquenessCheckStateRef>(UniquenessCheckStateRefImpl(consumingTxId, 0))
 
             assertThrows<IllegalStateException> {
