@@ -142,25 +142,25 @@ final class OSGiFrameworkMain {
         int exitCode = 0;
 
         final Logger logger = LoggerFactory.getLogger(OSGiFrameworkMain.class);
-        try {
-            final Path frameworkStorageDir = Files.createTempDirectory(FRAMEWORK_STORAGE_PREFIX);
-            OSGiFrameworkWrap osgiFrameworkWrap = new OSGiFrameworkWrap(
+        final Path frameworkStorageDir = Files.createTempDirectory(FRAMEWORK_STORAGE_PREFIX); // errors here wouldn't cause a framework stop
+        final OSGiFrameworkWrap osgiFrameworkWrap = new OSGiFrameworkWrap(
                 OSGiFrameworkWrap.getFrameworkFrom(
                     frameworkStorageDir,
                     OSGiFrameworkWrap.getFrameworkPropertyFrom(SYSTEM_PACKAGES_EXTRA)
                 )
-            );
-            try {
-                Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                    if (OSGiFrameworkWrap.isStoppable(osgiFrameworkWrap.getState())) {
-                        osgiFrameworkWrap.stop();
-                    }
-                }, "shutdown"));
+        );
+        try {
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                logger.error("Combined worked shutdown hook running");
+                if (OSGiFrameworkWrap.isStoppable(osgiFrameworkWrap.getState())) {
+                    osgiFrameworkWrap.stop();
+                }
+            }, "shutdown"));
 
                 final Path driverDirectory = getDbDriverDirectory(args);
                 final Path addonDirectory = getAddonDirectory(args);
 
-                osgiFrameworkWrap
+            osgiFrameworkWrap
                     .start()
                     .installFromDirectory(driverDirectory)
                     .installFromDirectory(addonDirectory)
@@ -168,18 +168,13 @@ final class OSGiFrameworkMain {
                     .activate()
                     .startApplication(NO_TIMEOUT, args)
                     .waitForStop(NO_TIMEOUT);
-            } finally {
-                // If osgiFrameworkWrap stopped because SIGINT/CTRL+C,
-                // this avoids to call stop twice and log warning.
-                if (OSGiFrameworkWrap.isStoppable(osgiFrameworkWrap.getState())) {
-                    osgiFrameworkWrap.stop();
-                }
-            }
         } catch (Exception e) {
-            logger.error("Error: " + e.getMessage(), e);
+            logger.error("Top level exception in OSGI framework main: " + e.getMessage(), e);
             exitCode = 1;
         }
-
+        if (osgiFrameworkWrap != null && OSGiFrameworkWrap.isStoppable(osgiFrameworkWrap.getState())) {
+            osgiFrameworkWrap.stop();
+        }
         if (exitCode != 0) {
             System.exit(exitCode);
         }

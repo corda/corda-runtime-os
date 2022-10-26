@@ -130,6 +130,11 @@ java -jar -Dco.paralleluniverse.fibers.verifyInstrumentation=true \
 Run or debug the `Combined Worker Local` target. If you want to break into the debugger at startup, set a breakpoint
 on the [CombinerWorker.kt startup method](src/main/kotlin/net/corda/applications/workers/combined/CombinedWorker.kt).
 
+IntelliJ by default does not kill debugged processes as soon as you stop them, and in particular the combined worker
+will often stay running for some time, still listening on its configured port, so you will not be able to start a new
+instance. There is an option under *Preferences / Build, Execution & Deployment / Debugger / Java section / Kill the
+debug process immediately*  that makes iterative debugging the combined work much easier.
+
 ## Interact with the worker
 
 The worker will expose the HTTP API on port 8888: https://localhost:8888/api/v1/swagger
