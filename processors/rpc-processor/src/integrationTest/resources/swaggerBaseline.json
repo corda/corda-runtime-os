@@ -1401,7 +1401,7 @@
             "description": "Forbidden"
           }
         }
-      },
+      }
     },
     "/maintenance/virtualnode/{virtualnodeshortid}/state/{newstate}" : {
       "put" : {
