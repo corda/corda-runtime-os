@@ -1,0 +1,13 @@
+plugins {
+    id 'corda.common-library'
+}
+
+description = 'Implement the testing API for sandbox singletons'
+
+dependencies {
+    compileOnly 'org.osgi:org.osgi.service.component.annotations'
+    compileOnly "org.osgi:org.osgi.service.component:$osgiServiceComponentVersion"
+    implementation platform("net.corda:corda-api:$cordaApiVersion")
+    api project(':testing:sandboxes:test-api')
+    api 'net.corda:corda-application'
+}

@@ -17,13 +17,14 @@ import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
+import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ServiceScope
+import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 @Suppress("LongParameterList")
-@Component(service = [ConsensualTransactionBuilderFactory::class], scope = ServiceScope.PROTOTYPE)
+@Component(service = [ ConsensualTransactionBuilderFactory::class, SingletonSerializeAsToken::class ], scope = PROTOTYPE)
 class ConsensualTransactionBuilderFactoryImpl @Activate constructor(
     @Reference(service = CipherSchemeMetadata::class)
     private val cipherSchemeMetadata: CipherSchemeMetadata,
@@ -43,7 +44,7 @@ class ConsensualTransactionBuilderFactoryImpl @Activate constructor(
     private val platformInfoProvider: PlatformInfoProvider,
     @Reference(service = FlowFiberService::class)
     private val flowFiberService: FlowFiberService
-) : ConsensualTransactionBuilderFactory {
+) : ConsensualTransactionBuilderFactory, SingletonSerializeAsToken {
 
     override fun create(): ConsensualTransactionBuilder =
         ConsensualTransactionBuilderImpl(

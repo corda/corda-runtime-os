@@ -18,6 +18,7 @@ import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.sandbox.SandboxGroup
 import net.corda.sandboxgroupcontext.CORDA_SANDBOX_FILTER
 import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
+import net.corda.sandboxgroupcontext.SANDBOX_SINGLETONS
 import net.corda.sandboxgroupcontext.SandboxGroupType
 import net.corda.sandboxgroupcontext.VirtualNodeContext
 import net.corda.sandboxgroupcontext.getObjectByKey
@@ -161,18 +162,24 @@ class FlowSandboxServiceImpl @Activate constructor(
         val cleanupCordaSingletons = mutableListOf<AutoCloseable>()
         val nonInjectableSingletons = getNonInjectableSingletons(cleanupCordaSingletons)
 
+        // These are the singleton services identified when creating the sandbox.
+        // This set includes both injectable and non-injectable singletons.
+        val sandboxSingletons = sandboxGroupContext.getObjectByKey<Set<Any>>(SANDBOX_SINGLETONS)
+            ?.filterIsInstanceTo(LinkedHashSet<SingletonSerializeAsToken>())
+            ?: emptySet()
+
         // Create and configure the checkpoint serializer
-        val checkpointSerializer =
-            checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(sandboxGroup).let { builder ->
-                builder.addSingletonSerializableInstances(injectorService.getRegisteredSingletons())
-                builder.addSingletonSerializableInstances(nonInjectableSingletons)
-                builder.addSingletonSerializableInstances(setOf(sandboxGroup))
-                for (serializer in checkpointInternalCustomSerializers) {
-                    log.info("Registering internal checkpoint serializer {}", serializer::class.java.name)
-                    builder.addSerializer(serializer.type, serializer)
-                }
-                builder.build()
+        val checkpointSerializer = checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(sandboxGroup).let { builder ->
+            builder.addSingletonSerializableInstances(injectorService.getRegisteredSingletons())
+            builder.addSingletonSerializableInstances(nonInjectableSingletons)
+            builder.addSingletonSerializableInstances(sandboxSingletons)
+            builder.addSingletonSerializableInstances(setOf(sandboxGroup))
+            for (serializer in checkpointInternalCustomSerializers) {
+                log.info("Registering internal checkpoint serializer {}", serializer::class.java.name)
+                builder.addSerializer(serializer.type, serializer)
             }
+            builder.build()
+        }
 
         sandboxGroupContext.putObjectByKey(FlowSandboxGroupContextImpl.CHECKPOINT_SERIALIZER, checkpointSerializer)
 
@@ -189,6 +196,9 @@ class FlowSandboxServiceImpl @Activate constructor(
         )
 
         sandboxGroupContext.registerCustomJsonSerialization()
+
+        // Instruct all CustomMetadataConsumers to accept their metadata.
+        sandboxGroupContextComponent.acceptCustomMetadata(sandboxGroupContext)
 
         return AutoCloseable {
             cleanupCordaSingletons.forEach(AutoCloseable::close)
