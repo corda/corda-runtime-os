@@ -115,6 +115,7 @@ internal class ConfigRestResourceImpl @Activate constructor(
                 is RegistrationStatusChangeEvent -> {
                     when (event.status) {
                         LifecycleStatus.ERROR -> {
+                            logger.error("Sending StopEvent due to errors in RegistratrionStatusChangeEvent $event")
                             coordinator.closeManagedResources(setOf(CONFIG_HANDLE))
                             coordinator.postEvent(StopEvent(errored = true))
                         }
