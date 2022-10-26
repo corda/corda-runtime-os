@@ -120,7 +120,7 @@ tasks.register('smokeTest', Test) {
             project.getProperties().getOrDefault("dbWorkerHealthHttp",combinedWorker ? null : "http://localhost:7004/")
 
     systemProperty "combinedWorkerHealthHttp",
-            project.getProperties().getOrDefault("combinedWorkerHealthHttp",combinedWorker ? "http://localhost:7000/" : null)
+            project.getProperties().getOrDefault("combinedWorkerHealthHttp", combinedWorker ? "http://localhost:7002/" : null)
 }
 
 
