@@ -30,8 +30,8 @@ fun RegistrationRequestProgressDto.fromDto() = RegistrationRequestProgress(
     registrationRequestId,
     registrationSent,
     registrationStatus,
-    memberInfoSubmitted.fromDto(),
-    reason
+    reason,
+    memberInfoSubmitted.fromDto()
 )
 
 /**

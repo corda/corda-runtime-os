@@ -219,7 +219,7 @@ class MemberOpsClientImpl @Activate constructor(
                     requestId,
                     null,
                     RegistrationRpcStatus.NOT_SUBMITTED.toString(),
-                    e.message,
+                    e.message ?: "No cause was provided for failure.",
                     MemberInfoSubmittedDto(emptyMap())
                 )
             }
@@ -298,7 +298,7 @@ class MemberOpsClientImpl @Activate constructor(
                 this.registrationId,
                 this.registrationSent,
                 this.registrationStatus.toString(),
-                this.reason ?: "",
+                this.reason ?: "Submitting registration request was successful.",
                 MemberInfoSubmittedDto(
                     mapOf(
                         "registrationProtocolVersion" to this.registrationProtocolVersion.toString(),

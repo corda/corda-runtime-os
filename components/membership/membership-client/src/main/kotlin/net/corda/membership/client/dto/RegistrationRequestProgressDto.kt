@@ -8,13 +8,13 @@ import java.time.Instant
  * @param registrationRequestId The request ID
  * @param registrationSent Date when registration progress started. Null if not submitted.
  * @param registrationStatus Status of registration request: Submitted or not submitted.
- * @param reason Reason why the request has not submitted status. Null, if the request has been submitted.
+ * @param reason Reason why the request has not submitted status. Has a default value, if the request has been submitted.
  * @param memberInfoSubmitted Information sent to the MGM for registration.
  */
 data class RegistrationRequestProgressDto(
     val registrationRequestId: String,
     val registrationSent: Instant?,
     val registrationStatus: String,
-    val reason: String?,
+    val reason: String,
     val memberInfoSubmitted: MemberInfoSubmittedDto
 )

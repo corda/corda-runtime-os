@@ -48,7 +48,7 @@ class MemberRegistrationRpcOpsTest {
         "RequestId",
         clock.instant(),
         "SUBMITTED",
-        null,
+        "",
         MemberInfoSubmittedDto(emptyMap())
     )
 

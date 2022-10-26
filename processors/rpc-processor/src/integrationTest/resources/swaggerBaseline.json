@@ -3280,7 +3280,7 @@
         }
       },
       "RegistrationRequestProgress" : {
-        "required" : [ "memberInfoSubmitted", "registrationId", "registrationStatus" ],
+        "required" : [ "memberInfoSubmitted", "reason", "registrationId", "registrationStatus" ],
         "type" : "object",
         "properties" : {
           "memberInfoSubmitted" : {
@@ -3288,7 +3288,7 @@
           },
           "reason" : {
             "type" : "string",
-            "nullable" : true,
+            "nullable" : false,
             "example" : "string"
           },
           "registrationId" : {
