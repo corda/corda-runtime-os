@@ -236,7 +236,15 @@ class MemberOpsClientImpl @Activate constructor(
                     RegistrationStatusRpcRequest(holdingIdentityShortHash.toString())
                 )
 
-                registrationsResponse(request.sendRequest())
+                val result = registrationsResponse(request.sendRequest())
+                if(result.isEmpty()) {
+                    throw RegistrationProgressNotFoundException(
+                        "There are no requests for '$holdingIdentityShortHash' holding identity."
+                    )
+                }
+                result
+            } catch (e: RegistrationProgressNotFoundException) {
+                throw RegistrationProgressNotFoundException(e.message!!)
             } catch (e: Exception) {
                 logger.warn("Could not check statuses of registration requests made by holding identity ID" +
                         " [${holdingIdentityShortHash}].", e)
@@ -263,8 +271,9 @@ class MemberOpsClientImpl @Activate constructor(
                 val response: RegistrationStatusResponse = request.sendRequest()
                 val status = response.status
                     ?: throw RegistrationProgressNotFoundException("There is no request with '$registrationRequestId' id.")
-
                 return status.toDto()
+            } catch (e: RegistrationProgressNotFoundException) {
+                throw RegistrationProgressNotFoundException(e.message!!)
             } catch (e: Exception) {
                 logger.warn("Could not check status of registration request `$registrationRequestId` made by holding identity ID" +
                         " [${holdingIdentityShortHash}].", e)

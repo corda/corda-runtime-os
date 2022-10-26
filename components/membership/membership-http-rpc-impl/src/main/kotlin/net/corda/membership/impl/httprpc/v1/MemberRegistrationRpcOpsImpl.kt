@@ -135,9 +135,13 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
         }
 
         override fun checkRegistrationProgress(holdingIdentityShortHash: String): List<RegistrationRequestStatus> {
-            return memberOpsClient.checkRegistrationProgress(
-                ShortHash.ofOrThrow(holdingIdentityShortHash)
-            ).map { it.fromDto() }
+            return try {
+                memberOpsClient.checkRegistrationProgress(
+                    ShortHash.ofOrThrow(holdingIdentityShortHash)
+                ).map { it.fromDto() }
+            } catch (e: RegistrationProgressNotFoundException) {
+                throw ResourceNotFoundException(e.message!!)
+            }
         }
 
         override fun checkSpecificRegistrationProgress(
