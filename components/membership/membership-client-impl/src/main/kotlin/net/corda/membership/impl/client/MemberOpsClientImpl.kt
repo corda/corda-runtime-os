@@ -244,7 +244,7 @@ class MemberOpsClientImpl @Activate constructor(
                 }
                 result
             } catch (e: RegistrationProgressNotFoundException) {
-                throw RegistrationProgressNotFoundException(e.message!!)
+                throw e
             } catch (e: Exception) {
                 logger.warn("Could not check statuses of registration requests made by holding identity ID" +
                         " [${holdingIdentityShortHash}].", e)
@@ -273,7 +273,7 @@ class MemberOpsClientImpl @Activate constructor(
                     ?: throw RegistrationProgressNotFoundException("There is no request with '$registrationRequestId' id.")
                 return status.toDto()
             } catch (e: RegistrationProgressNotFoundException) {
-                throw RegistrationProgressNotFoundException(e.message!!)
+                throw e
             } catch (e: Exception) {
                 logger.warn("Could not check status of registration request `$registrationRequestId` made by holding identity ID" +
                         " [${holdingIdentityShortHash}].", e)
