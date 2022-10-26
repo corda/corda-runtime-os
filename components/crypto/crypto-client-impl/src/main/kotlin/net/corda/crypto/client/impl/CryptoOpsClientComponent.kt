@@ -9,7 +9,7 @@ import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.data.crypto.wire.CryptoSignatureWithSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithSpec
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
@@ -35,6 +35,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import java.nio.ByteBuffer
 import java.security.PublicKey
+import net.corda.data.crypto.wire.CryptoSignatureWithId
 
 @Suppress("TooManyFunctions")
 @Component(service = [CryptoOpsClient::class, CryptoOpsProxyClient::class])
@@ -169,7 +170,7 @@ class CryptoOpsClientComponent @Activate constructor(
         publicKey: ByteBuffer,
         data: ByteBuffer,
         context: KeyValuePairList
-    ): CryptoSignatureWithSignatureSpec {
+    ): CryptoSignatureWithSpec {
         // must infer signature spec from public key alone
         val publicKeyDecoded = schemeMetadata.decodePublicKey(publicKey.array())
         // TODO should the inferring of signature spec take place here or maybe deeper at
@@ -191,17 +192,18 @@ class CryptoOpsClientComponent @Activate constructor(
         //  In that case it 'd make more sense to infer to `SignatureSpec` on the other side.
         val cryptoSignatureWithKey = signProxy(tenantId, publicKey, signatureSpecAvro, data, context)
 
-        return CryptoSignatureWithSignatureSpec(
-            cryptoSignatureWithKey.bytes,
-            // TODO To be changed to avro `CryptoSignatureSpec` type.
-            signatureSpec.signatureName,
-            // TODO fix below dummy value with SHA-256 hashing public key
-            SecureHash.parse("SHA-256:6D1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581F").let {
-                net.corda.data.crypto.SecureHash(
-                    it.algorithm,
-                    ByteBuffer.wrap(it.bytes)
-                )
-            }
+        return CryptoSignatureWithSpec(
+            CryptoSignatureWithId(
+                // TODO fix below dummy value with actual SHA-256 hashing public key
+                SecureHash.parse("SHA-256:6D1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581F").let {
+                    net.corda.data.crypto.SecureHash(
+                        it.algorithm,
+                        ByteBuffer.wrap(it.bytes)
+                    )
+                },
+                cryptoSignatureWithKey.bytes
+            ),
+            CryptoSignatureSpec(signatureSpec.signatureName, null, null)
         )
     }
 

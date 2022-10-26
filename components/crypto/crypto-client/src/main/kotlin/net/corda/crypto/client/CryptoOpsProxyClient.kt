@@ -3,7 +3,7 @@ package net.corda.crypto.client
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
-import net.corda.data.crypto.wire.CryptoSignatureWithSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithSpec
 import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.v5.crypto.CompositeKey
 import java.nio.ByteBuffer
@@ -43,5 +43,5 @@ interface CryptoOpsProxyClient : CryptoOpsClient {
         publicKey: ByteBuffer,
         data: ByteBuffer,
         context: KeyValuePairList
-    ): CryptoSignatureWithSignatureSpec
+    ): CryptoSignatureWithSpec
 }

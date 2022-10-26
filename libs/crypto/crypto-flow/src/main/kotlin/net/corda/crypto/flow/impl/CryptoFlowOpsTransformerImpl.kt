@@ -26,7 +26,7 @@ import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
-import net.corda.data.crypto.wire.CryptoSignatureWithSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithSpec
 import net.corda.v5.crypto.DigitalSignatureWithSpec
 import net.corda.v5.crypto.SecureHash
 
@@ -109,7 +109,7 @@ class CryptoFlowOpsTransformerImpl(
         return when (inferRequestType(response)) {
             SignFlowCommand::class.java -> when (response.response) {
                 is CryptoSignatureWithKey -> transformCryptoSignatureWithKey(response)
-                is CryptoSignatureWithSignatureSpec -> transformCryptoSignatureWithSignatureSpec(response)
+                is CryptoSignatureWithSpec -> transformCryptoSignatureWithSpec(response)
                 else -> throw IllegalArgumentException(
                     "Unknown response type: ${response.response}"
                 )
@@ -143,14 +143,17 @@ class CryptoFlowOpsTransformerImpl(
         )
     }
 
-    private fun transformCryptoSignatureWithSignatureSpec(response: FlowOpsResponse): DigitalSignatureWithSpec {
-        val resp = response.validateAndGet<CryptoSignatureWithSignatureSpec>()
+    private fun transformCryptoSignatureWithSpec(response: FlowOpsResponse): DigitalSignatureWithSpec {
+        val resp = response.validateAndGet<CryptoSignatureWithSpec>()
+        val signatureWithId = DigitalSignature.WithId(
+            by = SecureHash(resp.signature.publicKeyHash.algorithm, resp.signature.publicKeyHash.serverHash.array()),
+            bytes = resp.signature.bytes.array()
+        )
         return DigitalSignatureWithSpec(
-            bytes = ByteArray(resp.bytes.remaining()).also {
-                resp.bytes.get(it)
-            },
-            spec = SignatureSpec(resp.spec),
-            publicKeyHash = SecureHash(resp.publicKeyHash.algorithm, resp.publicKeyHash.serverHash.array())
+            signature = signatureWithId,
+            signatureSpec = SignatureSpec(
+                resp.signatureSpec.signatureName
+            )
         )
     }
 
