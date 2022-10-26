@@ -89,6 +89,7 @@ class AuthenticationProtocolTest {
         executeProtocol(partyASessionKey, partyBSessionKey, signature, SignatureSpec.ECDSA_SHA256, true)
     }
 
+    @Suppress("LongParameterList")
     private fun executeProtocol(partyASessionKey: KeyPair,
                                 partyBSessionKey: KeyPair,
                                 signature: Signature,
