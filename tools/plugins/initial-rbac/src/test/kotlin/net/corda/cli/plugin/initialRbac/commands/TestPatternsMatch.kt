@@ -11,8 +11,6 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.util.UUID
-import java.util.regex.Pattern
-import java.util.regex.Pattern.CASE_INSENSITIVE
 
 class TestPatternsMatch {
 
