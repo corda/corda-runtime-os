@@ -27,6 +27,7 @@ dependencies {
     testImplementation project(":libs:crypto:cipher-suite-impl")
     testImplementation project(":libs:crypto:merkle-impl")
     testImplementation project(':testing:test-serialization')
+    testImplementation project(":testing:kryo-serialization-testkit")
     testImplementation project(":libs:serialization:serialization-internal")
     testImplementation project(":libs:serialization:serialization-amqp")
     testImplementation project(":testing:ledger:ledger-utxo-testkit")
