@@ -20,4 +20,7 @@ dependencies {
     testImplementation "net.corda:corda-cipher-suite"
     testImplementation "org.mockito:mockito-inline:$mockitoInlineVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
+
+    integrationTestImplementation project(":testing:p2p:certificates")
+    integrationTestImplementation project(":libs:crypto:crypto-utils")
 }

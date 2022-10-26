@@ -1,6 +1,7 @@
 package net.corda.p2p.gateway.messaging.http
 
 import net.corda.p2p.NetworkType
+import net.corda.testing.p2p.certificates.Certificates
 import org.bouncycastle.asn1.x500.X500Name
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -13,7 +14,7 @@ class HostnameMatcherTest {
     @Test
     fun `C4 SNI match`() {
         val keyStore: KeyStore = KeyStore.getInstance("JKS").also {
-            it.load(javaClass.classLoader.getResource("sslkeystore_c4.jks").openStream(), "cordacadevpass".toCharArray())
+            it.load(Certificates.c4KeyStoreFile!!.openStream(), "cordacadevpass".toCharArray())
         }
         val x500Name = X500Name.getInstance(X500Principal("O=PartyA,L=London,C=GB").encoded)
         val calculatedSNI = SniCalculator.calculateSni(x500Name.toString(), NetworkType.CORDA_4, "")
@@ -34,7 +35,7 @@ class HostnameMatcherTest {
         // Because the tool used to create this certificate (tinycert.org) performs validations over subject alt names,
         // only happy paths can be tested using the certificate as input
         val keyStore: KeyStore = KeyStore.getInstance("JKS").also {
-            it.load(javaClass.classLoader.getResource("sslkeystore_c5.jks").openStream(), "password".toCharArray())
+            it.load(Certificates.c5KeyStoreFile!!.openStream(), "password".toCharArray())
         }
         val matcher = HostnameMatcher(keyStore)
         assertFalse(matcher.matches(SNIHostName("alice.net")))

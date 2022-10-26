@@ -49,9 +49,9 @@ class CertificateValidatorTest {
 
     @Test
     fun `certificate fails validation if x500 name is not a valid corda x500 name`() {
-        val x500NoLocal = X500Principal("CN=alice, OU=MyUnit, O=MyOrg, C=GB") //Valid X500Name but not a valid Corda X500Name
+        val x500NoLocality = X500Principal("CN=alice, OU=MyUnit, O=MyOrg, C=GB") //Valid X500Name but not a valid Corda X500Name
         val certificate = mock<X509Certificate> {
-            on {subjectX500Principal} doReturn x500NoLocal
+            on {subjectX500Principal} doReturn x500NoLocality
         }
         whenever(certificateChain.certificates).thenReturn(listOf(certificate))
         val validator = CertificateValidator(RevocationCheckMode.HARD_FAIL, trustStore, certPathValidator, certificateFactory)

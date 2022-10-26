@@ -65,6 +65,7 @@ import net.corda.schema.Schemas.P2P.Companion.P2P_OUT_TOPIC
 import net.corda.schema.configuration.BootConfig.INSTANCE_ID
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.eventually
+import net.corda.testing.p2p.certificates.Certificates
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.seconds
 import net.corda.v5.cipher.suite.schemes.ECDSA_SECP256R1_TEMPLATE
@@ -77,6 +78,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Timeout
 import org.mockito.kotlin.mock
 import java.io.StringWriter
+import java.net.URL
 import java.nio.ByteBuffer
 import java.security.Key
 import java.security.KeyFactory
@@ -117,13 +119,13 @@ class P2PLayerEndToEndTest {
     @Timeout(60)
     fun `two hosts can exchange data messages over p2p using RSA keys`() {
         val numberOfMessages = 10
-        val aliceId = Identity("O=Alice, L=London, C=GB", GROUP_ID, "sslkeystore_alice")
-        val chipId = Identity("O=Chip, L=London, C=GB", GROUP_ID, "sslkeystore_chip")
+        val aliceId = Identity("O=Alice, L=London, C=GB", GROUP_ID, Certificates.aliceKeyStoreFile)
+        val chipId = Identity("O=Chip, L=London, C=GB", GROUP_ID, Certificates.chipKeyStoreFile)
         Host(
             listOf(aliceId),
             "www.alice.net",
             10500,
-            "truststore",
+            Certificates.truststoreCertificatePem,
             bootstrapConfig,
             true,
             RSA_TEMPLATE,
@@ -132,7 +134,7 @@ class P2PLayerEndToEndTest {
                 listOf(chipId),
                 "chip.net",
                 10501,
-                "truststore",
+                Certificates.truststoreCertificatePem,
                 bootstrapConfig,
                 true,
                 RSA_TEMPLATE,
@@ -168,13 +170,13 @@ class P2PLayerEndToEndTest {
     @Timeout(60)
     fun `two hosts can exchange data messages over p2p with ECDSA keys`() {
         val numberOfMessages = 10
-        val receiverId = Identity("O=Alice, L=London, C=GB", GROUP_ID, "receiver")
-        val senderId = Identity("O=Chip, L=London, C=GB", GROUP_ID, "sender")
+        val receiverId = Identity("O=Alice, L=London, C=GB", GROUP_ID, Certificates.receiverKeyStoreFile)
+        val senderId = Identity("O=Chip, L=London, C=GB", GROUP_ID, Certificates.senderKeyStoreFile)
         Host(
             listOf(receiverId),
             "www.receiver.net",
             10502,
-            "ec_truststore",
+            Certificates.ecTrustStorePem,
             bootstrapConfig,
             false,
             ECDSA_SECP256R1_TEMPLATE,
@@ -183,7 +185,7 @@ class P2PLayerEndToEndTest {
                 listOf(senderId),
                 "www.sender.net",
                 10503,
-                "ec_truststore",
+                Certificates.ecTrustStorePem,
                 bootstrapConfig,
                 false,
                 ECDSA_SECP256R1_TEMPLATE,
@@ -219,13 +221,13 @@ class P2PLayerEndToEndTest {
     @Timeout(60)
     fun `messages can be looped back between locally hosted identities`() {
         val numberOfMessages = 10
-        val receiverId = Identity("O=Alice, L=London, C=GB", GROUP_ID, "receiver")
-        val senderId = Identity("O=Chip, L=London, C=GB", GROUP_ID, "sender")
+        val receiverId = Identity("O=Alice, L=London, C=GB", GROUP_ID, Certificates.receiverKeyStoreFile)
+        val senderId = Identity("O=Chip, L=London, C=GB", GROUP_ID, Certificates.senderKeyStoreFile)
         Host(
             listOf(receiverId, senderId),
             "www.alice.net",
             10500,
-            "truststore",
+            Certificates.truststoreCertificatePem,
             bootstrapConfig,
             true,
             RSA_TEMPLATE,
@@ -253,13 +255,13 @@ class P2PLayerEndToEndTest {
     @Timeout(60)
     fun `messages with expired ttl have processed marker and ttl expired marker and no received marker`() {
         val numberOfMessages = 10
-        val aliceId = Identity("O=Alice, L=London, C=GB", GROUP_ID, "sslkeystore_alice")
-        val chipId = Identity("O=Chip, L=London, C=GB", GROUP_ID, "sslkeystore_chip")
+        val aliceId = Identity("O=Alice, L=London, C=GB", GROUP_ID, Certificates.aliceKeyStoreFile)
+        val chipId = Identity("O=Chip, L=London, C=GB", GROUP_ID, Certificates.chipKeyStoreFile)
         Host(
             listOf(aliceId),
             "www.alice.net",
             10500,
-            "truststore",
+            Certificates.truststoreCertificatePem,
             bootstrapConfig,
             true,
             RSA_TEMPLATE,
@@ -268,7 +270,7 @@ class P2PLayerEndToEndTest {
                 listOf(chipId),
                 "chip.net",
                 10501,
-                "truststore",
+                Certificates.truststoreCertificatePem,
                 bootstrapConfig,
                 true,
                 RSA_TEMPLATE,
@@ -352,14 +354,14 @@ class P2PLayerEndToEndTest {
     internal data class Identity(
         val x500Name: String,
         val groupId: String,
-        val keyStoreFileName: String,
+        val keyStoreURL: URL,
     )
 
     internal class Host(
         private val ourIdentities: List<Identity>,
         p2pAddress: String,
         p2pPort: Int,
-        trustStoreFileName: String,
+        trustStoreURL: URL,
         private val bootstrapConfig: SmartConfig,
         checkRevocation: Boolean,
         keyTemplate: KeySchemeTemplate,
@@ -408,8 +410,8 @@ class P2PLayerEndToEndTest {
                 .withValue(MESSAGE_REPLAY_PERIOD_KEY, ConfigValueFactory.fromAnyRef(Duration.ofSeconds(2)))
         }
 
-        private fun readKeyStore(fileName: String): ByteArray {
-            return javaClass.classLoader.getResource(fileName)!!.readBytes()
+        private fun readKeyStore(resource: URL): ByteArray {
+            return resource.readBytes()
         }
 
         private fun createGatewayConfig(port: Int, domainName: String, sslConfig: SslConfiguration): Config {
@@ -467,7 +469,7 @@ class P2PLayerEndToEndTest {
 
         private val keyStores = ourIdentities.mapNotNull {
             KeyStore.getInstance("JKS").also { keyStore ->
-                javaClass.classLoader.getResource("${it.keyStoreFileName}.jks").openStream().use {
+                it.keyStoreURL.openStream().use {
                     keyStore.load(it, "password".toCharArray())
                 }
             }
@@ -496,7 +498,7 @@ class P2PLayerEndToEndTest {
                     ProtocolMode.AUTHENTICATION_ONLY,
                     ProtocolMode.AUTHENTICATED_ENCRYPTION,
                 ),
-                listOf(String(readKeyStore("$trustStoreFileName.pem"))),
+                listOf(String(readKeyStore(trustStoreURL))),
             )
         }
 
