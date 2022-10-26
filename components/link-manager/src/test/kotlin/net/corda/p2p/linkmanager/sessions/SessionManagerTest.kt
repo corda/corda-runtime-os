@@ -35,6 +35,7 @@ import net.corda.p2p.crypto.protocol.api.AuthenticationResult
 import net.corda.p2p.crypto.protocol.api.HandshakeIdentityData
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeMessageException
 import net.corda.p2p.crypto.protocol.api.InvalidHandshakeResponderKeyHash
+import net.corda.p2p.crypto.protocol.api.InvalidPeerCertificate
 import net.corda.p2p.crypto.protocol.api.KeyAlgorithm
 import net.corda.p2p.crypto.protocol.api.RevocationCheckMode
 import net.corda.p2p.crypto.protocol.api.Session
@@ -980,6 +981,33 @@ class SessionManagerTest {
     }
 
     @Test
+    fun `when initiator handshake is received, but validation fails due to InvalidPeerCertificate, the message is dropped`() {
+        val sessionId = "some-session-id"
+        val initiatorPublicKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
+        whenever(protocolResponder.generateResponderHello()).thenReturn(mock())
+
+        val initiatorHelloHeader = CommonHeader(MessageType.INITIATOR_HELLO, 1, sessionId, 1, Instant.now().toEpochMilli())
+        val initiatorHelloMessage = InitiatorHelloMessage(initiatorHelloHeader, ByteBuffer.wrap(PEER_KEY.public.encoded),
+            PROTOCOL_MODES, InitiatorHandshakeIdentity(ByteBuffer.wrap(messageDigest.hash(PEER_KEY.public.encoded)), GROUP_ID))
+        sessionManager.processSessionMessage(LinkInMessage(initiatorHelloMessage))
+
+        val initiatorHandshakeHeader = CommonHeader(MessageType.INITIATOR_HANDSHAKE, 1, sessionId, 3, Instant.now().toEpochMilli())
+        val initiatorHandshake = InitiatorHandshakeMessage(initiatorHandshakeHeader, RANDOM_BYTES, RANDOM_BYTES)
+        whenever(protocolResponder.getInitiatorIdentity())
+            .thenReturn(InitiatorHandshakeIdentity(ByteBuffer.wrap(initiatorPublicKeyHash), GROUP_ID))
+        whenever(protocolResponder.validatePeerHandshakeMessage(
+            initiatorHandshake,
+            PEER_MEMBER_INFO.holdingIdentity.x500Name,
+            PEER_KEY.public,
+            SignatureSpec.ECDSA_SHA256
+        )).thenThrow(InvalidPeerCertificate("Invalid peer certificate"))
+        val responseMessage = sessionManager.processSessionMessage(LinkInMessage(initiatorHandshake))
+
+        assertThat(responseMessage).isNull()
+        loggingInterceptor.assertSingleWarningContains("The message was discarded.")
+    }
+
+    @Test
     fun `when initiator handshake is received, but our member info is missing from the network map, the message is dropped`() {
         val sessionId = "some-session-id"
         val initiatorPublicKeyHash = messageDigest.hash(PEER_KEY.public.encoded)
@@ -1178,6 +1206,28 @@ class SessionManagerTest {
                 SignatureSpec.ECDSA_SHA256,
             )
         ).thenThrow(InvalidHandshakeResponderKeyHash())
+        assertThat(sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))).isNull()
+
+        loggingInterceptor.assertSingleWarningContains("The message was discarded.")
+    }
+
+    @Test
+    fun `when responder handshake is received, but validation fails due to InvalidPeerCertificate, the message is dropped`() {
+        val sessionId = "some-session"
+        whenever(outboundSessionPool.constructed().first().getSession(sessionId)).thenReturn(
+            OutboundSessionPool.SessionType.PendingSession(counterparties, protocolInitiator)
+        )
+
+        val header = CommonHeader(MessageType.RESPONDER_HANDSHAKE, 1, sessionId, 4, Instant.now().toEpochMilli())
+        val responderHandshakeMessage = ResponderHandshakeMessage(header, RANDOM_BYTES, RANDOM_BYTES)
+        whenever(
+            protocolInitiator.validatePeerHandshakeMessage(
+                responderHandshakeMessage,
+                PEER_MEMBER_INFO.holdingIdentity.x500Name,
+                PEER_KEY.public,
+                SignatureSpec.ECDSA_SHA256,
+            )
+        ).thenThrow(InvalidPeerCertificate("Bad Cert"))
         assertThat(sessionManager.processSessionMessage(LinkInMessage(responderHandshakeMessage))).isNull()
 
         loggingInterceptor.assertSingleWarningContains("The message was discarded.")
