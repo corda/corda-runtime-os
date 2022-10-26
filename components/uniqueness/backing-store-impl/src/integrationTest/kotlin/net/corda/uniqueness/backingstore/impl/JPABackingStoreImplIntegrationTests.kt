@@ -29,7 +29,6 @@ import net.corda.uniqueness.datamodel.impl.UniquenessCheckErrorReferenceStateCon
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckRequestInternal
 import net.corda.uniqueness.datamodel.internal.UniquenessCheckTransactionDetailsInternal
 import net.corda.uniqueness.utils.UniquenessAssertions
-import net.corda.v5.application.uniqueness.model.UniquenessCheckResultSuccess
 import net.corda.v5.application.uniqueness.model.UniquenessCheckResult
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
@@ -267,7 +266,7 @@ class JPABackingStoreImplIntegrationTests {
 
             UniquenessAssertions.assertContainingTxId(txnDetails, txIds.single())
             UniquenessAssertions.assertInputStateConflictResult(
-                txnDetails.entries.single().value.result, txId, consumingTxId
+                txnDetails.entries.single().value.result, txId, consumingTxId, 0
             )
         }
 

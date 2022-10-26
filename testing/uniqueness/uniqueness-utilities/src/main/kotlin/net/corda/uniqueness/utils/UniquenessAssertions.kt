@@ -182,6 +182,7 @@ object UniquenessAssertions {
         result: UniquenessCheckResult,
         txId: SecureHash,
         consumingTxId: SecureHash,
+        stateIdx: Int,
         clock: AutoTickTestClock? = null
     ) {
         assertRejectedResultCommon(result, clock)
@@ -193,7 +194,7 @@ object UniquenessAssertions {
             { assertThat(conflicts.size).isEqualTo(1) },
             { assertThat(conflicts.single().consumingTxId).isEqualTo(consumingTxId) },
             { assertThat(conflicts.single().stateRef.txHash).isEqualTo(txId) },
-            { assertThat(conflicts.single().stateRef.stateIndex).isEqualTo(0) })
+            { assertThat(conflicts.single().stateRef.stateIndex).isEqualTo(stateIdx) })
     }
 
     /**
