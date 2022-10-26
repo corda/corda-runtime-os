@@ -13,7 +13,7 @@ import org.osgi.service.component.propertytypes.ServiceRanking
 import java.util.stream.Stream
 
 interface TestVirtualNodeInfoReadService : VirtualNodeInfoReadService {
-    fun setTestVirtualNodeInfo(virtualNodeInfo: VirtualNodeInfo)
+    fun putTestVirtualNodeInfo(virtualNodeInfo: VirtualNodeInfo)
 }
 
 @ServiceRanking(Int.MAX_VALUE)
@@ -22,40 +22,31 @@ internal class TestVirtualNodeInfoReadServiceImpl @Activate constructor() : Test
 
     private val testVirtualNodeInfoList = mutableListOf<VirtualNodeInfo>()
 
-    override fun setTestVirtualNodeInfo(virtualNodeInfo: VirtualNodeInfo) {
+    override fun putTestVirtualNodeInfo(virtualNodeInfo: VirtualNodeInfo) {
         testVirtualNodeInfoList.add(virtualNodeInfo)
     }
 
     override fun getAll(): List<VirtualNodeInfo> = testVirtualNodeInfoList
 
-    override fun get(holdingIdentity: HoldingIdentity): VirtualNodeInfo? {
-        return testVirtualNodeInfoList.firstOrNull { it.holdingIdentity ==  holdingIdentity }
-    }
+    override fun get(holdingIdentity: HoldingIdentity) =
+        testVirtualNodeInfoList.firstOrNull {
+            it.holdingIdentity == holdingIdentity
+        }
 
-    override fun getByHoldingIdentityShortHash(holdingIdentityShortHash: ShortHash): VirtualNodeInfo? {
-        return testVirtualNodeInfoList.firstOrNull { it.holdingIdentity.shortHash ==  holdingIdentityShortHash }
-    }
+    override fun getByHoldingIdentityShortHash(holdingIdentityShortHash: ShortHash) =
+        testVirtualNodeInfoList.firstOrNull {
+            it.holdingIdentity.shortHash == holdingIdentityShortHash
+        }
 
-    override fun registerCallback(listener: VirtualNodeInfoListener): AutoCloseable {
-        return AutoCloseable { return@AutoCloseable }
-    }
 
-    override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>>? {
-        return null
-    }
+    override fun registerCallback(listener: VirtualNodeInfoListener) = AutoCloseable { return@AutoCloseable }
 
-    override val lifecycleCoordinatorName: LifecycleCoordinatorName
-        get() = LifecycleCoordinatorName.forComponent<TestVirtualNodeInfoReadServiceImpl>()
+    override val isRunning = true
+    override val lifecycleCoordinatorName =
+        LifecycleCoordinatorName.forComponent<TestVirtualNodeInfoReadServiceImpl>()
 
-    override val isRunning: Boolean
-        get() = true
-
-    override fun start() {
-        return
-    }
-
-    override fun stop() {
-        return
-    }
+    override fun getAllVersionedRecords(): Stream<VersionedRecord<HoldingIdentity, VirtualNodeInfo>>? = null
+    override fun stop() {}
+    override fun start() {}
 
 }

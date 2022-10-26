@@ -225,7 +225,7 @@ class MGMRegistrationService @Activate constructor(
     }
 
     private inner class ActiveImpl : InnerRegistrationService {
-        @Suppress("LongMethod")
+        @Suppress("LongMethod", "ComplexMethod")
         override fun register(
             registrationId: UUID,
             member: HoldingIdentity,

@@ -217,7 +217,7 @@ class StaticMemberRegistrationService @Activate constructor(
      * Parses the static member list template, creates the MemberInfo for the registering member and the records for the
      * kafka publisher.
      */
-    @Suppress("MaxLineLength")
+    @Suppress("ThrowsCount")
     private fun parseMemberTemplate(
         registeringMember: HoldingIdentity,
         groupPolicy: GroupPolicy,

@@ -186,7 +186,7 @@ class MemberRegistrationIntegrationTest {
             configurationReadService.bootstrapConfig(bootConfig)
 
 
-            testVirtualNodeInfoReadService.setTestVirtualNodeInfo(
+            testVirtualNodeInfoReadService.putTestVirtualNodeInfo(
                 VirtualNodeInfo(
                     holdingIdentity = HoldingIdentity(memberName, groupId),
                     cpiIdentifier = CpiIdentifier(CPI_NAME, CPI_VERSION, null),
