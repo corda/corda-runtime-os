@@ -56,10 +56,10 @@ internal class UtxoLedgerTransactionImplTest {
             mockSigningService(),
             mock(),
             testSerializationContext.currentSandboxGroup(),
-            utxoTransactionMetaDataExample,
-            utxoNotaryExample,
-            utxoTimeWindowExample,
+            utxoTransactionMetaDataExample
         )
+            .setNotary(utxoNotaryExample)
+            .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)
             .addOutputState(utxoStateExample)
             .addInputState(inputStateAndRef)
             .addReferenceInputState(referenceStateAndRef)
