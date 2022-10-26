@@ -89,6 +89,6 @@ internal class UtxoLedgerTransactionImplTest {
         assertIs<StateAndRef<UtxoStateClassExample>>(ledgerTransaction.referenceInputStateAndRefs.first())
         */
 
-        // Also test Commands and Attachments
+        // TODO Also test Commands and Attachments when they get deserialized properly.
     }
 }
