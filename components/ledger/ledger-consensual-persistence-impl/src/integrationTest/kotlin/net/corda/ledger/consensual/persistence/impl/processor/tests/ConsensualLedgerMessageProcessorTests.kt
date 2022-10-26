@@ -65,6 +65,7 @@ import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.ByteBuffer
 import java.nio.file.Path
+import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
 
@@ -110,6 +111,7 @@ class ConsensualLedgerMessageProcessorTests {
     @InjectService
     lateinit var jsonMarshallingService: JsonMarshallingService
     private lateinit var wireTransactionSerializer: InternalCustomSerializer<WireTransaction>
+    private lateinit var publicKeySerializer: InternalCustomSerializer<PublicKey>
     private lateinit var ctx: DbTestContext
 
     @BeforeAll
@@ -130,6 +132,10 @@ class ConsensualLedgerMessageProcessorTests {
             virtualNodeInfoReadService = setup.fetchService(timeout = 10000)
             wireTransactionSerializer = setup.fetchService(
                 "(component.name=net.corda.ledger.common.data.transaction.serializer.amqp.WireTransactionSerializer)",
+                10000
+            )
+            publicKeySerializer = setup.fetchService(
+                "(component.name=net.corda.crypto.impl.serialization.PublicKeySerializer)",
                 10000
             )
             deserializer = setup.fetchService<CordaAvroSerializationFactory>(timeout = 10000)
@@ -214,7 +220,7 @@ class ConsensualLedgerMessageProcessorTests {
 
         val componentContext = Mockito.mock(ComponentContext::class.java)
         whenever(componentContext.locateServices(INTERNAL_CUSTOM_SERIALIZERS))
-            .thenReturn(arrayOf(wireTransactionSerializer))
+            .thenReturn(arrayOf(wireTransactionSerializer, publicKeySerializer))
 
         // set up sandbox
         val entitySandboxService =

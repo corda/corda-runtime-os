@@ -7,12 +7,10 @@ import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
-import net.corda.v5.base.types.toHexString
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.DigestAlgorithmName
-import java.security.MessageDigest
 import java.time.Instant
 import javax.persistence.EntityManager
 import javax.persistence.Query
@@ -53,11 +51,13 @@ class ConsensualLedgerRepository(
             digestService,
             jsonMarshallingService,
             PrivacySaltImpl(rows.first()[1] as ByteArray),
-            rows.mapTuples(componentGroupListsTuplesMapper))
+            rows.mapTuples(componentGroupListsTuplesMapper)
+        )
 
         return ConsensualSignedTransactionContainer(
             wireTransaction,
-            findSignatures(entityManager, id))
+            findSignatures(entityManager, id)
+        )
     }
 
     /** Reads [DigitalSignatureAndMetadata] for signed transaction with given [transactionId] from database. */
@@ -220,7 +220,7 @@ class ConsensualLedgerRepository(
     }
 
     private fun ByteArray.hashAsHexString() =
-        MessageDigest.getInstance(DigestAlgorithmName.SHA2_256.name).digest(this).toHexString()
+        digestService.hash(this, DigestAlgorithmName.SHA2_256).toHexString()
 
     @Suppress("UNCHECKED_CAST")
     private fun Query.resultListAsTuples() = resultList as List<Tuple>
