@@ -237,26 +237,23 @@ class CpkDbChangeLogEntityTest {
             flush()
         }
 
-        val changeLog2 = CpkDbChangeLogEntity(
-            CpkDbChangeLogKey(cpk.metadata.id.cpkName, cpk.metadata.id.cpkVersion,
-                cpk.metadata.id.cpkSignerSummaryHash, "master"),
-            "master-checksum",
-            "master-content",
-            UUID.randomUUID()
-        )
+        val changeset2 = (4..6).map {
+            CpkDbChangeLogEntity(
+                CpkDbChangeLogKey(cpk.metadata.id.cpkName, cpk.metadata.id.cpkVersion,
+                    cpk.metadata.id.cpkSignerSummaryHash, "master-$it"),
+                "master-checksum",
+                "master-content",
+                fakeId
+            )
+        }
 
         transaction {
-            persist(changeLog2)
-            persist(CpkDbChangeLogAuditEntity(changeLog2))
+            changeset2.forEach { persist(it) }
+            changeset2.forEach { persist(CpkDbChangeLogAuditEntity(it)) }
             flush()
         }
 
         transaction {
-//            val loadedDbLogEntity = find(
-//                CpkDbChangeLogEntity::class.java,
-//                CpkDbChangeLogKey(cpk.metadata.id.cpkName, cpk.metadata.id.cpkVersion,
-//                    cpk.metadata.id.cpkSignerSummaryHash, "master")
-//            )
             val loadedDbLogAuditEntities = findDbChangeLogAuditForCpi(
                 this,
                 CpiIdentifier(
