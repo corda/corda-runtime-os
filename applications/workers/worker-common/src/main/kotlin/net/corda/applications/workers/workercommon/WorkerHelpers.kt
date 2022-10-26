@@ -2,6 +2,7 @@ package net.corda.applications.workers.workercommon
 
 import com.typesafe.config.ConfigFactory
 import com.typesafe.config.ConfigValueFactory
+import io.javalin.core.util.RouteOverviewUtil.metaInfo
 import net.corda.libs.configuration.SmartConfig
 import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.validation.ConfigurationValidator
@@ -141,16 +142,20 @@ class WorkerHelpers {
          * Logs info about Worker startup process, from worker [args] and [PlatformInfoProvider].
          */
         fun Logger.loggerStartupInfo(args: Array<String>, platformInfoProvider: PlatformInfoProvider) {
-            info("ActivePlatformVersion ${platformInfoProvider.activePlatformVersion}")
             info("LocalWorkerPlatformVersion ${platformInfoProvider.localWorkerPlatformVersion}")
             info("LocalWorkerSoftwareVersion ${platformInfoProvider.localWorkerSoftwareVersion}")
 
-            val info = ManagementFactory.getRuntimeMXBean()
-            info("PID: ${info.name.split("@").firstOrNull()}")  // TODO Java 9 has better support for this
-            info("CommandLine Args: ${info.inputArguments.joinToString(" ")}")
+            val processHandle = ProcessHandle.current()
+            val processInfo = processHandle.info()
+            info("PID: ${processHandle.pid()}")
+            info("CommandLine: ${processInfo.commandLine()}")
+            info("pInfo.command: ${processInfo.command()}")
+            info("pInfo.totalCpuDuration: ${processInfo.totalCpuDuration()}")
+            info("pInfo.user: ${processInfo.user()}")
+            info("pInfo.startInstant: ${processInfo.startInstant()}")
+            info("pInfo.javaClass: ${processInfo.javaClass}")
 
-            // JDK 11 (bootclasspath no longer supported from JDK 9)
-            if (info.isBootClassPathSupported) logger.info("bootclasspath: ${info.bootClassPath}")
+            val info = ManagementFactory.getRuntimeMXBean()
             info("classpath: ${info.classPath}")
             info("VM ${info.vmName} ${info.vmVendor} ${info.vmVersion}")
 
