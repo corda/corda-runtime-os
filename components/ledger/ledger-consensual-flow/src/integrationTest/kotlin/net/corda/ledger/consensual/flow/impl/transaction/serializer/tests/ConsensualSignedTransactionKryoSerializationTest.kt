@@ -2,7 +2,7 @@ package net.corda.ledger.consensual.flow.impl.transaction.serializer.tests
 
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.consensual.testkit.getConsensualSignedTransaction
+import net.corda.ledger.consensual.testkit.getConsensualSignedTransactionExample
 import net.corda.sandbox.SandboxCreationService
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
@@ -49,7 +49,7 @@ class ConsensualSignedTransactionKryoSerializationTest {
     lateinit var merkleTreeProvider: MerkleTreeProvider
 
     @InjectService(timeout = 1000)
-    lateinit var schemeMetadata: CipherSchemeMetadata
+    lateinit var cipherSchemeMetadata: CipherSchemeMetadata
 
     @InjectService(timeout = 1000)
     lateinit var jsonMarshallingService: JsonMarshallingService
@@ -95,7 +95,7 @@ class ConsensualSignedTransactionKryoSerializationTest {
     @Test
     @Suppress("FunctionName")
     fun `correct serialization of a consensual Signed Transaction`() {
-        val serializationService = TestSerializationService.getTestSerializationService({ }, schemeMetadata)
+        val serializationService = TestSerializationService.getTestSerializationService({ }, cipherSchemeMetadata)
 
         val builder = checkpointSerializerBuilderFactory.createCheckpointSerializerBuilder(emptySandboxGroup)
         val kryoSerializer = builder
@@ -103,7 +103,7 @@ class ConsensualSignedTransactionKryoSerializationTest {
             .addSerializer(ConsensualSignedTransaction::class.java, consensualSignedTransactionSerializer)
             .build()
 
-        val signedTransaction = getConsensualSignedTransaction(
+        val signedTransaction = getConsensualSignedTransactionExample(
             digestService,
             merkleTreeProvider,
             serializationService,

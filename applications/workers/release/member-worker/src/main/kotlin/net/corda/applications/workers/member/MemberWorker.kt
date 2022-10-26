@@ -40,7 +40,7 @@ class MemberWorker @Activate constructor(
 
         val params = getParams(args, MemberWorkerParams())
         if (printHelpOrVersion(params.defaultParams, MemberWorker::class.java, shutDownService)) return
-        setupMonitor(workerMonitor, params.defaultParams)
+        setupMonitor(workerMonitor, params.defaultParams, this.javaClass.simpleName)
 
         val config = getBootstrapConfig(params.defaultParams, configurationValidatorFactory.createConfigValidator())
 

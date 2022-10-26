@@ -100,9 +100,9 @@ class WorkerHelpers {
         }
 
         /** Sets up the [workerMonitor] based on the [params]. */
-        fun setupMonitor(workerMonitor: WorkerMonitor, params: DefaultWorkerParams) {
+        fun setupMonitor(workerMonitor: WorkerMonitor, params: DefaultWorkerParams, workerType: String) {
             if (!params.disableWorkerMonitor) {
-                workerMonitor.listen(params.workerMonitorPort)
+                workerMonitor.listen(params.workerMonitorPort, workerType)
             }
         }
 

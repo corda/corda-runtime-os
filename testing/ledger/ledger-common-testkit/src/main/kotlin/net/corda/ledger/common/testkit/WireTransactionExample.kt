@@ -7,18 +7,20 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 
-fun getWireTransaction(
+private val minimalTransactionMetaData = TransactionMetaData(
+    linkedMapOf(
+        TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues
+    )
+)
+fun getWireTransactionExample(
     digestService: DigestService,
     merkleTreeProvider: MerkleTreeProvider,
-    jsonMarshallingService: JsonMarshallingService
+    jsonMarshallingService: JsonMarshallingService,
+    metaData: TransactionMetaData = minimalTransactionMetaData
 ): WireTransaction {
-    val transactionMetaData = TransactionMetaData(
-        linkedMapOf(
-            TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues
-        )
-    )
+
     val componentGroupLists = listOf(
-        listOf(jsonMarshallingService.format(transactionMetaData).toByteArray(Charsets.UTF_8)), // TODO(update with CORE-6890)
+        listOf(jsonMarshallingService.format(metaData).toByteArray(Charsets.UTF_8)), // TODO(update with CORE-6890)
         listOf(".".toByteArray()),
         listOf("abc d efg".toByteArray()),
     )

@@ -23,7 +23,7 @@ import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.testkit.getWireTransaction
+import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.consensual.persistence.impl.processor.ConsensualLedgerMessageProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.orm.JpaEntitiesSet
@@ -165,7 +165,7 @@ class ConsensualLedgerMessageProcessorTests {
         Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
 
         // create ConsensualSignedTransactionImpl instance (or WireTransaction at first)
-        val tx = getWireTransaction(digestService, merkleTreeProvider, jsonMarshallingService)
+        val tx = getWireTransactionExample(digestService, merkleTreeProvider, jsonMarshallingService)
         logger.info("WireTransaction: ", tx)
 
         // serialise tx into bytebuffer and add to PersistTransaction payload
@@ -207,8 +207,8 @@ class ConsensualLedgerMessageProcessorTests {
 
         val testId = (0..1000000).random() // keeping this shorter than UUID.
         val schemaName = "consensual_ledger_test_$testId"
-        val animalDbConnection = Pair(virtualNodeInfo.vaultDmlConnectionId, "animals-node-$testId")
-        val dbConnectionManager = FakeDbConnectionManager(listOf(animalDbConnection), schemaName)
+        val dbConnection = Pair(virtualNodeInfo.vaultDmlConnectionId, "connection-1")
+        val dbConnectionManager = FakeDbConnectionManager(listOf(dbConnection), schemaName)
 
         val componentContext = Mockito.mock(ComponentContext::class.java)
         whenever(componentContext.locateServices(INTERNAL_CUSTOM_SERIALIZERS))
@@ -237,16 +237,16 @@ class ConsensualLedgerMessageProcessorTests {
             )
         )
 
-        lbm.updateDb(dbConnectionManager.getDataSource(animalDbConnection.first).connection, vaultSchema)
+        lbm.updateDb(dbConnectionManager.getDataSource(dbConnection.first).connection, vaultSchema)
 
         return DbTestContext(
             virtualNodeInfo,
             entitySandboxService,
             sandbox,
             dbConnectionManager.createEntityManagerFactory(
-                animalDbConnection.first,
+                dbConnection.first,
                 JpaEntitiesSet.create(
-                    animalDbConnection.second,
+                    dbConnection.second,
                     setOf()
                 )
             ),

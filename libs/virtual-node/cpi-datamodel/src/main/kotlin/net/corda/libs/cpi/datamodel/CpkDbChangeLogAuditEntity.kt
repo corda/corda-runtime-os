@@ -4,6 +4,7 @@ import net.corda.db.schema.DbSchema
 import net.corda.libs.packaging.core.CpiIdentifier
 import java.io.Serializable
 import java.time.Instant
+import java.util.UUID
 import javax.persistence.Column
 import javax.persistence.Embeddable
 import javax.persistence.EmbeddedId
@@ -32,6 +33,7 @@ class CpkDbChangeLogAuditEntity(
         CpkDbChangeLogAuditKey(
             cpkDbChangeLogEntity.id,
             cpkDbChangeLogEntity.fileChecksum,
+            cpkDbChangeLogEntity.changesetId,
             cpkDbChangeLogEntity.entityVersion
         ),
         cpkDbChangeLogEntity.content,
@@ -49,16 +51,19 @@ data class CpkDbChangeLogAuditKey(
     var cpkSignerSummaryHash: String,
     @Column(name = "cpk_file_checksum", nullable = false)
     val fileChecksum: String,
+    @Column(name = "changeset_id", nullable = false)
+    val changesetId: UUID,
     @Column(name = "entity_version", nullable = false)
     var entityVersion: Int,
     @Column(name = "file_path", nullable = false)
     val filePath: String,
 ) : Serializable {
-    constructor(cpkDbChangeLogKey: CpkDbChangeLogKey, fileChecksum: String, entityVersion: Int) : this(
+    constructor(cpkDbChangeLogKey: CpkDbChangeLogKey, fileChecksum: String, changesetId: UUID, entityVersion: Int) : this(
         cpkDbChangeLogKey.cpkName,
         cpkDbChangeLogKey.cpkVersion,
         cpkDbChangeLogKey.cpkSignerSummaryHash,
         fileChecksum,
+        changesetId,
         entityVersion,
         cpkDbChangeLogKey.filePath
     )

@@ -1,50 +1,33 @@
 package net.corda.sandboxgroupcontext.service.impl
 
 import net.corda.crypto.core.DigestAlgorithmFactoryProvider
-import net.corda.sandbox.SandboxContextService
-import net.corda.sandboxgroupcontext.CORDA_SANDBOX_FILTER
+import net.corda.sandboxgroupcontext.CustomMetadataConsumer
+import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
+import net.corda.sandboxgroupcontext.getObjectByKey
 import net.corda.v5.crypto.extensions.DigestAlgorithmFactory
-import org.osgi.framework.Bundle
+import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
-import org.osgi.service.component.annotations.Deactivate
-import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 @Suppress("unused")
 @Component(
-    service = [ DigestAlgorithmFactoryProvider::class ],
+    service = [
+        DigestAlgorithmFactoryProvider::class,
+        SingletonSerializeAsToken::class,
+        CustomMetadataConsumer::class
+    ],
     scope = PROTOTYPE
 )
-class DigestAlgorithmFactoryProviderImpl @Activate constructor(
-    @Reference
-    private val sandboxContextService: SandboxContextService
-) : DigestAlgorithmFactoryProvider {
-    private val cleanups = mutableListOf<AutoCloseable>()
+class DigestAlgorithmFactoryProviderImpl @Activate constructor()
+    : DigestAlgorithmFactoryProvider, SingletonSerializeAsToken, CustomMetadataConsumer {
+    private val provider = mutableMapOf<String, DigestAlgorithmFactory>()
 
-    private fun getAlgorithmFactories(bundle: Bundle): Map<String, DigestAlgorithmFactory>? {
-        val bundleContext = bundle.bundleContext
-        return bundleContext?.getServiceReferences(DigestAlgorithmFactory::class.java, CORDA_SANDBOX_FILTER)
-            ?.mapNotNull { reference ->
-                bundleContext.getService(reference)?.also {
-                    cleanups.add(AutoCloseable {
-                        bundleContext.ungetService(reference)
-                    })
-                }
-            }?.associateBy(DigestAlgorithmFactory::algorithm)
-    }
-
-    // This property MUST be "lazy" so that it is executed from within the sandbox.
-    // Note that SandboxContextService.getCallingSandboxGroup() works by walking the stack.
-    private val provider: Map<String, DigestAlgorithmFactory> by lazy {
-        sandboxContextService.getCallingSandboxGroup()?.let { sandboxGroup ->
-            sandboxGroup.metadata.keys.firstOrNull()?.let(::getAlgorithmFactories)
-        } ?: emptyMap()
-    }
-
-    @Deactivate
-    fun done() {
-        cleanups.forEach(AutoCloseable::close)
+    override fun accept(context: MutableSandboxGroupContext) {
+        context.getObjectByKey<Iterable<DigestAlgorithmFactory>>(DigestAlgorithmFactory::class.java.name)
+            ?.forEach { factory ->
+                provider[factory.algorithm] = factory
+            }
     }
 
     override fun get(algorithmName: String): DigestAlgorithmFactory? {

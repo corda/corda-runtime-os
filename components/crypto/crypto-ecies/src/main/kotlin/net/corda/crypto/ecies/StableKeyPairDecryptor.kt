@@ -36,8 +36,7 @@ interface StableKeyPairDecryptor : Lifecycle {
      * @param otherPublicKey the public key of the other party with which the consumer wants to establish secure
      * communication, the ephemeral key pair will be generated using the same key scheme.
      * @param cipherText cipher text to be decrypted.
-     * @param aad the optional additional authentication data used by the GCM, the provided data will be concatenated
-     * with the public keys of the both parties.
+     * @param aad the optional additional authentication data used by the GCM.
      *
      * @return the original plain text.
      */

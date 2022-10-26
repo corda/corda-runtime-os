@@ -30,6 +30,7 @@ class ConnectionManager(
     }
 
     private val clientPool: Cache<DestinationInfo, HttpClient> = CacheFactoryImpl().build(
+        "P2P-Client-Pool",
         Caffeine.newBuilder()
             .maximumSize(connectionConfiguration.maxClientConnections)
             .expireAfterAccess(connectionConfiguration.connectionIdleTimeout)

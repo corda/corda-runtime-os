@@ -5,7 +5,7 @@ import net.corda.p2p.app.UnauthenticatedMessageHeader
 import java.nio.ByteBuffer
 
 internal abstract class UnauthenticatedMessageHandler : MessageHandler {
-    override fun invoke(header: Any, payload: ByteBuffer): Record<*, *> {
+    override fun invoke(header: Any, payload: ByteBuffer): Record<*, *>? {
         if (header is UnauthenticatedMessageHeader) {
             return invokeUnauthenticatedMessage(header, payload)
         } else {
@@ -15,5 +15,5 @@ internal abstract class UnauthenticatedMessageHandler : MessageHandler {
         }
     }
 
-    abstract fun invokeUnauthenticatedMessage(header: UnauthenticatedMessageHeader, payload: ByteBuffer): Record<*, *>
+    abstract fun invokeUnauthenticatedMessage(header: UnauthenticatedMessageHeader, payload: ByteBuffer): Record<*, *>?
 }

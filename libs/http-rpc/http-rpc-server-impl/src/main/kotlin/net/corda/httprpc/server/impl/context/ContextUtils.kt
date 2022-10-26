@@ -16,6 +16,7 @@ import net.corda.httprpc.server.impl.internal.ParameterRetrieverFactory
 import net.corda.httprpc.server.impl.internal.ParametersRetrieverContext
 import net.corda.httprpc.server.impl.security.HttpRpcSecurityManager
 import net.corda.httprpc.server.impl.security.provider.credentials.CredentialResolver
+import net.corda.metrics.CordaMetrics
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.trace
@@ -88,30 +89,39 @@ internal object ContextUtils {
             log.info("Servicing ${ctx.method()} request to '${ctx.path()}'")
             log.debug { "Invoke method \"${this.method.method.name}\" for route info." }
             log.trace { "Get parameter values." }
-            try {
-                validateRequestContentType(this, ctx)
 
-                val clientHttpRequestContext = ClientHttpRequestContext(ctx)
-                val paramValues = retrieveParameters(clientHttpRequestContext)
+            CordaMetrics.Metric.HttpRequestCount.builder()
+                .withTag(CordaMetrics.Tag.Address, "${ctx.method()} ${ctx.path()}")
+                .build().increment()
+            val requestTimer = CordaMetrics.Metric.HttpRequestTime.builder()
+                .withTag(CordaMetrics.Tag.Address, "${ctx.method()} ${ctx.path()}")
+                .build()
+            requestTimer.recordCallable {
+                try {
+                    validateRequestContentType(this, ctx)
 
-                log.debug { "Invoke method \"${method.method.name}\" with paramValues \"${paramValues.joinToString(",")}\"." }
+                    val clientHttpRequestContext = ClientHttpRequestContext(ctx)
+                    val paramValues = retrieveParameters(clientHttpRequestContext)
 
-                @Suppress("SpreadOperator")
-                val result = invokeDelegatedMethod(*paramValues.toTypedArray())
+                    log.debug { "Invoke method \"${method.method.name}\" with paramValues \"${paramValues.joinToString(",")}\"." }
 
-                ctx.buildJsonResult(result, this.method.method.returnType)
+                    @Suppress("SpreadOperator")
+                    val result = invokeDelegatedMethod(*paramValues.toTypedArray())
 
-                ctx.header(Header.CACHE_CONTROL, "no-cache")
-                log.debug { "Invoke method \"${this.method.method.name}\" for route info completed." }
-            } catch (e: Exception) {
-                log.warn("Error invoking path '${this.fullPath}'.", e)
-                throw HttpExceptionMapper.mapToResponse(e)
-            } finally {
-                MDC.remove("http.method")
-                MDC.remove("http.path")
-                MDC.remove("http.user")
-                if(ctx.isMultipartFormData()) {
-                    cleanUpMultipartRequest(ctx)
+                    ctx.buildJsonResult(result, this.method.method.returnType)
+
+                    ctx.header(Header.CACHE_CONTROL, "no-cache")
+                    log.debug { "Invoke method \"${this.method.method.name}\" for route info completed." }
+                } catch (e: Exception) {
+                    log.warn("Error invoking path '${this.fullPath}'.", e)
+                    throw HttpExceptionMapper.mapToResponse(e)
+                } finally {
+                    MDC.remove("http.method")
+                    MDC.remove("http.path")
+                    MDC.remove("http.user")
+                    if (ctx.isMultipartFormData()) {
+                        cleanUpMultipartRequest(ctx)
+                    }
                 }
             }
         }

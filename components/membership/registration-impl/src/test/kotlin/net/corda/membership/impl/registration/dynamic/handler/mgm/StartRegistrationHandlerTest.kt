@@ -19,8 +19,10 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.ENDPOINTS
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
+import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoFactory
+import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.membership.persistence.client.MembershipPersistenceClient
 import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.persistence.client.MembershipQueryClient
@@ -29,6 +31,7 @@ import net.corda.messaging.api.records.Record
 import net.corda.schema.Schemas
 import net.corda.test.util.time.TestClock
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.base.util.parse
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MGMContext
 import net.corda.v5.membership.MemberContext
@@ -47,7 +50,8 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.time.Instant
-import java.util.*
+import java.util.SortedMap
+import java.util.UUID
 
 class StartRegistrationHandlerTest {
 
@@ -103,6 +107,7 @@ class StartRegistrationHandlerTest {
     private val memberMemberContext: MemberContext = mock {
         on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn groupId
         on { parseList(eq(ENDPOINTS), eq(EndpointInfo::class.java)) } doReturn listOf(mock())
+        on { entries } doReturn mapOf("$ROLES_PREFIX.0" to "notary").entries
     }
     private val memberMgmContext: MGMContext = mock {
         on { parse(eq(MODIFIED_TIME), eq(Instant::class.java)) } doReturn clock.instant()
@@ -376,6 +381,48 @@ class StartRegistrationHandlerTest {
             queryMemberInfo = true,
             persistMemberInfo = true
         )
+    }
+
+    @Test
+    fun `invoke returns follow on records when role is set to notary`() {
+        val notaryDetails = MemberNotaryDetails(
+            x500Name,
+            "Notary Plugin A",
+            listOf(mock())
+        )
+        whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
+
+        val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+
+        result.assertRegistrationStarted()
+    }
+
+    @Test
+    fun `declined if role is set to notary but notary keys are missing`() {
+        val notaryDetails = MemberNotaryDetails(
+            x500Name,
+            null,
+            emptyList()
+        )
+        whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
+
+        val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+
+        result.assertDeclinedRegistration()
+    }
+
+    @Test
+    fun `declined if role is set to notary and notary service plugin type is specified but blank`() {
+        val notaryDetails = MemberNotaryDetails(
+            x500Name,
+            " ",
+            listOf(mock())
+        )
+        whenever(memberMemberContext.parse<MemberNotaryDetails>("corda.notary")).thenReturn(notaryDetails)
+
+        val result = handler.invoke(null, Record(testTopic, testTopicKey, startRegistrationCommand))
+
+        result.assertDeclinedRegistration()
     }
 
     private fun RegistrationHandlerResult.assertRegistrationStarted() =

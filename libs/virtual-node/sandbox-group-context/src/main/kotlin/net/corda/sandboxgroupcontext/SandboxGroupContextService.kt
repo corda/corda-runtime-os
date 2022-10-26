@@ -55,7 +55,7 @@ interface SandboxGroupContextService: AutoCloseable {
      *       ctx!!.getUniqueObject<AnotherObject>()!!.doSomethingElse()
      *    }
      *
-     * @throws Exception or "something" if the requested [CPK]s cannot be found in the local package cache.
+     * @throws Exception or "something" if the requested CPKs cannot be found in the local package cache.
      *
      * @return a non-null [SandboxGroupContext] instance
      */
@@ -99,11 +99,19 @@ interface SandboxGroupContextService: AutoCloseable {
     ): AutoCloseable
 
     /**
-     * This function registers any [DigestAlgorithmFactory][net.corda.v5.cipher.suite.DigestAlgorithmFactory]
+     * Instruct all [CustomMetadataConsumer][net.corda.sandboxgroupcontext.service.impl.CustomMetadataConsumer]
+     * services inside the sandbox to accept their custom metadata.
+     *
+     * @param sandboxGroupContext
+     */
+    fun acceptCustomMetadata(sandboxGroupContext: MutableSandboxGroupContext)
+
+    /**
+     * This function registers any [DigestAlgorithmFactory][net.corda.v5.crypto.extensions.DigestAlgorithmFactory]
      * instances that exist inside the [SandboxGroup][net.corda.sandbox.SandboxGroup]'s CPKs.
      * The [DigestAlgorithmFactoryProvider][net.corda.crypto.core.DigestAlgorithmFactoryProvider]
-     * component will discover these services when the sandbox uses its
-     * [DigestService][net.corda.v5.cipher.suite.DigestService] for the first time.
+     * component will discover these services via its [CustomMetadataConsumer]
+       [net.corda.sandboxgroupcontext.service.impl.CustomMetadataConsumer] interface.
      *
      * @param sandboxGroupContext
      *
