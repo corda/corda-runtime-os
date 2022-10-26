@@ -9,6 +9,7 @@ import net.corda.crypto.component.impl.DependenciesTracker
 import net.corda.data.KeyValuePairList
 import net.corda.data.crypto.wire.CryptoSignatureSpec
 import net.corda.data.crypto.wire.CryptoSignatureWithKey
+import net.corda.data.crypto.wire.CryptoSignatureWithSignatureSpec
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.CryptoSigningKeys
 import net.corda.data.crypto.wire.ops.rpc.RpcOpsRequest
@@ -26,6 +27,7 @@ import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.DigitalSignature
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.publicKeyId
 import org.osgi.service.component.annotations.Activate
@@ -161,6 +163,47 @@ class CryptoOpsClientComponent @Activate constructor(
         data: ByteBuffer,
         context: KeyValuePairList
     ): CryptoSignatureWithKey = impl.ops.signProxy(tenantId, publicKey, signatureSpec, data, context)
+
+    override fun signProxy(
+        tenantId: String,
+        publicKey: ByteBuffer,
+        data: ByteBuffer,
+        context: KeyValuePairList
+    ): CryptoSignatureWithSignatureSpec {
+        // must infer signature spec from public key alone
+        val publicKeyDecoded = schemeMetadata.decodePublicKey(publicKey.array())
+        // TODO should the inferring of signature spec take place here or maybe deeper at
+        //  `SignRpcCommandHandler`. `CipherSchemeMetadata` (which has `inferSignatureSpec` API) is also available over there.
+        //  Doing it here means we are only exposing the new Avro API (`CryptoSignatureWithSignatureSpec`) here
+        //  and not to potential other paths leading to `SignRpcCommand` processing.
+        //  Less importantly also means we can fail and return faster.
+        val signatureSpec = schemeMetadata.inferSignatureSpec(publicKeyDecoded)
+        require(signatureSpec != null) {
+            "Failed to infer the signature spec for key=${publicKeyDecoded.publicKeyId()} " +
+                    " (${schemeMetadata.findKeyScheme(publicKeyDecoded).codeName})"
+        }
+
+        val signatureSpecAvro = CryptoSignatureSpec(
+            signatureSpec.signatureName, null, null
+        )
+
+        // TODO this should be changed to directly call and get `CryptoSignatureWithSignatureSpec` answer from Kafka,
+        //  In that case it 'd make more sense to infer to `SignatureSpec` on the other side.
+        val cryptoSignatureWithKey = signProxy(tenantId, publicKey, signatureSpecAvro, data, context)
+
+        return CryptoSignatureWithSignatureSpec(
+            cryptoSignatureWithKey.bytes,
+            // TODO To be changed to avro `CryptoSignatureSpec` type.
+            signatureSpec.signatureName,
+            // TODO fix below dummy value with SHA-256 hashing public key
+            SecureHash.parse("SHA-256:6D1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581F").let {
+                net.corda.data.crypto.SecureHash(
+                    it.algorithm,
+                    ByteBuffer.wrap(it.bytes)
+                )
+            }
+        )
+    }
 
     override fun createWrappingKey(
         hsmId: String,

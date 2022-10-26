@@ -141,12 +141,21 @@ class CryptoFlowOpsBusProcessor(
         private val client: CryptoOpsProxyClient
     ) : Handler<SignFlowCommand> {
         override fun handle(context: CryptoRequestContext, request: SignFlowCommand): Any =
-            client.signProxy(
-                tenantId = context.tenantId,
-                publicKey = request.publicKey,
-                signatureSpec = request.signatureSpec,
-                data = request.bytes,
-                context = request.context
-            )
+            if (request.signatureSpec != null) {
+                client.signProxy(
+                    tenantId = context.tenantId,
+                    publicKey = request.publicKey,
+                    signatureSpec = request.signatureSpec,
+                    data = request.bytes,
+                    context = request.context
+                )
+            } else {
+                client.signProxy(
+                    tenantId = context.tenantId,
+                    publicKey = request.publicKey,
+                    data = request.bytes,
+                    context = request.context
+                )
+            }
     }
 }
