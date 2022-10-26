@@ -1,6 +1,6 @@
 package net.corda.cli.plugin.initialRbac.commands
 
-import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.USER_REGEX
+import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.USER_URL_REGEX
 import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.UUID_REGEX
 import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.checkOrCreateRole
 import net.corda.cli.plugins.common.HttpRpcCommand
@@ -23,10 +23,10 @@ class UserAdminSubcommand : HttpRpcCommand(), Callable<Int> {
     private val permissionsToCreate: Map<String, String> = listOf(
         // User manipulation permissions
         "CreateUsers" to "POST:/api/v1/user",
-        "GetUsers" to "GET:/api/v1/user?loginName=$USER_REGEX",
-        "AddRoleToUser" to "PUT:/api/v1/user/$USER_REGEX/role/$UUID_REGEX",
-        "DeleteRoleFromUser" to "DELETE:/api/v1/user/$USER_REGEX/role/$UUID_REGEX",
-        "GetPermissionsSummary" to "GET:/api/v1/user/$USER_REGEX/permissionSummary",
+        "GetUsers" to "GET:/api/v1/user?loginName=$USER_URL_REGEX",
+        "AddRoleToUser" to "PUT:/api/v1/user/$USER_URL_REGEX/role/$UUID_REGEX",
+        "DeleteRoleFromUser" to "DELETE:/api/v1/user/$USER_URL_REGEX/role/$UUID_REGEX",
+        "GetPermissionsSummary" to "GET:/api/v1/user/$USER_URL_REGEX/permissionSummary",
 
         // Permission manipulation permissions ;-)
         "CreatePermission" to "POST:/api/v1/permission",
