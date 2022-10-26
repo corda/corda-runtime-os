@@ -79,27 +79,26 @@ class JPABackingStoreImplIntegrationTests {
     private lateinit var backingStoreImpl: JPABackingStoreImpl
     private lateinit var lifecycleCoordinator: LifecycleCoordinator
     private lateinit var lifecycleCoordinatorFactory: LifecycleCoordinatorFactory
-
     private lateinit var testClock: AutoTickTestClock
     private val baseTime = Instant.EPOCH
+    private val defaultTimeWindowUpperBound = LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
+
+    private val aliceIdentity = createTestHoldingIdentity("C=GB, L=London, O=Alice", "Test Group")
+    private val aliceIdentityDbName = VirtualNodeDbType.UNIQUENESS.getSchemaName(aliceIdentity.shortHash)
+    private val dbConfig = DbUtils.getEntityManagerConfiguration(aliceIdentityDbName)
+    private val databaseInstaller = DatabaseInstaller(
+        EntityManagerFactoryFactoryImpl(),
+        LiquibaseSchemaMigratorImpl(),
+        JpaEntitiesRegistryImpl()
+    )
+    private val aliceEmFactory: EntityManagerFactory = databaseInstaller.setupDatabase(
+        TestDbInfo(name = "unique_test_default", schemaName = aliceIdentityDbName),
+        "vnode-uniqueness",
+        JPABackingStoreEntities.classes
+    )
 
     companion object {
         private const val MAX_ATTEMPTS = 10
-        private val defaultTimeWindowUpperBound = LocalDate.of(2200, 1, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
-
-        private val aliceIdentity = createTestHoldingIdentity("C=GB, L=London, O=Alice", "Test Group")
-        private val aliceIdentityDbName = VirtualNodeDbType.UNIQUENESS.getSchemaName(aliceIdentity.shortHash)
-        private val dbConfig = DbUtils.getEntityManagerConfiguration(aliceIdentityDbName)
-        private val databaseInstaller = DatabaseInstaller(
-            EntityManagerFactoryFactoryImpl(),
-            LiquibaseSchemaMigratorImpl(),
-            JpaEntitiesRegistryImpl()
-        )
-        private val aliceEmFactory: EntityManagerFactory = databaseInstaller.setupDatabase(
-            TestDbInfo(name = "unique_test_default", schemaName = aliceIdentityDbName),
-            "vnode-uniqueness",
-            JPABackingStoreEntities.classes
-        )
     }
 
     class DummyException(message: String) : Exception(message)
@@ -307,7 +306,7 @@ class JPABackingStoreImplIntegrationTests {
 
             UniquenessAssertions.assertContainingTxId(txnDetails, txIds.single())
             UniquenessAssertions.assertReferenceStateConflictResult(
-                txnDetails.entries.single().value.result, txId, consumingTxId,
+                txnDetails.entries.single().value.result, txId, consumingTxId, 0
             )
         }
 
@@ -336,7 +335,7 @@ class JPABackingStoreImplIntegrationTests {
             }
 
             UniquenessAssertions.assertContainingTxId(txnDetails, txIds.single())
-            UniquenessAssertions.assertReferenceStateUnknownResult(txnDetails.entries.single().value.result, txId)
+            UniquenessAssertions.assertReferenceStateUnknownResult(txnDetails.entries.single().value.result, txId, 0)
         }
 
         @Test
@@ -477,7 +476,7 @@ class JPABackingStoreImplIntegrationTests {
             val consumingStateRef = stateRefs[0] // Consume the first out of two items.
             backingStoreImpl.session(aliceIdentity) { session ->
                 session.executeTransaction { _, txnOps ->
-                    txnOps.consumeStates(consumingTxId = consumingTxId, stateRefs = listOf(consumingStateRef))
+                    txnOps.consumeStates(consumingTxId, listOf(consumingStateRef))
                 }
             }
 
@@ -555,7 +554,7 @@ class JPABackingStoreImplIntegrationTests {
             assertThrows<IllegalStateException> {
                 backingStoreImpl.session(aliceIdentity) { session ->
                     session.executeTransaction { _, txnOps ->
-                        txnOps.consumeStates(consumingTxId = consumingTxId, stateRefs = consumingStateRefs)
+                        txnOps.consumeStates(consumingTxId, consumingStateRefs)
                     }
                 }
             }

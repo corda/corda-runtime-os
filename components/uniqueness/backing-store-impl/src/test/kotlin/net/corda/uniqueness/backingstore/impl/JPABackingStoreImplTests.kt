@@ -59,9 +59,7 @@ class JPABackingStoreImplTests {
     private lateinit var txnErrorQuery: TypedQuery<UniquenessRejectedTransactionEntity>
     private lateinit var dbConnectionManager: DbConnectionManager
 
-    companion object {
-        val aliceIdentity = createTestHoldingIdentity("C=GB, L=London, O=Alice", "Test Group")
-    }
+    private val aliceIdentity = createTestHoldingIdentity("C=GB, L=London, O=Alice", "Test Group")
 
     inner class DummyLifecycle : LifecycleEvent
 
