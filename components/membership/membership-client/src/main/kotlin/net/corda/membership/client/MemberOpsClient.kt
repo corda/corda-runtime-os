@@ -35,9 +35,14 @@ interface MemberOpsClient : Lifecycle {
      *
      * @param holdingIdentityShortHash The ID of the holding identity to be checked.
      * @param registrationRequestId The ID of the registration request.
+     *
+     * @throws RegistrationProgressNotFoundException if there was no registration request for given request id. Could
+     * happen when the registration request had NOT_SUBMITTED status or if [startRegistration] wasn't called at all.
+     *
      * @return [RegistrationRequestStatusDto] to indicate the last known status of the registration request based on
      * local member data.
      */
+    @Throws(RegistrationProgressNotFoundException::class)
     fun checkSpecificRegistrationProgress(
         holdingIdentityShortHash: ShortHash,
         registrationRequestId: String,

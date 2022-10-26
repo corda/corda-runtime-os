@@ -31,6 +31,7 @@ import net.corda.membership.client.dto.MemberRegistrationRequestDto
 import net.corda.membership.client.dto.RegistrationRequestProgressDto
 import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
+import net.corda.membership.client.RegistrationProgressNotFoundException
 import net.corda.membership.lib.toWire
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -260,8 +261,10 @@ class MemberOpsClientImpl @Activate constructor(
                 )
 
                 val response: RegistrationStatusResponse = request.sendRequest()
+                val status = response.status
+                    ?: throw RegistrationProgressNotFoundException("There is no request with '$registrationRequestId' id.")
 
-                return response.status?.toDto()
+                return status.toDto()
             } catch (e: Exception) {
                 logger.warn("Could not check status of registration request `$registrationRequestId` made by holding identity ID" +
                         " [${holdingIdentityShortHash}].", e)
