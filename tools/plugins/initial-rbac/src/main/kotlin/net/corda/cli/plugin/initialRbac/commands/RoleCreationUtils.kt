@@ -23,6 +23,11 @@ internal object RoleCreationUtils {
 
     const val USER_REGEX = "[-._@a-zA-Z0-9]{3,255}"
 
+    // first.last@company.com is a valid username, however when encoded in the URL it will be shown as
+    // first.last%40company.com
+    private const val ALLOWED_USER_URL_CHARS = "[-._a-zA-Z0-9]"
+    const val USER_URL_REGEX = "$ALLOWED_USER_URL_CHARS{3,200}[%40]{0,3}$ALLOWED_USER_URL_CHARS{0,50}"
+
     const val CLIENT_REQ_REGEX = "[-._A-Za-z0-9]{1,250}"
 
     const val FLOW_NAME_REGEX = "[._\$a-zA-Z0-9]{1,250}"
