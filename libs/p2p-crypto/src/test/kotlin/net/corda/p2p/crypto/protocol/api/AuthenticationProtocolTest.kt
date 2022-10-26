@@ -7,6 +7,9 @@ import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.Signature
@@ -56,6 +59,27 @@ class AuthenticationProtocolTest {
     }
 
     @Test
+    fun `authentication protocol verifies cert if CertificateCheckMode is CheckCertificate`() {
+        val signature = Signature.getInstance(SignatureSpec.ECDSA_SHA256.signatureName, provider)
+        val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
+        val partyASessionKey = keyPairGenerator.generateKeyPair()
+        val partyBSessionKey = keyPairGenerator.generateKeyPair()
+        val ourCertificate = mutableListOf("")
+        val certificateCheckMode = CertificateCheckMode.CheckCertificate(mock(), ourCertificate, RevocationCheckMode.HARD_FAIL)
+        val certificateValidator = Mockito.mockConstruction(CertificateValidator::class.java)
+
+        executeProtocol(
+            partyASessionKey, partyBSessionKey, signature, SignatureSpec.ECDSA_SHA256, certificateCheckMode = certificateCheckMode
+        )
+        //One validator for AuthenticationProtocolInitiator and one for AuthenticationProtocolResponder
+        assertThat(certificateValidator.constructed().size).isEqualTo(2)
+        verify(certificateValidator.constructed()[0]).validate(ourCertificate, aliceX500Name)
+        verify(certificateValidator.constructed()[1]).validate(ourCertificate, aliceX500Name)
+
+        certificateValidator.close()
+    }
+
+    @Test
     fun `authentication protocol methods are idempotent`() {
         val signature = Signature.getInstance(SignatureSpec.ECDSA_SHA256.signatureName, provider)
         val keyPairGenerator = KeyPairGenerator.getInstance("EC", provider)
@@ -69,20 +93,21 @@ class AuthenticationProtocolTest {
                                 partyBSessionKey: KeyPair,
                                 signature: Signature,
                                 signatureSpec: SignatureSpec,
-                                duplicateInvocations: Boolean = false) {
+                                duplicateInvocations: Boolean = false,
+                                certificateCheckMode: CertificateCheckMode = CertificateCheckMode.NoCertificate) {
         val protocolInitiator = AuthenticationProtocolInitiator(
             sessionId,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
             partyAMaxMessageSize,
             partyASessionKey.public,
             groupId,
-            CertificateCheckMode.NoCertificate
+            certificateCheckMode
         )
         val protocolResponder = AuthenticationProtocolResponder(
             sessionId,
             setOf(ProtocolMode.AUTHENTICATION_ONLY),
             partyBMaxMessageSize,
-            CertificateCheckMode.NoCertificate
+            certificateCheckMode
         )
 
         // Step 1: initiator sending hello message to responder.
