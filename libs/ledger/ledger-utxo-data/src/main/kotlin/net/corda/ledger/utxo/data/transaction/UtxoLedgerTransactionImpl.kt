@@ -29,10 +29,15 @@ data class UtxoLedgerTransactionImpl(
         serializationService.deserialize(timeWindowBytes)
     }
 
-    override val attachments: List<Attachment> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    val attachmentIds: List<Attachment> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         wireTransaction
             .getComponentGroupList(UtxoComponentGroup.DATA_ATTACHMENTS.ordinal)
             .map { serializationService.deserialize(it) }
+    }
+
+    override val attachments: List<Attachment> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        //TODO("Not yet implemented.")
+        emptyList()
     }
 
     override val commands: List<Command> by lazy(LazyThreadSafetyMode.PUBLICATION) {

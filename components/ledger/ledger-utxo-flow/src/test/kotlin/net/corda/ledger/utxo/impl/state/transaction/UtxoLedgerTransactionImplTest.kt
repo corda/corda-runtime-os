@@ -23,7 +23,9 @@ import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.SecureHash
+import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.StateAndRef
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
@@ -39,6 +41,12 @@ internal class UtxoLedgerTransactionImplTest {
 
     @Test
     fun `ledger transaction contains the same data what it was created with`() {
+
+        val inputStateAndRef = getUtxoInvalidStateAndRef()
+        val referenceStateAndRef = getUtxoInvalidStateAndRef()
+        val command = UtxoCommandExample()
+        val attachment = SecureHash("SHA-256", ByteArray(12))
+
         val signedTransaction = UtxoTransactionBuilderImpl(
             cipherSchemeMetadata,
             digestService,
@@ -53,18 +61,34 @@ internal class UtxoLedgerTransactionImplTest {
             utxoTimeWindowExample,
         )
             .addOutputState(utxoStateExample)
-            .addInputState(getUtxoInvalidStateAndRef())
-            .addReferenceInputState(getUtxoInvalidStateAndRef())
-            .addCommand(UtxoCommandExample())
-            .addAttachment(SecureHash("SHA-256", ByteArray(12)))
+            .addInputState(inputStateAndRef)
+            .addReferenceInputState(referenceStateAndRef)
+            .addCommand(command)
+            .addAttachment(attachment)
             .sign(publicKeyExample)
         val ledgerTransaction = signedTransaction.toLedgerTransaction()
+
+        assertIs<SecureHash>(ledgerTransaction.id)
+
         assertEquals(utxoTimeWindowExample, ledgerTransaction.timeWindow)
+
         assertIs<List<ContractState>>(ledgerTransaction.outputContractStates)
         assertEquals(1, ledgerTransaction.outputContractStates.size)
         assertEquals(utxoStateExample, ledgerTransaction.outputContractStates.first())
         assertIs<UtxoStateClassExample>(ledgerTransaction.outputContractStates.first())
 
-        assertIs<SecureHash>(ledgerTransaction.id)
+        /** TODO When inputStateAndRefs or referenceInputStateAndRefs will get available
+        assertIs<List<StateAndRef<UtxoStateClassExample>>>(ledgerTransaction.inputStateAndRefs)
+        assertEquals(1, ledgerTransaction.inputStateAndRefs.size)
+        assertEquals(inputStateAndRef, ledgerTransaction.inputStateAndRefs.first())
+        assertIs<StateAndRef<UtxoStateClassExample>>(ledgerTransaction.inputStateAndRefs.first())
+
+        assertIs<List<StateAndRef<UtxoStateClassExample>>>(ledgerTransaction.referenceInputStateAndRefs)
+        assertEquals(1, ledgerTransaction.referenceInputStateAndRefs.size)
+        assertEquals(referenceStateAndRef, ledgerTransaction.referenceInputStateAndRefs.first())
+        assertIs<StateAndRef<UtxoStateClassExample>>(ledgerTransaction.referenceInputStateAndRefs.first())
+        */
+
+        // Also test Commands and Attachments
     }
 }
