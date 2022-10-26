@@ -32,7 +32,14 @@ class ConfigTests {
     @Suppress("MaxLineLength")
     fun `instance ID, topic prefix, workspace dir, temp dir, messaging params, database params and additional params are passed through to the processor`() {
         val dbProcessor = DummyDBProcessor()
-        val dbWorker = DBWorker(dbProcessor, mock(), DummyShutdown(), DummyWorkerMonitor(), DummyValidatorFactory(), DummyPlatformInfoProvider())
+        val dbWorker = DBWorker(
+            dbProcessor,
+            mock(),
+            DummyShutdown(),
+            DummyWorkerMonitor(),
+            DummyValidatorFactory(),
+            DummyPlatformInfoProvider()
+        )
         val args = arrayOf(
             FLAG_INSTANCE_ID, VAL_INSTANCE_ID,
             FLAG_TOPIC_PREFIX, VALUE_TOPIC_PREFIX,

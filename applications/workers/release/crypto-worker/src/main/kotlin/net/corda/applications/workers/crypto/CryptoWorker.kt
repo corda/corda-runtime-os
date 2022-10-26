@@ -47,7 +47,7 @@ class CryptoWorker @Activate constructor(
 
     override fun startup(args: Array<String>) {
         logger.info("Crypto worker starting.")
-        logger.loggerStartupInfo(args, platformInfoProvider)
+        logger.loggerStartupInfo(platformInfoProvider)
 
         JavaSerialisationFilter.install()
         val params = getParams(args, CryptoWorkerParams())

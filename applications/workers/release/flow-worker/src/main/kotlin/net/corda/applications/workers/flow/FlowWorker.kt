@@ -42,7 +42,7 @@ class FlowWorker @Activate constructor(
     /** Parses the arguments, then initialises and starts the [flowProcessor]. */
     override fun startup(args: Array<String>) {
         logger.info("Flow worker starting.")
-        logger.loggerStartupInfo(args, platformInfoProvider)
+        logger.loggerStartupInfo(platformInfoProvider)
 
         if (System.getProperty("co.paralleluniverse.fibers.verifyInstrumentation") == true.toString()) {
             logger.info("Quasar's instrumentation verification is enabled")

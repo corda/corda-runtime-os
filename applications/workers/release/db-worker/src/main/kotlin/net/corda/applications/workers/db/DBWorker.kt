@@ -48,7 +48,7 @@ class DBWorker @Activate constructor(
     /** Parses the arguments, then initialises and starts the [processor]. */
     override fun startup(args: Array<String>) {
         logger.info("DB worker starting.")
-        logger.loggerStartupInfo(args, platformInfoProvider)
+        logger.loggerStartupInfo(platformInfoProvider)
 
         JavaSerialisationFilter.install()
 

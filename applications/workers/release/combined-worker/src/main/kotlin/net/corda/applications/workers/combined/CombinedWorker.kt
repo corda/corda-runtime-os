@@ -72,7 +72,7 @@ class CombinedWorker @Activate constructor(
     @Suppress("ComplexMethod")
     override fun startup(args: Array<String>) {
         logger.info("Combined worker starting.")
-        logger.loggerStartupInfo(args, platformInfoProvider)
+        logger.loggerStartupInfo(platformInfoProvider)
 
         if (System.getProperty("co.paralleluniverse.fibers.verifyInstrumentation") == true.toString()) {
             logger.info("Quasar's instrumentation verification is enabled")

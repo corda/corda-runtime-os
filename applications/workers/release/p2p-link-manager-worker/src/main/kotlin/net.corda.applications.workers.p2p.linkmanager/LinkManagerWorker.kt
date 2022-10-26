@@ -36,7 +36,7 @@ class LinkManagerWorker @Activate constructor(
 
     override fun startup(args: Array<String>) {
         logger.info("P2P Link Manager worker starting.")
-        logger.loggerStartupInfo(args, platformInfoProvider)
+        logger.loggerStartupInfo(platformInfoProvider)
 
         val params = WorkerHelpers.getParams(args, LinkManagerWorkerParams())
         if (WorkerHelpers.printHelpOrVersion(params.defaultParams, this::class.java, shutDownService)) return

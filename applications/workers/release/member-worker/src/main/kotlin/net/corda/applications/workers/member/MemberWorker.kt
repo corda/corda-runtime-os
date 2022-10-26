@@ -41,7 +41,7 @@ class MemberWorker @Activate constructor(
     /** Parses the arguments, then initialises and starts the [processor]. */
     override fun startup(args: Array<String>) {
         logger.info("Member worker starting.")
-        logger.loggerStartupInfo(args, platformInfoProvider)
+        logger.loggerStartupInfo(platformInfoProvider)
 
         val params = getParams(args, MemberWorkerParams())
         if (printHelpOrVersion(params.defaultParams, MemberWorker::class.java, shutDownService)) return

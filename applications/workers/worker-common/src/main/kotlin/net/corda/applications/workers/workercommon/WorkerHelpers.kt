@@ -138,9 +138,9 @@ class WorkerHelpers {
         }
 
         /**
-         * Logs info about Worker startup process, from worker [args] and [PlatformInfoProvider].
+         * Logs info about Worker startup process, including info from current process and [PlatformInfoProvider].
          */
-        fun Logger.loggerStartupInfo(args: Array<String>, platformInfoProvider: PlatformInfoProvider) {
+        fun Logger.loggerStartupInfo(platformInfoProvider: PlatformInfoProvider) {
             info("LocalWorkerPlatformVersion ${platformInfoProvider.localWorkerPlatformVersion}")
             info("LocalWorkerSoftwareVersion ${platformInfoProvider.localWorkerSoftwareVersion}")
 
@@ -148,6 +148,7 @@ class WorkerHelpers {
             val processInfo = processHandle.info()
             info("PID: ${processHandle.pid()}")
             info("CommandLine: ${processInfo.commandLine()}")
+            info("processInfo.arguments: ${processInfo.arguments()}")
             info("processInfo.command: ${processInfo.command()}")
             info("processInfo.totalCpuDuration: ${processInfo.totalCpuDuration()}")
             info("processInfo.user: ${processInfo.user()}")
@@ -157,19 +158,6 @@ class WorkerHelpers {
             val info = ManagementFactory.getRuntimeMXBean()
             info("classpath: ${info.classPath}")
             info("VM ${info.vmName} ${info.vmVendor} ${info.vmVersion}")
-
-            val params = getParams(args, DefaultWorkerParams())
-            info("Worker Params:")
-            info("Messaging Params: ${params.messagingParams}")
-            info("Help Requested: ${params.helpRequested}")
-            info("disableWorkerMonitor: ${params.disableWorkerMonitor}")
-            info("secretParams: ${params.secretsParams}")
-            info("workerMonitorPort: ${params.workerMonitorPort}")
-            info("instanceId: ${params.instanceId}")
-            info("tempDir: ${params.tempDir}")
-            info("topicPrefix: ${params.topicPrefix}")
-            info("versionRequested: ${params.versionRequested}")
-            info("workspaceDir: ${params.workspaceDir}")
         }
     }
 }
