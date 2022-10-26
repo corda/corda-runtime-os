@@ -93,7 +93,7 @@ class FlowEventProcessorImplTest {
     }
 
     private val flowEventPipelineFactory = mock<FlowEventPipelineFactory>().apply {
-        whenever(create(anyOrNull(), any(), any())).thenReturn(flowEventPipeline)
+        whenever(create(anyOrNull(), any(), any(), any())).thenReturn(flowEventPipeline)
     }
 
     private val processor = FlowEventProcessorImpl(

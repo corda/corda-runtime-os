@@ -66,7 +66,7 @@ class FlowEventPipelineFactoryImplTest {
             flowGlobalPostProcessor,
             buildFlowEventContext(flowCheckpoint, flowEvent.payload, config)
         )
-        val result = factory.create(checkpoint, flowEvent, config)
+        val result = factory.create(checkpoint, flowEvent, config, emptyMap())
         assertEquals(expected.context, result.context)
     }
 }

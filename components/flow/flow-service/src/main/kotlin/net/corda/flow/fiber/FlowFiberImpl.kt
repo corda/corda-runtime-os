@@ -10,7 +10,8 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Future
 import net.corda.data.flow.state.checkpoint.FlowStackItem
 import net.corda.flow.fiber.FlowFiberImpl.SerializableFiberWriter
-import net.corda.logging.mdc.pushLoggingMDC
+import net.corda.logging.mdc.clearMDC
+import net.corda.logging.mdc.setMDC
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
@@ -213,8 +214,9 @@ class FlowFiberImpl(
     }
 
     private fun setLoggingContext() {
+        clearMDC()
         flowFiberExecutionContext?.mdcLoggingData?.let {
-            pushLoggingMDC(it)
+            setMDC(it)
         }
     }
 

@@ -3,6 +3,8 @@ package net.corda.flow.pipeline.impl
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.state.checkpoint.Checkpoint
+import net.corda.data.flow.state.checkpoint.FlowState
+import net.corda.data.flow.state.external.ExternalEventStateType
 import net.corda.flow.pipeline.FlowEventExceptionProcessor
 import net.corda.flow.pipeline.converters.FlowEventContextConverter
 import net.corda.flow.pipeline.exceptions.FlowEventException
@@ -14,8 +16,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.logging.mdc.ExternalEventMDCFields.MDC_EXTERNAL_EVENT_ID
 import net.corda.logging.mdc.FlowMDCFields.MDC_CLIENT_ID
 import net.corda.logging.mdc.FlowMDCFields.MDC_VNODE_ID
-import net.corda.logging.mdc.clearLoggingMDC
-import net.corda.logging.mdc.pushLoggingMDC
+import net.corda.logging.mdc.withMDCAndReturn
 import net.corda.messaging.api.processor.StateAndEventProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.schema.configuration.MessagingConfig.Subscription.PROCESSOR_TIMEOUT
@@ -48,8 +49,18 @@ class FlowEventProcessorImpl(
         event: Record<String, FlowEvent>
     ): StateAndEventProcessor.Response<Checkpoint> {
         val flowEvent = event.value
-        pushLoggingMDC(getFlowMDCLogging(state, event.value))
+        val mdcProperties = getFlowMDCLogging(state, flowEvent)
+        return withMDCAndReturn(mdcProperties) {
+            getFlowPipelineResponse(flowEvent, event, state, mdcProperties)
+        }
+    }
 
+    private fun getFlowPipelineResponse(
+        flowEvent: FlowEvent?,
+        event: Record<String, FlowEvent>,
+        state: Checkpoint?,
+        mdcProperties: Map<String, String>
+    ): StateAndEventProcessor.Response<Checkpoint> {
         if (flowEvent == null) {
             log.error("The incoming event record '${event}' contained a null FlowEvent, this event will be discarded")
             return StateAndEventProcessor.Response(state, listOf())
@@ -57,7 +68,7 @@ class FlowEventProcessorImpl(
 
         val pipeline = try {
             log.info("Flow [${event.key}] Received event: ${flowEvent.payload::class.java} / ${flowEvent.payload}")
-            flowEventPipelineFactory.create(state, flowEvent, config)
+            flowEventPipelineFactory.create(state, flowEvent, config, mdcProperties)
         } catch (t: Throwable) {
             // Without a pipeline there's a limit to what can be processed.
             return flowEventExceptionProcessor.process(t)
@@ -87,8 +98,6 @@ class FlowEventProcessorImpl(
             flowEventExceptionProcessor.process(e, pipeline.context)
         } catch (t: Throwable) {
             flowEventExceptionProcessor.process(t)
-        } finally {
-            clearLoggingMDC(setOf(MDC_CLIENT_ID, MDC_VNODE_ID, MDC_EXTERNAL_EVENT_ID))
         }
     }
 
@@ -132,7 +141,23 @@ class FlowEventProcessorImpl(
         val startContext = flowState.flowStartContext
         val vNodeShortHash = startContext.identity.toCorda().shortHash.toString()
         val mdcLogging = mutableMapOf(MDC_VNODE_ID to vNodeShortHash, MDC_CLIENT_ID to startContext.requestId)
-        flowState.externalEventState?.requestId?.let { mdcLogging.put(MDC_EXTERNAL_EVENT_ID, it) }
+        setExternalEventIdIfNotComplete(flowState, mdcLogging)
         return mdcLogging
+    }
+
+    /**
+     * If a response has not been received from the external event or if it is still retrying a request then set the external event id
+     * into the MDC.
+     */
+    private fun setExternalEventIdIfNotComplete(
+        flowState: FlowState,
+        mdcLogging: MutableMap<String, String>
+    ) {
+        val extState = flowState.externalEventState
+        val requestId = extState.requestId
+        val status = extState.status
+        if (status == null || status.type == ExternalEventStateType.RETRY) {
+            mdcLogging[MDC_EXTERNAL_EVENT_ID] = requestId
+        }
     }
 }
