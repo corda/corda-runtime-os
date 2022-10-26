@@ -28,7 +28,7 @@ class KafkaTopicUtils(private val adminClient: AdminClient) : TopicUtils {
         try {
             topicsTemplate.checkValid(referenceTopicsConfig())
         } catch (e: ConfigException) {
-            log.warn("Error validating topic configuration")
+            log.warn("Error validating topic configuration, ${e.message}")
         }
 
         val topicTemplateList = topicsTemplate.getObjectList("topics")
