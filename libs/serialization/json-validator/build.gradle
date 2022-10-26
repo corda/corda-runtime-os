@@ -21,7 +21,12 @@ dependencies {
     implementation 'net.corda:corda-base'
     implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     implementation "io.github.erdtman:java-json-canonicalization:$jsonCanonicalizerVersion"
-    implementation "com.networknt:json-schema-validator:$networkntJsonSchemaVersion"
+    implementation("com.networknt:json-schema-validator:$networkntJsonSchemaVersion"){
+        // Exclude transitive dependency on vulnerable version of jackson
+        exclude group: 'com.fasterxml.jackson.core', module: 'jackson-databind'
+    }
+    compileOnly "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 }
 
