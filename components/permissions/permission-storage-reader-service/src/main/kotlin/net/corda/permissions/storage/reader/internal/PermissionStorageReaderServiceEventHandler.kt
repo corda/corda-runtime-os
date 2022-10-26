@@ -102,16 +102,12 @@ class PermissionStorageReaderServiceEventHandler(
                     setOf(BOOT_CONFIG, MESSAGING_CONFIG, RECONCILIATION_CONFIG)
                 )
             }
-            LifecycleStatus.DOWN -> {
+            else -> {
                 permissionStorageReader?.close()
                 permissionStorageReader = null
                 crsSub?.close()
                 crsSub = null
-            }
-            LifecycleStatus.ERROR -> {
-                coordinator.stop()
-                crsSub?.close()
-                crsSub = null
+                coordinator.updateStatus(LifecycleStatus.DOWN)
             }
         }
     }

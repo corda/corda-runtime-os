@@ -27,7 +27,6 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
-import net.corda.lifecycle.StopEvent
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -83,15 +82,9 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
                     )
                 }
                 dependentComponents.registerAndStartAll(coordinator)
-                coordinator.updateStatus(LifecycleStatus.UP)
             }
-            is StopEvent -> coordinator.updateStatus(LifecycleStatus.DOWN)
             is RegistrationStatusChangeEvent -> {
                 when (event.status) {
-                    LifecycleStatus.ERROR -> {
-                        coordinator.closeManagedResources(setOf(CONFIG_HANDLE))
-                        coordinator.postEvent(StopEvent(errored = true))
-                    }
                     LifecycleStatus.UP -> {
                         // Receive updates to the RPC and Messaging config
                         coordinator.createManagedResource(CONFIG_HANDLE) {
@@ -101,9 +94,11 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
                             )
                         }
                     }
-                    else -> logger.debug { "Unexpected status: ${event.status}" }
+                    else -> {
+                        coordinator.updateStatus(LifecycleStatus.DOWN)
+                        coordinator.closeManagedResources(setOf(CONFIG_HANDLE))
+                    }
                 }
-                coordinator.updateStatus(event.status)
             }
             is ConfigChangedEvent -> {
                 if (requiredKeys.all { it in event.config.keys } and event.keys.any { it in requiredKeys }) {
@@ -111,7 +106,6 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
                     val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
                     val duration = Duration.ofMillis(rpcConfig.getInt(ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS).toLong())
                     // Make sender unavailable while we're updating
-                    coordinator.updateStatus(LifecycleStatus.DOWN)
                     coordinator.createManagedResource(SENDER) {
                         virtualNodeSenderFactory.createSender(duration, messagingConfig)
                     }

@@ -132,7 +132,7 @@ class VirtualNodeInfoWriterComponentImpl @Activate constructor(
                 setOf(ConfigKeys.MESSAGING_CONFIG)
             )
         } else {
-            coordinator.updateStatus(event.status)
+            coordinator.updateStatus(LifecycleStatus.DOWN)
             configSubscription?.close()
         }
     }

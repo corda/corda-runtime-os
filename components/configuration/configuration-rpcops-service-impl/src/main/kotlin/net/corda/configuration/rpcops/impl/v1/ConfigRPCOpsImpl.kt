@@ -35,7 +35,6 @@ import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
-import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -107,13 +106,8 @@ internal class ConfigRPCOpsImpl @Activate constructor(
                     }
                     coordinator.updateStatus(LifecycleStatus.UP)
                 }
-                is StopEvent -> coordinator.updateStatus(LifecycleStatus.DOWN)
                 is RegistrationStatusChangeEvent -> {
                     when (event.status) {
-                        LifecycleStatus.ERROR -> {
-                            coordinator.closeManagedResources(setOf(CONFIG_HANDLE))
-                            coordinator.postEvent(StopEvent(errored = true))
-                        }
                         LifecycleStatus.UP -> {
                             // Receive updates to the RPC and Messaging config
                             coordinator.createManagedResource(CONFIG_HANDLE) {
@@ -123,16 +117,16 @@ internal class ConfigRPCOpsImpl @Activate constructor(
                                 )
                             }
                         }
-                        else -> logger.debug { "Unexpected status: ${event.status}" }
+                        else -> {
+                            coordinator.updateStatus(LifecycleStatus.DOWN)
+                        }
                     }
-                    coordinator.updateStatus(event.status)
                 }
                 is ConfigChangedEvent -> {
                     val rpcConfig = event.config.getConfig(ConfigKeys.RPC_CONFIG)
                     val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
                     setTimeout(rpcConfig.getInt(ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS))
                     // Make sender unavailable while we're updating
-                    coordinator.updateStatus(LifecycleStatus.DOWN)
                     coordinator.createManagedResource(SENDER) {
                         createAndStartRPCSender(messagingConfig)
                         object : Resource {

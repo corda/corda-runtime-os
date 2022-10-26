@@ -26,13 +26,11 @@ import net.corda.lifecycle.LifecycleEvent
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
-import net.corda.lifecycle.StopEvent
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.time.ClockFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
-import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.rpcops.common.VirtualNodeSender
@@ -89,15 +87,9 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
                     )
                 }
                 dependentComponents.registerAndStartAll(coordinator)
-                coordinator.updateStatus(LifecycleStatus.UP)
             }
-            is StopEvent -> coordinator.updateStatus(LifecycleStatus.DOWN)
             is RegistrationStatusChangeEvent -> {
                 when (event.status) {
-                    LifecycleStatus.ERROR -> {
-                        coordinator.closeManagedResources(setOf(CONFIG_HANDLE))
-                        coordinator.postEvent(StopEvent(errored = true))
-                    }
                     LifecycleStatus.UP -> {
                         // Receive updates to the RPC and Messaging config
                         coordinator.createManagedResource(CONFIG_HANDLE) {
@@ -107,9 +99,11 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
                             )
                         }
                     }
-                    else -> logger.debug { "Unexpected status: ${event.status}" }
+                    else -> {
+                        coordinator.updateStatus(LifecycleStatus.DOWN)
+                        coordinator.closeManagedResources(setOf(CONFIG_HANDLE))
+                    }
                 }
-                coordinator.updateStatus(event.status)
             }
             is ConfigChangedEvent -> {
                 if (requiredKeys.all { it in event.config.keys } and event.keys.any { it in requiredKeys }) {
@@ -117,7 +111,6 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
                     val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
                     val duration = Duration.ofMillis(rpcConfig.getInt(ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS).toLong())
                     // Make sender unavailable while we're updating
-                    coordinator.updateStatus(LifecycleStatus.DOWN)
                     coordinator.createManagedResource(SENDER) {
                         virtualNodeSenderFactory.createSender(duration, messagingConfig)
                     }

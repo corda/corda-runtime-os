@@ -145,10 +145,6 @@ abstract class AbstractPersistenceClient(
                 )
             }
             is StopEvent -> {
-                coordinator.updateStatus(
-                    LifecycleStatus.DOWN,
-                    "Component received stop event."
-                )
                 registrationHandle?.close()
                 registrationHandle = null
                 configHandle?.close()

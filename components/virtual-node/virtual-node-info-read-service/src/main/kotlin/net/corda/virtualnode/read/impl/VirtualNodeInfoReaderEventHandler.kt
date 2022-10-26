@@ -87,7 +87,7 @@ class VirtualNodeInfoReaderEventHandler(
             configSubscription?.close()
             configSubscription = configurationReadService.registerComponentForUpdates(coordinator, setOf(ConfigKeys.MESSAGING_CONFIG))
         } else {
-            coordinator.updateStatus(event.status)
+            coordinator.updateStatus(LifecycleStatus.DOWN)
             configSubscription?.close()
         }
     }

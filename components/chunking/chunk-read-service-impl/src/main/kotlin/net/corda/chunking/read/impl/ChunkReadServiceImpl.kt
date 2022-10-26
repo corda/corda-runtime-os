@@ -55,7 +55,7 @@ class ChunkReadServiceImpl @Activate constructor(
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when (event) {
             is StartEvent -> onStartEvent(coordinator)
-            is StopEvent -> onStopEvent(coordinator)
+            is StopEvent -> onStopEvent()
             is ConfigChangedEvent -> onConfigChangedEvent(event, coordinator)
             is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event)
         }
@@ -82,11 +82,9 @@ class ChunkReadServiceImpl @Activate constructor(
             )
     }
 
-    private fun onStopEvent(coordinator: LifecycleCoordinator) {
+    private fun onStopEvent() {
         chunkDbWriter?.close()
         chunkDbWriter = null
-
-        coordinator.updateStatus(LifecycleStatus.DOWN)
     }
 
     private fun onRegistrationStatusChangeEvent(event: RegistrationStatusChangeEvent) {

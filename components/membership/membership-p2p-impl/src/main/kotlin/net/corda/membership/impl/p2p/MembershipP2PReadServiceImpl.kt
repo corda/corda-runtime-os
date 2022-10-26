@@ -78,7 +78,6 @@ class MembershipP2PReadServiceImpl @Activate constructor(
                 )
             }
             is StopEvent -> {
-                coordinator.updateStatus(LifecycleStatus.DOWN, "Received stop event.")
                 registrationHandle?.close()
                 registrationHandle = null
                 configHandle?.close()
@@ -98,10 +97,17 @@ class MembershipP2PReadServiceImpl @Activate constructor(
                         coordinator.updateStatus(LifecycleStatus.UP, "Started subscription for incoming P2P messages.")
                     }
                 } else {
-                    coordinator.updateStatus(
-                        LifecycleStatus.DOWN,
-                        "Setting deactive state due to receiving registration status ${event.status}"
-                    )
+                    if (event.registration == subRegistrationHandle) {
+                        coordinator.updateStatus(
+                            event.status,
+                            "Subscription changed to ${event.status}"
+                        )
+                    } else {
+                        coordinator.updateStatus(
+                            LifecycleStatus.DOWN,
+                            "Setting deactivate state due to receiving registration status ${event.status}"
+                        )
+                    }
                     stopSubscriptions()
                 }
             }

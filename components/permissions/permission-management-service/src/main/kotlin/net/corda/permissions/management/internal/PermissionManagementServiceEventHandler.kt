@@ -92,22 +92,17 @@ internal class PermissionManagementServiceEventHandler(
                             setOf(BOOT_CONFIG, MESSAGING_CONFIG, RPC_CONFIG)
                         )
                     }
-                    LifecycleStatus.DOWN -> {
+                    else -> {
                         permissionManager?.stop()
                         permissionManager = null
                         basicAuthenticationService?.stop()
                         basicAuthenticationService = null
                         coordinator.updateStatus(LifecycleStatus.DOWN)
                     }
-                    LifecycleStatus.ERROR -> {
-                        coordinator.stop()
-                        coordinator.updateStatus(LifecycleStatus.ERROR)
-                    }
                 }
             }
             is ConfigChangedEvent -> {
                 log.info("Received new configuration event. Creating and starting RPCSender and permission manager.")
-                coordinator.updateStatus(LifecycleStatus.DOWN)
                 val messagingConfig = event.config.getConfig(MESSAGING_CONFIG)
                 createAndStartRpcSender(messagingConfig)
                 val rpcConfig = event.config[RPC_CONFIG]!!

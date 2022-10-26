@@ -90,7 +90,6 @@ class CertificatesClientImpl @Activate constructor(
         sessionKeyTenantId: String?,
         sessionKeyId: String?,
     ) {
-
         val record = hostedIdentityEntryFactory.createIdentityRecord(
             holdingIdentityShortHash, p2pTlsCertificateChainAlias, p2pTlsTenantId, sessionKeyTenantId, sessionKeyId
         )
@@ -138,10 +137,6 @@ class CertificatesClientImpl @Activate constructor(
     }
 
     private fun handleStopEvent() {
-        coordinator.updateStatus(
-            LifecycleStatus.DOWN,
-            "Component received stop event."
-        )
         senderRegistrationHandle?.close()
         senderRegistrationHandle = null
         registrationHandle?.close()
@@ -172,13 +167,13 @@ class CertificatesClientImpl @Activate constructor(
             if (event.registration == registrationHandle) {
                 configHandle?.close()
                 coordinator.updateStatus(
-                    event.status,
+                    LifecycleStatus.DOWN,
                     "Configuration read service went down"
                 )
             } else if (event.registration == senderRegistrationHandle) {
                 coordinator.updateStatus(
                     event.status,
-                    "Sender went down"
+                    "RPC Sender went to ${event.status}"
                 )
             }
         }

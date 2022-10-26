@@ -22,7 +22,6 @@ import net.corda.schema.Schemas.RPC.Companion.RPC_PERM_MGMT_REQ_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 import net.corda.utilities.VisibleForTesting
-import net.corda.v5.base.util.contextLogger
 
 @Suppress("LongParameterList")
 class PermissionStorageWriterServiceEventHandler(
@@ -38,8 +37,6 @@ class PermissionStorageWriterServiceEventHandler(
     private companion object {
         const val GROUP_NAME = "user.permissions.management"
         const val CLIENT_NAME = "user.permissions.management"
-
-        val log = contextLogger()
     }
 
     @VisibleForTesting
@@ -60,12 +57,9 @@ class PermissionStorageWriterServiceEventHandler(
                             setOf(BOOT_CONFIG, MESSAGING_CONFIG)
                         )
                     }
-                    LifecycleStatus.DOWN -> {
-                        downTransition(coordinator)
-                    }
-                    LifecycleStatus.ERROR -> {
-                        coordinator.updateStatus(LifecycleStatus.ERROR)
-                        coordinator.stop()
+                    else -> {
+                        coordinator.updateStatus(LifecycleStatus.DOWN)
+                        downTransition()
                     }
                 }
             }
@@ -74,7 +68,7 @@ class PermissionStorageWriterServiceEventHandler(
                 coordinator.updateStatus(LifecycleStatus.UP)
             }
             is StopEvent -> {
-                downTransition(coordinator)
+                downTransition()
             }
         }
     }
@@ -99,11 +93,10 @@ class PermissionStorageWriterServiceEventHandler(
         }
     }
 
-    private fun downTransition(coordinator: LifecycleCoordinator) {
+    private fun downTransition() {
         subscription?.close()
         subscription = null
         crsSub?.close()
         crsSub = null
-        coordinator.updateStatus(LifecycleStatus.DOWN)
     }
 }

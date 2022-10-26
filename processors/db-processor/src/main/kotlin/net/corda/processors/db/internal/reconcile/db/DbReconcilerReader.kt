@@ -14,7 +14,6 @@ import net.corda.lifecycle.RegistrationHandle
 import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
-import net.corda.processors.db.internal.reconcile.db.DbReconcilerReader.GetRecordsErrorEvent
 import net.corda.reconciliation.ReconcilerReader
 import net.corda.reconciliation.VersionedRecord
 import net.corda.utilities.VisibleForTesting
@@ -53,7 +52,6 @@ class DbReconcilerReader<K : Any, V : Any>(
         when (event) {
             is StartEvent -> onStartEvent(coordinator)
             is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
-            is GetRecordsErrorEvent -> onGetRecordsErrorEvent(event, coordinator)
             is StopEvent -> onStopEvent()
         }
     }
@@ -76,19 +74,8 @@ class DbReconcilerReader<K : Any, V : Any>(
             entityManagerFactory = dbConnectionManager.getClusterEntityManagerFactory()
             coordinator.updateStatus(LifecycleStatus.UP)
         } else {
-            coordinator.updateStatus(event.status)
-            closeResources()
+            coordinator.updateStatus(LifecycleStatus.DOWN)
         }
-    }
-
-    @Suppress("unused_parameter")
-    private fun onGetRecordsErrorEvent(event: GetRecordsErrorEvent, coordinator: LifecycleCoordinator) {
-        logger.warn("Processing a ${GetRecordsErrorEvent::class.java.name}")
-        // TODO based on exception determine component's next state i.e if transient exception or not -> DOWN or ERROR
-//        when (event.exception) {
-//        }
-        // For now just stopping it with errored false
-        coordinator.postEvent(StopEvent())
     }
 
     /**
@@ -110,7 +97,6 @@ class DbReconcilerReader<K : Any, V : Any>(
             }
         } catch (e: Exception) {
             logger.warn("Error while retrieving records for reconciliation", e)
-            coordinator.postEvent(GetRecordsErrorEvent(e))
             null
         }
     }
@@ -124,7 +110,6 @@ class DbReconcilerReader<K : Any, V : Any>(
 
     override fun stop() {
         coordinator.stop()
-        closeResources()
     }
 
     private fun closeResources() {
@@ -132,6 +117,4 @@ class DbReconcilerReader<K : Any, V : Any>(
         dbConnectionManagerRegistration = null
         entityManagerFactory = null
     }
-
-    private class GetRecordsErrorEvent(val exception: Exception) : LifecycleEvent
 }

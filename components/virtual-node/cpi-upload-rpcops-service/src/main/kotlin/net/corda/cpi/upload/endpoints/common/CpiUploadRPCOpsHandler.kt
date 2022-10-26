@@ -25,7 +25,7 @@ internal class CpiUploadRPCOpsHandler : LifecycleEventHandler {
         when (event) {
             is StartEvent -> onStartEvent(coordinator)
             is RegistrationStatusChangeEvent -> onRegistrationStatusChangeEvent(event, coordinator)
-            is StopEvent -> onStopEvent(coordinator)
+            is StopEvent -> closeResources()
         }
     }
 
@@ -42,15 +42,11 @@ internal class CpiUploadRPCOpsHandler : LifecycleEventHandler {
         event: RegistrationStatusChangeEvent,
         coordinator: LifecycleCoordinator
     ) {
-        if (event.status == LifecycleStatus.ERROR) {
-            closeResources()
+        if (event.status == LifecycleStatus.UP) {
+            coordinator.updateStatus(event.status)
+        } else {
+            coordinator.updateStatus(LifecycleStatus.DOWN)
         }
-        coordinator.updateStatus(event.status)
-    }
-
-    private fun onStopEvent(coordinator: LifecycleCoordinator) {
-        closeResources()
-        coordinator.updateStatus(LifecycleStatus.DOWN)
     }
 
     private fun closeResources() {

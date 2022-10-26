@@ -96,10 +96,6 @@ class CertificatesServiceImpl @Activate constructor(
                 )
             }
             is StopEvent -> {
-                coordinator.updateStatus(
-                    LifecycleStatus.DOWN,
-                    "Component received stop event."
-                )
                 subscriptionRegistrationHandle?.close()
                 subscriptionRegistrationHandle = null
                 registrationHandle?.close()
@@ -123,17 +119,10 @@ class CertificatesServiceImpl @Activate constructor(
                         rpcSubscription = null
                     }
                 } else if (event.registration == subscriptionRegistrationHandle) {
-                    if (event.status == LifecycleStatus.UP) {
-                        coordinator.updateStatus(
-                            LifecycleStatus.UP,
-                            "Ready."
-                        )
-                    } else {
-                        coordinator.updateStatus(
-                            event.status,
-                            "Subscription went down."
-                        )
-                    }
+                    coordinator.updateStatus(
+                        event.status,
+                        "Subscription went to status ${event.status}."
+                    )
                 } else {
                     logger.warn("Unexpected event $event.")
                 }
