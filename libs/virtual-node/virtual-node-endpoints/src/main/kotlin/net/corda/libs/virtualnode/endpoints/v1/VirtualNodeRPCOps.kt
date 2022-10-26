@@ -1,11 +1,14 @@
 package net.corda.libs.virtualnode.endpoints.v1
 
+import java.time.Instant
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
+import net.corda.httprpc.annotations.HttpRpcPUT
 import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.response.ResponseEntity
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
@@ -58,4 +61,56 @@ interface VirtualNodeRPCOps : RpcOps {
         responseDescription = "List of virtual node details."
     )
     fun getAllVirtualNodes(): VirtualNodes
+
+
+    @HttpRpcPUT(
+        path = "{virtualNodeShortId}/cpi/{cpiFileChecksum}",
+    )
+    fun upgradeVirtualNodeCpi(
+        @HttpRpcPathParameter(description = "Short ID of the virtual node instance to update")
+        virtualNodeShortId: String,
+        @HttpRpcPathParameter(description = "Checksum of the new version of the CPI to update to.")
+        cpiFileChecksum: String
+    ): ResponseEntity<AsyncResponse>
+
+    @HttpRpcGET(
+        path = "/status/{requestId}",
+        title = "Get the status of an asynchronous virtual node maintenance request.",
+        description = "Get the status of an asynchronous virtual node maintenance request.",
+        responseDescription = "The details of the asynchronous request."
+    )
+    fun virtualNodeStatus(
+        @HttpRpcPathParameter(description = "Identifier of the asynchronous request.")
+        requestId: String
+    ): ResponseEntity<UpgradeVirtualNodeStatus>
 }
+
+// todo move all these to the right places
+class AsyncResponse(val requestId: String)
+
+class UpgradeVirtualNodeStatus(
+    val virtualNodeShortHash: String,
+    val cpiFileChecksum: String,
+    val stage: String?,
+    startTime: Instant,
+    endTime: Instant?,
+    status: AsyncOperationStatus,
+    errors: List<AsyncError>?
+) : AsyncResponseStatus(startTime, endTime, status, errors)
+
+open class AsyncResponseStatus(
+    val startTime: Instant?,
+    val endTime: Instant?,
+    val status: AsyncOperationStatus,
+    val errors: List<AsyncError>?
+)
+
+enum class AsyncOperationStatus {
+    IN_PROGRESS, COMPLETE
+}
+
+data class AsyncError(
+    val code: String,
+    val message: String,
+    val details: Map<String, String>?
+)

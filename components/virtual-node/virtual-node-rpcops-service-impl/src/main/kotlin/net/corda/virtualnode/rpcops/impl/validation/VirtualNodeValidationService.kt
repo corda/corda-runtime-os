@@ -1,26 +1,21 @@
-package net.corda.libs.virtualnode.maintenance.rpcops.impl.validation
+package net.corda.virtualnode.rpcops.impl.validation
 
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.libs.packaging.core.CpiMetadata
-import net.corda.libs.virtualnode.maintenance.exception.IncompatibleVirtualNodeStateException
 import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.ShortHashException
-import net.corda.virtualnode.VirtualNodeState
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 
-class VirtualNodeMaintenanceValidationService(
+class VirtualNodeValidationService(
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
     private val cpiInfoReadService: CpiInfoReadService
 ) {
-    fun validateVirtualNodeInMaintenance(virtualNodeShortId: String): net.corda.virtualnode.VirtualNodeInfo {
-        return virtualNodeInfoReadService.getByHoldingIdentityShortHash(parseShortHash(virtualNodeShortId))?.apply {
-            if (state != VirtualNodeState.IN_MAINTENANCE) {
-                throw IncompatibleVirtualNodeStateException(state.name, VirtualNodeState.IN_MAINTENANCE.name, "CPI upgrade")
-            }
-        } ?: throw ResourceNotFoundException("Virtual node", virtualNodeShortId)
+    fun validateVirtualNodeExists(virtualNodeShortId: String) {
+        virtualNodeInfoReadService.getByHoldingIdentityShortHash(parseShortHash(virtualNodeShortId))
+            ?: throw ResourceNotFoundException("Virtual node", virtualNodeShortId)
     }
 
     fun validateAndGetUpgradeCpi(cpiFileChecksum: String): CpiMetadata {

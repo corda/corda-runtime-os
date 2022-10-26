@@ -1,14 +1,9 @@
 package net.corda.libs.virtualnode.maintenance.rpcops.impl.v1
 
-import java.time.Duration
-import java.time.Instant
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
-import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.chunking.PropertyKeys
-import net.corda.data.virtualnode.VirtualNodeCpiUpgradeRequest
-import net.corda.data.virtualnode.VirtualNodeCpiUpgradeResponse
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
@@ -20,13 +15,8 @@ import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.security.CURRENT_RPC_CONTEXT
 import net.corda.libs.configuration.helper.getConfig
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
-import net.corda.libs.packaging.core.CpiIdentifier
-import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity
-import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
 import net.corda.libs.virtualnode.maintenance.endpoints.v1.VirtualNodeMaintenanceRPCOps
 import net.corda.libs.virtualnode.maintenance.endpoints.v1.types.ChangeVirtualNodeStateResponse
-import net.corda.libs.virtualnode.maintenance.rpcops.impl.v1.ExceptionTranslator.Companion.translate
-import net.corda.libs.virtualnode.maintenance.rpcops.impl.validation.VirtualNodeMaintenanceValidationService
 import net.corda.lifecycle.DependentComponents
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinator
@@ -40,15 +30,14 @@ import net.corda.lifecycle.StopEvent
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.exceptions.CordaRuntimeException
-import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
-import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.rpcops.common.VirtualNodeSender
 import net.corda.virtualnode.rpcops.common.VirtualNodeSenderFactory
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
+import java.time.Duration
 
 @Suppress("unused")
 @Component(service = [PluggableRPCOps::class])
@@ -61,10 +50,6 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
     private val cpiUploadRPCOpsService: CpiUploadRPCOpsService,
     @Reference(service = VirtualNodeSenderFactory::class)
     private val virtualNodeSenderFactory: VirtualNodeSenderFactory,
-    @Reference(service = CpiInfoReadService::class)
-    private val cpiInfoReadService: CpiInfoReadService,
-    @Reference(service = VirtualNodeInfoReadService::class)
-    private val virtualNodeInfoReadService: VirtualNodeInfoReadService,
 ) : VirtualNodeMaintenanceRPCOps, PluggableRPCOps<VirtualNodeMaintenanceRPCOps>, Lifecycle {
 
     companion object {
@@ -81,13 +66,7 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
 
     private val clock = UTCClock()
     private val dependentComponents = DependentComponents.of(
-        ::cpiUploadRPCOpsService,
-        ::cpiInfoReadService,
-        ::virtualNodeInfoReadService
-    )
-    private val virtualNodeMaintenanceValidationService = VirtualNodeMaintenanceValidationService(
-        virtualNodeInfoReadService,
-        cpiInfoReadService
+        ::cpiUploadRPCOpsService
     )
 
     private val lifecycleCoordinator = coordinatorFactory.createCoordinator(
@@ -226,53 +205,6 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
             }
             else -> throw UnknownMaintenanceResponseTypeException(resp.responseType::class.java.name)
         }
-    }
-
-    override fun upgradeVirtualNodeCpi(virtualNodeShortId: String, cpiFileChecksum: String): VirtualNodeInfo {
-        val vNode = virtualNodeMaintenanceValidationService.validateVirtualNodeInMaintenance(virtualNodeShortId)
-        val upgradeCpi = virtualNodeMaintenanceValidationService.validateAndGetUpgradeCpi(cpiFileChecksum)
-        val currentCpi = getCurrentCpi(vNode.cpiIdentifier)
-        virtualNodeMaintenanceValidationService.validateCpiUpgradePrerequisites(currentCpi, upgradeCpi)
-
-        val request = VirtualNodeManagementRequest(
-            Instant.now(),
-            VirtualNodeCpiUpgradeRequest(
-                virtualNodeShortId,
-                cpiFileChecksum,
-                CURRENT_RPC_CONTEXT.get().principal
-            )
-        )
-
-        val resp = sendAndReceive(request)
-
-        return when (val resolvedResponse = resp.responseType) {
-            is VirtualNodeCpiUpgradeResponse -> resolvedResponse.toEndpointType()
-            is VirtualNodeManagementResponseFailure -> throw translate(resolvedResponse.exception)
-            else -> throw UnknownResponseTypeException(resp.responseType::class.java.name)
-        }
-    }
-
-    private fun VirtualNodeCpiUpgradeResponse.toEndpointType(): VirtualNodeInfo {
-        return VirtualNodeInfo(
-            net.corda.virtualnode.HoldingIdentity(MemberX500Name.parse(x500Name), mgmGroupId).toEndpointType(),
-            net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier.fromAvro(cpiIdentifier),
-            vaultDdlConnectionId,
-            vaultDmlConnectionId,
-            cryptoDdlConnectionId,
-            cryptoDmlConnectionId,
-            uniquenessDdlConnectionId,
-            uniquenessDmlConnectionId,
-            hsmConnectionId,
-            virtualNodeState
-        )
-    }
-
-    private fun net.corda.virtualnode.HoldingIdentity.toEndpointType(): HoldingIdentity =
-        HoldingIdentity(x500Name.toString(), groupId, shortHash.value, fullHash)
-
-
-    private fun getCurrentCpi(cpiIdentifier: CpiIdentifier) = checkNotNull(cpiInfoReadService.get(cpiIdentifier)) {
-        "CPI with identifier $cpiIdentifier was not found in CPI cache."
     }
 
     // Mandatory lifecycle methods - def to coordinator

@@ -1,8 +1,14 @@
 package net.corda.virtualnode.rpcops.impl.v1
 
 import java.time.Duration
+import java.time.Instant
+import java.util.UUID
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.cpiinfo.read.CpiInfoReadService
+import net.corda.data.async.AsyncStatus
+import net.corda.data.virtualnode.VirtualNodeCpiUpgradeRequest
+import net.corda.data.virtualnode.VirtualNodeCpiUpgradeResponse
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
 import net.corda.data.virtualnode.VirtualNodeCreateResponse
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
@@ -42,7 +48,13 @@ import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import net.corda.httprpc.exception.ResourceNotFoundException
+import net.corda.httprpc.response.ResponseEntity
+import net.corda.libs.virtualnode.endpoints.v1.AsyncResponse
+import net.corda.libs.virtualnode.endpoints.v1.UpgradeVirtualNodeStatus
+import net.corda.messaging.api.publisher.config.PublisherConfig
+import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.virtualnode.ShortHash
+import net.corda.virtualnode.rpcops.impl.validation.VirtualNodeValidationService
 import net.corda.libs.virtualnode.endpoints.v1.types.HoldingIdentity as HoldingIdentityEndpointType
 
 @Component(service = [PluggableRPCOps::class])
@@ -57,7 +69,13 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
     @Reference(service = VirtualNodeSenderFactory::class)
     private val virtualNodeSenderFactory: VirtualNodeSenderFactory,
     @Reference(service = ClockFactory::class)
-    private var clockFactory: ClockFactory
+    private var clockFactory: ClockFactory,
+    @Reference(service = CpiInfoReadService::class)
+    private val cpiInfoReadService: CpiInfoReadService,
+    @Reference(service = PublisherFactory::class)
+    private val publisherFactory: PublisherFactory,
+    @Reference(service = VirtualNodeUpgradeStatusService::class)
+    private val virtualNodeUpgradeStatusService: VirtualNodeUpgradeStatusService,
 ) : VirtualNodeRPCOps, PluggableRPCOps<VirtualNodeRPCOps>, Lifecycle {
 
     private companion object {
@@ -67,6 +85,7 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         private const val REGISTRATION = "REGISTRATION"
         private const val SENDER = "SENDER"
         private const val CONFIG_HANDLE = "CONFIG_HANDLE"
+        private const val VIRTUAL_NODE_UPGRADE_CLIENT_ID = "VIRTUAL_NODE_UPGRADE_CLIENT"
     }
 
     private val clock = clockFactory.createUTCClock()
@@ -74,6 +93,11 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
     // Http RPC values
     override val targetInterface: Class<VirtualNodeRPCOps> = VirtualNodeRPCOps::class.java
     override val protocolVersion = 1
+
+    private val virtualNodeValidationService = VirtualNodeValidationService(
+        virtualNodeInfoReadService,
+        cpiInfoReadService
+    )
 
     // Lifecycle
     private val dependentComponents = DependentComponents.of(::virtualNodeInfoReadService)
@@ -125,6 +149,10 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
                     coordinator.createManagedResource(SENDER) {
                         virtualNodeSenderFactory.createSender(duration, messagingConfig)
                     }
+                    publisherFactory.createPublisher(
+                        PublisherConfig(VIRTUAL_NODE_UPGRADE_CLIENT_ID),
+                        messagingConfig
+                    )
                     coordinator.updateStatus(LifecycleStatus.UP)
                 }
             }
@@ -166,6 +194,46 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
             "${this.javaClass.simpleName} is not running! Its status is: ${lifecycleCoordinator.status}"
         )
         return VirtualNodes(virtualNodeInfoReadService.getAll().map { it.toEndpointType() })
+    }
+
+    override fun upgradeVirtualNodeCpi(virtualNodeShortId: String, cpiFileChecksum: String): ResponseEntity<AsyncResponse> {
+        virtualNodeValidationService.validateVirtualNodeExists(virtualNodeShortId)
+        val upgradeCpi = virtualNodeValidationService.validateAndGetUpgradeCpi(cpiFileChecksum)
+        val currentCpi = checkNotNull(cpiInfoReadService.get(upgradeCpi.cpiId)) {
+            "CPI with identifier ${upgradeCpi.cpiId} was not found in CPI cache."
+        }
+        virtualNodeValidationService.validateCpiUpgradePrerequisites(currentCpi, upgradeCpi)
+
+        val requestId = sendAsynchronousRequest(Instant.now(), virtualNodeShortId, cpiFileChecksum, CURRENT_RPC_CONTEXT.get().principal)
+
+        return ResponseEntity.accepted(AsyncResponse(requestId))
+    }
+
+    override fun virtualNodeStatus(requestId: String): ResponseEntity<UpgradeVirtualNodeStatus> {
+        TODO("Not yet implemented")
+    }
+
+    private fun sendAsynchronousRequest(
+        requestTime: Instant,
+        virtualNodeShortId: String,
+        cpiFileChecksum: String,
+        actor: String
+    ): String {
+        val requestId = UUID.randomUUID().toString()
+        val request = VirtualNodeCpiUpgradeRequest(
+            requestId,
+            virtualNodeShortId,
+            cpiFileChecksum,
+            CURRENT_RPC_CONTEXT.get().principal,
+            "QUEUED",
+            AsyncStatus.IN_PROGRESS,
+            requestTime,
+            null,
+            null
+        )
+        publisher.
+
+        return requestId
     }
 
     /**
@@ -260,6 +328,25 @@ internal class VirtualNodeRPCOpsImpl @Activate constructor(
         val message = "X500 name \"$x500Name\" could not be parsed. Cause: ${e.message}"
         throw InvalidInputDataException(message)
     }
+
+    private fun VirtualNodeCpiUpgradeResponse.toEndpointType(): VirtualNodeInfo {
+        return VirtualNodeInfo(
+            net.corda.virtualnode.HoldingIdentity(MemberX500Name.parse(x500Name), mgmGroupId).toEndpointType(),
+            net.corda.libs.cpiupload.endpoints.v1.CpiIdentifier.fromAvro(cpiIdentifier),
+            vaultDdlConnectionId,
+            vaultDmlConnectionId,
+            cryptoDdlConnectionId,
+            cryptoDmlConnectionId,
+            uniquenessDdlConnectionId,
+            uniquenessDmlConnectionId,
+            hsmConnectionId,
+            virtualNodeState
+        )
+    }
+
+    private fun net.corda.virtualnode.HoldingIdentity.toEndpointType(): HoldingIdentity =
+        HoldingIdentity(x500Name.toString(), groupId, shortHash.value, fullHash)
+
 
     // Mandatory lifecycle methods - def to coordinator
     override val isRunning get() = lifecycleCoordinator.isRunning

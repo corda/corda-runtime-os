@@ -13,8 +13,6 @@ dependencies {
     implementation project(':components:configuration:configuration-read-service')
     implementation project(':components:virtual-node:cpi-upload-rpcops-service')
     implementation project(':components:virtual-node:virtual-node-management-sender')
-    implementation project(':components:virtual-node:cpi-info-read-service')
-    implementation project(':components:virtual-node:virtual-node-info-read-service')
 
     implementation project(':libs:virtual-node:virtual-node-endpoints-maintenance')
     implementation project(':libs:http-rpc:http-rpc')
@@ -22,8 +20,6 @@ dependencies {
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:messaging:messaging')
     implementation project(":libs:utilities")
-    implementation project(':libs:virtual-node:virtual-node-info')
-    implementation project(':libs:virtual-node:virtual-node-common')
 
     implementation 'net.corda:corda-avro-schema'
     implementation 'net.corda:corda-base'

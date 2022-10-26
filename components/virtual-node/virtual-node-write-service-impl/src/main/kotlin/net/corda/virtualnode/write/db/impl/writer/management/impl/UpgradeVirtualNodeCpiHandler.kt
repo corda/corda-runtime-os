@@ -13,8 +13,10 @@ import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
 import net.corda.libs.virtualnode.common.exception.HoldingIdentityNotFoundException
 import net.corda.libs.virtualnode.common.exception.MgmGroupMismatchException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeNotFoundException
+import net.corda.messaging.api.publisher.RPCSender
 import net.corda.utilities.time.Clock
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.crypto.SecureHash
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.write.db.impl.writer.CpiMetadataLite
 import net.corda.virtualnode.write.db.impl.writer.VirtualNodeDbConnections
@@ -31,6 +33,8 @@ internal class UpgradeVirtualNodeCpiHandler(
     private val migrationUtility: MigrationUtility,
     private val virtualNodeInfoPublisher: VirtualNodeInfoRecordPublisher,
     private val clock: Clock,
+    private val statusPublisher: VirtualNodeUpgradePublisher,
+    private val mgmReRegistrationSender: RPCSender<String, String> // todo wrap in service, change request response types
 ) : VirtualNodeManagementHandler<VirtualNodeCpiUpgradeRequest> {
 
     private companion object {
@@ -56,41 +60,64 @@ internal class UpgradeVirtualNodeCpiHandler(
 
             // todo work out which of these operations can be condensed into one transaction
 
+            statusPublisher.publish("Validating current virtual node")
             val currentVirtualNode = findCurrentVirtualNode(request.virtualNodeShortId)
+
+            statusPublisher.publish("Validating virtual node state")
             validateCurrentVirtualNodeMaintenance(currentVirtualNode)
 
+            statusPublisher.publish("Validating upgrade CPI")
             val upgradeCpiMetadata = findUpgradeCpi(request.cpiFileChecksum)
             val (holdingId, connections) = findHoldingIdentityAndConnections(request.virtualNodeShortId)
 
             val originalCpiMetadata = findCurrentCpiMetadata(currentVirtualNode.cpiName, currentVirtualNode.cpiVersion)
 
+            statusPublisher.publish("Validating CPI group")
             validateCpiInSameGroup(originalCpiMetadata, upgradeCpiMetadata)
 
+            statusPublisher.publish("Getting vault schema connections")
             val (vaultDDLConnectionConfig, vaultDMLConnectionConfig) =
                 getVaultSchemaConnectionConfigs(connections)
 
+            statusPublisher.publish("Running CPI migrations")
+            runCpiMigrations(holdingId, upgradeCpiMetadata, vaultDDLConnectionConfig?.config, vaultDMLConnectionConfig?.config)
+
+            statusPublisher.publish("Associating new CPI with virtual node")
             updateVirtualNodeCpi(holdingId, upgradeCpiMetadata.id)
-            try {
-                runCpiMigrations(holdingId, upgradeCpiMetadata, vaultDDLConnectionConfig?.config, vaultDMLConnectionConfig?.config)
-            } catch (e : Exception) {
-                rollBackVirtualNodeToOriginalCpi(holdingId, originalCpiMetadata)
-                throw e
-            }
 
-            publishNewlyUpgradedVirtualNodeInfo(holdingId, upgradeCpiMetadata, connections)
-
+            statusPublisher.publish("Setting virtual node state to active")
             updateVirtualNodeToActive(holdingId.shortHash.value)
 
-            // update mgm mapping for virtual node
-            publishMgmReRegistration()
+            statusPublisher.publish("Publishing upgraded virtual node info")
+            publishNewlyUpgradedVirtualNodeInfo(holdingId, upgradeCpiMetadata, connections)
+
+            statusPublisher.publish("Requesting re-registration from MGM")
+            publishMgmReRegistration(
+                currentVirtualNode.holdingIdentityShortHash,
+                upgradeCpiMetadata.id.name,
+                upgradeCpiMetadata.id.version,
+                upgradeCpiMetadata.id.signerSummaryHash
+            )
 
         } catch (e: Exception) {
             handleException(respFuture, e)
         }
     }
 
-    private fun publishMgmReRegistration() {
-        TODO("Not yet implemented")
+    private fun publishMgmReRegistration(
+        holdingIdentityShortHash: String,
+        name: String,
+        version: String,
+        signerSummaryHash: SecureHash?
+    ) {
+        val future = mgmReRegistrationSender.sendRequest(holdingIdentityShortHash)
+        future.whenComplete { t, u ->
+            reRegistrationCompletionLogic()
+        }
+    }
+
+    private fun reRegistrationCompletionLogic() {
+        statusPublisher.completed()
     }
 
     private fun updateVirtualNodeToActive(holdingIdShortHash: String) {

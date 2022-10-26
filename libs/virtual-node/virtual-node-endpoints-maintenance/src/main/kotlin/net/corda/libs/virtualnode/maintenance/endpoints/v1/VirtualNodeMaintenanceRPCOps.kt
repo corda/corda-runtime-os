@@ -1,14 +1,11 @@
 package net.corda.libs.virtualnode.maintenance.endpoints.v1
 
-import java.time.Instant
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.RpcOps
-import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
 import net.corda.httprpc.annotations.HttpRpcPUT
 import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcResource
-import net.corda.httprpc.response.ResponseEntity
 import net.corda.libs.cpiupload.endpoints.v1.CpiUploadRPCOps
 import net.corda.libs.virtualnode.maintenance.endpoints.v1.types.ChangeVirtualNodeStateResponse
 
@@ -61,87 +58,4 @@ interface VirtualNodeMaintenanceRPCOps : RpcOps {
                 "Possible values are: IN_MAINTENANCE and ACTIVE.")
         newState: String
     ): ChangeVirtualNodeStateResponse
-
-    /**
-     * This should run db migrations for the new CPI.
-     *
-     * DBA beware to take backups of vault schema before running this command.
-     */
-    @HttpRpcPUT(
-        path = "{virtualNodeShortId}/cpi/{cpiFileChecksum}",
-    )
-    fun upgradeVirtualNodeCpi(
-        @HttpRpcPathParameter(description = "Short ID of the virtual node instance to update")
-        virtualNodeShortId: String,
-        @HttpRpcPathParameter(description = "Checksum of the new version of the CPI to update to.")
-        cpiFileChecksum: String
-    ): ResponseEntity<AsyncResponse> //todo conal - make this type available for both v1 endpoints - common v1 package
-
-    @HttpRpcGET(
-        path = "/status/{requestId}",
-        title = "Get the status of an asynchronous virtual node maintenance request.",
-        description = "Get the status of an asynchronous virtual node maintenance request.",
-        responseDescription = "The details of the asynchronous request."
-    )
-    fun virtualNodeStatus(
-        @HttpRpcPathParameter(description = "Identifier of the asynchronous request.")
-        requestId: String
-    ): ResponseEntity<StatusResponse>
-
-}
-
-data class AsyncResponse(
-    /**
-     * ID of the request, to be used in the status endpoint.
-     */
-    val requestId: String?,
-    /**
-     * Relative URL to the status endpoint.
-     */
-    val location: String?
-)
-
-data class StatusResponse(
-    /**
-     * ID of the request, or the idempotent client request identifier.
-     */
-    val requestId: String,
-    /**
-     * ID of the resource.
-     */
-    val resourceId: String?,
-    /**
-     * Status of the asynchronous operation.
-     */
-    val status: AsyncOperationStatus,
-    /**
-     * The time the request was made.
-     */
-    val startTime: Instant,
-    /**
-     * The time the request completed.
-     */
-    val endTime: Instant?,
-    /**
-     * Relative URL of the resource, a GET to this endpoint will return the created/updated resource.
-     */
-    val location: String?,
-    /**
-     * Recommended period (in ms) for retries.
-     */
-    val retryAfter: Long?,
-    /**
-     * Error information if the operation fails.
-     */
-    val error: AsyncError?
-)
-
-data class AsyncError(
-    val code: String,
-    val message: String,
-    val details: Map<String, String>?
-)
-
-enum class AsyncOperationStatus {
-    IN_PROGRESS, ERROR, COMPLETE
 }
