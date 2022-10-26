@@ -77,7 +77,7 @@ class SecurityManagerServiceImpl @Activate constructor(
             ALL_PERMISSION_POLICY
         } else {
             val url = bundleContext.bundle.getResource(DEFAULT_SECURITY_POLICY)
-            log.info("Applying default security policy ($DEFAULT_SECURITY_POLICY)")
+            log.trace("Applying default security policy ($DEFAULT_SECURITY_POLICY)")
             readPolicy(url.openConnection().getInputStream())
         }
         updatePermissions(policy, clear = true)
@@ -85,7 +85,7 @@ class SecurityManagerServiceImpl @Activate constructor(
 
     override fun startRestrictiveMode() {
         cordaSecurityManager?.stop()
-        log.info("Starting restrictive Corda security manager.")
+        log.trace("Starting restrictive Corda security manager.")
         cordaSecurityManager = RestrictiveSecurityManager(conditionalPermissionAdmin, osgiSecurityManager)
     }
 
