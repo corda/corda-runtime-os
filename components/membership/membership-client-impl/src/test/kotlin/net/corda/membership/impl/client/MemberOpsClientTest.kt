@@ -13,7 +13,8 @@ import net.corda.data.membership.rpc.request.RegistrationStatusSpecificRpcReques
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
 import net.corda.data.membership.rpc.response.RegistrationRpcResponse
-import net.corda.data.membership.rpc.response.RegistrationRpcStatus
+import net.corda.data.membership.rpc.response.RegistrationRpcStatus.SUBMITTED
+import net.corda.data.membership.rpc.response.RegistrationRpcStatus.NOT_SUBMITTED
 import net.corda.data.membership.rpc.response.RegistrationStatusResponse
 import net.corda.data.membership.rpc.response.RegistrationsStatusResponse
 import net.corda.libs.configuration.SmartConfig
@@ -41,6 +42,7 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.time.TestClock
 import net.corda.virtualnode.ShortHash
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
@@ -152,7 +154,7 @@ class MemberOpsClientTest {
         val response = RegistrationRpcResponse(
             "Registration-ID",
             clock.instant(),
-            RegistrationRpcStatus.SUBMITTED,
+            SUBMITTED,
             "",
             1,
             KeyValuePairList(listOf(KeyValuePair("key", "value"))),
@@ -292,7 +294,7 @@ class MemberOpsClientTest {
                     RegistrationRpcResponse(
                         "RegistrationID",
                         clock.instant(),
-                        RegistrationRpcStatus.SUBMITTED,
+                        SUBMITTED,
                         "",
                         1,
                         KeyValuePairList(listOf(KeyValuePair("key", "value"))),
@@ -324,7 +326,7 @@ class MemberOpsClientTest {
                     RegistrationRpcResponse(
                         "RegistrationID",
                         clock.instant(),
-                        RegistrationRpcStatus.SUBMITTED,
+                        SUBMITTED,
                         "",
                         1,
                         KeyValuePairList(listOf(KeyValuePair("key", "value"))),
@@ -660,4 +662,19 @@ class MemberOpsClientTest {
             )
     }
 
+    @Test
+    fun `startRegistration should add exception message to reason field if exception happened`() {
+        val rpcRequest = argumentCaptor<MembershipRpcRequest>()
+        whenever(rpcSender.sendRequest(rpcRequest.capture())).then {
+            throw IllegalArgumentException("Exception happened.")
+        }
+        memberOpsClient.start()
+        setUpRpcSender()
+        val result = memberOpsClient.startRegistration(request)
+        assertSoftly {
+            it.assertThat(result.reason)
+                .isEqualTo("Failed to send request and receive response for membership RPC operation. Exception happened.")
+            it.assertThat(result.registrationStatus).isEqualTo(NOT_SUBMITTED.toString())
+        }
+    }
 }
