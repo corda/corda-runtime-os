@@ -51,7 +51,7 @@ class FlowEventPipelineImpl(
         }
 
     override fun eventPreProcessing(): FlowEventPipelineImpl {
-        log.trace { "Preprocessing of ${context.inputEventPayload::class.qualifiedName}..." }
+        log.trace { "Preprocessing of ${context.inputEventPayload::class.qualifiedName}" }
 
         /**
          * If the checkpoint is in a retry step and we receive a Wakeup then we
@@ -83,7 +83,7 @@ class FlowEventPipelineImpl(
 
         val handler = getFlowWaitingForHandler(waitingFor)
 
-        log.trace { "Run or continue using ${handler::class.java.name} when flow is waiting for $waitingFor" }
+        log.trace { "Run or continue when flow is waiting for $waitingFor" }
 
         return when (val outcome = handler.runOrContinue(context, waitingFor)) {
             is FlowContinuation.Run, is FlowContinuation.Error -> {
