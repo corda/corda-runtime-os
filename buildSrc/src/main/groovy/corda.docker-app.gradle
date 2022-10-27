@@ -27,6 +27,34 @@ if (enableProfiling.toBoolean()) {
     }
 }
 
+tasks.register('publishBuildkitImage' , BuildkitBuild) {
+    it.sourceFiles.setFrom(tasks.named('appJar', Jar))
+    it.extraSourceFiles.setFrom(configurations.dockerImage)
+    it.jdbcDriverFiles.setFrom(configurations.dockerImageJdbc)
+    it.useShortName = true
+    it.containerName = project.name
+
+    if (project.hasProperty('baseImage')) {
+        it.baseImageName = baseImage
+    }
+
+    if(project.hasProperty('tag')){
+        it.containerTag = tag
+    }
+
+    if (project.hasProperty('isNightly')) {
+        nightlyBuild = isNightly.toBoolean()
+    }
+
+    if (project.hasProperty('isPreTest')) {
+        preTest = isPreTest.toBoolean()
+    }
+    
+    if (project.hasProperty('isReleaseCandidate')) {
+        releaseCandidate = isReleaseCandidate.toBoolean()
+    }
+}
+
 tasks.register('publishOSGiImage', DeployableContainerBuilder) {
     it.sourceFiles.setFrom(tasks.named('appJar', Jar))
     it.extraSourceFiles.setFrom(configurations.dockerImage)
