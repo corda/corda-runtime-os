@@ -18,14 +18,14 @@ cordapp {
 dependencies {
     cordaProvided 'net.corda:corda-application'
     cordaProvided 'net.corda:corda-cipher-suite'
-    cordaProvided "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     cordaProvided 'net.corda:corda-notary-plugin'
+    cordaProvided "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
     cordaProvided 'org.slf4j:slf4j-api'
 
     cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
 
-    cordaProvided project(":notary-plugins:notary-plugin-common")
-    cordaProvided project(":notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-api")
+    cordapp project(":notary-plugins:notary-plugin-common")
+    cordapp project(":notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-api")
 }
 
 

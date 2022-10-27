@@ -10,8 +10,8 @@ import net.corda.v5.ledger.utxo.TimeWindow
  */
 data class TransactionParts(
     val id: SecureHash,
-    val inputs: List<StateRef>,
     val numOutputs: Int,
     val timeWindow: TimeWindow,
-    val references: List<StateRef> = emptyList()
+    val inputs: List<StateRef>,
+    val references: List<StateRef>
 )

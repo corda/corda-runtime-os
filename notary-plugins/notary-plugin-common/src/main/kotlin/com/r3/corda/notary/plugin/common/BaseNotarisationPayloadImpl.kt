@@ -6,25 +6,21 @@ import net.corda.v5.ledger.notary.plugin.core.NotarisationRequestSignature
 
 /**
  * A generic [NotarisationPayload] implementation that acts as a "base" class for multiple notarisation payloads.
- * It runs a validation that checks if the given [transaction]'s type is actually one of [validTypes].
+ * It runs validation that checks if the given [transaction]'s type is actually one of [validTypes].
  */
 @CordaSerializable
 abstract class BaseNotarisationPayloadImpl(
-    final override val transaction: Any,
-    final override val requestSignature: NotarisationRequestSignature,
-    final override val validTypes: List<Class<*>>
+    override val transaction: Any,
+    override val requestSignature: NotarisationRequestSignature,
+    override val validTypes: List<Class<*>>
 ) : NotarisationPayload {
 
     init {
-        require(validTypes.any { it.isAssignableFrom(transaction::class.java) })
+        require(validTypes.any { it.isAssignableFrom(transaction::class.java) }) {
+            "Unexpected transaction type ${transaction::class.java} in " +
+                    "notarisation payload. There may be a mismatch " +
+                    "between the configured notary type and the one " +
+                    "advertised on the network parameters."
+        }
     }
-
-    /**
-     * Helper function used in multiple implementations. This function will simply throw an IllegalArgumentException
-     * with a pre-defined message which is related to the fact that the [transaction]'s object type is unexpected.
-     */
-    protected fun unexpectedTransactionType() = IllegalArgumentException("Unexpected transaction type in the notarisation payload: " +
-            "${transaction::class.java}, it may be that there is a discrepancy between the configured notary type " +
-            "(validating/non-validating) and the one advertised on the network parameters."
-    )
 }

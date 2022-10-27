@@ -2,6 +2,7 @@ package com.r3.corda.notary.plugin.nonvalidating
 
 import com.r3.corda.notary.plugin.common.NotarisationRequestImpl
 import com.r3.corda.notary.plugin.common.NotaryException
+import com.r3.corda.notary.plugin.common.generateRequestSignature
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.CordaInject
@@ -10,13 +11,10 @@ import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
-import net.corda.v5.ledger.notary.plugin.core.NotarisationRequestSignature
 import net.corda.v5.ledger.notary.plugin.core.NotarisationResponse
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
-import org.slf4j.LoggerFactory
 
 /**
  * The client that is used for the non-validating notary logic. This class is very simple and uses the basic
@@ -35,17 +33,10 @@ class NonValidatingNotaryClientFlowImpl(
     private lateinit var memberLookupService: MemberLookup
 
     @CordaInject
-    private lateinit var hashingService: DigestService
-
-    @CordaInject
     private lateinit var serializationService: SerializationService
 
     @CordaInject
     private lateinit var signingService: SigningService
-
-    private companion object {
-        val logger = LoggerFactory.getLogger(this::class.java)
-    }
 
     /**
      * The main logic of the flow is defined in this function. The execution steps are:
@@ -59,9 +50,7 @@ class NonValidatingNotaryClientFlowImpl(
     override fun call(): List<DigitalSignatureAndMetadata> {
         val session = flowMessaging.initiateFlow(notary.name)
 
-        val requestSignature = generateRequestSignature()
-
-        val payload = generatePayload(requestSignature)
+        val payload = generatePayload(stx)
 
         val notarisationResponse = session.sendAndReceive(
             NotarisationResponse::class.java,
@@ -74,28 +63,28 @@ class NonValidatingNotaryClientFlowImpl(
     }
 
     /**
-     * This function needs to define how a notarisation payload of type [NonValidatingNotarisationPayload] is generated
-     * from the given [requestSignature] parameter.
+     * This function generates a notarisation request and a signature from that given request via serialization.
+     * Then attaches that signature to a [NonValidatingNotarisationPayload].
      */
-    private fun generatePayload(requestSignature: NotarisationRequestSignature): NonValidatingNotarisationPayload {
+    @Suspendable
+    private fun generatePayload(stx: UtxoSignedTransaction): NonValidatingNotarisationPayload {
+        val notarisationRequest = NotarisationRequestImpl(
+            stx.toLedgerTransaction().inputStateAndRefs.map { it.ref },
+            stx.id
+        )
+
+        val requestSignature = generateRequestSignature(
+            notarisationRequest,
+            memberLookupService.myInfo(),
+            serializationService,
+            signingService
+        )
+
         // TODO CORE-7249 Filtering needed
         return NonValidatingNotarisationPayload(
             stx.toLedgerTransaction(),
             stx.toLedgerTransaction().outputStateAndRefs.size,
             requestSignature
         )
-    }
-
-    /**
-     * Ensure that transaction ID instances are not referenced in the serialized form in case several input states are outputs of the
-     * same transaction.
-     */
-    @Suppress("ForbiddenComment")
-    private fun generateRequestSignature(): NotarisationRequestSignature {
-        val notarisationRequest = NotarisationRequestImpl(
-            stx.toLedgerTransaction().inputStateAndRefs.map { it.ref },
-            stx.id
-        )
-        return notarisationRequest.generateSignature(memberLookupService.myInfo(), signingService, serializationService)
     }
 }
