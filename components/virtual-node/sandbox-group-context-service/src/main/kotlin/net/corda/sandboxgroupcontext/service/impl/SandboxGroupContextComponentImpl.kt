@@ -16,6 +16,7 @@ import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.sandbox.RequireSandboxHooks
 import net.corda.sandbox.SandboxCreationService
+import net.corda.sandboxgroupcontext.MutableSandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.sandboxgroupcontext.SandboxGroupContextInitializer
 import net.corda.sandboxgroupcontext.VirtualNodeContext
@@ -37,7 +38,7 @@ import java.util.Collections.unmodifiableList
  * Sandbox group context service component... with lifecycle, since it depends on a CPK service
  * that has a lifecycle.
  */
-@Suppress("Unused", "LongParameterList")
+@Suppress("Unused", "LongParameterList", "TooManyFunctions")
 @Component(service = [SandboxGroupContextComponent::class])
 @RequireSandboxHooks
 class SandboxGroupContextComponentImpl @Activate constructor(
@@ -77,7 +78,6 @@ class SandboxGroupContextComponentImpl @Activate constructor(
                 "net.corda.serialization",
                 "org.apache.aries.spifly.dynamic.framework.extension",
                 "org.apache.felix.framework",
-                "org.apache.felix.scr",
                 "org.hibernate.orm.core",
                 "org.jetbrains.kotlin.osgi-bundle",
                 "slf4j.api"
@@ -112,6 +112,11 @@ class SandboxGroupContextComponentImpl @Activate constructor(
         sandboxGroupContextService?.registerMetadataServices(
             sandboxGroupContext, serviceNames, isMetadataService, serviceMarkerType
         )?: throw IllegalStateException("SandboxGroupContextService is not ready.")
+
+    override fun acceptCustomMetadata(sandboxGroupContext: MutableSandboxGroupContext) {
+        sandboxGroupContextService?.acceptCustomMetadata(sandboxGroupContext)
+            ?: throw IllegalStateException("SandboxGroupContextService is not ready.")
+    }
 
     override fun registerCustomCryptography(
         sandboxGroupContext: SandboxGroupContext

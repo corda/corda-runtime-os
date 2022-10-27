@@ -144,11 +144,10 @@ class EvolvabilityTests {
         val A = 1
 
         // Original version of the class as it was serialised
-        //
+        // @CordaSerializable
         // data class C(val a: Int)
         // val sc = SerializationOutput(sf).serialize(C(A))
         // File(URI("$localPath/$resource")).writeBytes(sc.bytes)
-        // println ("Path = $path")
 
         // new version of the class, in this case a new parameter has been added (b)
         data class C(val a: Int, val b: Int)
@@ -187,34 +186,6 @@ class EvolvabilityTests {
 
         assertEquals(B, deserializedCC.b)
         assertEquals(D, deserializedCC.d)
-    }
-
-    @Suppress("UNUSED_VARIABLE")
-    @Test
-    fun removeParameterWithCalculatedParameter() {
-        val sf = testDefaultFactory()
-        val resource = "EvolvabilityTests.removeParameterWithCalculatedParameter"
-
-        // Original version of the class as it was serialised
-        // @CordaSerializable
-        // data class CC(val a: Int, val b: String, val c: String, val d: Int) {
-        //     @get:SerializableCalculatedProperty
-        //     val e: String get() = "$b $c"
-        // }
-        // File(URI("$localPath/$resource")).writeBytes(SerializationOutput(sf).serialize(CC(1, "hello", "world", 2)).bytes)
-
-        @CordaSerializable
-        data class CC(val b: String, val d: Int) {
-            val e: String get() = "$b sailor"
-        }
-
-        val url = EvolvabilityTests::class.java.getResource(resource)
-        val sc2 = url.readBytes()
-        val deserializedCC = DeserializationInput(sf).deserialize(SerializedBytes<CC>(sc2))
-
-        assertEquals("hello", deserializedCC.b)
-        assertEquals(2, deserializedCC.d)
-        assertEquals("hello sailor", deserializedCC.e)
     }
 
     @Suppress("UNUSED_VARIABLE")
@@ -327,7 +298,7 @@ class EvolvabilityTests {
         //                 10,
         //                 Instant.now(),
         //                 9,
-        //                 mapOf("A" to listOf(1, 2, 3), "B" to listOf (4, 5, 6))), testSerializationContext).bytes)
+        //                 mapOf("A" to listOf(1, 2, 3), "B" to listOf (4, 5, 6)))).bytes)
 
         val url = EvolvabilityTests::class.java.getResource(resource)
         assertNotNull(url)
@@ -344,7 +315,7 @@ class EvolvabilityTests {
         val A = 1
 
         // Original version of the class as it was serialised
-        //
+        // @CordaSerializable
         // data class CC(val a: Int)
         // val scc = SerializationOutput(sf).serialize(CC(A))
         // File(URI("$localPath/$resource")).writeBytes(scc.bytes)
@@ -512,7 +483,9 @@ class EvolvabilityTests {
         // data class Inner (val a: Int)
         // @CordaSerializable
         // data class Outer (val a: Int, val b: Inner)
-        // File(URI("$localPath/$resource")).writeBytes(SerializationOutput(sf).serialize(Outer(oa, Inner (ia))).bytes)
+        // File(URI("$localPath/$resource"))
+        //     .writeBytes(SerializationOutput(sf)
+        //         .serialize(Outer(oa, Inner (ia))).bytes)
 
         // Add a parameter to inner but keep outer unchanged
         @CordaSerializable
@@ -691,7 +664,7 @@ class EvolvabilityTests {
         val sf = testDefaultFactory()
         // Uncomment to recreate
         // File(URI("$localPath/$resource")).writeBytes(SerializationOutput(sf)
-        // .serialize(ParameterizedContainer(Parameterized(10, setOf(20)))).bytes)
+        //     .serialize(ParameterizedContainer(Parameterized(10, setOf(20)))).bytes)
 
         val url = EvolvabilityTests::class.java.getResource(resource)
 
@@ -782,9 +755,9 @@ class EvolvabilityTests {
         val resource = "EvolvabilityTests.removeExistingNullableIntFieldWithAltConstructor"
 
         // Original version of the class as it was serialised
-//         @CordaSerializable
-//         data class CC(val data: String, val a: Int?)
-//         File(URI("$localPath/$resource")).writeBytes(SerializationOutput(sf).serialize(CC("written", null)).bytes)
+        // @CordaSerializable
+        // data class CC(val data: String, val a: Int?)
+        // File(URI("$localPath/$resource")).writeBytes(SerializationOutput(sf).serialize(CC("written", null)).bytes)
 
         @CordaSerializable
         data class CC(val data: String) {

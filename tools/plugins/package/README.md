@@ -53,7 +53,7 @@ keytool -importcert -keystore signingkeys.pfx -storepass "keystore password" -no
 ./corda-cli.sh mgm groupPolicy > TestGroupPolicy.json
 ```
 
-### Build a CPI
+### Build a CPI v1
 ```shell
 ./corda-cli.sh package create \
     --cpb mycpb.cpb \
@@ -64,7 +64,7 @@ keytool -importcert -keystore signingkeys.pfx -storepass "keystore password" -no
     --key "signing key 1"
 ```
 
-### Pipe group policy into CPI
+### Pipe group policy into CPI v1
 ```shell
 ./corda-cli.sh mgm groupPolicy | ./corda-cli.sh package create \
     --cpb mycpb.cpb \

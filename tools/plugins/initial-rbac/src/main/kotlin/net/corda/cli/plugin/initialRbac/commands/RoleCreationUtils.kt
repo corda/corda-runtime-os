@@ -16,13 +16,40 @@ import java.time.temporal.ChronoUnit
 
 internal object RoleCreationUtils {
 
+    private const val UUID_CHARS = "[a-fA-F0-9]"
+    const val UUID_REGEX = "$UUID_CHARS{8}-$UUID_CHARS{4}-$UUID_CHARS{4}-$UUID_CHARS{4}-$UUID_CHARS{12}"
+
+    const val VNODE_SHORT_HASH_REGEX = "$UUID_CHARS{12}"
+
+    const val USER_REGEX = "[-._@a-zA-Z0-9]{3,255}"
+
+    // first.last@company.com is a valid username, however when encoded in the URL it will be shown as
+    // first.last%40company.com
+    private const val ALLOWED_USER_URL_CHARS = "[-._a-zA-Z0-9]"
+    const val USER_URL_REGEX = "$ALLOWED_USER_URL_CHARS{3,200}[%40]{0,3}$ALLOWED_USER_URL_CHARS{0,50}"
+
+    const val CLIENT_REQ_REGEX = "[-._A-Za-z0-9]{1,250}"
+
+    const val FLOW_NAME_REGEX = "[._\$a-zA-Z0-9]{1,250}"
+
+    fun wildcardMatch(input: String, regex: String): Boolean {
+        return input.matches(regex.toRegex(RegexOption.IGNORE_CASE))
+    }
+
+    fun HttpRpcCommand.checkOrCreateRole(roleName: String, permissionsToCreate: Map<String, String>): Int {
+        return checkOrCreateRole(
+            roleName,
+            permissionsToCreate.map { PermissionTemplate(it.key, it.value, null) }.toSet()
+        )
+    }
+
     /**
      * Checks if role already exists and then does nothing, else:
      * - creates permissions;
      * - creates role;
      * - assigns permissions to the role.
      */
-    fun HttpRpcCommand.checkOrCreateRole(roleName: String, permissionsToCreate: Map<String, String>): Int {
+    fun HttpRpcCommand.checkOrCreateRole(roleName: String, permissionsToCreate: Set<PermissionTemplate>): Int {
 
         val logger: Logger = LoggerFactory.getLogger(this::class.java)
         val sysOut: Logger = LoggerFactory.getLogger("SystemOut")
@@ -32,7 +59,7 @@ internal object RoleCreationUtils {
 
         createHttpRpcClient(RoleEndpoint::class).use { roleEndpointClient ->
             val waitDuration = Duration.of(waitDurationSeconds.toLong(), ChronoUnit.SECONDS)
-            val roleEndpoint = executeWithRetry(waitDuration, "Start of role HTTP endpoint") {
+            val roleEndpoint = executeWithRetry(waitDuration, "Connect to role HTTP endpoint") {
                 roleEndpointClient.start().proxy
             }
             val allRoles = executeWithRetry(waitDuration, "Obtain list of available roles") {
@@ -47,18 +74,18 @@ internal object RoleCreationUtils {
                 val permissionEndpoint = executeWithRetry(waitDuration, "Start of permissions HTTP endpoint") {
                     permissionEndpointClient.start().proxy
                 }
-                permissionsToCreate.toSortedMap().map { entry ->
-                    executeWithRetry(waitDuration, "Creating permission: ${entry.key}") {
+                permissionsToCreate.sortedBy { it.permissionName }.map { entry ->
+                    executeWithRetry(waitDuration, "Creating permission: ${entry.permissionName}") {
                         permissionEndpoint.createPermission(
                             CreatePermissionType(
                                 PermissionType.ALLOW,
-                                entry.value,
+                                entry.permissionString,
                                 null,
-                                null
+                                entry.vnodeShortHash
                             )
                         )
                     }.responseBody.id.also {
-                        logger.info("Created permission: ${entry.key} with id: $it")
+                        logger.info("Created permission: ${entry.permissionName} with id: $it")
                     }
                 }
             }

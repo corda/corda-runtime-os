@@ -20,7 +20,7 @@ const val ALL_LEDGER_METADATA_COMPONENT_GROUP_ID = 0
 class WireTransaction(
     private val merkleTreeProvider: MerkleTreeProvider,
     private val digestService: DigestService,
-    private val jsonMarshallingService: JsonMarshallingService,
+    jsonMarshallingService: JsonMarshallingService,
     val privacySalt: PrivacySalt,
     val componentGroupLists: List<List<ByteArray>>
 ){

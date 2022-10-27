@@ -108,8 +108,12 @@ class EntitySandboxServiceImpl @Activate constructor(
         virtualNode: VirtualNodeInfo,
         ctx: MutableSandboxGroupContext
     ): AutoCloseable {
+        val customCrypto = sandboxService.registerCustomCryptography(ctx)
         val serializerCloseable = putSerializer(ctx, cpks, virtualNode)
         val emfCloseable = putEntityManager(ctx, cpks, virtualNode)
+
+        // Instruct all CustomMetadataConsumers to accept their metadata.
+        sandboxService.acceptCustomMetadata(ctx)
 
         logger.info(
             "Initialising DB Sandbox for ${virtualNode.holdingIdentity}/" +
@@ -123,6 +127,7 @@ class EntitySandboxServiceImpl @Activate constructor(
             )
             serializerCloseable.close()
             emfCloseable.close()
+            customCrypto.close()
         }
     }
 

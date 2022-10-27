@@ -6,5 +6,6 @@ object MembershipEntities {
         GroupPolicyEntity::class.java,
         MemberInfoEntity::class.java,
         MemberSignatureEntity::class.java,
+        GroupParametersEntity::class.java,
     )
 }

@@ -19,6 +19,7 @@ import net.corda.crypto.config.impl.bootstrapHsmId
 import net.corda.crypto.config.impl.toConfigurationSecrets
 import net.corda.crypto.config.impl.toCryptoConfig
 import net.corda.crypto.config.impl.hsm
+import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.impl.decorators.CryptoServiceDecorator
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.crypto.service.CryptoServiceRef
@@ -147,13 +148,13 @@ class CryptoServiceFactoryImpl @Activate constructor(
         }
 
         fun findInstance(tenantId: String, category: String): CryptoServiceRef {
-            logger.debug { "Getting the crypto service for tenantId=$tenantId, category=$category)" }
+            logger.debug { "Getting the crypto service for tenantId '$tenantId', category '$category'." }
             val association = hsmService.findAssignedHSM(tenantId, category)
-                ?: throw IllegalStateException("The tenant=$tenantId is not configured for category=$category")
+                ?: throw InvalidParamsException("The tenant '$tenantId' is not configured for category '$category'.")
             if(association.hsmId != hsmId) {
-                throw IllegalStateException(
-                    "This hsmId=$hsmId is not configured to handle tenant=$tenantId " +
-                            "with category=$category and association=$association"
+                throw InvalidParamsException(
+                    "This hsmId '$hsmId' is not configured to handle tenant '$tenantId' " +
+                            "with category '$category' and association '$association'."
                 )
             }
             logger.info("Creating {}: association={}", CryptoServiceRef::class.simpleName, association)

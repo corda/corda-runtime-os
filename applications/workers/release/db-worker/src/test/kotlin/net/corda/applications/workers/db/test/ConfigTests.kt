@@ -150,7 +150,7 @@ class ConfigTests {
 
     /** A no-op [WorkerMonitor]. */
     private class DummyWorkerMonitor : WorkerMonitor {
-        override fun listen(port: Int) = Unit
+        override fun listen(port: Int, workerType: String) = Unit
         override fun stop() = throw NotImplementedError()
         override val port = 7000
     }

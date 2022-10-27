@@ -6,7 +6,7 @@ import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.data.transaction.serializer.amqp.WireTransactionSerializer
-import net.corda.ledger.common.testkit.getWireTransaction
+import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
@@ -39,7 +39,7 @@ class WireTransactionAMQPSerializerTest {
 
     @Test
     fun `Should serialize and then deserialize wire Tx`() {
-        val wireTransaction = getWireTransaction(digestService, merkleTreeProvider, jsonMarshallingService)
+        val wireTransaction = getWireTransactionExample(digestService, merkleTreeProvider, jsonMarshallingService)
         val bytes = serializationService.serialize(wireTransaction)
         val deserialized = serializationService.deserialize(bytes)
         assertEquals(wireTransaction, deserialized)

@@ -159,6 +159,9 @@ abstract class BaseOnboard : Runnable {
     protected val sessionKeyId by lazy {
         assignSoftHsmAndGenerateKey("SESSION_INIT")
     }
+    protected val ecdhKeyId by lazy {
+        assignSoftHsmAndGenerateKey("PRE_AUTH")
+    }
     private val p2pHost by lazy {
         if (cordaClusterName == null) {
             "localhost"
