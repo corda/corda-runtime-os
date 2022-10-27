@@ -30,6 +30,7 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import java.security.PublicKey
 import java.time.Instant
+import java.util.*
 
 @Suppress("TooManyFunctions")
 data class UtxoTransactionBuilderImpl(
@@ -52,7 +53,6 @@ data class UtxoTransactionBuilderImpl(
     private val referenceInputStateAndRefs: List<StateAndRef<*>> = emptyList(),
     private val outputTransactionStates: List<TransactionState<*>> = emptyList()
 ) : UtxoTransactionBuilder {
-
 
     override fun addAttachment(attachmentId: SecureHash): UtxoTransactionBuilder {
         return copy(attachments = attachments + attachmentId)
@@ -205,58 +205,36 @@ data class UtxoTransactionBuilderImpl(
                     UtxoComponentGroup.REFERENCES ->
                         referenceInputStateAndRefs.map { serializationService.serialize(it.ref).bytes }
                 }
-        }
+            }
     }
 
     @Suppress("ComplexMethod")
     override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is UtxoTransactionBuilderImpl) return false
-        if (other.transactionMetaData != transactionMetaData) return false
-        if (other.notary != notary) return false
-        if (other.timeWindow != timeWindow) return false
-
-        if (other.attachments.size != attachments.size) return false
-        other.attachments.withIndex().all {
-            it.value == attachments[it.index]
-        } || return false
-
-        if (other.commands.size != commands.size) return false
-        other.commands.withIndex().all {
-            it.value == commands[it.index]
-        } || return false
-
-        if (other.inputStateAndRefs.size != inputStateAndRefs.size) return false
-        other.inputStateAndRefs.withIndex().all {
-            it.value == inputStateAndRefs[it.index]
-        } || return false
-
-        if (other.referenceInputStateAndRefs.size != referenceInputStateAndRefs.size) return false
-        other.referenceInputStateAndRefs.withIndex().all {
-            it.value == referenceInputStateAndRefs[it.index]
-        } || return false
-
-        if (other.outputTransactionStates.size != outputTransactionStates.size) return false
-        other.outputTransactionStates.withIndex().all {
-            it.value == outputTransactionStates[it.index]
-        } || return false
-
-        if (other.signatories != signatories) return false
-
-        return true
+        return this === other
+                || other is UtxoTransactionBuilderImpl
+                && other.transactionMetaData == transactionMetaData
+                && other.notary == notary
+                && other.timeWindow == timeWindow
+                && other.attachments == attachments
+                && other.commands == commands
+                && other.inputStateAndRefs == inputStateAndRefs
+                && other.referenceInputStateAndRefs == referenceInputStateAndRefs
+                && other.outputTransactionStates == outputTransactionStates
+                && other.signatories == signatories
     }
 
     override fun hashCode(): Int {
-        var result = transactionMetaData.hashCode()
-        result = 31 * result + notary.hashCode()
-        result = 31 * result + timeWindow.hashCode()
-        result = 31 * result + attachments.hashCode()
-        result = 31 * result + commands.hashCode()
-        result = 31 * result + signatories.hashCode()
-        result = 31 * result + inputStateAndRefs.hashCode()
-        result = 31 * result + referenceInputStateAndRefs.hashCode()
-        result = 31 * result + outputTransactionStates.hashCode()
-        return result
+        return Objects.hash(
+            transactionMetaData,
+            notary,
+            timeWindow,
+            attachments,
+            commands,
+            signatories,
+            inputStateAndRefs,
+            referenceInputStateAndRefs,
+            outputTransactionStates
+        )
     }
 }
 

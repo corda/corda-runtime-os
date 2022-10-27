@@ -2,7 +2,6 @@ package net.corda.ledger.utxo.impl.transaction
 
 import net.corda.ledger.common.data.transaction.SignableData
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
@@ -18,7 +17,6 @@ data class UtxoSignedTransactionImpl(
     private val serializationService: SerializationService,
     private val signingService: SigningService,
     private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
-
     private val wireTransaction: WireTransaction,
     override val signatures: List<DigitalSignatureAndMetadata>
 ) : UtxoSignedTransaction {
@@ -39,7 +37,7 @@ data class UtxoSignedTransactionImpl(
     }
 
     override fun getMissingSignatories(): Set<PublicKey> {
-        val appliedSignatories = signatures.filter{
+        val appliedSignatories = signatures.filter {
             try {
                 // TODO Signature spec to be determined internally by crypto code
                 val signedData = SignableData(id, it.metadata)
