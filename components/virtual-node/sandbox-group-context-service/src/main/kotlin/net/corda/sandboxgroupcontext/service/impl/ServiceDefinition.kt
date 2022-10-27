@@ -95,6 +95,9 @@ class ServiceDefinition(
             return serviceClass.constructors.firstOrNull { ctor ->
                 ctor.parameterCount == description.init && matchParameterTypes(ctor, parameterDTOs)
             }?.let { ctor ->
+                // Allow instantiation of classes which are non-public.
+                ctor.isAccessible = true
+
                 val properties = LinkedHashMap(description.properties ?: emptyMap()).let { props ->
                     props[COMPONENT_NAME] = description.name
                     unmodifiableMap(props)
