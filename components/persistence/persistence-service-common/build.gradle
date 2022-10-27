@@ -22,12 +22,15 @@ dependencies {
     implementation project(':components:virtual-node:virtual-node-info-read-service')
 
     implementation project(':libs:flows:external-event-responses')
+    implementation project(":libs:crypto:cipher-suite-impl")
     implementation project(":libs:messaging:messaging")
     implementation project(':libs:serialization:serialization-amqp')
     implementation project(':libs:serialization:serialization-internal')
     implementation project(':libs:virtual-node:sandbox-group-context')
 
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
+
+    runtimeOnly project(":libs:crypto:crypto-serialization-impl")
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 }
