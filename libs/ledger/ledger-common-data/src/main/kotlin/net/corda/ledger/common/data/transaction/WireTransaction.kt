@@ -1,6 +1,5 @@
 package net.corda.ledger.common.data.transaction
 
-import net.corda.common.json.validation.JsonSchemas
 import net.corda.crypto.core.concatByteArrays
 import net.corda.crypto.core.toByteArray
 import net.corda.common.json.validation.JsonValidator
@@ -142,9 +141,13 @@ class WireTransaction(
     }
 
     private fun parseMetadata(json: String): TransactionMetaData {
-        jsonValidator.validate(json, JsonSchemas.CONSENSUAL_LEDGER_METADATA)
+        val schema = getSchema("/schema/transaction-metadata.json")
+        jsonValidator.validate(json, schema)
         return jsonMarshallingService.parse(json, TransactionMetaData::class.java)
     }
+
+    private fun getSchema(path: String) =
+        checkNotNull(this::class.java.getResourceAsStream(path)) { "Failed to load JSON schema from $path" }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
