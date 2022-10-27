@@ -145,7 +145,7 @@ class CryptoFlowOpsTransformerImpl(
 
     private fun transformCryptoSignatureWithSpec(response: FlowOpsResponse): DigitalSignatureWithSpec {
         val resp = response.validateAndGet<CryptoSignatureWithSpec>()
-        val signatureWithId = DigitalSignature.WithId(
+        val signatureWithId = DigitalSignature.WithKeyHash(
             by = SecureHash(resp.signature.publicKeyHash.algorithm, resp.signature.publicKeyHash.serverHash.array()),
             bytes = resp.signature.bytes.array()
         )

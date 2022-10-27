@@ -212,7 +212,7 @@ class SigningServiceImpl(
         val publicKeyHash = net.corda.v5.crypto.SecureHash.parse("SHA-256:6D1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581F")
 
         return DigitalSignatureWithSpec(
-            signature = DigitalSignature.WithId(
+            signature = DigitalSignature.WithKeyHash(
                 publicKeyHash,
                 signatureWithKey.bytes
             ),

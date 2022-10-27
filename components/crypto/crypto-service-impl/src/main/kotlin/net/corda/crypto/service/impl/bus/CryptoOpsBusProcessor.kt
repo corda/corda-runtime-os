@@ -39,7 +39,7 @@ import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import net.corda.data.crypto.wire.CryptoSignatureSpec
-import net.corda.data.crypto.wire.CryptoSignatureWithId
+import net.corda.data.crypto.wire.CryptoSignatureWithKeyHash
 import net.corda.data.crypto.wire.CryptoSignatureWithSpec
 import net.corda.v5.crypto.DigitalSignatureWithSpec
 
@@ -277,7 +277,7 @@ class CryptoOpsBusProcessor(
 private fun DigitalSignatureWithSpec.toAvro(): CryptoSignatureWithSpec {
     val publicKeyHash = signature.by
     return CryptoSignatureWithSpec(
-        CryptoSignatureWithId(
+        CryptoSignatureWithKeyHash(
             net.corda.data.crypto.SecureHash(
                 publicKeyHash.algorithm,
                 ByteBuffer.wrap(publicKeyHash.bytes)
