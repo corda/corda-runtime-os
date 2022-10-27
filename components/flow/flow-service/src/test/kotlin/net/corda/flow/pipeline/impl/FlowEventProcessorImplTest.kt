@@ -7,8 +7,11 @@ import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
 import net.corda.data.flow.FlowStartContext
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.event.MessageDirection
+import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.Wakeup
+import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.checkpoint.FlowState
 import net.corda.data.flow.state.external.ExternalEventState
@@ -45,6 +48,7 @@ class FlowEventProcessorImplTest {
 
     private val wakeupPayload = Wakeup()
     private val aliceHoldingIdentity = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "1")
+    private val bobHoldingIdentity = HoldingIdentity("CN=Bob, O=Alice Corp, L=LDN, C=GB", "1")
     private val startFlowEvent = StartFlow(
         FlowStartContext(
             FlowKey("flowId", aliceHoldingIdentity),
@@ -60,6 +64,20 @@ class FlowEventProcessorImplTest {
         ),
         "flowStartArgs"
     )
+
+    private val sessionInitFlowEvent =
+        SessionEvent.newBuilder()
+            .setInitiatingIdentity(aliceHoldingIdentity)
+            .setInitiatedIdentity(bobHoldingIdentity)
+            .setMessageDirection(MessageDirection.INBOUND)
+            .setPayload(SessionInit())
+            .setTimestamp(Instant.now())
+            .setSessionId("SessionId")
+            .setSequenceNum(1)
+            .setReceivedSequenceNum(0)
+            .setOutOfOrderSequenceNums(emptyList())
+            .build()
+
     private val flowKey = "flow id"
     private val flowCheckpoint = mock<FlowCheckpoint>()
     private val checkpoint: Checkpoint = mock()
@@ -253,6 +271,16 @@ class FlowEventProcessorImplTest {
     @Test
     fun `Execute flow pipeline from null checkpoint and start flow event`() {
         val inputEvent = getFlowEventRecord(FlowEvent(flowKey, startFlowEvent))
+
+        val response = processor.onNext(null, inputEvent)
+
+        assertEquals(checkpoint, response.updatedState)
+        assertEquals(outputRecords, response.responseEvents)
+    }
+
+    @Test
+    fun `Execute flow pipeline from null checkpoint and session init event`() {
+        val inputEvent = getFlowEventRecord(FlowEvent(flowKey, sessionInitFlowEvent))
 
         val response = processor.onNext(null, inputEvent)
 

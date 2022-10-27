@@ -1,7 +1,9 @@
 package net.corda.flow.pipeline.impl
 
 import net.corda.data.flow.event.FlowEvent
+import net.corda.data.flow.event.SessionEvent
 import net.corda.data.flow.event.StartFlow
+import net.corda.data.flow.event.session.SessionInit
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.checkpoint.FlowState
 import net.corda.data.flow.state.external.ExternalEventStateType
@@ -116,7 +118,7 @@ class FlowEventProcessorImpl(
     }
 
     /**
-     * Extract out the MDC logging info from a [flowEvent]. The flow event is expected to be of type [StartFlow].
+     * Extract out the MDC logging info from a [flowEvent]. The flow event is expected to be of type [StartFlow] or a [SessionInit].
      */
     private fun getMDCFromEvent(flowEvent: FlowEvent?): Map<String, String> {
         val payload = flowEvent?.payload
@@ -125,6 +127,9 @@ class FlowEventProcessorImpl(
             val startKey = startContext.statusKey
             val holdingIdentityShortHash = startKey.identity.toCorda().shortHash.toString()
             return mapOf(MDC_VNODE_ID to holdingIdentityShortHash, MDC_CLIENT_ID to startContext.requestId)
+        } else if (payload is SessionEvent && payload.payload is SessionInit){
+            val holdingIdentityShortHash = payload.initiatedIdentity.toCorda().shortHash.toString()
+            return mapOf(MDC_VNODE_ID to holdingIdentityShortHash, MDC_CLIENT_ID to payload.sessionId)
         } else {
             //this shouldn't happen
             val payloadType = if (payload != null) payload::class else null
