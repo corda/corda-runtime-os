@@ -9,14 +9,22 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
 
-    implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda.kotlin:kotlin-stdlib-jdk8-osgi"
-    implementation "net.corda:corda-ledger-common"
     implementation "net.corda:corda-ledger-utxo"
-    implementation "net.corda:corda-base"
     implementation "net.corda:corda-cipher-suite"
     implementation project(":libs:crypto:crypto-core")
+    implementation project(":libs:ledger:ledger-common-data")
+    implementation project(":libs:ledger:ledger-utxo-data")
+    implementation project(":components:ledger:ledger-common-flow")
+    implementation project(":libs:sandbox")
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
+
+    testImplementation project(":libs:application:application-impl")
+    testImplementation project(":libs:crypto:cipher-suite-impl")
+    testImplementation project(":libs:crypto:merkle-impl")
+    testImplementation project(':testing:test-serialization')
+    testImplementation project(":libs:serialization:serialization-internal")
+    testImplementation project(":libs:serialization:serialization-amqp")
+    testImplementation project(":testing:ledger:ledger-utxo-testkit")
 }

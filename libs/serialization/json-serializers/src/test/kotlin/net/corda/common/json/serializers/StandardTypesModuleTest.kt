@@ -1,53 +1,27 @@
 package net.corda.common.json.serializers
 
-import com.fasterxml.jackson.core.JsonGenerator
-import com.fasterxml.jackson.core.JsonParseException
-import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.databind.ObjectMapper
 import net.corda.v5.base.types.MemberX500Name
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
 
 class StandardTypesModuleTest {
-    @Nested
-    inner class MemberX500NameDeserializerTest {
-        @Test
-        fun `deserialize parse the text`() {
-            val parser = mock<JsonParser> {
-                on { text } doReturn "O=Alice, L=London, C=GB"
-            }
 
-            val name = MemberX500NameDeserializer.deserialize(parser, mock())
-
-            assertThat(name.organization).isEqualTo("Alice")
-        }
-
-        @Test
-        fun `deserialize throw exception in case of a failure`() {
-            val parser = mock<JsonParser> {
-                on { text } doReturn "Invalid X500"
-            }
-
-            assertThrows<JsonParseException> {
-                MemberX500NameDeserializer.deserialize(parser, mock())
-            }
-        }
+    val mapper = ObjectMapper().apply {
+        registerModule(standardTypesModule())
     }
 
-    @Nested
-    inner class MemberX500NameSerializerTest {
-        @Test
-        fun `serialize write the member string`() {
-            val value = MemberX500Name.parse("O=Bob, L=London, C=GB")
-            val gen = mock<JsonGenerator>()
+    @Test
+    fun `Can deserialize member X500 name`() {
+        val name = mapper.readValue("\"C=GB, O=Alice, L=London\"", MemberX500Name::class.java)
 
-            MemberX500NameSerializer.serialize(value, gen, mock())
+        assertThat(name.organization).isEqualTo("Alice")
+    }
 
-            verify(gen).writeString("O=Bob, L=London, C=GB")
-        }
+    @Test
+    fun `Can serialize member X500 name`() {
+        val json = mapper.writeValueAsString(MemberX500Name.parse("C=GB, O=Alice, L=London"))
+
+        assertThat(json).isEqualTo("\"O=Alice, L=London, C=GB\"")
     }
 }

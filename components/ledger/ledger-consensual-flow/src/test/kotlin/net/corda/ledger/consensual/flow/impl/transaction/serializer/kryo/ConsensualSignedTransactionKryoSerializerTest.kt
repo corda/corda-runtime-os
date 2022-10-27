@@ -10,10 +10,10 @@ import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.serializer.amqp.WireTransactionSerializer
 import net.corda.ledger.common.flow.impl.transaction.serializer.kryo.WireTransactionKryoSerializer
-import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionImpl
-import net.corda.ledger.consensual.testkit.getConsensualSignedTransaction
+import net.corda.ledger.common.testkit.mockSigningService
+import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
+import net.corda.ledger.consensual.testkit.getConsensualSignedTransactionExample
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.crypto.DigitalSignature
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -28,10 +28,9 @@ class ConsensualSignedTransactionKryoSerializerTest {
     private val serializationService = TestSerializationService.getTestSerializationService({
         it.register(WireTransactionSerializer(merkleTreeProvider, digestService, jsonMarshallingService), it)
     }, cipherSchemeMetadata)
-    private val signingService: SigningService = mock()
 
     @Test
-    fun `serialization of a Wire Tx object using the kryo default serialization`() {
+    fun `serialization of a Consensual Signed Tx object using the kryo default serialization`() {
         val wireTransactionKryoSerializer = WireTransactionKryoSerializer(
             merkleTreeProvider,
             digestService,
@@ -39,16 +38,16 @@ class ConsensualSignedTransactionKryoSerializerTest {
         )
         val consensualSignedTransactionKryoSerializer = ConsensualSignedTransactionKryoSerializer(
             serializationService,
-            signingService,
+            mockSigningService(),
             mock()
         )
 
-        val signedTransaction = getConsensualSignedTransaction(
+        val signedTransaction = getConsensualSignedTransactionExample(
             digestService,
             merkleTreeProvider,
             serializationService,
             jsonMarshallingService,
-            signingService,
+            mockSigningService(),
             mock()
         )
 

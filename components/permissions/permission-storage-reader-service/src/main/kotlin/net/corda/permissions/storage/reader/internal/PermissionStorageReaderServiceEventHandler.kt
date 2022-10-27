@@ -109,6 +109,7 @@ class PermissionStorageReaderServiceEventHandler(
                 permissionStorageReader = null
                 crsSub?.close()
                 crsSub = null
+                coordinator.updateStatus(LifecycleStatus.DOWN)
             }
             LifecycleStatus.ERROR -> {
                 coordinator.stop()
