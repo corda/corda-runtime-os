@@ -13,6 +13,7 @@ import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.sql.SQLException
 import java.sql.SQLIntegrityConstraintViolationException
 import java.sql.SQLTransientException
 import java.time.Instant
@@ -116,10 +117,19 @@ class DBAccess(
             "get topic partition map",
             allowDuplicate = true,
         ) { entityManager ->
+            // TODO: figure out why this can throw ERROR: duplicate key value violates unique constraint "topic_pk"
+            //  Detail: Key (topic)=(gateway.tls.certs) already exists, for instance when from combined worker, despite
+            // this block being run in a transaction. It can happen if the database is running at low transaction isolation,
+            // e.g. Postgres set up for dirty reads. See https://www.postgresql.org/docs/current/transaction-iso.html
             entityManager.find(TopicEntry::class.java, topic)
                 ?: if (autoCreate) {
                     val topicEntry = TopicEntry(topic, defaultNumPartitions)
-                    entityManager.persist(topicEntry)
+                    try {
+                        entityManager.persist(topicEntry)
+                    } catch (e: SQLException) {
+                        val secondChance = entityManager.find(TopicEntry::class.java, topic)
+                        if (secondChance == null) throw e
+                    }
                     topicEntry
                 } else {
                     throw CordaMessageAPIFatalException("Cannot find topic $topic")
