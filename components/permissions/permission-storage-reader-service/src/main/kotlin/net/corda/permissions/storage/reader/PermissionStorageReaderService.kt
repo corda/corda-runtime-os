@@ -15,6 +15,7 @@ import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.permissions.management.cache.PermissionManagementCacheService
 import net.corda.permissions.validation.cache.PermissionValidationCacheService
 import net.corda.permissions.storage.reader.internal.PermissionStorageReaderServiceEventHandler
+import net.corda.v5.base.util.contextLogger
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -38,6 +39,10 @@ class PermissionStorageReaderService @Activate constructor(
     dbConnectionManager: DbConnectionManager,
 ) : Lifecycle {
 
+    private companion object {
+        private val logger = contextLogger()
+    }
+
     val permissionStorageReader: PermissionStorageReader? get() = handler.permissionStorageReader
 
     private val handler = PermissionStorageReaderServiceEventHandler(
@@ -57,6 +62,7 @@ class PermissionStorageReaderService @Activate constructor(
     }
 
     override fun stop() {
+        logger.warn("stopping ${coordinator.name} due to stop being called")
         coordinator.postEvent(StopEvent())
     }
 }

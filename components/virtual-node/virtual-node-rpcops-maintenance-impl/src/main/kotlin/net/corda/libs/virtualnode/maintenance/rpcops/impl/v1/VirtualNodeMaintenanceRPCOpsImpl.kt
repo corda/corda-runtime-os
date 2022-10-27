@@ -91,6 +91,7 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
                 when (event.status) {
                     LifecycleStatus.ERROR -> {
                         coordinator.closeManagedResources(setOf(CONFIG_HANDLE))
+                        logger.warn("posting stop event on ${coordinator.name} due to RegistrationStatusChangeEvent")
                         coordinator.postEvent(StopEvent(errored = true))
                     }
                     LifecycleStatus.UP -> {
