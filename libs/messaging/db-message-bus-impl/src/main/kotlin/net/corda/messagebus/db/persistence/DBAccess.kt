@@ -128,7 +128,11 @@ class DBAccess(
                         entityManager.persist(topicEntry)
                     } catch (e: SQLException) {
                         val secondChance = entityManager.find(TopicEntry::class.java, topic)
-                        if (secondChance == null) throw e
+                        if (secondChance == null) {
+                            throw e
+                        } else {
+                            log.info("Found topic entry on second chance look")
+                        }
                     }
                     topicEntry
                 } else {
