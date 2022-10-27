@@ -2,7 +2,6 @@ package net.corda.flow.application.crypto
 
 import java.security.PublicKey
 import net.corda.flow.application.crypto.external.events.CreateSignatureExternalEventFactory
-import net.corda.flow.application.crypto.external.events.CreateSignatureWithoutSignatureSpecExternalEventFactory
 import net.corda.flow.application.crypto.external.events.SignParameters
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.v5.application.crypto.SigningService
@@ -30,17 +29,20 @@ class SigningServiceImpl @Activate constructor(
 
     @Suspendable
     override fun sign(bytes: ByteArray, publicKey: PublicKey, signatureSpec: SignatureSpec): DigitalSignature.WithKey {
-        return externalEventExecutor.execute(
-            CreateSignatureExternalEventFactory::class.java,
-            SignParameters(bytes, keyEncodingService.encodeAsByteArray(publicKey), signatureSpec)
-        )
+        val signParameters = SignParameters(bytes, keyEncodingService.encodeAsByteArray(publicKey), signatureSpec)
+        return doSign(signParameters) as DigitalSignature.WithKey
     }
 
     @Suspendable
     override fun sign(bytes: ByteArray, publicKey: PublicKey): DigitalSignatureWithSpec {
+        val signParametersWithoutSpec = SignParameters(bytes, keyEncodingService.encodeAsByteArray(publicKey), null)
+        return doSign(signParametersWithoutSpec) as DigitalSignatureWithSpec
+    }
+
+    private fun doSign(signParameters: SignParameters): Any {
         return externalEventExecutor.execute(
-            CreateSignatureWithoutSignatureSpecExternalEventFactory::class.java,
-            SignParameters(bytes, keyEncodingService.encodeAsByteArray(publicKey), null)
+            CreateSignatureExternalEventFactory::class.java,
+            signParameters
         )
     }
 }
