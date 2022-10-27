@@ -78,19 +78,19 @@
                        tableName="consensual_transaction_component"/>
 
         <createTable tableName="consensual_cpk">
-            <column name="file_hash" type="VARCHAR(64)">
+            <column name="file_checksum" type="VARCHAR(255)">
                 <constraints nullable="false" primaryKey="true"/>
             </column>
             <column name="name" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
-            <column name="signer_hash" type="VARCHAR(255)">
+            <column name="signer_summary_hash" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
-            <column name="version" type="BIGINT">
+            <column name="version" type="VARCHAR(255)">
                 <constraints nullable="false"/>
             </column>
-            <column name="data" type="VARBINARY(1048576)">
+            <column name="data" type="BLOB">
                 <constraints nullable="false"/>
             </column>
             <column name="created" type="TIMESTAMP">
@@ -102,11 +102,11 @@
             <column name="transaction_id" type="VARCHAR(64)">
                 <constraints nullable="false" foreignKeyName="fk_cpk_transaction" references="consensual_transaction(id)"/>
             </column>
-            <column name="file_hash" type="VARCHAR(64)">
-                <constraints nullable="false" foreignKeyName="fk_cpk_hash" references="consensual_cpk(file_hash)"/>
+            <column name="file_checksum" type="VARCHAR(64)">
+                <constraints nullable="false" foreignKeyName="fk_cpk_checksum" references="consensual_cpk(file_checksum)"/>
             </column>
         </createTable>
-        <addPrimaryKey columnNames="transaction_id, file_hash"
+        <addPrimaryKey columnNames="transaction_id, file_checksum"
                        constraintName="consensual_transaction_cpk_pkey"
                        tableName="consensual_transaction_cpk"/>
     </changeSet>

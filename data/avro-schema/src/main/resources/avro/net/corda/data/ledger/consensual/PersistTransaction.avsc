@@ -8,6 +8,11 @@
       "name": "transaction",
       "type": "bytes",
       "doc": "the serialized transaction"
+    },
+    {
+      "name": "status",
+      "type": "string",
+      "doc": "the transaction status"
     }
   ]
 }
