@@ -1,4 +1,4 @@
-@Library('corda-shared-build-pipeline-steps@connelm/CORE-7109/dockerhub-publish') _
+@Library('corda-shared-build-pipeline-steps@5.0') _
 
 cordaPipeline(
     nexusAppId: 'flow-worker-5.0',
