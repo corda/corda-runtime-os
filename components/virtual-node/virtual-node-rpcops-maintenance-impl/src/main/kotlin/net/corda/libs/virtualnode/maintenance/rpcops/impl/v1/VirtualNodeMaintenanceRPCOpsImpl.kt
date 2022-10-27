@@ -6,6 +6,7 @@ import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.chunking.PropertyKeys
 import net.corda.data.virtualnode.VirtualNodeDBResetRequest
+import net.corda.data.virtualnode.VirtualNodeDBResetResponse
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
@@ -154,6 +155,7 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
         )
         val resp: VirtualNodeManagementResponse = sendAndReceive(request)
         when (val resolvedResponse = resp.responseType) {
+            is VirtualNodeDBResetResponse -> Unit // We don't want to do anything with this
             is VirtualNodeManagementResponseFailure -> throw handleFailure(resolvedResponse.exception)
             else -> throw UnknownMaintenanceResponseTypeException(resp.responseType::class.java.name)
         }

@@ -4,6 +4,7 @@ import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.persistence.CordaPersistenceException
 import net.corda.v5.application.persistence.PersistenceService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
@@ -27,10 +28,14 @@ class SimplePersistenceCheckFlow : RPCStartableFlow {
     @Suspendable
     override fun call(requestBody: RPCRequestData): String {
         val fish = Fish(UUID.randomUUID(), "Floaty", "Black", Owner(UUID.randomUUID(), "alice", 22))
-        persistenceService.persist(fish)
-        return with("Could persist ${fish.name}") {
-            log.info(this)
-            this
+
+        try {
+            persistenceService.persist(fish)
+        } catch (ex: CordaPersistenceException) {
+            log.error("exception $ex")
+            return "Could not persist fish"
         }
+        log.info("Persisted Fish: $fish")
+        return "Could persist ${fish.name}"
     }
 }

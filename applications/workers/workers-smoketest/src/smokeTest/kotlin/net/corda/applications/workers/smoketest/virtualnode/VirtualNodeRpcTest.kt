@@ -406,20 +406,11 @@ class VirtualNodeRpcTest {
 
     @Test
     @Order(92)
-    fun `can run the persistence flow with an change unapplied db change`() {
-        cluster {
-            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-
-            runSimplePersistenceCheckFlow("Could persist dog")
-        }
-    }
-
-    @Test
-    @Order(93)
     fun `Can sync DB and persist fish`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
-            assertThat(syncVirtualNode(aliceHoldingId).code).isEqualTo(200)
+            // Status 204 indicates a non-error but no response data
+            assertThat(syncVirtualNode(aliceHoldingId).code).isEqualTo(204)
 
             runSimplePersistenceCheckFlow("Could persist Floaty")
         }
@@ -447,6 +438,17 @@ class VirtualNodeRpcTest {
             }
 
             runReturnAStringFlow("original-cpi")
+        }
+    }
+
+    @Test
+    @Order(101)
+    fun `Can sync DB again and persist dog`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+            assertThat(syncVirtualNode(aliceHoldingId).code).isEqualTo(204)
+
+            runSimplePersistenceCheckFlow("Could persist dog")
         }
     }
 
