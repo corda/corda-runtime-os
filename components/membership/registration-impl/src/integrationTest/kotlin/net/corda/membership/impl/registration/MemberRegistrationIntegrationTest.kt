@@ -303,7 +303,6 @@ class MemberRegistrationIntegrationTest {
         }
     }
 
-
     private fun buildTestContext(member: HoldingIdentity): Map<String, String> {
         val sessionKeyId =
             cryptoOpsClient.generateKeyPair(
