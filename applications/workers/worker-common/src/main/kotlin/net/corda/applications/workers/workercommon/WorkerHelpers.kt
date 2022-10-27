@@ -162,9 +162,7 @@ class WorkerHelpers {
 
             info("User: ${if (processInfo.user().isPresent) processInfo.user().get() else "Null"}")
             info("StartInstant: ${if (processInfo.startInstant().isPresent) processInfo.startInstant().get() else "Null"}")
-
-            val totalCpuDuration = if (processInfo.totalCpuDuration().isPresent) processInfo.totalCpuDuration().get() else "Null"
-            info("TotalCpuDuration: $totalCpuDuration")
+            info("TotalCpuDuration: ${if (processInfo.totalCpuDuration().isPresent) processInfo.totalCpuDuration().get() else "Null"}")
             info("JavaClass: ${processInfo.javaClass}")
 
             val mxBeanInfo = ManagementFactory.getRuntimeMXBean()
