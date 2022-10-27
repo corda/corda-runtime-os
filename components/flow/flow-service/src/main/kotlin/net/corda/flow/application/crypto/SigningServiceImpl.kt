@@ -39,6 +39,7 @@ class SigningServiceImpl @Activate constructor(
         return doSign(signParametersWithoutSpec) as DigitalSignatureWithSpec
     }
 
+    @Suspendable
     private fun doSign(signParameters: SignParameters): Any {
         return externalEventExecutor.execute(
             CreateSignatureExternalEventFactory::class.java,
