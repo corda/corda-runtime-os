@@ -1,13 +1,13 @@
 package net.corda.internal.serialization.amqp
 
-import net.corda.internal.serialization.amqp.standard.EnumSerializer
-import net.corda.internal.serialization.amqp.standard.CollectionSerializer
-import net.corda.internal.serialization.amqp.standard.MapSerializer
-import net.corda.internal.serialization.amqp.standard.checkSupportedMapType
-import net.corda.internal.serialization.amqp.standard.PrimArraySerializer
 import net.corda.internal.serialization.amqp.standard.ArraySerializer
-import net.corda.internal.serialization.amqp.standard.SingletonSerializer
+import net.corda.internal.serialization.amqp.standard.CollectionSerializer
+import net.corda.internal.serialization.amqp.standard.EnumSerializer
+import net.corda.internal.serialization.amqp.standard.MapSerializer
 import net.corda.internal.serialization.amqp.standard.ObjectSerializer
+import net.corda.internal.serialization.amqp.standard.PrimArraySerializer
+import net.corda.internal.serialization.amqp.standard.SingletonSerializer
+import net.corda.internal.serialization.amqp.standard.checkSupportedMapType
 import net.corda.internal.serialization.model.DefaultCacheProvider
 import net.corda.internal.serialization.model.FingerPrinter
 import net.corda.internal.serialization.model.LocalTypeInformation
@@ -224,8 +224,18 @@ class DefaultLocalSerializerFactory(
 
     private fun makeDeclaredMap(localTypeInformation: LocalTypeInformation.AMap): AMQPSerializer<Any> {
         val resolved = MapSerializer.resolveDeclared(localTypeInformation, sandboxGroup)
+
+        val declaredType = object : ParameterizedType {
+            override fun getActualTypeArguments(): Array<Type> = arrayOf(
+                resolved.keyType.observedType,
+                resolved.valueType.observedType
+            )
+            override fun getRawType(): Type = resolved.observedType.asClass()
+            override fun getOwnerType(): Type? = (resolved.typeIdentifier as? ParameterizedType)?.ownerType
+        }
+
         return makeAndCache(resolved) {
-            MapSerializer(resolved.typeIdentifier.getLocalType(sandboxGroup) as ParameterizedType, this)
+            MapSerializer(declaredType, this)
         }
     }
 
