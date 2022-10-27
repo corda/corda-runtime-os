@@ -1,5 +1,8 @@
 package net.corda.messaging.subscription
 
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.thread
+import kotlin.concurrent.withLock
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
@@ -17,9 +20,6 @@ import net.corda.messaging.subscription.factory.MapFactory
 import net.corda.messaging.utils.toRecord
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.thread
-import kotlin.concurrent.withLock
 
 internal class CompactedSubscriptionImpl<K : Any, V : Any>(
     private val config: ResolvedSubscriptionConfig,
@@ -115,7 +115,7 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
                         log.warn("$errorMsg. Attempts: $attempts. Retrying.", ex)
                     }
                     else -> {
-                        log.error("$errorMsg. Fatal error occurred. Closing subscription.", ex)
+                        log.warn("$errorMsg. Fatal error occurred. Closing subscription.", ex)
                         lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, errorMsg)
                         close()
                     }

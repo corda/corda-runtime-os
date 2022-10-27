@@ -45,7 +45,7 @@ internal class MessagingConfigResolver(private val smartConfigFactory: SmartConf
         return try {
             ResolvedSubscriptionConfig.merge(subscriptionType, subscriptionConfig, config, counter)
         } catch (e: ConfigException) {
-            logger.error("Failed to resolve subscription config $subscriptionConfig: ${e.message}")
+            logger.warn("Failed to resolve subscription config $subscriptionConfig: ${e.message}")
             throw CordaMessageAPIConfigException(
                 "Failed to resolve subscription config $subscriptionConfig: ${e.message}",
                 e
@@ -68,7 +68,7 @@ internal class MessagingConfigResolver(private val smartConfigFactory: SmartConf
         return try {
             ResolvedPublisherConfig.merge(publisherConfig, config)
         } catch (e: ConfigException) {
-            logger.error("Failed to resolve publisher config $publisherConfig: ${e.message}")
+            logger.warn("Failed to resolve publisher config $publisherConfig: ${e.message}")
             throw CordaMessageAPIConfigException("Failed to resolve publisher config $publisherConfig: ${e.message}", e)
         }
     }
