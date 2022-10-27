@@ -8,7 +8,8 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
-    implementation "net.corda:corda-base"
+
+    api "org.slf4j:slf4j-api:$slf4jVersion"
 }
 
 description 'Logging Utilities'
