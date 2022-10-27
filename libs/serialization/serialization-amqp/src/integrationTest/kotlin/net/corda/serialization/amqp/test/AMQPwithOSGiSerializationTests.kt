@@ -6,6 +6,8 @@ import net.corda.internal.serialization.amqp.ObjectAndEnvelope
 import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
+import net.corda.internal.serialization.registerCustomSerializers
+import net.corda.ledger.common.data.transaction.SignableData
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
@@ -16,7 +18,10 @@ import net.corda.utilities.copyTo
 import net.corda.utilities.div
 import net.corda.utilities.reflection.packageName_
 import net.corda.utilities.toByteSequence
+import net.corda.v5.application.crypto.DigitalSignatureMetadata
+import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.types.OpaqueBytes
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -38,6 +43,7 @@ import java.io.File
 import java.io.NotSerializableException
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
+import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
@@ -195,6 +201,27 @@ class AMQPwithOSGiSerializationTests {
             ) {
                 SerializationOutput(factory).serialize(mainBundleItemInstance, context)
             }
+        } finally {
+            sandboxFactory.unloadSandboxGroup(sandboxGroup)
+        }
+    }
+
+    @CordaSerializable
+    data class TestSignableData(val signableData: Map<Int, SignableData>)
+
+    @Test
+    fun mapOfSignableData() {
+        val sandboxGroup = sandboxFactory.loadSandboxGroup("META-INF/TestSerializableCpk-using-lib.cpb")
+        try {
+            val factory = testDefaultFactory(sandboxGroup)
+            registerCustomSerializers(factory)
+            val context = testSerializationContext.withSandboxGroup(sandboxGroup)
+
+            val mainBundleItemInstance = TestSignableData(
+                mapOf(1 to SignableData(SecureHash.parse("ALGO:1234"),
+                DigitalSignatureMetadata(Instant.EPOCH, emptyMap()))))
+
+            SerializationOutput(factory).serialize(mainBundleItemInstance, context)
         } finally {
             sandboxFactory.unloadSandboxGroup(sandboxGroup)
         }
