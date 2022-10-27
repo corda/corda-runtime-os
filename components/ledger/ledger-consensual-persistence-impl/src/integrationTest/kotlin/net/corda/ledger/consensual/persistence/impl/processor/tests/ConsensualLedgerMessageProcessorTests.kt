@@ -21,10 +21,16 @@ import net.corda.db.persistence.testkit.fake.FakeDbConnectionManager
 import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getSerializer
 import net.corda.db.schema.DbSchema
-import net.corda.db.testkit.DbUtils
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
+import net.corda.ledger.common.data.transaction.TransactionMetaData
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
+import net.corda.ledger.common.testkit.cpiPackgeSummaryExample
+import net.corda.ledger.common.testkit.cpkPackageSummaryListExample
 import net.corda.ledger.common.testkit.getWireTransactionExample
+import net.corda.ledger.common.testkit.signatureWithMetaDataExample
+import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
+import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionContainer
 import net.corda.ledger.consensual.persistence.impl.processor.ConsensualLedgerMessageProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.orm.JpaEntitiesSet
@@ -36,13 +42,13 @@ import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
 import net.corda.testing.sandboxes.lifecycle.EachTestLifecycle
 import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import net.corda.virtualnode.toAvro
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assumptions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -60,6 +66,7 @@ import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
 import java.nio.ByteBuffer
 import java.nio.file.Path
+import java.security.PublicKey
 import java.time.Instant
 import java.util.UUID
 
@@ -100,10 +107,8 @@ class ConsensualLedgerMessageProcessorTests {
 
     @InjectService
     lateinit var digestService: DigestService
-
     @InjectService
     lateinit var merkleTreeProvider: MerkleTreeProvider
-
     @InjectService
     lateinit var jsonMarshallingService: JsonMarshallingService
 
@@ -111,6 +116,7 @@ class ConsensualLedgerMessageProcessorTests {
     lateinit var jsonValidator: JsonValidator
 
     private lateinit var wireTransactionSerializer: InternalCustomSerializer<WireTransaction>
+    private lateinit var publicKeySerializer: InternalCustomSerializer<PublicKey>
     private lateinit var ctx: DbTestContext
 
     @BeforeAll
@@ -133,6 +139,10 @@ class ConsensualLedgerMessageProcessorTests {
                 "(component.name=net.corda.ledger.common.data.transaction.serializer.amqp.WireTransactionSerializer)",
                 10000
             )
+            publicKeySerializer = setup.fetchService(
+                "(component.name=net.corda.crypto.impl.serialization.PublicKeySerializer)",
+                10000
+            )
             deserializer = setup.fetchService<CordaAvroSerializationFactory>(timeout = 10000)
                 .createAvroDeserializer({}, EntityResponse::class.java)
         }
@@ -141,44 +151,19 @@ class ConsensualLedgerMessageProcessorTests {
     @BeforeEach
     fun beforeEach() {
         ctx = createDbTestContext()
-        // Each test is likely to leave junk lying around in the tables before the next test.
-        // We can't trust deleting the tables because tests can run concurrently.
     }
-
-    /* Simple wrapper to serialize bytes correctly during test */
-    private fun SandboxGroupContext.serialize(obj: Any): ByteBuffer {
-        val serializer = getSerializer(SANDBOX_SERIALIZER)
-        //val serializer = serializationService
-        return ByteBuffer.wrap(serializer.serialize(obj).bytes)
-    }
-
-    /* Simple wrapper to serialize bytes correctly during test */
-    private fun DbTestContext.serialize(obj: Any) = sandbox.serialize(obj)
-
-    /* Simple wrapper to deserialize */
-    private fun SandboxGroupContext.deserialize(bytes: ByteBuffer) =
-        getSerializer(SANDBOX_SERIALIZER).deserialize(bytes.array(), Any::class.java)
-
-    /* Simple wrapper to deserialize */
-    private fun DbTestContext.deserialize(bytes: ByteBuffer) = sandbox.deserialize(bytes)
-
-    private fun noOpPayloadCheck(bytes: ByteBuffer) = bytes
 
     @Test
-    fun `persistTransaction for consensual ledger deserialises the tx and persists`() {
-        // Native SQL is used that is specific to Postgres and won't work with in-memory DB
-        Assumptions.assumeFalse(DbUtils.isInMemory, "Skipping this test when run against in-memory DB.")
+    fun `persistTransaction for consensual ledger deserialises the transaction and persists`() {
+        val transaction = createTestTransaction()
 
-        // create ConsensualSignedTransactionImpl instance (or WireTransaction at first)
-        val tx = getWireTransactionExample(digestService, merkleTreeProvider, jsonMarshallingService, jsonValidator)
-        logger.info("WireTransaction: ", tx)
-
-        // serialise tx into bytebuffer and add to PersistTransaction payload
-        val serializedTransaction = ctx.serialize(tx)
-        val persistTransaction = PersistTransaction(serializedTransaction)
+        // Serialise tx into bytebuffer and add to PersistTransaction payload
+        val serializedTransaction = ctx.serialize(transaction)
+        val transactionStatus = "V"
+        val persistTransaction = PersistTransaction(serializedTransaction, transactionStatus)
         val request = createRequest(ctx.virtualNodeInfo.holdingIdentity, persistTransaction)
 
-        // send request to message processor
+        // Send request to message processor
         val processor = ConsensualLedgerMessageProcessor(
             ctx.entitySandboxService,
             externalEventResponseFactory,
@@ -191,12 +176,12 @@ class ConsensualLedgerMessageProcessorTests {
         val requestId = UUID.randomUUID().toString()
         val records = listOf(Record(TOPIC, requestId, request))
 
-        // process the messages. This should result in ConsensualStateDAO persisting things to the DB
+        // Process the messages (this should persist transaction to the DB)
         var responses = assertSuccessResponses(processor.onNext(records))
         assertThat(responses.size).isEqualTo(1)
 
-        // check that we wrote the expected things to the DB
-        val findRequest = createRequest(ctx.virtualNodeInfo.holdingIdentity, FindTransaction(tx.id.toHexString()))
+        // Check that we wrote the expected things to the DB
+        val findRequest = createRequest(ctx.virtualNodeInfo.holdingIdentity, FindTransaction(transaction.id.toHexString()))
         responses = assertSuccessResponses(processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), findRequest))))
 
         assertThat(responses.size).isEqualTo(1)
@@ -205,20 +190,44 @@ class ConsensualLedgerMessageProcessorTests {
         assertThat(response.error).isNull()
         val entityResponse = deserializer.deserialize(response.payload.array())!!
         assertThat(entityResponse.results.size).isEqualTo(1)
-        assertThat(entityResponse.results.first()).isEqualTo(serializedTransaction) // need to reconstruct tx from the serialised response
+        assertThat(entityResponse.results.first()).isEqualTo(serializedTransaction)
+        val retrievedTransaction = ctx.deserialize<ConsensualSignedTransactionContainer>(serializedTransaction)
+        assertThat(retrievedTransaction).isEqualTo(transaction)
+    }
+
+    private fun createTestTransaction(): ConsensualSignedTransactionContainer {
+        val consensualTransactionMetaDataExample = TransactionMetaData(linkedMapOf(
+            TransactionMetaData.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
+            TransactionMetaData.LEDGER_VERSION_KEY to "1.0",
+            TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
+            TransactionMetaData.PLATFORM_VERSION_KEY to 123,
+            TransactionMetaData.CPI_METADATA_KEY to cpiPackgeSummaryExample,
+            TransactionMetaData.CPK_METADATA_KEY to cpkPackageSummaryListExample
+        ))
+        val wireTransaction = getWireTransactionExample(
+            digestService,
+            merkleTreeProvider,
+            jsonMarshallingService,
+            jsonValidator,
+            consensualTransactionMetaDataExample
+        )
+        return ConsensualSignedTransactionContainer(
+            wireTransaction,
+            listOf(signatureWithMetaDataExample)
+        )
     }
 
     private fun createDbTestContext(): DbTestContext {
         val virtualNodeInfo = virtualNode.load(Resources.EXTENDABLE_CPB)
 
-        val testId = (0..1000000).random() // keeping this shorter than UUID.
+        val testId = (0..1000000).random()
         val schemaName = "consensual_ledger_test_$testId"
         val dbConnection = Pair(virtualNodeInfo.vaultDmlConnectionId, "connection-1")
         val dbConnectionManager = FakeDbConnectionManager(listOf(dbConnection), schemaName)
 
         val componentContext = Mockito.mock(ComponentContext::class.java)
         whenever(componentContext.locateServices(INTERNAL_CUSTOM_SERIALIZERS))
-            .thenReturn(arrayOf(wireTransactionSerializer))
+            .thenReturn(arrayOf(wireTransactionSerializer, publicKeySerializer))
 
         // set up sandbox
         val entitySandboxService =
@@ -260,6 +269,15 @@ class ConsensualLedgerMessageProcessorTests {
         )
     }
 
+    private fun createRequest(
+        holdingId: net.corda.virtualnode.HoldingIdentity,
+        request: Any,
+        externalEventContext: ExternalEventContext = EXTERNAL_EVENT_CONTEXT
+    ): ConsensualLedgerRequest {
+        logger.info("Consensual ledger persistence request: ${request.javaClass.simpleName} $request")
+        return ConsensualLedgerRequest(Instant.now(), holdingId.toAvro(), request, externalEventContext)
+    }
+
     private fun assertSuccessResponses(records: List<Record<*, *>>): List<Record<*, *>> {
         records.forEach {
             val flowEvent = it.value as FlowEvent
@@ -272,24 +290,19 @@ class ConsensualLedgerMessageProcessorTests {
         return records
     }
 
-    private fun assertFailureResponses(records: List<Record<*, *>>): List<Record<*, *>> {
-        records.forEach {
-            val flowEvent = it.value as FlowEvent
-            val response = flowEvent.payload as ExternalEventResponse
-            if (response.error == null) {
-                logger.error("Incorrect successful response: ${response.error}")
-            }
-            assertThat(response.error).isNotNull()
-        }
-        return records
-    }
+    /* Simple wrapper to serialize bytes correctly during test */
+    private fun SandboxGroupContext.serialize(obj: Any) =
+        ByteBuffer.wrap(getSerializer(SANDBOX_SERIALIZER).serialize(obj).bytes)
 
-    private fun createRequest(
-        holdingId: net.corda.virtualnode.HoldingIdentity,
-        request: Any,
-        externalEventContext: ExternalEventContext = EXTERNAL_EVENT_CONTEXT
-    ): ConsensualLedgerRequest {
-        logger.info("Consensual ledger persistence request: ${request.javaClass.simpleName} $request")
-        return ConsensualLedgerRequest(Instant.now(), holdingId.toAvro(), request, externalEventContext)
-    }
+    /* Simple wrapper to serialize bytes correctly during test */
+    private fun DbTestContext.serialize(obj: Any) = sandbox.serialize(obj)
+
+    /* Simple wrapper to deserialize */
+    private inline fun <reified T : Any> SandboxGroupContext.deserialize(bytes: ByteBuffer) =
+        getSerializer(SANDBOX_SERIALIZER).deserialize<T>(bytes.array())
+
+    /* Simple wrapper to deserialize */
+    private inline fun <reified T : Any> DbTestContext.deserialize(bytes: ByteBuffer) = sandbox.deserialize<T>(bytes)
+
+    private fun noOpPayloadCheck(bytes: ByteBuffer) = bytes
 }

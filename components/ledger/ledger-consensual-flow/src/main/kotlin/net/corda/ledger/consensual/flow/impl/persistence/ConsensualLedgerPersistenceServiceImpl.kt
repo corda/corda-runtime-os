@@ -1,10 +1,16 @@
 package net.corda.ledger.consensual.flow.impl.persistence
 
 import net.corda.flow.external.events.executor.ExternalEventExecutor
+import net.corda.ledger.common.data.transaction.CordaPackageSummary
+import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionContainer
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.FindTransactionExternalEventFactory
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.FindTransactionParameters
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.PersistTransactionExternalEventFactory
 import net.corda.ledger.consensual.flow.impl.persistence.external.events.PersistTransactionParameters
+import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
+import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionInternal
+import net.corda.v5.application.crypto.DigitalSignatureVerificationService
+import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.crypto.SecureHash
@@ -25,7 +31,11 @@ class ConsensualLedgerPersistenceServiceImpl @Activate constructor(
     @Reference(service = ExternalEventExecutor::class)
     private val externalEventExecutor: ExternalEventExecutor,
     @Reference(service = SerializationService::class)
-    private val serializationService: SerializationService
+    private val serializationService: SerializationService,
+    @Reference(service = SigningService::class)
+    val signingService: SigningService,
+    @Reference(service = DigitalSignatureVerificationService::class)
+    val digitalSignatureVerificationService: DigitalSignatureVerificationService,
 ) : ConsensualLedgerPersistenceService, SingletonSerializeAsToken {
 
     override fun find(id: SecureHash): ConsensualSignedTransaction? {
@@ -34,19 +44,33 @@ class ConsensualLedgerPersistenceServiceImpl @Activate constructor(
                 FindTransactionExternalEventFactory::class.java,
                 FindTransactionParameters(id.toHexString())
             )
-        }.firstOrNull()?.let { serializationService.deserialize(it.array()) }
-    }
-
-    override fun persist(transaction: ConsensualSignedTransaction) {
-        wrapWithPersistenceException {
-            externalEventExecutor.execute(
-                PersistTransactionExternalEventFactory::class.java,
-                PersistTransactionParameters(serialize(transaction))
-            )
+        }.firstOrNull()?.let {
+            serializationService.deserialize<ConsensualSignedTransactionContainer>(it.array()).toSignedTransaction()
         }
     }
 
-    private fun serialize(payload: Any): ByteBuffer {
-        return ByteBuffer.wrap(serializationService.serialize(payload).bytes)
+    override fun persist(transaction: ConsensualSignedTransaction, transactionStatus: String): List<CordaPackageSummary> {
+        return wrapWithPersistenceException {
+            externalEventExecutor.execute(
+                PersistTransactionExternalEventFactory::class.java,
+                PersistTransactionParameters(serialize(transaction.toContainer()), transactionStatus)
+            )
+        }.map { serializationService.deserialize(it.array()) }
     }
+
+    private fun ConsensualSignedTransactionContainer.toSignedTransaction() =
+        ConsensualSignedTransactionImpl(
+            serializationService,
+            signingService,
+            digitalSignatureVerificationService,
+            wireTransaction,
+            signatures
+        )
+
+    private fun ConsensualSignedTransaction.toContainer() =
+        (this as ConsensualSignedTransactionInternal).run {
+            ConsensualSignedTransactionContainer(wireTransaction, signatures)
+        }
+
+    private fun serialize(payload: Any) = ByteBuffer.wrap(serializationService.serialize(payload).bytes)
 }

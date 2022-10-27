@@ -1,6 +1,6 @@
 package net.corda.flow.external.events.impl.executor
 
-import java.util.*
+import java.util.UUID
 import net.corda.flow.external.events.executor.ExternalEventExecutor
 import net.corda.flow.external.events.factory.ExternalEventFactory
 import net.corda.flow.fiber.FlowFiber

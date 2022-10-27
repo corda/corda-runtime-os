@@ -12,9 +12,8 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 import java.security.PublicKey
 
 @Component(
-    service = [DigitalSignatureVerificationService::class, SingletonSerializeAsToken::class],
-    scope = PROTOTYPE,
-    property = ["corda.system=true"]
+    service = [ DigitalSignatureVerificationService::class, SingletonSerializeAsToken::class ],
+    scope = PROTOTYPE
 )
 class DigitalSignatureVerificationServiceImpl @Activate constructor(
     @Reference(service = SignatureVerificationService::class)
