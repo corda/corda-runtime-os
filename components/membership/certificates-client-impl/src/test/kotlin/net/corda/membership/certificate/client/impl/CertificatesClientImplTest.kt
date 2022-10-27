@@ -1,5 +1,6 @@
 package net.corda.membership.certificate.client.impl
 
+import java.util.concurrent.CompletableFuture
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.crypto.client.CryptoOpsClient
@@ -43,7 +44,6 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.util.concurrent.CompletableFuture
 
 class CertificatesClientImplTest {
     private val coordinator = mock<LifecycleCoordinator>()
@@ -325,13 +325,6 @@ class CertificatesClientImplTest {
                 verify(sender).close()
                 verify(registrationHandle, times(2)).close()
                 verify(configHandle).close()
-            }
-
-            @Test
-            fun `StopEvent will change the status to down`() {
-                handler.firstValue.processEvent(StopEvent(), coordinator)
-
-                verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
             }
 
             @Test

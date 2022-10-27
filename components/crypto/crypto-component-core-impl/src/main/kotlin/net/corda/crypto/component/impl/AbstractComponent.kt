@@ -46,12 +46,12 @@ abstract class AbstractComponent<IMPL : AbstractComponent.AbstractImpl>(
         get() = lifecycleCoordinator.isRunning
 
     override fun start() {
-        logger.trace { "Starting..." }
+        logger.trace { "$myName starting..." }
         lifecycleCoordinator.start()
     }
 
     override fun stop() {
-        logger.trace  { "Stopping..." }
+        logger.trace  { "$myName stopping..." }
         lifecycleCoordinator.stop()
     }
 
@@ -84,10 +84,10 @@ abstract class AbstractComponent<IMPL : AbstractComponent.AbstractImpl>(
                     doActivate(coordinator)
                 } else {
                     if(upstream.isUp) {
-                        logger.trace { "TryAgainCreateActiveImpl - setting as UP." }
+                        logger.trace { "TryAgainCreateActiveImpl - $myName - setting as UP." }
                         coordinator.updateStatus(LifecycleStatus.UP)
                     } else {
-                        logger.trace { "TryAgainCreateActiveImpl - skipping as stale as _impl already created." }
+                        logger.trace { "TryAgainCreateActiveImpl - $myName - skipping as stale as _impl already created." }
                     }
                 }
             }
@@ -106,15 +106,15 @@ abstract class AbstractComponent<IMPL : AbstractComponent.AbstractImpl>(
             _impl = createActiveImpl()
             activationFailureCounter.set(0)
         } catch (e: FatalActivationException) {
-            logger.error("Failed activate", e)
+            logger.error("$myName failed activate", e)
             coordinator.updateStatus(LifecycleStatus.ERROR)
             return
         } catch (e: Throwable) {
             if(activationFailureCounter.incrementAndGet() <= 5) {
-                logger.debug("Failed activate..., will try again", e)
+                logger.debug("$myName failed activate..., will try again", e)
                 coordinator.postEvent(TryAgainCreateActiveImpl())
             } else {
-                logger.error("Failed activate, giving up", e)
+                logger.error("$myName failed activate, giving up", e)
                 coordinator.updateStatus(LifecycleStatus.ERROR)
             }
             return
