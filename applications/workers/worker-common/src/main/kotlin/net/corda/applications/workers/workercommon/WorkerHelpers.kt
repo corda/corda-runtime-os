@@ -152,7 +152,7 @@ class WorkerHelpers {
             val arguments = processInfo.arguments()
             if (arguments.isPresent) {
                 arguments.get().forEachIndexed { i, arg ->
-                    if ("-ddatabase.pass" !in arg) {
+                    if ("-ddatabase.pass" !in arg && "-spassphrase" !in arg) {
                         info("argument $i, $arg")
                     }
                 }
