@@ -8,13 +8,12 @@ import net.corda.common.json.validation.impl.JsonValidatorImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.internal.serialization.amqp.currentSandboxGroup
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
-import net.corda.ledger.common.testkit.mockTransactionMetaData
 import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.ledger.common.testkit.mockSigningService
 import net.corda.ledger.common.testkit.publicKeyExample
+import net.corda.ledger.common.testkit.transactionMetaDataExample
 import net.corda.ledger.consensual.testkit.ConsensualStateClassExample
 import net.corda.ledger.consensual.testkit.consensualStateExample
-import net.corda.ledger.consensual.testkit.consensualTransactionMetaDataExample
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -52,7 +51,7 @@ internal class ConsensualLedgerTransactionImplTest {
             mockSigningService(),
             mock(),
             testSerializationContext.currentSandboxGroup(),
-            consensualTransactionMetaDataExample
+            transactionMetaDataExample
         )
             .withStates(consensualStateExample)
             .sign(publicKeyExample)

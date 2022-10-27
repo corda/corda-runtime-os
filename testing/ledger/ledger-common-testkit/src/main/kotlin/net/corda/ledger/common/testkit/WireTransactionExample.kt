@@ -20,7 +20,7 @@ fun getWireTransactionExample(
     merkleTreeProvider: MerkleTreeProvider,
     jsonMarshallingService: JsonMarshallingService,
     jsonValidator: JsonValidator,
-    metaData: TransactionMetaData = minimalTransactionMetaData
+    metaData: TransactionMetaData = transactionMetaDataExample
 ): WireTransaction {
     val metadataJson = jsonMarshallingService.format(metaData)
     val canonicalJson = jsonValidator.canonicalize(metadataJson)

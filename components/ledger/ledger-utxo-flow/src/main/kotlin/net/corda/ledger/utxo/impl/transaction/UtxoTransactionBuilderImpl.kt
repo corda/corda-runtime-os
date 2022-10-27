@@ -180,10 +180,7 @@ data class UtxoTransactionBuilderImpl(
             .map { componentGroupIndex ->
                 when (componentGroupIndex) {
                     UtxoComponentGroup.METADATA ->
-                        listOf(
-                            jsonMarshallingService.format(transactionMetaData)
-                                .toByteArray(Charsets.UTF_8)
-                        ) // TODO(update with CORE-6890)
+                        listOf(serializeMetadata())
                     UtxoComponentGroup.NOTARY ->
                         notaryGroup.map { serializationService.serialize(it).bytes }
 
@@ -210,6 +207,11 @@ data class UtxoTransactionBuilderImpl(
                 }
         }
     }
+
+    private fun serializeMetadata(): ByteArray =
+        jsonValidator
+            .canonicalize(jsonMarshallingService.format(transactionMetaData))
+            .toByteArray(Charsets.UTF_8)
 
     @Suppress("ComplexMethod")
     override fun equals(other: Any?): Boolean {

@@ -25,7 +25,7 @@ dependencies {
         // Exclude transitive dependency on vulnerable version of jackson
         exclude group: 'com.fasterxml.jackson.core', module: 'jackson-databind'
     }
-    compileOnly "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
 
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 }

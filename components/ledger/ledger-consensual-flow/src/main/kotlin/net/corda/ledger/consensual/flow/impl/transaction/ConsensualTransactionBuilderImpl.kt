@@ -108,9 +108,7 @@ class ConsensualTransactionBuilderImpl(
             .map { componentGroupIndex ->
             when (componentGroupIndex) {
                 ConsensualComponentGroup.METADATA ->
-                    listOf(
-                        serializeMetadata().toByteArray(Charsets.UTF_8)
-                    )
+                    listOf(serializeMetadata())
                 ConsensualComponentGroup.TIMESTAMP ->
                     listOf(serializationService.serialize(Instant.now()).bytes)
                 ConsensualComponentGroup.REQUIRED_SIGNING_KEYS ->
@@ -123,8 +121,10 @@ class ConsensualTransactionBuilderImpl(
         }
     }
 
-    private fun serializeMetadata(): String =
-        jsonValidator.canonicalize(jsonMarshallingService.format(transactionMetaData))
+    private fun serializeMetadata(): ByteArray =
+        jsonValidator
+            .canonicalize(jsonMarshallingService.format(transactionMetaData))
+            .toByteArray(Charsets.UTF_8)
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

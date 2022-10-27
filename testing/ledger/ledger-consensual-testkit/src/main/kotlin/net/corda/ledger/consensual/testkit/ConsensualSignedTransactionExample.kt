@@ -3,6 +3,7 @@ package net.corda.ledger.consensual.testkit
 import net.corda.common.json.validation.JsonValidator
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.common.testkit.signatureWithMetaDataExample
+import net.corda.ledger.common.testkit.transactionMetaDataExample
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
@@ -11,8 +12,6 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
-import java.security.KeyPairGenerator
-import java.time.Instant
 
 @Suppress("LongParameterList")
 fun getConsensualSignedTransactionExample(
@@ -29,7 +28,7 @@ fun getConsensualSignedTransactionExample(
         merkleTreeProvider,
         jsonMarshallingService,
         jsonValidator,
-        consensualTransactionMetaDataExample
+        transactionMetaDataExample
     )
     return ConsensualSignedTransactionImpl(
         serializationService,
