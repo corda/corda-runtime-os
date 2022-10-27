@@ -26,6 +26,7 @@ import net.corda.v5.crypto.KEY_LOOKUP_INPUT_ITEMS_LIMIT
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.publicKeyId
 import java.security.PublicKey
+import net.corda.v5.crypto.DigitalSignatureWithSpec
 
 @Suppress("TooManyFunctions")
 class SigningServiceImpl(
@@ -185,6 +186,37 @@ class SigningServiceImpl(
             by = record.publicKey,
             bytes = signedBytes,
             context = context
+        )
+    }
+
+    override fun sign(
+        tenantId: String,
+        publicKey: PublicKey,
+        data: ByteArray,
+        context: Map<String, String>
+    ): DigitalSignatureWithSpec {
+        val signatureSpec = schemeMetadata.inferSignatureSpec(publicKey)
+        require(signatureSpec != null) {
+            "Failed to infer the signature spec for key=${publicKey.publicKeyId()} " +
+                    " (${schemeMetadata.findKeyScheme(publicKey).codeName})"
+        }
+
+        val signatureWithKey = sign(
+            tenantId,
+            publicKey,
+            signatureSpec,
+            data,
+            context
+        )
+        // TODO replace below dummy hash with actual one
+        val publicKeyHash = net.corda.v5.crypto.SecureHash.parse("SHA-256:6D1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581F")
+
+        return DigitalSignatureWithSpec(
+            signature = DigitalSignature.WithId(
+                publicKeyHash,
+                signatureWithKey.bytes
+            ),
+            signatureSpec = signatureSpec
         )
     }
 

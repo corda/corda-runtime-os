@@ -170,42 +170,8 @@ class CryptoOpsClientComponent @Activate constructor(
         publicKey: ByteBuffer,
         data: ByteBuffer,
         context: KeyValuePairList
-    ): CryptoSignatureWithSpec {
-        // must infer signature spec from public key alone
-        val publicKeyDecoded = schemeMetadata.decodePublicKey(publicKey.array())
-        // TODO should the inferring of signature spec take place here or maybe deeper at
-        //  `SignRpcCommandHandler`. `CipherSchemeMetadata` (which has `inferSignatureSpec` API) is also available over there.
-        //  Doing it here means we are only exposing the new Avro API (`CryptoSignatureWithSignatureSpec`) here
-        //  and not to potential other paths leading to `SignRpcCommand` processing.
-        //  Less importantly also means we can fail and return faster.
-        val signatureSpec = schemeMetadata.inferSignatureSpec(publicKeyDecoded)
-        require(signatureSpec != null) {
-            "Failed to infer the signature spec for key=${publicKeyDecoded.publicKeyId()} " +
-                    " (${schemeMetadata.findKeyScheme(publicKeyDecoded).codeName})"
-        }
-
-        val signatureSpecAvro = CryptoSignatureSpec(
-            signatureSpec.signatureName, null, null
-        )
-
-        // TODO this should be changed to directly call and get `CryptoSignatureWithSignatureSpec` answer from Kafka,
-        //  In that case it 'd make more sense to infer to `SignatureSpec` on the other side.
-        val cryptoSignatureWithKey = signProxy(tenantId, publicKey, signatureSpecAvro, data, context)
-
-        return CryptoSignatureWithSpec(
-            CryptoSignatureWithId(
-                // TODO fix below dummy value with actual SHA-256 hashing public key
-                SecureHash.parse("SHA-256:6D1687C143DF792A011A1E80670A4E4E0C25D0D87A39514409B1ABFC2043581F").let {
-                    net.corda.data.crypto.SecureHash(
-                        it.algorithm,
-                        ByteBuffer.wrap(it.bytes)
-                    )
-                },
-                cryptoSignatureWithKey.bytes
-            ),
-            CryptoSignatureSpec(signatureSpec.signatureName, null, null)
-        )
-    }
+    ): CryptoSignatureWithSpec =
+        impl.ops.signProxy(tenantId, publicKey, data, context)
 
     override fun createWrappingKey(
         hsmId: String,

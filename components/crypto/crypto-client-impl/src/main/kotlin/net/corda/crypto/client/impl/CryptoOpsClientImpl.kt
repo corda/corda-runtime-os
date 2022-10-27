@@ -44,6 +44,7 @@ import java.nio.ByteBuffer
 import java.security.PublicKey
 import java.time.Duration
 import java.util.UUID
+import net.corda.data.crypto.wire.CryptoSignatureWithSpec
 
 @Suppress("TooManyFunctions")
 class CryptoOpsClientImpl(
@@ -246,6 +247,28 @@ class CryptoOpsClientImpl(
             )
         )
         return request.execute(Duration.ofSeconds(20), CryptoSignatureWithKey::class.java)!!
+    }
+
+    fun signProxy(
+        tenantId: String,
+        publicKey: ByteBuffer,
+        data: ByteBuffer,
+        context: KeyValuePairList
+    ): CryptoSignatureWithSpec {
+        logger.debug {
+            "Sending '${SignRpcCommand::class.java.simpleName}'(tenant=${tenantId}," +
+                    "publicKey=${publicKey.array().sha256Bytes().toBase58().take(12)}..)"
+        }
+        val request = createRequest(
+            tenantId,
+            SignRpcCommand(
+                publicKey,
+                null,
+                data,
+                context
+            )
+        )
+        return request.execute(Duration.ofSeconds(20), CryptoSignatureWithSpec::class.java)!!
     }
 
     fun createWrappingKey(

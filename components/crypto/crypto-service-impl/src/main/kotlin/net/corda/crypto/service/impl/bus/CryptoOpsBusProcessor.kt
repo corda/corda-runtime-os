@@ -38,6 +38,10 @@ import org.slf4j.Logger
 import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
+import net.corda.data.crypto.wire.CryptoSignatureSpec
+import net.corda.data.crypto.wire.CryptoSignatureWithId
+import net.corda.data.crypto.wire.CryptoSignatureWithSpec
+import net.corda.v5.crypto.DigitalSignatureWithSpec
 
 class CryptoOpsBusProcessor(
     private val signingFactory: SigningServiceFactory,
@@ -244,18 +248,42 @@ class CryptoOpsBusProcessor(
     ) : Handler<SignRpcCommand> {
         override fun handle(context: CryptoRequestContext, request: SignRpcCommand): Any {
             val publicKey = signingService.schemeMetadata.decodePublicKey(request.publicKey.array())
-            val signature = signingService.sign(
-                context.tenantId,
-                publicKey,
-                request.signatureSpec.toSignatureSpec(signingService.schemeMetadata),
-                request.bytes.array(),
-                request.context.toMap()
-            )
-            return CryptoSignatureWithKey(
-                ByteBuffer.wrap(signingService.schemeMetadata.encodeAsByteArray(signature.by)),
-                ByteBuffer.wrap(signature.bytes),
-                signature.context.toWire()
-            )
+            if (request.signatureSpec != null) {
+                val signature = signingService.sign(
+                    context.tenantId,
+                    publicKey,
+                    request.signatureSpec.toSignatureSpec(signingService.schemeMetadata),
+                    request.bytes.array(),
+                    request.context.toMap()
+                )
+                return CryptoSignatureWithKey(
+                    ByteBuffer.wrap(signingService.schemeMetadata.encodeAsByteArray(signature.by)),
+                    ByteBuffer.wrap(signature.bytes),
+                    signature.context.toWire()
+                )
+            } else {
+                val signatureWithSpec = signingService.sign(
+                    context.tenantId,
+                    publicKey,
+                    request.bytes.array(),
+                    request.context.toMap()
+                )
+                return signatureWithSpec.toAvro()
+            }
         }
     }
+}
+
+private fun DigitalSignatureWithSpec.toAvro(): CryptoSignatureWithSpec {
+    val publicKeyHash = signature.by
+    return CryptoSignatureWithSpec(
+        CryptoSignatureWithId(
+            net.corda.data.crypto.SecureHash(
+                publicKeyHash.algorithm,
+                ByteBuffer.wrap(publicKeyHash.bytes)
+            ),
+            ByteBuffer.wrap(signature.bytes)
+        ),
+        CryptoSignatureSpec(signatureSpec.signatureName, null, null)
+    )
 }

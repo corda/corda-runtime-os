@@ -7,6 +7,7 @@ import net.corda.v5.crypto.CompositeKey
 import net.corda.v5.crypto.DigitalSignature
 import java.security.KeyPair
 import java.security.PublicKey
+import net.corda.v5.crypto.DigitalSignatureWithSpec
 
 /**
  * The [SigningService] is an abstraction of the lower level key generation and signing.
@@ -184,6 +185,13 @@ interface SigningService {
         data: ByteArray,
         context: Map<String, String> = EMPTY_CONTEXT
     ): DigitalSignature.WithKey
+
+    fun sign(
+        tenantId: String,
+        publicKey: PublicKey,
+        data: ByteArray,
+        context: Map<String, String> = EMPTY_CONTEXT
+    ): DigitalSignatureWithSpec
 
     /**
      * Derive Diffie–Hellman key agreement shared secret by using the private key associated with [publicKey]
