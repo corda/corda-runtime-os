@@ -1423,20 +1423,7 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "A list of the shortIDs or the exception encountered",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "uniqueItems" : false,
-                  "type" : "array",
-                  "nullable" : false,
-                  "items" : {
-                    "type" : "string",
-                    "example" : "string"
-                  }
-                }
-              }
-            }
+            "description" : "A list of the shortIDs or the exception encountered"
           },
           "401" : {
             "description" : "Unauthorized"
