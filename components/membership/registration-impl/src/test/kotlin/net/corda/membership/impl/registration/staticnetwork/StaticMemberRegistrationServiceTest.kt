@@ -479,6 +479,18 @@ class StaticMemberRegistrationServiceTest {
             }
             registrationService.stop()
         }
+
+        @Test
+        fun `registration fails when virtual node info is unavailable`() {
+            setUpPublisher()
+            registrationService.start()
+            whenever(virtualNodeInfoReadService.get((alice))).thenReturn(null)
+
+            val registrationResult = registrationService.register(registrationId, alice, mockContext)
+
+            assertThat(registrationResult.outcome).isEqualTo(NOT_SUBMITTED)
+            assertThat(registrationResult.message).isNotNull.contains("Could not find virtual node")
+        }
     }
 
     @Nested

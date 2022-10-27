@@ -83,6 +83,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertDoesNotThrow
 import org.mockito.kotlin.KArgumentCaptor
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
@@ -235,9 +236,9 @@ class DynamicMemberRegistrationServiceTest {
     private val configurationReadService: ConfigurationReadService = mock {
         on { registerComponentForUpdates(eq(coordinator), any()) } doReturn configHandle
     }
-    private var memberContext: KArgumentCaptor<KeyValuePairList> = argumentCaptor()
+    private var memberContextCaptor: KArgumentCaptor<KeyValuePairList> = argumentCaptor()
     private val keyValuePairListSerializer: CordaAvroSerializer<Any> = mock {
-        on { serialize(memberContext.capture()) } doReturn MEMBER_CONTEXT_BYTES
+        on { serialize(memberContextCaptor.capture()) } doReturn MEMBER_CONTEXT_BYTES
     }
     private val registrationRequestSerializer: CordaAvroSerializer<Any> = mock {
         on { serialize(any()) } doReturn REQUEST_BYTES
@@ -382,9 +383,9 @@ class DynamicMemberRegistrationServiceTest {
             registrationService.start()
             registrationService.register(registrationResultId, member, context)
 
-            val submittedMemberContext = memberContext.firstValue
+            val memberContext = assertDoesNotThrow { memberContextCaptor.firstValue }
 
-            assertThat(submittedMemberContext.items.map { it.key }).containsExactlyInAnyOrder(
+            assertThat(memberContext.items.map { it.key }).containsExactlyInAnyOrder(
                 GROUP_ID,
                 PARTY_NAME,
                 MEMBER_CPI_NAME,
@@ -402,8 +403,6 @@ class DynamicMemberRegistrationServiceTest {
                 LEDGER_KEY_HASHES_KEY.addIndex(0),
                 LEDGER_KEY_SIGNATURE_SPEC.addIndex(0)
             )
-
-
         }
     }
 
@@ -499,6 +498,25 @@ class DynamicMemberRegistrationServiceTest {
                     .isEqualTo(
                         "Registration failed. Reason: MGM's ECDH key is missing."
                     )
+            }
+            registrationService.stop()
+        }
+
+        @Test
+        fun `registration fails if virtual node info cannot be found`() {
+            postConfigChangedEvent()
+            registrationService.start()
+            val noVNodeMember = HoldingIdentity(
+                MemberX500Name.parse("O=Bob, C=IE, L=DUB"),
+                UUID.randomUUID().toString()
+            )
+            whenever(virtualNodeInfoReadService.get(eq(noVNodeMember))).thenReturn(null)
+
+            val result = registrationService.register(registrationResultId, noVNodeMember, context)
+
+            SoftAssertions.assertSoftly {
+                it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+                it.assertThat(result.message).isNotNull.contains("Could not find virtual node")
             }
             registrationService.stop()
         }

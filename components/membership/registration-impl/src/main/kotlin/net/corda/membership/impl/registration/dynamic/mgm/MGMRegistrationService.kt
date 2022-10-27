@@ -255,7 +255,7 @@ class MGMRegistrationService @Activate constructor(
             }
             try {
                 val cpi = virtualNodeInfoReadService.get(member)?.cpiIdentifier
-                    ?: throw CordaRuntimeException("Could not find virtual node info for member: [$member]")
+                    ?: throw CordaRuntimeException("Could not find virtual node info for member $member")
                 val sessionKey = getKeyFromId(context[SESSION_KEY_ID]!!, member.shortHash.value)
                 val ecdhKey = getKeyFromId(context[ECDH_KEY_ID]!!, member.shortHash.value)
                 val now = clock.instant().toString()

@@ -251,7 +251,7 @@ class StaticMemberRegistrationService @Activate constructor(
         val memberKey = keysFactory.getOrGenerateKeyPair(CryptoConsts.Categories.LEDGER)
 
         val cpi = virtualNodeInfoReadService.get(registeringMember)?.cpiIdentifier
-            ?: throw CordaRuntimeException("Could not find virtual node info for member: [$registeringMember]")
+            ?: throw CordaRuntimeException("Could not find virtual node info for member $registeringMember")
 
         @Suppress("SpreadOperator")
         val memberInfo = memberInfoFactory.create(

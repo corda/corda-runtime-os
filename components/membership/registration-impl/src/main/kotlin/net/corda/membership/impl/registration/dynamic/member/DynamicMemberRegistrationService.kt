@@ -360,7 +360,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             notaryKeys: List<KeyDetails>,
         ): Map<String, String> {
             val cpi = virtualNodeInfoReadService.get(member)?.cpiIdentifier
-                ?: throw CordaRuntimeException("Could not find virtual node info for member: [$member]")
+                ?: throw CordaRuntimeException("Could not find virtual node info for $member")
             return (
                 context.filterNot {
                     it.key.startsWith(LEDGER_KEYS) || it.key.startsWith(PARTY_SESSION_KEY)

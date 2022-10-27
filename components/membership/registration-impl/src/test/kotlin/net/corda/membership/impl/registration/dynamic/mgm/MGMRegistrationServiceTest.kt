@@ -539,6 +539,20 @@ class MGMRegistrationServiceTest {
             }
             registrationService.stop()
         }
+
+        @Test
+        fun `registration fails when vnode info cannot be found`() {
+            postConfigChangedEvent()
+            registrationService.start()
+            whenever(virtualNodeInfoReadService.get(eq(mgm))).doReturn(null)
+
+            val result = registrationService.register(registrationRequest, mgm, properties)
+
+            assertSoftly {
+                it.assertThat(result.outcome).isEqualTo(MembershipRequestRegistrationOutcome.NOT_SUBMITTED)
+                it.assertThat(result.message).isNotNull.contains("Could not find virtual node info")
+            }
+        }
     }
 
     @Nested
