@@ -24,6 +24,7 @@ import org.slf4j.Logger
  * The server-side implementation of the non-validating notary logic.
  * This will be initiated by the client side of this notary plugin: [NonValidatingNotaryClientFlowImpl]
  */
+// TODO CORE-7292 What is the best way to define the protocol
 @InitiatedBy(protocol = "non-validating-notary")
 class NonValidatingNotaryServerFlowImpl : ResponderFlow {
 
