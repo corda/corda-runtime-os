@@ -29,6 +29,9 @@ import org.junit.jupiter.api.Order
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestMethodOrder
 import java.time.Instant
+import java.util.UUID
+import net.corda.applications.workers.smoketest.VERSION_TESTING_CPB_V1
+import net.corda.applications.workers.smoketest.VERSION_TESTING_CPB_V2
 
 const val CODESIGNER_CERT = "/cordadevcodesign.pem"
 
@@ -256,6 +259,82 @@ class VirtualNodeRpcTest {
         }
     }
 
+    private fun x500Generator() = "CN=${UUID.randomUUID()}, OU=Application, O=R3, L=London, C=GB"
+
+    @Test
+    @Order(41)
+    fun `upload cpi v99`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+            val requestId = cpiUpload(VERSION_TESTING_CPB_V1, "6c5d6948-e17b-44e7-9d1c-fa4a3f667cad",
+                listOf(
+                    "CN=980b1999-546f-4e44-8830-44e25aa8dcab, OU=Application, O=R3, L=London, C=GB",
+                    "CN=5721f56f-a18c-40f0-a253-743770131799, OU=Application, O=R3, L=London, C=GB"
+                )
+                , TEST_CPI_NAME, "1.0.0.99-SNAPSHOT")
+                .let { it.toJson()["id"].textValue() }
+            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
+        }
+    }
+
+    @Test
+    @Order(41)
+    fun `upload cpi v100`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+            val requestId = cpiUpload(VERSION_TESTING_CPB_V2, "5c5d6948-e17b-44e7-9d1c-fa4a3f667cad",
+                listOf(
+                    "CN=880b1999-546f-4e44-8830-44e25aa8dcab, OU=Application, O=R3, L=London, C=GB",
+                    "CN=4721f56f-a18c-40f0-a253-743770131799, OU=Application, O=R3, L=London, C=GB"
+                )
+                , TEST_CPI_NAME, "1.0.0.100-SNAPSHOT")
+                .let { it.toJson()["id"].textValue() }
+            assertThat(requestId).withFailMessage(ERROR_IS_CLUSTER_RUNNING).isNotEmpty
+        }
+    }
+
+
+    // cpi v99 - FE952FFE869F55B0B0F32EE3A7728AFF67AC502A05CC0C28CD1EF62D78AB22AC
+    // E3B2E915CA0F - CN=980b1999-546f-4e44-8830-44e25aa8dcab, OU=Application, O=R3, L=London, C=GB
+    // 4C76A0CCC5ED - CN=5721f56f-a18c-40f0-a253-743770131799, OU=Application, O=R3, L=London, C=GB
+    @Test
+    @Order(42)
+    fun `create virtual node with CPI`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+            val vNodeJson = assertWithRetry {
+                command { vNodeCreate("73C57F2C10410950F86B97D6B1BB4104052AA31CE0D36F8253D425F6D933D89A",
+                    "CN=980b1999-546f-4e44-8830-44e25aa8dcab, OU=Application, O=R3, L=London, C=GB"
+                ) }
+                condition { it.code == 200 }
+                failMessage(ERROR_HOLDING_ID)
+            }.toJson()
+
+            val vNodeJson2 = assertWithRetry {
+                command { vNodeCreate("73C57F2C10410950F86B97D6B1BB4104052AA31CE0D36F8253D425F6D933D89A",
+                    "CN=5721f56f-a18c-40f0-a253-743770131799, OU=Application, O=R3, L=London, C=GB"
+                ) }
+                condition { it.code == 200 }
+                failMessage(ERROR_HOLDING_ID)
+            }.toJson()
+
+            assertThat(vNodeJson["holdingIdentity"]["shortHash"].textValue()).isNotNull.isNotEmpty
+            assertThat(vNodeJson2["holdingIdentity"]["shortHash"].textValue()).isNotNull.isNotEmpty
+        }
+    }
+
+    @Test
+    @Order(41)
+    fun `register members`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+//            net.corda.applications.workers.smoketest.registerMember("E3B2E915CA0F")
+            net.corda.applications.workers.smoketest.registerMember("4C76A0CCC5ED")
+        }
+    }
     @Test
     @Order(50)
     fun `cannot create duplicate virtual node`() {

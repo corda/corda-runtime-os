@@ -25,6 +25,15 @@ configurations {
     e2eTestCompileOnly.extendsFrom integrationTestCompileOnly
     e2eTestImplementation.extendsFrom integrationTestImplementation
     e2eTestRuntimeOnly.extendsFrom integrationTestRuntimeOnly
+
+    cpiForVersionUpgradeV1 {
+        canBeConsumed = false
+        transitive = false
+    }
+    cpiForVersionUpgradeV2 {
+        canBeConsumed = false
+        transitive = false
+    }
 }
 
 dependencies {
@@ -49,6 +58,9 @@ dependencies {
     runtimeOnly project(':libs:messaging:kafka-message-bus-impl')
     runtimeOnly project(":libs:messaging:messaging-impl")
 
+    cpiForVersionUpgradeV1 project(path: ':testing:cpbs:test-cordapp-version-upgrade-v1', configuration: 'cordaCPB')
+    cpiForVersionUpgradeV2 project(path: ':testing:cpbs:test-cordapp-version-upgrade-v2', configuration: 'cordaCPB')
+
     e2eTestImplementation project(":libs:configuration:configuration-endpoints")
     e2eTestImplementation project(":libs:crypto:certificate-generation")
     e2eTestImplementation project(":libs:http-rpc:http-rpc-client")
@@ -72,6 +84,7 @@ dependencies {
     e2eTestImplementation "net.corda:corda-topic-schema"
     e2eTestImplementation 'net.corda:corda-cipher-suite'
     e2eTestRuntimeOnly 'org.osgi:osgi.core'
+    e2eTestImplementation project(':tools:plugins:package')
 }
 
 tasks.register('e2eTest', Test) {
@@ -81,6 +94,22 @@ tasks.register('e2eTest', Test) {
     testClassesDirs = project.sourceSets["e2eTest"].output.classesDirs
     classpath = project.sourceSets["e2eTest"].runtimeClasspath
     outputs.upToDateWhen { false }
+}
+
+tasks.named('processE2eTestResources', ProcessResources) {
+    def cpiForVersionUpgradeV1 = configurations.cpiForVersionUpgradeV1
+    def cpiForVersionUpgradeV1Dir = "META-INF" + File.separator + "cpi-for-version-upgrade-v1"
+    from(cpiForVersionUpgradeV1) {
+        into cpiForVersionUpgradeV1Dir
+        rename "(.+)(-(?:\\d+\\.*)+.-.+-package)(\\.cpb)\$", "version-sensitive-cordapp.cpb"
+    }
+
+    def cpiForVersionUpgradeV2 = configurations.cpiForVersionUpgradeV2
+    def cpiForVersionUpgradeV2Dir = "META-INF" + File.separator + "cpi-for-version-upgrade-v2"
+    from(cpiForVersionUpgradeV2) {
+        into cpiForVersionUpgradeV2Dir
+        rename "(.+)(-(?:\\d+\\.*)+.-.+-package)(\\.cpb)\$", "version-sensitive-cordapp.cpb"
+    }
 }
 
 tasks.named('e2eTest') {

@@ -19,6 +19,7 @@ import java.time.Instant
 import java.util.UUID
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
+import net.corda.db.connection.manager.DbConnectionLite
 
 /**
  * Repository for DB connections fetched from the Connections DB.
@@ -35,6 +36,14 @@ class DbConnectionsRepositoryImpl(
     private companion object {
         private val logger = contextLogger()
     }
+
+    override fun get(connectionId: UUID): DbConnectionLite? {
+        return entityManagerFactory.createEntityManager().transaction { em ->
+            em.find(DbConnectionConfig::class.java, connectionId)?.toDbConnectionLite()
+        }
+    }
+
+    private fun DbConnectionConfig.toDbConnectionLite() = DbConnectionLite(id, config)
 
     override fun put(
         name: String,

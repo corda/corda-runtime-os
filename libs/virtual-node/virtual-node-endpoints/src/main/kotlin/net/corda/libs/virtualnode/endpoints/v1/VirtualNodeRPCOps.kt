@@ -1,10 +1,14 @@
 package net.corda.libs.virtualnode.endpoints.v1
 
+import java.time.Instant
 import net.corda.httprpc.RpcOps
 import net.corda.httprpc.annotations.HttpRpcGET
 import net.corda.httprpc.annotations.HttpRpcPOST
+import net.corda.httprpc.annotations.HttpRpcPUT
+import net.corda.httprpc.annotations.HttpRpcPathParameter
 import net.corda.httprpc.annotations.HttpRpcRequestBodyParameter
 import net.corda.httprpc.annotations.HttpRpcResource
+import net.corda.httprpc.response.ResponseEntity
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeRequest
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodes
 import net.corda.libs.virtualnode.endpoints.v1.types.VirtualNodeInfo
@@ -44,4 +48,26 @@ interface VirtualNodeRPCOps : RpcOps {
         responseDescription = "List of virtual node details."
     )
     fun getAllVirtualNodes(): VirtualNodes
+
+
+    @HttpRpcPUT(
+        path = "{virtualNodeShortId}/cpi/{cpiFileChecksum}",
+    )
+    fun upgradeVirtualNodeCpi(
+        @HttpRpcPathParameter(description = "Short ID of the virtual node instance to update")
+        virtualNodeShortId: String,
+        @HttpRpcPathParameter(description = "The file checksum of the CPI to upgrade to.")
+        cpiFileChecksum: String
+    ): AsyncOperationResponse
+
+    @HttpRpcGET(
+        path = "/status/{requestId}",
+        title = "Get the status of an asynchronous virtual node maintenance request.",
+        description = "Get the status of an asynchronous virtual node maintenance request.",
+        responseDescription = "The details of the asynchronous request."
+    )
+    fun virtualNodeStatus(
+        @HttpRpcPathParameter(description = "Identifier of the asynchronous request.")
+        requestId: String
+    ): ResponseEntity<UpgradeVirtualNodeStatus>
 }

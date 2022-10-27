@@ -32,6 +32,8 @@ const val GROUP_ID = "7c5d6948-e17b-44e7-9d1c-fa4a3f667cad"
 const val TEST_CPI_NAME = "test-cordapp"
 const val TEST_CPB_LOCATION = "/META-INF/test-cordapp.cpb"
 const val CACHE_INVALIDATION_TEST_CPB = "/META-INF/cache-invalidation-testing/test-cordapp.cpb"
+const val VERSION_TESTING_CPB_V1 = "/META-INF/cpi-for-version-upgrade-v1/test-cordapp.cpb"
+const val VERSION_TESTING_CPB_V2 = "/META-INF/cpi-for-version-upgrade-v2/test-cordapp.cpb"
 
 val CLUSTER_URI = URI(System.getProperty("rpcHost"))
 

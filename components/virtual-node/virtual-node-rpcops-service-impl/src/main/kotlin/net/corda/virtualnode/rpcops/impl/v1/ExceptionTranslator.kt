@@ -5,7 +5,9 @@ import net.corda.httprpc.exception.BadRequestException
 import net.corda.httprpc.exception.HttpApiException
 import net.corda.httprpc.exception.InternalServerException
 import net.corda.httprpc.exception.ResourceAlreadyExistsException
+import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
+import net.corda.libs.virtualnode.common.exception.HoldingIdentityNotFoundException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
 import net.corda.v5.base.util.contextLogger
 
@@ -28,6 +30,8 @@ class ExceptionTranslator {
                     -> BadRequestException(exception.errorMessage)
                 VirtualNodeAlreadyExistsException::class.java.name
                     -> ResourceAlreadyExistsException(exception.errorMessage)
+                HoldingIdentityNotFoundException::class.java.name
+                        -> ResourceNotFoundException(exception.errorMessage)
                 else
                     -> InternalServerException(exception.errorMessage)
             }

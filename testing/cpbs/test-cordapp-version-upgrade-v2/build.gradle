@@ -1,0 +1,23 @@
+plugins {
+    id 'net.corda.plugins.cordapp-cpb2'
+}
+
+tasks.named("jar") {
+    baseName 'test-cordapp-version-upgrade'
+    version '1.0.0.100-SNAPSHOT'
+}
+
+cordapp {
+    targetPlatformVersion platformVersion as Integer
+    minimumPlatformVersion platformVersion as Integer
+    workflow {
+        name "Flow Worker Development"
+        versionId 1
+        vendor "R3"
+    }
+}
+
+dependencies {
+    cordaProvided platform("net.corda:corda-api:$cordaApiVersion")
+    cordaProvided 'net.corda:corda-application'
+}

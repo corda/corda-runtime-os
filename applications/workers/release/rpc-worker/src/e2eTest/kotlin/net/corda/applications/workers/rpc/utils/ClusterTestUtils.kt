@@ -1,6 +1,7 @@
 package net.corda.applications.workers.rpc.utils
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import java.io.InputStream
 import net.corda.crypto.test.certificates.generation.toPem
 import net.corda.httprpc.HttpFileUpload
 import net.corda.httprpc.JsonObject
@@ -55,6 +56,36 @@ fun E2eCluster.uploadCpi(
                 extension = "cpb",
                 fileName = "$uniqueName.cpb",
                 size = jar.size.toLong(),
+            )
+            val id = cpi(upload).id
+            eventually {
+                val status = status(id)
+                assertThat(status.status).isEqualTo("OK")
+                status.cpiFileChecksum
+            }
+        }
+    }
+}
+
+fun E2eCluster.uploadCpi(
+    cpi: InputStream,
+    cpiFileName: String,
+    isMgm: Boolean = false
+) = with(testToolkit) {
+    httpClientFor(CpiUploadRPCOps::class.java).use { client ->
+        with(client.start().proxy) {
+            // Check if MGM CPI was already uploaded in previous run. Current validation only allows one MGM CPI.
+            if (isMgm) {
+                getAllCpis().cpis.firstOrNull {
+                    it.groupPolicy?.contains("CREATE_ID") ?: false
+                }?.let {
+                    return it.cpiFileChecksum
+                }
+            }
+
+            val upload = HttpFileUpload(
+                content = cpi,
+                fileName = cpiFileName
             )
             val id = cpi(upload).id
             eventually {

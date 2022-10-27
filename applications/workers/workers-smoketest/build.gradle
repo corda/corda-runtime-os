@@ -13,6 +13,14 @@ configurations {
         canBeConsumed = false
         transitive = false
     }
+    cpiForVersionUpgradeV1 {
+        canBeConsumed = false
+        transitive = false
+    }
+    cpiForVersionUpgradeV2 {
+        canBeConsumed = false
+        transitive = false
+    }
 }
 
 sourceSets {
@@ -59,6 +67,8 @@ dependencies {
     cpis project(path: ':testing:cpbs:test-cordapp', configuration: 'cordaCPB')
     cpis project(path: ':testing:cpbs:ledger-consensual-demo-app', configuration: 'cordaCPB')
     cpiForFlowCacheTest project(path: ':testing:cpbs:test-cordapp-for-cache-testing', configuration: 'cordaCPB')
+    cpiForVersionUpgradeV1 project(path: ':testing:cpbs:test-cordapp-version-upgrade-v1', configuration: 'cordaCPB')
+    cpiForVersionUpgradeV2 project(path: ':testing:cpbs:test-cordapp-version-upgrade-v2', configuration: 'cordaCPB')
 
     smokeTestImplementation "com.konghq:unirest-java:$unirestVersion"
     smokeTestImplementation "com.konghq:unirest-objectmapper-jackson:$unirestVersion"
@@ -92,6 +102,20 @@ def smokeTestResources = tasks.named('processSmokeTestResources', ProcessResourc
     def cacheTestingDir = "META-INF" + File.separator + "cache-invalidation-testing"
     from(cpiForFlowCacheTest) {
         into cacheTestingDir
+        rename "(.+)(-(?:\\d+\\.*)+.-.+-package)(\\.cpb)\$", "test-cordapp.cpb"
+    }
+
+    def cpiForVersionUpgradeV1 = configurations.cpiForVersionUpgradeV1
+    def cpiForVersionUpgradeV1Dir = "META-INF" + File.separator + "cpi-for-version-upgrade-v1"
+    from(cpiForVersionUpgradeV1) {
+        into cpiForVersionUpgradeV1Dir
+        rename "(.+)(-(?:\\d+\\.*)+.-.+-package)(\\.cpb)\$", "test-cordapp.cpb"
+    }
+
+    def cpiForVersionUpgradeV2 = configurations.cpiForVersionUpgradeV2
+    def cpiForVersionUpgradeV2Dir = "META-INF" + File.separator + "cpi-for-version-upgrade-v2"
+    from(cpiForVersionUpgradeV2) {
+        into cpiForVersionUpgradeV2Dir
         rename "(.+)(-(?:\\d+\\.*)+.-.+-package)(\\.cpb)\$", "test-cordapp.cpb"
     }
 }
