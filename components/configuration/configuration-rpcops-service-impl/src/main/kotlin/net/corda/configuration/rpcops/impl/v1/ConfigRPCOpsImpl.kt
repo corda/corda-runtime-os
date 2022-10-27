@@ -126,7 +126,6 @@ internal class ConfigRPCOpsImpl @Activate constructor(
                     val rpcConfig = event.config.getConfig(ConfigKeys.RPC_CONFIG)
                     val messagingConfig = event.config.getConfig(ConfigKeys.MESSAGING_CONFIG)
                     setTimeout(rpcConfig.getInt(ConfigKeys.RPC_ENDPOINT_TIMEOUT_MILLIS))
-                    // Make sender unavailable while we're updating
                     coordinator.createManagedResource(SENDER) {
                         createAndStartRPCSender(messagingConfig)
                         object : Resource {

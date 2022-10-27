@@ -234,12 +234,12 @@ class GroupPolicyProviderImpl @Activate constructor(
                     if(groupPolicyToStore == null) {
                         groupPolicies.remove(it)
                     } else if (groupPolicyToStore !is MGMGroupPolicy) {
-                        logger.debug("Caching group policy for member.")
+                        logger.debug { "Caching group policy for member." }
                         groupPolicies[it] = groupPolicyToStore
                         listeners.values.forEach { listener ->
                             listener.callBack(it, groupPolicies[it]!!)
                         }
-                        logger.debug("Returning new group policy after change in virtual node information.")
+                        logger.debug { "Returning new group policy after change in virtual node information." }
                     }
                 }
             }
