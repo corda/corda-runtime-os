@@ -67,7 +67,6 @@ class FlowClassRPCOpsImpl @Activate constructor(
             }
             is StopEvent -> {
                 dependentComponents.stopAll()
-                coordinator.updateStatus(LifecycleStatus.DOWN)
             }
             else -> {
                 log.error("Unexpected event $event!")
