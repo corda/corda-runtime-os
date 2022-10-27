@@ -1,6 +1,7 @@
 package net.corda.flow.pipeline.impl
 
 import java.time.Instant
+import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
 import net.corda.data.flow.FlowInitiatorType
 import net.corda.data.flow.FlowKey
@@ -36,6 +37,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.inOrder
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 
@@ -212,8 +214,9 @@ class FlowEventProcessorImplTest {
     }
 
     @Test
-    fun `Execute flow pipeline and verify MDC from checkpoint`() {
+    fun `Execute flow pipeline and verify MDC from checkpoint with no external event`() {
         val inputEvent = getFlowEventRecord(FlowEvent(flowKey, startFlowEvent))
+        whenever(flowState.externalEventState).thenReturn(null)
 
         val response = processor.onNext(checkpoint, inputEvent)
 
@@ -224,6 +227,27 @@ class FlowEventProcessorImplTest {
         verify(flowState).flowStartContext
         verify(flowStartContext).requestId
         verify(flowStartContext).identity
+        //this line is only executed for mdc when external events are present
+        verify(externalEventState, times(0)).requestId
+
+    }
+
+    @Test
+    fun `Execute flow pipeline and verify MDC with external event from checkpoint`() {
+        val inputEvent = getFlowEventRecord(FlowEvent(flowKey, startFlowEvent))
+
+        whenever(externalEventState.status).thenReturn(ExternalEventStateStatus(ExternalEventStateType.RETRY, ExceptionEnvelope()))
+        val response = processor.onNext(checkpoint, inputEvent)
+
+        assertEquals(checkpoint, response.updatedState)
+        assertEquals(outputRecords, response.responseEvents)
+
+        verify(checkpoint).flowState
+        verify(flowState).flowStartContext
+        verify(flowStartContext).requestId
+        verify(flowStartContext).identity
+        //this line is only executed for mdc when external events are present
+        verify(externalEventState).requestId
     }
 
     @Test
