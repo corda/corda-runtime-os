@@ -27,6 +27,11 @@
       }
     },
     {
+      "name": "reason",
+      "doc": "Reason why the request has not submitted status. Null, if the status is submitted.",
+      "type": ["null", "string"]
+    },
+    {
       "name": "registrationProtocolVersion",
       "doc": "Registration protocol number.",
       "type": "int"
