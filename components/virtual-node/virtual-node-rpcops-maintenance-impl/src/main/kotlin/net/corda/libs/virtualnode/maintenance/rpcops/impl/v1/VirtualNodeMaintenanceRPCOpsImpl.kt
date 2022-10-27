@@ -139,12 +139,9 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
         return CpiUploadRPCOps.CpiUploadResponse(cpiUploadRequestId.requestId)
     }
 
-    override fun resyncVirtualNodeDb(virtualNodeShortId: String): List<String> = resyncVirtualNodeDbs(listOf(virtualNodeShortId))
-
-    private fun resyncVirtualNodeDbs(virtualNodeShortIds: List<String>): List<String> {
+    override fun resyncVirtualNodeDb(virtualNodeShortId: String) {
         logger.info(
-            "Resyncing back the virtual node vault database for the following virtual nodes: " +
-                virtualNodeShortIds.joinToString(", ")
+            "Resyncing back the virtual node vault database for the following virtual node: $virtualNodeShortId"
         )
 
         val instant = clock.instant()
@@ -152,13 +149,12 @@ class VirtualNodeMaintenanceRPCOpsImpl @Activate constructor(
         val request = VirtualNodeManagementRequest(
             instant,
             VirtualNodeDBResetRequest(
-                virtualNodeShortIds,
+                listOf(virtualNodeShortId),
                 actor
             )
         )
         val resp: VirtualNodeManagementResponse = sendAndReceive(request)
-        return when (val resolvedResponse = resp.responseType) {
-            is VirtualNodeDBResetResponse -> resolvedResponse.holdingIdentityShortHashes
+        when (val resolvedResponse = resp.responseType) {
             is VirtualNodeManagementResponseFailure -> throw handleFailure(resolvedResponse.exception)
             else -> throw UnknownMaintenanceResponseTypeException(resp.responseType::class.java.name)
         }

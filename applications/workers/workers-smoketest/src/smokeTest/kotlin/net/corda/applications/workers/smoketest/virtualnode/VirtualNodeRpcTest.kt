@@ -406,7 +406,17 @@ class VirtualNodeRpcTest {
 
     @Test
     @Order(92)
-    fun `Sync DB and persist fish`() {
+    fun `can run the persistence flow with an change unapplied db change`() {
+        cluster {
+            endpoint(CLUSTER_URI, USERNAME, PASSWORD)
+
+            runSimplePersistenceCheckFlow("Could persist dog")
+        }
+    }
+
+    @Test
+    @Order(93)
+    fun `Can sync DB and persist fish`() {
         cluster {
             endpoint(CLUSTER_URI, USERNAME, PASSWORD)
             assertThat(syncVirtualNode(aliceHoldingId).code).isEqualTo(200)

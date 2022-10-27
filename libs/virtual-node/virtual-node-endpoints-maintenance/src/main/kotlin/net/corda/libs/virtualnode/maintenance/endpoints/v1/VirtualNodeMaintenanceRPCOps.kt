@@ -50,7 +50,7 @@ interface VirtualNodeMaintenanceRPCOps : RpcOps {
     fun resyncVirtualNodeDb(
         @HttpRpcPathParameter(description = "Short ID of the virtual node instance to rollback")
         virtualNodeShortId: String
-    ): List<String>
+    )
 
     /**
      * Updates a virtual nodes state.
