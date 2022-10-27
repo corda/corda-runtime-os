@@ -154,10 +154,9 @@ class FlowEventProcessorImpl(
         mdcLogging: MutableMap<String, String>
     ) {
         val extState = flowState.externalEventState
-        val requestId = extState.requestId
         val status = extState.status
-        if (status == null || status.type == ExternalEventStateType.RETRY) {
-            mdcLogging[MDC_EXTERNAL_EVENT_ID] = requestId
+        if (extState.response == null || status.type == ExternalEventStateType.RETRY) {
+            mdcLogging[MDC_EXTERNAL_EVENT_ID] = extState.requestId
         }
     }
 }

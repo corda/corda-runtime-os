@@ -10,6 +10,9 @@ import net.corda.data.flow.event.StartFlow
 import net.corda.data.flow.event.Wakeup
 import net.corda.data.flow.state.checkpoint.Checkpoint
 import net.corda.data.flow.state.checkpoint.FlowState
+import net.corda.data.flow.state.external.ExternalEventState
+import net.corda.data.flow.state.external.ExternalEventStateStatus
+import net.corda.data.flow.state.external.ExternalEventStateType
 import net.corda.data.identity.HoldingIdentity
 import net.corda.flow.MINIMUM_SMART_CONFIG
 import net.corda.flow.pipeline.FlowEventExceptionProcessor
@@ -60,6 +63,7 @@ class FlowEventProcessorImplTest {
     private val checkpoint: Checkpoint = mock()
     private val flowState: FlowState = mock()
     private val flowStartContext: FlowStartContext = mock()
+    private val externalEventState: ExternalEventState = mock()
     private val outputRecords = listOf(Record(FLOW_EVENT_TOPIC, "key", "value"))
     private val updatedContext = buildFlowEventContext<Any>(
         flowCheckpoint,
@@ -107,6 +111,9 @@ class FlowEventProcessorImplTest {
     fun setup() {
         whenever(checkpoint.flowState).thenReturn(flowState)
         whenever(flowState.flowStartContext).thenReturn(flowStartContext)
+        whenever(flowState.externalEventState).thenReturn(externalEventState)
+        whenever(externalEventState.status).thenReturn(ExternalEventStateStatus(ExternalEventStateType.OK, null))
+        whenever(externalEventState.requestId).thenReturn("externalEventId")
         whenever(flowStartContext.requestId).thenReturn("requestId")
         whenever(flowStartContext.identity).thenReturn(aliceHoldingIdentity)
     }
