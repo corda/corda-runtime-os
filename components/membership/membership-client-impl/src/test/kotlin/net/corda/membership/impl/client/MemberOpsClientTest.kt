@@ -13,7 +13,8 @@ import net.corda.data.membership.rpc.request.RegistrationStatusSpecificRpcReques
 import net.corda.data.membership.rpc.response.MembershipRpcResponse
 import net.corda.data.membership.rpc.response.MembershipRpcResponseContext
 import net.corda.data.membership.rpc.response.RegistrationRpcResponse
-import net.corda.data.membership.rpc.response.RegistrationRpcStatus
+import net.corda.data.membership.rpc.response.RegistrationRpcStatus.SUBMITTED
+import net.corda.data.membership.rpc.response.RegistrationRpcStatus.NOT_SUBMITTED
 import net.corda.data.membership.rpc.response.RegistrationStatusResponse
 import net.corda.data.membership.rpc.response.RegistrationsStatusResponse
 import net.corda.libs.configuration.SmartConfig
@@ -27,6 +28,7 @@ import net.corda.lifecycle.RegistrationStatusChangeEvent
 import net.corda.lifecycle.Resource
 import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
+import net.corda.membership.client.RegistrationProgressNotFoundException
 import net.corda.membership.client.dto.MemberInfoSubmittedDto
 import net.corda.membership.client.dto.MemberRegistrationRequestDto
 import net.corda.membership.client.dto.RegistrationActionDto
@@ -41,7 +43,9 @@ import net.corda.schema.configuration.ConfigKeys
 import net.corda.test.util.time.TestClock
 import net.corda.virtualnode.ShortHash
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.mockito.kotlin.any
@@ -152,7 +156,8 @@ class MemberOpsClientTest {
         val response = RegistrationRpcResponse(
             "Registration-ID",
             clock.instant(),
-            RegistrationRpcStatus.SUBMITTED,
+            SUBMITTED,
+            "",
             1,
             KeyValuePairList(listOf(KeyValuePair("key", "value"))),
             KeyValuePairList(emptyList())
@@ -187,7 +192,7 @@ class MemberOpsClientTest {
     fun `rpc sender sends the expected request - checking registration progress`() {
         val rpcRequest = argumentCaptor<MembershipRpcRequest>()
         val response = RegistrationsStatusResponse(
-            emptyList()
+            listOf(mock())
         )
         whenever(rpcSender.sendRequest(rpcRequest.capture())).then {
             val requestContext = it.getArgument<MembershipRpcRequest>(0).requestContext
@@ -291,7 +296,8 @@ class MemberOpsClientTest {
                     RegistrationRpcResponse(
                         "RegistrationID",
                         clock.instant(),
-                        RegistrationRpcStatus.SUBMITTED,
+                        SUBMITTED,
+                        "",
                         1,
                         KeyValuePairList(listOf(KeyValuePair("key", "value"))),
                         KeyValuePairList(emptyList())
@@ -322,7 +328,8 @@ class MemberOpsClientTest {
                     RegistrationRpcResponse(
                         "RegistrationID",
                         clock.instant(),
-                        RegistrationRpcStatus.SUBMITTED,
+                        SUBMITTED,
+                        "",
                         1,
                         KeyValuePairList(listOf(KeyValuePair("key", "value"))),
                         KeyValuePairList(emptyList())
@@ -604,7 +611,7 @@ class MemberOpsClientTest {
     }
 
     @Test
-    fun `checkSpecificRegistrationProgress return correct data when response is null`() {
+    fun `checkSpecificRegistrationProgress throws exception when response is null`() {
         whenever(rpcSender.sendRequest(any())).then {
             val requestContext = it.getArgument<MembershipRpcRequest>(0).requestContext
             CompletableFuture.completedFuture(
@@ -621,9 +628,9 @@ class MemberOpsClientTest {
         memberOpsClient.start()
         setUpRpcSender()
 
-        val status = memberOpsClient.checkSpecificRegistrationProgress(request.holdingIdentityShortHash, "registration id")
-
-        assertThat(status).isNull()
+        assertThrows<RegistrationProgressNotFoundException> {
+            memberOpsClient.checkSpecificRegistrationProgress(request.holdingIdentityShortHash, "registration id")
+        }
     }
 
 
@@ -639,7 +646,7 @@ class MemberOpsClientTest {
                         requestContext.requestTimestamp,
                         clock.instant()
                     ),
-                    RegistrationStatusResponse(null),
+                    RegistrationStatusResponse(mock()),
                 )
             )
         }
@@ -657,4 +664,19 @@ class MemberOpsClientTest {
             )
     }
 
+    @Test
+    fun `startRegistration should add exception message to reason field if exception happened`() {
+        val rpcRequest = argumentCaptor<MembershipRpcRequest>()
+        whenever(rpcSender.sendRequest(rpcRequest.capture())).then {
+            throw IllegalArgumentException("Exception happened.")
+        }
+        memberOpsClient.start()
+        setUpRpcSender()
+        val result = memberOpsClient.startRegistration(request)
+        assertSoftly {
+            it.assertThat(result.reason)
+                .isEqualTo("Failed to send request and receive response for membership RPC operation. Exception happened.")
+            it.assertThat(result.registrationStatus).isEqualTo(NOT_SUBMITTED.toString())
+        }
+    }
 }
