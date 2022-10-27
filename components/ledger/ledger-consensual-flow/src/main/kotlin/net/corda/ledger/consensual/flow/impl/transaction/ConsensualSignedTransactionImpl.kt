@@ -26,7 +26,6 @@ class ConsensualSignedTransactionImpl(
     override val signatures: List<DigitalSignatureAndMetadata>
 ): ConsensualSignedTransactionInternal
 {
-
     init {
         require(signatures.isNotEmpty()) {
             "Tried to instantiate a ${ConsensualSignedTransactionImpl::class.java.simpleName} without any signatures "

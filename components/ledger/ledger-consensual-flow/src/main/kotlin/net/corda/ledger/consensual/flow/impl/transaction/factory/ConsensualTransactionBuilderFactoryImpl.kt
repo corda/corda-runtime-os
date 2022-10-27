@@ -4,6 +4,7 @@ import net.corda.flow.fiber.FlowFiberService
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.TransactionMetaData
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
+import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualTransactionBuilderImpl
 import net.corda.ledger.consensual.flow.impl.transaction.TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
@@ -26,20 +27,15 @@ import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 @Suppress("LongParameterList")
 @Component(service = [ ConsensualTransactionBuilderFactory::class, SingletonSerializeAsToken::class ], scope = PROTOTYPE)
 class ConsensualTransactionBuilderFactoryImpl @Activate constructor(
-    @Reference(service = CipherSchemeMetadata::class)
-    private val cipherSchemeMetadata: CipherSchemeMetadata,
-    @Reference(service = DigestService::class)
-    private val digestService: DigestService,
+    @Reference(service = WireTransactionFactory::class)
+    private val wireTransactionFactory: WireTransactionFactory,
     @Reference(service = JsonMarshallingService::class)
     private val jsonMarshallingService: JsonMarshallingService,
-    @Reference(service = MerkleTreeProvider::class)
-    private val merkleTreeProvider: MerkleTreeProvider,
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService,
-    @Reference(service = SigningService::class)
-    private val signingService: SigningService,
-    @Reference(service = DigitalSignatureVerificationService::class)
-    private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
+    @Reference(service = ConsensualSignedTransactionFactory::class)
+    private val consensualSignedTransactionFactory: ConsensualSignedTransactionFactory,
+
     @Reference(service = PlatformInfoProvider::class)
     private val platformInfoProvider: PlatformInfoProvider,
     @Reference(service = FlowFiberService::class)
@@ -48,13 +44,10 @@ class ConsensualTransactionBuilderFactoryImpl @Activate constructor(
 
     override fun create(): ConsensualTransactionBuilder =
         ConsensualTransactionBuilderImpl(
-            cipherSchemeMetadata,
-            digestService,
+            wireTransactionFactory,
             jsonMarshallingService,
-            merkleTreeProvider,
             serializationService,
-            signingService,
-            digitalSignatureVerificationService,
+            consensualSignedTransactionFactory,
             flowFiberService.getExecutingFiber().getExecutionContext().sandboxGroupContext.sandboxGroup,
             calculateMetaData(),
         )

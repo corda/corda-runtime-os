@@ -1,20 +1,15 @@
 package net.corda.ledger.consensual.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
-import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.TransactionMetaData
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.flow.impl.transaction.createTransactionSignature
+import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
+import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualSignedTransactionFactory
 import net.corda.sandbox.SandboxGroup
-import net.corda.v5.application.crypto.DigitalSignatureVerificationService
-import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
@@ -25,13 +20,10 @@ import java.time.Instant
 // TODO Create an AMQP serializer if we plan on sending transaction builders between virtual nodes
 @Suppress("LongParameterList")
 class ConsensualTransactionBuilderImpl(
-    private val cipherSchemeMetadata: CipherSchemeMetadata,
-    private val digestService: DigestService,
+    private val wireTransactionFactory: WireTransactionFactory,
     private val jsonMarshallingService: JsonMarshallingService,
-    private val merkleTreeProvider: MerkleTreeProvider,
     private val serializationService: SerializationService,
-    private val signingService: SigningService,
-    private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
+    private val consensualSignedTransactionFactory: ConsensualSignedTransactionFactory,
     private val currentSandboxGroup: SandboxGroup, // TODO CORE-7101 use CurrentSandboxService when it gets available
     // cpi defines what type of signing/hashing is used (related to the digital signature signing and verification stuff)
     private val transactionMetaData: TransactionMetaData,
@@ -52,26 +44,8 @@ class ConsensualTransactionBuilderImpl(
 
     @Suspendable
     override fun sign(signatories: Iterable<PublicKey>): ConsensualSignedTransaction{
-        require(signatories.toList().isNotEmpty()){
-            "At least one key needs to be provided in order to create a signed Transaction!"
-        }
         val wireTransaction = buildWireTransaction()
-        val signaturesWithMetaData = signatories.map {
-            createTransactionSignature(
-                signingService,
-                serializationService,
-                getCpiSummary(),
-                wireTransaction.id,
-                it
-            )
-        }
-        return ConsensualSignedTransactionImpl(
-            serializationService,
-            signingService,
-            digitalSignatureVerificationService,
-            wireTransaction,
-            signaturesWithMetaData
-        )
+        return consensualSignedTransactionFactory.initialCreate(wireTransaction, signatories)
     }
 
     private fun buildWireTransaction(): WireTransaction {
@@ -81,17 +55,7 @@ class ConsensualTransactionBuilderImpl(
         require(states.all { it.participants.isNotEmpty() }) { "All consensual states must have participants" }
         val componentGroupLists = calculateComponentGroupLists()
 
-        val entropy = ByteArray(32)
-        cipherSchemeMetadata.secureRandom.nextBytes(entropy)
-        val privacySalt = PrivacySaltImpl(entropy)
-
-        return WireTransaction(
-            merkleTreeProvider,
-            digestService,
-            jsonMarshallingService,
-            privacySalt,
-            componentGroupLists
-        )
+        return wireTransactionFactory.create(componentGroupLists)
     }
 
     private fun calculateComponentGroupLists(): List<List<ByteArray>> {
@@ -136,27 +100,13 @@ class ConsensualTransactionBuilderImpl(
 
     private fun copy(states: List<ConsensualState> = this.states): ConsensualTransactionBuilderImpl {
         return ConsensualTransactionBuilderImpl(
-            cipherSchemeMetadata,
-            digestService,
+            wireTransactionFactory,
             jsonMarshallingService,
-            merkleTreeProvider,
             serializationService,
-            signingService,
-            digitalSignatureVerificationService,
+            consensualSignedTransactionFactory,
             currentSandboxGroup,
             transactionMetaData,
             states,
         )
     }
-
-    /**
-     * TODO [CORE-7126] Fake values until we can get CPI information properly
-     */
-    private fun getCpiSummary(): CordaPackageSummary =
-        CordaPackageSummary(
-            name = "CPI name",
-            version = "CPI version",
-            signerSummaryHash = SecureHash("SHA-256", "Fake-value".toByteArray()).toHexString(),
-            fileChecksum = SecureHash("SHA-256", "Another-Fake-value".toByteArray()).toHexString()
-        )
 }

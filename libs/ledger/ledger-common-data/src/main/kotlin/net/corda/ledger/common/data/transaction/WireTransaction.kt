@@ -31,17 +31,9 @@ class WireTransaction(
     val metadata: TransactionMetaData
 
     init {
-        check(componentGroupLists.all { it.isNotEmpty() }) { "Empty component groups are not allowed" }
-        check(componentGroupLists.all { i -> i.all { j-> j.isNotEmpty() } }) { "Empty components are not allowed" }
-
         val metadataBytes = componentGroupLists[ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first()
-        // TODO(update with CORE-6890)
         metadata = jsonMarshallingService.parse(metadataBytes.decodeToString(), TransactionMetaData::class.java)
-
-        check(metadata.getDigestSettings() == WireTransactionDigestSettings.defaultValues) {
-            "Only the default digest settings are acceptable now! ${metadata.getDigestSettings()} vs " +
-                    "${WireTransactionDigestSettings.defaultValues}"
-        }
+        // TODO: Should we just pass metadata maybe from the Factory? Then we could get rid of jsonMarshallingService here...
     }
 
     fun getComponentGroupList(componentGroupId: Int): List<ByteArray> =
