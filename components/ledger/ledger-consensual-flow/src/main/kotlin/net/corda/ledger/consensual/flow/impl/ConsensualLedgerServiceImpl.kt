@@ -2,6 +2,7 @@ package net.corda.ledger.consensual.flow.impl
 
 import net.corda.ledger.consensual.flow.impl.flows.finality.ConsensualFinalityFlow
 import net.corda.ledger.consensual.flow.impl.flows.finality.ConsensualReceiveFinalityFlow
+import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualTransactionBuilderFactory
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
@@ -24,7 +25,9 @@ class ConsensualLedgerServiceImpl @Activate constructor(
     @Reference(service = ConsensualTransactionBuilderFactory::class)
     private val consensualTransactionBuilderFactory: ConsensualTransactionBuilderFactory,
     @Reference(service = FlowEngine::class)
-    private val flowEngine: FlowEngine
+    private val flowEngine: FlowEngine,
+    @Reference(service = ConsensualLedgerPersistenceService::class)
+    private val consensualLedgerPersistenceService: ConsensualLedgerPersistenceService
 ) : ConsensualLedgerService, SingletonSerializeAsToken {
 
     @Suspendable
@@ -43,7 +46,7 @@ class ConsensualLedgerServiceImpl @Activate constructor(
         */
         val consensualFinalityFlow = try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
-                ConsensualFinalityFlow(signedTransaction, sessions)
+                ConsensualFinalityFlow(signedTransaction, sessions, consensualLedgerPersistenceService)
             })
         } catch (e: PrivilegedActionException) {
             throw e.exception
@@ -58,7 +61,7 @@ class ConsensualLedgerServiceImpl @Activate constructor(
     ): ConsensualSignedTransaction {
         val consensualReceiveFinalityFlow = try {
             AccessController.doPrivileged(PrivilegedExceptionAction {
-                ConsensualReceiveFinalityFlow(session, verifier)
+                ConsensualReceiveFinalityFlow(session, verifier, consensualLedgerPersistenceService)
             })
         } catch (e: PrivilegedActionException) {
             throw e.exception

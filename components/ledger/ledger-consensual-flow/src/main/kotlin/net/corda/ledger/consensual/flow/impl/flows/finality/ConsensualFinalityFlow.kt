@@ -1,6 +1,8 @@
 package net.corda.ledger.consensual.flow.impl.flows.finality
 
 import net.corda.ledger.common.data.transaction.SignableData
+import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
+import net.corda.ledger.consensual.flow.impl.persistence.TransactionStatus
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.flows.CordaInject
@@ -19,7 +21,8 @@ import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 
 class ConsensualFinalityFlow(
     private val signedTransaction: ConsensualSignedTransaction,
-    private val sessions: List<FlowSession>
+    private val sessions: List<FlowSession>,
+    private val persistenceService: ConsensualLedgerPersistenceService
 ) : SubFlow<ConsensualSignedTransaction> {
 
     private companion object {
@@ -123,8 +126,7 @@ class ConsensualFinalityFlow(
             }
         }
 
-        // TODO [CORE-7055] Record the transaction
-
+        persistenceService.persist(signedByParticipantsTransaction, TransactionStatus.VERIFIED)
         log.debug { "Recorded signed transaction ${signedTransaction.id}" }
 
         // TODO Consider removing

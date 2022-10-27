@@ -1,5 +1,7 @@
 package net.corda.ledger.consensual.flow.impl.flows.finality
 
+import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
+import net.corda.ledger.consensual.flow.impl.persistence.TransactionStatus
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.membership.MemberLookup
@@ -15,7 +17,8 @@ import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransactionVer
 
 class ConsensualReceiveFinalityFlow(
     private val session: FlowSession,
-    private val verifier: ConsensualSignedTransactionVerifier
+    private val verifier: ConsensualSignedTransactionVerifier,
+    private val persistenceService: ConsensualLedgerPersistenceService
 ) : SubFlow<ConsensualSignedTransaction> {
 
     private companion object {
@@ -71,7 +74,7 @@ class ConsensualReceiveFinalityFlow(
 
         signedTransactionToFinalize.verifySignatures()
 
-        // TODO [CORE-7055] Record the transaction
+        persistenceService.persist(signedTransactionToFinalize, TransactionStatus.VERIFIED)
         log.debug { "Recorded signed transaction $transactionId" }
 
         session.send(Unit)

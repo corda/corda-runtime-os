@@ -12,6 +12,7 @@ import net.corda.internal.serialization.amqp.helper.TestFlowFiberServiceWithSeri
 import net.corda.ledger.common.testkit.mockPlatformInfoProvider
 import net.corda.ledger.common.testkit.mockSigningService
 import net.corda.ledger.common.testkit.publicKeyExample
+import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualTransactionBuilderFactory
 import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualTransactionBuilderFactoryImpl
 import net.corda.ledger.consensual.testkit.consensualStateExample
@@ -44,6 +45,7 @@ class ConsensualLedgerServiceImplTest {
     private val flowFiberService = TestFlowFiberServiceWithSerializationProxy(cipherSchemeMetadata)
     private val flowEngine: FlowEngine = FlowEngineImpl(flowFiberService)
     private val serializationService: SerializationService = SerializationServiceImpl(flowFiberService)
+    private val consensualLedgerPersistenceService = mock<ConsensualLedgerPersistenceService>()
 
     private val consensualTransactionBuilderFactory: ConsensualTransactionBuilderFactory =
         ConsensualTransactionBuilderFactoryImpl(
@@ -61,14 +63,14 @@ class ConsensualLedgerServiceImplTest {
 
     @Test
     fun `getTransactionBuilder should return a Transaction Builder`() {
-        val service = ConsensualLedgerServiceImpl(consensualTransactionBuilderFactory, flowEngine)
+        val service = ConsensualLedgerServiceImpl(consensualTransactionBuilderFactory, flowEngine, consensualLedgerPersistenceService)
         val transactionBuilder = service.getTransactionBuilder()
         assertIs<ConsensualTransactionBuilder>(transactionBuilder)
     }
 
     @Test
     fun `ConsensualLedgerServiceImpl's getTransactionBuilder() can build a SignedTransaction`() {
-        val service = ConsensualLedgerServiceImpl(consensualTransactionBuilderFactory, flowEngine)
+        val service = ConsensualLedgerServiceImpl(consensualTransactionBuilderFactory, flowEngine, consensualLedgerPersistenceService)
         val transactionBuilder = service.getTransactionBuilder()
         val signedTransaction = transactionBuilder
             .withStates(consensualStateExample)
