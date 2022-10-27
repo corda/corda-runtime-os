@@ -147,7 +147,7 @@ class WorkerHelpers {
             val processHandle = ProcessHandle.current()
             val processInfo = processHandle.info()
             info("PID: ${processHandle.pid()}")
-            info("processInfo.command: ${if (processInfo.command().isPresent) processInfo.command().get() else "Null"}")
+            info("Command: ${if (processInfo.command().isPresent) processInfo.command().get() else "Null"}")
 
             val arguments = processInfo.arguments()
             if (arguments.isPresent) {
@@ -160,12 +160,12 @@ class WorkerHelpers {
                 info("arguments: Null")
             }
 
-            info("processInfo.user: ${if (processInfo.user().isPresent) processInfo.user().get() else "Null"}")
-            info("processInfo.startInstant: ${if (processInfo.startInstant().isPresent) processInfo.startInstant().get() else "Null"}")
+            info("User: ${if (processInfo.user().isPresent) processInfo.user().get() else "Null"}")
+            info("StartInstant: ${if (processInfo.startInstant().isPresent) processInfo.startInstant().get() else "Null"}")
 
             val totalCpuDuration = if (processInfo.totalCpuDuration().isPresent) processInfo.totalCpuDuration().get() else "Null"
-            info("processInfo.totalCpuDuration: $totalCpuDuration")
-            info("processInfo.javaClass: ${processInfo.javaClass}")
+            info("TotalCpuDuration: $totalCpuDuration")
+            info("JavaClass: ${processInfo.javaClass}")
 
             val mxBeanInfo = ManagementFactory.getRuntimeMXBean()
             info("classpath: ${mxBeanInfo.classPath}")
