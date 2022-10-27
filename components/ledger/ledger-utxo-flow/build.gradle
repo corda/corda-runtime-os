@@ -1,6 +1,7 @@
 plugins {
     id 'corda.common-publishing'
     id 'corda.common-library'
+    id 'corda.osgi-test-conventions'
 }
 
 description 'Corda UTXO ledger - flow implementation'
@@ -31,4 +32,11 @@ dependencies {
     testImplementation project(":libs:serialization:serialization-internal")
     testImplementation project(":libs:serialization:serialization-amqp")
     testImplementation project(":testing:ledger:ledger-utxo-testkit")
+
+    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
+    integrationTestRuntimeOnly project(":testing:sandboxes")
+    integrationTestRuntimeOnly project(":libs:messaging:db-message-bus-impl")
+    integrationTestRuntimeOnly project(":libs:messaging:messaging-impl")
+    integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
+    integrationTestRuntimeOnly project(":libs:flows:session-manager-impl")
 }
