@@ -6,7 +6,6 @@ import net.corda.cpi.upload.endpoints.service.CpiUploadRPCOpsService
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.chunking.PropertyKeys
 import net.corda.data.virtualnode.VirtualNodeDBResetRequest
-import net.corda.data.virtualnode.VirtualNodeDBResetResponse
 import net.corda.data.virtualnode.VirtualNodeManagementRequest
 import net.corda.data.virtualnode.VirtualNodeManagementResponse
 import net.corda.data.virtualnode.VirtualNodeManagementResponseFailure
