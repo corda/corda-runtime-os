@@ -207,7 +207,7 @@ class AMQPwithOSGiSerializationTests {
     }
 
     @CordaSerializable
-    data class TestSignableData(val signableData: Map<Int, SignableData>)
+    data class TestMapOfSignableData(val signableData: Map<Int, SignableData>)
 
     @Test
     fun mapOfSignableData() {
@@ -217,15 +217,47 @@ class AMQPwithOSGiSerializationTests {
             registerCustomSerializers(factory)
             val context = testSerializationContext.withSandboxGroup(sandboxGroup)
 
-            val mainBundleItemInstance = TestSignableData(
+            val testObject = TestMapOfSignableData(
                 mapOf(1 to SignableData(SecureHash.parse("ALGO:1234"),
                 DigitalSignatureMetadata(Instant.EPOCH, emptyMap()))))
 
-            SerializationOutput(factory).serialize(mainBundleItemInstance, context)
+            val serializedBytes = SerializationOutput(factory).serialize(testObject, context)
+            val deserialize = DeserializationInput(factory).deserialize(serializedBytes, context)
+
+            assertEquals(testObject, deserialize)
         } finally {
             sandboxFactory.unloadSandboxGroup(sandboxGroup)
         }
     }
+
+    @CordaSerializable
+    data class TestListOfSignableData(val signableData: List<SignableData>)
+
+    @Test
+    fun listOfSignableData() {
+        val sandboxGroup = sandboxFactory.loadSandboxGroup("META-INF/TestSerializableCpk-using-lib.cpb")
+        try {
+            val factory = testDefaultFactory(sandboxGroup)
+            registerCustomSerializers(factory)
+            val context = testSerializationContext.withSandboxGroup(sandboxGroup)
+
+            val testObject = TestListOfSignableData(
+                listOf(SignableData(
+                    SecureHash.parse("ALGO:1234"),
+                    DigitalSignatureMetadata(Instant.EPOCH, emptyMap())
+                ))
+            )
+
+            val serializedBytes = SerializationOutput(factory).serialize(testObject, context)
+            val deserialize = DeserializationInput(factory).deserialize(serializedBytes, context)
+
+            assertEquals(testObject, deserialize)
+
+        } finally {
+            sandboxFactory.unloadSandboxGroup(sandboxGroup)
+        }
+    }
+
 
     // Based on writeTestResource from AMQPTestUtils.kt which is not available as an OSGi exported package
     @Suppress("unused")
