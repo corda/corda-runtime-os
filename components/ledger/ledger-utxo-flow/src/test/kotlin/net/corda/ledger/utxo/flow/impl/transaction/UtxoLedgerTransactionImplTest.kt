@@ -9,7 +9,6 @@ import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.ledger.common.testkit.mockSigningService
 import net.corda.ledger.common.testkit.publicKeyExample
-import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.UtxoStateClassExample
 import net.corda.ledger.utxo.testkit.getUtxoInvalidStateAndRef
@@ -23,9 +22,7 @@ import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.SecureHash
-import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
-import net.corda.v5.ledger.utxo.StateAndRef
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
