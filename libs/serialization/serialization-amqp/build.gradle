@@ -59,10 +59,7 @@ dependencies {
 
     integrationTestImplementation project(':testing:sandboxes')
     integrationTestImplementation "net.corda:corda-application"
-    integrationTestImplementation project(":libs:ledger:ledger-common-data")
     integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
-    integrationTestRuntimeOnly project(':libs:application:application-impl')
-    integrationTestRuntimeOnly project(':libs:crypto:merkle-impl')
     integrationTestRuntimeOnly project(':libs:crypto:crypto-core')
     integrationTestRuntimeOnly project(':libs:crypto:cipher-suite-impl')
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")

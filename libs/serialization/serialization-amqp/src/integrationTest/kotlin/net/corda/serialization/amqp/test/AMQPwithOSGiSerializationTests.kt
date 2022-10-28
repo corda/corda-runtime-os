@@ -7,7 +7,6 @@ import net.corda.internal.serialization.amqp.SerializationOutput
 import net.corda.internal.serialization.amqp.SerializerFactory
 import net.corda.internal.serialization.amqp.SerializerFactoryBuilder
 import net.corda.internal.serialization.registerCustomSerializers
-import net.corda.ledger.common.data.transaction.SignableData
 import net.corda.sandbox.SandboxException
 import net.corda.sandbox.SandboxGroup
 import net.corda.serialization.SerializationContext
@@ -18,10 +17,8 @@ import net.corda.utilities.copyTo
 import net.corda.utilities.div
 import net.corda.utilities.reflection.packageName_
 import net.corda.utilities.toByteSequence
-import net.corda.v5.application.crypto.DigitalSignatureMetadata
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.types.OpaqueBytes
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.serialization.SerializedBytes
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -43,7 +40,6 @@ import java.io.File
 import java.io.NotSerializableException
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
-import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
@@ -207,6 +203,9 @@ class AMQPwithOSGiSerializationTests {
     }
 
     @CordaSerializable
+    class SignableData
+
+    @CordaSerializable
     data class TestMapOfSignableData(val signableData: Map<Int, SignableData>)
 
     @Test
@@ -217,9 +216,7 @@ class AMQPwithOSGiSerializationTests {
             registerCustomSerializers(factory)
             val context = testSerializationContext.withSandboxGroup(sandboxGroup)
 
-            val testObject = TestMapOfSignableData(
-                mapOf(1 to SignableData(SecureHash.parse("ALGO:1234"),
-                DigitalSignatureMetadata(Instant.EPOCH, emptyMap()))))
+            val testObject = TestMapOfSignableData(mapOf(1 to SignableData()))
 
             val serializedBytes = SerializationOutput(factory).serialize(testObject, context)
             val deserialize = DeserializationInput(factory).deserialize(serializedBytes, context)
@@ -241,12 +238,7 @@ class AMQPwithOSGiSerializationTests {
             registerCustomSerializers(factory)
             val context = testSerializationContext.withSandboxGroup(sandboxGroup)
 
-            val testObject = TestListOfSignableData(
-                listOf(SignableData(
-                    SecureHash.parse("ALGO:1234"),
-                    DigitalSignatureMetadata(Instant.EPOCH, emptyMap())
-                ))
-            )
+            val testObject = TestListOfSignableData(listOf(SignableData()))
 
             val serializedBytes = SerializationOutput(factory).serialize(testObject, context)
             val deserialize = DeserializationInput(factory).deserialize(serializedBytes, context)
