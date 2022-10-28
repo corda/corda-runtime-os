@@ -1,5 +1,6 @@
 package net.corda.permissions.management.internal
 
+import java.util.concurrent.atomic.AtomicReference
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.permissions.management.PermissionManagementRequest
 import net.corda.data.permissions.management.PermissionManagementResponse
@@ -30,7 +31,6 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.util.concurrent.atomic.AtomicReference
 
 internal class PermissionManagementServiceEventHandlerTest {
     private val permissionManagementCacheRef = AtomicReference(mock<PermissionManagementCache>())
@@ -164,11 +164,10 @@ internal class PermissionManagementServiceEventHandlerTest {
     }
 
     @Test
-    fun `processing ERROR status update stops coordinator and sets status to ERROR`() {
+    fun `processing ERROR status update stops coordinator and sets status to DOWN`() {
         handler.processEvent(RegistrationStatusChangeEvent(mock(), LifecycleStatus.ERROR), coordinator)
 
-        verify(coordinator).stop()
-        verify(coordinator).updateStatus(LifecycleStatus.ERROR)
+        verify(coordinator).updateStatus(LifecycleStatus.DOWN)
     }
 
     @Test

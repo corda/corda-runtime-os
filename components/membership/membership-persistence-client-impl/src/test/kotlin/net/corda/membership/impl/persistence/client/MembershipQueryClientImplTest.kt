@@ -1,6 +1,9 @@
 package net.corda.membership.impl.persistence.client
 
 import com.typesafe.config.ConfigFactory
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.concurrent.CompletableFuture
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
 import net.corda.data.KeyValuePair
@@ -60,9 +63,6 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.concurrent.CompletableFuture
 
 class MembershipQueryClientImplTest {
 
@@ -186,10 +186,9 @@ class MembershipQueryClientImplTest {
     }
 
     @Test
-    fun `stop event sets status to down but closes no handlers since they haven't been created`() {
+    fun `stop event closes no handlers since they haven't been created`() {
         postStopEvent()
 
-        verify(coordinator).updateStatus(eq(LifecycleStatus.DOWN), any())
         verify(registrationHandle, never()).close()
         verify(configHandle, never()).close()
         verify(rpcSender, never()).close()
