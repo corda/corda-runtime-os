@@ -14,9 +14,10 @@ import net.corda.data.persistence.EntityRequest
 import net.corda.data.persistence.EntityResponse
 import net.corda.data.persistence.FindAll
 import net.corda.data.persistence.FindEntities
+import net.corda.data.persistence.FindWithNamedQuery
+import net.corda.data.persistence.FindEntities
 import net.corda.data.persistence.MergeEntities
 import net.corda.data.persistence.PersistEntities
-import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.db.admin.LiquibaseSchemaMigrator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.connection.manager.DbConnectionManager
@@ -33,9 +34,16 @@ import net.corda.db.persistence.testkit.helpers.SandboxHelper.createDog
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getCatClass
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getDogClass
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.getOwnerClass
+import net.corda.db.persistence.testkit.helpers.SandboxHelper.getSerializer
+import net.corda.db.persistence.testkit.components.VirtualNodeService
+import net.corda.db.persistence.testkit.fake.FakeDbConnectionManager
+import net.corda.db.persistence.testkit.helpers.BasicMocks
+import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.entityprocessor.impl.internal.EntityMessageProcessor
 import net.corda.entityprocessor.impl.internal.PersistenceServiceInternal
 import net.corda.entityprocessor.impl.internal.getClass
+import net.corda.entityprocessor.impl.tests.helpers.AnimalCreator.createCats
+import net.corda.entityprocessor.impl.tests.helpers.AnimalCreator.createDogs
 import net.corda.entityprocessor.impl.tests.helpers.AnimalCreator.createCats
 import net.corda.entityprocessor.impl.tests.helpers.AnimalCreator.createDogs
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
@@ -46,6 +54,11 @@ import net.corda.orm.utils.use
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.EntitySandboxServiceFactory
 import net.corda.persistence.common.getSerializationService
+import net.corda.persistence.common.exceptions.KafkaMessageSizeException
+import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_SERIALIZER
+import net.corda.persistence.common.EntitySandboxService
+import net.corda.persistence.common.EntitySandboxServiceFactory
+import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.exceptions.KafkaMessageSizeException
 import net.corda.sandboxgroupcontext.SandboxGroupContext
 import net.corda.testing.sandboxes.SandboxSetup
@@ -109,7 +122,7 @@ class PersistenceServiceInternalTests {
     private lateinit var virtualNode: VirtualNodeService
     private lateinit var cpiInfoReadService: CpiInfoReadService
     private lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
-    private lateinit var externalEventResponseFactory: ExternalEventResponseFactory
+    private lateinit var responseFactory: ResponseFactory
     private lateinit var deserializer: CordaAvroDeserializer<EntityResponse>
 
     private lateinit var virtualNodeInfo: VirtualNodeInfo
@@ -135,7 +148,7 @@ class PersistenceServiceInternalTests {
             virtualNode = setup.fetchService(timeout = 10000)
             cpiInfoReadService = setup.fetchService(timeout = 10000)
             virtualNodeInfoReadService = setup.fetchService(timeout = 10000)
-            externalEventResponseFactory = setup.fetchService(timeout = 10000)
+            responseFactory = setup.fetchService(timeout = 10000)
             deserializer = setup.fetchService<CordaAvroSerializationFactory>(timeout = 10000)
                 .createAvroDeserializer({}, EntityResponse::class.java)
         }
@@ -241,9 +254,10 @@ class PersistenceServiceInternalTests {
         )
         val processor = EntityMessageProcessor(
             myEntitySandboxService,
-            externalEventResponseFactory,
+            responseFactory,
             this::noOpPayloadCheck
         )
+
         val requestId = UUID.randomUUID().toString() // just needs to be something unique.
         val records = listOf(Record(TOPIC, requestId, request))
 
@@ -298,7 +312,10 @@ class PersistenceServiceInternalTests {
     fun `find multiple by ids`() {
         val basilTheDog = sandbox.createDog("Basil", UUID.randomUUID())
         val cloverTheDog = sandbox.createDog("Clover", UUID.randomUUID())
-        persistDirectInDb(basilTheDog.instance, cloverTheDog.instance)     // write the dog *directly* to the database (don't use 'our' code).
+        persistDirectInDb(
+            basilTheDog.instance,
+            cloverTheDog.instance
+        )     // write the dog *directly* to the database (don't use 'our' code).
         val result = assertFindEntities(DOG_CLASS_NAME, basilTheDog.id, cloverTheDog.id) // use API to find it
         assertThat(result).containsOnly(basilTheDog.instance, cloverTheDog.instance)
     }
@@ -509,7 +526,7 @@ class PersistenceServiceInternalTests {
     fun `find all exceeds kakfa packet size`() {
         persistDogs()
 
-        val processor = EntityMessageProcessor(entitySandboxService, externalEventResponseFactory) {
+        val processor = getMessageProcessor {
             if (it.array().size > 50) throw KafkaMessageSizeException("Too large")
             it
         }
@@ -528,7 +545,7 @@ class PersistenceServiceInternalTests {
         val dog = sandbox.createDog("K9", owner = "Doctor Who")
         persistDirectInDb(dog.instance)
 
-        val processor = EntityMessageProcessor(entitySandboxService, externalEventResponseFactory) {
+        val processor = getMessageProcessor {
             if (it.array().size > 4) throw KafkaMessageSizeException("Too large")
             it
         }
@@ -552,7 +569,7 @@ class PersistenceServiceInternalTests {
 
         val modifiedDog = sandbox.createDog("K9", owner = "Doctor Who Peter Davidson", id = dog.id)
 
-        val processor = EntityMessageProcessor(entitySandboxService, externalEventResponseFactory) {
+        val processor = getMessageProcessor {
             if (it.array().size > 4) throw KafkaMessageSizeException("Too large")
             it
         }
@@ -780,7 +797,7 @@ class PersistenceServiceInternalTests {
                 FindAll(querySetup.className, offset, limit)
             }
         }
-        val processor = EntityMessageProcessor(entitySandboxService, externalEventResponseFactory) {
+        val processor = getMessageProcessor {
             val size = it.array().size
             logger.info("payload check size $size c/w limit $sizeLimit")
             if (size > sizeLimit) throw KafkaMessageSizeException("Too large; size $size exceeds limit $sizeLimit")
@@ -812,11 +829,7 @@ class PersistenceServiceInternalTests {
      * @return the list of successful responses
      * */
     private fun assertDeleteEntities(vararg objs: Any): Record<*, *> {
-        val processor = EntityMessageProcessor(
-            entitySandboxService,
-            externalEventResponseFactory,
-            this::noOpPayloadCheck
-        )
+        val processor = getMessageProcessor(this::noOpPayloadCheck)
 
         val responses = assertSuccessResponses(
             processor.onNext(
@@ -844,11 +857,7 @@ class PersistenceServiceInternalTests {
      * */
     private fun assertDeleteEntitiesById(className: String, vararg objs: UUID): List<Record<*, *>> {
         val deleteByPrimaryKey = DeleteEntitiesById(className, objs.map { sandbox.serialize(it) })
-        val processor = EntityMessageProcessor(
-            entitySandboxService,
-            externalEventResponseFactory,
-            this::noOpPayloadCheck
-        )
+        val processor = getMessageProcessor(this::noOpPayloadCheck)
         val records = listOf(
             Record(
                 TOPIC,
@@ -863,11 +872,7 @@ class PersistenceServiceInternalTests {
      * @return the list of successful responses
      * */
     private fun assertFindEntities(className: String, vararg obj: Any): List<*> {
-        val processor = EntityMessageProcessor(
-            entitySandboxService,
-            externalEventResponseFactory,
-            this::noOpPayloadCheck
-        )
+        val processor = getMessageProcessor(this::noOpPayloadCheck)
 
         val responses = assertSuccessResponses(
             processor.onNext(
@@ -894,11 +899,8 @@ class PersistenceServiceInternalTests {
      * @return the list of successful responses
      */
     private fun assertPersistEntities(vararg entities: Any): List<Record<*, *>> {
-        val processor = EntityMessageProcessor(
-            entitySandboxService,
-            externalEventResponseFactory,
-            this::noOpPayloadCheck
-        )
+        val processor = getMessageProcessor(this::noOpPayloadCheck)
+
         val requestId = UUID.randomUUID().toString()
         val responses = assertSuccessResponses(
             processor.onNext(
@@ -927,11 +929,8 @@ class PersistenceServiceInternalTests {
      * @return the list of successful responses
      */
     private fun assertMergeEntities(vararg objs: Any): List<Any> {
-        val processor = EntityMessageProcessor(
-            entitySandboxService,
-            externalEventResponseFactory,
-            this::noOpPayloadCheck
-        )
+        val processor = getMessageProcessor(this::noOpPayloadCheck)
+
         val responses = assertSuccessResponses(
             processor.onNext(
                 listOf(
@@ -970,10 +969,19 @@ class PersistenceServiceInternalTests {
         return cats.size
     }
 
+    private fun SandboxGroupContext.serialize(obj: Any) =
+        ByteBuffer.wrap(getSerializer(SANDBOX_SERIALIZER).serialize(obj).bytes)
     private fun SandboxGroupContext.serialize(obj: Any) = ByteBuffer.wrap(getSerializationService().serialize(obj).bytes)
 
     /** Simple wrapper to deserialize */
     private fun SandboxGroupContext.deserialize(bytes: ByteBuffer) =
         getSerializationService().deserialize(bytes.array(), Any::class.java)
 
+    private fun getMessageProcessor(payloadCheck: (bytes: ByteBuffer) -> ByteBuffer): EntityMessageProcessor {
+        return EntityMessageProcessor(
+            entitySandboxService,
+            responseFactory,
+            payloadCheck
+        )
+    }
 }

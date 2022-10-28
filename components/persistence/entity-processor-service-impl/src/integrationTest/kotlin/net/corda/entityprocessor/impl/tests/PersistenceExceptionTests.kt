@@ -1,8 +1,5 @@
 package net.corda.entityprocessor.impl.tests
 
-import java.nio.ByteBuffer
-import java.nio.file.Path
-import java.util.UUID
 import net.corda.cpiinfo.read.CpiInfoReadService
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.KeyValuePairList
@@ -18,13 +15,16 @@ import net.corda.db.persistence.testkit.fake.FakeDbConnectionManager
 import net.corda.db.persistence.testkit.helpers.Resources
 import net.corda.db.persistence.testkit.helpers.SandboxHelper.createDog
 import net.corda.entityprocessor.impl.internal.EntityMessageProcessor
-import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.messaging.api.records.Record
+import net.corda.persistence.common.EntitySandboxContextTypes.SANDBOX_SERIALIZER
 import net.corda.persistence.common.exceptions.NotReadyException
 import net.corda.persistence.common.exceptions.VirtualNodeException
 import net.corda.persistence.common.EntitySandboxServiceFactory
+import net.corda.persistence.common.ResponseFactory
+import net.corda.persistence.common.exceptions.NotReadyException
+import net.corda.persistence.common.exceptions.VirtualNodeException
 import net.corda.persistence.common.getSerializationService
 import net.corda.testing.sandboxes.SandboxSetup
 import net.corda.testing.sandboxes.fetchService
@@ -45,6 +45,8 @@ import org.osgi.test.common.annotation.InjectBundleContext
 import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.context.BundleContextExtension
 import org.osgi.test.junit5.service.ServiceExtension
+import java.nio.ByteBuffer
+import java.nio.file.Path
 
 
 /**
@@ -65,7 +67,7 @@ class PersistenceExceptionTests {
     private lateinit var virtualNode: VirtualNodeService
     private lateinit var cpiInfoReadService: CpiInfoReadService
     private lateinit var virtualNodeInfoReadService: VirtualNodeInfoReadService
-    private lateinit var externalEventResponseFactory: ExternalEventResponseFactory
+    private lateinit var responseFactory: ResponseFactory
 
     @BeforeAll
     fun setup(
@@ -82,7 +84,7 @@ class PersistenceExceptionTests {
             virtualNode = setup.fetchService(timeout = 5000)
             cpiInfoReadService = setup.fetchService(timeout = 5000)
             virtualNodeInfoReadService = setup.fetchService(timeout = 5000)
-            externalEventResponseFactory = setup.fetchService(timeout = 5000)
+            responseFactory = setup.fetchService(timeout = 5000)
         }
     }
 
@@ -107,7 +109,7 @@ class PersistenceExceptionTests {
             )
 
         val processor =
-            EntityMessageProcessor(brokenEntitySandboxService, externalEventResponseFactory, this::noOpPayloadCheck)
+            EntityMessageProcessor(brokenEntitySandboxService, responseFactory, this::noOpPayloadCheck)
 
         // Now "send" the request for processing and "receive" the responses.
         val responses = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), ignoredRequest)))
@@ -143,7 +145,7 @@ class PersistenceExceptionTests {
             )
 
         val processor =
-            EntityMessageProcessor(brokenEntitySandboxService, externalEventResponseFactory, this::noOpPayloadCheck)
+            EntityMessageProcessor(brokenEntitySandboxService, responseFactory, this::noOpPayloadCheck)
 
         // Now "send" the request for processing and "receive" the responses.
         val responses = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), ignoredRequest)))
@@ -178,7 +180,7 @@ class PersistenceExceptionTests {
             )
 
         val processor =
-            EntityMessageProcessor(entitySandboxService, externalEventResponseFactory, this::noOpPayloadCheck)
+            EntityMessageProcessor(entitySandboxService, responseFactory, this::noOpPayloadCheck)
 
         // Now "send" the request for processing and "receive" the responses.
         val responses = processor.onNext(listOf(Record(TOPIC, UUID.randomUUID().toString(), badRequest)))
