@@ -40,8 +40,12 @@ class ConsensualTransactionBuilderImpl(
 
     private var spent: Boolean = false
 
-    override fun withStates(vararg states: ConsensualState): ConsensualTransactionBuilder =
-        this.copy(states = this.states + states)
+    override fun withStates(vararg states: ConsensualState): ConsensualTransactionBuilder {
+        check(!spent) { "This transaction builder has already been consumed and cannot be used again." }
+        val builder = this.copy(states = this.states + states)
+        spent = true
+        return builder
+    }
 
     @Suspendable
     override fun sign(): ConsensualSignedTransaction {
