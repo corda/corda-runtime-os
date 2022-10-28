@@ -1,9 +1,9 @@
 package net.corda.cli.plugin.initialRbac.commands
 
-import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.UUID_REGEX
-import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.VNODE_SHORT_HASH_REGEX
 import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.checkOrCreateRole
 import net.corda.cli.plugins.common.HttpRpcCommand
+import net.corda.rbac.schema.RbacKeys.UUID_REGEX
+import net.corda.rbac.schema.RbacKeys.VNODE_SHORT_HASH_REGEX
 import picocli.CommandLine
 import java.util.concurrent.Callable
 

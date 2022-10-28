@@ -64,7 +64,7 @@ class ConsensualLedgerPersistenceServiceImplTest {
         whenever(transaction.wireTransaction).thenReturn(mock())
         whenever(transaction.signatures).thenReturn(mock())
 
-        assertThat(consensualLedgerPersistenceService.persist(transaction, "V")).isEqualTo(listOf(expectedObj))
+        assertThat(consensualLedgerPersistenceService.persist(transaction, TransactionStatus.VERIFIED)).isEqualTo(listOf(expectedObj))
 
         verify(serializationService).serialize(any())
         verify(serializationService).deserialize<CordaPackageSummary>(any<ByteArray>(), any())
