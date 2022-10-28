@@ -25,7 +25,7 @@ import net.corda.flow.external.events.responses.factory.ExternalEventResponseFac
 import net.corda.ledger.common.data.transaction.TransactionMetaData
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
-import net.corda.ledger.common.testkit.cpiPackgeSummaryExample
+import net.corda.ledger.common.testkit.cpiPackageSummaryExample
 import net.corda.ledger.common.testkit.cpkPackageSummaryListExample
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.common.testkit.signatureWithMetaDataExample
@@ -201,7 +201,7 @@ class ConsensualLedgerMessageProcessorTests {
             TransactionMetaData.LEDGER_VERSION_KEY to "1.0",
             TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
             TransactionMetaData.PLATFORM_VERSION_KEY to 123,
-            TransactionMetaData.CPI_METADATA_KEY to cpiPackgeSummaryExample,
+            TransactionMetaData.CPI_METADATA_KEY to cpiPackageSummaryExample,
             TransactionMetaData.CPK_METADATA_KEY to cpkPackageSummaryListExample
         ))
         val wireTransaction = getWireTransactionExample(

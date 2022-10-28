@@ -1,5 +1,6 @@
 package net.corda.ledger.consensual.persistence.impl.processor.tests
 
+import net.corda.common.json.validation.JsonValidator
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.schema.DbSchema
@@ -77,6 +78,8 @@ class ConsensualLedgerRepositoryTest {
     lateinit var merkleTreeProvider: MerkleTreeProvider
     @InjectService
     lateinit var jsonMarshallingService: JsonMarshallingService
+    @InjectService
+    lateinit var jsonValidator: JsonValidator
 
     private lateinit var serializationService: SerializationService
     private lateinit var emptySandboxGroup: SandboxGroup
@@ -129,7 +132,8 @@ class ConsensualLedgerRepositoryTest {
             serializationService = getTestSerializationService(emptySandboxGroup) {
                 it.register(publicKeySerializer, it)
             }
-            repository = ConsensualLedgerRepository(merkleTreeProvider, digestService, jsonMarshallingService, serializationService)
+            repository = ConsensualLedgerRepository(merkleTreeProvider, digestService,
+                jsonMarshallingService, jsonValidator, serializationService)
             setup.withCleanup {
                 sandboxCreationService.unloadSandboxGroup(emptySandboxGroup)
             }
@@ -386,6 +390,7 @@ class ConsensualLedgerRepositoryTest {
             merkleTreeProvider,
             digestService,
             jsonMarshallingService,
+            jsonValidator,
             privacySalt,
             componentGroupLists
         )
