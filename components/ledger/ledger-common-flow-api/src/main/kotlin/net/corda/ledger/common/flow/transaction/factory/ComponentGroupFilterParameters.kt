@@ -1,17 +1,42 @@
 package net.corda.ledger.common.flow.transaction.factory
 
+import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.data.transaction.filtered.MerkleProofType
 
+/**
+ * [ComponentGroupFilterParameters] is used with [FilteredTransactionFactory] to specify what component groups include in the
+ * [FilteredTransaction] that the factory creates.
+ *
+ * @see FilteredTransactionFactory
+ */
 sealed interface ComponentGroupFilterParameters {
 
-    val componentGroupOrdinal: Int
+    /**
+     * Gets the index of the component group to include.
+     */
+    val componentGroupIndex: Int
+
+    /**
+     * Gets the type of proof to create.
+     */
     val merkleProofType: MerkleProofType
 
-    data class AuditProof(override val componentGroupOrdinal: Int, val deserializedClass: Class<*>) : ComponentGroupFilterParameters {
+    /**
+     * [AuditProof] includes a component group in the [FilteredTransaction] and creates an audit proof from the filtered components.
+     *
+     * @property componentGroupIndex The index of the component group to include.
+     * @property deserializedClass The type that the component group deserializes its components into.
+     */
+    data class AuditProof(override val componentGroupIndex: Int, val deserializedClass: Class<*>) : ComponentGroupFilterParameters {
         override val merkleProofType = MerkleProofType.AUDIT
     }
 
-    data class SizeProof(override val componentGroupOrdinal: Int) : ComponentGroupFilterParameters {
+    /**
+     * [SizeProof] includes a component group in the [FilteredTransaction] and creates a size proof from the component group.
+     *
+     * @property componentGroupIndex The index of the component group to include.
+     */
+    data class SizeProof(override val componentGroupIndex: Int) : ComponentGroupFilterParameters {
         override val merkleProofType = MerkleProofType.SIZE
     }
 }

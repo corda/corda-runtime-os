@@ -7,10 +7,9 @@ import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadata
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
-import net.corda.ledger.common.data.transaction.filtered.MerkleProofType
 import net.corda.ledger.common.flow.impl.transaction.factory.FilteredTransactionFactoryImpl
 import net.corda.ledger.common.flow.transaction.factory.ComponentGroupFilterParameters
-import net.corda.ledger.common.testkit.getWireTransaction
+import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
 import org.junit.jupiter.api.Assertions.assertArrayEquals
@@ -61,7 +60,7 @@ class FilteredTransactionImplTest {
         whenever(serializationService.deserialize(COMPONENT_6, Any::class.java)).thenReturn(MyClassB())
         whenever(serializationService.deserialize(COMPONENT_10, Any::class.java)).thenReturn(MyClassC())
 
-        wireTransaction = getWireTransaction(
+        wireTransaction = getWireTransactionExample(
             digestService,
             merkleTreeProvider,
             jsonMarshallingService,
@@ -102,7 +101,7 @@ class FilteredTransactionImplTest {
         whenever(serializationService.deserialize(COMPONENT_1, Any::class.java)).thenReturn(MyClassA())
         whenever(serializationService.deserialize(COMPONENT_2, Any::class.java)).thenReturn(MyClassB())
 
-        wireTransaction = getWireTransaction(
+        wireTransaction = getWireTransactionExample(
             digestService,
             merkleTreeProvider,
             jsonMarshallingService,
@@ -138,7 +137,7 @@ class FilteredTransactionImplTest {
         whenever(serializationService.deserialize(COMPONENT_2, Any::class.java)).thenReturn(MyClassB())
         whenever(serializationService.deserialize(COMPONENT_3, Any::class.java)).thenReturn(MyClassC())
 
-        wireTransaction = getWireTransaction(
+        wireTransaction = getWireTransactionExample(
             digestService,
             merkleTreeProvider,
             jsonMarshallingService,
@@ -173,7 +172,7 @@ class FilteredTransactionImplTest {
         whenever(serializationService.deserialize(COMPONENT_1, Any::class.java)).thenReturn(MyClassA())
         whenever(serializationService.deserialize(COMPONENT_2, Any::class.java)).thenReturn(MyClassB())
 
-        wireTransaction = getWireTransaction(
+        wireTransaction = getWireTransactionExample(
             digestService,
             merkleTreeProvider,
             jsonMarshallingService,

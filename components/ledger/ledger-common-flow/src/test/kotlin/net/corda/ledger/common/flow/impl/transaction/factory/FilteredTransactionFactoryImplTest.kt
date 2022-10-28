@@ -9,7 +9,7 @@ import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
 import net.corda.ledger.common.data.transaction.filtered.MerkleProofType
 import net.corda.ledger.common.flow.transaction.factory.ComponentGroupFilterParameters
-import net.corda.ledger.common.testkit.getWireTransaction
+import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
 import org.assertj.core.api.Assertions.assertThat
@@ -109,8 +109,8 @@ class FilteredTransactionFactoryImplTest {
         ) { true }
 
         assertThat(filteredTransaction.filteredComponentGroups).hasSize(2)
-        assertThat(filteredTransaction.filteredComponentGroups[0]!!.componentGroupOrdinal).isEqualTo(0)
-        assertThat(filteredTransaction.filteredComponentGroups[1]!!.componentGroupOrdinal).isEqualTo(1)
+        assertThat(filteredTransaction.filteredComponentGroups[0]!!.componentGroupIndex).isEqualTo(0)
+        assertThat(filteredTransaction.filteredComponentGroups[1]!!.componentGroupIndex).isEqualTo(1)
         assertThat(filteredTransaction.filteredComponentGroups[0]!!.merkleProofType).isEqualTo(MerkleProofType.AUDIT)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProofType).isEqualTo(MerkleProofType.AUDIT)
     }
@@ -134,8 +134,8 @@ class FilteredTransactionFactoryImplTest {
         ) { it is MyClassA || it is MyClassB }
 
         assertThat(filteredTransaction.filteredComponentGroups).hasSize(2)
-        assertThat(filteredTransaction.filteredComponentGroups[0]!!.componentGroupOrdinal).isEqualTo(0)
-        assertThat(filteredTransaction.filteredComponentGroups[1]!!.componentGroupOrdinal).isEqualTo(1)
+        assertThat(filteredTransaction.filteredComponentGroups[0]!!.componentGroupIndex).isEqualTo(0)
+        assertThat(filteredTransaction.filteredComponentGroups[1]!!.componentGroupIndex).isEqualTo(1)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProofType).isEqualTo(MerkleProofType.AUDIT)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof.leaves).hasSize(2)
     }
@@ -159,8 +159,8 @@ class FilteredTransactionFactoryImplTest {
         ) { false }
 
         assertThat(filteredTransaction.filteredComponentGroups).hasSize(2)
-        assertThat(filteredTransaction.filteredComponentGroups[0]!!.componentGroupOrdinal).isEqualTo(0)
-        assertThat(filteredTransaction.filteredComponentGroups[1]!!.componentGroupOrdinal).isEqualTo(1)
+        assertThat(filteredTransaction.filteredComponentGroups[0]!!.componentGroupIndex).isEqualTo(0)
+        assertThat(filteredTransaction.filteredComponentGroups[1]!!.componentGroupIndex).isEqualTo(1)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProofType).isEqualTo(MerkleProofType.AUDIT)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof).isEqualTo(
             wireTransaction.componentMerkleTrees[1]!!.createAuditProof(
@@ -217,8 +217,8 @@ class FilteredTransactionFactoryImplTest {
         ) { false }
 
         assertThat(filteredTransaction.filteredComponentGroups).hasSize(2)
-        assertThat(filteredTransaction.filteredComponentGroups[0]!!.componentGroupOrdinal).isEqualTo(0)
-        assertThat(filteredTransaction.filteredComponentGroups[1]!!.componentGroupOrdinal).isEqualTo(1)
+        assertThat(filteredTransaction.filteredComponentGroups[0]!!.componentGroupIndex).isEqualTo(0)
+        assertThat(filteredTransaction.filteredComponentGroups[1]!!.componentGroupIndex).isEqualTo(1)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProofType).isEqualTo(MerkleProofType.AUDIT)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof).isEqualTo(
             wireTransaction.componentMerkleTrees[1]!!.createAuditProof(
@@ -247,18 +247,18 @@ class FilteredTransactionFactoryImplTest {
         ) { false }
 
         assertThat(filteredTransaction.filteredComponentGroups).hasSize(2)
-        assertThat(filteredTransaction.filteredComponentGroups[0]!!.componentGroupOrdinal).isEqualTo(0)
-        assertThat(filteredTransaction.filteredComponentGroups[1]!!.componentGroupOrdinal).isEqualTo(1)
+        assertThat(filteredTransaction.filteredComponentGroups[0]!!.componentGroupIndex).isEqualTo(0)
+        assertThat(filteredTransaction.filteredComponentGroups[1]!!.componentGroupIndex).isEqualTo(1)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProofType).isEqualTo(MerkleProofType.SIZE)
         assertThat(filteredTransaction.filteredComponentGroups[1]!!.merkleProof.leaves).hasSize(3)
     }
 
     private fun wireTransaction(componentGroupLists: List<List<ByteArray>>): WireTransaction {
-        return getWireTransaction(
+        return getWireTransactionExample(
             digestService,
             merkleTreeProvider,
             jsonMarshallingService,
-            componentGroupLists
+            componentGroupLists = componentGroupLists
         )
     }
 

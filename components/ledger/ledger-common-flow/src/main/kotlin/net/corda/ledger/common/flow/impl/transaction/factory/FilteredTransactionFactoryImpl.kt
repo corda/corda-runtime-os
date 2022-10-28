@@ -35,14 +35,14 @@ class FilteredTransactionFactoryImpl @Activate constructor(
         filter: Predicate<Any>
     ): FilteredTransaction {
 
-        requireUniqueComponentGroupOrdinals(componentGroupFilterParameters)
+        requireUniqueComponentGroupIndexes(componentGroupFilterParameters)
 
         // Guarantees construction of [WireTransaction.rootMerkleTree] as it is lazily constructed.
         val transactionId = wireTransaction.id
 
         val filteredComponentGroups = componentGroupFilterParameters
             .map { filterComponentGroup(wireTransaction, it, filter) }
-            .associateBy(FilteredComponentGroup::componentGroupOrdinal)
+            .associateBy(FilteredComponentGroup::componentGroupIndex)
 
         return FilteredTransactionImpl(
             id = transactionId,
@@ -53,10 +53,10 @@ class FilteredTransactionFactoryImpl @Activate constructor(
         )
     }
 
-    private fun requireUniqueComponentGroupOrdinals(componentGroupFilterParameters: List<ComponentGroupFilterParameters>) {
-        val componentGroupOrdinals = componentGroupFilterParameters.map { it.componentGroupOrdinal }
-        require(componentGroupFilterParameters.size == componentGroupOrdinals.toSet().size) {
-            "Unique component group indexes are required when filtering a transaction, indexes: $componentGroupOrdinals"
+    private fun requireUniqueComponentGroupIndexes(componentGroupFilterParameters: List<ComponentGroupFilterParameters>) {
+        val componentGroupIndexes = componentGroupFilterParameters.map { it.componentGroupIndex }
+        require(componentGroupFilterParameters.size == componentGroupIndexes.toSet().size) {
+            "Unique component group indexes are required when filtering a transaction, indexes: $componentGroupIndexes"
         }
     }
 
@@ -66,18 +66,18 @@ class FilteredTransactionFactoryImpl @Activate constructor(
         filter: Predicate<Any>,
     ): FilteredComponentGroup {
 
-        val componentGroupOrdinal = parameters.componentGroupOrdinal
-        val componentGroup = wireTransaction.getComponentGroupList(componentGroupOrdinal)
+        val componentGroupIndex = parameters.componentGroupIndex
+        val componentGroup = wireTransaction.getComponentGroupList(componentGroupIndex)
 
         val componentGroupMerkleTreeDigestProvider = wireTransaction.getComponentGroupMerkleTreeDigestProvider(
             wireTransaction.privacySalt,
-            componentGroupOrdinal
+            componentGroupIndex
         )
 
         val merkleProof = when (parameters) {
             is ComponentGroupFilterParameters.AuditProof -> {
 
-                val skipFiltering = componentGroupOrdinal == 0
+                val skipFiltering = componentGroupIndex == 0
 
                 val filteredComponents = componentGroup
                     .mapIndexed { index, component -> index to component }
@@ -90,7 +90,7 @@ class FilteredTransactionFactoryImpl @Activate constructor(
                         )
                     }
 
-                wireTransaction.componentMerkleTrees[componentGroupOrdinal]!!.let { merkleTree ->
+                wireTransaction.componentMerkleTrees[componentGroupIndex]!!.let { merkleTree ->
                     if (filteredComponents.isEmpty()) {
                         merkleTree.createAuditProof(listOf(0))
                     } else {
@@ -100,8 +100,8 @@ class FilteredTransactionFactoryImpl @Activate constructor(
             }
             is ComponentGroupFilterParameters.SizeProof -> {
 
-                wireTransaction.componentMerkleTrees[componentGroupOrdinal]!!.let { merkleTree ->
-                    if (wireTransaction.getComponentGroupList(componentGroupOrdinal).isEmpty()) {
+                wireTransaction.componentMerkleTrees[componentGroupIndex]!!.let { merkleTree ->
+                    if (wireTransaction.getComponentGroupList(componentGroupIndex).isEmpty()) {
                         merkleTree.createAuditProof(listOf(0))
                     } else {
                         val componentGroupMerkleTreeSizeProofProvider =
@@ -114,6 +114,6 @@ class FilteredTransactionFactoryImpl @Activate constructor(
             }
         }
 
-        return FilteredComponentGroup(componentGroupOrdinal, merkleProof, parameters.merkleProofType)
+        return FilteredComponentGroup(componentGroupIndex, merkleProof, parameters.merkleProofType)
     }
 }

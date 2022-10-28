@@ -73,10 +73,10 @@ class FilteredTransactionImpl(
         val componentGroupAuditProofProvider = createComponentGroupAuditProofProvider(componentGroupDigestAlgorithmName)
         val componentGroupSizeProofProvider = createComponentGroupSizeProofProvider(componentGroupDigestAlgorithmName)
 
-        for ((componentGroupOrdinal, filteredComponentGroup) in filteredComponentGroups) {
+        for ((componentGroupIndex, filteredComponentGroup) in filteredComponentGroups) {
 
             val componentGroupFromTopLevelProofLeafData =
-                componentGroupMerkleProof.leaves.single { it.index == componentGroupOrdinal }.leafData
+                componentGroupMerkleProof.leaves.single { it.index == componentGroupIndex }.leafData
 
             val componentLeafHash = SecureHash(componentGroupDigestAlgorithmName.name, componentGroupFromTopLevelProofLeafData)
 
@@ -93,7 +93,7 @@ class FilteredTransactionImpl(
                 }
             }
             validate(filteredComponentGroup.merkleProof.verify(componentLeafHash, providerToVerifyWith)) {
-                "Component group leaf [index = $componentGroupOrdinal] Merkle proof cannot be verified against the top level Merkle " +
+                "Component group leaf [index = $componentGroupIndex] Merkle proof cannot be verified against the top level Merkle " +
                         "tree's leaf with the same index"
             }
         }
@@ -105,8 +105,8 @@ class FilteredTransactionImpl(
         jsonMarshallingService.parse(proof.leaves.single().leafData.decodeToString())
     }
 
-    override fun getComponentGroupContent(componentGroupOrdinal: Int): List<ByteArray>? {
-        return filteredComponentGroups[componentGroupOrdinal]?.merkleProof?.leaves?.map { it.leafData }
+    override fun getComponentGroupContent(componentGroupIndex: Int): List<ByteArray>? {
+        return filteredComponentGroups[componentGroupIndex]?.merkleProof?.leaves?.map { it.leafData }
     }
 
     private fun createRootAuditProofProvider(): MerkleTreeHashDigestProvider {
