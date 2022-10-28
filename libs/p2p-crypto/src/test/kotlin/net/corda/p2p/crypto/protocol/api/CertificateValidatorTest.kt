@@ -3,7 +3,6 @@ package net.corda.p2p.crypto.protocol.api
 import net.corda.v5.base.types.MemberX500Name
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.mockito.MockedConstruction
 import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
@@ -16,7 +15,6 @@ import java.security.cert.Certificate
 import java.security.cert.CertificateFactory
 import java.security.cert.PKIXBuilderParameters
 import java.security.cert.X509Certificate
-import java.util.Enumeration
 import javax.security.auth.x500.X500Principal
 
 class CertificateValidatorTest {
