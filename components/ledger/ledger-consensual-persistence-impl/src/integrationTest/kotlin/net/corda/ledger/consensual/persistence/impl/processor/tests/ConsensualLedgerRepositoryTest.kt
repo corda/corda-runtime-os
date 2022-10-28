@@ -19,6 +19,8 @@ import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.TransactionMetaData
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
+import net.corda.ledger.common.testkit.cpiPackageSummaryExample
+import net.corda.ledger.common.testkit.cpkPackageSummaryListExample
 import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionContainer
 import net.corda.ledger.consensual.persistence.impl.processor.tests.datamodel.ConsensualCpkEntity
 import net.corda.ledger.consensual.persistence.impl.processor.tests.datamodel.ConsensualLedgerEntities
@@ -374,14 +376,17 @@ class ConsensualLedgerRepositoryTest {
             CordaPackageSummary("$seed-cpk2", "signerSummaryHash2", "2.0", "$seed-fileChecksum2"),
             CordaPackageSummary("$seed-cpk3", "signerSummaryHash3", "3.0", "$seed-fileChecksum3"),
         )
-        val transactionMetaData = TransactionMetaData(
-            LinkedHashMap<String, Any>().apply {
-                put(TransactionMetaData.DIGEST_SETTINGS_KEY, WireTransactionDigestSettings.defaultValues)
-                put(TransactionMetaData.CPK_METADATA_KEY, cpks)
-            }
-        )
+        val transactionMetaData = TransactionMetaData(linkedMapOf(
+            TransactionMetaData.LEDGER_MODEL_KEY to "net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl",
+            TransactionMetaData.LEDGER_VERSION_KEY to "0.0.1",
+            TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
+            TransactionMetaData.PLATFORM_VERSION_KEY to 123,
+            TransactionMetaData.CPI_METADATA_KEY to cpiPackageSummaryExample,
+            TransactionMetaData.CPK_METADATA_KEY to cpks
+        ))
+
         val componentGroupLists: List<List<ByteArray>> = listOf(
-            listOf(jsonMarshallingService.format(transactionMetaData).toByteArray(Charsets.UTF_8)),
+            listOf(jsonValidator.canonicalize(jsonMarshallingService.format(transactionMetaData)).toByteArray(Charsets.UTF_8)),
             listOf("group2_component1".toByteArray()),
             listOf("group3_component1".toByteArray())
         )
