@@ -96,10 +96,10 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
             val stateConsumerPollPosition = stateConsumer.position(stateTopicPartition)
             val endOffset = partition.value
             if (stateConsumerPollPosition >= endOffset) {
-                log.trace {
-                    "State partition $stateTopicPartition is now up to date. Poll position $stateConsumerPollPosition, recorded " +
-                            "end offset $endOffset"
-                }
+                log.info(
+                    "State partition $stateTopicPartition is now up to date for consumer in group ${config.group}. " +
+                            "Poll position $stateConsumerPollPosition, recorded end offset $endOffset"
+                )
                 partitionsToSync.remove(partitionId)
                 partitionsSynced.add(CordaTopicPartition(config.topic, partitionId))
             }
@@ -109,7 +109,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun resumeConsumerAndExecuteListener(partitionsSynced: Set<CordaTopicPartition>) {
-        log.debug { "State consumer is up to date for $partitionsSynced.  Resuming event feed." }
+        log.info("State consumer in group ${config.group} is up to date for $partitionsSynced.  Resuming event feed.")
         eventConsumer.resume(partitionsSynced)
 
         stateAndEventListener?.let { listener ->
