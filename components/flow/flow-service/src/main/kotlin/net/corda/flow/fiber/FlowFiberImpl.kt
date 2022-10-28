@@ -73,7 +73,7 @@ class FlowFiberImpl(
         }
 
         if (!flowCompletion.isDone) {
-            log.error("runFlow failed to complete normally, forcing a failure")
+            log.warn("runFlow failed to complete normally, forcing a failure")
             failTopLevelSubFlow(IllegalStateException("Flow failed to complete normally, forcing a failure"))
         }
     }
@@ -120,7 +120,6 @@ class FlowFiberImpl(
 
     @Suspendable
     override fun <SUSPENDRETURN> suspend(request: FlowIORequest<SUSPENDRETURN>): SUSPENDRETURN {
-        log.info("Flow suspending.")
         parkAndSerialize(SerializableFiberWriter { _, _ ->
             val fiberState = getExecutionContext().sandboxGroupContext.checkpointSerializer.serialize(this)
             flowCompletion.complete(FlowIORequest.FlowSuspended(ByteBuffer.wrap(fiberState), request))
@@ -159,7 +158,6 @@ class FlowFiberImpl(
 
     @Suspendable
     private fun failTopLevelSubFlow(throwable: Throwable) {
-        log.info("Flow [$flowId] completed with failure")
         // We close the sessions here, which delegates to the subFlow failed request handler, rather than combining the logic into the
         // flow finish request handler. This is due to the flow finish code removing the flow's checkpoint, which is needed by the close
         // logic to determine whether all sessions have successfully acknowledged receipt of the close messages.
