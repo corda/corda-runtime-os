@@ -165,8 +165,6 @@ private fun MerkleTreeHashDigestProvider.checkMatchingAlgorithms(left: SecureHas
 
 const val SERIALIZATION_SEPARATOR: Char = ':'
 
-// do I need to use this to turn a leaf byte array into a secure hash?
-// it is used by some of the provider.leafHash implementations but Matthew said not to use that method
 internal fun SecureHash.Companion.deserialize(bytes: ByteArray, digestService: DigestService): SecureHash {
     val idxOfSeparator = bytes.indexOf(SERIALIZATION_SEPARATOR.code.toByte())
     if (idxOfSeparator == -1) {

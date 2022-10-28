@@ -114,7 +114,7 @@ data class UtxoTransactionBuilderImpl(
         }
         verifyIfReady()
         val wireTransaction = buildWireTransaction()
-        val signaturesWithMetaData = signatories.map {
+        val signaturesWithMetadata = signatories.map {
             createTransactionSignature(
                 signingService,
                 serializationService,
@@ -128,7 +128,7 @@ data class UtxoTransactionBuilderImpl(
             signingService,
             digitalSignatureVerificationService,
             wireTransaction,
-            signaturesWithMetaData
+            signaturesWithMetadata
         )
     }
 

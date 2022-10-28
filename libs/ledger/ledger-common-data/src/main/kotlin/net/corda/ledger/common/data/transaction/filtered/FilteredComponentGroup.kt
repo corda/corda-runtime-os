@@ -6,6 +6,6 @@ import net.corda.v5.crypto.merkle.MerkleProof
 @CordaSerializable
 data class FilteredComponentGroup(
     val componentGroupOrdinal: Int,
-    val merkleProof: MerkleProof, // Compares to leaf of root merkle proof with the same component group index
+    val merkleProof: MerkleProof,
     val merkleProofType: MerkleProofType
 )
