@@ -349,7 +349,6 @@ abstract class DeployableContainerBuilder extends DefaultTask {
         }
 
         logger.quiet("Publishing '${targetRepo}:${tag}' ${(remotePublish.get() || dockerHubPublish.get()) ? "${dockerHubPublish.get() ? 'to docker hub' : 'to remote artifactory'}" : "to local docker daemon"} with jar from '${projectName}', from base '${baseImageName.get()}:${baseImageTag.get()}'")
-
     }
 
     /**
