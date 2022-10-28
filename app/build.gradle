@@ -89,6 +89,9 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
     if (project.hasProperty('baseImage')) {
         baseImageName = baseImage
     }
+    if (project.hasProperty('doDockerHubPublish')) {
+        dockerHubPublish = doDockerHubPublish.toBoolean()
+    }
     if (project.hasProperty('useDockerDaemon')) {
         useDaemon = useDockerDaemon.toBoolean()
     }

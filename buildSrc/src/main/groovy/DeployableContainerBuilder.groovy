@@ -55,7 +55,27 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             )
 
     @Input
+    @Optional
+    final Property<String> dockerHubUsername = getObjects().property(String).
+            convention(getProviderFactory().environmentVariable("DOCKER_HUB_USERNAME")
+                    .orElse(getProviderFactory().gradleProperty("dockerHubUsername"))
+                    .orElse(getProviderFactory().systemProperty("docker.hub.username"))
+            )
+
+    @Input
+    @Optional
+    final Property<String> dockerHubPassword = getObjects().property(String).
+            convention(getProviderFactory().environmentVariable("DOCKER_HUB_PASSWORD")
+                    .orElse(getProviderFactory().gradleProperty("dockerHubPassword"))
+                    .orElse(getProviderFactory().systemProperty("docker.hub.password"))
+            )
+
+    @Input
     final Property<Boolean> remotePublish =
+            getObjects().property(Boolean).convention(false)
+
+    @Input
+    final Property<Boolean> dockerHubPublish =
             getObjects().property(Boolean).convention(false)
 
     @Input
@@ -221,9 +241,12 @@ abstract class DeployableContainerBuilder extends DefaultTask {
 
         def containerName = overrideContainerName.get().empty ? projectName : overrideContainerName.get()
 
-         logger.info("***releaseType : ${releaseType}  nightlyBuild ${nightlyBuild.get()}")
+        logger.info("***releaseType : ${releaseType}  nightlyBuild ${nightlyBuild.get()}")
 
-        if (preTest.get()) {
+        if (dockerHubPublish.get()) {
+            targetRepo = "corda/corda-os-${containerName}"
+            tagContainer(builder, version)
+        } else if (preTest.get()) {
             targetRepo = "corda-os-docker-pre-test.software.r3.com/corda-os-${containerName}"
             tagContainer(builder, "preTest-${tagPrefix}"+version)
             tagContainer(builder, "preTest-${tagPrefix}"+gitRevision)
@@ -286,13 +309,17 @@ abstract class DeployableContainerBuilder extends DefaultTask {
             builder.containerize(
                     Containerizer.to(RegistryImage.named("${targetRepo}:${tag}")
                             .addCredential(registryUsername.get(), registryPassword.get())).setAlwaysCacheBaseImage(true))
+        } else if (dockerHubPublish.get()){
+            builder.containerize(
+                    Containerizer.to(RegistryImage.named("${targetRepo}:${tag}")
+                            .addCredential(dockerHubUsername.get(), dockerHubPassword.get())).setAlwaysCacheBaseImage(true))
         } else {
             builder.containerize(
                     Containerizer.to(DockerDaemonImage.named("${targetRepo}:${tag}")).setAlwaysCacheBaseImage(true)
             )
         }
 
-        logger.quiet("Publishing '${targetRepo}:${tag}' ${remotePublish.get() ? "to remote artifactory" : "to local docker daemon"} with jar from '${projectName}', from base '${baseImageName.get()}:${baseImageTag.get()}'")
+        logger.quiet("Publishing '${targetRepo}:${tag}' ${(remotePublish.get() || dockerHubPublish.get()) ? "${dockerHubPublish.get() ? 'to docker hub' : 'to remote artifactory'}" : "to local docker daemon"} with jar from '${projectName}', from base '${baseImageName.get()}:${baseImageTag.get()}'")
     }
 
     /**
