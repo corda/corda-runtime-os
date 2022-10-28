@@ -37,6 +37,10 @@ tasks.register('publishOSGiImage', DeployableContainerBuilder) {
         remotePublish = jibRemotePublish.toBoolean()
     }
 
+    if (project.hasProperty('doDockerHubPublish')) {
+        dockerHubPublish = doDockerHubPublish.toBoolean()
+    }
+
     if (project.hasProperty('isReleaseCandidate')) {
         releaseCandidate = isReleaseCandidate.toBoolean()
     }
