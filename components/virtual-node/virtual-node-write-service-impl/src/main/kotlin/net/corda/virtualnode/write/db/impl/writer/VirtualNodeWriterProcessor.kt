@@ -231,8 +231,6 @@ internal class VirtualNodeWriterProcessor(
         val em = dbConnectionManager.getClusterEntityManagerFactory().createEntityManager()
         val shortHashes = em.use {
             dbResetRequest.holdingIdentityShortHashes.map { shortHashString ->
-                // Start for given vnode and it's vault
-                val startMillis = currentTimeMillis()
                 val shortHash = ShortHash.Companion.of(shortHashString)
                 // Open a TX to find the connection information we need for the virtual nodes vault as it may live on
                 //  another database.
