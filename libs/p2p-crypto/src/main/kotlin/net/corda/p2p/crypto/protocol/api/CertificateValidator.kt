@@ -5,6 +5,7 @@ import net.corda.v5.base.util.contextLogger
 import java.io.ByteArrayInputStream
 import java.lang.IllegalArgumentException
 import java.security.KeyStore
+import java.security.cert.CertPath
 import java.security.cert.CertPathBuilder
 import java.security.cert.CertPathValidator
 import java.security.cert.CertPathValidatorException
@@ -26,6 +27,7 @@ class CertificateValidator(
     private companion object {
         const val certificateAlgorithm = "PKIX"
         const val certificateFactoryType = "X.509"
+        const val digital_signature_bit = 0
         val logger = contextLogger()
     }
 
@@ -74,6 +76,17 @@ class CertificateValidator(
             certPathValidator.validate(certificateChain, pkixParams)
         } catch (exception: CertPathValidatorException) {
             throw InvalidPeerCertificate(exception.message)
+        }
+        checkAllCertsInChainDigitalSignature(certificateChain)
+    }
+
+    private fun checkAllCertsInChainDigitalSignature(certificateChain: CertPath) {
+        certificateChain.certificates.forEachIndexed { index, certificate ->
+            val x509Cert = (certificate as? X509Certificate)
+                ?: throw InvalidPeerCertificate("Certificate $index in chain is not a valid X509 certificate.")
+            if (!x509Cert.keyUsage[digital_signature_bit]) {
+                throw InvalidPeerCertificate("Certificate $index in chain is not a digital signature.")
+            }
         }
     }
 

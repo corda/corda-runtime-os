@@ -3,6 +3,8 @@ package net.corda.p2p.crypto.protocol.api
 import net.corda.v5.base.types.MemberX500Name
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.mockito.MockedConstruction
+import org.mockito.Mockito
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -12,7 +14,9 @@ import java.security.cert.CertPath
 import java.security.cert.CertPathValidator
 import java.security.cert.Certificate
 import java.security.cert.CertificateFactory
+import java.security.cert.PKIXBuilderParameters
 import java.security.cert.X509Certificate
+import java.util.Enumeration
 import javax.security.auth.x500.X500Principal
 
 class CertificateValidatorTest {
@@ -56,5 +60,29 @@ class CertificateValidatorTest {
         whenever(certificateChain.certificates).thenReturn(listOf(certificate))
         val validator = CertificateValidator(RevocationCheckMode.HARD_FAIL, trustStore, certPathValidator, certificateFactory)
         assertThrows<InvalidPeerCertificate> { validator.validate(listOf(certificatePemString), certX500Name) }
+    }
+
+    @Test
+    fun `certificate fails validation if x509 cert does not have digital signature set`() {
+        whenever(certificate.keyUsage).thenReturn(BooleanArray(10) { it != 0 })
+        whenever(trustStore.aliases()).thenReturn(any())
+        val mock = Mockito.mockConstruction(PKIXBuilderParameters::class.java)
+        val validator = CertificateValidator(RevocationCheckMode.HARD_FAIL, trustStore, certPathValidator, certificateFactory)
+        assertThrows<InvalidPeerCertificate> { validator.validate(listOf(certificatePemString), certX500Name) }
+        mock.close()
+    }
+
+    @Test
+    fun `certificate fails validation if second cert is not an X509Certificate`() {
+        whenever(certificate.keyUsage).thenReturn(BooleanArray(10) { it != 0 })
+        val nonX500Certificate = mock<Certificate>()
+        val certificateChain = mock<CertPath> {
+            on { certificates } doReturn listOf(certificate, nonX500Certificate)
+        }
+        whenever(certificateFactory.generateCertPath(any<MutableList<Certificate>>())) doReturn certificateChain
+        val mock = Mockito.mockConstruction(PKIXBuilderParameters::class.java)
+        val validator = CertificateValidator(RevocationCheckMode.HARD_FAIL, trustStore, certPathValidator, certificateFactory)
+        assertThrows<InvalidPeerCertificate> { validator.validate(listOf(certificatePemString), certX500Name) }
+        mock.close()
     }
 }
