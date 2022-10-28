@@ -21,8 +21,7 @@ import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 
 class ConsensualFinalityFlow(
     private val signedTransaction: ConsensualSignedTransaction,
-    private val sessions: List<FlowSession>,
-    private val persistenceService: ConsensualLedgerPersistenceService
+    private val sessions: List<FlowSession>
 ) : SubFlow<ConsensualSignedTransaction> {
 
     private companion object {
@@ -34,6 +33,9 @@ class ConsensualFinalityFlow(
 
     @CordaInject
     lateinit var memberLookup: MemberLookup
+
+    @CordaInject
+    lateinit var persistenceService: ConsensualLedgerPersistenceService
 
     @CordaInject
     lateinit var serializationService: SerializationService
