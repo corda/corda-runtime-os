@@ -83,7 +83,7 @@ class EntitySandboxServiceImpl @Activate constructor(
     }
 
     private val externalInitialisationSteps =
-        mutableListOf<(Collection<CpkMetadata>, VirtualNodeInfo, MutableSandboxGroupContext) -> AutoCloseable>()
+        mutableSetOf<(Collection<CpkMetadata>, VirtualNodeInfo, MutableSandboxGroupContext) -> AutoCloseable>()
     private val internalCustomSerializers
         get() = componentContext.fetchServices<InternalCustomSerializer<out Any>>(INTERNAL_CUSTOM_SERIALIZERS)
 
