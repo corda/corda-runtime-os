@@ -40,29 +40,6 @@ fun getWireTransactionExample(
     )
 }
 
-fun mockTransactionMetaData() =
-    TransactionMetaData(
-        linkedMapOf(
-            TransactionMetaData.LEDGER_MODEL_KEY to "net.corda.ledger.consensual.impl.transaction.ConsensualLedgerTransactionImpl",
-            TransactionMetaData.LEDGER_VERSION_KEY to "0.0.1",
-            TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
-            TransactionMetaData.PLATFORM_VERSION_KEY to 123,
-            TransactionMetaData.CPI_METADATA_KEY to getCpiSummary(),
-            TransactionMetaData.CPK_METADATA_KEY to listOf(
-                CordaPackageSummary(
-                    "MockCpk",
-                    "1",
-                    "",
-                    "0101010101010101010101010101010101010101010101010101010101010101"),
-                CordaPackageSummary(
-                    "MockCpk",
-                    "3",
-                    "",
-                    "0303030303030303030303030303030303030303030303030303030303030303")
-            )
-        )
-    )
-
 private fun getCpiSummary() = CordaPackageSummary(
     name = "CPI name",
     version = "CPI version",
