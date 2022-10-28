@@ -113,7 +113,7 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                         log.warn("$errorMsg. Attempts: $attempts. Retrying.", ex)
                     }
                     else -> {
-                        log.warn("$errorMsg. Fatal error occurred. Closing subscription.", ex)
+                        log.error("$errorMsg. Fatal error occurred. Closing subscription.", ex)
                         lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, errorMsg)
                         close()
                     }

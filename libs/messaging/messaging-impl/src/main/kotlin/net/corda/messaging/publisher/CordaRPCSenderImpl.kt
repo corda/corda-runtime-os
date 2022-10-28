@@ -144,7 +144,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                         log.warn("$errorMsg. Attempts: $attempts. Retrying.", ex)
                     }
                     else -> {
-                        log.warn("$errorMsg. Fatal error occurred. Closing subscription.", ex)
+                        log.error("$errorMsg. Fatal error occurred. Closing subscription.", ex)
                         lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, errorMsg)
                         this.close()
                     }
@@ -239,7 +239,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                     ex
                 )
             )
-            log.warn(
+            log.error(
                 "Serializing your request resulted in an exception. " +
                     "Verify that the fields of the request are populated correctly. " +
                     "Request was: $req",

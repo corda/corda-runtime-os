@@ -167,7 +167,7 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                         )
                     }
                     else -> {
-                        log.warn(
+                        log.error(
                             "$errorMsg Attempts: $attempts. Closing subscription.", ex
                         )
                         lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, errorMsg)

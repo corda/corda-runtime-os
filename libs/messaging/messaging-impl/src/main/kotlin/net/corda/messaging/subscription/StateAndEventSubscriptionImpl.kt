@@ -150,11 +150,11 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                     processor.eventValueClass,
                     stateAndEventListener,
                     { data ->
-                        log.warn("Failed to deserialize state record from $stateTopic")
+                        log.error("Failed to deserialize state record from $stateTopic")
                         deadLetterRecords.add(data)
                     },
                     { data ->
-                        log.warn("Failed to deserialize event record from $eventTopic")
+                        log.error("Failed to deserialize event record from $eventTopic")
                         deadLetterRecords.add(data)
                     }
                 )
@@ -178,7 +178,7 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
                         )
                     }
                     else -> {
-                        log.warn(
+                        log.error(
                             "$errorMsg Attempts: $attempts. Closing subscription.", ex
                         )
                         lifecycleCoordinator.updateStatus(LifecycleStatus.ERROR, errorMsg)

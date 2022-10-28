@@ -213,6 +213,6 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
     }
 
     private fun logFailedDeserialize(data: ByteArray) {
-        log.warn("Failed to deserialize a record on ${config.topic}: (${data.toHexString()}")
+        log.error("Failed to deserialize a record on ${config.topic}: (${data.toHexString()}")
     }
 }
