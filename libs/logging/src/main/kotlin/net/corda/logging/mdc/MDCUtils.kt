@@ -8,22 +8,10 @@ import org.slf4j.MDC
  * @param block the function to execute whose result is returned
  * @return the result of the [block] function
  */
-fun <R> withMDCAndReturn(mdcProperties: Map<String, String>, block: () -> R) : R {
+fun <R> withMDC(mdcProperties: Map<String, String>, block: () -> R) : R {
     try {
         setMDC(mdcProperties)
         return block()
-    } finally {
-        clearMDC(mdcProperties)
-    }
-}
-
-/**
- * Push the map of [mdcProperties] into the logging MDC, run the code provided in [block] and then remove the [mdcProperties]
- */
-fun withMDC(mdcProperties: Map<String, String>, block: () -> Unit) {
-    try {
-        setMDC(mdcProperties)
-        block()
     } finally {
         clearMDC(mdcProperties)
     }

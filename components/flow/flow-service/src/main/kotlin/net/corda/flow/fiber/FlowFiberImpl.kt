@@ -81,7 +81,7 @@ class FlowFiberImpl(
     @Suspendable
     private fun runFlow() {
         initialiseThreadContext()
-        setLoggingContext()
+        resetLoggingContext()
         suspend(FlowIORequest.InitialCheckpoint)
 
         val outcomeOfFlow = try {
@@ -122,13 +122,14 @@ class FlowFiberImpl(
     override fun <SUSPENDRETURN> suspend(request: FlowIORequest<SUSPENDRETURN>): SUSPENDRETURN {
         log.info("Flow suspending.")
         parkAndSerialize(SerializableFiberWriter { _, _ ->
+            resetLoggingContext()
             log.info("Parking...")
             val fiberState = getExecutionContext().sandboxGroupContext.checkpointSerializer.serialize(this)
             flowCompletion.complete(FlowIORequest.FlowSuspended(ByteBuffer.wrap(fiberState), request))
             log.info("Parked.")
         })
 
-        setLoggingContext()
+        resetLoggingContext()
         log.info("Flow resuming.")
 
         @Suppress("unchecked_cast")
@@ -213,7 +214,8 @@ class FlowFiberImpl(
         Thread.currentThread().contextClassLoader = flowLogic.javaClass.classLoader
     }
 
-    private fun setLoggingContext() {
+    private fun resetLoggingContext() {
+        //fully clear the fiber before setting the MDC
         clearMDC()
         flowFiberExecutionContext?.mdcLoggingData?.let {
             setMDC(it)

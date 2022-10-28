@@ -13,8 +13,7 @@ import net.corda.data.persistence.MergeEntities
 import net.corda.data.persistence.PersistEntities
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.logging.mdc.ExternalEventMDCFields.MDC_EXTERNAL_EVENT_ID
-import net.corda.logging.mdc.clearMDC
-import net.corda.logging.mdc.setMDC
+import net.corda.logging.mdc.withMDC
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
@@ -65,15 +64,14 @@ class EntityMessageProcessor(
                 // We received a [null] external event therefore we do not know the flow id to respond to.
                 return@mapNotNull null
             } else {
-                try {
-                    setMDC(mapOf(MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId))
-                    val holdingIdentity = request.holdingIdentity.toCorda()
-                    val sandbox = entitySandboxService.get(holdingIdentity)
-                    processRequestWithSandbox(sandbox, request)
-                } catch (e: Exception) {
-                    responseFactory.errorResponse(request.flowExternalEventContext, e)
-                } finally {
-                    clearMDC(setOf(MDC_EXTERNAL_EVENT_ID))
+                withMDC(mapOf(MDC_EXTERNAL_EVENT_ID to request.flowExternalEventContext.requestId)) {
+                    try {
+                        val holdingIdentity = request.holdingIdentity.toCorda()
+                        val sandbox = entitySandboxService.get(holdingIdentity)
+                        processRequestWithSandbox(sandbox, request)
+                    } catch (e: Exception) {
+                        responseFactory.errorResponse(request.flowExternalEventContext, e)
+                    }
                 }
             }
         }
