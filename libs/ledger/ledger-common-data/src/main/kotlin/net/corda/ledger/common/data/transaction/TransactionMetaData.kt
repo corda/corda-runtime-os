@@ -11,6 +11,7 @@ class TransactionMetaData(private val properties: LinkedHashMap<String, Any>) {
     companion object {
         const val LEDGER_MODEL_KEY = "ledgerModel"
         const val LEDGER_VERSION_KEY = "ledgerVersion"
+        const val TRANSACTION_SUBTYPE_KEY = "transactionSubtype"
         const val DIGEST_SETTINGS_KEY = "digestSettings"
         const val PLATFORM_VERSION_KEY = "platformVersion"
         const val CPI_METADATA_KEY = "cpiMetadata"
@@ -28,6 +29,8 @@ class TransactionMetaData(private val properties: LinkedHashMap<String, Any>) {
     fun getLedgerModel(): String = this[LEDGER_MODEL_KEY].toString()
 
     fun getLedgerVersion(): String = this[LEDGER_VERSION_KEY].toString()
+
+    fun getTransactionSubtype(): String = this[TRANSACTION_SUBTYPE_KEY].toString()
 
     fun getCpiMetadata(): CordaPackageSummary? = this[CPI_METADATA_KEY]?.let { CordaPackageSummary.from(it) }
 

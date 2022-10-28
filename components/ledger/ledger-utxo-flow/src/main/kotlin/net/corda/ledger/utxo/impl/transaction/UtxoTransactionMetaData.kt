@@ -1,3 +1,12 @@
 package net.corda.ledger.utxo.impl.transaction
 
-const val TRANSACTION_META_DATA_UTXO_LEDGER_VERSION = "0.001"
+class UtxoTransactionMetaData {
+    enum class TransactionSubtype {
+        NOTARY_CHANGE,
+        GENERAL
+    }
+    companion object {
+        const val LEDGER_VERSION = "0.001"
+    }
+}
+

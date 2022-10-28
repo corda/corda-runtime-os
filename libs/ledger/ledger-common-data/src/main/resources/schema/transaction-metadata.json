@@ -142,11 +142,10 @@
           "transactionSubtype": {
             "title": "Transaction subtype",
             "type": "string",
-            "examples": [
-              "NotaryChangeTransaction",
-              "GeneralTransaction"
-            ],
-            "pattern": "^.*$"
+            "enum": [
+              "NOTARY_CHANGE",
+              "GENERAL"
+            ]
           }
         }
       }
