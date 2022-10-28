@@ -217,8 +217,15 @@ class DefaultLocalSerializerFactory(
 
     private fun makeDeclaredCollection(localTypeInformation: LocalTypeInformation.ACollection): AMQPSerializer<Any> {
         val resolved = CollectionSerializer.resolveDeclared(localTypeInformation, sandboxGroup)
+
+        val declaredType = object : ParameterizedType {
+            override fun getActualTypeArguments(): Array<Type> = arrayOf(resolved.elementType.observedType)
+            override fun getRawType(): Type = resolved.observedType.asClass()
+            override fun getOwnerType(): Type? = (resolved.typeIdentifier as? ParameterizedType)?.ownerType
+        }
+
         return makeAndCache(resolved) {
-            CollectionSerializer(resolved.typeIdentifier.getLocalType(sandboxGroup) as ParameterizedType, this)
+            CollectionSerializer(declaredType, this)
         }
     }
 
