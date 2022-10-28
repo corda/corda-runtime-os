@@ -219,7 +219,7 @@ class DefaultLocalSerializerFactory(
         val resolved = CollectionSerializer.resolveDeclared(localTypeInformation, sandboxGroup)
 
         val declaredType = object : ParameterizedType {
-            override fun getActualTypeArguments(): Array<Type> = arrayOf(resolved.elementType.observedType)
+            override fun getActualTypeArguments(): Array<Type> = arrayOf(resolved.elementType.observedType.asClass())
             override fun getRawType(): Type = resolved.observedType.asClass()
             override fun getOwnerType(): Type? = (resolved.typeIdentifier as? ParameterizedType)?.ownerType
         }
@@ -234,8 +234,8 @@ class DefaultLocalSerializerFactory(
 
         val declaredType = object : ParameterizedType {
             override fun getActualTypeArguments(): Array<Type> = arrayOf(
-                resolved.keyType.observedType,
-                resolved.valueType.observedType
+                resolved.keyType.observedType.asClass(),
+                resolved.valueType.observedType.asClass()
             )
             override fun getRawType(): Type = resolved.observedType.asClass()
             override fun getOwnerType(): Type? = (resolved.typeIdentifier as? ParameterizedType)?.ownerType
