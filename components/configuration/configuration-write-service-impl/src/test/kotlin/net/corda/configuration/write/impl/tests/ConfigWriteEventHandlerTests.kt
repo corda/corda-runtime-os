@@ -81,12 +81,4 @@ class ConfigWriteEventHandlerTests {
             eventHandler.processEvent(BootstrapConfigEvent(mock()), mock())
         }
     }
-
-    @Test
-    fun `StopEvent sets coordinator status to down`() {
-        val coordinator = mock<LifecycleCoordinator>()
-        eventHandler.processEvent(StopEvent(), coordinator)
-
-        verify(coordinator).updateStatus(eq(DOWN), any())
-    }
 }
