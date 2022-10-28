@@ -28,11 +28,12 @@ class PersistTransactionExternalEventFactoryTest {
         whenever(checkpoint.holdingIdentity).thenReturn(ALICE_X500_HOLDING_IDENTITY.toCorda())
 
         val transaction = ByteBuffer.wrap(byteArrayOf(1))
+        val transactionStatus = "V"
 
         val externalEventRecord = PersistTransactionExternalEventFactory(testClock).createExternalEvent(
             checkpoint,
             externalEventContext,
-            PersistTransactionParameters(transaction)
+            PersistTransactionParameters(transaction, transactionStatus)
         )
         assertEquals(Schemas.Persistence.PERSISTENCE_LEDGER_PROCESSOR_TOPIC, externalEventRecord.topic)
         assertNull(externalEventRecord.key)
@@ -40,7 +41,7 @@ class PersistTransactionExternalEventFactoryTest {
             ConsensualLedgerRequest(
                 testClock.instant(),
                 ALICE_X500_HOLDING_IDENTITY,
-                PersistTransaction(transaction),
+                PersistTransaction(transaction, transactionStatus),
                 externalEventContext
             ),
             externalEventRecord.payload

@@ -3,6 +3,7 @@ package net.corda.cli.plugin.initialRbac.commands
 import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.CLIENT_REQ_REGEX
 import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.FLOW_NAME_REGEX
 import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.USER_REGEX
+import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.USER_URL_REGEX
 import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.UUID_REGEX
 import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.VNODE_SHORT_HASH_REGEX
 import net.corda.cli.plugin.initialRbac.commands.RoleCreationUtils.wildcardMatch
@@ -31,11 +32,21 @@ class TestPatternsMatch {
 
     @Test
     fun testUser() {
-        val validUserName = "joe.bloggs@company_1.com"
+        listOf("joe.bloggs@company_1.com", "plainUser").forEach { validUserName ->
+            assertTrue(wildcardMatch(validUserName, USER_REGEX)) { "Failed for $validUserName" }
+        }
+        assertFalse(wildcardMatch("joe/bloggs", USER_REGEX))
+        assertFalse(wildcardMatch("0", USER_REGEX))
+    }
 
-        assertTrue(wildcardMatch(validUserName, USER_REGEX))
-        assertFalse(wildcardMatch("joe/bloggs", VNODE_SHORT_HASH_REGEX))
-        assertFalse(wildcardMatch("0", VNODE_SHORT_HASH_REGEX))
+    @Test
+    fun testUserInURL() {
+        listOf("joe.bloggs%40company_1.com", "plainUser").forEach { validUserName ->
+            assertTrue(wildcardMatch(validUserName, USER_URL_REGEX)) { "Failed for $validUserName" }
+        }
+
+        assertFalse(wildcardMatch("joe/bloggs", USER_URL_REGEX))
+        assertFalse(wildcardMatch("0", USER_URL_REGEX))
     }
 
     @Test

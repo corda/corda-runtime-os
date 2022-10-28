@@ -62,6 +62,7 @@ class FlowTests {
 
         val expectedFlows = listOf(
             "net.cordapp.testing.smoketests.virtualnode.ReturnAStringFlow",
+            "net.cordapp.testing.smoketests.flow.AmqpSerializationTestFlow",
             "net.cordapp.testing.smoketests.flow.RpcSmokeTestFlow",
             "net.cordapp.testing.testflows.TestFlow",
             "net.cordapp.testing.testflows.BrokenProtocolFlow",

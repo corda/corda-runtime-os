@@ -3285,11 +3285,16 @@
         }
       },
       "RegistrationRequestProgress" : {
-        "required" : [ "memberInfoSubmitted", "registrationId", "registrationStatus" ],
+        "required" : [ "memberInfoSubmitted", "reason", "registrationId", "registrationStatus" ],
         "type" : "object",
         "properties" : {
           "memberInfoSubmitted" : {
             "$ref" : "#/components/schemas/MemberInfoSubmitted"
+          },
+          "reason" : {
+            "type" : "string",
+            "nullable" : false,
+            "example" : "string"
           },
           "registrationId" : {
             "type" : "string",

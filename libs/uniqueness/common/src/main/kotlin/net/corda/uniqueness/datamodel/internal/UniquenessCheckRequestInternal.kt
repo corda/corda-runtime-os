@@ -11,7 +11,7 @@ import java.time.Instant
  * backing store only. This simply wraps the external message bus request, converting data that
  * is represented as primitive types into the internal types used within the uniqueness checker.
  */
-data class UniquenessCheckRequestInternal private constructor(
+data class UniquenessCheckRequestInternal constructor(
     val txId: SecureHash,
     val rawTxId: String,
     val inputStates: List<UniquenessCheckStateRef>,
