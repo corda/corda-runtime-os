@@ -10,7 +10,6 @@ import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.utils.tryGetResult
 import net.corda.schema.Schemas.Companion.getStateAndEventStateTopic
 import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.trace
 import org.slf4j.LoggerFactory
 import java.time.Clock
 import java.time.Duration
