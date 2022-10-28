@@ -105,6 +105,7 @@ internal class VirtualNodeRestResourceImpl @Activate constructor(
                 when (event.status) {
                     LifecycleStatus.ERROR -> {
                         coordinator.closeManagedResources(setOf(CONFIG_HANDLE))
+                        logger.warn("Errored out in VirtualNodeRPCOps; sending stop event")
                         coordinator.postEvent(StopEvent(errored = true))
                     }
                     LifecycleStatus.UP -> {
