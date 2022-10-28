@@ -26,6 +26,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_SIGNER_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
@@ -161,7 +162,7 @@ class StaticMemberRegistrationService @Activate constructor(
         } catch (ex: MembershipSchemaValidationException) {
             return MembershipRequestRegistrationResult(
                 NOT_SUBMITTED,
-                "Registration failed. The registration context is invalid: " + ex.getErrorSummary()
+                "Registration failed. The registration context is invalid: " + ex.message
             )
         }
         try {
@@ -251,27 +252,33 @@ class StaticMemberRegistrationService @Activate constructor(
         val memberKey = keysFactory.getOrGenerateKeyPair(CryptoConsts.Categories.LEDGER)
 
         val cpi = virtualNodeInfoReadService.get(registeringMember)?.cpiIdentifier
-            ?: throw CordaRuntimeException("Could not find virtual node info for member $registeringMember")
+            ?: throw CordaRuntimeException("Could not find virtual node info for member ${registeringMember.shortHash}")
 
+        val optionalContext = mutableMapOf<String, String>()
+        cpi.signerSummaryHash?.let {
+            optionalContext.put(MEMBER_CPI_SIGNER_HASH, it.toString())
+        }
         @Suppress("SpreadOperator")
+        val memberContext = mapOf(
+            PARTY_NAME to memberName.toString(),
+            PARTY_SESSION_KEY to memberKey.pem,
+            GROUP_ID to groupId,
+            *generateLedgerKeys(memberKey.pem).toTypedArray(),
+            *generateLedgerKeyHashes(memberKey.hash).toTypedArray(),
+            *convertEndpoints(staticMemberInfo).toTypedArray(),
+            *roles.toMemberInfo {
+                listOf(keysFactory.getOrGenerateKeyPair(NOTARY))
+            }.toTypedArray(),
+            SESSION_KEY_HASH to memberKey.hash.toString(),
+            SOFTWARE_VERSION to platformInfoProvider.localWorkerSoftwareVersion,
+            PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),
+            MEMBER_CPI_NAME to cpi.name,
+            MEMBER_CPI_VERSION to cpi.version,
+            SERIAL to staticMemberInfo.serial,
+        ) + optionalContext
+
         val memberInfo = memberInfoFactory.create(
-            sortedMapOf(
-                PARTY_NAME to memberName.toString(),
-                PARTY_SESSION_KEY to memberKey.pem,
-                GROUP_ID to groupId,
-                *generateLedgerKeys(memberKey.pem).toTypedArray(),
-                *generateLedgerKeyHashes(memberKey.hash).toTypedArray(),
-                *convertEndpoints(staticMemberInfo).toTypedArray(),
-                *roles.toMemberInfo {
-                    listOf(keysFactory.getOrGenerateKeyPair(NOTARY))
-                }.toTypedArray(),
-                SESSION_KEY_HASH to memberKey.hash.toString(),
-                SOFTWARE_VERSION to platformInfoProvider.localWorkerSoftwareVersion,
-                PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),
-                MEMBER_CPI_NAME to cpi.name,
-                MEMBER_CPI_VERSION to cpi.version,
-                SERIAL to staticMemberInfo.serial,
-            ),
+            memberContext.toSortedMap(),
             sortedMapOf(
                 STATUS to staticMemberInfo.status,
                 MODIFIED_TIME to staticMemberInfo.modifiedTime,

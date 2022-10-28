@@ -1,5 +1,6 @@
 package net.corda.membership.lib
 
+import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.utilities.NetworkHostAndPort
 import net.corda.v5.base.util.contextLogger
@@ -8,6 +9,7 @@ import net.corda.v5.base.util.parseList
 import net.corda.v5.base.util.parseOrNull
 import net.corda.v5.base.util.parseSet
 import net.corda.v5.crypto.PublicKeyHash
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.calculateHash
 import net.corda.v5.membership.EndpointInfo
 import net.corda.v5.membership.MemberInfo
@@ -92,6 +94,9 @@ class MemberInfoExtension {
 
         /** Key name for the CPI version **/
         const val MEMBER_CPI_VERSION = "corda.cpi.version"
+
+        /** Key name for the CPI signer summary hash **/
+        const val MEMBER_CPI_SIGNER_HASH = "corda.cpi.signer.summary.hash"
 
         /** Active nodes can transact in the Membership Group with the other nodes. **/
         const val MEMBER_STATUS_ACTIVE = "ACTIVE"
@@ -229,14 +234,17 @@ class MemberInfoExtension {
         val MemberInfo.ecdhKey: PublicKey?
             get() = memberProvidedContext.parseOrNull(ECDH_KEY)
 
-        /** The CPI name included in the member's member info **/
+        /**
+         * Return the [CpiIdentifier] from the [MemberInfo]
+         */
         @JvmStatic
-        val MemberInfo.cpiName: String
-            get() = memberProvidedContext.parse(MEMBER_CPI_NAME)
-
-        /** The CPI version included in the member's member info **/
-        @JvmStatic
-        val MemberInfo.cpiVersion: String
-            get() = memberProvidedContext.parse(MEMBER_CPI_VERSION)
+        val MemberInfo.cpiInfo: CpiIdentifier
+            get() = CpiIdentifier(
+                memberProvidedContext.parse(MEMBER_CPI_NAME),
+                memberProvidedContext.parse(MEMBER_CPI_VERSION),
+                memberProvidedContext.parseOrNull<String>(MEMBER_CPI_SIGNER_HASH)?.let {
+                    SecureHash.parse(it)
+                }
+            )
     }
 }

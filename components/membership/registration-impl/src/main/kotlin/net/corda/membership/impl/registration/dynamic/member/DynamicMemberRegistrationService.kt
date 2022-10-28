@@ -36,6 +36,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_SIGNER_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.NOTARY_KEY_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
@@ -86,7 +87,7 @@ import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
 import org.slf4j.Logger
 import java.nio.ByteBuffer
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.TimeUnit
 
 @Suppress("LongParameterList")
@@ -239,7 +240,7 @@ class DynamicMemberRegistrationService @Activate constructor(
             } catch (ex: MembershipSchemaValidationException) {
                 return MembershipRequestRegistrationResult(
                     MembershipRequestRegistrationOutcome.NOT_SUBMITTED,
-                    "Registration failed. The registration context is invalid. " + ex.getErrorSummary()
+                    "Registration failed. The registration context is invalid. " + ex.message
                 )
             }
             try {
@@ -303,7 +304,7 @@ class DynamicMemberRegistrationService @Activate constructor(
                     latestHeader = UnauthenticatedRegistrationRequestHeader(
                         ByteBuffer.wrap(salt), ByteBuffer.wrap(aad), keyEncodingService.encodeAsString(ek)
                     )
-                    EciesParams( salt, aad )
+                    EciesParams(salt, aad)
                 }
 
                 val messageHeader = UnauthenticatedMessageHeader(
@@ -360,23 +361,35 @@ class DynamicMemberRegistrationService @Activate constructor(
             notaryKeys: List<KeyDetails>,
         ): Map<String, String> {
             val cpi = virtualNodeInfoReadService.get(member)?.cpiIdentifier
-                ?: throw CordaRuntimeException("Could not find virtual node info for $member")
-            return (
-                context.filterNot {
-                    it.key.startsWith(LEDGER_KEYS) || it.key.startsWith(PARTY_SESSION_KEY)
-                } + generateSessionKeyData(context, member.shortHash.value) +
-                    generateLedgerKeyData(context, member.shortHash.value) +
-                    mapOf(
-                        REGISTRATION_ID to registrationId.toString(),
-                        PARTY_NAME to member.x500Name.toString(),
-                        GROUP_ID to member.groupId,
-                        PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),
-                        SOFTWARE_VERSION to platformInfoProvider.localWorkerSoftwareVersion,
-                        MEMBER_CPI_NAME to cpi.name,
-                        MEMBER_CPI_VERSION to cpi.version,
-                        SERIAL to SERIAL_CONST,
-                    ) + roles.toMemberInfo { notaryKeys }
-                )
+                ?: throw CordaRuntimeException("Could not find virtual node info for member ${member.shortHash}")
+            val filteredContext = context.filterNot {
+                it.key.startsWith(LEDGER_KEYS) || it.key.startsWith(PARTY_SESSION_KEY)
+            }
+            val sessionKeyContext = generateSessionKeyData(context, member.shortHash.value)
+            val ledgerKeyContext = generateLedgerKeyData(context, member.shortHash.value)
+            val additionalContext = mapOf(
+                REGISTRATION_ID to registrationId.toString(),
+                PARTY_NAME to member.x500Name.toString(),
+                GROUP_ID to member.groupId,
+                PLATFORM_VERSION to platformInfoProvider.activePlatformVersion.toString(),
+                SOFTWARE_VERSION to platformInfoProvider.localWorkerSoftwareVersion,
+                MEMBER_CPI_NAME to cpi.name,
+                MEMBER_CPI_VERSION to cpi.version,
+                MEMBER_CPI_SIGNER_HASH to cpi.signerSummaryHash.toString(),
+                SERIAL to SERIAL_CONST,
+            )
+            val roleContext = roles.toMemberInfo { notaryKeys }
+            val optionalContext = mutableMapOf<String, String>()
+            cpi.signerSummaryHash?.let {
+                optionalContext.put(MEMBER_CPI_SIGNER_HASH, it.toString())
+            }
+            return filteredContext +
+                    sessionKeyContext +
+                    ledgerKeyContext +
+                    additionalContext +
+                    roleContext +
+                    optionalContext
+
         }
 
         private fun validateContext(context: Map<String, String>) {
@@ -411,11 +424,11 @@ class DynamicMemberRegistrationService @Activate constructor(
             }
             logger.info(
                 "Signature spec for key with ID: ${key.id} was not specified. Applying default signature spec " +
-                    "for ${key.schemeCodeName}."
+                        "for ${key.schemeCodeName}."
             )
             return key.spec ?: throw IllegalArgumentException(
                 "Could not find a suitable signature spec for ${key.schemeCodeName}. " +
-                    "Specify signature spec for key with ID: ${key.id} explicitly in the context."
+                        "Specify signature spec for key with ID: ${key.id} explicitly in the context."
             )
         }
 
@@ -465,7 +478,10 @@ class DynamicMemberRegistrationService @Activate constructor(
             return mapOf(
                 PARTY_SESSION_KEY to keyEncodingService.encodeAsString(sessionPublicKey),
                 SESSION_KEY_HASH to sessionPublicKey.calculateHash().value,
-                SESSION_KEY_SIGNATURE_SPEC to getSignatureSpec(sessionKey, context[SESSION_KEY_SIGNATURE_SPEC]).signatureName
+                SESSION_KEY_SIGNATURE_SPEC to getSignatureSpec(
+                    sessionKey,
+                    context[SESSION_KEY_SIGNATURE_SPEC]
+                ).signatureName
             )
         }
 

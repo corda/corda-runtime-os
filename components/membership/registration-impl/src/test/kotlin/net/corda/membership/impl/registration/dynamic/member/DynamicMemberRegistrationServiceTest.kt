@@ -26,13 +26,13 @@ import net.corda.lifecycle.StopEvent
 import net.corda.membership.impl.registration.TEST_PLATFORM_VERSION
 import net.corda.membership.impl.registration.TEST_SOFTWARE_VERSION
 import net.corda.membership.impl.registration.buildTestVirtualNodeInfo
-import net.corda.membership.impl.registration.addIndex
 import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_SIGNATURE_SPEC
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_SIGNER_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
@@ -390,18 +390,19 @@ class DynamicMemberRegistrationServiceTest {
                 PARTY_NAME,
                 MEMBER_CPI_NAME,
                 MEMBER_CPI_VERSION,
+                MEMBER_CPI_SIGNER_HASH,
                 SOFTWARE_VERSION,
                 PLATFORM_VERSION,
                 REGISTRATION_ID,
                 SERIAL,
-                URL_KEY.addIndex(0),
-                PROTOCOL_VERSION.addIndex(0),
+                URL_KEY.format(0),
+                PROTOCOL_VERSION.format(0),
                 PARTY_SESSION_KEY,
                 SESSION_KEY_HASH,
                 SESSION_KEY_SIGNATURE_SPEC,
-                LEDGER_KEYS_KEY.addIndex(0),
-                LEDGER_KEY_HASHES_KEY.addIndex(0),
-                LEDGER_KEY_SIGNATURE_SPEC.addIndex(0)
+                LEDGER_KEYS_KEY.format(0),
+                LEDGER_KEY_HASHES_KEY.format(0),
+                LEDGER_KEY_SIGNATURE_SPEC.format(0)
             )
         }
     }

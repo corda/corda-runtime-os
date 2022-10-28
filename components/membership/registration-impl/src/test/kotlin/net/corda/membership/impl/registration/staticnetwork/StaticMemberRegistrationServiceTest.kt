@@ -36,10 +36,10 @@ import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithInvalidStaticNetworkTemplate
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithStaticNetwork
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithoutStaticNetwork
+import net.corda.membership.impl.registration.testCpiSignerSummaryHash
 import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
-import net.corda.membership.lib.MemberInfoExtension.Companion.cpiName
-import net.corda.membership.lib.MemberInfoExtension.Companion.cpiVersion
+import net.corda.membership.lib.MemberInfoExtension.Companion.cpiInfo
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
 import net.corda.membership.lib.MemberInfoExtension.Companion.ledgerKeyHashes
@@ -303,8 +303,9 @@ class StaticMemberRegistrationServiceTest {
             assertEquals(DUMMY_GROUP_ID, memberPublished.groupId)
             assertEquals(TEST_SOFTWARE_VERSION, memberPublished.softwareVersion)
             assertEquals(TEST_PLATFORM_VERSION, memberPublished.platformVersion)
-            assertEquals(TEST_CPI_NAME, memberPublished.cpiName)
-            assertEquals(TEST_CPI_VERSION, memberPublished.cpiVersion)
+            assertEquals(TEST_CPI_NAME, memberPublished.cpiInfo.name)
+            assertEquals(TEST_CPI_VERSION, memberPublished.cpiInfo.version)
+            assertEquals(testCpiSignerSummaryHash, memberPublished.cpiInfo.signerSummaryHash)
             assertNotNull(memberPublished.serial)
             assertNotNull(memberPublished.modifiedTime)
 

@@ -31,7 +31,6 @@ import net.corda.membership.impl.registration.TEST_CPI_NAME
 import net.corda.membership.impl.registration.TEST_CPI_VERSION
 import net.corda.membership.impl.registration.TEST_PLATFORM_VERSION
 import net.corda.membership.impl.registration.TEST_SOFTWARE_VERSION
-import net.corda.membership.impl.registration.addIndex
 import net.corda.membership.impl.registration.buildMockPlatformInfoProvider
 import net.corda.membership.impl.registration.buildTestVirtualNodeInfo
 import net.corda.membership.lib.MemberInfoExtension.Companion.CREATED_TIME
@@ -39,6 +38,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.ECDH_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.IS_MGM
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_SIGNER_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.MODIFIED_TIME
@@ -323,9 +323,10 @@ class MGMRegistrationServiceTest {
                             SOFTWARE_VERSION,
                             MEMBER_CPI_NAME,
                             MEMBER_CPI_VERSION,
+                            MEMBER_CPI_SIGNER_HASH,
                             SERIAL,
-                            URL_KEY.addIndex(0),
-                            PROTOCOL_VERSION.addIndex(0),
+                            URL_KEY.format(0),
+                            PROTOCOL_VERSION.format(0),
                         )
                     )
                 it.assertThat(persistedMgm.mgmContext.items.map { item -> item.key })
@@ -504,7 +505,7 @@ class MGMRegistrationServiceTest {
                 it.assertThat(result.message)
                     .isEqualTo(
                         "Onboarding MGM failed. " +
-                                "The registration context is invalid: Provided TLS trust stores are incorrectly numbered."
+                                "Provided TLS trust stores are incorrectly numbered."
                     )
             }
             registrationService.stop()

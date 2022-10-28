@@ -31,6 +31,7 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEYS_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.LEDGER_KEY_HASHES_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_NAME
+import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_SIGNER_HASH
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_CPI_VERSION
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_NAME
 import net.corda.membership.lib.MemberInfoExtension.Companion.PARTY_SESSION_KEY
@@ -58,6 +59,7 @@ import net.corda.utilities.concurrent.getOrThrow
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
+import net.corda.v5.crypto.SecureHash
 import net.corda.v5.crypto.publicKeyId
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.VirtualNodeInfo
@@ -72,7 +74,7 @@ import org.osgi.test.common.annotation.InjectService
 import org.osgi.test.junit5.service.ServiceExtension
 import java.time.Duration
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
 @ExtendWith(ServiceExtension::class, DBSetup::class)
@@ -148,6 +150,7 @@ class MemberRegistrationIntegrationTest {
         const val PROTOCOL_KEY = "corda.endpoints.0.protocolVersion"
         const val PROTOCOL_VALUE = "1"
         const val CPI_VERSION = "1.1"
+        const val CPI_SIGNER_HASH = "ALG:A1B2C3D4"
         const val CPI_NAME = "cpi-name"
         const val TEST_SERIAL = 1
 
@@ -189,7 +192,7 @@ class MemberRegistrationIntegrationTest {
             testVirtualNodeInfoReadService.putTestVirtualNodeInfo(
                 VirtualNodeInfo(
                     holdingIdentity = HoldingIdentity(memberName, groupId),
-                    cpiIdentifier = CpiIdentifier(CPI_NAME, CPI_VERSION, null),
+                    cpiIdentifier = CpiIdentifier(CPI_NAME, CPI_VERSION, SecureHash.parse(CPI_SIGNER_HASH)),
                     cryptoDmlConnectionId = UUID.randomUUID(),
                     uniquenessDmlConnectionId = UUID.randomUUID(),
                     vaultDmlConnectionId = UUID.randomUUID(),
@@ -283,6 +286,7 @@ class MemberRegistrationIntegrationTest {
                     it.assertThat(getValue(GROUP_ID)).isEqualTo(groupId)
                     it.assertThat(getValue(MEMBER_CPI_NAME)).isEqualTo(CPI_NAME)
                     it.assertThat(getValue(MEMBER_CPI_VERSION)).isEqualTo(CPI_VERSION)
+                    it.assertThat(getValue(MEMBER_CPI_SIGNER_HASH)).isEqualTo(CPI_SIGNER_HASH)
                     it.assertThat(getValue(PLATFORM_VERSION)).isEqualTo(TEST_ACTIVE_PLATFORM_VERSION.toString())
                     it.assertThat(getValue(SOFTWARE_VERSION)).isEqualTo(TEST_SOFTWARE_VERSION)
                     it.assertThat(getValue(SERIAL)).isEqualTo(TEST_SERIAL.toString())
