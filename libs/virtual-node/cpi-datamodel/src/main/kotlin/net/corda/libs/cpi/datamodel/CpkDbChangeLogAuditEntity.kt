@@ -21,10 +21,10 @@ class CpkDbChangeLogAuditEntity(
     @EmbeddedId
     var id: CpkDbChangeLogAuditKey,
     @Column(name = "content", nullable = false)
-    val content: String,
+    override val content: String,
     @Column(name = "is_deleted", nullable = false)
     var isDeleted: Boolean = false
-) {
+) : CpkDbChangelog {
     // this TS is managed on the DB itself
     @Column(name = "insert_ts", insertable = false, updatable = false)
     val insertTimestamp: Instant? = null
@@ -39,6 +39,8 @@ class CpkDbChangeLogAuditEntity(
         cpkDbChangeLogEntity.content,
         cpkDbChangeLogEntity.isDeleted
     )
+
+    override val filePath get() = id.filePath
 }
 
 @Embeddable
@@ -94,6 +96,8 @@ fun findDbChangeLogAuditForCpi(
 
 /*
  * Find all the audit db changelogs for a CPI
+ *
+ *  lookup is chunked to prevent large list being passed as part of the IN clause
  */
 fun findDbChangeLogAuditForCpi(
     entityManager: EntityManager,

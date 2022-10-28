@@ -32,10 +32,9 @@ import net.corda.libs.cpi.datamodel.findDbChangeLogForCpi
 import net.corda.libs.packaging.core.CpiIdentifier
 import net.corda.libs.virtualnode.common.exception.CpiNotFoundException
 import net.corda.libs.virtualnode.common.exception.VirtualNodeAlreadyExistsException
-import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
-import net.corda.membership.lib.MemberInfoExtension.Companion.id
 import net.corda.membership.lib.grouppolicy.GroupPolicyConstants.PolicyValues.Root.MGM_DEFAULT_GROUP_ID
+import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.messaging.api.processor.RPCResponderProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
@@ -56,7 +55,7 @@ import net.corda.virtualnode.toAvro
 import net.corda.virtualnode.write.db.VirtualNodeWriteServiceException
 import java.lang.System.currentTimeMillis
 import java.time.Instant
-import java.util.*
+import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 import javax.persistence.EntityManager
@@ -259,26 +258,12 @@ internal class VirtualNodeWriterProcessor(
                         val appliedVersions: Set<UUID> = getAppliedVersions(tx, dataSource, systemTerminatorTag)
                         // Look up all audit entries that correspond to the UUID set that we just got
                         val migrationSet = findDbChangeLogAuditForCpi(tx, virtualNodeInfo.cpiIdentifier, appliedVersions)
-                        measureTimeMillis {
-                            // Attempt to rollback the acquired changes
-                            rollbackVirtualNodeDb(connectionConfig, migrationSet, systemTerminatorTag)
-                        }.also {
-                            logger.debug {
-                                "[Rollback of ${virtualNodeInfo.holdingIdentity.x500Name}] reverting migrations took $it ms" +
-                                    ", elapsed " + "${currentTimeMillis() - startMillis} ms"
-                            }
-                        }
+                        // Attempt to rollback the acquired changes
+                        rollbackVirtualNodeDb(connectionConfig, migrationSet, systemTerminatorTag)
                         logger.info("Finished rolling back previous migrations, attempting to apply new ones")
-                        measureTimeMillis {
-                            // Attempt to apply the changes from the current CPI
-                            val changelogs = getChangelogs(em, cpiMetadata.id)
-                            runCpiResyncMigrations(changelogs, connectionConfig)
-                        }.also {
-                            logger.debug {
-                                "[Rollback of ${virtualNodeInfo.holdingIdentity.x500Name}] applying migrations took $it ms" +
-                                    ", elapsed " + "${currentTimeMillis() - startMillis} ms"
-                            }
-                        }
+                        // Attempt to apply the changes from the current CPI
+                        val changelogs = getChangelogs(em, cpiMetadata.id)
+                        runCpiResyncMigrations(changelogs, connectionConfig)
                     }
                 }
                 shortHash.value
@@ -298,7 +283,7 @@ internal class VirtualNodeWriterProcessor(
         changelogs: List<CpkDbChangeLogAuditEntity>,
         tagToRollbackTo: String
     ) {
-        val dbChange = VirtualNodeDbChangeLogAudit(changelogs)
+        val dbChange = VirtualNodeDbChangeLog(changelogs)
         dbConnectionManager.getDataSource(connectionConfig).use { dataSource ->
             dataSource.connection.use { connection ->
                 LiquibaseSchemaMigratorImpl().rollBackDb(connection, dbChange, tagToRollbackTo)
@@ -538,7 +523,7 @@ internal class VirtualNodeWriterProcessor(
                 val cpkChangelogs = changelogs.filter { cl2 -> cl2.id.cpkName == cpkName }
                 logger.info("Doing ${cpkChangelogs.size} migrations for $cpkName")
                 val dbChange = VirtualNodeDbChangeLog(cpkChangelogs)
-                val changesetId = cpkChangelogs.last().changesetId
+                val changesetId = cpkChangelogs.first().changesetId
                 try {
                     vaultDb.runCpiMigrations(dbChange, changesetId.toString())
                 } catch (e: Exception) {
