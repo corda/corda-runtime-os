@@ -89,6 +89,9 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     private fun getSyncedEventPartitions(): Set<CordaTopicPartition> {
         val partitionsSynced = mutableSetOf<CordaTopicPartition>()
         val statePartitionsToSync = partitionsToSync.toMap()
+        if (statePartitionsToSync.isNotEmpty()) {
+            log.info("State consumer in group ${config.group} is syncing partitions: $statePartitionsToSync")
+        }
         for (partition in statePartitionsToSync) {
             val partitionId = partition.key
             val stateTopic = getStateAndEventStateTopic(config.topic)
