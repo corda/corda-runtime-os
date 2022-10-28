@@ -20,6 +20,7 @@ import org.slf4j.Logger
 import picocli.CommandLine
 import java.io.InputStream
 import java.lang.management.ManagementFactory
+import kotlin.jvm.optionals.getOrElse
 
 
 /** Associates a configuration key/value map with the path at which the configuration should be stored. */
@@ -147,7 +148,7 @@ class WorkerHelpers {
             val processHandle = ProcessHandle.current()
             val processInfo = processHandle.info()
             info("PID: ${processHandle.pid()}")
-            info("Command: ${if (processInfo.command().isPresent) processInfo.command().get() else "Null"}")
+            info("Command: ${processInfo.command().orElse("Null")}")
 
             val arguments = processInfo.arguments()
             if (arguments.isPresent) {
@@ -160,7 +161,7 @@ class WorkerHelpers {
                 info("arguments: Null")
             }
 
-            info("User: ${if (processInfo.user().isPresent) processInfo.user().get() else "Null"}")
+            info("User: ${processInfo.user().orElse("Null")}")
             info("StartInstant: ${if (processInfo.startInstant().isPresent) processInfo.startInstant().get() else "Null"}")
             info("TotalCpuDuration: ${if (processInfo.totalCpuDuration().isPresent) processInfo.totalCpuDuration().get() else "Null"}")
             info("JavaClass: ${processInfo.javaClass}")
