@@ -239,7 +239,8 @@ class TestServicesFactory {
         SigningServiceImpl(
             signingKeyStore,
             cryptoServiceFactory,
-            schemeMetadata
+            schemeMetadata,
+            digest
         )
     }
 

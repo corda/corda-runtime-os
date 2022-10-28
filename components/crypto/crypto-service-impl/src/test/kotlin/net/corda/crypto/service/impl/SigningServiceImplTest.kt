@@ -5,6 +5,7 @@ import net.corda.crypto.persistence.SigningCachedKey
 import net.corda.crypto.persistence.SigningKeyStore
 import net.corda.crypto.service.CryptoServiceFactory
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.schemes.KeyScheme
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -16,10 +17,12 @@ class SigningServiceImplTest {
     private val store = mock<SigningKeyStore>()
     private val cryptoServiceFactory = mock<CryptoServiceFactory>()
     private val schemeMetadata = mock<CipherSchemeMetadata>()
+    private val digestService = mock<DigestService>()
     private val service = SigningServiceImpl(
         store,
         cryptoServiceFactory,
-        schemeMetadata
+        schemeMetadata,
+        digestService
     )
 
     @Test

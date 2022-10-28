@@ -11,6 +11,7 @@ import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.cipher.suite.DigestService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -24,7 +25,9 @@ class SigningServiceFactoryImpl @Activate constructor(
     @Reference(service = SigningKeyStore::class)
     private val store: SigningKeyStore,
     @Reference(service = CryptoServiceFactory::class)
-    private val cryptoServiceFactory: CryptoServiceFactory
+    private val cryptoServiceFactory: CryptoServiceFactory,
+    @Reference(service = DigestService::class)
+    private val digestService: DigestService
 ) : AbstractComponent<SigningServiceFactoryImpl.Impl>(
     coordinatorFactory = coordinatorFactory,
     myName = LifecycleCoordinatorName.forComponent<SigningServiceFactory>(),
@@ -39,7 +42,7 @@ class SigningServiceFactoryImpl @Activate constructor(
         private val logger = contextLogger()
     }
 
-    override fun createActiveImpl(): Impl = Impl(schemeMetadata, store, cryptoServiceFactory)
+    override fun createActiveImpl(): Impl = Impl(schemeMetadata, store, cryptoServiceFactory, digestService)
 
     override fun getInstance(): SigningService =
         impl.getInstance()
@@ -47,7 +50,8 @@ class SigningServiceFactoryImpl @Activate constructor(
     class Impl(
         private val schemeMetadata: CipherSchemeMetadata,
         private val store: SigningKeyStore,
-        private val cryptoServiceFactory: CryptoServiceFactory
+        private val cryptoServiceFactory: CryptoServiceFactory,
+        private val digestService: DigestService
     ) : AbstractImpl {
         private val lock = Any()
 
@@ -75,7 +79,8 @@ class SigningServiceFactoryImpl @Activate constructor(
                         signingService = SigningServiceImpl(
                             store = store,
                             cryptoServiceFactory = cryptoServiceFactory,
-                            schemeMetadata = schemeMetadata
+                            schemeMetadata = schemeMetadata,
+                            digestService = digestService
                         )
                         signingService!!
                     }
