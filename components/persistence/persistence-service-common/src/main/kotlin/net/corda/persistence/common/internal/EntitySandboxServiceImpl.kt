@@ -82,8 +82,20 @@ class EntitySandboxServiceImpl @Activate constructor(
         }
     }
 
+    private val externalInitialisationSteps =
+        mutableListOf<(Collection<CpkMetadata>, VirtualNodeInfo, MutableSandboxGroupContext) -> AutoCloseable>()
     private val internalCustomSerializers
         get() = componentContext.fetchServices<InternalCustomSerializer<out Any>>(INTERNAL_CUSTOM_SERIALIZERS)
+
+    override fun addInitialisationStep(
+        initFunction: (
+            cpks: Collection<CpkMetadata>,
+            virtualNode: VirtualNodeInfo,
+            ctx: MutableSandboxGroupContext
+        ) -> AutoCloseable
+    ) {
+        externalInitialisationSteps.add(initFunction)
+    }
 
     override fun get(holdingIdentity: HoldingIdentity): SandboxGroupContext {
         // We're throwing internal exceptions so that we can relay some information back to the flow worker
@@ -111,6 +123,7 @@ class EntitySandboxServiceImpl @Activate constructor(
         val customCrypto = sandboxService.registerCustomCryptography(ctx)
         val serializerCloseable = putSerializer(ctx, cpks, virtualNode)
         val emfCloseable = putEntityManager(ctx, cpks, virtualNode)
+        val externalStepCloseables = externalInitialisationSteps.map { it(cpks, virtualNode, ctx) }
 
         // Instruct all CustomMetadataConsumers to accept their metadata.
         sandboxService.acceptCustomMetadata(ctx)
@@ -128,6 +141,7 @@ class EntitySandboxServiceImpl @Activate constructor(
             serializerCloseable.close()
             emfCloseable.close()
             customCrypto.close()
+            externalStepCloseables.forEach { it.close() }
         }
     }
 
@@ -145,11 +159,7 @@ class EntitySandboxServiceImpl @Activate constructor(
 
         // TODO - add general vault entities
         val entityClasses = EntityExtractor.getEntityClassNames(cpks).map {
-            try {
-                ctx.sandboxGroup.loadClassFromMainBundles(it)
-            } catch (e: SandboxException) {
-                throw e
-            }
+            ctx.sandboxGroup.loadClassFromMainBundles(it)
         }.toSet()
 
         // We now have the collection of class types, from the CPKs, with their *own* classloaders (i.e. osgi).
