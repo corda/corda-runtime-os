@@ -203,10 +203,10 @@ class AMQPwithOSGiSerializationTests {
     }
 
     @CordaSerializable
-    data class SignableData(val contents: String)
+    data class SignableDataAmqpTest(val contents: String)
 
     @CordaSerializable
-    data class TestMapOfSignableData(val signableData: Map<Int, SignableData>)
+    data class TestMapOfSignableData(val signableData: Map<Int, SignableDataAmqpTest>)
 
     @Test
     fun mapOfSignableData() {
@@ -216,7 +216,7 @@ class AMQPwithOSGiSerializationTests {
             registerCustomSerializers(factory)
             val context = testSerializationContext.withSandboxGroup(sandboxGroup)
 
-            val testObject = TestMapOfSignableData(mapOf(1 to SignableData("mapOfSignableData")))
+            val testObject = TestMapOfSignableData(mapOf(1 to SignableDataAmqpTest("mapOfSignableData")))
 
             val serializedBytes = SerializationOutput(factory).serialize(testObject, context)
             val deserialize = DeserializationInput(factory).deserialize(serializedBytes, context)
@@ -228,7 +228,7 @@ class AMQPwithOSGiSerializationTests {
     }
 
     @CordaSerializable
-    data class TestListOfSignableData(val signableData: List<SignableData>)
+    data class TestListOfSignableData(val signableData: List<SignableDataAmqpTest>)
 
     @Test
     fun listOfSignableData() {
@@ -238,7 +238,7 @@ class AMQPwithOSGiSerializationTests {
             registerCustomSerializers(factory)
             val context = testSerializationContext.withSandboxGroup(sandboxGroup)
 
-            val testObject = TestListOfSignableData(listOf(SignableData("listOfSignableData")))
+            val testObject = TestListOfSignableData(listOf(SignableDataAmqpTest("listOfSignableData")))
 
             val serializedBytes = SerializationOutput(factory).serialize(testObject, context)
             val deserialize = DeserializationInput(factory).deserialize(serializedBytes, context)
