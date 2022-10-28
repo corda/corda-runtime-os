@@ -20,8 +20,6 @@ import org.slf4j.Logger
 import picocli.CommandLine
 import java.io.InputStream
 import java.lang.management.ManagementFactory
-import kotlin.jvm.optionals.getOrElse
-
 
 /** Associates a configuration key/value map with the path at which the configuration should be stored. */
 data class PathAndConfig(val path: String, val config: Map<String, String>)
