@@ -1,4 +1,4 @@
-package net.corda.ledger.common.flow.impl.transaction
+package net.corda.ledger.common.flow.impl.transaction.filtered
 
 import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
@@ -6,9 +6,9 @@ import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.ledger.common.data.transaction.TransactionMetadata
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
-import net.corda.ledger.common.flow.impl.transaction.factory.FilteredTransactionFactoryImpl
-import net.corda.ledger.common.flow.transaction.factory.ComponentGroupFilterParameters
+import net.corda.ledger.common.flow.impl.transaction.filtered.factory.FilteredTransactionFactoryImpl
+import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
+import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.CordaSerializable
@@ -20,7 +20,10 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
-class FilteredTransactionImplTest {
+/**
+ * Has no benefit being an OSGi test but cannot be moved without causing issues due to mocks.
+ */
+class FilteredTransactionImplIntegrationTest {
 
     private companion object {
         val COMPONENT_1 = "Component 1".toByteArray()

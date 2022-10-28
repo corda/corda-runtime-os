@@ -1,7 +1,8 @@
-package net.corda.ledger.common.flow.transaction.factory
+package net.corda.ledger.common.flow.transaction.filtered.factory
 
-import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
-import net.corda.ledger.common.data.transaction.filtered.MerkleProofType
+import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
+import net.corda.ledger.common.flow.transaction.filtered.MerkleProofType
+import net.corda.v5.crypto.merkle.MerkleProof
 
 /**
  * [ComponentGroupFilterParameters] is used with [FilteredTransactionFactory] to specify what component groups include in the
@@ -17,7 +18,7 @@ sealed interface ComponentGroupFilterParameters {
     val componentGroupIndex: Int
 
     /**
-     * Gets the type of proof to create.
+     * Gets the type of [MerkleProof] to create.
      */
     val merkleProofType: MerkleProofType
 

@@ -1,8 +1,8 @@
-package net.corda.ledger.common.data.transaction.serializer.amqp
+package net.corda.ledger.common.flow.impl.transaction.filtered.serializer.amqp
 
-import net.corda.ledger.common.data.transaction.filtered.FilteredTransactionImpl
-import net.corda.ledger.common.data.transaction.filtered.FilteredComponentGroup
-import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
+import net.corda.ledger.common.flow.impl.transaction.filtered.FilteredTransactionImpl
+import net.corda.ledger.common.flow.transaction.filtered.FilteredComponentGroup
+import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
 import net.corda.serialization.BaseProxySerializer
 import net.corda.serialization.InternalCustomSerializer
 import net.corda.v5.application.marshalling.JsonMarshallingService

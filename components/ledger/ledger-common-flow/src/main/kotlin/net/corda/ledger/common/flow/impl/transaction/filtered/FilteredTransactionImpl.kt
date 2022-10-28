@@ -1,10 +1,13 @@
-package net.corda.ledger.common.data.transaction.filtered
+package net.corda.ledger.common.flow.impl.transaction.filtered
 
 import net.corda.ledger.common.data.transaction.COMPONENT_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY
 import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_ALGORITHM_NAME_KEY
 import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_OPTIONS_LEAF_PREFIX_B64_KEY
 import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_OPTIONS_NODE_PREFIX_B64_KEY
 import net.corda.ledger.common.data.transaction.TransactionMetadata
+import net.corda.ledger.common.flow.transaction.filtered.FilteredComponentGroup
+import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
+import net.corda.ledger.common.flow.transaction.filtered.MerkleProofType
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.marshalling.parse
 import net.corda.v5.base.exceptions.CordaRuntimeException
@@ -19,6 +22,14 @@ import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_NONCE_VERIFY_NAME
 import net.corda.v5.crypto.merkle.HASH_DIGEST_PROVIDER_TWEAKABLE_NAME
 import net.corda.v5.crypto.merkle.MerkleProof
 import java.util.Base64
+import kotlin.collections.filter
+import kotlin.collections.isEmpty
+import kotlin.collections.isNotEmpty
+import kotlin.collections.map
+import kotlin.collections.single
+import kotlin.collections.toSet
+import kotlin.text.decodeToString
+import kotlin.to
 
 class FilteredTransactionImpl(
     override val id: SecureHash,
@@ -85,7 +96,7 @@ class FilteredTransactionImpl(
                     componentGroupAuditProofProvider
                 }
                 MerkleProofType.SIZE -> {
-                    if (filteredComponentGroup.merkleProof.treeSize == 1 && filteredComponentGroup.merkleProof.leaves.single().leafData.isEmpty()) {
+                    if (filteredComponentGroup.merkleProof.hasSingleEmptyLeaf()) {
                         componentGroupAuditProofProvider
                     } else {
                         componentGroupSizeProofProvider
@@ -139,6 +150,10 @@ class FilteredTransactionImpl(
             merkleTreeHashDigestProviderName = HASH_DIGEST_PROVIDER_NONCE_SIZE_ONLY_VERIFY_NAME,
             componentGroupDigestAlgorithmName
         )
+    }
+
+    private fun MerkleProof.hasSingleEmptyLeaf(): Boolean {
+        return treeSize == 1 && leaves.single().leafData.isEmpty()
     }
 
     private inline fun validate(condition: Boolean, message: () -> String) {

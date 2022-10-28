@@ -1,11 +1,11 @@
-package net.corda.ledger.common.flow.impl.transaction.factory
+package net.corda.ledger.common.flow.impl.transaction.filtered.factory
 
 import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.data.transaction.filtered.FilteredComponentGroup
-import net.corda.ledger.common.data.transaction.filtered.FilteredTransaction
-import net.corda.ledger.common.data.transaction.filtered.FilteredTransactionImpl
-import net.corda.ledger.common.flow.transaction.factory.ComponentGroupFilterParameters
-import net.corda.ledger.common.flow.transaction.factory.FilteredTransactionFactory
+import net.corda.ledger.common.flow.impl.transaction.filtered.FilteredTransactionImpl
+import net.corda.ledger.common.flow.transaction.filtered.FilteredComponentGroup
+import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
+import net.corda.ledger.common.flow.transaction.filtered.factory.ComponentGroupFilterParameters
+import net.corda.ledger.common.flow.transaction.filtered.factory.FilteredTransactionFactory
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
