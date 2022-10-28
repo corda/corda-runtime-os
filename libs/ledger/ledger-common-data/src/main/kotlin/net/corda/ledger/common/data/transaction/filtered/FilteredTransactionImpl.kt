@@ -50,13 +50,13 @@ class FilteredTransactionImpl(
 
         validate(filteredComponentGroups[0] != null) { "Component group 0 does not exist" }
 
-        val transactionMetaDataProof = filteredComponentGroups[0]!!.merkleProof
+        val transactionMetadataProof = filteredComponentGroups[0]!!.merkleProof
 
-        validate(transactionMetaDataProof.treeSize == 1) {
-            "Component group 0's Merkle proof must have a tree size of 1 but has a size of ${transactionMetaDataProof.treeSize}"
+        validate(transactionMetadataProof.treeSize == 1) {
+            "Component group 0's Merkle proof must have a tree size of 1 but has a size of ${transactionMetadataProof.treeSize}"
         }
-        validate(transactionMetaDataProof.leaves.size == 1) {
-            "Component group 0's Merkle proof must have a single leaf but contains ${transactionMetaDataProof.leaves.size}"
+        validate(transactionMetadataProof.leaves.size == 1) {
+            "Component group 0's Merkle proof must have a single leaf but contains ${transactionMetadataProof.leaves.size}"
         }
 
         validate(componentGroupMerkleProof.verify(id, createRootAuditProofProvider())) {

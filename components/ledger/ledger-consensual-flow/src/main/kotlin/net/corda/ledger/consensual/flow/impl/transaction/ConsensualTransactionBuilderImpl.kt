@@ -34,7 +34,7 @@ class ConsensualTransactionBuilderImpl(
     private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
     private val currentSandboxGroup: SandboxGroup, // TODO CORE-7101 use CurrentSandboxService when it gets available
     // cpi defines what type of signing/hashing is used (related to the digital signature signing and verification stuff)
-    private val transactionMetaData: TransactionMetadata,
+    private val transactionMetadata: TransactionMetadata,
     override val states: List<ConsensualState> = emptyList(),
 ) : ConsensualTransactionBuilder {
 
@@ -106,7 +106,7 @@ class ConsensualTransactionBuilderImpl(
             when (componentGroupIndex) {
                 ConsensualComponentGroup.METADATA ->
                     listOf(
-                        jsonMarshallingService.format(transactionMetaData)
+                        jsonMarshallingService.format(transactionMetadata)
                             .toByteArray(Charsets.UTF_8)
                     ) // TODO(update with CORE-6890)
                 ConsensualComponentGroup.TIMESTAMP ->
@@ -124,7 +124,7 @@ class ConsensualTransactionBuilderImpl(
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is ConsensualTransactionBuilderImpl) return false
-        if (other.transactionMetaData != transactionMetaData) return false
+        if (other.transactionMetadata != transactionMetadata) return false
         if (other.states.size != states.size) return false
 
         return other.states.withIndex().all {
@@ -144,7 +144,7 @@ class ConsensualTransactionBuilderImpl(
             signingService,
             digitalSignatureVerificationService,
             currentSandboxGroup,
-            transactionMetaData,
+            transactionMetadata,
             states,
         )
     }

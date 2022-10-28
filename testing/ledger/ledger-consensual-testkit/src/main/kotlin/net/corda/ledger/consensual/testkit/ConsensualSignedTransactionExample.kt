@@ -24,7 +24,7 @@ fun getConsensualSignedTransactionExample(
         digestService,
         merkleTreeProvider,
         jsonMarshallingService,
-        consensualTransactionMetaDataExample
+        consensualTransactionMetadataExample
     )
     return ConsensualSignedTransactionImpl(
         serializationService,

@@ -24,7 +24,7 @@ fun getUtxoSignedTransactionExample(
         digestService,
         merkleTreeProvider,
         jsonMarshallingService,
-        utxoTransactionMetaDataExample
+        utxoTransactionMetadataExample
     )
     return UtxoSignedTransactionImpl(
         serializationService,
