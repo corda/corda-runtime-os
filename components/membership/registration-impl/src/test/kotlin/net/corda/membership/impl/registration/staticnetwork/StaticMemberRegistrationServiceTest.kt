@@ -38,6 +38,7 @@ import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.
 import net.corda.membership.impl.registration.staticnetwork.TestUtils.Companion.groupPolicyWithoutStaticNetwork
 import net.corda.membership.impl.registration.testCpiSignerSummaryHash
 import net.corda.membership.lib.EndpointInfoFactory
+import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.MEMBER_STATUS_ACTIVE
 import net.corda.membership.lib.MemberInfoExtension.Companion.cpiInfo
 import net.corda.membership.lib.MemberInfoExtension.Companion.endpoints
@@ -61,9 +62,12 @@ import net.corda.membership.persistence.client.MembershipPersistenceResult
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.NOT_SUBMITTED
 import net.corda.membership.registration.MembershipRequestRegistrationOutcome.SUBMITTED
 import net.corda.membership.registration.MembershipRequestRegistrationResult
+import net.corda.messaging.api.processor.CompactedProcessor
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.publisher.factory.PublisherFactory
 import net.corda.messaging.api.records.Record
+import net.corda.messaging.api.subscription.CompactedSubscription
+import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.p2p.HostedIdentityEntry
 import net.corda.schema.Schemas
 import net.corda.schema.Schemas.P2P.Companion.P2P_HOSTED_IDENTITIES_TOPIC
@@ -93,7 +97,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.times
 import org.mockito.kotlin.whenever
 import java.security.PublicKey
-import java.util.*
+import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
@@ -144,6 +148,12 @@ class StaticMemberRegistrationServiceTest {
 
     private val publisherFactory: PublisherFactory = mock {
         on { createPublisher(any(), any()) } doReturn mockPublisher
+    }
+
+    private val mockSubscription: CompactedSubscription<String, KeyValuePairList> = mock()
+
+    private val subscriptionFactory: SubscriptionFactory = mock {
+        on { createCompactedSubscription(any(), any<CompactedProcessor<String, KeyValuePairList>>(), any()) } doReturn mockSubscription
     }
 
     private val keyEncodingService: KeyEncodingService = mock {
@@ -241,10 +251,12 @@ class StaticMemberRegistrationServiceTest {
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { get(eq(alice)) } doReturn virtualNodeInfo
     }
+    private val groupParametersFactory: GroupParametersFactory = mock()
 
     private val registrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
         publisherFactory,
+        subscriptionFactory,
         keyEncodingService,
         cryptoOpsClient,
         configurationReadService,
@@ -256,7 +268,8 @@ class StaticMemberRegistrationServiceTest {
         membershipSchemaValidatorFactory,
         endpointInfoFactory,
         platformInfoProvider,
-        virtualNodeInfoReadService
+        groupParametersFactory,
+        virtualNodeInfoReadService,
     )
 
     private fun setUpPublisher() {
