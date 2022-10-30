@@ -57,7 +57,7 @@ class ConsensualTransactionBuilderFactoryImpl @Activate constructor(
             signingService,
             digitalSignatureVerificationService,
             flowFiberService.getExecutingFiber().getExecutionContext().sandboxGroupContext.sandboxGroup,
-            calculateMetaData(),
+            calculateMetadata(),
         )
 
     // CORE-7127 Get rid of flowFiberService and access CPK information without fiber when the related solution gets
@@ -79,7 +79,7 @@ class ConsensualTransactionBuilderFactoryImpl @Activate constructor(
             )
         }
 
-    private fun calculateMetaData() =
+    private fun calculateMetadata() =
         TransactionMetadata(
             linkedMapOf(
                 TransactionMetadata.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
