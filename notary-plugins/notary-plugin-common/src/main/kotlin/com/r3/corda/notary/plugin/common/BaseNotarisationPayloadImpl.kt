@@ -10,9 +10,9 @@ import net.corda.v5.ledger.notary.plugin.core.NotarisationRequestSignature
  */
 @CordaSerializable
 abstract class BaseNotarisationPayloadImpl(
-    override val transaction: Any,
-    override val requestSignature: NotarisationRequestSignature,
-    override val validTypes: List<Class<*>>
+    final override val transaction: Any,
+    final override val requestSignature: NotarisationRequestSignature,
+    final override val validTypes: List<Class<*>>
 ) : NotarisationPayload {
 
     init {
