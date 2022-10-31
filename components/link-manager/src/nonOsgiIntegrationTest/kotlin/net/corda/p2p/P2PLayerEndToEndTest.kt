@@ -95,6 +95,7 @@ class P2PLayerEndToEndTest {
         private val logger = contextLogger()
         private const val GROUP_ID = "group-1"
         private const val TLS_KEY_TENANT_ID = "p2p"
+        private const val URL_PATH = "/gateway"
 
         private const val MAX_REQUEST_SIZE = 50_000_000L
 
@@ -413,6 +414,7 @@ class P2PLayerEndToEndTest {
             return ConfigFactory.empty()
                 .withValue("hostAddress", ConfigValueFactory.fromAnyRef(domainName))
                 .withValue("hostPort", ConfigValueFactory.fromAnyRef(port))
+                .withValue("urlPath", ConfigValueFactory.fromAnyRef(URL_PATH))
                 .withValue("maxRequestSize", ConfigValueFactory.fromAnyRef(MAX_REQUEST_SIZE))
                 .withValue("sslConfig.revocationCheck.mode", ConfigValueFactory.fromAnyRef(sslConfig.revocationCheck.mode.toString()))
         }
@@ -503,7 +505,7 @@ class P2PLayerEndToEndTest {
             MemberInfoEntry(
                 HoldingIdentity(identity.x500Name, identity.groupId),
                 keyPairs[i].public.toPem(),
-                "http://$p2pAddress:$p2pPort",
+                "http://$p2pAddress:$p2pPort$URL_PATH",
             )
         }
 

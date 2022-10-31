@@ -73,6 +73,7 @@ class HttpTest : TestBase() {
             GatewayConfiguration(
                 serverAddress.host,
                 serverAddress.port,
+                "/",
                 aliceSslConfig,
                 MAX_REQUEST_SIZE
             ),
@@ -112,6 +113,7 @@ class HttpTest : TestBase() {
             GatewayConfiguration(
                 serverAddress.host,
                 serverAddress.port,
+                "/",
                 aliceSslConfig,
                 MAX_REQUEST_SIZE
             ),
@@ -175,6 +177,7 @@ class HttpTest : TestBase() {
             GatewayConfiguration(
                 serverAddress.host,
                 serverAddress.port,
+                "/",
                 aliceSslConfig,
                 MAX_REQUEST_SIZE
             ),
@@ -211,6 +214,7 @@ class HttpTest : TestBase() {
             GatewayConfiguration(
                 serverAddress.host,
                 serverAddress.port,
+                "/",
                 bobSslConfig,
                 MAX_REQUEST_SIZE
             ),
@@ -246,6 +250,7 @@ class HttpTest : TestBase() {
             GatewayConfiguration(
                 serverAddress.host,
                 serverAddress.port,
+                "/",
                 c4sslConfig,
                 MAX_REQUEST_SIZE
             ),
@@ -344,6 +349,7 @@ class HttpTest : TestBase() {
             GatewayConfiguration(
                 serverAddress.host,
                 serverAddress.port,
+                "/",
                 aliceSslConfig,
                 MAX_REQUEST_SIZE
             ),
@@ -388,6 +394,7 @@ class HttpTest : TestBase() {
             GatewayConfiguration(
                 serverAddress.host,
                 serverAddress.port,
+                "/",
                 bobSslConfig,
                 MAX_REQUEST_SIZE
             ),

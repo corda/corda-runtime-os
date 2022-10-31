@@ -43,6 +43,7 @@ class HttpServerTest {
     private val configuration = GatewayConfiguration(
         hostAddress = "www.r3.com",
         hostPort = 33,
+        urlPath = "/",
         sslConfig = mock(),
         maxRequestSize = 1_000
     )
