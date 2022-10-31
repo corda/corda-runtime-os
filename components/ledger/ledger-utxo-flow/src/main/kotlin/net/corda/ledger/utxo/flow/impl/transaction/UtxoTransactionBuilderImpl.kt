@@ -16,7 +16,6 @@ import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
@@ -26,7 +25,6 @@ import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
 import net.corda.v5.ledger.utxo.TimeWindow
-import net.corda.v5.ledger.utxo.TransactionState
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import java.security.PublicKey
@@ -51,7 +49,9 @@ data class UtxoTransactionBuilderImpl(
     private val signatories: Set<PublicKey> = emptySet(),
     private val inputStateAndRefs: List<StateAndRef<*>> = emptyList(),
     private val referenceInputStateAndRefs: List<StateAndRef<*>> = emptyList(),
-    private val outputTransactionStates: List<TransactionState<*>> = emptyList()
+
+    // We cannot use TransactionStates without notary which may be available only later
+    private val outputStates: List<Pair<ContractState, Int?>> = emptyList()
 ) : UtxoTransactionBuilder {
 
     override fun setNotary(notary: Party): UtxoTransactionBuilder {
@@ -87,11 +87,7 @@ data class UtxoTransactionBuilderImpl(
     }
 
     override fun addOutputState(contractState: ContractState, encumbrance: Int?): UtxoTransactionBuilder {
-        if (notary == null) {
-            throw(CordaRuntimeException("Adding Output states is not possible until the notary has been set!"))
-        }
-        val transactionState = TransactionStateImpl(contractState, notary, encumbrance)
-        return copy(outputTransactionStates = outputTransactionStates + transactionState)
+        return copy(outputStates = outputStates + Pair(contractState, encumbrance))
     }
 
     override fun setTimeWindowUntil(until: Instant): UtxoTransactionBuilder {
@@ -116,6 +112,7 @@ data class UtxoTransactionBuilderImpl(
         require(signatories.toList().isNotEmpty()) {
             "At least one key needs to be provided in order to create a signed Transaction!"
         }
+        verifyIfReady()
         val wireTransaction = buildWireTransaction()
         val signaturesWithMetaData = signatories.map {
             createTransactionSignature(
@@ -135,12 +132,31 @@ data class UtxoTransactionBuilderImpl(
         )
     }
 
-    private fun buildWireTransaction(): WireTransaction {
+    private fun verifyIfReady() {
         // TODO(CORE-7116 more verifications)
         // TODO(CORE-7116 metadata verifications: nulls, order of CPKs, at least one CPK?))
-        require(inputStateAndRefs.isNotEmpty() || outputTransactionStates.isNotEmpty()) {
+
+        // Notary is not null
+        checkNotNull(notary) { "Adding Output states is not possible until the notary has been set!" }
+
+        // TODO Input notaries same (and later or rotated) as notary
+
+        // timeWindow is not null
+        checkNotNull(timeWindow)
+
+        // At least one input, or one output
+        require(inputStateAndRefs.isNotEmpty() || outputStates.isNotEmpty()) {
             "At least one input or output state is required"
         }
+
+        // TODO At least one required signer
+
+        // TODO At least one command
+
+        // TODO probably some more stuff we have to go look at C4 to remember
+    }
+
+    private fun buildWireTransaction(): WireTransaction {
         val componentGroupLists = calculateComponentGroupLists()
 
         val entropy = ByteArray(32)
@@ -158,18 +174,20 @@ data class UtxoTransactionBuilderImpl(
 
     @Suppress("ComplexMethod")
     private fun calculateComponentGroupLists(): List<List<ByteArray>> {
-        if (notary == null) {
-            throw(CordaRuntimeException("Finalising the transaction is not possible until the notary has been set!"))
-        }
         val notaryGroup = listOf(
             notary,
             timeWindow,
             /*TODO notaryallowlist*/
         )
+
+        val outputTransactionStates = outputStates.map{
+            TransactionStateImpl(it.first, notary!!, it.second)
+        }
+
         val outputsInfo = outputTransactionStates.map {
             UtxoOutputInfoComponent(
                 it.encumbrance,
-                notary,
+                notary!!,
                 currentSandboxGroup.getEvolvableTag(it.contractStateType),
                 currentSandboxGroup.getEvolvableTag(it.contractType)
             )
@@ -246,9 +264,9 @@ data class UtxoTransactionBuilderImpl(
             it.value == referenceInputStateAndRefs[it.index]
         } || return false
 
-        if (other.outputTransactionStates.size != outputTransactionStates.size) return false
-        other.outputTransactionStates.withIndex().all {
-            it.value == outputTransactionStates[it.index]
+        if (other.outputStates.size != outputStates.size) return false
+        other.outputStates.withIndex().all {
+            it.value == outputStates[it.index]
         } || return false
 
         if (other.signatories != signatories) return false
@@ -265,7 +283,7 @@ data class UtxoTransactionBuilderImpl(
         result = 31 * result + signatories.hashCode()
         result = 31 * result + inputStateAndRefs.hashCode()
         result = 31 * result + referenceInputStateAndRefs.hashCode()
-        result = 31 * result + outputTransactionStates.hashCode()
+        result = 31 * result + outputStates.hashCode()
         return result
     }
 }

@@ -29,7 +29,7 @@ data class UtxoLedgerTransactionImpl(
         serializationService.deserialize(timeWindowBytes)
     }
 
-    val attachmentIds: List<Attachment> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+    val attachmentIds: List<SecureHash> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         wireTransaction
             .getComponentGroupList(UtxoComponentGroup.DATA_ATTACHMENTS.ordinal)
             .map { serializationService.deserialize(it) }
