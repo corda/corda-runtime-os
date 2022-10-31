@@ -1,6 +1,8 @@
 package net.corda.ledger.consensual.flow.impl.flows.finality
 
 import net.corda.ledger.common.data.transaction.SignableData
+import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
+import net.corda.ledger.consensual.flow.impl.persistence.TransactionStatus
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.flows.CordaInject
@@ -31,6 +33,9 @@ class ConsensualFinalityFlow(
 
     @CordaInject
     lateinit var memberLookup: MemberLookup
+
+    @CordaInject
+    lateinit var persistenceService: ConsensualLedgerPersistenceService
 
     @CordaInject
     lateinit var serializationService: SerializationService
@@ -123,8 +128,7 @@ class ConsensualFinalityFlow(
             }
         }
 
-        // TODO [CORE-7055] Record the transaction
-
+        persistenceService.persist(signedByParticipantsTransaction, TransactionStatus.VERIFIED)
         log.debug { "Recorded signed transaction ${signedTransaction.id}" }
 
         // TODO Consider removing

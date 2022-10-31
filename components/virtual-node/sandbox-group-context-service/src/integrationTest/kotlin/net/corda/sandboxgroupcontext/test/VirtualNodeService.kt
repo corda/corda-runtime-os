@@ -12,12 +12,14 @@ import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.serialization.SingletonSerializeAsToken
 import net.corda.virtualnode.VirtualNodeInfo
 import org.junit.jupiter.api.fail
+import org.osgi.framework.BundleContext
 import org.osgi.framework.FrameworkUtil
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
 import org.osgi.service.component.annotations.Reference
 import java.util.UUID
+import java.util.function.BiConsumer
 
 @Component(service = [ VirtualNodeService::class ])
 class VirtualNodeService @Activate constructor(
@@ -59,7 +61,9 @@ class VirtualNodeService @Activate constructor(
             null
         )
         return sandboxGroupContextComponent.getOrCreate(vNodeContext) { _, sandboxGroupContext ->
-            sandboxGroupContextComponent.registerCustomCryptography(sandboxGroupContext)
+            val closeables = sandboxGroupContextComponent.registerCustomCryptography(sandboxGroupContext)
+            sandboxGroupContextComponent.acceptCustomMetadata(sandboxGroupContext)
+            closeables
         }
     }
 
@@ -75,11 +79,27 @@ class VirtualNodeService @Activate constructor(
         vnodes.remove(sandboxGroupContext)?.let(virtualNodeLoader::unloadVirtualNode)
     }
 
-    fun <T : Any> runFlow(className: String, groupContext: SandboxGroupContext): T {
-        val workflowClass = groupContext.sandboxGroup.loadClassFromMainBundles(className, Flow::class.java)
-        val context = FrameworkUtil.getBundle(workflowClass).bundleContext
-        val reference = context.getServiceReferences(SubFlow::class.java, "(component.name=$className)")
-            .firstOrNull() ?: fail("No service found for $className.")
+    fun withSandbox(resourceName: String, type: SandboxGroupType, action: BiConsumer<VirtualNodeService, SandboxGroupContext>) {
+        val sandboxGroupContext = loadSandbox(resourceName, type)
+        try {
+            action.accept(this, sandboxGroupContext)
+        } finally {
+            unloadSandbox(sandboxGroupContext)
+        }
+    }
+
+    fun getFlowClass(className: String, groupContext: SandboxGroupContext): Class<out Flow> {
+        return groupContext.sandboxGroup.loadClassFromMainBundles(className, Flow::class.java)
+    }
+
+    fun getBundleContext(clazz: Class<*>): BundleContext {
+        return (FrameworkUtil.getBundle(clazz) ?: fail("$clazz has no bundle")).bundleContext
+    }
+
+    fun <T : Any> runFlow(workflowClass: Class<out Flow>): T {
+        val context = getBundleContext(workflowClass)
+        val reference = context.getServiceReferences(SubFlow::class.java, "(component.name=${workflowClass.name})")
+            .maxOrNull() ?: fail("No service found for ${workflowClass.name}.")
         return context.getService(reference)?.let { service ->
             try {
                 @Suppress("unchecked_cast")
@@ -87,6 +107,10 @@ class VirtualNodeService @Activate constructor(
             } finally {
                 context.ungetService(reference)
             }
-        } ?: fail("$className service not available - OSGi error?")
+        } ?: fail("${workflowClass.name} service not available - OSGi error?")
+    }
+
+    fun <T : Any> runFlow(className: String, groupContext: SandboxGroupContext): T {
+        return runFlow(getFlowClass(className, groupContext))
     }
 }

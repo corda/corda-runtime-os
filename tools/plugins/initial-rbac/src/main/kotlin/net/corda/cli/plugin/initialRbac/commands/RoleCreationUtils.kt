@@ -16,17 +16,6 @@ import java.time.temporal.ChronoUnit
 
 internal object RoleCreationUtils {
 
-    private const val UUID_CHARS = "[a-fA-F0-9]"
-    const val UUID_REGEX = "$UUID_CHARS{8}-$UUID_CHARS{4}-$UUID_CHARS{4}-$UUID_CHARS{4}-$UUID_CHARS{12}"
-
-    const val VNODE_SHORT_HASH_REGEX = "$UUID_CHARS{12}"
-
-    const val USER_REGEX = "[-._@a-zA-Z0-9]{3,255}"
-
-    const val CLIENT_REQ_REGEX = "[-._A-Za-z0-9]{1,250}"
-
-    const val FLOW_NAME_REGEX = "[._\$a-zA-Z0-9]{1,250}"
-
     fun wildcardMatch(input: String, regex: String): Boolean {
         return input.matches(regex.toRegex(RegexOption.IGNORE_CASE))
     }
