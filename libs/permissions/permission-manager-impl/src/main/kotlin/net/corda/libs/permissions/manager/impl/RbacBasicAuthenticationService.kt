@@ -13,26 +13,37 @@ class RbacBasicAuthenticationService(
     private val passwordService: PasswordService
 ) : BasicAuthenticationService {
 
-    companion object {
-        private val logger = contextLogger()
+    private companion object {
+        val logger = contextLogger()
     }
+
+    private val repeatedLogonsCache = RepeatedLogonsCache()
 
     override fun authenticateUser(loginName: String, password: CharArray): Boolean {
         logger.debug { "Checking authentication for user $loginName." }
         val permissionManagementCache = checkNotNull(permissionManagementCacheRef.get()) {
             "Permission management cache is null."
         }
+
+        val clearTextPassword = String(password)
+
+        if(repeatedLogonsCache.verifies(loginName, clearTextPassword)) {
+            return true
+        }
+
         val user = permissionManagementCache.getUser(loginName) ?: return false
 
         if (user.saltValue == null || user.hashedPassword == null) {
             return false
         }
 
-        if (!passwordService.verifies(String(password), PasswordHash(user.saltValue, user.hashedPassword))) {
-            return false
+        if (passwordService.verifies(clearTextPassword, PasswordHash(user.saltValue, user.hashedPassword))) {
+            repeatedLogonsCache.add(loginName, clearTextPassword)
+            return true
         }
 
-        return true
+        repeatedLogonsCache.remove(loginName)
+        return false
     }
 
     private var running = false

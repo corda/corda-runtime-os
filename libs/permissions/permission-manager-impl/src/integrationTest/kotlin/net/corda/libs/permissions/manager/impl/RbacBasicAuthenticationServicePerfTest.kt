@@ -26,7 +26,6 @@ class RbacBasicAuthenticationServicePerfTest {
         const val repsCount = 1_000
     }
 
-
     private val passwordService = PasswordServiceImpl(SecureRandom())
 
     private val passwordString = "password"
