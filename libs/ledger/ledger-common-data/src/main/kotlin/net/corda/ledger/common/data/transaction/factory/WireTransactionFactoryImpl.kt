@@ -1,11 +1,14 @@
 package net.corda.ledger.common.data.transaction.factory
 
+import net.corda.flow.fiber.FlowFiberService
 import net.corda.ledger.common.data.transaction.ALL_LEDGER_METADATA_COMPONENT_GROUP_ID
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
+import net.corda.ledger.common.data.transaction.TransactionBuilderInternal
 import net.corda.ledger.common.data.transaction.TransactionMetaData
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
@@ -25,15 +28,18 @@ class WireTransactionFactoryImpl @Activate constructor(
     @Reference(service = JsonMarshallingService::class)
     private val jsonMarshallingService: JsonMarshallingService,
     @Reference(service = CipherSchemeMetadata::class)
-    private val cipherSchemeMetadata: CipherSchemeMetadata
+    private val cipherSchemeMetadata: CipherSchemeMetadata,
+    @Reference(service = SerializationService::class)
+    private val serializationService: SerializationService,
+    @Reference(service = FlowFiberService::class)
+    private val flowFiberService: FlowFiberService, // TODO CORE-7101 use CurrentSandboxService when it gets available
 ) : WireTransactionFactory {
 
     private fun checkComponentGroups(componentGroupLists: List<List<ByteArray>>) {
-        check(componentGroupLists.all { it.isNotEmpty() }) { "Empty component groups are not allowed" }
-        check(componentGroupLists.all { i -> i.all { j -> j.isNotEmpty() } }) { "Empty components are not allowed" }
+        check(componentGroupLists.isNotEmpty()) { "todo text" }
     }
 
-    private fun checkMetadata(metadataBytes: ByteArray) {
+    private fun parseMetadata(metadataBytes: ByteArray): TransactionMetaData {
         // TODO(update with CORE-6890)
         val metadata = jsonMarshallingService.parse(metadataBytes.decodeToString(), TransactionMetaData::class.java)
 
@@ -41,6 +47,7 @@ class WireTransactionFactoryImpl @Activate constructor(
             "Only the default digest settings are acceptable now! ${metadata.getDigestSettings()} vs " +
                     "${WireTransactionDigestSettings.defaultValues}"
         }
+        return jsonMarshallingService.parse(metadataBytes.decodeToString(), TransactionMetaData::class.java)
     }
 
     private fun generatePrivacySalt(): PrivacySalt {
@@ -49,30 +56,42 @@ class WireTransactionFactoryImpl @Activate constructor(
         return PrivacySaltImpl(entropy)
     }
 
-    override fun create(componentGroupLists: List<List<ByteArray>>, privacySalt: PrivacySalt): WireTransaction {
+    override fun create(
+        componentGroupLists: List<List<ByteArray>>,
+        privacySalt: PrivacySalt
+    ): WireTransaction { // todo check parameter name
         checkComponentGroups(componentGroupLists)
-        checkMetadata(componentGroupLists[ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first())
+        val metadata = parseMetadata(componentGroupLists[ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first())
 
         return WireTransaction(
             merkleTreeProvider,
             digestService,
-            jsonMarshallingService,
             privacySalt,
-            componentGroupLists
+            componentGroupLists,
+            metadata
         )
     }
 
-    override fun create(componentGroupLists: List<List<ByteArray>>): WireTransaction {
+    override fun create(
+        transactionBuilderInternal: TransactionBuilderInternal,
+        metadata: TransactionMetaData
+    ): WireTransaction {
+        val metadataBytes = jsonMarshallingService.format(metadata)
+            .toByteArray(Charsets.UTF_8) // TODO(update with CORE-6890)
+        val componentGroupLists = transactionBuilderInternal.calculateComponentGroups(
+            serializationService,
+            metadataBytes,
+            flowFiberService.getExecutingFiber().getExecutionContext().sandboxGroupContext.sandboxGroup
+        )
         checkComponentGroups(componentGroupLists)
-        checkMetadata(componentGroupLists[ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first())
+        val parsedMetadata = parseMetadata(componentGroupLists[ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first())
 
         return WireTransaction(
             merkleTreeProvider,
             digestService,
-            jsonMarshallingService,
             generatePrivacySalt(),
-            componentGroupLists
+            componentGroupLists,
+            parsedMetadata
         )
     }
-
 }

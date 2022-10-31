@@ -1,9 +1,15 @@
 package net.corda.ledger.consensual.flow.impl.transaction.factory
 
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
+import net.corda.ledger.common.data.transaction.TransactionBuilderInternal
+import net.corda.ledger.common.data.transaction.TransactionMetaData
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.flow.impl.transaction.createTransactionSignature
+import net.corda.ledger.common.flow.impl.transaction.factory.TransactionMetadataFactory
+import net.corda.ledger.consensual.data.transaction.ConsensualLedgerTransactionImpl
 import net.corda.ledger.consensual.flow.impl.transaction.ConsensualSignedTransactionImpl
+import net.corda.ledger.consensual.flow.impl.transaction.TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
@@ -27,16 +33,27 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
     @Reference(service = SigningService::class)
     private val signingService: SigningService,
     @Reference(service = DigitalSignatureVerificationService::class)
-    private val digitalSignatureVerificationService: DigitalSignatureVerificationService
+    private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
+    @Reference(service = TransactionMetadataFactory::class)
+    private val transactionMetadataFactory: TransactionMetadataFactory,
+    @Reference(service = WireTransactionFactory::class)
+    private val wireTransactionFactory: WireTransactionFactory,
 ) : ConsensualSignedTransactionFactory, SingletonSerializeAsToken {
 
-    override fun initialCreate(
-        wireTransaction: WireTransaction,
+    private fun consensualMetadata() = linkedMapOf(
+        TransactionMetaData.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
+        TransactionMetaData.LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
+    )
+
+    override fun create(
+        consensualTransactionBuilder: TransactionBuilderInternal,
         signatories: Iterable<PublicKey>
     ): ConsensualSignedTransaction {
         require(signatories.toList().isNotEmpty()){
             "At least one key needs to be provided in order to create a signed Transaction!"
         }
+        val metadata = transactionMetadataFactory.create(consensualMetadata())
+        val wireTransaction = wireTransactionFactory.create(consensualTransactionBuilder, metadata)
         val signaturesWithMetaData = signatories.map {
             createTransactionSignature(
                 signingService,

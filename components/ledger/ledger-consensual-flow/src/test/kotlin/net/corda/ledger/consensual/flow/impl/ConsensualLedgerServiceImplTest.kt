@@ -12,8 +12,6 @@ import net.corda.internal.serialization.amqp.helper.TestFlowFiberServiceWithSeri
 import net.corda.ledger.common.testkit.mockPlatformInfoProvider
 import net.corda.ledger.common.testkit.mockSigningService
 import net.corda.ledger.common.testkit.publicKeyExample
-import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualTransactionBuilderFactory
-import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualTransactionBuilderFactoryImpl
 import net.corda.ledger.consensual.testkit.consensualStateExample
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.serialization.SerializationService

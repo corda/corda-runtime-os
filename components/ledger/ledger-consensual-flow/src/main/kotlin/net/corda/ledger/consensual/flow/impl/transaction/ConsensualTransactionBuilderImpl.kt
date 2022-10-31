@@ -1,34 +1,24 @@
 package net.corda.ledger.consensual.flow.impl.transaction
 
-import net.corda.ledger.common.data.transaction.CordaPackageSummary
-import net.corda.ledger.common.data.transaction.TransactionMetaData
-import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
+import net.corda.ledger.common.data.transaction.TransactionBuilderInternal
 import net.corda.ledger.consensual.data.transaction.ConsensualComponentGroup
 import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualSignedTransactionFactory
 import net.corda.sandbox.SandboxGroup
-import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.consensual.ConsensualState
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
 import java.security.PublicKey
 import java.time.Instant
+import java.util.Objects
 
-// TODO Create an AMQP serializer if we plan on sending transaction builders between virtual nodes
-@Suppress("LongParameterList")
+// Is this still needed? TODO Create an AMQP serializer if we plan on sending transaction builders between virtual nodes
 class ConsensualTransactionBuilderImpl(
-    private val wireTransactionFactory: WireTransactionFactory,
-    private val jsonMarshallingService: JsonMarshallingService,
-    private val serializationService: SerializationService,
     private val consensualSignedTransactionFactory: ConsensualSignedTransactionFactory,
-    private val currentSandboxGroup: SandboxGroup, // TODO CORE-7101 use CurrentSandboxService when it gets available
     // cpi defines what type of signing/hashing is used (related to the digital signature signing and verification stuff)
-    private val transactionMetaData: TransactionMetaData,
     override val states: List<ConsensualState> = emptyList(),
-) : ConsensualTransactionBuilder {
+) : ConsensualTransactionBuilder, TransactionBuilderInternal {
 
     override fun withStates(vararg states: ConsensualState): ConsensualTransactionBuilder =
         this.copy(states = this.states + states)
@@ -44,21 +34,19 @@ class ConsensualTransactionBuilderImpl(
 
     @Suspendable
     override fun sign(signatories: Iterable<PublicKey>): ConsensualSignedTransaction{
-        val wireTransaction = buildWireTransaction()
-        return consensualSignedTransactionFactory.initialCreate(wireTransaction, signatories)
+        return consensualSignedTransactionFactory.create(this, signatories)
     }
 
-    private fun buildWireTransaction(): WireTransaction {
+    override fun calculateComponentGroups(
+        serializationService: SerializationService,
+        metadataBytes: ByteArray,
+        currentSandboxGroup: SandboxGroup
+    ): List<List<ByteArray>> {
         // TODO(CORE-5982 more verifications)
         // TODO(CORE-5982 ? metadata verifications: nulls, order of CPKs, at least one CPK?))
         require(states.isNotEmpty()) { "At least one consensual state is required" }
         require(states.all { it.participants.isNotEmpty() }) { "All consensual states must have participants" }
-        val componentGroupLists = calculateComponentGroupLists()
 
-        return wireTransactionFactory.create(componentGroupLists)
-    }
-
-    private fun calculateComponentGroupLists(): List<List<ByteArray>> {
         val requiredSigningKeys = states
             .flatMap { it.participants }
             .distinct()
@@ -69,10 +57,7 @@ class ConsensualTransactionBuilderImpl(
             .map { componentGroupIndex ->
             when (componentGroupIndex) {
                 ConsensualComponentGroup.METADATA ->
-                    listOf(
-                        jsonMarshallingService.format(transactionMetaData)
-                            .toByteArray(Charsets.UTF_8)
-                    ) // TODO(update with CORE-6890)
+                    listOf(metadataBytes)
                 ConsensualComponentGroup.TIMESTAMP ->
                     listOf(serializationService.serialize(Instant.now()).bytes)
                 ConsensualComponentGroup.REQUIRED_SIGNING_KEYS ->
@@ -88,24 +73,14 @@ class ConsensualTransactionBuilderImpl(
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is ConsensualTransactionBuilderImpl) return false
-        if (other.transactionMetaData != transactionMetaData) return false
-        if (other.states.size != states.size) return false
-
-        return other.states.withIndex().all {
-            it.value == states[it.index]
-        }
+        return other.states == states
     }
 
-    override fun hashCode(): Int = states.hashCode()
+    override fun hashCode(): Int = Objects.hash(states)
 
     private fun copy(states: List<ConsensualState> = this.states): ConsensualTransactionBuilderImpl {
         return ConsensualTransactionBuilderImpl(
-            wireTransactionFactory,
-            jsonMarshallingService,
-            serializationService,
             consensualSignedTransactionFactory,
-            currentSandboxGroup,
-            transactionMetaData,
             states,
         )
     }

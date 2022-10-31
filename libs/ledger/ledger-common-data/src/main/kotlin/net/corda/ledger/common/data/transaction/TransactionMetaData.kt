@@ -3,6 +3,8 @@ package net.corda.ledger.common.data.transaction
 import net.corda.v5.base.annotations.CordaSerializable
 import net.corda.v5.base.exceptions.CordaRuntimeException
 
+const val ALL_LEDGER_METADATA_COMPONENT_GROUP_ID = 0
+
 @CordaSerializable
 class TransactionMetaData(private val properties: LinkedHashMap<String, Any>) {
 

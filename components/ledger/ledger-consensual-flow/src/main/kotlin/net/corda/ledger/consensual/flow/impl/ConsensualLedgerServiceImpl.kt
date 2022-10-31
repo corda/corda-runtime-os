@@ -2,7 +2,8 @@ package net.corda.ledger.consensual.flow.impl
 
 import net.corda.ledger.consensual.flow.impl.flows.finality.ConsensualFinalityFlow
 import net.corda.ledger.consensual.flow.impl.flows.finality.ConsensualReceiveFinalityFlow
-import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualTransactionBuilderFactory
+import net.corda.ledger.consensual.flow.impl.transaction.ConsensualTransactionBuilderImpl
+import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualSignedTransactionFactory
 import net.corda.v5.application.flows.FlowEngine
 import net.corda.v5.application.messaging.FlowSession
 import net.corda.v5.base.annotations.Suspendable
@@ -22,16 +23,17 @@ import java.security.PrivilegedExceptionAction
 
 @Component(service = [ConsensualLedgerService::class, SingletonSerializeAsToken::class], scope = PROTOTYPE)
 class ConsensualLedgerServiceImpl @Activate constructor(
-    @Reference(service = ConsensualTransactionBuilderFactory::class)
-    private val consensualTransactionBuilderFactory: ConsensualTransactionBuilderFactory,
+    @Reference(service = ConsensualSignedTransactionFactory::class)
+    private val consensualSignedTransactionFactory: ConsensualSignedTransactionFactory,
     @Reference(service = FlowEngine::class)
     private val flowEngine: FlowEngine
 ) : ConsensualLedgerService, SingletonSerializeAsToken {
 
     @Suspendable
-    override fun getTransactionBuilder(): ConsensualTransactionBuilder {
-        return consensualTransactionBuilderFactory.create()
-    }
+    override fun getTransactionBuilder(): ConsensualTransactionBuilder =
+        ConsensualTransactionBuilderImpl(
+            consensualSignedTransactionFactory
+        )
 
     override fun fetchTransaction(id: SecureHash): ConsensualSignedTransaction? {
         TODO("Not yet implemented")
