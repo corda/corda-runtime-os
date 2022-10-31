@@ -7,7 +7,13 @@ package net.corda.sandboxgroupcontext
  *
  * @return null if not found
  */
-inline fun <reified T : Any> SandboxGroupContext.getObjectByKey(key: String) = this.get(key, T::class.java)
+inline fun <reified T : Any> SandboxGroupContext.getObjectByKey(key: String) = get(key, T::class.java)
+
+/**
+ * Fetch service instances previously created using [SandboxGroupContextComponent.registerMetadataServices].
+ */
+@Suppress("KDocUnresolvedReference")
+inline fun <reified T : Any> SandboxGroupContext.getMetadataServices(): Set<T> = getObjectByKey(T::class.java.name) ?: emptySet()
 
 /**
  * Fetch the set of singleton services created for use by this sandbox.
