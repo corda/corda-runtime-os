@@ -18,6 +18,12 @@
       "minimum": 0,
       "maximum": 65535
     },
+    "urlPath": {
+      "description": "The url path the gateway server will be listening to.",
+      "type": "string",
+      "default": "/",
+      "pattern": "^\\/[\\/.a-zA-Z0-9-]*$"
+    },
     "sslConfig": {
       "description": "Used for one-way TLS between Gateways.",
       "type": "object",
