@@ -1,7 +1,6 @@
 package com.r3.corda.notary.plugin.nonvalidating
 
 import com.r3.corda.notary.plugin.common.NotarisationRequestImpl
-import com.r3.corda.notary.plugin.common.TransactionParts
 import com.r3.corda.notary.plugin.common.toNotarisationResponse
 import com.r3.corda.notary.plugin.common.validateRequestSignature
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
@@ -104,7 +103,7 @@ class NonValidatingNotaryServerFlowImpl : ResponderFlow {
      */
     @Suppress("TooGenericExceptionCaught")
     private fun validateRequest(otherSideSession: FlowSession,
-                                requestPayload: NonValidatingNotarisationPayload): TransactionParts {
+                                requestPayload: NonValidatingNotarisationPayload): NonValidatingNotaryTransactionDetails {
 
         val transactionParts = extractParts(requestPayload)
         logger.debug {
@@ -115,18 +114,18 @@ class NonValidatingNotaryServerFlowImpl : ResponderFlow {
     }
 
     /**
-     * A helper function that constructs an instance of [TransactionParts] from the given transaction.
+     * A helper function that constructs an instance of [NonValidatingNotaryTransactionDetails] from the given transaction.
      *
      * TODO CORE-7249 For now this is basically a dummy function. In the old C5 world this function extracted
      *  the data from either the `NotaryChangeWireTransaction` or the `FilteredTransaction` which
      *  do not exist for now.
      */
     @Suspendable
-    private fun extractParts(requestPayload: NonValidatingNotarisationPayload): TransactionParts {
+    private fun extractParts(requestPayload: NonValidatingNotarisationPayload): NonValidatingNotaryTransactionDetails {
         val signedTx = requestPayload.transaction as UtxoSignedTransaction
         val ledgerTx = signedTx.toLedgerTransaction()
 
-        return TransactionParts(
+        return NonValidatingNotaryTransactionDetails(
             signedTx.id,
             requestPayload.numOutputs,
             ledgerTx.timeWindow,
