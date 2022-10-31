@@ -60,6 +60,7 @@ class SandboxSetupImpl @Activate constructor(
             "net.corda.membership",
             "net.corda.persistence",
             "net.corda.serialization",
+            "net.corda.test-api",
             "org.apache.aries.spifly.dynamic.framework.extension",
             "org.apache.felix.framework",
             "org.apache.felix.scr",

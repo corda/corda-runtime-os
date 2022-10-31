@@ -10,7 +10,7 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ServiceScope
+import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 @Component(
     service = [
@@ -18,7 +18,7 @@ import org.osgi.service.component.annotations.ServiceScope
         SerializationServiceInternal::class,
         SingletonSerializeAsToken::class
     ],
-    scope = ServiceScope.PROTOTYPE,
+    scope = PROTOTYPE,
     property = [ "corda.system=true" ]
 )
 class SerializationServiceImpl @Activate constructor(

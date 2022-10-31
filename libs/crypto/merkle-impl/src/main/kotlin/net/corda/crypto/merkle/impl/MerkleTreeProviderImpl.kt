@@ -17,15 +17,15 @@ import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
-import org.osgi.service.component.annotations.ServiceScope
+import org.osgi.service.component.annotations.ServiceScope.PROTOTYPE
 
 @Component(
-    service = [MerkleTreeProvider::class, SingletonSerializeAsToken::class],
-    scope = ServiceScope.PROTOTYPE,
-    property=["corda.system=true"])
+    service = [ MerkleTreeProvider::class, SingletonSerializeAsToken::class ],
+    scope = PROTOTYPE
+)
 class MerkleTreeProviderImpl @Activate constructor(
     @Reference(service = DigestService::class)
-    private val digestService: DigestService,
+    private val digestService: DigestService
 ) : MerkleTreeProvider, SingletonSerializeAsToken {
     override fun createHashDigestProvider(
         merkleTreeHashDigestProviderName: String,
