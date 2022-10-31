@@ -429,6 +429,7 @@ if (compositeBuild.toBoolean() && file(cordaApiLocation).exists()) {
             substitute module('net.corda:corda-ledger-utxo') using project(':ledger:ledger-utxo')
             substitute module('net.corda:corda-membership') using project(':membership')
             substitute module('net.corda:corda-serialization') using project(':serialization')
+            substitute module('net.corda:notary-plugins') using project(':notary-plugins')
         }
     }
 }
