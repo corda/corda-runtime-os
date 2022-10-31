@@ -88,7 +88,7 @@ data class UtxoTransactionBuilderImpl(
 
     override fun addOutputState(contractState: ContractState, encumbrance: Int?): UtxoTransactionBuilder {
         if (notary == null) {
-            throw(CordaRuntimeException("Adding Output states is not possible until the notary is not set!"))
+            throw(CordaRuntimeException("Adding Output states is not possible until the notary has been set!"))
         }
         val transactionState = TransactionStateImpl(contractState, notary, encumbrance)
         return copy(outputTransactionStates = outputTransactionStates + transactionState)
@@ -159,7 +159,7 @@ data class UtxoTransactionBuilderImpl(
     @Suppress("ComplexMethod")
     private fun calculateComponentGroupLists(): List<List<ByteArray>> {
         if (notary == null) {
-            throw(CordaRuntimeException("Finalising the transaction is not possible until the notary is not set!"))
+            throw(CordaRuntimeException("Finalising the transaction is not possible until the notary has been set!"))
         }
         val notaryGroup = listOf(
             notary,
