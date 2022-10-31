@@ -9,7 +9,7 @@ import net.corda.applications.workers.smoketest.registerMember
 import net.corda.applications.workers.smoketest.startRpcFlow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.Disabled
+import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
@@ -19,7 +19,7 @@ import org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS
  */
 @Suppress("Unused", "FunctionName")
 @TestInstance(PER_CLASS)
-@Disabled
+@Tag("Unstable")
 class ConsensualLedgerFullTest {
 
     private val aliceHoldingId: String = getHoldingIdShortHash(CONSENSUAL_X500_ALICE, CONSENSUAL_GROUP_ID)
