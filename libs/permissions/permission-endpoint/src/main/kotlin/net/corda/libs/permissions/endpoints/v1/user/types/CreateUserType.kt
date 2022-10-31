@@ -72,7 +72,7 @@ data class CreateUserType(
         USER_REGEX.let {
             val regEx = Regex(it)
             if (!regEx.matches(loginName)) {
-                errors[nextErrKey()] = "Login name contains invalid characters. Allowed characters are: '$it'."
+                errors[nextErrKey()] = "Login name contains invalid characters. Correct pattern is: '$it'."
             }
         }
 
