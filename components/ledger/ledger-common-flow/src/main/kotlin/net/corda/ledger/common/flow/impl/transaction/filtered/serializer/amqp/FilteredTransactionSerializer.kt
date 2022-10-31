@@ -28,13 +28,13 @@ class FilteredTransactionSerializer @Activate constructor(
     override val withInheritance = true
 
     override fun toProxy(obj: FilteredTransaction): FilteredTransactionProxy {
-        return FilteredTransactionProxy(obj.id, obj.componentGroupMerkleProof, obj.filteredComponentGroups)
+        return FilteredTransactionProxy(obj.id, obj.topLevelMerkleProof, obj.filteredComponentGroups)
     }
 
     override fun fromProxy(proxy: FilteredTransactionProxy): FilteredTransaction {
         return FilteredTransactionImpl(
             proxy.id,
-            proxy.componentGroupProof,
+            proxy.topLevelMerkleProof,
             proxy.filteredComponentGroups,
             jsonMarshallingService,
             merkleTreeProvider
@@ -44,6 +44,6 @@ class FilteredTransactionSerializer @Activate constructor(
 
 class FilteredTransactionProxy(
     val id: SecureHash,
-    val componentGroupProof: MerkleProof,
+    val topLevelMerkleProof: MerkleProof,
     val filteredComponentGroups: Map<Int, FilteredComponentGroup>
 )

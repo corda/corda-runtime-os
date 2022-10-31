@@ -7,10 +7,10 @@ import net.corda.ledger.common.data.transaction.ROOT_MERKLE_TREE_DIGEST_OPTIONS_
 import net.corda.ledger.common.data.transaction.TransactionMetadata
 import net.corda.ledger.common.flow.transaction.filtered.FilteredComponentGroup
 import net.corda.ledger.common.flow.transaction.filtered.FilteredTransaction
+import net.corda.ledger.common.flow.transaction.filtered.FilteredTransactionVerificationException
 import net.corda.ledger.common.flow.transaction.filtered.MerkleProofType
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.marshalling.parse
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.DigestAlgorithmName
 import net.corda.v5.crypto.SecureHash
@@ -33,16 +33,16 @@ import kotlin.to
 
 class FilteredTransactionImpl(
     override val id: SecureHash,
-    override val componentGroupMerkleProof: MerkleProof,
+    override val topLevelMerkleProof: MerkleProof,
     override val filteredComponentGroups: Map<Int, FilteredComponentGroup>,
     private val jsonMarshallingService: JsonMarshallingService,
     private val merkleTreeProvider: MerkleTreeProvider
 ) : FilteredTransaction {
 
     override fun verify() {
-        validate(componentGroupMerkleProof.leaves.isNotEmpty()) { "At least one component group merkle leaf is required" }
+        validate(topLevelMerkleProof.leaves.isNotEmpty()) { "At least one component group merkle leaf is required" }
 
-        val transactionMetadataLeaves = componentGroupMerkleProof.leaves.filter { it.index == 0 }
+        val transactionMetadataLeaves = topLevelMerkleProof.leaves.filter { it.index == 0 }
 
         validate(transactionMetadataLeaves.isNotEmpty()) {
             "Top level Merkle proof does not contain a leaf with index 0"
@@ -52,10 +52,10 @@ class FilteredTransactionImpl(
             "Top level Merkle proof contains more than one leaf with index 0"
         }
 
-        val componentGroupMerkleProofLeafIndexes = componentGroupMerkleProof.leaves.map { it.index }.toSet()
+        val topLevelMerkleProofLeafIndexes = topLevelMerkleProof.leaves.map { it.index }.toSet()
         val filteredComponentGroupIndexes = filteredComponentGroups.keys
 
-        validate(componentGroupMerkleProofLeafIndexes == filteredComponentGroupIndexes) {
+        validate(topLevelMerkleProofLeafIndexes == filteredComponentGroupIndexes) {
             "Top level Merkle proof does not contain the same indexes as the filtered component groups"
         }
 
@@ -70,7 +70,7 @@ class FilteredTransactionImpl(
             "Component group 0's Merkle proof must have a single leaf but contains ${transactionMetadataProof.leaves.size}"
         }
 
-        validate(componentGroupMerkleProof.verify(id, createRootAuditProofProvider())) {
+        validate(topLevelMerkleProof.verify(id, createTopLevelAuditProofProvider())) {
             "Top level Merkle proof cannot be verified against transaction's id"
         }
 
@@ -87,7 +87,7 @@ class FilteredTransactionImpl(
         for ((componentGroupIndex, filteredComponentGroup) in filteredComponentGroups) {
 
             val componentGroupFromTopLevelProofLeafData =
-                componentGroupMerkleProof.leaves.single { it.index == componentGroupIndex }.leafData
+                topLevelMerkleProof.leaves.single { it.index == componentGroupIndex }.leafData
 
             val componentLeafHash = SecureHash(componentGroupDigestAlgorithmName.name, componentGroupFromTopLevelProofLeafData)
 
@@ -120,7 +120,7 @@ class FilteredTransactionImpl(
         return filteredComponentGroups[componentGroupIndex]?.merkleProof?.leaves?.map { it.leafData }
     }
 
-    private fun createRootAuditProofProvider(): MerkleTreeHashDigestProvider {
+    private fun createTopLevelAuditProofProvider(): MerkleTreeHashDigestProvider {
         val digestSettings = metadata.getDigestSettings()
         return merkleTreeProvider.createHashDigestProvider(
             merkleTreeHashDigestProviderName = HASH_DIGEST_PROVIDER_TWEAKABLE_NAME, // TODO should come from meta eventually
@@ -162,7 +162,3 @@ class FilteredTransactionImpl(
         }
     }
 }
-
-internal class FilteredTransactionVerificationException(id: SecureHash, reason: String) : CordaRuntimeException(
-    "Failed to verify filtered transaction $id. Reason: $reason"
-)

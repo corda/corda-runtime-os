@@ -15,6 +15,7 @@ import net.corda.v5.base.annotations.CordaSerializable
 import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
@@ -99,7 +100,7 @@ class FilteredTransactionImplIntegrationTest {
     }
 
     @Test
-    fun `component group can be retrieved from a filtered transaction when the merkle proof for the group is an audit proof`() {
+    fun `component group content can be retrieved from a filtered transaction when the merkle proof for the group is an audit proof`() {
 
         whenever(serializationService.deserialize(COMPONENT_1, Any::class.java)).thenReturn(MyClassA())
         whenever(serializationService.deserialize(COMPONENT_2, Any::class.java)).thenReturn(MyClassB())
@@ -134,7 +135,7 @@ class FilteredTransactionImplIntegrationTest {
     }
 
     @Test
-    fun `retrieved component group does not included filtered content when the merkle proof for the group is an audit proof`() {
+    fun `retrieved component group content does not included filtered content when the merkle proof for the group is an audit proof`() {
 
         whenever(serializationService.deserialize(COMPONENT_1, Any::class.java)).thenReturn(MyClassA())
         whenever(serializationService.deserialize(COMPONENT_2, Any::class.java)).thenReturn(MyClassB())
@@ -170,7 +171,40 @@ class FilteredTransactionImplIntegrationTest {
     }
 
     @Test
-    fun `component group cannot be retrieved from a filtered transaction when the merkle proof for the group is a size proof`() {
+    fun `cannot retrieve filtered out component group content when the merkle proof for the group is an audit proof`() {
+
+        whenever(serializationService.deserialize(COMPONENT_1, Any::class.java)).thenReturn(MyClassA())
+        whenever(serializationService.deserialize(COMPONENT_2, Any::class.java)).thenReturn(MyClassB())
+        whenever(serializationService.deserialize(COMPONENT_3, Any::class.java)).thenReturn(MyClassC())
+
+        wireTransaction = getWireTransactionExample(
+            digestService,
+            merkleTreeProvider,
+            jsonMarshallingService,
+            componentGroupLists = listOf(
+                listOf(COMPONENT_1),
+                listOf(COMPONENT_1, COMPONENT_2, COMPONENT_3)
+            )
+        )
+
+        filteredTransaction = filteredTransactionFactory.create(
+            wireTransaction,
+            componentGroupFilterParameters = listOf(
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
+                ComponentGroupFilterParameters.AuditProof(1, Any::class.java),
+            )
+        ) { it is MyClassA || it is MyClassC }
+
+        val componentGroup1 = filteredTransaction.getComponentGroupContent(1)!!
+        val componentGroup2 = filteredTransaction.getComponentGroupContent(2)
+
+        assertEquals(1, componentGroup1.size)
+        assertNull(componentGroup2)
+        assertArrayEquals(COMPONENT_1, componentGroup1.single())
+    }
+
+    @Test
+    fun `original component group content cannot be retrieved from a filtered transaction when the merkle proof for the group is a size proof`() {
 
         whenever(serializationService.deserialize(COMPONENT_1, Any::class.java)).thenReturn(MyClassA())
         whenever(serializationService.deserialize(COMPONENT_2, Any::class.java)).thenReturn(MyClassB())
@@ -202,6 +236,37 @@ class FilteredTransactionImplIntegrationTest {
         assertNotEquals(COMPONENT_1.toList(), componentGroup1.single().toList())
         assertNotEquals(COMPONENT_1.toList(), componentGroup2.first().toList())
         assertNotEquals(COMPONENT_2.toList(), componentGroup2[1].toList())
+    }
+
+    @Test
+    fun `cannot retrieve filtered out component group content when the merkle proof for the group is a size proof`() {
+
+        whenever(serializationService.deserialize(COMPONENT_1, Any::class.java)).thenReturn(MyClassA())
+        whenever(serializationService.deserialize(COMPONENT_2, Any::class.java)).thenReturn(MyClassB())
+
+        wireTransaction = getWireTransactionExample(
+            digestService,
+            merkleTreeProvider,
+            jsonMarshallingService,
+            componentGroupLists = listOf(
+                listOf(COMPONENT_1),
+                listOf(COMPONENT_1, COMPONENT_2)
+            )
+        )
+
+        filteredTransaction = filteredTransactionFactory.create(
+            wireTransaction,
+            componentGroupFilterParameters = listOf(
+                ComponentGroupFilterParameters.AuditProof(0, TransactionMetadata::class.java),
+                ComponentGroupFilterParameters.SizeProof(1),
+            )
+        ) { it is MyClassA || it is MyClassC }
+
+        val componentGroup1 = filteredTransaction.getComponentGroupContent(1)!!
+        val componentGroup2 = filteredTransaction.getComponentGroupContent(2)
+
+        assertEquals(1, componentGroup1.size)
+        assertNull(componentGroup2)
     }
 
     @CordaSerializable

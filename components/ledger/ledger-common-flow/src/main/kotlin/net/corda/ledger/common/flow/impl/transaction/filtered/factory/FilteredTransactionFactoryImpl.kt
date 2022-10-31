@@ -46,7 +46,7 @@ class FilteredTransactionFactoryImpl @Activate constructor(
 
         return FilteredTransactionImpl(
             id = transactionId,
-            componentGroupMerkleProof = wireTransaction.rootMerkleTree.createAuditProof(filteredComponentGroups.keys.toList()),
+            topLevelMerkleProof = wireTransaction.rootMerkleTree.createAuditProof(filteredComponentGroups.keys.toList()),
             filteredComponentGroups,
             jsonMarshallingService,
             merkleTreeProvider
