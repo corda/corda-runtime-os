@@ -8,11 +8,9 @@ description 'Group Parameters Writer Service Implementation'
 dependencies {
     compileOnly 'org.osgi:osgi.annotation'
     compileOnly 'org.osgi:org.osgi.service.component.annotations'
-    api project(':components:reconciliation:reconciliation')
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation 'net.corda.kotlin:kotlin-stdlib-jdk8-osgi'
-
     implementation 'net.corda:corda-avro-schema'
     implementation 'net.corda:corda-config-schema'
     implementation 'net.corda:corda-membership'
@@ -20,6 +18,7 @@ dependencies {
 
     implementation project(':components:configuration:configuration-read-service')
     implementation project(':components:membership:group-params-writer-service')
+    implementation project(':components:reconciliation:reconciliation')
     implementation project(':libs:layered-property-map')
     implementation project(':libs:messaging:messaging')
 
