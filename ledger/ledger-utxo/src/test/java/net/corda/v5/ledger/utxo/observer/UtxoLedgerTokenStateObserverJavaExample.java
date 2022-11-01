@@ -7,22 +7,22 @@ import org.jetbrains.annotations.NotNull;
  * This tests validates the code example in the KDoc comments will compile
  */
 
-public class UtxoLedgerTokenStateObserverJavaExample implements UtxoLedgerTokenStateObserver<ExampleStateK> {
+public class UtxoLedgerTokenStateObserverJavaExample implements UtxoLedgerTokenStateObserver<ExampleStateJ> {
 
     @NotNull
     @Override
-    public Class<ExampleStateK> getStateType() {
-        return ExampleStateK.class;
+    public Class<ExampleStateJ> getStateType() {
+        return ExampleStateJ.class;
     }
 
     @NotNull
     @Override
-    public UtxoToken onProduced(@NotNull StateAndRef<? extends ExampleStateK> stateAndRef) {
-        ExampleStateK state = stateAndRef.getState().getContractState();
+    public UtxoToken onProduced(@NotNull StateAndRef<? extends ExampleStateJ> stateAndRef) {
+        ExampleStateJ state = stateAndRef.getState().getContractState();
 
         return new UtxoToken(
-                new UtxoTokenPoolKey(ExampleStateK.class.getName(), state.getIssuer(), state.getCurrency()),
-                state.getAmount(),
+                new UtxoTokenPoolKey(ExampleStateK.class.getName(), state.issuer, state.currency),
+                state.amount,
                 new UtxoTokenFilterFields()
         );
     }
