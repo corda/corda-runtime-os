@@ -6,6 +6,7 @@ import net.corda.v5.base.types.MemberX500Name
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.security.cert.CertificateFactory
+import java.util.logging.Logger
 
 class CertificateValidatorTest {
     private companion object {
@@ -22,7 +23,6 @@ class CertificateValidatorTest {
     private val wrongTrustStore = convertToKeyStore(
         certificateFactory, listOf(Certificates.c4TruststoreCertificatePem.readText()), keyStoreAlias
     )
-
     @Test
     fun `valid certificate passes validation`() {
         val validator = CertificateValidator(RevocationCheckMode.HARD_FAIL, trustStore!!)
