@@ -17,7 +17,7 @@ class TestSerializationService {
     companion object{
         private fun getTestDefaultFactoryNoEvolution(
             registerMoreSerializers: (it: SerializerFactory) -> Unit,
-            schemeMetadata: CipherSchemeMetadata,
+            cipherSchemeMetadata: CipherSchemeMetadata,
             descriptorBasedSerializerRegistry: DescriptorBasedSerializerRegistry =
                 DefaultDescriptorBasedSerializerRegistry(),
         ): SerializerFactory =
@@ -27,15 +27,15 @@ class TestSerializationService {
                 allowEvolution = false
             ).also {
                 registerCustomSerializers(it)
-                it.register(PublicKeySerializer(schemeMetadata), it)
+                it.register(PublicKeySerializer(cipherSchemeMetadata), it)
                 registerMoreSerializers(it)
             }
 
         fun getTestSerializationService(
             registerMoreSerializers: (it: SerializerFactory) -> Unit,
-            schemeMetadata: CipherSchemeMetadata
+            cipherSchemeMetadata: CipherSchemeMetadata
         ) : SerializationService {
-            val factory = getTestDefaultFactoryNoEvolution(registerMoreSerializers, schemeMetadata)
+            val factory = getTestDefaultFactoryNoEvolution(registerMoreSerializers, cipherSchemeMetadata)
             val output = SerializationOutput(factory)
             val input = DeserializationInput(factory)
             val context = testSerializationContext
