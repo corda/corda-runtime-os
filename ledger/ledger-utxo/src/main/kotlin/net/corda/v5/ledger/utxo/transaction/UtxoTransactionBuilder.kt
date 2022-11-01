@@ -5,6 +5,7 @@ import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
+import net.corda.v5.ledger.utxo.Attachment
 import net.corda.v5.ledger.utxo.Command
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
@@ -15,19 +16,13 @@ import java.time.Instant
  * Defines a builder for UTXO transactions.
  *
  * @property notary The transaction notary.
- * @property timeWindow The transaction time window.
- * @property attachments The transaction attachments.
- * @property commands The transaction commands.
- * @property inputStateAndRefs The transaction input state and refs.
- * @property referenceInputStateAndRefs The transaction referenced input state and refs.
- * @property outputTransactionStates The transaction output states.
  */
 @DoNotImplement
 @CordaSerializable
 @Suppress("TooManyFunctions")
 interface UtxoTransactionBuilder {
 
-    val notary: Party
+    val notary: Party?
 
     /**
      * Adds an [Attachment] to the current [UtxoTransactionBuilder].
@@ -105,6 +100,14 @@ interface UtxoTransactionBuilder {
      * @return Returns a [UtxoTransactionBuilder] including the additional output state.
      */
     fun addOutputState(contractState: ContractState, encumbrance: Int?): UtxoTransactionBuilder
+
+    /**
+     * Sets the [Party] as a notary to the current [UtxoTransactionBuilder].
+     *
+     * @param notary The [Party] to set as a notary to the current [UtxoTransactionBuilder].
+     * @return Returns a new [UtxoTransactionBuilder] with the new notary.
+     */
+    fun setNotary(notary: Party): UtxoTransactionBuilder
 
     /**
      * Sets the transaction time window to be valid until the specified [Instant], tending towards negative infinity.

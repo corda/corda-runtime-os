@@ -136,8 +136,6 @@ public class AbstractMockTestHarness {
         Mockito.when(utxoLedgerService.getTransactionBuilder()).thenReturn(utxoTransactionBuilder);
         Mockito.when(utxoLedgerService.resolve(List.of(stateRef))).thenReturn(List.of(contractStateAndRef));
         Mockito.when(utxoLedgerService.resolve(stateRef)).thenReturn(contractStateAndRef);
-        Mockito.doNothing().when(utxoLedgerService).verify(List.of(contractStateAndRef));
-        Mockito.doNothing().when(utxoLedgerService).verify(contractStateAndRef);
     }
 
     private void initializeUtxoLedgerTransaction() {

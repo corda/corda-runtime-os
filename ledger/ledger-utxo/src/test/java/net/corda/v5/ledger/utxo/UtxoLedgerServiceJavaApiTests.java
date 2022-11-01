@@ -26,14 +26,4 @@ public final class UtxoLedgerServiceJavaApiTests extends AbstractMockTestHarness
         StateAndRef<ContractState> value = utxoLedgerService.resolve(stateRef);
         Assertions.assertEquals(contractStateAndRef, value);
     }
-
-    @Test
-    public void verifyShouldBeCallable() {
-        utxoLedgerService.verify(Set.of(contractStateAndRef));
-    }
-
-    @Test
-    public void verifyVarargShouldBeCallable() {
-        utxoLedgerService.verify(contractStateAndRef);
-    }
 }

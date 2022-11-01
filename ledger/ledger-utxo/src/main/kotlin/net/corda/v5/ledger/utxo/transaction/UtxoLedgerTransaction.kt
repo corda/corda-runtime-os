@@ -3,12 +3,12 @@ package net.corda.v5.ledger.utxo.transaction
 import net.corda.v5.base.annotations.DoNotImplement
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.transaction.TransactionVerificationException
-import net.corda.v5.ledger.utxo.TimeWindow
-import net.corda.v5.ledger.utxo.StateAndRef
-import net.corda.v5.ledger.utxo.ContractState
-import net.corda.v5.ledger.utxo.TransactionState
 import net.corda.v5.ledger.utxo.Attachment
 import net.corda.v5.ledger.utxo.Command
+import net.corda.v5.ledger.utxo.ContractState
+import net.corda.v5.ledger.utxo.StateAndRef
+import net.corda.v5.ledger.utxo.TimeWindow
+import net.corda.v5.ledger.utxo.TransactionState
 import java.security.PublicKey
 
 /**
@@ -131,6 +131,16 @@ interface UtxoLedgerTransaction {
      * @return Returns all ledger transaction [ContractState] outputs that match the specified [ContractState] type.
      */
     fun <T : ContractState> getOutputStates(type: Class<T>): List<T>
+}
+
+/**
+ * Obtains all ledger transaction [Command] instances that match the specified type.
+ *
+ * @param T The underlying type of the [Command].
+ * @return Returns all ledger transaction [Command] instances that match the specified type.
+ */
+inline fun <reified T : Command> UtxoLedgerTransaction.getCommands(): List<T> {
+    return getCommands(T::class.java)
 }
 
 /**

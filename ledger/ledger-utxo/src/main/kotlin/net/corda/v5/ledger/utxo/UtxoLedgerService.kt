@@ -38,19 +38,5 @@ interface UtxoLedgerService {
     @Suspendable
     fun <T : ContractState> resolve(stateRef: StateRef): StateAndRef<T>
 
-    /**
-     * Verifies the specified [StateAndRef] instances.
-     *
-     * @param stateAndRefs The [StateAndRef] instances to verify.
-     */
-    @Suspendable
-    fun <T : ContractState> verify(stateAndRefs: Iterable<StateAndRef<T>>)
-
-    /**
-     * Verifies the specified [StateAndRef] instance.
-     *
-     * @param stateAndRef The [StateAndRef] instance to verify.
-     */
-    @Suspendable
-    fun <T : ContractState> verify(stateAndRef: StateAndRef<T>)
+    // TODO CORE-7327 Add verify(signedTx) verify(ledgerTx)
 }
