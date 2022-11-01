@@ -22,8 +22,9 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 
 /**
- * Has no benefit being an OSGi test but cannot be moved without causing issues due to mocks.
+ * Has no benefit being an OSGi test and cannot be moved without causing issues due to mocks.
  */
+@Suppress("MaxLineLength")
 class FilteredTransactionImplIntegrationTest {
 
     private companion object {
