@@ -8,14 +8,13 @@ import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
 import net.corda.libs.cpi.datamodel.CpiMetadataEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
-import net.corda.libs.cpiupload.DuplicateCpiUploadException
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.CpiReader
 import net.corda.libs.packaging.core.exception.PackagingException
-import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.grouppolicy.GroupPolicyIdNotFoundException
 import net.corda.membership.lib.grouppolicy.GroupPolicyParseException
+import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.crypto.SecureHash
 import org.slf4j.Logger
@@ -133,16 +132,14 @@ fun CpiPersistence.persistCpiToDatabase(
                 cpkDbChangeLogEntities
             )
         } else {
-            throw ValidationException(
-                "CPI has already been inserted with cpks for " +
-                    "${cpi.metadata.cpiId.name} ${cpi.metadata.cpiId.version} with groupId=$groupId",
-                requestId
+            throw UnsupportedOperationException(
+                "CPI ${cpi.metadata.cpiId.name} ${cpi.metadata.cpiId.version} ${cpi.metadata.cpiId.signerSummaryHashForDbQuery}" +
+                        "already exists and cannot be replaced."
             )
         }
     } catch (ex: Exception) {
         log.info("Unexpected error when persisting CPI to the database", ex)
         when (ex) {
-            is ValidationException -> throw ex
             is PersistenceException -> throw ValidationException("Could not persist CPI and CPK to database", requestId, ex)
             is CordaRuntimeException -> throw ValidationException("Could not persist CPI and CPK to database", requestId, ex)
             else -> throw ValidationException("Unexpected error when trying to persist CPI and CPK to database", requestId, ex)
@@ -199,27 +196,6 @@ fun Cpi.validateAndGetGroupPolicyFileVersion(): Int {
         GroupPolicyParser.getFileFormatVersion(this.metadata.groupPolicy!!)
     } catch (e: Exception) {
         throw ValidationException("Group policy file in the CPI is invalid. Could not get file format version. ${e.message}", null, e)
-    }
-}
-
-/**
- * Checks the group id for cpi of a specific (name, version)
- * @throws ValidationException if the CPI (name, version) is already uploaded with this group
- */
-fun CpiPersistence.verifyGroupIdIsUniqueForCpi(cpi: Cpi) {
-    val groupIdInDatabase = this.getGroupId(
-        cpi.metadata.cpiId.name,
-        cpi.metadata.cpiId.version,
-        cpi.metadata.cpiId.signerSummaryHashForDbQuery
-    )
-
-    if (groupIdInDatabase != null) {
-        // Carefully constructed message because the "409/conflict" exception:
-        // ResourceAlreadyExistsException
-        // just wants "the resource".
-        val resource = "CPI ${cpi.metadata.cpiId.name} ${cpi.metadata.cpiId.version} " +
-            "already uploaded with groupId(groupId=$groupIdInDatabase)"
-        throw DuplicateCpiUploadException(resource)
     }
 }
 
