@@ -186,6 +186,7 @@ class MemberOpsServiceProcessorTest {
             UUID(3, 5).toString(),
             requestTimestamp,
             RegistrationRpcStatus.SUBMITTED,
+            null,
             1,
             KeyValuePairList(emptyList()),
             KeyValuePairList(emptyList())

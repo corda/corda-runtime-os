@@ -1,12 +1,14 @@
 package net.corda.membership.impl.httprpc.v1
 
 import net.corda.httprpc.PluggableRPCOps
+import net.corda.httprpc.exception.ResourceNotFoundException
 import net.corda.httprpc.exception.ServiceUnavailableException
 import net.corda.lifecycle.Lifecycle
 import net.corda.lifecycle.LifecycleCoordinatorFactory
 import net.corda.lifecycle.LifecycleCoordinatorName
 import net.corda.lifecycle.LifecycleStatus
 import net.corda.membership.client.MemberOpsClient
+import net.corda.membership.client.RegistrationProgressNotFoundException
 import net.corda.membership.httprpc.v1.MemberRegistrationRpcOps
 import net.corda.membership.httprpc.v1.types.request.MemberRegistrationRequest
 import net.corda.membership.httprpc.v1.types.response.RegistrationRequestProgress
@@ -131,19 +133,27 @@ class MemberRegistrationRpcOpsImpl @Activate constructor(
         }
 
         override fun checkRegistrationProgress(holdingIdentityShortHash: String): List<RegistrationRequestStatus> {
-            return memberOpsClient.checkRegistrationProgress(
-                ShortHash.ofOrThrow(holdingIdentityShortHash)
-            ).map { it.fromDto() }
+            return try {
+                memberOpsClient.checkRegistrationProgress(
+                    ShortHash.ofOrThrow(holdingIdentityShortHash)
+                ).map { it.fromDto() }
+            } catch (e: RegistrationProgressNotFoundException) {
+                throw ResourceNotFoundException(e.message!!)
+            }
         }
 
         override fun checkSpecificRegistrationProgress(
             holdingIdentityShortHash: String,
             registrationRequestId: String,
         ): RegistrationRequestStatus? {
-            return memberOpsClient.checkSpecificRegistrationProgress(
-                ShortHash.ofOrThrow(holdingIdentityShortHash),
-                registrationRequestId
-            )?.fromDto()
+            return try {
+                memberOpsClient.checkSpecificRegistrationProgress(
+                    ShortHash.ofOrThrow(holdingIdentityShortHash),
+                    registrationRequestId
+                )?.fromDto()
+            } catch (e: RegistrationProgressNotFoundException) {
+                throw ResourceNotFoundException(e.message!!)
+            }
         }
     }
 }
