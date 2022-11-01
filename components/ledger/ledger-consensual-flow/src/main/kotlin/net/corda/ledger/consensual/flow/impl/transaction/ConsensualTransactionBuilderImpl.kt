@@ -38,14 +38,10 @@ class ConsensualTransactionBuilderImpl(
     override val states: List<ConsensualState> = emptyList(),
 ) : ConsensualTransactionBuilder {
 
-    private var spent: Boolean = false
+    private var alreadySigned: Boolean = false
 
-    override fun withStates(vararg states: ConsensualState): ConsensualTransactionBuilder {
-        check(!spent) { "This transaction builder has already been consumed and cannot be used again." }
-        val builder = this.copy(states = this.states + states)
-        spent = true
-        return builder
-    }
+    override fun withStates(vararg states: ConsensualState): ConsensualTransactionBuilder =
+        copy(states = this.states + states)
 
     @Suspendable
     override fun sign(): ConsensualSignedTransaction {
@@ -58,7 +54,7 @@ class ConsensualTransactionBuilderImpl(
 
     @Suspendable
     override fun sign(signatories: Iterable<PublicKey>): ConsensualSignedTransaction{
-        check(!spent) { "This transaction builder has already been consumed and cannot be used again." }
+        check(!alreadySigned) { "A transaction cannot be signed twice." }
         require(signatories.toList().isNotEmpty()){
             "At least one key needs to be provided in order to create a signed Transaction!"
         }
@@ -81,7 +77,7 @@ class ConsensualTransactionBuilderImpl(
             signaturesWithMetaData
         )
 
-        spent = true
+        alreadySigned = true
         return tx
     }
 

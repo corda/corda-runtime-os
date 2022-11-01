@@ -53,15 +53,6 @@ internal class ConsensualTransactionBuilderImplTest {
     }
 
     @Test
-    fun `builder is consumed when calling withStates()`() {
-        assertThrows(IllegalStateException::class.java) {
-            val builder = makeTransactionBuilder()
-            builder.withStates(consensualStateExample)
-            builder.withStates(consensualStateExample)
-        }
-    }
-
-    @Test
     fun `cannot build Transaction without Consensual States`() {
         val exception = assertThrows(IllegalArgumentException::class.java) {
             makeTransactionBuilder().sign(publicKeyExample)
