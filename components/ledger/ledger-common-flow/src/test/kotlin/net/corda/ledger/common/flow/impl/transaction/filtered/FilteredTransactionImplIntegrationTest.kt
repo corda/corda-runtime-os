@@ -129,9 +129,12 @@ class FilteredTransactionImplIntegrationTest {
 
         assertEquals(1, componentGroup1.size)
         assertEquals(2, componentGroup2.size)
-        assertArrayEquals(COMPONENT_1, componentGroup1.single())
-        assertArrayEquals(COMPONENT_1, componentGroup2.first())
-        assertArrayEquals(COMPONENT_2, componentGroup2[1])
+        assertEquals(0, componentGroup1.single().first)
+        assertEquals(0, componentGroup2.first().first)
+        assertEquals(1, componentGroup2[1].first)
+        assertArrayEquals(COMPONENT_1, componentGroup1.single().second)
+        assertArrayEquals(COMPONENT_1, componentGroup2.first().second)
+        assertArrayEquals(COMPONENT_2, componentGroup2[1].second)
     }
 
     @Test
@@ -165,9 +168,12 @@ class FilteredTransactionImplIntegrationTest {
 
         assertEquals(1, componentGroup1.size)
         assertEquals(2, componentGroup2.size)
-        assertArrayEquals(COMPONENT_1, componentGroup1.single())
-        assertArrayEquals(COMPONENT_1, componentGroup2.first())
-        assertArrayEquals(COMPONENT_3, componentGroup2[1])
+        assertEquals(0, componentGroup1.single().first)
+        assertEquals(0, componentGroup2.first().first)
+        assertEquals(2, componentGroup2[1].first)
+        assertArrayEquals(COMPONENT_1, componentGroup1.single().second)
+        assertArrayEquals(COMPONENT_1, componentGroup2.first().second)
+        assertArrayEquals(COMPONENT_3, componentGroup2[1].second)
     }
 
     @Test
@@ -200,7 +206,7 @@ class FilteredTransactionImplIntegrationTest {
 
         assertEquals(1, componentGroup1.size)
         assertNull(componentGroup2)
-        assertArrayEquals(COMPONENT_1, componentGroup1.single())
+        assertArrayEquals(COMPONENT_1, componentGroup1.single().second)
     }
 
     @Test

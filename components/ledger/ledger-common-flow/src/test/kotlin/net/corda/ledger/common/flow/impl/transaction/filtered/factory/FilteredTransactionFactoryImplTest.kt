@@ -85,7 +85,7 @@ class FilteredTransactionFactoryImplTest {
             )
         ) { false }
 
-        assertThat(filteredTransaction.getComponentGroupContent(0)?.single())
+        assertThat(filteredTransaction.getComponentGroupContent(0)?.single()?.second)
             .isEqualTo(wireTransaction.componentGroupLists.first().single())
         verify(serializationService, never()).deserialize(any<ByteArray>(), eq(TransactionMetadata::class.java))
     }

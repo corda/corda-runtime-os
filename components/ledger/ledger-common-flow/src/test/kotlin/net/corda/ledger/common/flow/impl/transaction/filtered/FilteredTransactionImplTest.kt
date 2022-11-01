@@ -584,11 +584,14 @@ class FilteredTransactionImplTest {
         whenever(filteredComponentGroup0Proof.leaves).thenReturn(listOf(indexedMerkleLeaf(0, metadataBytes)))
         whenever(filteredComponentGroup1Proof.leaves).thenReturn(indexedMerkleLeafs)
 
-        assertArrayEquals(metadataBytes, filteredTransaction.getComponentGroupContent(0)!!.single())
+        assertArrayEquals(metadataBytes, filteredTransaction.getComponentGroupContent(0)!!.single().second)
         filteredTransaction.getComponentGroupContent(1)!!.let {
-            assertArrayEquals(indexedMerkleLeafs[0].leafData, it[0])
-            assertArrayEquals(indexedMerkleLeafs[1].leafData, it[1])
-            assertArrayEquals(indexedMerkleLeafs[2].leafData, it[2])
+            assertEquals(indexedMerkleLeafs[0].index, it[0].first)
+            assertEquals(indexedMerkleLeafs[1].index, it[1].first)
+            assertEquals(indexedMerkleLeafs[2].index, it[2].first)
+            assertArrayEquals(indexedMerkleLeafs[0].leafData, it[0].second)
+            assertArrayEquals(indexedMerkleLeafs[1].leafData, it[1].second)
+            assertArrayEquals(indexedMerkleLeafs[2].leafData, it[2].second)
         }
     }
 

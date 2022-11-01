@@ -116,8 +116,8 @@ class FilteredTransactionImpl(
         jsonMarshallingService.parse(proof.leaves.single().leafData.decodeToString())
     }
 
-    override fun getComponentGroupContent(componentGroupIndex: Int): List<ByteArray>? {
-        return filteredComponentGroups[componentGroupIndex]?.merkleProof?.leaves?.map { it.leafData }
+    override fun getComponentGroupContent(componentGroupIndex: Int): List<Pair<Int, ByteArray>>? {
+        return filteredComponentGroups[componentGroupIndex]?.merkleProof?.leaves?.map { it.index to it.leafData }
     }
 
     private fun createTopLevelAuditProofProvider(): MerkleTreeHashDigestProvider {
