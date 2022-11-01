@@ -1,5 +1,11 @@
 package net.corda.messaging.subscription
 
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.thread
+import kotlin.concurrent.withLock
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
@@ -26,12 +32,6 @@ import net.corda.messaging.api.subscription.RPCSubscription
 import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.v5.base.util.debug
 import org.slf4j.LoggerFactory
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.thread
-import kotlin.concurrent.withLock
 
 @Suppress("LongParameterList")
 internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
@@ -120,7 +120,6 @@ internal class RPCSubscriptionImpl<REQUEST : Any, RESPONSE : Any>(
                 }
             }
         }
-        lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
     }
 
     private fun createProducerConsumerAndStartPolling() {
