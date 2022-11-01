@@ -1,4 +1,4 @@
-package net.corda.ledger.utxo.impl.state
+package net.corda.ledger.utxo.flow.impl.state
 
 import net.corda.ledger.utxo.data.state.getContractClass
 import net.corda.v5.ledger.utxo.BelongsToContract

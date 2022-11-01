@@ -1,18 +1,18 @@
-package net.corda.ledger.utxo.impl.timewindow
+package net.corda.ledger.utxo.flow.impl.timewindow
 
 import net.corda.v5.ledger.utxo.TimeWindow
 import java.time.Instant
 
 /**
- * Represents an unbounded time window that tends towards negative infinity.
+ * Represents an unbounded time window that tends towards positive infinity.
  *
- * @constructor Creates a new instance of the [TimeWindowUntilImpl] data class.
- * @property from Always Instant.MIN as this time window tends towards negative infinity.
- * @property until The boundary at which the time window ends.
+ * @constructor Creates a new instance of the [TimeWindowFromImpl] data class.
+ * @property from The boundary at which the time window begins.
+ * @property until Always Instant.MAX as this time window tends towards positive infinity.
  */
-data class TimeWindowUntilImpl(override val until: Instant) : TimeWindow {
+data class TimeWindowFromImpl(override val from: Instant) : TimeWindow {
 
-    override val from: Instant = Instant.MIN
+    override val until: Instant = Instant.MAX
 
     /**
      * Determines whether the current [TimeWindow] contains the specified [Instant].
@@ -21,7 +21,7 @@ data class TimeWindowUntilImpl(override val until: Instant) : TimeWindow {
      * @return Returns true if the current [TimeWindow] contains the specified [Instant]; otherwise, false.
      */
     override fun contains(instant: Instant): Boolean {
-        return instant <= until
+        return instant >= from
     }
 
     /**
@@ -30,6 +30,6 @@ data class TimeWindowUntilImpl(override val until: Instant) : TimeWindow {
      * @return Returns a string that represents the current object.
      */
     override fun toString(): String {
-        return "infinity to $until"
+        return "$from to infinity"
     }
 }
