@@ -90,7 +90,6 @@ internal class VirtualNodeWriterProcessor(
         const val PUBLICATION_TIMEOUT_SECONDS = 30L
         val systemTerminatorTag = "${VAULT.name}-system-final"
     }
-    private val smartConfigFactory = dbConnectionManager.clusterConfig.factory
 
     @Suppress("ReturnCount", "ComplexMethod")
     private fun createVirtualNode(
