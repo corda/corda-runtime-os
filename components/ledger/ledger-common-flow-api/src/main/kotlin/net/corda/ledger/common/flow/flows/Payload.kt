@@ -41,13 +41,6 @@ sealed interface Payload<T> {
     fun getOrThrow(throwOnFailure: Function<Failure<*>, Throwable>): T
 
     /**
-     * Throws a [CordaRuntimeException] if the [Payload] is a [Failure].
-     *
-     * @throws CordaRuntimeException If the [Payload] is a [Failure].
-     */
-    fun throwIfFailed()
-
-    /**
      * [Success] represents a successful response.
      *
      * @property value The underlying payload.
@@ -61,8 +54,6 @@ sealed interface Payload<T> {
         override fun getOrThrow(throwOnFailure: Function<Failure<*>, Throwable>): T {
             return value
         }
-
-        override fun throwIfFailed() { }
     }
 
     /**
@@ -82,10 +73,6 @@ sealed interface Payload<T> {
 
         override fun getOrThrow(throwOnFailure: Function<Failure<*>, Throwable>): T {
             throw throwOnFailure.apply(this)
-        }
-
-        override fun throwIfFailed() {
-            throw CordaRuntimeException(message)
         }
     }
 }

@@ -71,7 +71,9 @@ class ConsensualReceiveFinalityFlow(
 
         session.send(signaturesPayload)
 
-        signaturesPayload.throwIfFailed()
+        if (signaturesPayload is Payload.Failure) {
+            throw CordaRuntimeException(signaturesPayload.message)
+        }
 
         val signedTransactionToFinalize = session.receive<ConsensualSignedTransaction>()
 
