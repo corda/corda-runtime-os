@@ -121,11 +121,19 @@ class WireTransaction(
         merkleTreeProvider.createTree(componentGroupRoots, getRootMerkleTreeDigestProvider())
     }
 
-    override fun equals(other: Any?): Boolean =
-        this === other
-                || other is WireTransaction
-                && other.privacySalt == privacySalt
-                && other.componentGroupLists == componentGroupLists
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is WireTransaction) return false
+        if (other.privacySalt != privacySalt) return false
+        if (other.componentGroupLists.size != componentGroupLists.size) return false
+
+        return (other.componentGroupLists.withIndex().all { i ->
+            i.value.size == componentGroupLists[i.index].size &&
+                i.value.withIndex().all { j ->
+                    j.value contentEquals componentGroupLists[i.index][j.index]
+                }
+            })
+    }
 
     override fun hashCode(): Int = Objects.hash(privacySalt, componentGroupLists)
 }
