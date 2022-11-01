@@ -3,20 +3,19 @@ package net.corda.membership.impl.registration.staticnetwork.cache
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
 import net.corda.libs.platform.PlatformInfoProvider
-import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.MODIFIED_TIME_KEY
 import net.corda.membership.lib.MPV_KEY
 import net.corda.membership.lib.MemberInfoExtension.Companion.groupId
-import net.corda.membership.lib.MemberInfoExtension.Companion.holdingIdentity
+import net.corda.membership.lib.MemberInfoExtension.Companion.notaryDetails
 import net.corda.membership.lib.NOTARY_SERVICE_NAME_KEY
 import net.corda.membership.lib.addNewNotaryService
-import net.corda.membership.lib.updateExistingNotaryService
 import net.corda.membership.lib.toMap
+import net.corda.membership.lib.updateExistingNotaryService
 import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
+import net.corda.schema.Schemas.Membership.Companion.GROUP_PARAMETERS_TOPIC
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
@@ -91,7 +90,7 @@ class GroupParametersCache(
         publisher.publish(
             listOf(
                 Record(
-                    MEMBER_LIST_TOPIC, // TODO change topic
+                    GROUP_PARAMETERS_TOPIC,
                     groupId,
                     this // TODO publish new persistent group params; PGP(GPO("Static", groupId), this))
                 )

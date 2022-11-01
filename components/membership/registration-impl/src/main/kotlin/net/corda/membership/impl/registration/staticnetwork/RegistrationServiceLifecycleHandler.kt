@@ -22,7 +22,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
-import net.corda.schema.Schemas
+import net.corda.schema.Schemas.Membership.Companion.GROUP_PARAMETERS_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 
@@ -126,7 +126,7 @@ class RegistrationServiceLifecycleHandler(
 
         subscription?.close()
         subscription = subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig(CONSUMER_GROUP, Schemas.Membership.MEMBER_LIST_TOPIC), // TODO change topic to group params
+            SubscriptionConfig(CONSUMER_GROUP, GROUP_PARAMETERS_TOPIC),
             processor,
             event.config.getConfig(MESSAGING_CONFIG)
         ).also {
