@@ -2,6 +2,7 @@ package net.corda.libs.permissions.manager.impl
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
+import net.corda.cache.caffeine.CacheFactoryImpl
 import net.corda.v5.crypto.sha256Bytes
 import java.time.Duration
 
@@ -18,10 +19,12 @@ internal class RepeatedLogonsCache {
     private val expireAfterWriteSeconds =
         java.lang.Long.getLong("net.corda.libs.permissions.manager.repeatedLogons.expire.seconds", 600)
 
-    private val cache: Cache<String, ByteArray> = Caffeine.newBuilder()
-        .maximumSize(maximumSize)
-        .expireAfterWrite(Duration.ofSeconds(expireAfterWriteSeconds))
-        .build()
+    private val cache: Cache<String, ByteArray> = CacheFactoryImpl().build(
+        javaClass.simpleName,
+        Caffeine.newBuilder()
+            .maximumSize(maximumSize)
+            .expireAfterWrite(Duration.ofSeconds(expireAfterWriteSeconds))
+    )
 
     private fun String.toCacheValue(): ByteArray {
         return toByteArray().sha256Bytes()

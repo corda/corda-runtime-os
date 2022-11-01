@@ -6,6 +6,7 @@ import net.corda.libs.permissions.management.cache.PermissionManagementCache
 import net.corda.permissions.password.impl.PasswordServiceImpl
 import net.corda.v5.base.util.contextLogger
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
@@ -63,6 +64,7 @@ class RbacBasicAuthenticationServicePerfTest {
     fun singleThreadedTest() {
         // Warm-up
         assertTrue(rbacBasicAuthenticationService.authenticateUser(userLogons.first(), passwordString.toCharArray()))
+        assertFalse(rbacBasicAuthenticationService.authenticateUser(userLogons.first(), "wrongPassword".toCharArray()))
 
         // Measure time
         val start = System.currentTimeMillis()
@@ -81,6 +83,7 @@ class RbacBasicAuthenticationServicePerfTest {
     fun multiThreadedTest() {
         // Warm-up
         assertTrue(rbacBasicAuthenticationService.authenticateUser(userLogons.first(), passwordString.toCharArray()))
+        assertFalse(rbacBasicAuthenticationService.authenticateUser(userLogons.first(), "wrongPassword".toCharArray()))
 
         // Measure time
         val start = System.currentTimeMillis()
