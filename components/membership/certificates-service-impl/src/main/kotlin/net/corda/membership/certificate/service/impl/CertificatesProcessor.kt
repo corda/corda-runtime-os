@@ -119,15 +119,19 @@ internal class CertificatesProcessor(
         holdingIdentityId: ShortHash?,
         usage: CertificateUsage,
         block: (CertificateProcessor<*>) -> T
-    ) {
-        if (holdingIdentityId == null) {
+    ): T {
+        return if (holdingIdentityId == null) {
             val processor = ClusterCertificateProcessor(usage)
             block.invoke(processor)
         } else {
             useCertificateProcessor(holdingIdentityId, usage, block)
         }
     }
-    private fun <T> useCertificateProcessor(holdingIdentityId: ShortHash, usage: CertificateUsage, block: (CertificateProcessor<*>) -> T) {
+    private fun <T> useCertificateProcessor(
+        holdingIdentityId: ShortHash,
+        usage: CertificateUsage,
+        block: (CertificateProcessor<*>) -> T,
+    ): T {
         val node = virtualNodeInfoReadService.getByHoldingIdentityShortHash(holdingIdentityId)
             ?: throw NoSuchNode(holdingIdentityId)
         val factory = dbConnectionManager.createEntityManagerFactory(
@@ -137,7 +141,7 @@ internal class CertificatesProcessor(
                     "persistenceUnitName ${CordaDb.Vault.persistenceUnitName} is not registered."
                 )
         )
-        try {
+        return try {
             val processor = NodeCertificateProcessor(factory, usage)
             block.invoke(processor)
         } finally {

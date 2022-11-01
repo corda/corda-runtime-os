@@ -18,6 +18,7 @@ import net.corda.v5.crypto.DigitalSignature
 import net.corda.v5.crypto.ECDSA_SECP256R1_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.SignatureSpec.Companion.ECDSA_SHA256
+import net.corda.virtualnode.ShortHash
 import org.assertj.core.api.Assertions.assertThat
 import org.bouncycastle.asn1.DEROctetString
 import org.bouncycastle.asn1.x500.X500Name
@@ -309,6 +310,35 @@ class CertificatesRpcOpsImplTest {
             certificatesOps.importCertificateChain("p2p-tls", "alias", null, listOf(certificate))
 
             verify(certificatesClient).importCertificates(CertificateUsage.P2P_TLS, null, "alias", certificateText)
+        }
+
+        @Test
+        fun `holding id will be translate to short hash`() {
+            val certificateText = ClassLoader.getSystemResource("r3.pem").readText()
+            val certificate = mock<HttpFileUpload> {
+                on { content } doReturn certificateText.byteInputStream()
+            }
+
+            certificatesOps.importCertificateChain("p2p-tls", "alias", "123123123123", listOf(certificate))
+
+            verify(certificatesClient).importCertificates(
+                CertificateUsage.P2P_TLS,
+                ShortHash.of("123123123123"),
+                "alias",
+                certificateText
+            )
+        }
+
+        @Test
+        fun `invalid usage will throw an exception`() {
+            val certificateText = ClassLoader.getSystemResource("r3.pem").readText()
+            val certificate = mock<HttpFileUpload> {
+                on { content } doReturn certificateText.byteInputStream()
+            }
+
+            assertThrows<InvalidInputDataException> {
+                certificatesOps.importCertificateChain("nop", "alias", "123123123123", listOf(certificate))
+            }
         }
 
         @Test

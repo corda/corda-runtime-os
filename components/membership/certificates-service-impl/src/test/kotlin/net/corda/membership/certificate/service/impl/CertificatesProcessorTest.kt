@@ -32,6 +32,13 @@ import java.util.concurrent.CompletableFuture
 import javax.persistence.EntityManager
 import javax.persistence.EntityManagerFactory
 import javax.persistence.EntityTransaction
+import javax.persistence.TypedQuery
+import javax.persistence.criteria.CriteriaBuilder
+import javax.persistence.criteria.CriteriaQuery
+import javax.persistence.criteria.Order
+import javax.persistence.criteria.Path
+import javax.persistence.criteria.Predicate
+import javax.persistence.criteria.Root
 
 class CertificatesProcessorTest {
     private val mockTransaction = mock<EntityTransaction>()
@@ -100,6 +107,19 @@ class CertificatesProcessorTest {
         verify(clusterEntityManager).merge(ClusterCertificate(
             "alias", CertificateUsage.RPC_API_TLS.publicName, "certificate")
         )
+    }
+
+    @Test
+    fun `onNext with invalid node throw an exception`() {
+        val request = CertificateRpcRequest(
+            CertificateUsage.RPC_API_TLS,
+            "123456789011",
+            ImportCertificateRpcRequest("alias", "certificate")
+        )
+
+        processor.onNext(request, response)
+
+        assertThat(response).isCompletedExceptionally
     }
 
     @Test
@@ -221,6 +241,67 @@ class CertificatesProcessorTest {
         processor.onNext(request, response)
 
         assertThat(response).isCompletedWithValue(CertificateRpcResponse(CertificateRetrievalRpcResponse("certificate")))
+    }
+
+    @Test
+    fun `onNext returns null if the usage is wrong with value`() {
+        whenever(nodeEntityManager.find(Certificate::class.java, "alias"))
+            .doReturn(Certificate("alias", CertificateUsage.P2P_TLS.publicName, "certificate"))
+        val request = CertificateRpcRequest(
+            CertificateUsage.P2P_SESSION,
+            nodeTenantId.value,
+            RetrieveCertificateRpcRequest("alias")
+        )
+
+        processor.onNext(request, response)
+
+        assertThat(response).isCompletedWithValue(CertificateRpcResponse(CertificateRetrievalRpcResponse(null)))
+    }
+
+    @Test
+    fun `readAllCertificates creates the correct query for retrieve all by usage`() {
+        val certificates = (1..5).map {
+            ClusterCertificate(
+                alias = "alias:$it",
+                usage = CertificateUsage.P2P_TLS.publicName,
+                rawCertificate = "certificate-$it"
+            )
+        }
+        val usagePath = mock<Path<String>>()
+        val aliasPath = mock<Path<String>>()
+        val equalPredicate = mock<Predicate>()
+        val order = mock<Order>()
+        val root = mock<Root<ClusterCertificate>> {
+            on { get<String>("usage") } doReturn usagePath
+            on { get<String>("alias") } doReturn aliasPath
+        }
+        val query = mock<CriteriaQuery<ClusterCertificate>> {
+            on { from(ClusterCertificate::class.java) } doReturn root
+            on { select(root) } doReturn mock
+            on { where(equalPredicate) } doReturn mock
+            on { orderBy(order) } doReturn mock
+        }
+        val criteriaBuilder = mock<CriteriaBuilder> {
+            on { createQuery(ClusterCertificate::class.java) } doReturn query
+            on { equal(usagePath, CertificateUsage.P2P_TLS.publicName) } doReturn equalPredicate
+            on { asc(aliasPath) } doReturn order
+        }
+        val typedQuery = mock<TypedQuery<ClusterCertificate>> {
+            on { resultList } doReturn certificates
+        }
+        whenever(clusterEntityManager.criteriaBuilder).doReturn(criteriaBuilder)
+        whenever(clusterEntityManager.createQuery(query)).doReturn(typedQuery)
+
+        val rawCertificates = processor.useCertificateProcessor(
+            null,
+            CertificateUsage.P2P_TLS
+        ) {
+            it.readAllCertificates()
+        }
+
+        assertThat(rawCertificates).isEqualTo(
+            certificates.map { it.rawCertificate }
+        )
     }
 
     @Test

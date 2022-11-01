@@ -184,6 +184,12 @@
                     "nullable" : false,
                     "example" : "string"
                   },
+                  "holdingIdentityId" : {
+                    "type" : "string",
+                    "description" : "The certificate holding identity ID (null to cluster-level certificate, default to null)",
+                    "nullable" : true,
+                    "example" : "string"
+                  },
                   "certificate" : {
                     "uniqueItems" : false,
                     "type" : "array",

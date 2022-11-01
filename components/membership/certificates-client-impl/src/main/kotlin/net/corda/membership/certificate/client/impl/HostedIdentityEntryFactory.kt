@@ -71,7 +71,7 @@ internal class HostedIdentityEntryFactory(
     ): List<String> {
         val certificateChain = retrieveCertificates(certificateHoldingId, CertificateUsage.P2P_TLS, certificateChainAlias)
             ?: throw CertificatesResourceNotFoundException(
-                "Please import certificate chain into p2p with alias $certificateChainAlias"
+                "Please import certificate chain into p2p-tls with alias $certificateChainAlias"
             )
         return certificateChain.reader().use { reader ->
             PEMParser(reader).use {

@@ -32,20 +32,38 @@ import org.osgi.service.component.annotations.Reference
 
 @Component(service = [CertificatesService::class])
 @Suppress("LongParameterList")
-class CertificatesServiceImpl @Activate constructor(
-    @Reference(service = LifecycleCoordinatorFactory::class)
+class CertificatesServiceImpl internal constructor(
     coordinatorFactory: LifecycleCoordinatorFactory,
-    @Reference(service = SubscriptionFactory::class)
     private val subscriptionFactory: SubscriptionFactory,
-    @Reference(service = DbConnectionManager::class)
-    dbConnectionManager: DbConnectionManager,
-    @Reference(service = JpaEntitiesRegistry::class)
-    jpaEntitiesRegistry: JpaEntitiesRegistry,
-    @Reference(service = ConfigurationReadService::class)
     private val configurationReadService: ConfigurationReadService,
-    @Reference(service = VirtualNodeInfoReadService::class)
-    virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    private val processor: CertificatesProcessor,
 ) : CertificatesService {
+
+    @Activate
+    constructor(
+        @Reference(service = LifecycleCoordinatorFactory::class)
+        coordinatorFactory: LifecycleCoordinatorFactory,
+        @Reference(service = SubscriptionFactory::class)
+        subscriptionFactory: SubscriptionFactory,
+        @Reference(service = DbConnectionManager::class)
+        dbConnectionManager: DbConnectionManager,
+        @Reference(service = JpaEntitiesRegistry::class)
+        jpaEntitiesRegistry: JpaEntitiesRegistry,
+        @Reference(service = ConfigurationReadService::class)
+        configurationReadService: ConfigurationReadService,
+        @Reference(service = VirtualNodeInfoReadService::class)
+        virtualNodeInfoReadService: VirtualNodeInfoReadService,
+    ) : this(
+        coordinatorFactory,
+        subscriptionFactory,
+        configurationReadService,
+        CertificatesProcessor(
+            dbConnectionManager,
+            jpaEntitiesRegistry,
+            virtualNodeInfoReadService,
+        )
+    )
+
     private companion object {
         val logger = contextLogger()
         const val GROUP_NAME = "membership.certificates.service"
@@ -56,11 +74,6 @@ class CertificatesServiceImpl @Activate constructor(
     private var subscriptionRegistrationHandle: AutoCloseable? = null
     private var configHandle: Resource? = null
     private var rpcSubscription: Resource? = null
-    private val processor = CertificatesProcessor(
-        dbConnectionManager,
-        jpaEntitiesRegistry,
-        virtualNodeInfoReadService,
-    )
     private val coordinator = coordinatorFactory.createCoordinator<CertificatesService>(::handleEvent)
 
     override fun importCertificates(
@@ -76,18 +89,16 @@ class CertificatesServiceImpl @Activate constructor(
         holdingIdentityId: ShortHash?,
         alias: String,
     ): String? {
-        var certificates: String? = null
-        processor.useCertificateProcessor(holdingIdentityId, usage) { p -> certificates = p.readCertificates(alias) }
-        return certificates
+        return processor.useCertificateProcessor(holdingIdentityId, usage) { p ->
+            p.readCertificates(alias)
+        }
     }
 
     override fun retrieveAllCertificates(
         usage: CertificateUsage,
         holdingIdentityId: ShortHash?,
     ): List<String> {
-        var certificates = emptyList<String>()
-        processor.useCertificateProcessor(holdingIdentityId, usage) { p -> certificates = p.readAllCertificates() }
-        return certificates
+        return processor.useCertificateProcessor(holdingIdentityId, usage) { p -> p.readAllCertificates() }
     }
 
     override fun start() {

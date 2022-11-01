@@ -152,14 +152,14 @@ class CertificatesRpcOpsImpl @Activate constructor(
                 details = mapOf("certificate" to "No certificates")
             )
         }
-        val holdingIdentityShortHash = if(holdingIdentityId != null) {
+        val holdingIdentityShortHash = if (holdingIdentityId != null) {
             ShortHash.ofOrThrow(holdingIdentityId)
         } else {
             null
         }
         val usageType = CertificateUsage.values().firstOrNull {
             it.publicName.equals(usage.trim(), ignoreCase = true)
-        }?: throw InvalidInputDataException(
+        } ?: throw InvalidInputDataException(
             details = mapOf("usage" to "Unknown usage: $usage")
         )
         val rawCertificates = certificates.map {
