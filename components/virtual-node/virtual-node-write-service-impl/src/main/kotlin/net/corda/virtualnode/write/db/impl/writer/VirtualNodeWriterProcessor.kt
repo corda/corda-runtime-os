@@ -1,6 +1,5 @@
 package net.corda.virtualnode.write.db.impl.writer
 
-import com.typesafe.config.ConfigFactory
 import net.corda.data.ExceptionEnvelope
 import net.corda.data.membership.PersistentMemberInfo
 import net.corda.data.virtualnode.VirtualNodeCreateRequest
@@ -18,12 +17,11 @@ import net.corda.db.connection.manager.VirtualNodeDbType
 import net.corda.db.connection.manager.VirtualNodeDbType.CRYPTO
 import net.corda.db.connection.manager.VirtualNodeDbType.UNIQUENESS
 import net.corda.db.connection.manager.VirtualNodeDbType.VAULT
+import net.corda.db.core.CloseableDataSource
 import net.corda.db.core.DbPrivilege
 import net.corda.db.core.DbPrivilege.DDL
 import net.corda.db.core.DbPrivilege.DML
 import net.corda.layeredpropertymap.toAvro
-import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.datamodel.findDbConnectionByNameAndPrivilege
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogAuditEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
 import net.corda.libs.cpi.datamodel.findDbChangeLogAuditForCpi
@@ -42,7 +40,6 @@ import net.corda.orm.utils.use
 import net.corda.schema.Schemas.Membership.Companion.MEMBER_LIST_TOPIC
 import net.corda.schema.Schemas.VirtualNode.Companion.VIRTUAL_NODE_INFO_TOPIC
 import net.corda.utilities.time.Clock
-import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.types.MemberX500Name
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -235,14 +232,6 @@ internal class VirtualNodeWriterProcessor(
                 // Open a TX to find the connection information we need for the virtual nodes vault as it may live on
                 //  another database.
                 it.transaction { tx ->
-                    // Get a DDL connection since we're working with migrations
-                    val dbConnection = tx.findDbConnectionByNameAndPrivilege(VAULT.getConnectionName(shortHash), DDL)
-                        ?: throw CordaRuntimeException("Could not lookup db connection for virtual node $shortHash")
-                    val dbConfig = ConfigFactory.parseString(
-                        dbConnection.config
-                    )
-                    // Change the config into a SmartConfig
-                    val connectionConfig = smartConfigFactory.create(dbConfig)
                     // Retrieve virtual node info
                     val virtualNodeInfo = virtualNodeEntityRepository.getVirtualNode(shortHashString)
                     // Retrieve CPI metadata
@@ -251,17 +240,17 @@ internal class VirtualNodeWriterProcessor(
                         virtualNodeInfo.cpiIdentifier.version
                     )!!
                     // Acquire datasource for our virtualnode vault from the config we constructed earlier
-                    dbConnectionManager.getDataSource(connectionConfig).use { dataSource ->
+                    dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).use { dataSource ->
                         // Look up the tags(UUIDs) of the applied changelog entries
                         val appliedVersions: Set<UUID> = getAppliedVersions(tx, dataSource, systemTerminatorTag)
                         // Look up all audit entries that correspond to the UUID set that we just got
                         val migrationSet = findDbChangeLogAuditForCpi(tx, virtualNodeInfo.cpiIdentifier, appliedVersions)
                         // Attempt to rollback the acquired changes
-                        rollbackVirtualNodeDb(connectionConfig, migrationSet, systemTerminatorTag)
+                        rollbackVirtualNodeDb(dataSource, migrationSet, systemTerminatorTag)
                         logger.info("Finished rolling back previous migrations, attempting to apply new ones")
                         // Attempt to apply the changes from the current CPI
                         val changelogs = getChangelogs(em, cpiMetadata.id)
-                        runCpiResyncMigrations(changelogs, connectionConfig)
+                        runCpiResyncMigrations(dataSource, changelogs)
                     }
                 }
                 shortHash.value
@@ -277,16 +266,13 @@ internal class VirtualNodeWriterProcessor(
     }
 
     private fun rollbackVirtualNodeDb(
-        connectionConfig: SmartConfig,
+        dataSource: CloseableDataSource,
         changelogs: List<CpkDbChangeLogAuditEntity>,
         tagToRollbackTo: String
     ) {
         val dbChange = VirtualNodeDbChangeLog(changelogs)
-        dbConnectionManager.getDataSource(connectionConfig).use { dataSource ->
-            dataSource.connection.use { connection ->
-                LiquibaseSchemaMigratorImpl().rollBackDb(connection, dbChange, tagToRollbackTo)
-            }
-        }
+        val connection = dataSource.connection
+        LiquibaseSchemaMigratorImpl().rollBackDb(connection, dbChange, tagToRollbackTo)
     }
 
     // State change request produced by VirtualNodeMaintenanceRPCOpsImpl
@@ -535,19 +521,17 @@ internal class VirtualNodeWriterProcessor(
             }
         }
 
-    private fun runCpiResyncMigrations(changelogs: List<CpkDbChangeLogEntity>, connectionConfig: SmartConfig) {
+    private fun runCpiResyncMigrations(dataSource: CloseableDataSource, changelogs: List<CpkDbChangeLogEntity>) {
         changelogs.map { cl -> cl.id.cpkName }.distinct().sorted().forEach { cpkName ->
             val cpkChangelogs = changelogs.filter { cl2 -> cl2.id.cpkName == cpkName }
             val newChangeSetId = cpkChangelogs.first().changesetId
             logger.info("Applying change logs from $cpkName at $newChangeSetId")
-
-            dbConnectionManager.getDataSource(connectionConfig).connection.use { connection ->
-                LiquibaseSchemaMigratorImpl().updateDb(
-                    connection,
-                    VirtualNodeDbChangeLog(cpkChangelogs),
-                    tag = newChangeSetId.toString()
-                )
-            }
+            val connection = dataSource.connection
+            LiquibaseSchemaMigratorImpl().updateDb(
+                connection,
+                VirtualNodeDbChangeLog(cpkChangelogs),
+                tag = newChangeSetId.toString()
+            )
         }
     }
 
