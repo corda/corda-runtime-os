@@ -29,6 +29,7 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import java.security.PublicKey
 import java.time.Instant
+import java.util.Objects
 
 @Suppress("TooManyFunctions")
 data class UtxoTransactionBuilderImpl(
@@ -242,50 +243,26 @@ data class UtxoTransactionBuilderImpl(
         if (other !is UtxoTransactionBuilderImpl) return false
         if (other.transactionMetaData != transactionMetaData) return false
         if (other.notary != notary) return false
-        if (other.timeWindow != timeWindow) return false
-
-        if (other.attachments.size != attachments.size) return false
-        other.attachments.withIndex().all {
-            it.value == attachments[it.index]
-        } || return false
-
-        if (other.commands.size != commands.size) return false
-        other.commands.withIndex().all {
-            it.value == commands[it.index]
-        } || return false
-
-        if (other.inputStateAndRefs.size != inputStateAndRefs.size) return false
-        other.inputStateAndRefs.withIndex().all {
-            it.value == inputStateAndRefs[it.index]
-        } || return false
-
-        if (other.referenceInputStateAndRefs.size != referenceInputStateAndRefs.size) return false
-        other.referenceInputStateAndRefs.withIndex().all {
-            it.value == referenceInputStateAndRefs[it.index]
-        } || return false
-
-        if (other.outputStates.size != outputStates.size) return false
-        other.outputStates.withIndex().all {
-            it.value == outputStates[it.index]
-        } || return false
-
+        if (other.attachments != attachments) return false
+        if (other.commands != commands) return false
+        if (other.inputStateAndRefs != inputStateAndRefs) return false
+        if (other.referenceInputStateAndRefs != referenceInputStateAndRefs) return false
+        if (other.outputStates != outputStates) return false
         if (other.signatories != signatories) return false
-
         return true
     }
 
-    override fun hashCode(): Int {
-        var result = transactionMetaData.hashCode()
-        result = 31 * result + notary.hashCode()
-        result = 31 * result + timeWindow.hashCode()
-        result = 31 * result + attachments.hashCode()
-        result = 31 * result + commands.hashCode()
-        result = 31 * result + signatories.hashCode()
-        result = 31 * result + inputStateAndRefs.hashCode()
-        result = 31 * result + referenceInputStateAndRefs.hashCode()
-        result = 31 * result + outputStates.hashCode()
-        return result
-    }
+    override fun hashCode(): Int = Objects.hash(
+        transactionMetaData,
+        notary,
+        timeWindow,
+        attachments,
+        commands,
+        signatories,
+        inputStateAndRefs,
+        referenceInputStateAndRefs,
+        outputStates,
+    )
 }
 
 /**
