@@ -38,10 +38,13 @@ tasks.register('publishBuildkitImage' , BuildkitBuild) {
         it.baseImageName = baseImage
     }
 
+<<<<<<< HEAD
     if(project.hasProperty('useBuildx')){
         it.isBuildx = useBuildx.toBoolean()
     }
 
+=======
+>>>>>>> 719f4c1c6 (NOTICK: add BuildKit changes)
     if(project.hasProperty('tag')){
         it.containerTag = tag
     }
