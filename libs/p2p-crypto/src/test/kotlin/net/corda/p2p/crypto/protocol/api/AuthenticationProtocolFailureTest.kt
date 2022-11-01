@@ -7,6 +7,11 @@ import net.corda.v5.crypto.SignatureSpec
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
+import org.mockito.Mockito
+import org.mockito.kotlin.any
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
 import java.nio.ByteBuffer
 import java.security.KeyPairGenerator
 import java.security.Signature
@@ -207,5 +212,230 @@ class AuthenticationProtocolFailureTest {
         // Step 2: responder sending hello message to initiator.
         assertThatThrownBy { authenticationProtocolB.generateResponderHello() }
             .isInstanceOf(NoCommonModeError::class.java)
+    }
+
+    @Test
+    fun `session authentication fails if responder certificate validation fails`() {
+        val certificateValidator = Mockito.mockConstruction(CertificateValidator::class.java) { mock, _ ->
+            whenever(mock.validate(any(), any())).thenThrow(InvalidPeerCertificate("Invalid peer certificate"))
+        }
+        val ourCertificates = listOf<String>()
+        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), ourCertificates, mock())
+
+        val authenticationProtocolA = AuthenticationProtocolInitiator(
+            sessionId,
+            setOf(ProtocolMode.AUTHENTICATION_ONLY),
+            partyAMaxMessageSize,
+            partyASessionKey.public,
+            sessionId,
+            certCheckMode
+        )
+        val authenticationProtocolB = AuthenticationProtocolResponder(
+            sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize, certCheckMode
+        )
+
+        // Step 1: initiator sending hello message to responder.
+        val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
+        authenticationProtocolB.receiveInitiatorHello(initiatorHelloMsg)
+
+        // Step 2: responder sending hello message to initiator.
+        val responderHelloMsg = authenticationProtocolB.generateResponderHello()
+        authenticationProtocolA.receiveResponderHello(responderHelloMsg)
+
+        // Both sides generate handshake secrets.
+        authenticationProtocolA.generateHandshakeSecrets()
+        authenticationProtocolB.generateHandshakeSecrets()
+
+        // Step 3: initiator sending handshake message and responder validating it.
+        val signingCallbackForA = { data: ByteArray ->
+            signature.initSign(partyASessionKey.private)
+            signature.update(data)
+            signature.sign()
+        }
+        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
+
+        assertThrows<InvalidPeerCertificate> { authenticationProtocolB.validatePeerHandshakeMessage(
+                initiatorHandshakeMessage,
+                aliceX500Name,
+                partyASessionKey.public,
+                SignatureSpec.ECDSA_SHA256,
+            )
+        }
+        certificateValidator.close()
+    }
+
+    @Test
+    fun `session authentication fails if initiator certificate validation fails`() {
+        val certificateValidator = Mockito.mockConstruction(CertificateValidator::class.java)
+        val ourCertificates = listOf<String>()
+        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), ourCertificates, mock())
+
+        val authenticationProtocolA = AuthenticationProtocolInitiator(
+            sessionId,
+            setOf(ProtocolMode.AUTHENTICATION_ONLY),
+            partyAMaxMessageSize,
+            partyASessionKey.public,
+            sessionId,
+            certCheckMode
+        )
+        val authenticationProtocolB = AuthenticationProtocolResponder(
+            sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize, certCheckMode
+        )
+        val certificateValidatorInitiator = certificateValidator.constructed()[0]!!
+        //val certificateValidatorResponder = certificateValidator.constructed()[1]!!
+        whenever(certificateValidatorInitiator.validate(any(), any())).thenThrow(InvalidPeerCertificate(""))
+
+        // Step 1: initiator sending hello message to responder.
+        val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
+        authenticationProtocolB.receiveInitiatorHello(initiatorHelloMsg)
+
+        // Step 2: responder sending hello message to initiator.
+        val responderHelloMsg = authenticationProtocolB.generateResponderHello()
+        authenticationProtocolA.receiveResponderHello(responderHelloMsg)
+
+        // Both sides generate handshake secrets.
+        authenticationProtocolA.generateHandshakeSecrets()
+        authenticationProtocolB.generateHandshakeSecrets()
+
+        // Step 3: initiator sending handshake message and responder validating it.
+        val signingCallbackForA = { data: ByteArray ->
+            signature.initSign(partyASessionKey.private)
+            signature.update(data)
+            signature.sign()
+        }
+        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
+
+        authenticationProtocolB.validatePeerHandshakeMessage(
+            initiatorHandshakeMessage,
+            aliceX500Name,
+            partyASessionKey.public,
+            SignatureSpec.ECDSA_SHA256,
+        )
+
+        // Step 4: responder sending handshake message and initiator validating it.
+        val signingCallbackForB = { data: ByteArray ->
+            signature.initSign(partyBSessionKey.private)
+            signature.update(data)
+            signature.sign()
+        }
+        val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForB)
+
+        assertThrows<InvalidPeerCertificate> {
+            authenticationProtocolA.validatePeerHandshakeMessage(
+                responderHandshakeMessage, aliceX500Name, partyBSessionKey.public, SignatureSpec.ECDSA_SHA256
+            )
+        }
+
+        certificateValidator.close()
+    }
+
+    @Test
+    fun `session authentication fails for responder if initiator doesn't send a certificate`() {
+        val certificateValidator = Mockito.mockConstruction(CertificateValidator::class.java)
+        val ourCertificates = listOf<String>()
+        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), ourCertificates, mock())
+
+        val authenticationProtocolA = AuthenticationProtocolInitiator(
+            sessionId,
+            setOf(ProtocolMode.AUTHENTICATION_ONLY),
+            partyAMaxMessageSize,
+            partyASessionKey.public,
+            sessionId,
+            CertificateCheckMode.NoCertificate
+        )
+        val authenticationProtocolB = AuthenticationProtocolResponder(
+            sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize, certCheckMode
+        )
+
+        // Step 1: initiator sending hello message to responder.
+        val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
+        authenticationProtocolB.receiveInitiatorHello(initiatorHelloMsg)
+
+        // Step 2: responder sending hello message to initiator.
+        val responderHelloMsg = authenticationProtocolB.generateResponderHello()
+        authenticationProtocolA.receiveResponderHello(responderHelloMsg)
+
+        // Both sides generate handshake secrets.
+        authenticationProtocolA.generateHandshakeSecrets()
+        authenticationProtocolB.generateHandshakeSecrets()
+
+        // Step 3: initiator sending handshake message and responder validating it.
+        val signingCallbackForA = { data: ByteArray ->
+            signature.initSign(partyASessionKey.private)
+            signature.update(data)
+            signature.sign()
+        }
+        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
+
+        assertThrows<InvalidPeerCertificate> { authenticationProtocolB.validatePeerHandshakeMessage(
+            initiatorHandshakeMessage,
+            aliceX500Name,
+            partyASessionKey.public,
+            SignatureSpec.ECDSA_SHA256,
+        )
+        }
+        certificateValidator.close()
+    }
+
+    @Test
+    fun `session authentication fails for initiator if responder doesn't send a certificate`() {
+        val certificateValidator = Mockito.mockConstruction(CertificateValidator::class.java)
+        val ourCertificates = listOf<String>()
+        val certCheckMode = CertificateCheckMode.CheckCertificate(mock(), ourCertificates, mock())
+
+        val authenticationProtocolA = AuthenticationProtocolInitiator(
+            sessionId,
+            setOf(ProtocolMode.AUTHENTICATION_ONLY),
+            partyAMaxMessageSize,
+            partyASessionKey.public,
+            sessionId,
+            certCheckMode
+        )
+        val authenticationProtocolB = AuthenticationProtocolResponder(
+            sessionId, setOf(ProtocolMode.AUTHENTICATION_ONLY), partyBMaxMessageSize, CertificateCheckMode.NoCertificate
+        )
+
+        // Step 1: initiator sending hello message to responder.
+        val initiatorHelloMsg = authenticationProtocolA.generateInitiatorHello()
+        authenticationProtocolB.receiveInitiatorHello(initiatorHelloMsg)
+
+        // Step 2: responder sending hello message to initiator.
+        val responderHelloMsg = authenticationProtocolB.generateResponderHello()
+        authenticationProtocolA.receiveResponderHello(responderHelloMsg)
+
+        // Both sides generate handshake secrets.
+        authenticationProtocolA.generateHandshakeSecrets()
+        authenticationProtocolB.generateHandshakeSecrets()
+
+        // Step 3: initiator sending handshake message and responder validating it.
+        val signingCallbackForA = { data: ByteArray ->
+            signature.initSign(partyASessionKey.private)
+            signature.update(data)
+            signature.sign()
+        }
+        val initiatorHandshakeMessage = authenticationProtocolA.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForA)
+
+        authenticationProtocolB.validatePeerHandshakeMessage(
+            initiatorHandshakeMessage,
+            aliceX500Name,
+            partyASessionKey.public,
+            SignatureSpec.ECDSA_SHA256,
+        )
+
+        // Step 4: responder sending handshake message and initiator validating it.
+        val signingCallbackForB = { data: ByteArray ->
+            signature.initSign(partyBSessionKey.private)
+            signature.update(data)
+            signature.sign()
+        }
+        val responderHandshakeMessage = authenticationProtocolB.generateOurHandshakeMessage(partyBSessionKey.public, signingCallbackForB)
+
+        assertThrows<InvalidPeerCertificate> {
+            authenticationProtocolA.validatePeerHandshakeMessage(
+                responderHandshakeMessage, aliceX500Name, partyBSessionKey.public, SignatureSpec.ECDSA_SHA256
+            )
+        }
+
+        certificateValidator.close()
     }
 }

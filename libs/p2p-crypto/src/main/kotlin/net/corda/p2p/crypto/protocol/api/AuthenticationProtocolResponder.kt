@@ -194,15 +194,25 @@ class AuthenticationProtocolResponder(val sessionId: String,
 
                 agreedMaxMessageSize = min(ourMaxMessageSize, this)
             }
-            certificateValidator?.validate(
-                initiatorHandshakePayload.initiatorEncryptedExtensions.initiatorCertificate,
-                initiatorX500Name
-            )
+            validateCertificate(initiatorHandshakePayload, initiatorX500Name)
 
             handshakeIdentityData =  HandshakeIdentityData(initiatorHandshakePayload.initiatorPublicKeyHash.array(),
                 initiatorHandshakePayload.initiatorEncryptedExtensions.responderPublicKeyHash.array(),
                 initiatorHandshakePayload.initiatorEncryptedExtensions.groupId)
             handshakeIdentityData!!
+        }
+    }
+
+    private fun validateCertificate(initiatorHandshakePayload: InitiatorHandshakePayload, initiatorX500Name: MemberX500Name) {
+        if (certificateCheckMode != CertificateCheckMode.NoCertificate) {
+            if (initiatorHandshakePayload.initiatorEncryptedExtensions.initiatorCertificate != null) {
+            certificateValidator!!.validate(
+                initiatorHandshakePayload.initiatorEncryptedExtensions.initiatorCertificate,
+                initiatorX500Name
+            )
+            } else {
+                throw InvalidPeerCertificate("No peer certificate was sent in the initiator handshake message.")
+            }
         }
     }
 
