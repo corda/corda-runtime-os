@@ -297,7 +297,7 @@ class CertificatesRpcOpsImplTest {
             }
 
             assertThrows<InvalidInputDataException> {
-                certificatesOps.importCertificateChain("rpc-api-tls", "alias", null, listOf(certificate))
+                certificatesOps.importCertificateChain("rpc-api-tls", null, "alias", listOf(certificate))
             }
         }
         @Test
@@ -307,7 +307,7 @@ class CertificatesRpcOpsImplTest {
                 on { content } doReturn certificateText.byteInputStream()
             }
 
-            certificatesOps.importCertificateChain("p2p-tls", "alias", null, listOf(certificate))
+            certificatesOps.importCertificateChain("p2p-tls", null, "alias", listOf(certificate))
 
             verify(certificatesClient).importCertificates(CertificateUsage.P2P_TLS, null, "alias", certificateText)
         }
@@ -319,7 +319,7 @@ class CertificatesRpcOpsImplTest {
                 on { content } doReturn certificateText.byteInputStream()
             }
 
-            certificatesOps.importCertificateChain("p2p-tls", "alias", "123123123123", listOf(certificate))
+            certificatesOps.importCertificateChain("p2p-tls", "123123123123", "alias", listOf(certificate))
 
             verify(certificatesClient).importCertificates(
                 CertificateUsage.P2P_TLS,
@@ -337,14 +337,14 @@ class CertificatesRpcOpsImplTest {
             }
 
             assertThrows<InvalidInputDataException> {
-                certificatesOps.importCertificateChain("nop", "alias", "123123123123", listOf(certificate))
+                certificatesOps.importCertificateChain("nop", "123123123123", "alias", listOf(certificate))
             }
         }
 
         @Test
         fun `no certificates throws an exception`() {
             assertThrows<InvalidInputDataException> {
-                certificatesOps.importCertificateChain("rpc-api-tls", "alias", null, emptyList())
+                certificatesOps.importCertificateChain("rpc-api-tls", null, "alias", emptyList())
             }
         }
 
@@ -356,7 +356,7 @@ class CertificatesRpcOpsImplTest {
             }
 
             val details = assertThrows<InvalidInputDataException> {
-                certificatesOps.importCertificateChain("rpc-api-tls", "", null, listOf(certificate))
+                certificatesOps.importCertificateChain("rpc-api-tls", null, "", listOf(certificate))
             }.details
             assertThat(details).containsKey("alias")
         }
@@ -371,7 +371,7 @@ class CertificatesRpcOpsImplTest {
                 on { content } doReturn ("$certificateText\n$certificateText").byteInputStream()
             }
 
-            certificatesOps.importCertificateChain("rpc-api-tls", "alias", null, listOf(certificate1, certificate2))
+            certificatesOps.importCertificateChain("rpc-api-tls", null, "alias", listOf(certificate1, certificate2))
 
             verify(certificatesClient).importCertificates(
                 CertificateUsage.RPC_API_TLS, null, "alias", "$certificateText\n$certificateText\n$certificateText"

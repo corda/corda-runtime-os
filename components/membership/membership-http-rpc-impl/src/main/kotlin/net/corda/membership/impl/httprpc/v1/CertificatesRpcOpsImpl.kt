@@ -137,8 +137,8 @@ class CertificatesRpcOpsImpl @Activate constructor(
 
     override fun importCertificateChain(
         usage: String,
-        alias: String,
         holdingIdentityId: String?,
+        alias: String,
         certificates: List<HttpFileUpload>,
     ) {
         if (alias.isBlank()) {
