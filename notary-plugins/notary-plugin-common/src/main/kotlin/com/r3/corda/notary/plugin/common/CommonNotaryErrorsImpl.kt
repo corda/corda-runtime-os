@@ -2,15 +2,12 @@ package com.r3.corda.notary.plugin.common
 
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateDetails
 import net.corda.v5.application.uniqueness.model.UniquenessCheckStateRef
-import net.corda.v5.ledger.notary.plugin.core.NotaryErrorGeneral
-import net.corda.v5.ledger.notary.plugin.core.NotaryErrorInputStateConflict
-import net.corda.v5.ledger.notary.plugin.core.NotaryErrorInputStateUnknown
-import net.corda.v5.ledger.notary.plugin.core.NotaryErrorMalformedRequest
-import net.corda.v5.ledger.notary.plugin.core.NotaryErrorReferenceStateConflict
-import net.corda.v5.ledger.notary.plugin.core.NotaryErrorReferenceStateUnknown
-import net.corda.v5.ledger.notary.plugin.core.NotaryErrorTimeWindowOutOfBounds
 import java.time.Instant
 
+/**
+ * This class contains implementation of error types that are common for plugins that use the uniqueness checker (e.g.
+ * non-validating and validating notary plugins)
+ */
 data class NotaryErrorInputStateConflictImpl(
     override val conflictingStates: List<UniquenessCheckStateDetails>
 ) : NotaryErrorInputStateConflict

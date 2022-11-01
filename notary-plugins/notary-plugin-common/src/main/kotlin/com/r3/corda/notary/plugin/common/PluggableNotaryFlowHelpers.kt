@@ -17,9 +17,6 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.toBase58
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.ledger.common.Party
-import net.corda.v5.ledger.notary.plugin.core.NotarisationRequest
-import net.corda.v5.ledger.notary.plugin.core.NotarisationRequestSignature
-import net.corda.v5.ledger.notary.plugin.core.NotarisationResponse
 import net.corda.v5.ledger.notary.plugin.core.NotaryError
 import net.corda.v5.membership.MemberInfo
 import java.security.PublicKey
@@ -70,7 +67,7 @@ fun generateRequestSignature(notarisationRequest: NotarisationRequest,
         myLegalIdentity,
         SignatureSpec.ECDSA_SHA256 // TODO This shouldn't be hardcoded?
     )
-    return NotarisationRequestSignatureImpl(signature, memberInfo.platformVersion)
+    return NotarisationRequestSignature(signature, memberInfo.platformVersion)
 }
 
 /**
@@ -94,7 +91,7 @@ fun UniquenessCheckResponse.toNotarisationResponse(): NotarisationResponse {
             )
         )
     }
-    return NotarisationResponseImpl(signature, notaryError)
+    return NotarisationResponse(signature, notaryError)
 }
 
 /**

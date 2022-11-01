@@ -1,8 +1,8 @@
 package com.r3.corda.notary.plugin.nonvalidating
 
-import com.r3.corda.notary.plugin.common.BaseNotarisationPayloadImpl
+import com.r3.corda.notary.plugin.common.BaseNotarisationPayload
+import com.r3.corda.notary.plugin.common.NotarisationRequestSignature
 import net.corda.v5.base.annotations.CordaSerializable
-import net.corda.v5.ledger.notary.plugin.core.NotarisationRequestSignature
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 
 /**
@@ -15,7 +15,7 @@ class NonValidatingNotarisationPayload(
     // TODO CORE-4667 needs to be communicated in a more elegant way as part of Ledger / Transcend
     val numOutputs: Int,
     requestSignature: NotarisationRequestSignature
-): BaseNotarisationPayloadImpl(
+): BaseNotarisationPayload(
     transaction,
     requestSignature,
     listOf(UtxoSignedTransaction::class.java)

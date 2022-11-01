@@ -1,8 +1,8 @@
 package com.r3.corda.notary.plugin.nonvalidating
 
-import com.r3.corda.notary.plugin.common.NotarisationRequestImpl
 import com.r3.corda.notary.plugin.common.toNotarisationResponse
 import com.r3.corda.notary.plugin.common.validateRequestSignature
+import com.r3.corda.notary.plugin.common.NotarisationRequest
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.InitiatedBy
@@ -14,7 +14,6 @@ import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.v5.ledger.common.Party
-import net.corda.v5.ledger.notary.plugin.core.NotarisationResponse
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.uniqueness.client.LedgerUniquenessCheckerClientService
 import org.slf4j.Logger
@@ -51,15 +50,16 @@ class NonValidatingNotaryServerFlowImpl : ResponderFlow {
      * 2. Run initial validation (signature etc.)
      * 3. Run verification
      * 4. Request uniqueness checking using the [LedgerUniquenessCheckerClientService]
-     * 5. Send the [NotarisationResponse] back to the client including the specific
+     * 5. Send the [NotarisationResponse][com.r3.corda.notary.plugin.common.response.NotarisationResponse]
+     * back to the client including the specific
      * [NotaryError][net.corda.v5.ledger.notary.plugin.core.NotaryError] if applicable
      */
     @Suspendable
     override fun call(session: FlowSession) {
         val requestPayload = session.receive(NonValidatingNotarisationPayload::class.java)
 
-        val txParts = validateRequest(session, requestPayload)
-        val request = NotarisationRequestImpl(txParts.inputs, txParts.id)
+        val txDetails = validateRequest(session, requestPayload)
+        val request = NotarisationRequest(txDetails.inputs, txDetails.id)
 
         // TODO This shouldn't ever fail but should add an error handling
         // TODO Discuss this with MGM team but should we able to look up members by X500 name?
@@ -77,19 +77,19 @@ class NonValidatingNotaryServerFlowImpl : ResponderFlow {
         verifyTransaction(requestPayload)
 
         val uniquenessResponse = clientService.requestUniquenessCheck(
-            txParts.id.toString(),
-            txParts.inputs.map { it.toString() },
-            txParts.references.map { it.toString() },
-            txParts.numOutputs,
+            txDetails.id.toString(),
+            txDetails.inputs.map { it.toString() },
+            txDetails.references.map { it.toString() },
+            txDetails.numOutputs,
 
             // TODO CORE-7251 LedgerTransaction has a non-nullable time window
             //  but the lower bound should be nullable
-            txParts.timeWindow.from,
-            txParts.timeWindow.until
+            txDetails.timeWindow.from,
+            txDetails.timeWindow.until
         )
 
         logger.debug {
-            "Uniqueness check completed for transaction with Tx [${txParts.id}], " +
+            "Uniqueness check completed for transaction with Tx [${txDetails.id}], " +
                     "result is: ${uniquenessResponse.result}"
         }
 

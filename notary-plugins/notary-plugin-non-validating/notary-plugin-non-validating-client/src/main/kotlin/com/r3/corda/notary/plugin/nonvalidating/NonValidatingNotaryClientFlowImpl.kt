@@ -1,8 +1,9 @@
 package com.r3.corda.notary.plugin.nonvalidating
 
-import com.r3.corda.notary.plugin.common.NotarisationRequestImpl
 import com.r3.corda.notary.plugin.common.NotaryException
 import com.r3.corda.notary.plugin.common.generateRequestSignature
+import com.r3.corda.notary.plugin.common.NotarisationRequest
+import com.r3.corda.notary.plugin.common.NotarisationResponse
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.flows.CordaInject
@@ -13,7 +14,6 @@ import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.notary.plugin.api.PluggableNotaryClientFlow
-import net.corda.v5.ledger.notary.plugin.core.NotarisationResponse
 import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 
 /**
@@ -69,7 +69,7 @@ class NonValidatingNotaryClientFlowImpl(
      */
     @Suspendable
     private fun generatePayload(stx: UtxoSignedTransaction): NonValidatingNotarisationPayload {
-        val notarisationRequest = NotarisationRequestImpl(
+        val notarisationRequest = NotarisationRequest(
             stx.toLedgerTransaction().inputStateAndRefs.map { it.ref },
             stx.id
         )

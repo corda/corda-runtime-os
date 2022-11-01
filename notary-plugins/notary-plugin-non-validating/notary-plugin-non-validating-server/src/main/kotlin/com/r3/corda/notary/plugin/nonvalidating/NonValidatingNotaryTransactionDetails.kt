@@ -5,8 +5,8 @@ import net.corda.v5.ledger.utxo.StateRef
 import net.corda.v5.ledger.utxo.TimeWindow
 
 /**
- * The minimum amount of information needed to notarise a transaction. Note that this does not include
- * any sensitive transaction details.
+ * A representation of a transaction (non-validating). It is easier to perform operations on this representation than
+ * on the actual transaction object (e.g. FilteredTransaction).
  */
 data class NonValidatingNotaryTransactionDetails(
     val id: SecureHash,
