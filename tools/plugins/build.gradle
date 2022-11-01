@@ -90,6 +90,50 @@ tasks.named('jar').configure {
     }
 }
 
+tasks.register('publishBuildkitImage' , BuildkitBuild) {
+    def cordaCliIncluded = gradle.includedBuilds.collect { it.name == "corda-cli-plugin-host" }.contains(true)
+    def cordaApiIncluded = gradle.includedBuilds.collect { it.name == "corda-api" }.contains(true)
+    it.subDir = "plugins/"
+    it.containerName = project.name
+    it.overrideEntryName = "cli"
+    it.sourceFiles.setFrom(otherPluginsTasks)
+
+    if (project.hasProperty('cliBaseImage')) {
+        it.baseImageName = cliBaseImage
+    } else {
+        // cater for local composite build
+        it.baseImageName = (cordaCliIncluded) ? "corda-os-docker-dev.software.r3.com/corda-os-cli" : "corda-os-docker.software.r3.com/corda-os-cli"
+    }
+
+    if (project.hasProperty('baseTag')) {
+        it.baseImageTag = baseTag
+    } else {
+        it.baseImageTag = (cordaCliIncluded) ? "latest-local" : "unstable"
+    }
+
+    if(project.hasProperty('tag')){
+        it.containerTag = tag
+    }
+
+    if (cordaCliIncluded && cordaApiIncluded) {
+        logger.lifecycle("corda-cli-plugin-host project detected in composite build logic, building base image from include project")
+        dependsOn gradle.includedBuild("corda-api").task(':application:jar')
+        dependsOn gradle.includedBuild("corda-cli-plugin-host").task(':app:publishBuildkitImage')
+    }
+
+    if (project.hasProperty('isReleaseCandidate')) {
+        releaseCandidate = isReleaseCandidate.toBoolean()
+    }
+
+    if (project.hasProperty('isNightly')) {
+        nightlyBuild = isNightly.toBoolean()
+    }
+
+    if (project.hasProperty('isPreTest')) {
+        preTest = isPreTest.toBoolean()
+    }
+}
+
 tasks.register('publishOSGiImage', DeployableContainerBuilder) {
 
     def cordaCliIncluded = gradle.includedBuilds.collect { it.name == "corda-cli-plugin-host" }.contains(true)
