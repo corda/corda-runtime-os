@@ -30,14 +30,6 @@ class VirtualNodeValidationService(
         require(upgradeCpi.cpiId.name == currentCpi.cpiId.name) {
             "Upgrade CPI must have the same name as the current CPI."
         }
-        // compares ASCII value, for example:
-        // 1.0.1-SNAPSHOT > 1.0.0-SNAPSHOT,
-        // 1.2.0-ALPHA > 1.1.6-BETA,
-        // 1.2.0-SNAPSHOT > 1.2.0-ALPHA (obviously String.compareTo() cannot tell the difference between phonetic alphabet and snapshot,
-        // therefore this simple mechanism will value "-SNAPSHOT" > "-ALPHA"). A custom comparator could improve this validation.
-        require(upgradeCpi.cpiId.version > currentCpi.cpiId.version) {
-            "Upgrade CPI must have the same name as the current CPI."
-        }
 
         require(upgradeCpi.cpiId.signerSummaryHash == currentCpi.cpiId.signerSummaryHash) {
             "Upgrade CPI must have the same signature summary hash."

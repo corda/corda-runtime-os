@@ -58,16 +58,5 @@ interface VirtualNodeRPCOps : RpcOps {
         virtualNodeShortId: String,
         @HttpRpcPathParameter(description = "The file checksum of the CPI to upgrade to.")
         cpiFileChecksum: String
-    ): AsyncOperationResponse
-
-    @HttpRpcGET(
-        path = "/status/{requestId}",
-        title = "Get the status of an asynchronous virtual node maintenance request.",
-        description = "Get the status of an asynchronous virtual node maintenance request.",
-        responseDescription = "The details of the asynchronous request."
-    )
-    fun virtualNodeStatus(
-        @HttpRpcPathParameter(description = "Identifier of the asynchronous request.")
-        requestId: String
-    ): ResponseEntity<UpgradeVirtualNodeStatus>
+    ): VirtualNodeInfo
 }
