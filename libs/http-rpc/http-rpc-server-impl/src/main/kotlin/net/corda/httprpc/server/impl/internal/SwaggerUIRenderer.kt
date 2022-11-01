@@ -76,11 +76,8 @@ internal class SwaggerUIRenderer(private val configurationProvider: HttpRpcSetti
                         presets: [SwaggerUIBundle.presets.apis],
                         oauth2RedirectUrl: `${"$"}{window.location.protocol}//${"$"}{window.location.host}${ctx.contextPath()}/webjars/swagger-ui/$swaggerUiVersion/oauth2-redirect.html`,
                         onComplete: function() {
-                    // "basicAuth" is the key name of the security scheme in securityDefinitions
-                    ui.preauthorizeBasic("basicAuth", "", "");
-                    
-                    ${getInitOAuth()}
-                  }
+                            ${getInitOAuth()}
+                        }
                     });
                 </script>
             </body>""".trimIndent()

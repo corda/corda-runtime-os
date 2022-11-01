@@ -1,5 +1,6 @@
 package net.corda.crypto.component.impl
 
+import net.corda.crypto.core.InvalidParamsException
 import net.corda.crypto.core.KeyAlreadyExistsException
 import net.corda.messaging.api.exception.CordaRPCAPIResponderException
 import net.corda.v5.crypto.exceptions.CryptoException
@@ -19,6 +20,7 @@ class ExceptionsUtilsTests {
             CryptoSignatureException::class.java,
             CryptoRetryException::class.java,
             KeyAlreadyExistsException::class.java,
+            InvalidParamsException::class.java,
         )
     }
 

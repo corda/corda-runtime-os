@@ -4,6 +4,7 @@ import net.corda.db.schema.DbSchema
 import net.corda.libs.packaging.core.CpiIdentifier
 import java.io.Serializable
 import java.time.Instant
+import java.util.UUID
 import javax.persistence.Column
 import javax.persistence.Embeddable
 import javax.persistence.EmbeddedId
@@ -24,6 +25,8 @@ class CpkDbChangeLogEntity(
     val fileChecksum: String,
     @Column(name = "content", nullable = false)
     val content: String,
+    @Column(name = "changeset_id", nullable = false)
+    val changesetId: UUID
 ) {
     // This structure does not distinguish the root changelogs from changelog include files
     // (or CSVs, which we do not need to support). So, to find the root, you need to look for a filename

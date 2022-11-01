@@ -18,7 +18,7 @@ import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
 
-val TEST_CLOCK = Clock.fixed(Instant.now(), ZoneId.of("UTC"))
+val TEST_CLOCK: Clock = Clock.fixed(Instant.now(), ZoneId.of("UTC"))
 val ALICE_X500_HOLDING_IDENTITY = HoldingIdentity("CN=Alice, O=Alice Corp, L=LDN, C=GB", "group1")
 
 class AbstractConsensualLedgerExternalEventFactoryTest {

@@ -1,6 +1,8 @@
 package net.corda.ledger.consensual.flow.impl.flows.finality
 
 import net.corda.ledger.common.data.transaction.SignableData
+import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
+import net.corda.ledger.consensual.flow.impl.persistence.TransactionStatus
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.flows.CordaInject
@@ -33,6 +35,9 @@ class ConsensualFinalityFlow(
     lateinit var memberLookup: MemberLookup
 
     @CordaInject
+    lateinit var persistenceService: ConsensualLedgerPersistenceService
+
+    @CordaInject
     lateinit var serializationService: SerializationService
 
     @Suspendable
@@ -59,7 +64,7 @@ class ConsensualFinalityFlow(
         }
 
         // Should this also be a [CordaRuntimeException]? Or make the others [IllegalArgumentException]s?
-        val missingSigningKeys = signedTransaction.getMissingSigningKeys()
+        val missingSigningKeys = signedTransaction.getMissingSignatories()
         // Check if all missing signing keys are covered by the sessions.
         require(sessionPublicKeys.values.flatten().containsAll(missingSigningKeys)) {
             "Required signatures $missingSigningKeys but ledger keys for the passed in sessions are $sessionPublicKeys"
@@ -123,8 +128,7 @@ class ConsensualFinalityFlow(
             }
         }
 
-        // TODO [CORE-7055] Record the transaction
-
+        persistenceService.persist(signedByParticipantsTransaction, TransactionStatus.VERIFIED)
         log.debug { "Recorded signed transaction ${signedTransaction.id}" }
 
         // TODO Consider removing

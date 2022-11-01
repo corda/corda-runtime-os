@@ -150,6 +150,7 @@ class MemberOpsServiceProcessor(
                 registrationId.toString(),
                 context.requestTimestamp,
                 registrationStatus,
+                result?.message,
                 REGISTRATION_PROTOCOL_VERSION,
                 KeyValuePairList(emptyList()),
                 KeyValuePairList(emptyList())

@@ -31,6 +31,7 @@ import net.corda.membership.client.dto.MemberRegistrationRequestDto
 import net.corda.membership.client.dto.RegistrationRequestProgressDto
 import net.corda.membership.client.dto.RegistrationRequestStatusDto
 import net.corda.membership.client.dto.RegistrationStatusDto
+import net.corda.membership.client.RegistrationProgressNotFoundException
 import net.corda.membership.lib.toWire
 import net.corda.messaging.api.publisher.RPCSender
 import net.corda.messaging.api.publisher.factory.PublisherFactory
@@ -219,6 +220,7 @@ class MemberOpsClientImpl @Activate constructor(
                     requestId,
                     null,
                     RegistrationRpcStatus.NOT_SUBMITTED.toString(),
+                    e.message ?: "No cause was provided for failure.",
                     MemberInfoSubmittedDto(emptyMap())
                 )
             }
@@ -234,7 +236,15 @@ class MemberOpsClientImpl @Activate constructor(
                     RegistrationStatusRpcRequest(holdingIdentityShortHash.toString())
                 )
 
-                registrationsResponse(request.sendRequest())
+                val result = registrationsResponse(request.sendRequest())
+                if(result.isEmpty()) {
+                    throw RegistrationProgressNotFoundException(
+                        "There are no requests for '$holdingIdentityShortHash' holding identity."
+                    )
+                }
+                result
+            } catch (e: RegistrationProgressNotFoundException) {
+                throw e
             } catch (e: Exception) {
                 logger.warn("Could not check statuses of registration requests made by holding identity ID" +
                         " [${holdingIdentityShortHash}].", e)
@@ -259,8 +269,11 @@ class MemberOpsClientImpl @Activate constructor(
                 )
 
                 val response: RegistrationStatusResponse = request.sendRequest()
-
-                return response.status?.toDto()
+                val status = response.status
+                    ?: throw RegistrationProgressNotFoundException("There is no request with '$registrationRequestId' id.")
+                return status.toDto()
+            } catch (e: RegistrationProgressNotFoundException) {
+                throw e
             } catch (e: Exception) {
                 logger.warn("Could not check status of registration request `$registrationRequestId` made by holding identity ID" +
                         " [${holdingIdentityShortHash}].", e)
@@ -297,6 +310,7 @@ class MemberOpsClientImpl @Activate constructor(
                 this.registrationId,
                 this.registrationSent,
                 this.registrationStatus.toString(),
+                this.reason ?: "Submitting registration request was successful.",
                 MemberInfoSubmittedDto(
                     mapOf(
                         "registrationProtocolVersion" to this.registrationProtocolVersion.toString(),

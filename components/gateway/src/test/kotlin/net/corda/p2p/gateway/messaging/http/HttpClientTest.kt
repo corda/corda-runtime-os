@@ -203,7 +203,7 @@ class HttpClientTest {
         val future = client.write(byteArrayOf(1, 5))
 
         assertSoftly {
-            it.assertThat(request.firstValue.uri()).isEqualTo("https://www.r3.com:3023/gateway/send")
+            it.assertThat(request.firstValue.uri()).isEqualTo("https://www.r3.com:3023")
             it.assertThat(request.firstValue.method()).isEqualTo(HttpMethod.POST)
             it.assertThat(request.firstValue.content().array()).isEqualTo(byteArrayOf(1, 5))
         }

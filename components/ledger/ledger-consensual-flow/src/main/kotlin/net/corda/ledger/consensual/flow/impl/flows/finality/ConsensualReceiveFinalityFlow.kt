@@ -1,5 +1,7 @@
 package net.corda.ledger.consensual.flow.impl.flows.finality
 
+import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
+import net.corda.ledger.consensual.flow.impl.persistence.TransactionStatus
 import net.corda.v5.application.flows.CordaInject
 import net.corda.v5.application.flows.SubFlow
 import net.corda.v5.application.membership.MemberLookup
@@ -26,6 +28,9 @@ class ConsensualReceiveFinalityFlow(
     lateinit var memberLookup: MemberLookup
 
     @CordaInject
+    lateinit var persistenceService: ConsensualLedgerPersistenceService
+
+    @CordaInject
     lateinit var serializationService: SerializationService
 
     @Suspendable
@@ -43,7 +48,7 @@ class ConsensualReceiveFinalityFlow(
 
         // We check which of our keys are required.
         val myExpectedSigningKeys = signedTransaction
-            .getMissingSigningKeys()
+            .getMissingSignatories()
             .intersect(
                     memberLookup
                         .myInfo()
@@ -71,7 +76,7 @@ class ConsensualReceiveFinalityFlow(
 
         signedTransactionToFinalize.verifySignatures()
 
-        // TODO [CORE-7055] Record the transaction
+        persistenceService.persist(signedTransactionToFinalize, TransactionStatus.VERIFIED)
         log.debug { "Recorded signed transaction $transactionId" }
 
         session.send(Unit)
