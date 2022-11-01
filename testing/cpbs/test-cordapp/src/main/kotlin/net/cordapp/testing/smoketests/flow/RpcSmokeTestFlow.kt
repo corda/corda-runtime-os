@@ -11,6 +11,7 @@ import net.corda.v5.application.flows.RPCRequestData
 import net.corda.v5.application.flows.RPCStartableFlow
 import net.corda.v5.application.flows.getRequestBodyAs
 import net.corda.v5.application.marshalling.JsonMarshallingService
+import net.corda.v5.application.marshalling.parse
 import net.corda.v5.application.membership.MemberLookup
 import net.corda.v5.application.messaging.FlowMessaging
 import net.corda.v5.application.messaging.sendAndReceive
@@ -25,6 +26,9 @@ import net.corda.v5.crypto.exceptions.CryptoSignatureException
 import net.cordapp.testing.bundles.dogs.Dog
 import net.cordapp.testing.smoketests.flow.context.launchContextPropagationFlows
 import net.cordapp.testing.smoketests.flow.messages.InitiatedSmokeTestMessage
+import net.cordapp.testing.smoketests.flow.messages.JsonSerializationFlowOutput
+import net.cordapp.testing.smoketests.flow.messages.JsonSerializationInput
+import net.cordapp.testing.smoketests.flow.messages.JsonSerializationOutput
 import net.cordapp.testing.smoketests.flow.messages.RpcSmokeTestInput
 import net.cordapp.testing.smoketests.flow.messages.RpcSmokeTestOutput
 
@@ -59,6 +63,7 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         "context_propagation" to { contextPropagation() },
         "serialization" to this::serialization,
         "lookup_member_by_x500_name" to this::lookupMember,
+        "json_serialization" to this::jsonSerialization
     )
 
     @CordaInject
@@ -323,7 +328,12 @@ class RpcSmokeTestFlow : RPCStartableFlow {
         log.info("Crypto - Signing bytes $bytesToSign with public key '$publicKey'")
         val signedBytes = signingService.sign(bytesToSign, publicKey, SignatureSpec.ECDSA_SHA256)
         log.info("Crypto - Signature $signedBytes received")
-        digitalSignatureVerificationService.verify(publicKey, SignatureSpec.ECDSA_SHA256, signedBytes.bytes, bytesToSign)
+        digitalSignatureVerificationService.verify(
+            publicKey,
+            SignatureSpec.ECDSA_SHA256,
+            signedBytes.bytes,
+            bytesToSign
+        )
         log.info("Crypto - Verified $signedBytes as the signature of $bytesToSign")
         return true.toString()
     }
@@ -370,5 +380,28 @@ class RpcSmokeTestFlow : RPCStartableFlow {
             checkNotNull(this.command) { "No smoke test command received" },
             checkNotNull(commandMap[this.command]) { "command '${this.command}' not recognised" }.invoke(this)
         )
+    }
+
+    @Suspendable
+    private fun jsonSerialization(input: RpcSmokeTestInput): String {
+        // First test checks custom serializers with message defined in the CorDapp
+        // this should output json with 2 fields each with test-string as the value
+        val jsonString = jsonMarshallingService.format(JsonSerializationInput("test-string"))
+        // this should combine both of those fields
+        val jsonOutput = jsonMarshallingService.parse<JsonSerializationOutput>(jsonString)
+        // when the second serializer runs during format of JsonSerializationFlowOutput, we should see the combined value
+        // outputted as "serialized-implicitly"
+
+        // Second test checks platform custom serializer/deserializer of MemberX500Name, the serializer should be run
+        // implicitly when JsonSerializationFlowOutput is formatted
+        val memberX500NameString = input.getValue("vnode")
+        val memberX500NameDeserialized = jsonMarshallingService.parse<MemberX500Name>("\"$memberX500NameString\"")
+
+        val output = JsonSerializationFlowOutput(
+            firstTest = jsonOutput,
+            secondTest = memberX500NameDeserialized
+        )
+
+        return jsonMarshallingService.format(output)
     }
 }

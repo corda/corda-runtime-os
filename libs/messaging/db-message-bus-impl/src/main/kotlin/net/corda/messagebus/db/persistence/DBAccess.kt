@@ -9,6 +9,7 @@ import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.messagebus.db.datamodel.TransactionState
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
 import net.corda.orm.utils.transaction
+import net.corda.v5.base.util.debug
 import net.corda.v5.base.util.uncheckedCast
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -359,13 +360,16 @@ class DBAccess(
         } catch (e: Exception) {
             if (allowDuplicate && e.isDuplicate()) {
                 // Someone got here first, not a problem
+                // Ideally this would log at debug, but we're leaving it at info because
+                // the database will have logged an error and we need some way to alert
+                // that it's okay.
                 log.info("Attempt at duplicate record is allowed in this instance.")
                 result
             } else if (!alreadyTriedOnce && e.isTransientDbException()) {
                 // Transient exception may occur when we were stopped on a breakpoint whilst trying to obtain
                 // DB connection from a Hikari pool. If we were paused for long enough Hikari will report a condition
                 // where connection is not available.
-                log.info("Transient DB error, let's try one more time: ${e.message}")
+                log.debug { "Transient DB error, let's try one more time: ${e.message}" }
                 executeWithErrorHandling(operationName, allowDuplicate, true, operation)
             } else {
                 log.error("Error while trying to $operationName. Transaction has been rolled back.", e)

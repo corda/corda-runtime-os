@@ -14,8 +14,8 @@ class PersistTransactionExternalEventFactory : AbstractConsensualLedgerExternalE
     constructor(clock: Clock) : super(clock)
 
     override fun createRequest(parameters: PersistTransactionParameters): Any {
-        return PersistTransaction(parameters.transaction)
+        return PersistTransaction(parameters.transaction, parameters.transactionStatus)
     }
 }
 
-data class PersistTransactionParameters(val transaction: ByteBuffer)
+data class PersistTransactionParameters(val transaction: ByteBuffer, val transactionStatus: String)

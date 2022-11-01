@@ -27,7 +27,7 @@ class DBTopicUtils(
         try {
             topicsTemplate.checkValid(referenceTopicsConfig())
         } catch (e: ConfigException) {
-            log.error("Error validating topic configuration")
+            log.warn("Error validating topic configuration")
         }
 
         val topicTemplateList = topicsTemplate.getObjectList("topics")
@@ -40,12 +40,8 @@ class DBTopicUtils(
             )
 
             entityManagerFactory.transaction { entityManager ->
-                log.info("Attempting to create topic: $topic")
                 if (entityManager.find(TopicEntry::class.java, topic.topic) == null) {
                     entityManager.persist(topic)
-                    log.info("$topic created successfully")
-                } else {
-                    log.info("$topic already exists in database")
                 }
             }
         }

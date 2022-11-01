@@ -160,11 +160,15 @@ class FlowMessagingImpl @Activate constructor(
         received: Map<String, ByteArray>,
         receiveType: Map<FlowSessionInternal, Class<out Any>>
     ): Map<FlowSession, Any> {
-        return uncheckedCast(receiveType.mapValues {
+        // Please DON'T use uncheckedCast() because its behaviour is
+        // not guaranteed, and it often breaks when upgrading Kotlin!
+        // It's more likely that your generic types are wrong anyway.
+        @Suppress("unchecked_cast")
+        return receiveType.mapValues {
             val sessionId = it.key.getSessionId()
             val bytes = received[sessionId] ?: throw CordaRuntimeException("Unexpected error. $sessionId not found in received data.")
             deserializeReceivedPayload(sessionId, bytes, it.value)
-        })
+        } as Map<FlowSession, Class<out Any>>
     }
 
     private fun <R : Any> deserializeReceivedPayload(
