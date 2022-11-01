@@ -57,6 +57,7 @@ fun E2eCluster.uploadTlsCertificate(
         client.start().proxy.importCertificateChain(
             P2P_TENANT_ID,
             TLS_CERT_ALIAS,
+            null,
             listOf(
                 HttpFileUpload(
                     certificatePem.byteInputStream(),

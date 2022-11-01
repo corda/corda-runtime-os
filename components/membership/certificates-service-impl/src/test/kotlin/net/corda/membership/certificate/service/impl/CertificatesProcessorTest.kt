@@ -1,6 +1,6 @@
 package net.corda.membership.certificate.service.impl
 
-import net.corda.data.certificates.CertificateType
+import net.corda.data.certificates.CertificateUsage
 import net.corda.data.certificates.rpc.request.CertificateRpcRequest
 import net.corda.data.certificates.rpc.request.ImportCertificateRpcRequest
 import net.corda.data.certificates.rpc.request.RetrieveCertificateRpcRequest
@@ -9,10 +9,9 @@ import net.corda.data.certificates.rpc.response.CertificateRetrievalRpcResponse
 import net.corda.data.certificates.rpc.response.CertificateRpcResponse
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.CordaDb
-import net.corda.membership.certificates.CertificateUsage.Companion.publicName
+import net.corda.membership.certificates.CertificateUsageUtils.publicName
 import net.corda.membership.certificates.datamodel.Certificate
 import net.corda.membership.certificates.datamodel.ClusterCertificate
-import net.corda.membership.certificates.datamodel.ClusterCertificatePrimaryKey
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.JpaEntitiesSet
 import net.corda.virtualnode.ShortHash
@@ -74,37 +73,40 @@ class CertificatesProcessorTest {
     private val processor = CertificatesProcessor(dbConnectionManager, jpaEntitiesRegistry, virtualNodeInfoReadService)
 
     @Test
-    fun `onNext merge the certificate into the p2p tenant`() {
+    fun `onNext merge the certificate into the P2P_TLS tenant`() {
         val request = CertificateRpcRequest(
-            CertificateType.P2P,
+            CertificateUsage.P2P_TLS,
+            null,
             ImportCertificateRpcRequest("alias", "certificate")
         )
 
         processor.onNext(request, response)
 
         verify(clusterEntityManager).merge(
-            ClusterCertificate(CertificateType.P2P.publicName, "alias", "certificate")
+            ClusterCertificate("alias", CertificateUsage.P2P_TLS.publicName, "certificate")
         )
     }
 
     @Test
     fun `onNext merge the certificate into the RPC API tenant`() {
         val request = CertificateRpcRequest(
-            CertificateType.RPC_API,
+            CertificateUsage.RPC_API_TLS,
+            null,
             ImportCertificateRpcRequest("alias", "certificate")
         )
 
         processor.onNext(request, response)
 
         verify(clusterEntityManager).merge(ClusterCertificate(
-            CertificateType.RPC_API.publicName, "alias", "certificate")
+            "alias", CertificateUsage.RPC_API_TLS.publicName, "certificate")
         )
     }
 
     @Test
     fun `onNext find the certificate from the RPC API tenant`() {
         val request = CertificateRpcRequest(
-            CertificateType.RPC_API,
+            CertificateUsage.RPC_API_TLS,
+            null,
             RetrieveCertificateRpcRequest("alias")
         )
 
@@ -112,16 +114,15 @@ class CertificatesProcessorTest {
 
         verify(clusterEntityManager).find(
             ClusterCertificate::class.java,
-            ClusterCertificatePrimaryKey(
-                CertificateType.RPC_API.publicName, "alias"
-            )
+            "alias",
         )
     }
 
     @Test
-    fun `onNext find the certificate from the P2P tenant`() {
+    fun `onNext find the certificate from the P2P_TLS tenant`() {
         val request = CertificateRpcRequest(
-            CertificateType.P2P,
+            CertificateUsage.P2P_TLS,
+            null,
             RetrieveCertificateRpcRequest("alias")
         )
 
@@ -129,16 +130,14 @@ class CertificatesProcessorTest {
 
         verify(clusterEntityManager).find(
             ClusterCertificate::class.java,
-            ClusterCertificatePrimaryKey(
-                CertificateType.P2P.publicName,
-                "alias",
-            )
+            "alias",
         )
     }
 
     @Test
     fun `onNext find the certificate from the node entity`() {
         val request = CertificateRpcRequest(
+            CertificateUsage.P2P_SESSION,
             nodeTenantId.value,
             RetrieveCertificateRpcRequest("alias")
         )
@@ -154,6 +153,7 @@ class CertificatesProcessorTest {
     @Test
     fun `onNext will close the node factory`() {
         val request = CertificateRpcRequest(
+            CertificateUsage.P2P_SESSION,
             nodeTenantId.value,
             RetrieveCertificateRpcRequest("alias")
         )
@@ -166,7 +166,8 @@ class CertificatesProcessorTest {
     @Test
     fun `onNext will not close the node factory`() {
         val request = CertificateRpcRequest(
-            CertificateType.P2P,
+            CertificateUsage.P2P_TLS,
+            null,
             RetrieveCertificateRpcRequest("alias")
         )
 
@@ -178,18 +179,26 @@ class CertificatesProcessorTest {
     @Test
     fun `onNext merge the certificate into the node entity`() {
         val request = CertificateRpcRequest(
+            CertificateUsage.RPC_API_TLS,
             nodeTenantId.value,
             ImportCertificateRpcRequest("alias", "certificate")
         )
 
         processor.onNext(request, response)
 
-        verify(nodeEntityManager).merge(Certificate("alias", "certificate"))
+        verify(nodeEntityManager).merge(
+            Certificate(
+                "alias",
+                CertificateUsage.RPC_API_TLS.publicName,
+                "certificate",
+            )
+        )
     }
 
     @Test
     fun `onNext returns CertificateRetrievalRpcResponse without value`() {
         val request = CertificateRpcRequest(
+            CertificateUsage.P2P_TLS,
             nodeTenantId.value,
             RetrieveCertificateRpcRequest("alias")
         )
@@ -202,8 +211,9 @@ class CertificatesProcessorTest {
     @Test
     fun `onNext returns CertificateRetrievalRpcResponse with value`() {
         whenever(nodeEntityManager.find(Certificate::class.java, "alias"))
-            .doReturn(Certificate("alias", "certificate"))
+            .doReturn(Certificate("alias", CertificateUsage.P2P_TLS.publicName, "certificate"))
         val request = CertificateRpcRequest(
+            CertificateUsage.P2P_TLS,
             nodeTenantId.value,
             RetrieveCertificateRpcRequest("alias")
         )
@@ -216,7 +226,8 @@ class CertificatesProcessorTest {
     @Test
     fun `onNext will return CertificateImportedRpcResponse`() {
         val request = CertificateRpcRequest(
-            CertificateType.RPC_API,
+            CertificateUsage.RPC_API_TLS,
+            null,
             ImportCertificateRpcRequest("alias", "certificate")
         )
 
@@ -229,7 +240,8 @@ class CertificatesProcessorTest {
     fun `onNext will throw an error if there are any`() {
         whenever(clusterEntityManager.merge(any<ClusterCertificate>())).doThrow(RuntimeException("OOPs"))
         val request = CertificateRpcRequest(
-            CertificateType.RPC_API,
+            CertificateUsage.RPC_API_TLS,
+            null,
             ImportCertificateRpcRequest("alias", "certificate")
         )
 
@@ -241,8 +253,9 @@ class CertificatesProcessorTest {
     @Test
     fun `onNext will throw an error for unexpected request`() {
         val request = CertificateRpcRequest(
-            CertificateType.RPC_API,
-            null
+            CertificateUsage.RPC_API_TLS,
+            null,
+            null,
         )
 
         processor.onNext(request, response)
@@ -253,6 +266,7 @@ class CertificatesProcessorTest {
     @Test
     fun `onNext throws exception for unknown node`() {
         val request = CertificateRpcRequest(
+            CertificateUsage.RPC_API_TLS,
             "Nop",
             ImportCertificateRpcRequest("alias", "certificate")
         )
@@ -266,6 +280,7 @@ class CertificatesProcessorTest {
     fun `onNext throws exception for unknown tenant ID`() {
         whenever(jpaEntitiesRegistry.get(CordaDb.Vault.persistenceUnitName)) doReturn null
         val request = CertificateRpcRequest(
+            CertificateUsage.RPC_API_TLS,
             nodeTenantId.value,
             ImportCertificateRpcRequest("alias", "certificate")
         )

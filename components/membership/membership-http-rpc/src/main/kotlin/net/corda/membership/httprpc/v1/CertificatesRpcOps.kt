@@ -32,16 +32,21 @@ interface CertificatesRpcOps : RpcOps {
      *
      * Example usage:
      * ```
-     * certificatesOps.importCertificateChain(usage = "58B6030FABDD", alias = "cert58B6030FABDD",
+     * certificatesOps.importCertificateChain(usage = "p2p-tls", alias = "cert58B6030FABDD",
      * certificates = "-----BEGIN CERTIFICATE-----\n{truncated for readability}\n-----END CERTIFICATE-----")
      *
-     * certificatesOps.importCertificateChain(usage = "rpc-api", alias = "cert58B6030FABDD",
+     * certificatesOps.importCertificateChain(usage = "rpc-api-tls", alias = "cert58B6030FABDD",
+     * holdingIdentityId = "58B6030FABDD",
      * certificates = "-----BEGIN CERTIFICATE-----\n{truncated for readability}\n-----END CERTIFICATE-----")
      * ```
      *
-     * @param usage Can either be a holding identity ID, the value 'p2p' for a cluster-level certificate of the P2P
-     *     services, or the value 'rpc-api' for a cluster-level certificate of the HTTP RPC API, or code-signer for a
-     *     cluster-level certificate of the code signing service.
+     * @param usage The certificate usage. Can be:
+     *     * 'p2p-tls' for a TLS certificate to be used in P2P communication.
+     *     * 'p2p-session' for a session certificate to be used in P2P communication.
+     *     * 'rpc-api-tls' for a TLS certificate to be used in RPC API communication.
+     *     * 'code-signer' for a certificate of the code signing service
+     * @param holdingIdentityId The holding identity of the virtual node that own the certificate. Null for
+     *     cluster-level certificate.
      * @param alias The unique alias under which the certificate chain will be stored.
      * @param certificates A valid certificate chain in PEM format obtained from a certificate authority.
      */
@@ -61,6 +66,11 @@ interface CertificatesRpcOps : RpcOps {
             required = true,
         )
         alias: String,
+        @HttpRpcRequestBodyParameter(
+            description = "The certificate holding identity ID (null to cluster-level certificate, default to null)",
+            required = false,
+        )
+        holdingIdentityId: String? = null,
         @HttpRpcRequestBodyParameter(
             description = "A valid certificate chain in PEM format obtained from a certificate authority",
             required = true,

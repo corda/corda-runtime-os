@@ -6,7 +6,7 @@ import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.chunking.db.impl.persistence.CpiPersistence
 import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.cpiinfo.write.CpiInfoWriteService
-import net.corda.data.certificates.CertificateType
+import net.corda.data.certificates.CertificateUsage
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.cpiupload.ReUsedGroupIdException
 import net.corda.libs.packaging.Cpi
@@ -14,7 +14,6 @@ import net.corda.libs.packaging.PackagingConstants
 import net.corda.libs.packaging.core.CpiMetadata
 import net.corda.libs.packaging.verify.verifyCpi
 import net.corda.membership.certificate.service.CertificatesService
-import net.corda.membership.certificates.CertificateUsage.Companion.fromAvro
 import net.corda.membership.lib.grouppolicy.GroupPolicyParser
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidationException
 import net.corda.membership.lib.schema.validation.MembershipSchemaValidator
@@ -131,7 +130,7 @@ class CpiValidatorImpl constructor(
      * Retrieves trusted certificates for packaging verification
      */
     private fun getCerts(): Collection<X509Certificate> {
-        val certs = certificatesService.retrieveAllCertificates(CertificateType.CODE_SIGNER.fromAvro)
+        val certs = certificatesService.retrieveAllCertificates(CertificateUsage.CODE_SIGNER, null)
         if (certs.isEmpty()) {
             log.warn("No trusted certificates for package validation found")
             return emptyList()

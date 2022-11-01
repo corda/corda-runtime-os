@@ -4,12 +4,10 @@ import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts.Categories.SESSION_INIT
 import net.corda.crypto.core.CryptoConsts.SigningKeyFilters.CATEGORY_FILTER
 import net.corda.crypto.core.CryptoTenants.P2P
-import net.corda.data.certificates.CertificateType
+import net.corda.data.certificates.CertificateUsage
 import net.corda.data.crypto.wire.CryptoSigningKey
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.membership.certificate.client.CertificatesResourceNotFoundException
-import net.corda.membership.certificates.CertificateUsage
-import net.corda.membership.certificates.CertificateUsage.Companion.fromAvro
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.membership.lib.grouppolicy.GroupPolicy
 import net.corda.p2p.HostedIdentityEntry
@@ -124,7 +122,7 @@ class HostedIdentityEntryFactoryTest {
         cryptoOpsClient,
         keyEncodingService,
         groupPolicyProvider,
-    ) { _, alias ->
+    ) { _, _, alias ->
         if (alias == VALID_CERTIFICATE_ALIAS) {
             certificatePem
         } else {
@@ -257,14 +255,14 @@ class HostedIdentityEntryFactoryTest {
 
     @Test
     fun `createIdentityRecord with another TLS tenant will call the certificates from that tenant`() {
-        var tenantId: CertificateUsage? = null
+        var usage: CertificateUsage? = null
         val factory = HostedIdentityEntryFactory(
             virtualNodeInfoReadService,
             cryptoOpsClient,
             keyEncodingService,
             groupPolicyProvider,
-        ) { tenant, _ ->
-            tenantId = tenant
+        ) { _, tenant, _ ->
+            usage = tenant
             certificatePem
         }
 
@@ -276,7 +274,7 @@ class HostedIdentityEntryFactoryTest {
             sessionKeyId = null
         )
 
-        assertThat(tenantId).isEqualTo(CertificateType.P2P.fromAvro)
+        assertThat(usage).isEqualTo(CertificateUsage.P2P_TLS)
     }
 
     @Test
@@ -299,7 +297,7 @@ class HostedIdentityEntryFactoryTest {
             cryptoOpsClient,
             keyEncodingService,
             groupPolicyProvider,
-        ) { _, _ ->
+        ) { _, _, _ ->
             "\n"
         }
 

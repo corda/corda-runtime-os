@@ -2,6 +2,7 @@ package net.corda.membership.certificate.service.impl
 
 import net.corda.configuration.read.ConfigChangedEvent
 import net.corda.configuration.read.ConfigurationReadService
+import net.corda.data.certificates.CertificateUsage
 import net.corda.data.certificates.rpc.request.CertificateRpcRequest
 import net.corda.data.certificates.rpc.response.CertificateRpcResponse
 import net.corda.db.connection.manager.DbConnectionManager
@@ -17,13 +18,13 @@ import net.corda.lifecycle.StartEvent
 import net.corda.lifecycle.StopEvent
 import net.corda.lifecycle.createCoordinator
 import net.corda.membership.certificate.service.CertificatesService
-import net.corda.membership.certificates.CertificateUsage
 import net.corda.messaging.api.subscription.config.RPCConfig
 import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.schema.Schemas
 import net.corda.schema.configuration.ConfigKeys
 import net.corda.v5.base.util.contextLogger
+import net.corda.virtualnode.ShortHash
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
@@ -63,26 +64,29 @@ class CertificatesServiceImpl @Activate constructor(
     private val coordinator = coordinatorFactory.createCoordinator<CertificatesService>(::handleEvent)
 
     override fun importCertificates(
-        typeOrHoldingId: CertificateUsage,
+        usage: CertificateUsage,
+        holdingIdentityId: ShortHash?,
         alias: String,
-        certificates: String,
+        certificates: String
     ) =
-        processor.useCertificateProcessor(typeOrHoldingId) { p -> p.saveCertificates(alias, certificates) }
+        processor.useCertificateProcessor(holdingIdentityId, usage) { p -> p.saveCertificates(alias, certificates) }
 
     override fun retrieveCertificates(
-        typeOrHoldingId: CertificateUsage,
+        usage: CertificateUsage,
+        holdingIdentityId: ShortHash?,
         alias: String,
     ): String? {
         var certificates: String? = null
-        processor.useCertificateProcessor(typeOrHoldingId) { p -> certificates = p.readCertificates(alias) }
+        processor.useCertificateProcessor(holdingIdentityId, usage) { p -> certificates = p.readCertificates(alias) }
         return certificates
     }
 
     override fun retrieveAllCertificates(
-        typeOrHoldingId: CertificateUsage,
+        usage: CertificateUsage,
+        holdingIdentityId: ShortHash?,
     ): List<String> {
         var certificates = emptyList<String>()
-        processor.useCertificateProcessor(typeOrHoldingId) { p -> certificates = p.readAllCertificates() }
+        processor.useCertificateProcessor(holdingIdentityId, usage) { p -> certificates = p.readAllCertificates() }
         return certificates
     }
 

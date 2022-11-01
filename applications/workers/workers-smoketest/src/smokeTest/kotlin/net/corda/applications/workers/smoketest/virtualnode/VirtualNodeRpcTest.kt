@@ -20,7 +20,7 @@ import net.corda.applications.workers.smoketest.truncateLongHash
 import net.corda.applications.workers.smoketest.virtualnode.helpers.ClusterBuilder
 import net.corda.applications.workers.smoketest.virtualnode.helpers.assertWithRetry
 import net.corda.applications.workers.smoketest.virtualnode.helpers.cluster
-import net.corda.data.certificates.CertificateType
+import net.corda.data.certificates.CertificateUsage
 import net.corda.httprpc.ResponseCode.CONFLICT
 import net.corda.test.util.eventually
 import org.assertj.core.api.Assertions.assertThat
@@ -69,7 +69,7 @@ class VirtualNodeRpcTest {
                 // Certificate upload can be slow in the combined worker, especially after it has just started up.
                 timeout(Duration.ofSeconds(100))
                 interval(Duration.ofSeconds(1))
-                command { importCertificate(CODESIGNER_CERT, CertificateType.CODE_SIGNER, "cordadev") }
+                command { importCertificate(CODESIGNER_CERT, CertificateUsage.CODE_SIGNER, "cordadev") }
                 condition { it.code == 204 }
             }
         }

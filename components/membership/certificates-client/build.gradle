@@ -11,5 +11,4 @@ dependencies {
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation project(':libs:lifecycle:lifecycle')
     implementation project(':libs:virtual-node:virtual-node-info')
-    api project(':libs:membership:certificates-common')
 }

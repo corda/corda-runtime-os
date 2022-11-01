@@ -1,7 +1,7 @@
 package net.corda.membership.certificate.client
 
+import net.corda.data.certificates.CertificateUsage
 import net.corda.lifecycle.Lifecycle
-import net.corda.membership.certificates.CertificateUsage
 import net.corda.virtualnode.ShortHash
 
 /**
@@ -12,12 +12,18 @@ interface CertificatesClient : Lifecycle {
     /**
      * Import certificate chain.
      *
-     * @param usage Certificate usage (type of holding identity).
+     * @param usage The certificate usage
+     * @param holdingIdentityId The holding Identity ID. null for a cluster-level certificate.
      * @param alias Unique alias of the certificate.
      * @param certificates The certificates in PEM format
      * @throws Exception in case of network or persistent error.
      */
-    fun importCertificates(usage: CertificateUsage, alias: String, certificates: String)
+    fun importCertificates(
+        usage: CertificateUsage,
+        holdingIdentityId: ShortHash?,
+        alias: String,
+        certificates: String
+    )
 
     /**
      * Set up locally hosted identity.

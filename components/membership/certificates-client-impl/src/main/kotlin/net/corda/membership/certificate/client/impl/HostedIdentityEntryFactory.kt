@@ -3,11 +3,9 @@ package net.corda.membership.certificate.client.impl
 import net.corda.crypto.client.CryptoOpsClient
 import net.corda.crypto.core.CryptoConsts
 import net.corda.crypto.core.CryptoTenants.P2P
-import net.corda.data.certificates.CertificateType
+import net.corda.data.certificates.CertificateUsage
 import net.corda.data.crypto.wire.ops.rpc.queries.CryptoKeyOrderBy
 import net.corda.membership.certificate.client.CertificatesResourceNotFoundException
-import net.corda.membership.certificates.CertificateUsage
-import net.corda.membership.certificates.CertificateUsage.Companion.fromAvro
 import net.corda.membership.grouppolicy.GroupPolicyProvider
 import net.corda.messaging.api.records.Record
 import net.corda.p2p.HostedIdentityEntry
@@ -32,7 +30,7 @@ internal class HostedIdentityEntryFactory(
     private val cryptoOpsClient: CryptoOpsClient,
     private val keyEncodingService: KeyEncodingService,
     private val groupPolicyProvider: GroupPolicyProvider,
-    private val retrieveCertificates: (CertificateUsage, String) -> String?,
+    private val retrieveCertificates: (ShortHash?, CertificateUsage, String) -> String?,
 ) {
     private companion object {
         val logger = contextLogger()
@@ -68,12 +66,12 @@ internal class HostedIdentityEntryFactory(
     }
 
     private fun getCertificates(
-        type: CertificateUsage,
+        certificateHoldingId: ShortHash?,
         certificateChainAlias: String,
     ): List<String> {
-        val certificateChain = retrieveCertificates(type, certificateChainAlias)
+        val certificateChain = retrieveCertificates(certificateHoldingId, CertificateUsage.P2P_TLS, certificateChainAlias)
             ?: throw CertificatesResourceNotFoundException(
-                "Please import certificate chain into $type with alias $certificateChainAlias"
+                "Please import certificate chain into p2p with alias $certificateChainAlias"
             )
         return certificateChain.reader().use { reader ->
             PEMParser(reader).use {
@@ -102,13 +100,13 @@ internal class HostedIdentityEntryFactory(
         val nodeInfo = getNode(holdingIdentityShortHash)
         val actualSessionKeyTenantId = sessionKeyTenantId ?: holdingIdentityShortHash.toString()
         val sessionPublicKey = getKey(actualSessionKeyTenantId, sessionKeyId)
-        val (keyTenantId, certificateType) = if (useClusterLevelTlsCertificateAndKey) {
-            P2P to CertificateType.P2P.fromAvro
+        val (keyTenantId, certificateHoldingId) = if (useClusterLevelTlsCertificateAndKey) {
+            P2P to null
         } else {
-            holdingIdentityShortHash.value to CertificateUsage.HoldingIdentityId(holdingIdentityShortHash)
+            holdingIdentityShortHash.value to holdingIdentityShortHash
         }
         val tlsCertificates = getCertificates(
-            certificateType,
+            certificateHoldingId,
             certificateChainAlias,
         )
         validateCertificates(keyTenantId, nodeInfo.holdingIdentity, tlsCertificates)

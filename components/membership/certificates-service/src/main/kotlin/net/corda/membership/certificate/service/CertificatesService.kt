@@ -1,34 +1,47 @@
 package net.corda.membership.certificate.service
 
+import net.corda.data.certificates.CertificateUsage
 import net.corda.lifecycle.Lifecycle
-import net.corda.membership.certificates.CertificateUsage
+import net.corda.virtualnode.ShortHash
 
 interface CertificatesService : Lifecycle {
 
     /**
      * Import certificate chain.
      *
-     * @param typeOrHoldingId can either be a holding identity ID, or a certificate type  for a cluster-level certificate.
+     * @param usage The certificate usage
+     * @param holdingIdentityId The holding Identity ID. null for a cluster-level certificate.
      * @param alias Unique alias of the certificate.
      * @param certificates The certificates in PEM format
      * @throws Exception in case of network or persistent error.
      */
-    fun importCertificates(typeOrHoldingId: CertificateUsage, alias: String, certificates: String)
+    fun importCertificates(
+        usage: CertificateUsage,
+        holdingIdentityId: ShortHash?,
+        alias: String,
+        certificates: String,
+    )
 
     /**
      * Retrieve certificate.
      *
-     * @param typeOrHoldingId can either be a holding identity ID, or a certificate type  for a cluster-level certificate.
+     * @param usage The certificate usage
+     * @param holdingIdentityId The holding Identity ID. null for a cluster-level certificate.
      * @param alias Unique alias of the certificate
      * @return Certificate in PEM format.
      */
-    fun retrieveCertificates(typeOrHoldingId: CertificateUsage, alias: String): String?
+    fun retrieveCertificates(
+        usage: CertificateUsage,
+        holdingIdentityId: ShortHash?,
+        alias: String,
+    ): String?
 
     /**
      * Retrieve all certificates for given tenant.
      *
-     * @param typeOrHoldingId can either be a holding identity ID, or a certificate type  for a cluster-level certificate.
+     * @param usage The certificate usage
+     * @param holdingIdentityId The holding Identity ID. null for a cluster-level certificate.
      * @return Certificates in PEM format.
      */
-    fun retrieveAllCertificates(typeOrHoldingId: CertificateUsage): List<String>
+    fun retrieveAllCertificates(usage: CertificateUsage, holdingIdentityId: ShortHash?): List<String>
 }

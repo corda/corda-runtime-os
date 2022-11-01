@@ -1,19 +1,16 @@
 package net.corda.membership.certificate.service.impl
 
-import net.corda.data.certificates.CertificateType
+import net.corda.data.certificates.CertificateUsage
 import net.corda.db.admin.impl.ClassloaderChangeLog
 import net.corda.db.admin.impl.LiquibaseSchemaMigratorImpl
 import net.corda.db.connection.manager.DbConnectionManager
 import net.corda.db.schema.DbSchema
 import net.corda.db.testkit.DbUtils
 import net.corda.membership.certificate.service.CertificatesService
-import net.corda.membership.certificates.CertificateUsage
-import net.corda.membership.certificates.CertificateUsage.Companion.fromAvro
-import net.corda.membership.certificates.CertificateUsage.Companion.publicName
+import net.corda.membership.certificates.CertificateUsageUtils.publicName
 import net.corda.membership.certificates.datamodel.Certificate
 import net.corda.membership.certificates.datamodel.CertificateEntities
 import net.corda.membership.certificates.datamodel.ClusterCertificate
-import net.corda.membership.certificates.datamodel.ClusterCertificatePrimaryKey
 import net.corda.orm.JpaEntitiesRegistry
 import net.corda.orm.impl.EntityManagerFactoryFactoryImpl
 import net.corda.orm.utils.transaction
@@ -101,32 +98,32 @@ internal class CertificatesServiceImplTest {
     @Test
     fun `imports cluster certificate`() {
 
-        val testTenant = CertificateType.CODE_SIGNER
+        val usage = CertificateUsage.CODE_SIGNER
         val testAlias = "testAlias"
         val testRawCertificate = "testRawCertificate"
         entityManagerFactory.transaction {
             it.createQuery("delete from ClusterCertificate").executeUpdate()
         }
 
-        certificatesService.importCertificates(testTenant.fromAvro, testAlias, testRawCertificate)
+        certificatesService.importCertificates(usage, null, testAlias, testRawCertificate)
 
         val importedCertificate = entityManagerFactory.transaction {
-            it.find(ClusterCertificate::class.java, ClusterCertificatePrimaryKey(testTenant.publicName, testAlias))
+            it.find(ClusterCertificate::class.java, testAlias)
         }
-        assertThat(importedCertificate).isEqualTo(ClusterCertificate(testTenant.publicName, testAlias, testRawCertificate))
+        assertThat(importedCertificate).isEqualTo(ClusterCertificate(testAlias, CertificateUsage.CODE_SIGNER.publicName, testRawCertificate))
     }
 
     @Test
     fun `returns null when cluster certificate not found by alias`() {
 
-        val testTenant = CertificateType.P2P
+        val testUsage = CertificateUsage.P2P_TLS
         val testAlias = "testAlias"
         entityManagerFactory.transaction {
             it.createQuery("delete from ClusterCertificate").executeUpdate()
             it.persist(ClusterCertificate("otherTenant", testAlias, "otherCertificate"))
         }
 
-        val certificate = certificatesService.retrieveCertificates(testTenant.fromAvro, testAlias)
+        val certificate = certificatesService.retrieveCertificates(testUsage, null, testAlias)
 
         assertThat(certificate).isNull()
     }
@@ -134,16 +131,28 @@ internal class CertificatesServiceImplTest {
     @Test
     fun `retrieves cluster certificate by alias`() {
 
-        val testTenant = CertificateType.CODE_SIGNER
+        val testUsage = CertificateUsage.CODE_SIGNER
         val testAlias = "testAlias"
         val testRawCertificate = "testRawCertificate"
         entityManagerFactory.transaction {
             it.createQuery("delete from ClusterCertificate").executeUpdate()
-            it.persist(ClusterCertificate(testTenant.publicName, testAlias, testRawCertificate))
-            it.persist(ClusterCertificate("otherTenant", testAlias, "otherCertificate"))
+            it.persist(
+                ClusterCertificate(
+                    usage = testUsage.publicName,
+                    alias = testAlias,
+                    rawCertificate = testRawCertificate
+                )
+            )
+            it.persist(
+                ClusterCertificate(
+                    usage = "otherTenant",
+                    alias = "OtherAlias",
+                    rawCertificate = "otherCertificate"
+                )
+            )
         }
 
-        val certificate = certificatesService.retrieveCertificates(testTenant.fromAvro, testAlias)
+        val certificate = certificatesService.retrieveCertificates(testUsage, null, testAlias)
 
         assertThat(certificate).isEqualTo(testRawCertificate)
     }
@@ -151,13 +160,13 @@ internal class CertificatesServiceImplTest {
     @Test
     fun `returns empty list when tenant's cluster certificates not found`() {
 
-        val testTenant = CertificateType.P2P
+        val testUsage = CertificateUsage.P2P_TLS
         entityManagerFactory.transaction {
             it.createQuery("delete from ClusterCertificate").executeUpdate()
             it.persist(ClusterCertificate("otherTenant", "otherAlias", "otherCertificate"))
         }
 
-        val certificate = certificatesService.retrieveAllCertificates(testTenant.fromAvro)
+        val certificate = certificatesService.retrieveAllCertificates(testUsage, null)
 
         assertThat(certificate).isEmpty()
     }
@@ -165,17 +174,17 @@ internal class CertificatesServiceImplTest {
     @Test
     fun `retrieves all tenant's cluster certificates`() {
 
-        val testTenant = CertificateType.RPC_API
+        val testUsage = CertificateUsage.RPC_API_TLS
         val testRawCertificate1 = "testRawCertificate1"
         val testRawCertificate2 = "testRawCertificate2"
         entityManagerFactory.transaction {
             it.createQuery("delete from ClusterCertificate").executeUpdate()
-            it.persist(ClusterCertificate(testTenant.publicName, "testAlias1", testRawCertificate1))
-            it.persist(ClusterCertificate(testTenant.publicName, "testAlias2", testRawCertificate2))
-            it.persist(ClusterCertificate("otherTenant", "otherAlias", "otherCertificate"))
+            it.persist(ClusterCertificate("testAlias1", testUsage.publicName, testRawCertificate1))
+            it.persist(ClusterCertificate("testAlias2", testUsage.publicName, testRawCertificate2))
+            it.persist(ClusterCertificate("otherAlias", "OtherUsage", "otherCertificate"))
         }
 
-        val certificates = certificatesService.retrieveAllCertificates(testTenant.fromAvro)
+        val certificates = certificatesService.retrieveAllCertificates(testUsage, null)
 
         assertThat(certificates.size).isEqualTo(2)
         assertThat(certificates.toSet()).isEqualTo(setOf(testRawCertificate1, testRawCertificate2))
@@ -184,85 +193,75 @@ internal class CertificatesServiceImplTest {
     @Test
     fun `imports virtual node certificate`() {
 
-        val testTenant = CertificateUsage.HoldingIdentityId(
-            ShortHash.of("012345678901")
-        )
+        val testTenant = ShortHash.of("012345678901")
         val testAlias = "testAlias"
         val testRawCertificate = "testRawCertificate"
         entityManagerFactory.transaction {
             it.createQuery("delete from Certificate").executeUpdate()
         }
 
-        certificatesService.importCertificates(testTenant, testAlias, testRawCertificate)
+        certificatesService.importCertificates(CertificateUsage.RPC_API_TLS, testTenant, testAlias, testRawCertificate)
 
         val importedCertificate = entityManagerFactory.transaction {
             it.find(Certificate::class.java, testAlias)
         }
-        assertThat(importedCertificate).isEqualTo(Certificate(testAlias, testRawCertificate))
+        assertThat(importedCertificate).isEqualTo(Certificate(testAlias, CertificateUsage.RPC_API_TLS.publicName, testRawCertificate))
     }
 
     @Test
     fun `returns null when virtual node certificate not found by alias`() {
-        val testTenant = CertificateUsage.HoldingIdentityId(
-            ShortHash.of("012345678901")
-        )
+        val testTenant = ShortHash.of("012345678901")
         val testAlias = "testAlias"
         entityManagerFactory.transaction {
             it.createQuery("delete from Certificate").executeUpdate()
-            it.persist(Certificate("otherAlias", "otherCertificate"))
+            it.persist(Certificate("otherAlias", CertificateUsage.P2P_TLS.publicName, "otherCertificate"))
         }
 
-        val certificate = certificatesService.retrieveCertificates(testTenant, testAlias)
+        val certificate = certificatesService.retrieveCertificates(CertificateUsage.P2P_TLS, testTenant, testAlias)
 
         assertThat(certificate).isNull()
     }
 
     @Test
     fun `retrieves virtual node certificate by alias`() {
-        val testTenant = CertificateUsage.HoldingIdentityId(
-            ShortHash.of("012345678902")
-        )
+        val testTenant = ShortHash.of("012345678902")
         val testAlias = "testAlias"
         val testRawCertificate = "testRawCertificate"
         entityManagerFactory.transaction {
             it.createQuery("delete from Certificate").executeUpdate()
-            it.persist(Certificate(testAlias, testRawCertificate))
-            it.persist(Certificate("otherAlias", "otherCertificate"))
+            it.persist(Certificate(testAlias, CertificateUsage.RPC_API_TLS.publicName, testRawCertificate))
+            it.persist(Certificate("otherAlias", CertificateUsage.RPC_API_TLS.publicName, "otherCertificate"))
         }
 
-        val certificate = certificatesService.retrieveCertificates(testTenant, testAlias)
+        val certificate = certificatesService.retrieveCertificates(CertificateUsage.RPC_API_TLS, testTenant, testAlias)
 
         assertThat(certificate).isEqualTo(testRawCertificate)
     }
 
     @Test
     fun `returns empty list when virtual node certificates not found`() {
-        val testTenant = CertificateUsage.HoldingIdentityId(
-            ShortHash.of("012345678903")
-        )
+        val testTenant = ShortHash.of("012345678903")
         entityManagerFactory.transaction {
             it.createQuery("delete from Certificate").executeUpdate()
         }
 
-        val certificate = certificatesService.retrieveAllCertificates(testTenant)
+        val certificate = certificatesService.retrieveAllCertificates(CertificateUsage.P2P_SESSION, testTenant)
 
         assertThat(certificate).isEmpty()
     }
 
     @Test
     fun `retrieves all virtual node's certificates`() {
-        val testTenant = CertificateUsage.HoldingIdentityId(
-            ShortHash.of("012345678904")
-        )
+        val testTenant = ShortHash.of("012345678904")
         val testRawCertificate1 = "testRawCertificate1"
         val testRawCertificate2 = "testRawCertificate2"
         entityManagerFactory.transaction {
             it.createQuery("delete from Certificate").executeUpdate()
-            it.persist(Certificate("testAlias1", testRawCertificate1))
-            it.persist(Certificate("testAlias2", testRawCertificate2))
+            it.persist(Certificate("testAlias1", CertificateUsage.P2P_SESSION.publicName, testRawCertificate1))
+            it.persist(Certificate("testAlias2", CertificateUsage.P2P_SESSION.publicName, testRawCertificate2))
         }
 
-        val certificates = certificatesService.retrieveAllCertificates(testTenant)
+        val certificates = certificatesService.retrieveAllCertificates(CertificateUsage.P2P_SESSION, testTenant)
 
         assertThat(certificates.size).isEqualTo(2)
         assertThat(certificates.toSet()).isEqualTo(setOf(testRawCertificate1, testRawCertificate2))
