@@ -32,7 +32,9 @@ internal class StateAndEventConsumerRebalanceListenerImpl<K : Any, S : Any, E : 
      *  keeps up
      */
     override fun onPartitionsAssigned(partitions: Collection<CordaTopicPartition>) {
-        log.debug { "Updating state partitions to match new event partitions: $partitions" }
+        val partitionIds = partitions.map{ it.partition }.joinToString(",")
+        log.info("Consumer (${config.clientId}) group name ${config.group} for topic ${config.topic} partition assigned: $partitionIds.")
+
         val newStatePartitions = partitions.toStateTopics()
         val statePartitions = stateConsumer.assignment() + newStatePartitions
         stateConsumer.assign(statePartitions)
@@ -57,7 +59,8 @@ internal class StateAndEventConsumerRebalanceListenerImpl<K : Any, S : Any, E : 
      *  keeps up
      */
     override fun onPartitionsRevoked(partitions: Collection<CordaTopicPartition>) {
-        log.debug { "Updating state partitions to match removed event partitions: $partitions" }
+        val partitionIds = partitions.map{ it.partition }.joinToString(",")
+        log.info("Consumer (${config.clientId}) group name ${config.group} for topic ${config.topic} partition revoked: $partitionIds.")
         val removedStatePartitions = partitions.toStateTopics()
         val statePartitions = stateConsumer.assignment() - removedStatePartitions.toSet()
         stateConsumer.assign(statePartitions)
