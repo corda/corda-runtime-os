@@ -26,12 +26,12 @@ internal class RepeatedLogonsCache {
             .expireAfterWrite(Duration.ofSeconds(expireAfterWriteSeconds))
     )
 
-    private fun String.toCacheValue(): ByteArray {
-        return toByteArray().sha256Bytes()
+    private fun Pair<String, String>.toCacheValue(): ByteArray {
+        return "$first:$second".toByteArray().sha256Bytes()
     }
 
     fun add(loginName: String, clearTextPassword: String) {
-        cache.put(loginName, clearTextPassword.toCacheValue())
+        cache.put(loginName, (loginName to clearTextPassword).toCacheValue())
     }
 
     fun remove(loginName: String) {
@@ -40,6 +40,6 @@ internal class RepeatedLogonsCache {
 
     fun verifies(loginName: String, clearTextPassword: String): Boolean {
         val cachedValue = cache.getIfPresent(loginName) ?: return false
-        return clearTextPassword.toCacheValue().contentEquals(cachedValue)
+        return (loginName to clearTextPassword).toCacheValue().contentEquals(cachedValue)
     }
 }
