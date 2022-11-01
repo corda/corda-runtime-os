@@ -4,7 +4,9 @@ import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
+import net.corda.internal.serialization.amqp.helper.TestFlowFiberServiceWithSerialization
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
+import net.corda.ledger.common.data.transaction.factory.WireTransactionFactoryImpl
 import net.corda.ledger.common.data.transaction.serializer.amqp.WireTransactionSerializer
 import net.corda.ledger.common.testkit.mockSigningService
 import net.corda.ledger.consensual.testkit.getConsensualSignedTransactionExample
@@ -18,15 +20,22 @@ class ConsensualSignedTransactionSerializerTest {
     private val cipherSchemeMetadata = CipherSchemeMetadataImpl()
     private val digestService = DigestServiceImpl(cipherSchemeMetadata, null)
     private val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
+    private val flowFiberService = TestFlowFiberServiceWithSerialization()
     private val jsonMarshallingService = JsonMarshallingServiceImpl()
     private val serializationServiceNullCfg =
         TestSerializationService.getTestSerializationService({}, cipherSchemeMetadata)
+    private val wireTransactionFactory = WireTransactionFactoryImpl(
+        merkleTreeProvider,
+        digestService,
+        jsonMarshallingService,
+        cipherSchemeMetadata,
+        serializationServiceNullCfg,
+        flowFiberService
+    )
     private val serializationService = TestSerializationService.getTestSerializationService({
         it.register(
             WireTransactionSerializer(
-                merkleTreeProvider,
-                digestService,
-                jsonMarshallingService
+                wireTransactionFactory
             ), it
         )
         it.register(

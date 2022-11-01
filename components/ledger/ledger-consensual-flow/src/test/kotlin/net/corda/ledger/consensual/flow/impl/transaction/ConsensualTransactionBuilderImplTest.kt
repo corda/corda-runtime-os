@@ -5,11 +5,16 @@ import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
 import net.corda.internal.serialization.amqp.currentSandboxGroup
+import net.corda.internal.serialization.amqp.helper.TestFlowFiberServiceWithSerialization
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.internal.serialization.amqp.helper.testSerializationContext
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
+import net.corda.ledger.common.data.transaction.factory.WireTransactionFactoryImpl
+import net.corda.ledger.common.flow.impl.transaction.factory.TransactionMetadataFactoryImpl
+import net.corda.ledger.common.testkit.mockPlatformInfoProvider
 import net.corda.ledger.common.testkit.mockSigningService
 import net.corda.ledger.common.testkit.publicKeyExample
+import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualSignedTransactionFactoryImpl
 import net.corda.ledger.consensual.testkit.ConsensualStateClassExample
 import net.corda.ledger.consensual.testkit.consensualStateExample
 import net.corda.ledger.consensual.testkit.consensualTransactionMetaDataExample
@@ -30,9 +35,26 @@ internal class ConsensualTransactionBuilderImplTest {
     private val jsonMarshallingService: JsonMarshallingService = JsonMarshallingServiceImpl()
     private val cipherSchemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
     private val digestService: DigestService = DigestServiceImpl(cipherSchemeMetadata, null)
-    private val merkleTreeFactory: MerkleTreeProvider = MerkleTreeProviderImpl(digestService)
+    private val merkleTreeProvider: MerkleTreeProvider = MerkleTreeProviderImpl(digestService)
+    private val flowFiberService = TestFlowFiberServiceWithSerialization()
     private val serializationService: SerializationService = TestSerializationService.getTestSerializationService({}, cipherSchemeMetadata)
-
+    private val transactionMetadataFactory =
+        TransactionMetadataFactoryImpl(flowFiberService, mockPlatformInfoProvider())
+    private val wireTransactionFactory = WireTransactionFactoryImpl(
+        merkleTreeProvider,
+        digestService,
+        jsonMarshallingService,
+        cipherSchemeMetadata,
+        serializationService,
+        flowFiberService
+    )
+    private val consensualSignedTransactionFactory = ConsensualSignedTransactionFactoryImpl(
+        serializationService,
+        mockSigningService(),
+        mock(),
+        transactionMetadataFactory,
+        wireTransactionFactory
+    )
     @Test
     fun `can build a simple Transaction`() {
         val tx = makeTransactionBuilder()
@@ -96,15 +118,6 @@ internal class ConsensualTransactionBuilderImplTest {
 
     private fun makeTransactionBuilder(): ConsensualTransactionBuilder {
         return ConsensualTransactionBuilderImpl(
-            cipherSchemeMetadata,
-            digestService,
-            jsonMarshallingService,
-            merkleTreeFactory,
-            serializationService,
-            mockSigningService(),
-            mock(),
-            testSerializationContext.currentSandboxGroup(),
-            consensualTransactionMetaDataExample
-        )
+            consensualSignedTransactionFactory)
     }
 }
