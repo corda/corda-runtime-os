@@ -254,10 +254,9 @@ class StaticMemberRegistrationService @Activate constructor(
         val cpi = virtualNodeInfoReadService.get(registeringMember)?.cpiIdentifier
             ?: throw CordaRuntimeException("Could not find virtual node info for member ${registeringMember.shortHash}")
 
-        val optionalContext = mutableMapOf<String, String>()
-        cpi.signerSummaryHash?.let {
-            optionalContext.put(MEMBER_CPI_SIGNER_HASH, it.toString())
-        }
+        val optionalContext = cpi.signerSummaryHash?.let {
+            mapOf(MEMBER_CPI_SIGNER_HASH to it.toString())
+        } ?: emptyMap()
         @Suppress("SpreadOperator")
         val memberContext = mapOf(
             PARTY_NAME to memberName.toString(),

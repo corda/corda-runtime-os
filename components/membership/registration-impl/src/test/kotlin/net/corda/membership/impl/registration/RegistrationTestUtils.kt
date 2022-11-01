@@ -20,9 +20,9 @@ val testCpiSignerSummaryHash = SecureHash.parse("ALG:A1B2C3D4")
 fun buildTestVirtualNodeInfo(member: HoldingIdentity) = VirtualNodeInfo(
     holdingIdentity = member,
     cpiIdentifier = CpiIdentifier(TEST_CPI_NAME, TEST_CPI_VERSION, testCpiSignerSummaryHash),
-    vaultDmlConnectionId = UUID.randomUUID(),
-    cryptoDmlConnectionId = UUID.randomUUID(),
-    uniquenessDmlConnectionId = UUID.randomUUID(),
+    vaultDmlConnectionId = UUID(0, 1),
+    cryptoDmlConnectionId = UUID(0, 1),
+    uniquenessDmlConnectionId = UUID(0, 1),
     timestamp = Instant.ofEpochSecond(1)
 )
 

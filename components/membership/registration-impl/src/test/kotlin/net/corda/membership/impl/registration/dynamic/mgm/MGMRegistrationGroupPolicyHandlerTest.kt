@@ -22,7 +22,7 @@ import java.util.UUID
 class MGMRegistrationGroupPolicyHandlerTest {
     private val testHoldingIdentity = HoldingIdentity(
         MemberX500Name.parse("O=Alice, L=Dublin, C=IE"),
-        UUID.randomUUID().toString()
+        UUID(0, 1).toString()
     )
 
     private val groupPolicyContextCaptor = argumentCaptor<Map<String, String>>()

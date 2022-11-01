@@ -375,14 +375,12 @@ class DynamicMemberRegistrationService @Activate constructor(
                 SOFTWARE_VERSION to platformInfoProvider.localWorkerSoftwareVersion,
                 MEMBER_CPI_NAME to cpi.name,
                 MEMBER_CPI_VERSION to cpi.version,
-                MEMBER_CPI_SIGNER_HASH to cpi.signerSummaryHash.toString(),
                 SERIAL to SERIAL_CONST,
             )
             val roleContext = roles.toMemberInfo { notaryKeys }
-            val optionalContext = mutableMapOf<String, String>()
-            cpi.signerSummaryHash?.let {
-                optionalContext.put(MEMBER_CPI_SIGNER_HASH, it.toString())
-            }
+            val optionalContext = cpi.signerSummaryHash?.let {
+                mapOf(MEMBER_CPI_SIGNER_HASH to it.toString())
+            } ?: emptyMap()
             return filteredContext +
                     sessionKeyContext +
                     ledgerKeyContext +

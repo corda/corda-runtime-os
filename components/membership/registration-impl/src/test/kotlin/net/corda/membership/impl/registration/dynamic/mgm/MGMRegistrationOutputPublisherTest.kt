@@ -30,11 +30,11 @@ import org.mockito.kotlin.whenever
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
-class MGMRegistrationOutPublisherTest {
+class MGMRegistrationOutputPublisherTest {
 
     private val holdingIdentity = HoldingIdentity(
         MemberX500Name.parse("O=Alice, L=London, C=GB"),
-        UUID.randomUUID().toString()
+        UUID(0, 1).toString()
     )
     private val memberContext: MemberContext = mock {
         on { parse(eq(GROUP_ID), eq(String::class.java)) } doReturn holdingIdentity.groupId

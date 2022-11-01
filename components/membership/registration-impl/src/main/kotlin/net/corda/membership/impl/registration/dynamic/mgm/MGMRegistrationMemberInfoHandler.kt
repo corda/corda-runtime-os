@@ -114,10 +114,9 @@ internal class MGMRegistrationMemberInfoHandler(
         val sessionKey = getKeyFromId(context[SESSION_KEY_ID]!!, holdingIdentity.shortHash.value)
         val ecdhKey = getKeyFromId(context[ECDH_KEY_ID]!!, holdingIdentity.shortHash.value)
         val now = clock.instant().toString()
-        val optionalContext = mutableMapOf<String, String>()
-        cpi.signerSummaryHash?.let {
-            optionalContext.put(MEMBER_CPI_SIGNER_HASH, it.toString())
-        }
+        val optionalContext = cpi.signerSummaryHash?.let {
+            mapOf(MEMBER_CPI_SIGNER_HASH to it.toString())
+        } ?: emptyMap()
         val memberContext = context.filterKeys {
             !keyIdList.contains(it)
         }.filterKeys {

@@ -66,21 +66,21 @@ class MGMRegistrationMemberInfoHandlerTest {
         const val GROUP_POLICY_PROPERTY_KEY = GROUP_POLICY_PREFIX_WITH_DOT + "test"
     }
 
-    private val registrationId = UUID.randomUUID()
+    private val registrationId = UUID(0, 1)
     private val cordaAvroSerializer: CordaAvroSerializer<KeyValuePairList> = mock {
         on { serialize(any()) } doReturn "".toByteArray()
     }
     private val holdingIdentity = HoldingIdentity(
         MemberX500Name.parse("O=Alice, L=London, C=GB"),
-        UUID.randomUUID().toString()
+        UUID(0, 1).toString()
     )
     private val cpiIdentifier = CpiIdentifier(TEST_CPI_NAME, TEST_CPI_VERSION, null)
     private val virtualNodeInfo = VirtualNodeInfo(
         holdingIdentity,
         cpiIdentifier,
-        vaultDmlConnectionId = UUID.randomUUID(),
-        cryptoDmlConnectionId = UUID.randomUUID(),
-        uniquenessDmlConnectionId = UUID.randomUUID(),
+        vaultDmlConnectionId = UUID(0, 1),
+        cryptoDmlConnectionId = UUID(0, 1),
+        uniquenessDmlConnectionId = UUID(0, 1),
         timestamp = Instant.ofEpochSecond(0)
     )
     private val publicKey: PublicKey = mock {
@@ -258,15 +258,10 @@ class MGMRegistrationMemberInfoHandlerTest {
             )
         }
 
-        assertThat(mgmContext).containsOnlyKeys(
-            CREATED_TIME,
-            MODIFIED_TIME,
-            STATUS,
-            IS_MGM
-        )
-
-        assertThat(mgmContext[STATUS]).isEqualTo(MEMBER_STATUS_ACTIVE)
-        assertThat(mgmContext[IS_MGM]).isEqualTo(true.toString())
+        assertThat(mgmContext)
+            .containsOnlyKeys(CREATED_TIME, MODIFIED_TIME, STATUS, IS_MGM)
+            .containsEntry(STATUS, MEMBER_STATUS_ACTIVE)
+            .containsEntry(IS_MGM, true.toString())
     }
 
     @Test

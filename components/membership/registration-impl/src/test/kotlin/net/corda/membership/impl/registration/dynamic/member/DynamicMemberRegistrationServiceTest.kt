@@ -509,7 +509,7 @@ class DynamicMemberRegistrationServiceTest {
             registrationService.start()
             val noVNodeMember = HoldingIdentity(
                 MemberX500Name.parse("O=Bob, C=IE, L=DUB"),
-                UUID.randomUUID().toString()
+                UUID(0, 1).toString()
             )
             whenever(virtualNodeInfoReadService.get(eq(noVNodeMember))).thenReturn(null)
 

@@ -51,11 +51,9 @@ internal class MGMRegistrationOutputPublisher(
             publisherFactory
                 .invoke()
                 .publish(listOf(mgmRecord, eventRecord))
-                .first()
-                .get(
-                    PUBLICATION_TIMEOUT_SECONDS,
-                    TimeUnit.SECONDS
-                )
+                .forEach {
+                    it.get(PUBLICATION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                }
         } catch (ex: CordaMessageAPIFatalException) {
             throw MGMRegistrationOutputPublisherException(ex.message ?: "Unknown failure.", ex)
         }
