@@ -25,6 +25,7 @@ class RbacBasicAuthenticationServicePerfTest {
         val logger = contextLogger()
         val userLogons: List<String> = (1..10).map { "user$it" }
         const val repsCount = 1_000
+        const val PERF_THRESHOLD_MS = 10_000L
     }
 
     private val passwordService = PasswordServiceImpl(SecureRandom())
@@ -76,7 +77,10 @@ class RbacBasicAuthenticationServicePerfTest {
 
         assertThat(result).allMatch { true }
 
-        logger.info("singleThreadedTest elapsed time: ${end - start} ms")
+        val elapsedMs = end - start
+        logger.info("singleThreadedTest elapsed time: $elapsedMs ms")
+
+        assertThat(elapsedMs).isLessThan(PERF_THRESHOLD_MS)
     }
 
     @Test
@@ -97,6 +101,9 @@ class RbacBasicAuthenticationServicePerfTest {
 
         assertThat(result).allMatch { true }
 
-        logger.info("multiThreadedTest elapsed time: ${end - start} ms")
+        val elapsedMs = end - start
+        logger.info("multiThreadedTest elapsed time: $elapsedMs ms")
+
+        assertThat(elapsedMs).isLessThan(PERF_THRESHOLD_MS)
     }
 }
