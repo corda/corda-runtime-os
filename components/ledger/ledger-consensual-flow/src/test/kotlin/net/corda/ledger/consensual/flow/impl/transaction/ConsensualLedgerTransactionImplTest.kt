@@ -43,16 +43,17 @@ internal class ConsensualLedgerTransactionImplTest {
         merkleTreeProvider,
         digestService,
         jsonMarshallingService,
-        cipherSchemeMetadata,
-        serializationService,
-        flowFiberService
+        cipherSchemeMetadata
+
     )
     private val consensualSignedTransactionFactory = ConsensualSignedTransactionFactoryImpl(
         serializationService,
         mockSigningService(),
         mock(),
         transactionMetadataFactory,
-        wireTransactionFactory
+        wireTransactionFactory,
+        flowFiberService,
+        jsonMarshallingService
     )
 
     @Test

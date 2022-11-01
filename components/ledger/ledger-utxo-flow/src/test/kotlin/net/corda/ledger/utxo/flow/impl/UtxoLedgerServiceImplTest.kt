@@ -41,15 +41,15 @@ class UtxoLedgerServiceImplTest {
         digestService,
         jsonMarshallingService,
         cipherSchemeMetadata,
-        serializationService,
-        flowFiberService
     )
     private val utxoSignedTransactionFactory = UtxoSignedTransactionFactoryImpl(
         serializationService,
         mockSigningService(),
         mock(),
         transactionMetadataFactory,
-        wireTransactionFactory
+        wireTransactionFactory,
+        flowFiberService,
+        jsonMarshallingService
     )
 
 

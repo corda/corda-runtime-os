@@ -4,7 +4,6 @@ import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
-import net.corda.internal.serialization.amqp.helper.TestFlowFiberServiceWithSerialization
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactoryImpl
 import net.corda.ledger.common.data.transaction.serializer.amqp.WireTransactionSerializer
@@ -20,12 +19,8 @@ class WireTransactionAMQPSerializerTest {
         val digestService = DigestServiceImpl(cipherSchemeMetadata, null)
         val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
         val jsonMarshallingService = JsonMarshallingServiceImpl()
-        private val serializationServiceBasic =
-            TestSerializationService.getTestSerializationService({}, cipherSchemeMetadata)
-        private val flowFiberService = TestFlowFiberServiceWithSerialization()
         private val wireTransactionFactory = WireTransactionFactoryImpl(
-            merkleTreeProvider, digestService, jsonMarshallingService, cipherSchemeMetadata,
-            serializationServiceBasic, flowFiberService
+            merkleTreeProvider, digestService, jsonMarshallingService, cipherSchemeMetadata
         )
         val serializationService = TestSerializationService.getTestSerializationService({
             it.register(WireTransactionSerializer(wireTransactionFactory), it)

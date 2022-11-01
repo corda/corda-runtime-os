@@ -4,7 +4,6 @@ import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
-import net.corda.internal.serialization.amqp.helper.TestFlowFiberServiceWithSerialization
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactoryImpl
 import net.corda.ledger.common.data.transaction.serializer.amqp.WireTransactionSerializer
@@ -16,11 +15,11 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.mock
 import kotlin.test.assertEquals
 
+@Suppress("LongParameterList")
 class ConsensualSignedTransactionSerializerTest {
     private val cipherSchemeMetadata = CipherSchemeMetadataImpl()
     private val digestService = DigestServiceImpl(cipherSchemeMetadata, null)
     private val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
-    private val flowFiberService = TestFlowFiberServiceWithSerialization()
     private val jsonMarshallingService = JsonMarshallingServiceImpl()
     private val serializationServiceNullCfg =
         TestSerializationService.getTestSerializationService({}, cipherSchemeMetadata)
@@ -28,9 +27,7 @@ class ConsensualSignedTransactionSerializerTest {
         merkleTreeProvider,
         digestService,
         jsonMarshallingService,
-        cipherSchemeMetadata,
-        serializationServiceNullCfg,
-        flowFiberService
+        cipherSchemeMetadata
     )
     private val serializationService = TestSerializationService.getTestSerializationService({
         it.register(

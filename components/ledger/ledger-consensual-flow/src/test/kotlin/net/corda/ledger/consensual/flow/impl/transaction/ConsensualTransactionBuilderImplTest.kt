@@ -42,15 +42,15 @@ internal class ConsensualTransactionBuilderImplTest {
         digestService,
         jsonMarshallingService,
         cipherSchemeMetadata,
-        serializationService,
-        flowFiberService
     )
     private val consensualSignedTransactionFactory = ConsensualSignedTransactionFactoryImpl(
         serializationService,
         mockSigningService(),
         mock(),
         transactionMetadataFactory,
-        wireTransactionFactory
+        wireTransactionFactory,
+        flowFiberService,
+        jsonMarshallingService
     )
     @Test
     fun `can build a simple Transaction`() {

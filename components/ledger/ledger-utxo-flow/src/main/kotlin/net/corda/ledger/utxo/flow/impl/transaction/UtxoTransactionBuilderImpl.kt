@@ -1,14 +1,8 @@
 package net.corda.ledger.utxo.flow.impl.transaction
 
-import net.corda.ledger.common.data.transaction.TransactionBuilderInternal
-import net.corda.ledger.utxo.data.state.TransactionStateImpl
-import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
-import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.flow.impl.timewindow.TimeWindowBetweenImpl
 import net.corda.ledger.utxo.flow.impl.timewindow.TimeWindowUntilImpl
 import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
-import net.corda.sandbox.SandboxGroup
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
@@ -27,16 +21,16 @@ data class UtxoTransactionBuilderImpl(
     private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory,
     // cpi defines what type of signing/hashing is used (related to the digital signature signing and verification stuff)
     override val notary: Party? = null,
-    private val timeWindow: TimeWindow? = null,
-    private val attachments: List<SecureHash> = emptyList(),
-    private val commands: List<Command> = emptyList(),
+    override val timeWindow: TimeWindow? = null,
+    override val attachments: List<SecureHash> = emptyList(),
+    override val commands: List<Command> = emptyList(),
     private val signatories: Set<PublicKey> = emptySet(),
-    private val inputStateAndRefs: List<StateAndRef<*>> = emptyList(),
-    private val referenceInputStateAndRefs: List<StateAndRef<*>> = emptyList(),
+    override val inputStateAndRefs: List<StateAndRef<*>> = emptyList(),
+    override val referenceInputStateAndRefs: List<StateAndRef<*>> = emptyList(),
 
     // We cannot use TransactionStates without notary which may be available only later
-    private val outputStates: List<Pair<ContractState, Int?>> = emptyList()
-) : UtxoTransactionBuilder, TransactionBuilderInternal {
+    override val outputStates: List<Pair<ContractState, Int?>> = emptyList()
+) : UtxoTransactionBuilder, UtxoTransactionBuilderInternal {
 
     override fun setNotary(notary: Party): UtxoTransactionBuilder {
         return copy(notary = notary)
@@ -100,97 +94,6 @@ data class UtxoTransactionBuilderImpl(
         return utxoSignedTransactionFactory.create(this, signatories)
     }
 
-    private fun verifyIfReady() {
-        // TODO(CORE-7116 more verifications)
-        // TODO(CORE-7116 metadata verifications: nulls, order of CPKs, at least one CPK?))
-
-        // Notary is not null
-        checkNotNull(notary) { "Adding Output states is not possible until the notary has been set!" }
-
-        // TODO Input notaries same (and later or rotated) as notary
-
-        // timeWindow is not null
-        checkNotNull(timeWindow)
-
-        // At least one input, or one output
-        require(inputStateAndRefs.isNotEmpty() || outputStates.isNotEmpty()) {
-            "At least one input or output state is required"
-        }
-
-        // TODO At least one required signer
-
-        // TODO At least one command
-
-        // TODO probably some more stuff we have to go look at C4 to remember
-    }
-
-    @Suppress("ComplexMethod")
-    override fun calculateComponentGroups(
-        serializationService: SerializationService,
-        metadataBytes: ByteArray,
-        currentSandboxGroup: SandboxGroup
-    ): List<List<ByteArray>> {
-        val notaryGroup = listOf(
-            notary,
-            timeWindow,
-            /*TODO notaryallowlist*/
-        )
-
-        val outputTransactionStates = outputStates.map{
-            TransactionStateImpl(it.first, notary!!, it.second)
-        }
-
-        val outputsInfo = outputTransactionStates.map {
-            UtxoOutputInfoComponent(
-                it.encumbrance,
-                notary!!,
-                currentSandboxGroup.getEvolvableTag(it.contractStateType),
-                currentSandboxGroup.getEvolvableTag(it.contractType)
-            )
-        }
-        val commandsInfo = commands.map {
-            listOf(
-                "", // TODO signers
-                currentSandboxGroup.getEvolvableTag(it.javaClass),
-            )
-        }
-
-        return UtxoComponentGroup
-            .values()
-            .sorted()
-            .map { componentGroupIndex ->
-                when (componentGroupIndex) {
-                    UtxoComponentGroup.METADATA ->
-                        listOf(
-                            metadataBytes
-                        ) // TODO(update with CORE-6890)
-                    UtxoComponentGroup.NOTARY ->
-                        notaryGroup.map { serializationService.serialize(it!!).bytes }
-
-                    UtxoComponentGroup.OUTPUTS_INFO ->
-                        outputsInfo.map { serializationService.serialize(it).bytes }
-
-                    UtxoComponentGroup.COMMANDS_INFO ->
-                        commandsInfo.map { serializationService.serialize(it).bytes }
-
-                    UtxoComponentGroup.DATA_ATTACHMENTS ->
-                        attachments.map { serializationService.serialize(it).bytes }
-
-                    UtxoComponentGroup.INPUTS ->
-                        inputStateAndRefs.map { serializationService.serialize(it.ref).bytes }
-
-                    UtxoComponentGroup.OUTPUTS ->
-                        outputTransactionStates.map { serializationService.serialize(it.contractState).bytes }
-
-                    UtxoComponentGroup.COMMANDS ->
-                        commands.map { serializationService.serialize(it).bytes }
-
-                    UtxoComponentGroup.REFERENCES ->
-                        referenceInputStateAndRefs.map { serializationService.serialize(it.ref).bytes }
-                }
-        }
-    }
-
     @Suppress("ComplexMethod")
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -215,4 +118,28 @@ data class UtxoTransactionBuilderImpl(
         referenceInputStateAndRefs,
         outputStates,
     )
+
+    private fun verifyIfReady() {
+        // TODO(CORE-7116 more verifications)
+        // TODO(CORE-7116 metadata verifications: nulls, order of CPKs, at least one CPK?))
+
+        // Notary is not null
+        checkNotNull(notary) { "Adding Output states is not possible until the notary has been set!" }
+
+        // TODO Input notaries same (and later or rotated) as notary
+
+        // timeWindow is not null
+        checkNotNull(timeWindow)
+
+        // At least one input, or one output
+        require(inputStateAndRefs.isNotEmpty() || outputStates.isNotEmpty()) {
+            "At least one input or output state is required"
+        }
+
+        // TODO At least one required signer
+
+        // TODO At least one command
+
+        // TODO probably some more stuff we have to go look at C4 to remember
+    }
 }

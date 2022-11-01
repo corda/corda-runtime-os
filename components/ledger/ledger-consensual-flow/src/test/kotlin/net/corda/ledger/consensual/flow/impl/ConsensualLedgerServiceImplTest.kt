@@ -36,15 +36,15 @@ class ConsensualLedgerServiceImplTest {
         digestService,
         jsonMarshallingService,
         cipherSchemeMetadata,
-        serializationService,
-        flowFiberService
     )
     private val consensualSignedTransactionFactory = ConsensualSignedTransactionFactoryImpl(
         serializationService,
         mockSigningService(),
         mock(),
         transactionMetadataFactory,
-        wireTransactionFactory
+        wireTransactionFactory,
+        flowFiberService,
+        jsonMarshallingService
     )
 
     @Test

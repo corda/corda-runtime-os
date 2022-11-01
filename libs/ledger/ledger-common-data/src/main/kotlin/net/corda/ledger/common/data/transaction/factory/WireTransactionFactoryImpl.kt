@@ -1,14 +1,11 @@
 package net.corda.ledger.common.data.transaction.factory
 
-import net.corda.flow.fiber.FlowFiberService
 import net.corda.ledger.common.data.transaction.ALL_LEDGER_METADATA_COMPONENT_GROUP_ID
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
-import net.corda.ledger.common.data.transaction.TransactionBuilderInternal
 import net.corda.ledger.common.data.transaction.TransactionMetaData
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
 import net.corda.v5.cipher.suite.DigestService
 import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
@@ -29,17 +26,13 @@ class WireTransactionFactoryImpl @Activate constructor(
     @Reference(service = JsonMarshallingService::class)
     private val jsonMarshallingService: JsonMarshallingService,
     @Reference(service = CipherSchemeMetadata::class)
-    private val cipherSchemeMetadata: CipherSchemeMetadata,
-    @Reference(service = SerializationService::class)
-    private val serializationService: SerializationService,
-    @Reference(service = FlowFiberService::class)
-    private val flowFiberService: FlowFiberService, // TODO CORE-7101 use CurrentSandboxService when it gets available
+    private val cipherSchemeMetadata: CipherSchemeMetadata
 ) : WireTransactionFactory, SingletonSerializeAsToken {
 
     override fun create(
         componentGroupLists: List<List<ByteArray>>,
         privacySalt: PrivacySalt
-    ): WireTransaction { // todo check parameter name
+    ): WireTransaction {
         checkComponentGroups(componentGroupLists)
         val metadata = parseMetadata(componentGroupLists[ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first())
 
@@ -53,16 +46,9 @@ class WireTransactionFactoryImpl @Activate constructor(
     }
 
     override fun create(
-        transactionBuilderInternal: TransactionBuilderInternal,
+        componentGroupLists: List<List<ByteArray>>,
         metadata: TransactionMetaData
     ): WireTransaction {
-        val metadataBytes = jsonMarshallingService.format(metadata)
-            .toByteArray(Charsets.UTF_8) // TODO(update with CORE-6890)
-        val componentGroupLists = transactionBuilderInternal.calculateComponentGroups(
-            serializationService,
-            metadataBytes,
-            flowFiberService.getExecutingFiber().getExecutionContext().sandboxGroupContext.sandboxGroup
-        )
         checkComponentGroups(componentGroupLists)
         val parsedMetadata = parseMetadata(componentGroupLists[ALL_LEDGER_METADATA_COMPONENT_GROUP_ID].first())
 

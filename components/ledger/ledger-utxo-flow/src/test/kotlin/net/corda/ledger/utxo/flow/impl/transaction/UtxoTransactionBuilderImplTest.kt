@@ -39,15 +39,15 @@ internal class UtxoTransactionBuilderImplTest {
         digestService,
         jsonMarshallingService,
         cipherSchemeMetadata,
-        serializationService,
-        flowFiberService
     )
     private val utxoSignedTransactionFactory = UtxoSignedTransactionFactoryImpl(
         serializationService,
         mockSigningService(),
         mock(),
         transactionMetadataFactory,
-        wireTransactionFactory
+        wireTransactionFactory,
+        flowFiberService,
+        jsonMarshallingService
     )
     @Test
     fun `can build a simple Transaction`() {
