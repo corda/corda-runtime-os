@@ -4,33 +4,32 @@ import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
+import net.corda.internal.serialization.amqp.helper.TestFlowFiberServiceWithSerialization
+import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.kryoserialization.testkit.createCheckpointSerializer
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.data.transaction.factory.WireTransactionFactoryImpl
 import net.corda.ledger.common.testkit.getWireTransactionExample
-import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.ledger.common.transaction.PrivacySalt
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 
 class WireTransactionKryoSerializerTest {
     companion object {
-        private lateinit var digestService: DigestService
-        private lateinit var merkleTreeProvider: MerkleTreeProvider
-        private lateinit var jsonMarshallingService: JsonMarshallingService
+        private val cipherSchemeMetadata = CipherSchemeMetadataImpl()
+        val digestService= DigestServiceImpl(cipherSchemeMetadata, null)
+        val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
+        val jsonMarshallingService = JsonMarshallingServiceImpl()
+        private val serializationServiceBasic =
+            TestSerializationService.getTestSerializationService({}, cipherSchemeMetadata)
+        private val flowFiberService = TestFlowFiberServiceWithSerialization()
+        private val wireTransactionFactory = WireTransactionFactoryImpl(
+            merkleTreeProvider, digestService, jsonMarshallingService, cipherSchemeMetadata,
+            serializationServiceBasic, flowFiberService
+        )
 
-        @BeforeAll
-        @JvmStatic
-        fun setup() {
-            val schemeMetadata = CipherSchemeMetadataImpl()
-            digestService = DigestServiceImpl(schemeMetadata, null)
-            merkleTreeProvider = MerkleTreeProviderImpl(digestService)
-            jsonMarshallingService = JsonMarshallingServiceImpl()
-        }
     }
 
     @Test
@@ -41,9 +40,7 @@ class WireTransactionKryoSerializerTest {
             jsonMarshallingService
         )
         val wireTransactionKryoSerializer = WireTransactionKryoSerializer(
-            merkleTreeProvider,
-            digestService,
-            jsonMarshallingService
+            wireTransactionFactory
         )
 
         val serializer = createCheckpointSerializer(

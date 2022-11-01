@@ -1,6 +1,7 @@
 package net.corda.ledger.common.flow.impl.transaction.serializer.kryo
 
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.serialization.checkpoint.CheckpointInput
 import net.corda.serialization.checkpoint.CheckpointInternalCustomSerializer
 import net.corda.serialization.checkpoint.CheckpointOutput
@@ -15,9 +16,7 @@ import org.osgi.service.component.annotations.Reference
 
 @Component(service = [CheckpointInternalCustomSerializer::class])
 class WireTransactionKryoSerializer @Activate constructor(
-    @Reference(service = MerkleTreeProvider::class) private val merkleTreeProvider: MerkleTreeProvider,
-    @Reference(service = DigestService::class) private val digestService: DigestService,
-    @Reference(service = JsonMarshallingService::class) private val jsonMarshallingService: JsonMarshallingService
+    @Reference(service = WireTransactionFactory::class) private val wireTransactionFactory: WireTransactionFactory
 ) : CheckpointInternalCustomSerializer<WireTransaction> {
     override val type = WireTransaction::class.java
 
@@ -29,12 +28,9 @@ class WireTransactionKryoSerializer @Activate constructor(
     override fun read(input: CheckpointInput, type: Class<WireTransaction>): WireTransaction {
         val privacySalt = input.readClassAndObject() as PrivacySalt
         val componentGroupLists : List<List<ByteArray>> = uncheckedCast(input.readClassAndObject())
-        return WireTransaction(
-            merkleTreeProvider,
-            digestService,
-            jsonMarshallingService,
-            privacySalt,
+        return wireTransactionFactory.create(
             componentGroupLists,
+            privacySalt,
         )
     }
 }

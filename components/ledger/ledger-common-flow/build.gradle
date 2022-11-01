@@ -36,6 +36,7 @@ dependencies {
     testImplementation project(":testing:kryo-serialization-testkit")
     testImplementation project(":testing:layered-property-map-testkit")
     testImplementation project(':testing:ledger:ledger-common-testkit')
+    testImplementation project(":testing:test-serialization")
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
@@ -44,4 +45,6 @@ dependencies {
     integrationTestRuntimeOnly project(':libs:lifecycle:lifecycle-impl')
     integrationTestRuntimeOnly project(':libs:messaging:db-message-bus-impl')
     integrationTestRuntimeOnly project(':libs:messaging:messaging-impl')
+    integrationTestRuntimeOnly project(":libs:flows:session-manager-impl")
+    integrationTestRuntimeOnly "org.apache.aries.spifly:org.apache.aries.spifly.dynamic.framework.extension:$ariesDynamicFrameworkExtensionVersion"
 }
