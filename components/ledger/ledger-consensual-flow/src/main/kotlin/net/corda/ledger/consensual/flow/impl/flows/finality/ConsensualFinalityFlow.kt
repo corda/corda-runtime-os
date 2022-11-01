@@ -1,6 +1,7 @@
 package net.corda.ledger.consensual.flow.impl.flows.finality
 
 import net.corda.ledger.common.data.transaction.SignableData
+import net.corda.ledger.common.flow.flows.Payload
 import net.corda.ledger.consensual.flow.impl.persistence.ConsensualLedgerPersistenceService
 import net.corda.ledger.consensual.flow.impl.persistence.TransactionStatus
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
@@ -47,20 +48,15 @@ class ConsensualFinalityFlow(
 
         // Check if the sessions' counterparties are all available and have keys.
         val sessionPublicKeys = sessions.map { session ->
-            session to (
-                memberLookup.lookup(session.counterparty)
-                    ?: throw CordaRuntimeException(
-                        "A session with ${session.counterparty} exists but the member no longer exists in the membership group"
-                    )
-
+            val member = memberLookup.lookup(session.counterparty)
+                ?: throw CordaRuntimeException(
+                    "A session with ${session.counterparty} exists but the member no longer exists in the membership group"
                 )
+            session to member
         }.associate { (session, memberInfo) ->
-            session to
-                memberInfo.ledgerKeys.ifEmpty {
-                    throw CordaRuntimeException(
-                        "A session with ${memberInfo.name} exists but the member does not have any active ledger keys"
-                    )
-                }
+            session to memberInfo.ledgerKeys.ifEmpty {
+                throw CordaRuntimeException("A session with ${memberInfo.name} exists but the member does not have any active ledger keys")
+            }
         }
 
         // Should this also be a [CordaRuntimeException]? Or make the others [IllegalArgumentException]s?
@@ -76,19 +72,25 @@ class ConsensualFinalityFlow(
 
         var signedByParticipantsTransaction = signedTransaction
 
-        sessions.forEach{ session ->
+        sessions.forEach { session ->
             // TODO Use [FlowMessaging.sendAll] and [FlowMessaging.receiveAll] anyway
             log.debug { "Requesting signature from ${session.counterparty} for signed transaction ${signedTransaction.id}" }
             session.send(signedTransaction)
 
-            val signatures = try {
-                session.receive<List<DigitalSignatureAndMetadata>>()
+            val signaturesPayload = try {
+                session.receive<Payload<List<DigitalSignatureAndMetadata>>>()
             } catch (e: CordaRuntimeException) {
-                log.warn(
-                    "Failed to receive signature from ${session.counterparty} for signed transaction ${signedTransaction.id}"
-                )
+                log.warn("Failed to receive signature from ${session.counterparty} for signed transaction ${signedTransaction.id}")
                 throw e
             }
+
+            val signatures = signaturesPayload.getOrThrow { failure ->
+                val message = "Failed to receive signature from ${session.counterparty} for signed transaction " +
+                        "${signedTransaction.id} with message: ${failure.message}"
+                log.warn(message)
+                CordaRuntimeException(message)
+            }
+
             log.debug { "Received signature from ${session.counterparty} for signed transaction ${signedTransaction.id}" }
 
             val receivedSigningKeys = signatures.map { it.by }
@@ -99,7 +101,7 @@ class ConsensualFinalityFlow(
                 )
             }
 
-            signatures.forEach {signature ->
+            signatures.forEach { signature ->
                 try {
                     // TODO Do not hardcode signature spec
                     val signedData = SignableData(signedTransaction.id, signature.metadata)
@@ -122,9 +124,7 @@ class ConsensualFinalityFlow(
                     throw e
                 }
                 signedByParticipantsTransaction = signedTransaction.addSignature(signature)
-                log.trace {
-                    "Added signature from ${session.counterparty} of $signature for signed transaction ${signedTransaction.id}"
-                }
+                log.trace { "Added signature from ${session.counterparty} of $signature for signed transaction ${signedTransaction.id}" }
             }
         }
 
@@ -140,9 +140,7 @@ class ConsensualFinalityFlow(
             // Returning a context map might be appropriate in case we want to do any sort of handling in the future
             // without having to worry about backwards compatibility.
             session.receive<Unit>()
-            log.debug {
-                "${session.counterparty} received and acknowledged storage of signed transaction ${signedTransaction.id}"
-            }
+            log.debug { "${session.counterparty} received and acknowledged storage of signed transaction ${signedTransaction.id}" }
         }
 
         if (sessions.isNotEmpty()) {
