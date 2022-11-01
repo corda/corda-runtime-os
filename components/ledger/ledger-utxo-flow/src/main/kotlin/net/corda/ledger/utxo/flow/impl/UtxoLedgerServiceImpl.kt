@@ -31,12 +31,4 @@ class UtxoLedgerServiceImpl @Activate constructor(
     override fun <T : ContractState> resolve(stateRef: StateRef): StateAndRef<T> {
         TODO("Not yet implemented")
     }
-
-    override fun <T : ContractState> verify(stateAndRefs: Iterable<StateAndRef<T>>) {
-        TODO("Not yet implemented")
-    }
-
-    override fun <T : ContractState> verify(stateAndRef: StateAndRef<T>) {
-        TODO("Not yet implemented")
-    }
 }
