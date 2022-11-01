@@ -1,6 +1,7 @@
 package net.corda.p2p.crypto.protocol.api
 
 import net.corda.v5.base.types.MemberX500Name
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito
@@ -34,6 +35,12 @@ class CertificateValidatorTest {
         on { generateCertPath(any<MutableList<Certificate>>()) } doReturn certificateChain
         on { generateCertificate(any()) } doReturn certificate
     }
+    private val mockInvalidPeerCertificate = Mockito.mockConstruction(InvalidPeerCertificate::class.java)
+
+    @AfterEach
+    fun cleanUp() {
+        mockInvalidPeerCertificate.close()
+    }
 
     @Test
     fun `certificate fails validation if X500 name doesn't match`() {
@@ -64,20 +71,6 @@ class CertificateValidatorTest {
     fun `certificate fails validation if x509 cert does not have digital signature set`() {
         whenever(certificate.keyUsage).thenReturn(BooleanArray(10) { it != 0 })
         whenever(trustStore.aliases()).thenReturn(any())
-        val mock = Mockito.mockConstruction(PKIXBuilderParameters::class.java)
-        val validator = CertificateValidator(RevocationCheckMode.HARD_FAIL, trustStore, certPathValidator, certificateFactory)
-        assertThrows<InvalidPeerCertificate> { validator.validate(listOf(certificatePemString), certX500Name) }
-        mock.close()
-    }
-
-    @Test
-    fun `certificate fails validation if second cert is not an X509Certificate`() {
-        whenever(certificate.keyUsage).thenReturn(BooleanArray(10) { it != 0 })
-        val nonX500Certificate = mock<Certificate>()
-        val certificateChain = mock<CertPath> {
-            on { certificates } doReturn listOf(certificate, nonX500Certificate)
-        }
-        whenever(certificateFactory.generateCertPath(any<MutableList<Certificate>>())) doReturn certificateChain
         val mock = Mockito.mockConstruction(PKIXBuilderParameters::class.java)
         val validator = CertificateValidator(RevocationCheckMode.HARD_FAIL, trustStore, certPathValidator, certificateFactory)
         assertThrows<InvalidPeerCertificate> { validator.validate(listOf(certificatePemString), certX500Name) }
