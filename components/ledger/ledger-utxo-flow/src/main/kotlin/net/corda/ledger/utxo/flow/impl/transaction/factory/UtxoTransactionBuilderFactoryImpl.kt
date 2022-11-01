@@ -2,7 +2,7 @@ package net.corda.ledger.utxo.flow.impl.transaction.factory
 
 import net.corda.flow.fiber.FlowFiberService
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
-import net.corda.ledger.common.data.transaction.TransactionMetaData
+import net.corda.ledger.common.data.transaction.TransactionMetadata
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
 import net.corda.ledger.utxo.flow.impl.transaction.TRANSACTION_META_DATA_UTXO_LEDGER_VERSION
@@ -79,14 +79,14 @@ class UtxoTransactionBuilderFactoryImpl @Activate constructor(
         }
 
     private fun calculateMetaData() =
-        TransactionMetaData(
+        TransactionMetadata(
             linkedMapOf(
-                TransactionMetaData.LEDGER_MODEL_KEY to UtxoLedgerTransactionImpl::class.java.canonicalName,
-                TransactionMetaData.LEDGER_VERSION_KEY to TRANSACTION_META_DATA_UTXO_LEDGER_VERSION,
-                TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
-                TransactionMetaData.PLATFORM_VERSION_KEY to platformInfoProvider.activePlatformVersion,
-                TransactionMetaData.CPI_METADATA_KEY to getCpiSummary(),
-                TransactionMetaData.CPK_METADATA_KEY to getCpkSummaries()
+                TransactionMetadata.LEDGER_MODEL_KEY to UtxoLedgerTransactionImpl::class.java.canonicalName,
+                TransactionMetadata.LEDGER_VERSION_KEY to TRANSACTION_META_DATA_UTXO_LEDGER_VERSION,
+                TransactionMetadata.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
+                TransactionMetadata.PLATFORM_VERSION_KEY to platformInfoProvider.activePlatformVersion,
+                TransactionMetadata.CPI_METADATA_KEY to getCpiSummary(),
+                TransactionMetadata.CPK_METADATA_KEY to getCpkSummaries()
             )
         )
 }
