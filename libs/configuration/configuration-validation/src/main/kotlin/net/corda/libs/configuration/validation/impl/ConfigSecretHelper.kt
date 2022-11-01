@@ -67,9 +67,9 @@ class ConfigSecretHelper {
         if (node.isObject) {
             for ((name, newNode) in node.fields().asSequence().toList()) {
                 val nodePath = if (nodeName == "") name else "$nodeName.$name"
-                if (secretsNode.keys.contains(nodePath)) {
-                    val secret = secretsNode[nodePath]
-                    (node as ObjectNode).set(name, secret)
+                val secret = secretsNode[nodePath]
+                if (secret != null) {
+                    (node as ObjectNode).set<ObjectNode>(name, secret)
                 } else {
                     insertSecretsRecursive(newNode, secretsNode, nodePath)
                 }

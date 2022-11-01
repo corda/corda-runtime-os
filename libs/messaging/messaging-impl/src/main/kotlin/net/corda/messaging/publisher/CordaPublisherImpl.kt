@@ -1,5 +1,7 @@
 package net.corda.messaging.publisher
 
+import java.nio.ByteBuffer
+import java.util.concurrent.CompletableFuture
 import net.corda.messagebus.api.producer.CordaProducer
 import net.corda.messagebus.api.producer.CordaProducerRecord
 import net.corda.messaging.api.exception.CordaMessageAPIFatalException
@@ -12,8 +14,6 @@ import net.corda.messaging.utils.toCordaProducerRecords
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.slf4j.Logger
-import java.nio.ByteBuffer
-import java.util.concurrent.CompletableFuture
 
 /**
  * Kafka publisher will create a new Kafka instance of Publisher.
@@ -161,7 +161,7 @@ internal class CordaPublisherImpl(
                 }
             }
             exception is CordaMessageAPIFatalException -> {
-                log.error("$message. Fatal error occurred. Closing producer.", exception)
+                log.warn("$message. Fatal error occurred. Closing producer.", exception)
                 future.completeExceptionally(CordaMessageAPIFatalException(message, exception))
                 close()
             }
@@ -170,7 +170,7 @@ internal class CordaPublisherImpl(
                 future.completeExceptionally(CordaMessageAPIIntermittentException(message, exception))
             }
             else -> {
-                log.error("$message. Unknown error occurred. Closing producer.", exception)
+                log.warn("$message. Unknown error occurred. Closing producer.", exception)
                 future.completeExceptionally(CordaMessageAPIFatalException(message, exception))
                 close()
             }
@@ -188,7 +188,7 @@ internal class CordaPublisherImpl(
         fatal: Boolean
     ) {
         if (fatal) {
-            log.error("$message. Closing producer.", exception)
+            log.warn("$message. Closing producer.", exception)
             future.completeExceptionally(CordaMessageAPIFatalException(message, exception))
             close()
         } else {
@@ -204,7 +204,7 @@ internal class CordaPublisherImpl(
         try {
             cordaProducer.close()
         } catch (ex: Exception) {
-            log.error("CordaKafkaPublisher failed to close producer safely. ClientId: ${config.clientId}", ex)
+            log.warn("CordaKafkaPublisher failed to close producer safely. ClientId: ${config.clientId}", ex)
         }
     }
 

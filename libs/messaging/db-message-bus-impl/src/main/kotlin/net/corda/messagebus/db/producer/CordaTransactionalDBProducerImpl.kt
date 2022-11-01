@@ -157,7 +157,7 @@ class CordaTransactionalDBProducerImpl(
 
     override fun close() {
         if (inTransaction) {
-            log.error("Close called during transaction.  Some data may be lost.")
+            log.warn("Close called during transaction.  Some data may be lost.")
             abortTransaction()
         }
         dbAccess.close()
