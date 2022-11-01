@@ -10,7 +10,6 @@ import net.corda.messaging.config.ResolvedSubscriptionConfig
 import net.corda.messaging.utils.tryGetResult
 import net.corda.schema.Schemas.Companion.getStateAndEventStateTopic
 import net.corda.v5.base.util.debug
-import net.corda.v5.base.util.trace
 import org.slf4j.LoggerFactory
 import java.time.Clock
 import java.time.Duration
@@ -89,6 +88,9 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     private fun getSyncedEventPartitions(): Set<CordaTopicPartition> {
         val partitionsSynced = mutableSetOf<CordaTopicPartition>()
         val statePartitionsToSync = partitionsToSync.toMap()
+        if (statePartitionsToSync.isNotEmpty()) {
+            log.info("State consumer in group ${config.group} is syncing partitions: $statePartitionsToSync")
+        }
         for (partition in statePartitionsToSync) {
             val partitionId = partition.key
             val stateTopic = getStateAndEventStateTopic(config.topic)
@@ -96,10 +98,10 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
             val stateConsumerPollPosition = stateConsumer.position(stateTopicPartition)
             val endOffset = partition.value
             if (stateConsumerPollPosition >= endOffset) {
-                log.trace {
-                    "State partition $stateTopicPartition is now up to date. Poll position $stateConsumerPollPosition, recorded " +
-                            "end offset $endOffset"
-                }
+                log.info(
+                    "State partition $stateTopicPartition is now up to date for consumer in group ${config.group}. " +
+                            "Poll position $stateConsumerPollPosition, recorded end offset $endOffset"
+                )
                 partitionsToSync.remove(partitionId)
                 partitionsSynced.add(CordaTopicPartition(config.topic, partitionId))
             }
@@ -109,7 +111,7 @@ internal class StateAndEventConsumerImpl<K : Any, S : Any, E : Any>(
     }
 
     private fun resumeConsumerAndExecuteListener(partitionsSynced: Set<CordaTopicPartition>) {
-        log.debug { "State consumer is up to date for $partitionsSynced.  Resuming event feed." }
+        log.info("State consumer in group ${config.group} is up to date for $partitionsSynced.  Resuming event feed.")
         eventConsumer.resume(partitionsSynced)
 
         stateAndEventListener?.let { listener ->

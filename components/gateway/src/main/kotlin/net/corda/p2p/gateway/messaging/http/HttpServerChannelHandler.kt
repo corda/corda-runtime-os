@@ -20,6 +20,7 @@ import java.lang.IndexOutOfBoundsException
 
 class HttpServerChannelHandler(private val serverListener: HttpServerListener,
                                private val maxRequestSize: Long,
+                               private val urlPath: String,
                                private val logger: Logger): BaseHttpChannelHandler(serverListener, logger) {
 
     private var responseCode: HttpResponseStatus? = null
@@ -30,7 +31,7 @@ class HttpServerChannelHandler(private val serverListener: HttpServerListener,
     @Suppress("ComplexMethod")
     override fun channelRead0(ctx: ChannelHandlerContext, msg: HttpObject) {
         if (msg is HttpRequest) {
-            responseCode = msg.validate(maxRequestSize)
+            responseCode = msg.validate(maxRequestSize, urlPath)
             if (responseCode != HttpResponseStatus.OK) {
                 logger.warn ("Received invalid HTTP request from ${ctx.channel().remoteAddress()}\n" +
                         "Protocol version: ${msg.protocolVersion()}\n" +

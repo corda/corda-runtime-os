@@ -182,8 +182,10 @@ class SandboxGroupContextServiceImpl(
                         serviceIndex.computeIfAbsent(serviceType) { HashSet() }.add(serviceRef)
                     }.mapNotNullTo(ArrayList()) { serviceType ->
                         if (systemFilter.match(serviceRef)) {
-                            singleton(serviceRef.bundle).loadCommonService(serviceType)
+                            // We always load interfaces for system services.
+                            serviceRef.loadCommonService(serviceType)
                         } else if (accessControlContext.checkServicePermission(serviceType)) {
+                            // Only accept those service types for which this sandbox also has a bundle wiring.
                             bundles.loadCommonService(serviceType)
                         } else {
                             logger.debug("Holding ID {} denied GET permission for {}", vnc.holdingIdentity, serviceType)
@@ -394,6 +396,11 @@ class SandboxGroupContextServiceImpl(
 
                 // Register the remaining injectables, which we must create ourselves.
                 while (injectables.isNotEmpty()) {
+                    // Create as many non-injectable services as we can before
+                    // trying to create any more injectable ones. These may
+                    // require other non-injectable services themselves.
+                    createNonInjectables(closeables)
+
                     if (!registerComplexInjectables(targetContext, closeables)) {
                         logger.warn("Failed to create sandbox injectables: {}",
                             injectables.values
@@ -402,11 +409,6 @@ class SandboxGroupContextServiceImpl(
                         )
                         break
                     }
-
-                    // Create as many non-injectable services as we can before
-                    // trying to create any more injectable ones. These may
-                    // require other non-injectable services themselves.
-                    createNonInjectables(closeables)
                 }
 
                 // This shouldn't log anything unless we also failed to create some injectables.
@@ -657,6 +659,15 @@ private fun Iterable<Bundle>.loadCommonService(serviceClassName: String): Class<
         }
     }
     return null
+}
+
+/**
+ * Try to load an interface for a service in the core platform.
+ * Returns `null` if this [ServiceReference]'s [Bundle] has no
+ * wiring for that service interface.
+ */
+private fun ServiceReference<*>.loadCommonService(serviceClassName: String): Class<*>? {
+    return singleton(bundle).loadCommonService(serviceClassName)
 }
 
 /**

@@ -14,14 +14,6 @@ class ConsensualLedgerTransactionImpl(
     private val serializationService: SerializationService
 ) : ConsensualLedgerTransaction {
 
-    override fun equals(other: Any?): Boolean =
-        (other === this) ||
-                ((other is ConsensualLedgerTransactionImpl) &&
-                        (other.wireTransaction == wireTransaction)
-                        )
-
-    override fun hashCode(): Int = wireTransaction.hashCode()
-
     override val id: SecureHash
         get() = wireTransaction.id
 
@@ -55,4 +47,10 @@ class ConsensualLedgerTransactionImpl(
             "Deserialized required signatories from WireTx do not match with the ones derived from the states!"
         }
     }
+
+    override fun equals(other: Any?): Boolean {
+        return (other === this) || ((other is ConsensualLedgerTransactionImpl) && (other.wireTransaction == wireTransaction))
+    }
+
+    override fun hashCode(): Int = wireTransaction.hashCode()
 }

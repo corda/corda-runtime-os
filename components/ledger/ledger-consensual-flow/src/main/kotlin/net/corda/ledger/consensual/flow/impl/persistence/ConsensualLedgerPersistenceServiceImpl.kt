@@ -13,6 +13,7 @@ import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
+import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.serialization.SingletonSerializeAsToken
@@ -33,11 +34,12 @@ class ConsensualLedgerPersistenceServiceImpl @Activate constructor(
     @Reference(service = SerializationService::class)
     private val serializationService: SerializationService,
     @Reference(service = SigningService::class)
-    val signingService: SigningService,
+    private val signingService: SigningService,
     @Reference(service = DigitalSignatureVerificationService::class)
-    val digitalSignatureVerificationService: DigitalSignatureVerificationService,
+    private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
 ) : ConsensualLedgerPersistenceService, SingletonSerializeAsToken {
 
+    @Suspendable
     override fun find(id: SecureHash): ConsensualSignedTransaction? {
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
@@ -49,11 +51,12 @@ class ConsensualLedgerPersistenceServiceImpl @Activate constructor(
         }
     }
 
-    override fun persist(transaction: ConsensualSignedTransaction, transactionStatus: String): List<CordaPackageSummary> {
+    @Suspendable
+    override fun persist(transaction: ConsensualSignedTransaction, transactionStatus: TransactionStatus): List<CordaPackageSummary> {
         return wrapWithPersistenceException {
             externalEventExecutor.execute(
                 PersistTransactionExternalEventFactory::class.java,
-                PersistTransactionParameters(serialize(transaction.toContainer()), transactionStatus)
+                PersistTransactionParameters(serialize(transaction.toContainer()), transactionStatus.value)
             )
         }.map { serializationService.deserialize(it.array()) }
     }

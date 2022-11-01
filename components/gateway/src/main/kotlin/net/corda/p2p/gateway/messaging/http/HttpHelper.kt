@@ -21,11 +21,6 @@ class HttpHelper {
 
     companion object {
         /**
-         * Endpoint suffix for POST requests.
-         */
-        const val ENDPOINT = "/gateway/send"
-
-        /**
          * Protocol scheme expected by the server
          */
         const val SCHEME = "https"
@@ -40,7 +35,7 @@ class HttpHelper {
             return DefaultFullHttpRequest(
                 HttpVersion.HTTP_1_1,
                 HttpMethod.POST,
-                URL(SCHEME, uri.host, uri.port, ENDPOINT).toString(), // At a later point we should just use the provided URI
+                URL(SCHEME, uri.host, uri.port, uri.path).toString(),
                 content
             ).apply {
                 headers()
@@ -70,11 +65,11 @@ class HttpHelper {
          * Extension function which validates an incoming request.
          * @return an [HttpResponseStatus] containing the status code
          */
-        fun HttpRequest.validate(maxRequestSize: Long): HttpResponseStatus {
+        fun HttpRequest.validate(maxRequestSize: Long, urlPath: String): HttpResponseStatus {
             try {
                 val uri = URI.create(this.uri()).normalize()
 
-                if (uri.path != ENDPOINT) {
+                if (uri.path != urlPath) {
                     return HttpResponseStatus.NOT_FOUND
                 }
 
