@@ -41,11 +41,6 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
 ) : UtxoSignedTransactionFactory,
     SingletonSerializeAsToken {
 
-    private fun consensualMetadata() = linkedMapOf(
-        TransactionMetaData.LEDGER_MODEL_KEY to UtxoLedgerTransactionImpl::class.java.canonicalName,
-        TransactionMetaData.LEDGER_VERSION_KEY to TRANSACTION_META_DATA_UTXO_LEDGER_VERSION,
-    )
-
     override fun create(
         consensualTransactionBuilder: TransactionBuilderInternal,
         signatories: Iterable<PublicKey>
@@ -73,7 +68,6 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
         )
     }
 
-
     override fun create(
         wireTransaction: WireTransaction,
         signaturesWithMetaData: List<DigitalSignatureAndMetadata>
@@ -86,6 +80,11 @@ class UtxoSignedTransactionFactoryImpl @Activate constructor(
             signaturesWithMetaData
         )
     }
+
+    private fun consensualMetadata() = linkedMapOf(
+        TransactionMetaData.LEDGER_MODEL_KEY to UtxoLedgerTransactionImpl::class.java.canonicalName,
+        TransactionMetaData.LEDGER_VERSION_KEY to TRANSACTION_META_DATA_UTXO_LEDGER_VERSION,
+    )
 }
 
 /**

@@ -40,11 +40,6 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
     private val wireTransactionFactory: WireTransactionFactory,
 ) : ConsensualSignedTransactionFactory, SingletonSerializeAsToken {
 
-    private fun consensualMetadata() = linkedMapOf(
-        TransactionMetaData.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
-        TransactionMetaData.LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
-    )
-
     override fun create(
         consensualTransactionBuilder: TransactionBuilderInternal,
         signatories: Iterable<PublicKey>
@@ -72,7 +67,6 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
         )
     }
 
-
     override fun create(
         wireTransaction: WireTransaction,
         signaturesWithMetaData: List<DigitalSignatureAndMetadata>
@@ -85,6 +79,11 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
             signaturesWithMetaData
         )
     }
+
+    private fun consensualMetadata() = linkedMapOf(
+        TransactionMetaData.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
+        TransactionMetaData.LEDGER_VERSION_KEY to TRANSACTION_META_DATA_CONSENSUAL_LEDGER_VERSION,
+    )
 }
 
 /**

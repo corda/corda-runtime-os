@@ -36,27 +36,6 @@ class WireTransactionFactoryImpl @Activate constructor(
     private val flowFiberService: FlowFiberService, // TODO CORE-7101 use CurrentSandboxService when it gets available
 ) : WireTransactionFactory, SingletonSerializeAsToken {
 
-    private fun checkComponentGroups(componentGroupLists: List<List<ByteArray>>) {
-        check(componentGroupLists.isNotEmpty()) { "todo text" }
-    }
-
-    private fun parseMetadata(metadataBytes: ByteArray): TransactionMetaData {
-        // TODO(update with CORE-6890)
-        val metadata = jsonMarshallingService.parse(metadataBytes.decodeToString(), TransactionMetaData::class.java)
-
-        check(metadata.getDigestSettings() == WireTransactionDigestSettings.defaultValues) {
-            "Only the default digest settings are acceptable now! ${metadata.getDigestSettings()} vs " +
-                    "${WireTransactionDigestSettings.defaultValues}"
-        }
-        return jsonMarshallingService.parse(metadataBytes.decodeToString(), TransactionMetaData::class.java)
-    }
-
-    private fun generatePrivacySalt(): PrivacySalt {
-        val entropy = ByteArray(32)
-        cipherSchemeMetadata.secureRandom.nextBytes(entropy)
-        return PrivacySaltImpl(entropy)
-    }
-
     override fun create(
         componentGroupLists: List<List<ByteArray>>,
         privacySalt: PrivacySalt
@@ -94,5 +73,26 @@ class WireTransactionFactoryImpl @Activate constructor(
             componentGroupLists,
             parsedMetadata
         )
+    }
+
+    private fun checkComponentGroups(componentGroupLists: List<List<ByteArray>>) {
+        check(componentGroupLists.isNotEmpty()) { "todo text" }
+    }
+
+    private fun parseMetadata(metadataBytes: ByteArray): TransactionMetaData {
+        // TODO(update with CORE-6890)
+        val metadata = jsonMarshallingService.parse(metadataBytes.decodeToString(), TransactionMetaData::class.java)
+
+        check(metadata.getDigestSettings() == WireTransactionDigestSettings.defaultValues) {
+            "Only the default digest settings are acceptable now! ${metadata.getDigestSettings()} vs " +
+                    "${WireTransactionDigestSettings.defaultValues}"
+        }
+        return jsonMarshallingService.parse(metadataBytes.decodeToString(), TransactionMetaData::class.java)
+    }
+
+    private fun generatePrivacySalt(): PrivacySalt {
+        val entropy = ByteArray(32)
+        cipherSchemeMetadata.secureRandom.nextBytes(entropy)
+        return PrivacySaltImpl(entropy)
     }
 }
