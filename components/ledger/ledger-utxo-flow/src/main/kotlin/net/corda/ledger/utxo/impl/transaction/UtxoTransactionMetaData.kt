@@ -6,7 +6,7 @@ class UtxoTransactionMetaData {
         GENERAL
     }
     companion object {
-        const val LEDGER_VERSION = "0.001"
+        const val LEDGER_VERSION = 1
     }
 }
 

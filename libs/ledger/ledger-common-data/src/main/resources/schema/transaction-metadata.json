@@ -105,10 +105,10 @@
     },
     "ledgerVersion": {
       "title": "Ledger version",
-      "type": "string",
+      "type": "integer",
       "default": "",
       "examples": [
-        "0.001"
+        1
       ],
       "pattern": "^.*$"
     },

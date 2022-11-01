@@ -198,7 +198,7 @@ class ConsensualLedgerMessageProcessorTests {
     private fun createTestTransaction(): ConsensualSignedTransactionContainer {
         val consensualTransactionMetaDataExample = TransactionMetaData(linkedMapOf(
             TransactionMetaData.LEDGER_MODEL_KEY to ConsensualLedgerTransactionImpl::class.java.canonicalName,
-            TransactionMetaData.LEDGER_VERSION_KEY to "1.0",
+            TransactionMetaData.LEDGER_VERSION_KEY to 1,
             TransactionMetaData.DIGEST_SETTINGS_KEY to WireTransactionDigestSettings.defaultValues,
             TransactionMetaData.PLATFORM_VERSION_KEY to 123,
             TransactionMetaData.CPI_METADATA_KEY to cpiPackageSummaryExample,

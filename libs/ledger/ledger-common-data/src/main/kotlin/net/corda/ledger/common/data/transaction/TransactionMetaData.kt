@@ -28,7 +28,16 @@ class TransactionMetaData(private val properties: LinkedHashMap<String, Any>) {
 
     fun getLedgerModel(): String = this[LEDGER_MODEL_KEY].toString()
 
-    fun getLedgerVersion(): String = this[LEDGER_VERSION_KEY].toString()
+    fun getLedgerVersion(): Int {
+        val version = this[LEDGER_VERSION_KEY].toString()
+
+        try {
+            return Integer.parseInt(version)
+        } catch (e: NumberFormatException) {
+            throw CordaRuntimeException(
+            "Transaction metadata representation error: ledger version should be an integer but could not be parsed: $version")
+        }
+    }
 
     fun getTransactionSubtype(): String = this[TRANSACTION_SUBTYPE_KEY].toString()
 

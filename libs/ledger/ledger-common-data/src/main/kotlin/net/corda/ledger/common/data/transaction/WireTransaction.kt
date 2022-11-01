@@ -17,6 +17,7 @@ import net.corda.v5.ledger.common.transaction.PrivacySalt
 import java.util.Base64
 
 const val ALL_LEDGER_METADATA_COMPONENT_GROUP_ID = 0
+private const val SCHEMA_PATH = "/schema/transaction-metadata.json"
 
 @Suppress("LongParameterList")
 class WireTransaction(
@@ -141,8 +142,7 @@ class WireTransaction(
     }
 
     private fun parseMetadata(json: String): TransactionMetaData {
-        val schema = getSchema("/schema/transaction-metadata.json")
-        jsonValidator.validate(json, schema)
+        jsonValidator.validate(json, getSchema(SCHEMA_PATH))
         return jsonMarshallingService.parse(json, TransactionMetaData::class.java)
     }
 
