@@ -23,7 +23,6 @@ import net.corda.db.core.DbPrivilege.DDL
 import net.corda.db.core.DbPrivilege.DML
 import net.corda.layeredpropertymap.toAvro
 import net.corda.libs.configuration.SmartConfig
-import net.corda.libs.configuration.SmartConfigFactory
 import net.corda.libs.configuration.datamodel.findDbConnectionByNameAndPrivilege
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogAuditEntity
 import net.corda.libs.cpi.datamodel.CpkDbChangeLogEntity
@@ -94,6 +93,7 @@ internal class VirtualNodeWriterProcessor(
         const val PUBLICATION_TIMEOUT_SECONDS = 30L
         val systemTerminatorTag = "${VAULT.name}-system-final"
     }
+    private val smartConfigFactory = dbConnectionManager.clusterConfig.factory
 
     @Suppress("ReturnCount", "ComplexMethod")
     private fun createVirtualNode(
@@ -242,7 +242,7 @@ internal class VirtualNodeWriterProcessor(
                         dbConnection.config
                     )
                     // Change the config into a SmartConfig
-                    val connectionConfig = SmartConfigFactory.create(dbConfig).create(dbConfig)
+                    val connectionConfig = smartConfigFactory.create(dbConfig)
                     // Retrieve virtual node info
                     val virtualNodeInfo = virtualNodeEntityRepository.getVirtualNode(shortHashString)
                     // Retrieve CPI metadata
