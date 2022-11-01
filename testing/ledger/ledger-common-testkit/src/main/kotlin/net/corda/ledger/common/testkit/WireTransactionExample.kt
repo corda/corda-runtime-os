@@ -27,9 +27,9 @@ fun getWireTransactionExample(
     return WireTransaction(
         merkleTreeProvider,
         digestService,
-        jsonMarshallingService,
         getPrivacySalt(),
-        componentGroupLists
+        componentGroupLists,
+        metaData
     )
 }
 

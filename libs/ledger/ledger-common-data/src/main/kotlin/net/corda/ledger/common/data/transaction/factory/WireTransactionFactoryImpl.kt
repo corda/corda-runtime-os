@@ -20,6 +20,7 @@ import org.osgi.service.component.annotations.Reference
 import org.osgi.service.component.annotations.ServiceScope
 
 @Component(service = [WireTransactionFactory::class, SingletonSerializeAsToken::class], scope = ServiceScope.PROTOTYPE)
+@Suppress("LongParameterList")
 class WireTransactionFactoryImpl @Activate constructor(
     @Reference(service = MerkleTreeProvider::class)
     private val merkleTreeProvider: MerkleTreeProvider,
@@ -33,7 +34,7 @@ class WireTransactionFactoryImpl @Activate constructor(
     private val serializationService: SerializationService,
     @Reference(service = FlowFiberService::class)
     private val flowFiberService: FlowFiberService, // TODO CORE-7101 use CurrentSandboxService when it gets available
-) : WireTransactionFactory {
+) : WireTransactionFactory, SingletonSerializeAsToken {
 
     private fun checkComponentGroups(componentGroupLists: List<List<ByteArray>>) {
         check(componentGroupLists.isNotEmpty()) { "todo text" }

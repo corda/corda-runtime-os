@@ -12,7 +12,7 @@ interface WireTransactionFactory {
     ): WireTransaction
 
     fun create(
-        componentGroups: List<List<ByteArray>>,
+        componentGroupLists: List<List<ByteArray>>,
         privacySalt: PrivacySalt
     ): WireTransaction
 }

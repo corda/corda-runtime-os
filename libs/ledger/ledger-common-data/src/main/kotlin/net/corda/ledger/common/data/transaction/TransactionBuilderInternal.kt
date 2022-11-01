@@ -1,7 +1,6 @@
 package net.corda.ledger.common.data.transaction
 
 import net.corda.sandbox.SandboxGroup
-import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 
 interface TransactionBuilderInternal {

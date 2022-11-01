@@ -4,37 +4,47 @@ import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
+import net.corda.flow.fiber.FlowFiber
+import net.corda.flow.fiber.FlowFiberService
+import net.corda.internal.serialization.amqp.helper.TestFlowFiberServiceWithSerialization
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
+import net.corda.ledger.common.data.transaction.factory.WireTransactionFactoryImpl
 import net.corda.ledger.common.data.transaction.serializer.amqp.WireTransactionSerializer
 import net.corda.ledger.common.testkit.getWireTransactionExample
-import net.corda.v5.application.marshalling.JsonMarshallingService
-import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
-import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
+import net.corda.v5.cipher.suite.CipherSchemeMetadata
+import net.corda.v5.serialization.SingletonSerializeAsToken
 import org.junit.jupiter.api.Assertions
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
+class TestFlowFiberServiceWithSerializationProxy constructor(
+    private val cipherSchemeMetadata: CipherSchemeMetadata
+) : FlowFiberService, SingletonSerializeAsToken {
+    override fun getExecutingFiber(): FlowFiber {
+        val testFlowFiberServiceWithSerialization = TestFlowFiberServiceWithSerialization()
+        testFlowFiberServiceWithSerialization.configureSerializer({}, cipherSchemeMetadata)
+        return testFlowFiberServiceWithSerialization.getExecutingFiber()
+    }
+}
+
 class WireTransactionAMQPSerializerTest {
     companion object {
-        private lateinit var digestService: DigestService
-        private lateinit var merkleTreeProvider: MerkleTreeProvider
-        private lateinit var jsonMarshallingService: JsonMarshallingService
-        private lateinit var serializationService: SerializationService
+        private val cipherSchemeMetadata = CipherSchemeMetadataImpl()
+        val digestService = DigestServiceImpl(cipherSchemeMetadata, null)
+        val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
+        val jsonMarshallingService = JsonMarshallingServiceImpl()
+        private val serializationServiceBasic =
+            TestSerializationService.getTestSerializationService({}, cipherSchemeMetadata)
+        private val flowFiberService = TestFlowFiberServiceWithSerializationProxy(cipherSchemeMetadata)
+        private val wireTransactionFactory = WireTransactionFactoryImpl(
+            merkleTreeProvider, digestService, jsonMarshallingService, cipherSchemeMetadata,
+            serializationServiceBasic, flowFiberService
+        )
+        val serializationService = TestSerializationService.getTestSerializationService({
+            it.register(WireTransactionSerializer(wireTransactionFactory), it)
+        }, cipherSchemeMetadata)
 
-        @BeforeAll
-        @JvmStatic
-        fun setup() {
-            val schemeMetadata = CipherSchemeMetadataImpl()
-            digestService = DigestServiceImpl(schemeMetadata, null)
-            merkleTreeProvider = MerkleTreeProviderImpl(digestService)
-            jsonMarshallingService = JsonMarshallingServiceImpl()
-            serializationService = TestSerializationService.getTestSerializationService({
-                it.register(WireTransactionSerializer(merkleTreeProvider, digestService, jsonMarshallingService), it)
-            }, schemeMetadata)
-        }
     }
 
     @Test
@@ -46,6 +56,7 @@ class WireTransactionAMQPSerializerTest {
         Assertions.assertDoesNotThrow {
             deserialized.id
         }
+
         assertEquals(wireTransaction.id, deserialized.id)
     }
 }
