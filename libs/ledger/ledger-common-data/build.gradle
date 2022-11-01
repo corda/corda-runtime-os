@@ -34,7 +34,7 @@ dependencies {
     testImplementation "org.mockito:mockito-core:$mockitoVersion"
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
 
-    integrationTestRuntimeOnly project(':testing:sandboxes')
+    integrationTestImplementation project(':testing:sandboxes')
     integrationTestRuntimeOnly project(':libs:crypto:cipher-suite-impl')
     integrationTestRuntimeOnly project(":libs:flows:session-manager-impl")
     integrationTestRuntimeOnly project(":libs:lifecycle:lifecycle-impl")
