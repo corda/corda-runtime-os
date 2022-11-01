@@ -1,24 +1,15 @@
 package net.corda.ledger.utxo.flow.impl.transaction
 
-import net.corda.ledger.common.data.transaction.CordaPackageSummary
-import net.corda.ledger.common.data.transaction.PrivacySaltImpl
-import net.corda.ledger.common.data.transaction.TransactionMetaData
-import net.corda.ledger.common.data.transaction.WireTransaction
-import net.corda.ledger.common.flow.impl.transaction.createTransactionSignature
+import net.corda.ledger.common.data.transaction.TransactionBuilderInternal
 import net.corda.ledger.utxo.data.state.TransactionStateImpl
 import net.corda.ledger.utxo.data.transaction.UtxoComponentGroup
 import net.corda.ledger.utxo.data.transaction.UtxoOutputInfoComponent
 import net.corda.ledger.utxo.flow.impl.timewindow.TimeWindowBetweenImpl
 import net.corda.ledger.utxo.flow.impl.timewindow.TimeWindowUntilImpl
+import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.sandbox.SandboxGroup
-import net.corda.v5.application.crypto.DigitalSignatureVerificationService
-import net.corda.v5.application.crypto.SigningService
-import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.annotations.Suspendable
-import net.corda.v5.cipher.suite.CipherSchemeMetadata
-import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.common.Party
 import net.corda.v5.ledger.utxo.Command
@@ -33,16 +24,8 @@ import java.util.Objects
 
 @Suppress("TooManyFunctions")
 data class UtxoTransactionBuilderImpl(
-    private val cipherSchemeMetadata: CipherSchemeMetadata,
-    private val digestService: DigestService,
-    private val jsonMarshallingService: JsonMarshallingService,
-    private val merkleTreeProvider: MerkleTreeProvider,
-    private val serializationService: SerializationService,
-    private val signingService: SigningService,
-    private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
-    private val currentSandboxGroup: SandboxGroup, // TODO CORE-7101 use CurrentSandboxService when it gets available
+    private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory,
     // cpi defines what type of signing/hashing is used (related to the digital signature signing and verification stuff)
-    private val transactionMetaData: TransactionMetaData,
     override val notary: Party? = null,
     private val timeWindow: TimeWindow? = null,
     private val attachments: List<SecureHash> = emptyList(),
@@ -53,7 +36,7 @@ data class UtxoTransactionBuilderImpl(
 
     // We cannot use TransactionStates without notary which may be available only later
     private val outputStates: List<Pair<ContractState, Int?>> = emptyList()
-) : UtxoTransactionBuilder {
+) : UtxoTransactionBuilder, TransactionBuilderInternal {
 
     override fun setNotary(notary: Party): UtxoTransactionBuilder {
         return copy(notary = notary)
@@ -114,23 +97,7 @@ data class UtxoTransactionBuilderImpl(
             "At least one key needs to be provided in order to create a signed Transaction!"
         }
         verifyIfReady()
-        val wireTransaction = buildWireTransaction()
-        val signaturesWithMetaData = signatories.map {
-            createTransactionSignature(
-                signingService,
-                serializationService,
-                getCpiSummary(),
-                wireTransaction.id,
-                it
-            )
-        }
-        return UtxoSignedTransactionImpl(
-            serializationService,
-            signingService,
-            digitalSignatureVerificationService,
-            wireTransaction,
-            signaturesWithMetaData
-        )
+        return utxoSignedTransactionFactory.create(this, signatories)
     }
 
     private fun verifyIfReady() {
@@ -157,24 +124,12 @@ data class UtxoTransactionBuilderImpl(
         // TODO probably some more stuff we have to go look at C4 to remember
     }
 
-    private fun buildWireTransaction(): WireTransaction {
-        val componentGroupLists = calculateComponentGroupLists()
-
-        val entropy = ByteArray(32)
-        cipherSchemeMetadata.secureRandom.nextBytes(entropy)
-        val privacySalt = PrivacySaltImpl(entropy)
-
-        return WireTransaction(
-            merkleTreeProvider,
-            digestService,
-            jsonMarshallingService,
-            privacySalt,
-            componentGroupLists
-        )
-    }
-
     @Suppress("ComplexMethod")
-    private fun calculateComponentGroupLists(): List<List<ByteArray>> {
+    override fun calculateComponentGroups(
+        serializationService: SerializationService,
+        metadataBytes: ByteArray,
+        currentSandboxGroup: SandboxGroup
+    ): List<List<ByteArray>> {
         val notaryGroup = listOf(
             notary,
             timeWindow,
@@ -207,8 +162,7 @@ data class UtxoTransactionBuilderImpl(
                 when (componentGroupIndex) {
                     UtxoComponentGroup.METADATA ->
                         listOf(
-                            jsonMarshallingService.format(transactionMetaData)
-                                .toByteArray(Charsets.UTF_8)
+                            metadataBytes
                         ) // TODO(update with CORE-6890)
                     UtxoComponentGroup.NOTARY ->
                         notaryGroup.map { serializationService.serialize(it!!).bytes }
@@ -241,7 +195,6 @@ data class UtxoTransactionBuilderImpl(
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is UtxoTransactionBuilderImpl) return false
-        if (other.transactionMetaData != transactionMetaData) return false
         if (other.notary != notary) return false
         if (other.attachments != attachments) return false
         if (other.commands != commands) return false
@@ -253,7 +206,6 @@ data class UtxoTransactionBuilderImpl(
     }
 
     override fun hashCode(): Int = Objects.hash(
-        transactionMetaData,
         notary,
         timeWindow,
         attachments,
@@ -264,14 +216,3 @@ data class UtxoTransactionBuilderImpl(
         outputStates,
     )
 }
-
-/**
- * TODO [CORE-7126] Fake values until we can get CPI information properly
- */
-private fun getCpiSummary(): CordaPackageSummary =
-    CordaPackageSummary(
-        name = "CPI name",
-        version = "CPI version",
-        signerSummaryHash = SecureHash("SHA-256", "Fake-value".toByteArray()).toHexString(),
-        fileChecksum = SecureHash("SHA-256", "Another-Fake-value".toByteArray()).toHexString()
-    )

@@ -1,6 +1,7 @@
 package net.corda.ledger.utxo.flow.impl
 
-import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoTransactionBuilderFactory
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoTransactionBuilderImpl
+import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactory
 import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.ledger.utxo.ContractState
 import net.corda.v5.ledger.utxo.StateAndRef
@@ -15,14 +16,13 @@ import org.osgi.service.component.annotations.ServiceScope
 
 @Component(service = [UtxoLedgerService::class, SingletonSerializeAsToken::class], scope = ServiceScope.PROTOTYPE)
 class UtxoLedgerServiceImpl @Activate constructor(
-    @Reference(service = UtxoTransactionBuilderFactory::class)
-    private val utxoTransactionBuilderFactory: UtxoTransactionBuilderFactory
+    @Reference(service = UtxoSignedTransactionFactory::class)
+    private val utxoSignedTransactionFactory: UtxoSignedTransactionFactory
 ) : UtxoLedgerService, SingletonSerializeAsToken {
 
     @Suspendable
-    override fun getTransactionBuilder(): UtxoTransactionBuilder {
-        return utxoTransactionBuilderFactory.create()
-    }
+    override fun getTransactionBuilder(): UtxoTransactionBuilder =
+        UtxoTransactionBuilderImpl(utxoSignedTransactionFactory)
 
     override fun <T : ContractState> resolve(stateRefs: Iterable<StateRef>): List<StateAndRef<T>> {
         TODO("Not yet implemented")

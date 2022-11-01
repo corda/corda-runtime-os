@@ -4,18 +4,20 @@ import net.corda.application.impl.services.json.JsonMarshallingServiceImpl
 import net.corda.cipher.suite.impl.CipherSchemeMetadataImpl
 import net.corda.cipher.suite.impl.DigestServiceImpl
 import net.corda.crypto.merkle.impl.MerkleTreeProviderImpl
-import net.corda.internal.serialization.amqp.currentSandboxGroup
+import net.corda.internal.serialization.amqp.helper.TestFlowFiberServiceWithSerialization
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
-import net.corda.internal.serialization.amqp.helper.testSerializationContext
+import net.corda.ledger.common.data.transaction.factory.WireTransactionFactoryImpl
+import net.corda.ledger.common.flow.impl.transaction.factory.TransactionMetadataFactoryImpl
+import net.corda.ledger.common.testkit.mockPlatformInfoProvider
 import net.corda.ledger.common.testkit.mockSigningService
 import net.corda.ledger.common.testkit.publicKeyExample
+import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactoryImpl
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.UtxoStateClassExample
 import net.corda.ledger.utxo.testkit.getUtxoInvalidStateAndRef
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
 import net.corda.ledger.utxo.testkit.utxoStateExample
 import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
-import net.corda.ledger.utxo.testkit.utxoTransactionMetaDataExample
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.cipher.suite.CipherSchemeMetadata
@@ -33,8 +35,25 @@ internal class UtxoLedgerTransactionImplTest {
     private val cipherSchemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
     private val digestService: DigestService = DigestServiceImpl(cipherSchemeMetadata, null)
     private val merkleTreeProvider: MerkleTreeProvider = MerkleTreeProviderImpl(digestService)
-    private val serializationService: SerializationService =
-        TestSerializationService.getTestSerializationService({}, cipherSchemeMetadata)
+    private val flowFiberService = TestFlowFiberServiceWithSerialization()
+    private val serializationService: SerializationService = TestSerializationService.getTestSerializationService({}, cipherSchemeMetadata)
+    private val transactionMetadataFactory =
+        TransactionMetadataFactoryImpl(flowFiberService, mockPlatformInfoProvider())
+    private val wireTransactionFactory = WireTransactionFactoryImpl(
+        merkleTreeProvider,
+        digestService,
+        jsonMarshallingService,
+        cipherSchemeMetadata,
+        serializationService,
+        flowFiberService
+    )
+    private val utxoSignedTransactionFactory = UtxoSignedTransactionFactoryImpl(
+        serializationService,
+        mockSigningService(),
+        mock(),
+        transactionMetadataFactory,
+        wireTransactionFactory
+    )
 
     @Test
     fun `ledger transaction contains the same data what it was created with`() {
@@ -45,15 +64,7 @@ internal class UtxoLedgerTransactionImplTest {
         val attachment = SecureHash("SHA-256", ByteArray(12))
 
         val signedTransaction = UtxoTransactionBuilderImpl(
-            cipherSchemeMetadata,
-            digestService,
-            jsonMarshallingService,
-            merkleTreeProvider,
-            serializationService,
-            mockSigningService(),
-            mock(),
-            testSerializationContext.currentSandboxGroup(),
-            utxoTransactionMetaDataExample
+            utxoSignedTransactionFactory
         )
             .setNotary(utxoNotaryExample)
             .setTimeWindowBetween(utxoTimeWindowExample.from, utxoTimeWindowExample.until)

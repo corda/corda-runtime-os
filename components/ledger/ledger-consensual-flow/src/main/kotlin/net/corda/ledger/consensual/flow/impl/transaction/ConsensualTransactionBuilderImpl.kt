@@ -34,6 +34,9 @@ class ConsensualTransactionBuilderImpl(
 
     @Suspendable
     override fun sign(signatories: Iterable<PublicKey>): ConsensualSignedTransaction{
+        require(signatories.toList().isNotEmpty()) {
+            "At least one key needs to be provided in order to create a signed Transaction!"
+        }
         return consensualSignedTransactionFactory.create(this, signatories)
     }
 
