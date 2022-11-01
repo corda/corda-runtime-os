@@ -1,6 +1,5 @@
 package net.corda.entityprocessor.impl.internal
 
-import java.nio.ByteBuffer
 import net.corda.data.flow.event.FlowEvent
 import net.corda.data.persistence.DeleteEntities
 import net.corda.data.persistence.DeleteEntitiesById
@@ -11,7 +10,6 @@ import net.corda.data.persistence.FindEntities
 import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.data.persistence.MergeEntities
 import net.corda.data.persistence.PersistEntities
-import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
@@ -25,6 +23,7 @@ import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.toCorda
+import java.nio.ByteBuffer
 
 fun EntitySandboxService.getClass(holdingIdentity: HoldingIdentity, fullyQualifiedClassName: String) =
     this.get(holdingIdentity).sandboxGroup.loadClassFromMainBundles(fullyQualifiedClassName)
@@ -41,14 +40,12 @@ fun EntitySandboxService.getClass(holdingIdentity: HoldingIdentity, fullyQualifi
  */
 class EntityMessageProcessor(
     private val entitySandboxService: EntitySandboxService,
-    externalEventResponseFactory: ExternalEventResponseFactory,
+    private val responseFactory: ResponseFactory,
     private val payloadCheck: (bytes: ByteBuffer) -> ByteBuffer,
 ) : DurableProcessor<String, EntityRequest> {
     private companion object {
         val log = contextLogger()
     }
-
-    private val responseFactory = ResponseFactory(externalEventResponseFactory, log)
 
     override val keyClass = String::class.java
 
@@ -122,7 +119,10 @@ class EntityMessageProcessor(
                     persistenceServiceInternal.findWithNamedQuery(serializationService, it, entityRequest)
                 )
                 else -> {
-                    responseFactory.fatalErrorResponse(request.flowExternalEventContext, CordaRuntimeException("Unknown command"))
+                    responseFactory.fatalErrorResponse(
+                        request.flowExternalEventContext,
+                        CordaRuntimeException("Unknown command")
+                    )
                 }
             }
         }

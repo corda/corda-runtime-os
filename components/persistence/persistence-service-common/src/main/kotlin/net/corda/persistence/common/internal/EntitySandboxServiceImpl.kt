@@ -159,7 +159,11 @@ class EntitySandboxServiceImpl @Activate constructor(
 
         // TODO - add general vault entities
         val entityClasses = EntityExtractor.getEntityClassNames(cpks).map {
-            ctx.sandboxGroup.loadClassFromMainBundles(it)
+            try {
+                ctx.sandboxGroup.loadClassFromMainBundles(it)
+            } catch (e: SandboxException) {
+                throw e
+            }
         }.toSet()
 
         // We now have the collection of class types, from the CPKs, with their *own* classloaders (i.e. osgi).

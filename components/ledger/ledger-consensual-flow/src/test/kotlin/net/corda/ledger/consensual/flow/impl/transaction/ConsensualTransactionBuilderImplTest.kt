@@ -31,7 +31,8 @@ internal class ConsensualTransactionBuilderImplTest {
     private val cipherSchemeMetadata: CipherSchemeMetadata = CipherSchemeMetadataImpl()
     private val digestService: DigestService = DigestServiceImpl(cipherSchemeMetadata, null)
     private val merkleTreeFactory: MerkleTreeProvider = MerkleTreeProviderImpl(digestService)
-    private val serializationService: SerializationService = TestSerializationService.getTestSerializationService({}, cipherSchemeMetadata)
+    private val serializationService: SerializationService =
+        TestSerializationService.getTestSerializationService({}, cipherSchemeMetadata)
 
     @Test
     fun `can build a simple Transaction`() {
