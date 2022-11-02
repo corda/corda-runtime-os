@@ -16,6 +16,7 @@ import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
+import net.corda.v5.base.annotations.Suspendable
 import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.consensual.transaction.ConsensualSignedTransaction
 import net.corda.v5.ledger.consensual.transaction.ConsensualTransactionBuilder
@@ -49,6 +50,7 @@ class ConsensualSignedTransactionFactoryImpl @Activate constructor(
     private val jsonMarshallingService: JsonMarshallingService,
 ) : ConsensualSignedTransactionFactory, SingletonSerializeAsToken {
 
+    @Suspendable
     override fun create(
         consensualTransactionBuilder: ConsensualTransactionBuilder,
         signatories: Iterable<PublicKey>
