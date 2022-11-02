@@ -28,6 +28,11 @@ object CordaMetrics {
          * Time it took to create the sandbox
          */
         object SandboxCreateTime : Metric<Timer>("sandbox.create.time", Metrics::timer)
+
+        /**
+         * Time it took to create the sandbox
+         */
+        object FlowRunTime : Metric<Timer>("flow.run.time", Metrics::timer)
     }
 
     enum class Tag(val value: String) {
@@ -47,6 +52,16 @@ object CordaMetrics {
          * Virtual Node for which the metric is applicable.
          */
         VirtualNode("virtualNode"),
+
+        /**
+         * Flow class for which the metric is applicable.
+         */
+        FlowClass("flowClass"),
+
+        /**
+         * The status of the operation. Can be used to indicate whether an operation was successful or failed.
+         */
+        OperationStatus("OperationStatus"),
     }
 
     val registry: CompositeMeterRegistry = Metrics.globalRegistry
