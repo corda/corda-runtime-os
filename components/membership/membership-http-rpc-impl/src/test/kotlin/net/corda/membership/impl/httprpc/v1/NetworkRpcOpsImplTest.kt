@@ -83,7 +83,7 @@ class NetworkRpcOpsImplTest {
                 HostedIdentitySetupRequest(
                     "alias",
                     true,
-                    "session-tenant",
+                    true,
                     "session"
                 )
             )
@@ -92,7 +92,7 @@ class NetworkRpcOpsImplTest {
                 ShortHash.of("1234567890ab"),
                 "alias",
                 true,
-                "session-tenant",
+                true,
                 "session",
             )
         }
@@ -114,7 +114,7 @@ class NetworkRpcOpsImplTest {
                     HostedIdentitySetupRequest(
                         "alias",
                         false,
-                        "session-tenant",
+                        true,
                         "session"
                     )
                 )
@@ -129,7 +129,7 @@ class NetworkRpcOpsImplTest {
                     HostedIdentitySetupRequest(
                         "alias",
                         false,
-                        "session-tenant",
+                        true,
                         "session"
                     )
                 )
@@ -154,7 +154,7 @@ class NetworkRpcOpsImplTest {
                     HostedIdentitySetupRequest(
                         "alias",
                         true,
-                        "session-tenant",
+                        true,
                         "session"
                     )
                 )

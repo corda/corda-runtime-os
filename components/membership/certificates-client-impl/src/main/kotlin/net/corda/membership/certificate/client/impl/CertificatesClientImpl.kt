@@ -87,22 +87,21 @@ class CertificatesClientImpl @Activate constructor(
         send<CertificateImportedRpcResponse>(holdingIdentityId, usage, ImportCertificateRpcRequest(alias, certificates))
     }
 
-    private fun retrieveCertificates(holdingIdentityId: ShortHash?, usage: CertificateUsage,  alias: String): String? {
+    private fun retrieveCertificates(holdingIdentityId: ShortHash?, usage: CertificateUsage, alias: String): String? {
         return send<CertificateRetrievalRpcResponse>(holdingIdentityId, usage, RetrieveCertificateRpcRequest(alias))?.certificates
     }
-
     override fun setupLocallyHostedIdentity(
         holdingIdentityShortHash: ShortHash,
         p2pTlsCertificateChainAlias: String,
         useClusterLevelTlsCertificateAndKey: Boolean,
-        sessionKeyTenantId: String?,
+        useClusterLevelSessionCertificateAndKey: Boolean,
         sessionKeyId: String?,
     ) {
         val record = hostedIdentityEntryFactory.createIdentityRecord(
             holdingIdentityShortHash,
             p2pTlsCertificateChainAlias,
             useClusterLevelTlsCertificateAndKey,
-            sessionKeyTenantId,
+            useClusterLevelSessionCertificateAndKey,
             sessionKeyId,
         )
 

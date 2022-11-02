@@ -41,7 +41,7 @@ class NetworkRpcOpsImpl @Activate constructor(
                 ShortHash.ofOrThrow(holdingIdentityShortHash),
                 request.p2pTlsCertificateChainAlias,
                 request.useClusterLevelTlsCertificateAndKey == true,
-                request.sessionKeyTenantId,
+                request.useClusterLevelSessionCertificateAndKey != false,
                 request.sessionKeyId,
             )
         } catch (e: CertificatesResourceNotFoundException) {

@@ -71,7 +71,7 @@ internal class HostedIdentityEntryFactory(
     ): List<String> {
         val certificateChain = retrieveCertificates(certificateHoldingId, CertificateUsage.P2P_TLS, certificateChainAlias)
             ?: throw CertificatesResourceNotFoundException(
-                "Please import certificate chain into p2p-tls with alias $certificateChainAlias"
+                "Please import certificate chain with usage \"p2p-tls\" and alias $certificateChainAlias"
             )
         return certificateChain.reader().use { reader ->
             PEMParser(reader).use {
@@ -94,12 +94,16 @@ internal class HostedIdentityEntryFactory(
         holdingIdentityShortHash: ShortHash,
         certificateChainAlias: String,
         useClusterLevelTlsCertificateAndKey: Boolean,
-        sessionKeyTenantId: String?,
+        useClusterLevelSessionCertificateAndKey: Boolean,
         sessionKeyId: String?,
     ): Record<String, HostedIdentityEntry> {
         val nodeInfo = getNode(holdingIdentityShortHash)
-        val actualSessionKeyTenantId = sessionKeyTenantId ?: holdingIdentityShortHash.toString()
-        val sessionPublicKey = getKey(actualSessionKeyTenantId, sessionKeyId)
+        val sessionKeyTenantId = if (useClusterLevelSessionCertificateAndKey) {
+            P2P
+        } else {
+            holdingIdentityShortHash.value
+        }
+        val sessionPublicKey = getKey(sessionKeyTenantId, sessionKeyId)
         val (keyTenantId, certificateHoldingId) = if (useClusterLevelTlsCertificateAndKey) {
             P2P to null
         } else {
@@ -113,7 +117,7 @@ internal class HostedIdentityEntryFactory(
 
         val hostedIdentityEntry = HostedIdentityEntry.newBuilder()
             .setHoldingIdentity(nodeInfo.holdingIdentity.toAvro())
-            .setSessionKeyTenantId(actualSessionKeyTenantId)
+            .setSessionKeyTenantId(sessionKeyTenantId)
             .setSessionPublicKey(sessionPublicKey)
             .setTlsCertificates(tlsCertificates)
             .setTlsTenantId(keyTenantId)

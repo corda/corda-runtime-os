@@ -150,7 +150,7 @@ class CertificatesClientImplTest {
                 shortHash,
                 "Alias",
                 true,
-                "sessionKeyTenantId",
+                true,
                 "sessionAlias"
             )
 
@@ -160,7 +160,7 @@ class CertificatesClientImplTest {
                 shortHash,
                 "Alias",
                 true,
-                "sessionKeyTenantId",
+                true,
                 "sessionAlias"
             )
         }
@@ -195,7 +195,7 @@ class CertificatesClientImplTest {
                     shortHash,
                     "Alias",
                     true,
-                    "sessionKeyTenantId",
+                    false,
                     "sessionAlias"
                 )
             }
@@ -215,7 +215,7 @@ class CertificatesClientImplTest {
                     shortHash,
                     "Alias",
                     false,
-                    "sessionKeyTenantId",
+                    true,
                     "sessionAlias"
                 )
             }
@@ -238,7 +238,7 @@ class CertificatesClientImplTest {
                 shortHash,
                 "Alias",
                 false,
-                "sessionKeyTenantId",
+                true,
                 "sessionAlias"
             )
 

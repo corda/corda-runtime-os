@@ -154,11 +154,11 @@
         }
       }
     },
-    "/certificates/{usage}" : {
+    "/certificates/{usage}/cluster" : {
       "put" : {
         "tags" : [ "Certificates API" ],
         "description" : "This method imports a certificate chain for a specified tenant.",
-        "operationId" : "put_certificates__usage_",
+        "operationId" : "put_certificates__usage__cluster",
         "parameters" : [ {
           "name" : "usage",
           "in" : "path",
@@ -3110,10 +3110,10 @@
             "nullable" : true,
             "example" : "string"
           },
-          "sessionKeyTenantId" : {
-            "type" : "string",
+          "useClusterLevelSessionCertificateAndKey" : {
+            "type" : "boolean",
             "nullable" : true,
-            "example" : "string"
+            "example" : true
           },
           "useClusterLevelTlsCertificateAndKey" : {
             "type" : "boolean",
@@ -3121,7 +3121,7 @@
             "example" : true
           }
         },
-        "description" : "\n                Request object which contains properties for P2P messaging including:\n                p2pTlsCertificateChainAlias: the P2P TLS certificate chain alias\n                p2pTlsTenantId: the TLS tenant ID (either 'p2p' or holding identity ID)\n                sessionKeyTenantId: the tenant ID under which the session initiation key is stored\n                sessionKeyId: the session key identifier"
+        "description" : "\n                Request object which contains properties for P2P messaging including:\n                p2pTlsCertificateChainAlias: the P2P TLS certificate chain alias\n                useClusterLevelTlsCertificateAndKey: Should the cluster-level P2P TLS certificate type and key be \n                used or the virtual node certificate and key.\n                useClusterLevelSessionCertificateAndKey: Should the cluster-level P2P SESSION certificate type \n                and key be used or the virtual node certificate and key.\n                sessionKeyId: the session key identifier"
       },
       "HsmAssociationInfo" : {
         "required" : [ "category", "deprecatedAt", "hsmId", "id" ],

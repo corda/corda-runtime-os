@@ -33,7 +33,8 @@ interface CertificatesClient : Lifecycle {
      * @param p2pTlsCertificateChainAlias The certificates chain alias.
      * @param useClusterLevelTlsCertificateAndKey Should we use the P2P cluster level TLS certificate type and P2P key or
      *   the virtual node cluster and key.
-     * @param sessionKeyTenantId The tenant ID under which the session initiation key is stored (defaults to [holdingIdentityShortHash]).
+     * @param useClusterLevelSessionCertificateAndKey Should we use the P2P cluster level session certificate type and P2P key or
+     *   the virtual node cluster and key.
      * @param sessionKeyId The session key ID (will use the first one if null).
      * @throws CertificatesResourceNotFoundException if a resource was not found.
      */
@@ -41,7 +42,7 @@ interface CertificatesClient : Lifecycle {
         holdingIdentityShortHash: ShortHash,
         p2pTlsCertificateChainAlias: String,
         useClusterLevelTlsCertificateAndKey: Boolean,
-        sessionKeyTenantId: String?,
+        useClusterLevelSessionCertificateAndKey: Boolean,
         sessionKeyId: String?
     )
 }
