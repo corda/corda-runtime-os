@@ -8,7 +8,9 @@ import net.corda.membership.lib.MemberInfoExtension.Companion.ROLES_PREFIX
 import net.corda.membership.lib.notary.MemberNotaryDetails
 import net.corda.membership.lib.notary.MemberNotaryKey
 import net.corda.membership.read.MembershipGroupReader
+import net.corda.v5.application.crypto.CompositeKeyGenerator
 import net.corda.v5.base.types.MemberX500Name
+import net.corda.v5.crypto.CompositeKeyNodeAndWeight
 import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.crypto.SignatureSpec.Companion.RSA_SHA512
 import net.corda.v5.membership.MemberContext
@@ -24,8 +26,12 @@ class NotaryLookupImplTest {
     private val alice = MemberX500Name.parse("O=Alice, L=LDN, C=GB")
     private val bob = MemberX500Name.parse("O=Bob, L=LDN, C=GB")
     private val carol = MemberX500Name.parse("O=Carol, L=LDN, C=GB")
-    private val alicePublicKey = mock<PublicKey>()
-    private val carolPublicKey = mock<PublicKey>()
+    private val alicePublicKeyOne = mock<PublicKey>()
+    private val alicePublicKeyTwo = mock<PublicKey>()
+    private val alicePublicKeyCompose = mock<PublicKey>()
+    private val carolPublicKeyOne = mock<PublicKey>()
+    private val carolPublicKeyTwo = mock<PublicKey>()
+    private val carolPublicKeyCompose = mock<PublicKey>()
     private val members = listOf(
         createMemberInfo(null),
         createMemberInfo(null),
@@ -35,10 +41,15 @@ class NotaryLookupImplTest {
                 "net.corda.Plugin1",
                 listOf(
                     MemberNotaryKey(
-                        alicePublicKey,
+                        alicePublicKeyOne,
                         PublicKeyHash.calculate("1234".toByteArray()),
                         RSA_SHA512,
-                    )
+                    ),
+                    MemberNotaryKey(
+                        alicePublicKeyTwo,
+                        PublicKeyHash.calculate("433".toByteArray()),
+                        RSA_SHA512,
+                    ),
                 )
             )
         ),
@@ -55,7 +66,7 @@ class NotaryLookupImplTest {
                 null,
                 listOf(
                     MemberNotaryKey(
-                        carolPublicKey,
+                        carolPublicKeyOne,
                         PublicKeyHash.calculate("456".toByteArray()),
                         RSA_SHA512,
                     )
@@ -66,7 +77,13 @@ class NotaryLookupImplTest {
             MemberNotaryDetails(
                 carol,
                 "net.corda.Plugin2",
-                emptyList()
+                listOf(
+                    MemberNotaryKey(
+                        carolPublicKeyTwo,
+                        PublicKeyHash.calculate("456".toByteArray()),
+                        RSA_SHA512,
+                    )
+                )
             )
         ),
     )
@@ -82,8 +99,40 @@ class NotaryLookupImplTest {
     private val flowFiberService = mock<FlowFiberService> {
         on { getExecutingFiber() } doReturn flowFiber
     }
+    private val compositeKeyGenerator = mock<CompositeKeyGenerator> {
+        on {
+            create(
+                listOf(
+                    CompositeKeyNodeAndWeight(
+                        alicePublicKeyOne,
+                        1
+                    ),
+                    CompositeKeyNodeAndWeight(
+                        alicePublicKeyTwo,
+                        1
+                    ),
+                ),
+                0
+            )
+        } doReturn alicePublicKeyCompose
+        on {
+            create(
+                listOf(
+                    CompositeKeyNodeAndWeight(
+                        carolPublicKeyOne,
+                        1
+                    ),
+                    CompositeKeyNodeAndWeight(
+                        carolPublicKeyTwo,
+                        1
+                    ),
+                ),
+                0
+            )
+        } doReturn carolPublicKeyCompose
+    }
 
-    private val lookup = NotaryLookupImpl(flowFiberService)
+    private val lookup = NotaryLookupImpl(flowFiberService, compositeKeyGenerator)
 
     @Test
     fun `notaryServices return all the notary services`() {
@@ -92,11 +141,11 @@ class NotaryLookupImplTest {
         assertThat(notaries).anySatisfy {
             assertThat(it.party).isEqualTo(alice)
             assertThat(it.pluginClass).isEqualTo("net.corda.Plugin1")
-            assertThat(it.publicKeys).containsExactly(alicePublicKey)
+            assertThat(it.publicKey).isEqualTo(alicePublicKeyCompose)
         }.anySatisfy {
             assertThat(it.party).isEqualTo(carol)
             assertThat(it.pluginClass).isEqualTo("net.corda.Plugin2")
-            assertThat(it.publicKeys).containsExactly(carolPublicKey)
+            assertThat(it.publicKey).isEqualTo(carolPublicKeyCompose)
         }.hasSize(2)
     }
 
