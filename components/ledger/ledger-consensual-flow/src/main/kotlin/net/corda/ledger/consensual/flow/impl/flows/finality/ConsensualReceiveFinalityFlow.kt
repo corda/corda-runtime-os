@@ -80,7 +80,7 @@ class ConsensualReceiveFinalityFlow(
         // A [require] block isn't the correct option if we want to do something with the error on the peer side
         require(signedTransactionToFinalize.id == transactionId) {
             "Expected to received transaction $transactionId from ${session.counterparty} to finalise but received " +
-                    "${signedTransaction.id} instead"
+                    "${signedTransactionToFinalize.id} instead"
         }
 
         signedTransactionToFinalize.verifySignatures()
