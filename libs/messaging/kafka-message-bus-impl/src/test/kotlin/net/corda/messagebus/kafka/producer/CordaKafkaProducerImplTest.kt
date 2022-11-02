@@ -14,6 +14,8 @@ import org.apache.kafka.clients.consumer.ConsumerGroupMetadata
 import org.apache.kafka.clients.producer.Producer
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.KafkaException
+import org.apache.kafka.common.errors.InvalidProducerEpochException
+import org.apache.kafka.common.errors.ProducerFencedException
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -87,6 +89,20 @@ class CordaKafkaProducerImplTest {
     }
 
     @Test
+    fun testBeginTransactionZombieProducerThrowsFatalException() {
+        doThrow(ProducerFencedException("")).whenever(producer).beginTransaction()
+        assertThrows<CordaMessageAPIFatalException> { cordaKafkaProducer.beginTransaction() }
+        verify(producer, times(1)).beginTransaction()
+    }
+
+    @Test
+    fun testBeginTransactionTimedOutProducerThrowsIntermittentException() {
+        doThrow(InvalidProducerEpochException("")).whenever(producer).beginTransaction()
+        assertThrows<CordaMessageAPIIntermittentException> { cordaKafkaProducer.beginTransaction() }
+        verify(producer, times(1)).beginTransaction()
+    }
+
+    @Test
     fun testTryCommitTransaction() {
         cordaKafkaProducer.commitTransaction()
         verify(producer, times(1)).commitTransaction()
@@ -109,6 +125,20 @@ class CordaKafkaProducerImplTest {
     }
 
     @Test
+    fun testCommitTransactionZombieProducerThrowsFatalException() {
+        doThrow(ProducerFencedException("")).whenever(producer).commitTransaction()
+        assertThrows<CordaMessageAPIFatalException> { cordaKafkaProducer.commitTransaction() }
+        verify(producer, times(1)).commitTransaction()
+    }
+
+    @Test
+    fun testCommitTransactionTimedOutProducerThrowsIntermittentException() {
+        doThrow(InvalidProducerEpochException("")).whenever(producer).commitTransaction()
+        assertThrows<CordaMessageAPIIntermittentException> { cordaKafkaProducer.commitTransaction() }
+        verify(producer, times(1)).commitTransaction()
+    }
+
+    @Test
     fun testAbortTransaction() {
         cordaKafkaProducer.abortTransaction()
         verify(producer, times(1)).abortTransaction()
@@ -124,6 +154,20 @@ class CordaKafkaProducerImplTest {
     @Test
     fun testAbortTransactionIntermittent() {
         doThrow(KafkaException()).whenever(producer).abortTransaction()
+        assertThrows<CordaMessageAPIIntermittentException> { cordaKafkaProducer.abortTransaction() }
+        verify(producer, times(1)).abortTransaction()
+    }
+
+    @Test
+    fun testAbortTransactionZombieProducerThrowsFatalException() {
+        doThrow(ProducerFencedException("")).whenever(producer).abortTransaction()
+        assertThrows<CordaMessageAPIFatalException> { cordaKafkaProducer.abortTransaction() }
+        verify(producer, times(1)).abortTransaction()
+    }
+
+    @Test
+    fun testAbortTransactionTimedOutProducerThrowsIntermittentException() {
+        doThrow(InvalidProducerEpochException("")).whenever(producer).abortTransaction()
         assertThrows<CordaMessageAPIIntermittentException> { cordaKafkaProducer.abortTransaction() }
         verify(producer, times(1)).abortTransaction()
     }
@@ -208,6 +252,22 @@ class CordaKafkaProducerImplTest {
         assertThrows<CordaMessageAPIIntermittentException> {
             cordaKafkaProducer.sendRecordOffsetsToTransaction(cordaConsumer, mockCordaConsumerRecords)
         }
+        verify(producer, times(1)).sendOffsetsToTransaction(any(), Mockito.any(ConsumerGroupMetadata::class.java))
+    }
+
+    @Test
+    fun testSendOffsetsZombieProducerThrowsFatalException() {
+        doThrow(ProducerFencedException("")).whenever(producer)
+            .sendOffsetsToTransaction(any(), Mockito.any(ConsumerGroupMetadata::class.java))
+        assertThrows<CordaMessageAPIFatalException> { cordaKafkaProducer.sendAllOffsetsToTransaction(cordaConsumer) }
+        verify(producer, times(1)).sendOffsetsToTransaction(any(), Mockito.any(ConsumerGroupMetadata::class.java))
+    }
+
+    @Test
+    fun testSendOffsetsTimedOutProducerThrowsIntermittentException() {
+        doThrow(InvalidProducerEpochException("")).whenever(producer)
+            .sendOffsetsToTransaction(any(), Mockito.any(ConsumerGroupMetadata::class.java))
+        assertThrows<CordaMessageAPIIntermittentException> { cordaKafkaProducer.sendAllOffsetsToTransaction(cordaConsumer) }
         verify(producer, times(1)).sendOffsetsToTransaction(any(), Mockito.any(ConsumerGroupMetadata::class.java))
     }
 
