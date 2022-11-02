@@ -162,11 +162,11 @@
         "parameters" : [ {
           "name" : "usage",
           "in" : "path",
-          "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level certificate of the P2P services, or the value 'rpc-api' for a cluster-level certificate of the HTTP RPC API, or 'code-signer' for a cluster-level certificate of the code signing service.",
+          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description" : "Can either be a holding identity ID, the value 'p2p' for a cluster-level certificate of the P2P services, or the value 'rpc-api' for a cluster-level certificate of the HTTP RPC API, or 'code-signer' for a cluster-level certificate of the code signing service.",
+            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
             "nullable" : false,
             "example" : "string"
           }
@@ -184,10 +184,75 @@
                     "nullable" : false,
                     "example" : "string"
                   },
-                  "holdingIdentityId" : {
+                  "certificate" : {
+                    "uniqueItems" : false,
+                    "type" : "array",
+                    "nullable" : false,
+                    "items" : {
+                      "type" : "string",
+                      "description" : "A content of the file to upload.",
+                      "format" : "binary",
+                      "example" : "No example available for this type"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Success"
+          },
+          "401" : {
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "description" : "Forbidden"
+          }
+        }
+      }
+    },
+    "/certificates/{usage}/{holdingidentityid}" : {
+      "put" : {
+        "tags" : [ "Certificates API" ],
+        "description" : "This method imports a certificate chain for a virtual node.",
+        "operationId" : "put_certificates__usage___holdingidentityid_",
+        "parameters" : [ {
+          "name" : "usage",
+          "in" : "path",
+          "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, 'p2p-session' for a session certificate to be used in P2P communication, 'rpc-api-tls' for a TLS certificate to be used in RPC API communication, or 'code-signer' for a certificate of the code signing service.",
+            "nullable" : false,
+            "example" : "string"
+          }
+        }, {
+          "name" : "holdingidentityid",
+          "in" : "path",
+          "description" : "The certificate holding identity ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The certificate holding identity ID",
+            "nullable" : true,
+            "example" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "description" : "requestBody",
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "alias" : {
                     "type" : "string",
-                    "description" : "The certificate holding identity ID (null to cluster-level certificate, default to null)",
-                    "nullable" : true,
+                    "description" : "The unique alias under which the certificate chain will be stored",
+                    "nullable" : false,
                     "example" : "string"
                   },
                   "certificate" : {

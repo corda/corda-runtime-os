@@ -52,9 +52,10 @@ interface CertificatesRpcOps : RpcOps {
     )
     fun importCertificateChain(
         @HttpRpcPathParameter(
-            description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level certificate of the P2P" +
-                " services, or the value 'rpc-api' for a cluster-level certificate of the HTTP RPC API, or 'code-signer' for a" +
-                " cluster-level certificate of the code signing service."
+            description = "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, " +
+                "'p2p-session' for a session certificate to be used in P2P communication, " +
+                "'rpc-api-tls' for a TLS certificate to be used in RPC API communication, " +
+                "or 'code-signer' for a certificate of the code signing service."
         )
         usage: String,
         @HttpRpcPathParameter(
@@ -99,9 +100,10 @@ interface CertificatesRpcOps : RpcOps {
     )
     fun importCertificateChain(
         @HttpRpcPathParameter(
-            description = "Can either be a holding identity ID, the value 'p2p' for a cluster-level certificate of the P2P" +
-                " services, or the value 'rpc-api' for a cluster-level certificate of the HTTP RPC API, or 'code-signer' for a" +
-                " cluster-level certificate of the code signing service."
+            description = "The certificate usage. Can be either 'p2p-tls' for a TLS certificate to be used in P2P communication, " +
+                "'p2p-session' for a session certificate to be used in P2P communication, " +
+                "'rpc-api-tls' for a TLS certificate to be used in RPC API communication, " +
+                "or 'code-signer' for a certificate of the code signing service."
         )
         usage: String,
         @HttpRpcRequestBodyParameter(
