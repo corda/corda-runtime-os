@@ -238,27 +238,31 @@ internal class VirtualNodeWriterProcessor(
                         virtualNodeInfo.cpiIdentifier.name,
                         virtualNodeInfo.cpiIdentifier.version
                     )!!
-                    // Look up the tags(UUIDs) of the applied changelog entries
-                    val appliedVersions: Set<UUID> = getAppliedVersions(
-                        tx,
-                        dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!),
-                        systemTerminatorTag
-                    )
-                    // Look up all audit entries that correspond to the UUID set that we just got
-                    val migrationSet = findDbChangeLogAuditForCpi(tx, virtualNodeInfo.cpiIdentifier, appliedVersions)
-                    // Attempt to rollback the acquired changes
-                    rollbackVirtualNodeDb(
-                        dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!),
-                        migrationSet,
-                        systemTerminatorTag
-                    )
+                    dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).use { dataSource ->
+                        // Look up the tags(UUIDs) of the applied changelog entries
+                        val appliedVersions: Set<UUID> = getAppliedVersions(
+                            tx,
+                            dataSource,
+                            systemTerminatorTag
+                        )
+                        // Look up all audit entries that correspond to the UUID set that we just got
+                        val migrationSet = findDbChangeLogAuditForCpi(tx, virtualNodeInfo.cpiIdentifier, appliedVersions)
+                        // Attempt to rollback the acquired changes
+                        rollbackVirtualNodeDb(
+                            dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!),
+                            migrationSet,
+                            systemTerminatorTag
+                        )
+                    }
                     logger.info("Finished rolling back previous migrations, attempting to apply new ones")
                     // Attempt to apply the changes from the current CPI
                     val changelogs = getChangelogs(em, cpiMetadata.id)
-                    runCpiResyncMigrations(
-                        dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!),
-                        changelogs
-                    )
+                    dbConnectionManager.createDatasource(virtualNodeInfo.vaultDdlConnectionId!!).use { dataSource ->
+                        runCpiResyncMigrations(
+                            dataSource,
+                            changelogs
+                        )
+                    }
                 }
                 shortHash.value
             }
