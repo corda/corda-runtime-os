@@ -19,14 +19,10 @@ dependencies {
     implementation project(":components:flow:flow-service")
     implementation project(":libs:virtual-node:sandbox-group-context")
     implementation project(":libs:sandbox")
-//    implementation project(":libs:platform-info")
 
     testImplementation "org.mockito.kotlin:mockito-kotlin:$mockitoKotlinVersion"
     testImplementation "org.jetbrains.kotlin:kotlin-test:$kotlinVersion"
 
-//    testImplementation project(":libs:application:application-impl")
-//    testImplementation project(":libs:crypto:cipher-suite-impl")
-//    testImplementation project(":libs:crypto:merkle-impl")
     testImplementation project(':testing:test-serialization')
     testImplementation project(":testing:kryo-serialization-testkit")
     testImplementation project(":libs:serialization:serialization-internal")

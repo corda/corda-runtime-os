@@ -9,7 +9,6 @@ dependencies {
 
     implementation project(":testing:ledger:ledger-common-testkit")
     implementation project(":components:ledger:ledger-common-flow")
-//??    implementation project(":libs:ledger:ledger-common-data")
 
     api project(":libs:crypto:cipher-suite-impl")
     api project(":libs:crypto:merkle-impl")
