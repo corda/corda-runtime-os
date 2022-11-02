@@ -190,7 +190,6 @@ internal class StateAndEventSubscriptionImpl<K : Any, S : Any, E : Any>(
             }
         }
         nullableRebalanceListener?.close()
-        lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
         closeStateAndEventProducerConsumer()
     }
 

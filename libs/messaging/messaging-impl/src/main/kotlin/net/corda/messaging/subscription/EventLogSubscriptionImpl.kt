@@ -176,7 +176,6 @@ internal class EventLogSubscriptionImpl<K : Any, V : Any>(
                 }
             }
         }
-        lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
     }
 
     /**

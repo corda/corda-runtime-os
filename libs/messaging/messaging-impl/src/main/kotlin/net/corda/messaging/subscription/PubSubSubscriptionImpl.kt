@@ -156,7 +156,6 @@ internal class PubSubSubscriptionImpl<K : Any, V : Any>(
                 close()
             }
         }
-        lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
     }
 
     /**

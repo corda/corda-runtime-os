@@ -122,7 +122,6 @@ internal class CompactedSubscriptionImpl<K : Any, V : Any>(
                 }
             }
         }
-        lifecycleCoordinator.updateStatus(LifecycleStatus.DOWN)
     }
 
     private fun onError(bytes: ByteArray) {
