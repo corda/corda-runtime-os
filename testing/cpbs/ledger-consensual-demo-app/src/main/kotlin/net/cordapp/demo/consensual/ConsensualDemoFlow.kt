@@ -25,6 +25,10 @@ import java.security.PublicKey
  * agreement.
  */
 
+data class ConsensualDemoFlowParameter(
+    val testField: String? = null,
+)
+
 @InitiatingFlow("consensual-flow-protocol")
 class ConsensualDemoFlow : RPCStartableFlow {
     data class InputMessage(val number: Int)
@@ -57,13 +61,15 @@ class ConsensualDemoFlow : RPCStartableFlow {
     override fun call(requestBody: RPCRequestData): String {
         log.info("Consensual flow demo starting...")
         try {
-            val request = requestBody.getRequestBodyAs<String>(jsonMarshallingService)
+            val request = requestBody.getRequestBodyAs<ConsensualDemoFlowParameter>(jsonMarshallingService)
+
+            val testField = request.testField ?: ""
 
             val alice = memberLookup.myInfo()
             val bob = memberLookup.lookup(MemberX500Name("Bob", "Consensual", "R3", "London", null, "GB"))!!
 
             val testConsensualState = TestConsensualState(
-                request,
+                testField,
                 listOf(
                     alice.ledgerKeys.first(),
                     bob.ledgerKeys.first(),

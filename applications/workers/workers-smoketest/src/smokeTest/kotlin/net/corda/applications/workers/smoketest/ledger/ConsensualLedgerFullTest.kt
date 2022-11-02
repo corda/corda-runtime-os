@@ -49,7 +49,7 @@ class ConsensualLedgerFullTest {
         val requestID =
             startRpcFlow(
                 aliceHoldingId,
-                mapOf(),
+                mapOf("testField" to "Success"),
                 "net.cordapp.demo.consensual.ConsensualDemoFlow"
             )
         val result = awaitRpcFlowFinished(aliceHoldingId, requestID)
