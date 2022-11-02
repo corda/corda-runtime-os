@@ -5,7 +5,7 @@ import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
 import net.corda.ledger.common.testkit.cpiPackgeSummaryExample
 import net.corda.ledger.common.testkit.cpkPackageSummaryListExample
 import net.corda.ledger.utxo.data.transaction.UtxoLedgerTransactionImpl
-import net.corda.ledger.utxo.impl.transaction.TRANSACTION_META_DATA_UTXO_LEDGER_VERSION
+import net.corda.ledger.utxo.flow.impl.transaction.TRANSACTION_META_DATA_UTXO_LEDGER_VERSION
 
 val utxoTransactionMetaDataExample = TransactionMetaData(linkedMapOf(
     TransactionMetaData.LEDGER_MODEL_KEY to UtxoLedgerTransactionImpl::class.java.canonicalName,

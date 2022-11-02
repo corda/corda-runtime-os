@@ -1,4 +1,4 @@
-package net.corda.ledger.utxo.impl.transaction
+package net.corda.ledger.utxo.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.SignableData
 import net.corda.ledger.common.data.transaction.WireTransaction
@@ -19,7 +19,7 @@ data class UtxoSignedTransactionImpl(
     private val signingService: SigningService,
     private val digitalSignatureVerificationService: DigitalSignatureVerificationService,
 
-    private val wireTransaction: WireTransaction,
+    val wireTransaction: WireTransaction,
     override val signatures: List<DigitalSignatureAndMetadata>
 ) : UtxoSignedTransaction {
 
