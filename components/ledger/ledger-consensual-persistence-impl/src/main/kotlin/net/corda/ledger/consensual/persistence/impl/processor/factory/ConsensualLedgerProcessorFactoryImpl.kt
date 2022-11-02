@@ -1,6 +1,7 @@
 package net.corda.ledger.consensual.persistence.impl.processor.factory
 
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
+import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.consensual.persistence.impl.processor.ConsensualLedgerMessageProcessor
 import net.corda.ledger.consensual.persistence.impl.processor.ConsensualLedgerProcessorImpl
 import net.corda.ledger.consensual.persistence.processor.ConsensualLedgerProcessor
@@ -11,9 +12,7 @@ import net.corda.messaging.api.subscription.factory.SubscriptionFactory
 import net.corda.persistence.common.EntitySandboxService
 import net.corda.persistence.common.PayloadChecker
 import net.corda.schema.Schemas
-import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -27,12 +26,10 @@ class ConsensualLedgerProcessorFactoryImpl @Activate constructor(
     private val entitySandboxService: EntitySandboxService,
     @Reference(service = ExternalEventResponseFactory::class)
     private val externalEventResponseFactory: ExternalEventResponseFactory,
-    @Reference(service = MerkleTreeProvider::class)
-    private val merkleTreeProvider: MerkleTreeProvider,
     @Reference(service = DigestService::class)
     private val digestService: DigestService,
-    @Reference(service = JsonMarshallingService::class)
-    private val jsonMarshallingService: JsonMarshallingService
+    @Reference(service = WireTransactionFactory::class)
+    private val wireTransactionFactory: WireTransactionFactory
 ) : ConsensualLedgerProcessorFactory {
     companion object {
         internal const val GROUP_NAME = "persistence.ledger.processor"
@@ -45,9 +42,8 @@ class ConsensualLedgerProcessorFactoryImpl @Activate constructor(
         val processor = ConsensualLedgerMessageProcessor(
             entitySandboxService,
             externalEventResponseFactory,
-            merkleTreeProvider,
             digestService,
-            jsonMarshallingService,
+            wireTransactionFactory,
             PayloadChecker(config)::checkSize
         )
 

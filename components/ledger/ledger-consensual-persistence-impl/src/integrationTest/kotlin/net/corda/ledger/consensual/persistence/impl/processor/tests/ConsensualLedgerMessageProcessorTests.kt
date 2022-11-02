@@ -24,6 +24,7 @@ import net.corda.flow.external.events.responses.factory.ExternalEventResponseFac
 import net.corda.ledger.common.data.transaction.TransactionMetaData
 import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
+import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.common.testkit.cpiPackgeSummaryExample
 import net.corda.ledger.common.testkit.cpkPackageSummaryListExample
 import net.corda.ledger.common.testkit.getWireTransactionExample
@@ -109,6 +110,8 @@ class ConsensualLedgerMessageProcessorTests {
     @InjectService
     lateinit var merkleTreeProvider: MerkleTreeProvider
     @InjectService
+    lateinit var wireTransactionFactory: WireTransactionFactory
+    @InjectService
     lateinit var jsonMarshallingService: JsonMarshallingService
     private lateinit var wireTransactionSerializer: InternalCustomSerializer<WireTransaction>
     private lateinit var publicKeySerializer: InternalCustomSerializer<PublicKey>
@@ -162,9 +165,8 @@ class ConsensualLedgerMessageProcessorTests {
         val processor = ConsensualLedgerMessageProcessor(
             ctx.entitySandboxService,
             externalEventResponseFactory,
-            merkleTreeProvider,
             digestService,
-            jsonMarshallingService,
+            wireTransactionFactory,
             this::noOpPayloadCheck
         )
         val requestId = UUID.randomUUID().toString()

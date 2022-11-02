@@ -16,8 +16,8 @@ import net.corda.internal.serialization.registerCustomSerializers
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.TransactionMetaData
-import net.corda.ledger.common.data.transaction.WireTransaction
 import net.corda.ledger.common.data.transaction.WireTransactionDigestSettings
+import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionContainer
 import net.corda.ledger.consensual.persistence.impl.processor.tests.datamodel.ConsensualCpkEntity
 import net.corda.ledger.consensual.persistence.impl.processor.tests.datamodel.ConsensualLedgerEntities
@@ -41,7 +41,6 @@ import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.base.types.toHexString
 import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.DigitalSignature
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterAll
@@ -74,9 +73,9 @@ class ConsensualLedgerRepositoryTest {
     @InjectService
     lateinit var digestService: DigestService
     @InjectService
-    lateinit var merkleTreeProvider: MerkleTreeProvider
-    @InjectService
     lateinit var jsonMarshallingService: JsonMarshallingService
+    @InjectService
+    lateinit var wireTransactionFactory: WireTransactionFactory
 
     private lateinit var serializationService: SerializationService
     private lateinit var emptySandboxGroup: SandboxGroup
@@ -129,7 +128,7 @@ class ConsensualLedgerRepositoryTest {
             serializationService = getTestSerializationService(emptySandboxGroup) {
                 it.register(publicKeySerializer, it)
             }
-            repository = ConsensualLedgerRepository(merkleTreeProvider, digestService, jsonMarshallingService, serializationService)
+            repository = ConsensualLedgerRepository(digestService, serializationService, wireTransactionFactory)
             setup.withCleanup {
                 sandboxCreationService.unloadSandboxGroup(emptySandboxGroup)
             }
@@ -382,12 +381,9 @@ class ConsensualLedgerRepositoryTest {
             listOf("group3_component1".toByteArray())
         )
         val privacySalt = PrivacySaltImpl(Random.nextBytes(32))
-        val wireTransaction = WireTransaction(
-            merkleTreeProvider,
-            digestService,
-            jsonMarshallingService,
-            privacySalt,
-            componentGroupLists
+        val wireTransaction = wireTransactionFactory.create(
+            componentGroupLists,
+            privacySalt
         )
         val publicKey = KeyPairGenerator.getInstance("EC")
             .apply { initialize(ECGenParameterSpec("secp256r1")) }

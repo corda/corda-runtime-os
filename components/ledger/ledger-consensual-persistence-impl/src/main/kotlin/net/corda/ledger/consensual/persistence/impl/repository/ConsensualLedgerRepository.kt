@@ -2,14 +2,13 @@ package net.corda.ledger.consensual.persistence.impl.repository
 
 import net.corda.ledger.common.data.transaction.PrivacySaltImpl
 import net.corda.ledger.common.data.transaction.WireTransaction
+import net.corda.ledger.common.data.transaction.factory.WireTransactionFactory
 import net.corda.ledger.consensual.data.transaction.ConsensualSignedTransactionContainer
 import net.corda.v5.application.crypto.DigitalSignatureAndMetadata
-import net.corda.v5.application.marshalling.JsonMarshallingService
 import net.corda.v5.application.serialization.SerializationService
 import net.corda.v5.application.serialization.deserialize
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.DigestService
-import net.corda.v5.cipher.suite.merkle.MerkleTreeProvider
 import net.corda.v5.crypto.DigestAlgorithmName
 import java.time.Instant
 import javax.persistence.EntityManager
@@ -20,10 +19,9 @@ import javax.persistence.Tuple
  * Reads and writes ledger transaction data to and from the virtual node vault database.
  */
 class ConsensualLedgerRepository(
-    private val merkleTreeProvider: MerkleTreeProvider,
     private val digestService: DigestService,
-    private val jsonMarshallingService: JsonMarshallingService,
-    private val serializationService: SerializationService
+    private val serializationService: SerializationService,
+    private val wireTransactionFactory: WireTransactionFactory
 ) {
     companion object {
         private val logger = contextLogger()
@@ -46,12 +44,9 @@ class ConsensualLedgerRepository(
 
         if (rows.isEmpty()) return null
 
-        val wireTransaction = WireTransaction(
-            merkleTreeProvider,
-            digestService,
-            jsonMarshallingService,
-            PrivacySaltImpl(rows.first()[1] as ByteArray),
-            rows.mapTuples(componentGroupListsTuplesMapper)
+        val wireTransaction = wireTransactionFactory.create(
+            rows.mapTuples(componentGroupListsTuplesMapper),
+            PrivacySaltImpl(rows.first()[1] as ByteArray)
         )
 
         return ConsensualSignedTransactionContainer(
