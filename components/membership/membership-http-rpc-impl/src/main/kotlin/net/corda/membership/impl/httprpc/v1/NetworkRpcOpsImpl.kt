@@ -40,8 +40,8 @@ class NetworkRpcOpsImpl @Activate constructor(
             certificatesClient.setupLocallyHostedIdentity(
                 ShortHash.ofOrThrow(holdingIdentityShortHash),
                 request.p2pTlsCertificateChainAlias,
-                request.useClusterLevelTlsCertificateAndKey == true,
-                request.useClusterLevelSessionCertificateAndKey != false,
+                request.useClusterLevelTlsCertificateAndKey != false,
+                request.useClusterLevelSessionCertificateAndKey == true,
                 request.sessionKeyId,
             )
         } catch (e: CertificatesResourceNotFoundException) {
