@@ -77,7 +77,9 @@ class PermissionStorageWriterProcessorImpl(
                     }
 
                     // Once done with all - post update to permission summaries
-                    permissionStorageReader.reconcilePermissionSummaries()
+                    if (permissionRequest.roleIds.isNotEmpty()) {
+                        permissionStorageReader.reconcilePermissionSummaries()
+                    }
 
                     BulkCreatePermissionsResponse(permIds, permissionRequest.roleIds)
                 }

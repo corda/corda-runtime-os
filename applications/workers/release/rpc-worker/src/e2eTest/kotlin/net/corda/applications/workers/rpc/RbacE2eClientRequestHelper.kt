@@ -3,6 +3,7 @@ package net.corda.applications.workers.rpc
 import java.time.Instant
 import net.corda.applications.workers.rpc.http.TestToolkit
 import net.corda.libs.permissions.endpoints.v1.permission.PermissionEndpoint
+import net.corda.libs.permissions.endpoints.v1.permission.types.BulkCreatePermissionsRequestType
 import net.corda.libs.permissions.endpoints.v1.permission.types.CreatePermissionType
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionResponseType
 import net.corda.libs.permissions.endpoints.v1.permission.types.PermissionType
@@ -168,6 +169,23 @@ class RbacE2eClientRequestHelper(
             }
             this
         }
+    }
+
+    fun createPermissionsAndAssignToRoles(permissionsToCreate: Set<Pair<PermissionType, String>>, roleIds: Set<String>): Set<String> {
+        val client = testToolkit.httpClientFor(PermissionEndpoint::class.java, requestUserName, requestUserPassword)
+        val proxy = client.start().proxy
+
+        val permissionsToCreateDto: Set<CreatePermissionType> =
+            permissionsToCreate.map { CreatePermissionType(it.first, it.second, null, null) }.toSet()
+
+        val responseEntity =
+            proxy.createAndAssignPermissions(BulkCreatePermissionsRequestType(permissionsToCreateDto, roleIds))
+
+        SoftAssertions.assertSoftly {
+            it.assertThat(responseEntity.responseCode.statusCode).isEqualTo(201)
+            it.assertThat(responseEntity.responseBody.permissionIds).isNotEmpty
+        }
+        return responseEntity.responseBody.permissionIds
     }
 }
 
