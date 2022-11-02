@@ -10,6 +10,7 @@ import net.corda.session.manager.impl.processor.helper.generateErrorSessionState
 import net.corda.session.manager.impl.processor.helper.recalcReceivedProcessState
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
+import net.corda.v5.base.util.trace
 import java.time.Instant
 
 
@@ -37,7 +38,7 @@ class SessionCloseProcessorReceive(
     override fun execute(): SessionState {
         return if (sessionState == null) {
             val errorMessage = "Received SessionClose on key $key and sessionId $sessionId  with null state"
-            logger.error(errorMessage)
+            logger.warn(errorMessage)
             generateErrorSessionStateFromSessionEvent(errorMessage, sessionEvent, "SessionClose-NullSessionState", instant)
         } else {
             val seqNum = sessionEvent.sequenceNum
@@ -67,7 +68,7 @@ class SessionCloseProcessorReceive(
     ) = when (sessionState.status) {
         SessionStateType.CONFIRMED, SessionStateType.CREATED -> {
             sessionState.apply {
-                logger.debug { "Updating session state to ${SessionStateType.CLOSING} for session state $sessionState" }
+                logger.trace { "Updating session state to ${SessionStateType.CLOSING} for session state $sessionState" }
                 status = SessionStateType.CLOSING
                 sendAck = true
             }
@@ -75,10 +76,10 @@ class SessionCloseProcessorReceive(
         SessionStateType.CLOSING -> {
             sessionState.apply {
                 status = if (sendEventsState.undeliveredMessages.isNullOrEmpty()) {
-                    logger.debug { "Updating session state to ${SessionStateType.CLOSED} for session state $sessionState" }
+                    logger.trace { "Updating session state to ${SessionStateType.CLOSED} for session state $sessionState" }
                     SessionStateType.CLOSED
                 } else {
-                    logger.debug { "Updating session state to ${SessionStateType.WAIT_FOR_FINAL_ACK} for session state $sessionState" }
+                    logger.trace { "Updating session state to ${SessionStateType.WAIT_FOR_FINAL_ACK} for session state $sessionState" }
                     SessionStateType.WAIT_FOR_FINAL_ACK
                 }
                 sendAck = true
@@ -96,7 +97,7 @@ class SessionCloseProcessorReceive(
         sessionState: SessionState,
         errorType: String
     ): SessionState {
-        logger.error(errorMessage)
+        logger.warn(errorMessage)
         return sessionState.apply {
             status = SessionStateType.ERROR
             sendEventsState.undeliveredMessages =

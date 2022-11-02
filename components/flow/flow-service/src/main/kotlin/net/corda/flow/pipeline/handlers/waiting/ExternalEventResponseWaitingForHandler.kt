@@ -13,6 +13,7 @@ import net.corda.libs.configuration.SmartConfig
 import net.corda.schema.configuration.FlowConfig
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.debug
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Reference
@@ -47,11 +48,11 @@ class ExternalEventResponseWaitingForHandler @Activate constructor(
                 retryOrError(context.config, status.exception, externalEventState)
             }
             ExternalEventStateType.PLATFORM_ERROR -> {
-                log.error("Resuming flow with platform error received from external event response: ${status.exception}")
+                log.debug { "Resuming flow with platform error received from external event response: ${status.exception}" }
                 FlowContinuation.Error(CordaRuntimeException(status.exception.errorMessage))
             }
             ExternalEventStateType.FATAL_ERROR -> {
-                log.error("Erroring flow due to fatal error received from external event response: ${status.exception}")
+                log.debug { "Erroring flow due to fatal error received from external event response: ${status.exception}" }
                 throw FlowFatalException(status.exception.errorMessage)
             }
             null -> throw FlowFatalException(
@@ -86,16 +87,16 @@ class ExternalEventResponseWaitingForHandler @Activate constructor(
     ): FlowContinuation {
         val retries = externalEventState.retries
         return if (retries >= config.getLong(FlowConfig.EXTERNAL_EVENT_MAX_RETRIES)) {
-            log.error(
+            log.debug {
                 "Resuming flow with transient error received from external event response after exceeding max " +
                         "retries: $exception"
-            )
+            }
             FlowContinuation.Error(CordaRuntimeException(exception.errorMessage))
         } else {
-            log.warn(
+            log.debug {
                 "Resending external event after delay after receiving transient error from external event response. " +
                         "Current retry count $retries. Error: $exception"
-            )
+            }
             externalEventState.retries = retries.inc()
             FlowContinuation.Continue
         }
