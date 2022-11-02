@@ -333,6 +333,10 @@ include 'libs:virtual-node:virtual-node-datamodel'
 include 'libs:virtual-node:virtual-node-endpoints'
 include 'libs:virtual-node:virtual-node-endpoints-maintenance'
 include 'libs:virtual-node:virtual-node-info'
+include 'notary-plugins:notary-plugin-common'
+include 'notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-api'
+include 'notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-client'
+include 'notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-server'
 include 'osgi-framework-api'
 include 'osgi-framework-bootstrap'
 include 'processors:crypto-processor'
@@ -428,6 +432,7 @@ if (compositeBuild.toBoolean() && file(cordaApiLocation).exists()) {
             substitute module('net.corda:corda-ledger-utxo') using project(':ledger:ledger-utxo')
             substitute module('net.corda:corda-membership') using project(':membership')
             substitute module('net.corda:corda-serialization') using project(':serialization')
+            substitute module('net.corda:notary-plugins') using project(':notary-plugins')
         }
     }
 }

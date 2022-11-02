@@ -4,11 +4,11 @@ import net.corda.chunking.ChunkReaderFactoryImpl
 import net.corda.chunking.RequestId
 import net.corda.chunking.db.impl.persistence.ChunkPersistence
 import net.corda.chunking.db.impl.persistence.CpiPersistence
+import net.corda.chunking.db.impl.persistence.PersistenceUtils.signerSummaryHashForDbQuery
 import net.corda.chunking.db.impl.persistence.StatusPublisher
 import net.corda.cpiinfo.write.CpiInfoWriteService
 import net.corda.data.certificates.CertificateUsage
 import net.corda.libs.cpiupload.ValidationException
-import net.corda.libs.cpiupload.ReUsedGroupIdException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.PackagingConstants
 import net.corda.libs.packaging.core.CpiMetadata
@@ -67,21 +67,24 @@ class CpiValidatorImpl constructor(
                 cpi.metadata.groupPolicy!!
             )
         } catch (ex: MembershipSchemaValidationException) {
-            throw ValidationException("Group policy file in the CPI is invalid. ${ex.getErrorSummary()}", null, ex)
+            throw ValidationException("Group policy file in the CPI is invalid. ${ex.message}", null, ex)
         }
 
         publisher.update(requestId, "Checking group id in CPI")
         val groupId = cpi.validateAndGetGroupId(requestId, GroupPolicyParser::groupIdFromJson)
 
-        if (!fileInfo.forceUpload) {
-            publisher.update(requestId, "Validating group id against DB")
-            cpiPersistence.verifyGroupIdIsUniqueForCpi(cpi)
-        }
-
         publisher.update(
             requestId, "Checking we can upsert a cpi with name=${cpi.metadata.cpiId.name} and groupId=$groupId"
         )
-        canUpsertCpi(cpi, groupId, fileInfo.forceUpload, requestId)
+
+        cpiPersistence.validateCanUpsertCpi(
+            cpiName = cpi.metadata.cpiId.name,
+            cpiSignerSummaryHash = cpi.metadata.cpiId.signerSummaryHashForDbQuery,
+            cpiVersion = cpi.metadata.cpiId.version,
+            groupId = groupId,
+            forceUpload = fileInfo.forceUpload,
+            requestId = requestId
+        )
 
         publisher.update(requestId, "Extracting Liquibase files from CPKs in CPI")
         val cpkDbChangeLogEntities = cpi.extractLiquibaseScripts()
@@ -102,28 +105,6 @@ class CpiValidatorImpl constructor(
         cpiInfoWriteService.put(cpiMetadata.cpiId, cpiMetadata)
 
         return fileInfo.checksum
-    }
-
-    /**
-     *  Check that we can upsert a CPI with the same name and group id, or a new cpi
-     *  with a different name *and* different group id.  This is enforcing the policy
-     *  of one CPI per mgm group id.
-     */
-    private fun canUpsertCpi(cpi: Cpi, groupId: String, forceUpload: Boolean, requestId: String) {
-        if (!cpiPersistence.canUpsertCpi(
-                cpi.metadata.cpiId.name,
-                groupId,
-                forceUpload,
-                cpi.metadata.cpiId.version,
-                requestId
-            )
-        ) {
-            throw ReUsedGroupIdException(
-                "Group id ($groupId) in use with another CPI.  " +
-                        "Cannot upload ${cpi.metadata.cpiId.name} ${cpi.metadata.cpiId.version}",
-                requestId
-            )
-        }
     }
 
     /**

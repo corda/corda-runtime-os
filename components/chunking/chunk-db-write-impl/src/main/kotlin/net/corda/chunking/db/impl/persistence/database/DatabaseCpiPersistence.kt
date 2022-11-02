@@ -20,6 +20,7 @@ import net.corda.libs.cpi.datamodel.QUERY_PARAM_FILE_CHECKSUM
 import net.corda.libs.cpi.datamodel.QUERY_PARAM_ID
 import net.corda.libs.cpi.datamodel.QUERY_PARAM_INCREMENTED_ENTITY_VERSION
 import net.corda.libs.cpi.datamodel.findDbChangeLogForCpi
+import net.corda.libs.cpiupload.DuplicateCpiUploadException
 import net.corda.libs.cpiupload.ValidationException
 import net.corda.libs.packaging.Cpi
 import net.corda.libs.packaging.Cpk
@@ -382,32 +383,45 @@ class DatabaseCpiPersistence(private val entityManagerFactory: EntityManagerFact
         }
     }
 
-    private fun checkForMatchingEntity(entitiesFound: List<CpiMetadataEntity>, cpiName: String, cpiVersion: String, requestId: String) {
-        if (entitiesFound.singleOrNull { it.name == cpiName && it.version == cpiVersion } == null) {
-            throw ValidationException("No instance of same CPI with previous version found", requestId)
-        }
-    }
-
-    override fun canUpsertCpi(cpiName: String, groupId: String, forceUpload: Boolean, cpiVersion: String?, requestId: String): Boolean {
-        val entitiesFound = entityManagerFactory.createEntityManager().transaction {
+    override fun validateCanUpsertCpi(
+        cpiName: String,
+        cpiSignerSummaryHash: String,
+        cpiVersion: String,
+        groupId: String,
+        forceUpload: Boolean,
+        requestId: String) {
+        val sameCPis = entityManagerFactory.createEntityManager().transaction {
             it.createQuery(
-                "FROM ${CpiMetadataEntity::class.simpleName} c WHERE c.groupId = :groupId",
+                "FROM ${CpiMetadataEntity::class.simpleName} c " +
+                        "WHERE c.name = :cpiName " +
+                        "AND c.signerSummaryHash = :cpiSignerSummaryHash",
                 CpiMetadataEntity::class.java
-            ).setParameter("groupId", groupId).resultList
+            )
+                .setParameter("cpiName", cpiName)
+                .setParameter("cpiSignerSummaryHash", cpiSignerSummaryHash).resultList
         }
 
-        // we can insert this CPI, it's the first one with this group id
-        if (entitiesFound.isEmpty() && !forceUpload) return true
-
-        if (forceUpload && cpiVersion != null) {
-            checkForMatchingEntity(entitiesFound, cpiName, cpiVersion, requestId)
-            // We can update this CPI if we find one with the same version in the case of a forceUpload
-            return true
-        } else if (entitiesFound.map { it.name }.contains(cpiName)) {
-            // we can insert this CPI, it has the same name and group id (we are NOT checking the version)
-            return true
+        if (forceUpload) {
+            if (!sameCPis.any { it.version == cpiVersion }) {
+                throw ValidationException("No instance of same CPI with previous version found", requestId)
+            }
+            if(sameCPis.first().groupId != groupId) {
+                throw ValidationException("Cannot force update a CPI with a different group ID", requestId)
+            }
+            // We can force-update this CPI because we found one with the same version
+            return
         }
 
-        return false
+        // outside a force-update, anything goes except identical ID (name, signer and version)
+        if (sameCPis.any { it.version == cpiVersion }) {
+            throw DuplicateCpiUploadException("CPI $cpiName, $cpiVersion, $cpiSignerSummaryHash already exists.")
+        }
+
+        // NOTE: we may do additional validation here, such as validate that the group ID is not changing during a
+        //  regular update. For now, just logging this as un-usual.
+        if(sameCPis.any { it.groupId != groupId }) {
+            log.info("CPI upload $requestId contains a CPI with the same name ($cpiName) and " +
+                    "signer ($cpiSignerSummaryHash) as an existing CPI, but a different Group ID.")
+        }
     }
 }
