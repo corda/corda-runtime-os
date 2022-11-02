@@ -28,11 +28,11 @@ import org.mockito.kotlin.mock
 import kotlin.test.assertIs
 
 class TestFlowFiberServiceWithSerializationProxy constructor(
-    private val schemeMetadata: CipherSchemeMetadata
+    private val cipherSchemeMetadata: CipherSchemeMetadata
 ) : FlowFiberService, SingletonSerializeAsToken {
     override fun getExecutingFiber(): FlowFiber {
         val testFlowFiberServiceWithSerialization = TestFlowFiberServiceWithSerialization()
-        testFlowFiberServiceWithSerialization.configureSerializer({}, schemeMetadata)
+        testFlowFiberServiceWithSerialization.configureSerializer({}, cipherSchemeMetadata)
         return testFlowFiberServiceWithSerialization.getExecutingFiber()
     }
 }

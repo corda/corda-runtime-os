@@ -7,6 +7,7 @@ import net.corda.messagebus.db.datamodel.TransactionRecordEntry
 import net.corda.orm.EntityManagerFactoryFactory
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
+import net.corda.v5.base.util.trace
 import org.osgi.service.component.annotations.Activate
 import org.osgi.service.component.annotations.Component
 import org.osgi.service.component.annotations.Deactivate
@@ -41,7 +42,7 @@ class EntityManagerFactoryHolder @Activate constructor(
         jdbcPassword: String,
     ): EntityManagerFactory {
         if (emf == null) {
-            logger.info("Creating emf for $jdbcUrl")
+            logger.trace { "Creating emf for $jdbcUrl" }
             emf = entityManagerFactoryFactory.create(
                 jdbcUrl,
                 jdbcUsername,

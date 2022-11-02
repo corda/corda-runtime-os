@@ -3,7 +3,7 @@ package net.corda.ledger.utxo.testkit
 import net.corda.common.json.validation.JsonValidator
 import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.common.testkit.signatureWithMetaDataExample
-import net.corda.ledger.utxo.impl.transaction.UtxoSignedTransactionImpl
+import net.corda.ledger.utxo.flow.impl.transaction.UtxoSignedTransactionImpl
 import net.corda.v5.application.crypto.DigitalSignatureVerificationService
 import net.corda.v5.application.crypto.SigningService
 import net.corda.v5.application.marshalling.JsonMarshallingService

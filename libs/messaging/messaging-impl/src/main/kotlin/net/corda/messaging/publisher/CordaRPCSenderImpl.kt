@@ -1,5 +1,12 @@
 package net.corda.messaging.publisher
 
+import java.nio.ByteBuffer
+import java.time.Instant
+import java.util.UUID
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.thread
+import kotlin.concurrent.withLock
 import net.corda.data.CordaAvroDeserializer
 import net.corda.data.CordaAvroSerializer
 import net.corda.data.ExceptionEnvelope
@@ -32,13 +39,6 @@ import net.corda.schema.Schemas.Companion.getRPCResponseTopic
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
 import org.slf4j.Logger
-import java.nio.ByteBuffer
-import java.time.Instant
-import java.util.*
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.thread
-import kotlin.concurrent.withLock
 
 @Suppress("LongParameterList")
 internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
@@ -215,11 +215,11 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                     }
                     futureTracker.removeFuture(correlationKey, partition)
                 } else {
-                    log.info(
+                    log.debug {
                         "Response for request $correlationKey was received at ${rpcResponse.sendTime}. " +
-                            "There is no future assigned for $correlationKey meaning that this request was either orphaned during " +
-                            "a repartition event or the client dropped their future. The response status for it was $responseStatus"
-                    )
+                                "There is no future assigned for $correlationKey meaning that this request was either orphaned during " +
+                                "a repartition event or the client dropped their future. The response status for it was $responseStatus"
+                    }
                 }
             }
     }
@@ -251,7 +251,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
         if (partitions.isEmpty()) {
             val error = "No partitions for topic ${getRPCResponseTopic(config.topic)}. Couldn't send."
             future.completeExceptionally(CordaRPCAPISenderException(error))
-            log.error(error)
+            log.warn(error)
         } else {
             val partition = partitions[0].partition
             val request = RPCRequest(
@@ -269,7 +269,7 @@ internal class CordaRPCSenderImpl<REQUEST : Any, RESPONSE : Any>(
                 producer?.sendRecords(listOf(record))
             } catch (ex: Exception) {
                 future.completeExceptionally(CordaRPCAPISenderException("Failed to publish", ex))
-                log.error("Failed to publish. Exception: ${ex.message}", ex)
+                log.warn("Failed to publish. Exception: ${ex.message}", ex)
             }
         }
 

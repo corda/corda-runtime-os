@@ -36,6 +36,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.TestMethodOrder
+import kotlin.text.Typography.quote
 
 @Suppress("Unused", "FunctionName")
 @Order(20)
@@ -62,6 +63,7 @@ class FlowTests {
 
         val expectedFlows = listOf(
             "net.cordapp.testing.smoketests.virtualnode.ReturnAStringFlow",
+            "net.cordapp.testing.smoketests.virtualnode.SimplePersistenceCheckFlow",
             "net.cordapp.testing.smoketests.flow.AmqpSerializationTestFlow",
             "net.cordapp.testing.smoketests.flow.RpcSmokeTestFlow",
             "net.cordapp.testing.testflows.TestFlow",
@@ -93,6 +95,19 @@ class FlowTests {
             registerMember(charlieHoldingId)
         }
     }
+
+    /**
+     * Removes whitespaces unless they are in quotes, allowing Json declared in tests to take any shape and still pass
+     * string matching with expected outputs from Flows.
+     */
+    private fun String.trimJson(): String {
+        var isInQuotes = false
+        return this.filter { char ->
+            if (char == quote) isInQuotes = !isInQuotes
+            !char.isWhitespace() || isInQuotes
+        }
+    }
+
     @Test
     fun `start RPC flow`() {
         val requestBody = RpcSmokeTestInput().apply {
@@ -553,7 +568,7 @@ class FlowTests {
         assertThat(result.flowError).isNull()
         assertThat(flowResult.command).isEqualTo("context_propagation")
 
-        val CONTEXT_JSON =
+        val contextJson =
             """
             {
               "rpcFlow": {
@@ -587,10 +602,9 @@ class FlowTests {
                 "user3": "null"
               }
             }
-            """.filter { !it.isWhitespace() }
+            """.trimJson()
 
-        assertThat(flowResult.result)
-            .isEqualTo(CONTEXT_JSON)
+        assertThat(flowResult.result).isEqualTo(contextJson)
     }
 
     @Test
@@ -684,5 +698,35 @@ class FlowTests {
             updateConfig(mapOf(MAX_ALLOWED_MSG_SIZE to currentConfigValue).toJsonString(), MESSAGING_CONFIG)
             waitForConfigurationChange(MESSAGING_CONFIG, MAX_ALLOWED_MSG_SIZE, currentConfigValue.toString())
         }
+    }
+
+    @Test
+    fun `Json serialisation`() {
+        val requestBody = RpcSmokeTestInput().apply {
+            command = "json_serialization"
+            data = mapOf("vnode" to X500_BOB)
+        }
+
+        val requestId = startRpcFlow(bobHoldingId, requestBody)
+
+        val result = awaitRpcFlowFinished(bobHoldingId, requestId)
+
+        val flowResult = result.getRpcFlowResult()
+        assertThat(result.flowStatus).isEqualTo(RPC_FLOW_STATUS_SUCCESS)
+        assertThat(result.flowResult).isNotNull
+        assertThat(result.flowError).isNull()
+        assertThat(flowResult.command).isEqualTo("json_serialization")
+
+        val expectedOutputJson =
+            """
+            {
+              "firstTest": {
+                "serialized-implicitly": "combined-test-stringtest-string"
+              },
+              "secondTest": "CN=Bob, OU=Application, O=R3, L=London, C=GB"
+            }
+            """.trimJson()
+
+        assertThat(flowResult.result).isEqualTo(expectedOutputJson)
     }
 }

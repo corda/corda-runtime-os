@@ -56,6 +56,12 @@ spec:
             containerPort: 10045
         {{- end }}
         {{- if not .Values.workers.flow.debug.enabled }}
+        readinessProbe:
+          httpGet:
+            path: /status
+            port: monitor
+          periodSeconds: 10
+          failureThreshold: 1
         livenessProbe:
           httpGet:
             path: /isHealthy

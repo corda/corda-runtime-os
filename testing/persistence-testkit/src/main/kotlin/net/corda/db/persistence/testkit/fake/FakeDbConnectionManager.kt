@@ -108,6 +108,10 @@ class FakeDbConnectionManager(
         TODO("Not yet implemented")
     }
 
+    override fun createDatasource(connectionId: UUID): CloseableDataSource {
+        TODO("Not yet implemented")
+    }
+
     override fun getDataSource(name: String, privilege: DbPrivilege): DataSource? {
         TODO("Not yet implemented")
     }

@@ -333,6 +333,10 @@ include 'libs:virtual-node:virtual-node-datamodel'
 include 'libs:virtual-node:virtual-node-endpoints'
 include 'libs:virtual-node:virtual-node-endpoints-maintenance'
 include 'libs:virtual-node:virtual-node-info'
+include 'notary-plugins:notary-plugin-common'
+include 'notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-api'
+include 'notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-client'
+include 'notary-plugins:notary-plugin-non-validating:notary-plugin-non-validating-server'
 include 'osgi-framework-api'
 include 'osgi-framework-bootstrap'
 include 'processors:crypto-processor'
@@ -351,13 +355,13 @@ include 'testing:db-testkit'
 include 'testing:db-message-bus-testkit'
 include 'testing:bundles:testing-cats'
 include 'testing:bundles:testing-dogs'
+include 'testing:bundles:testing-fish'
 include 'testing:cpbs:calculator'
 include 'testing:cpbs:chat'
 include 'testing:cpbs:crypto-custom-digest-one-cpk'
 include 'testing:cpbs:crypto-custom-digest-one-consumer'
 include 'testing:cpbs:crypto-custom-digest-two-cpk'
 include 'testing:cpbs:crypto-custom-digest-two-consumer'
-include 'testing:cpbs:connect4'
 include 'testing:cpbs:ledger-consensual-demo-app'
 include 'testing:cpbs:extendable-cpb'
 include 'testing:cpbs:test-cordapp'
@@ -372,7 +376,6 @@ include 'testing:cpbs:split-packages:split-packages-one'
 include 'testing:cpbs:split-packages:split-packages-one:library-one'
 include 'testing:cpbs:split-packages:split-packages-two'
 include 'testing:cpbs:split-packages:split-packages-two:library-two'
-include 'testing:cpbs:tic-tac-toe'
 include 'testing:crypto-testkit'
 include 'testing:flow:dummy-link-manager'
 include 'testing:flow:external-events'
@@ -430,6 +433,7 @@ if (compositeBuild.toBoolean() && file(cordaApiLocation).exists()) {
             substitute module('net.corda:corda-ledger-utxo') using project(':ledger:ledger-utxo')
             substitute module('net.corda:corda-membership') using project(':membership')
             substitute module('net.corda:corda-serialization') using project(':serialization')
+            substitute module('net.corda:notary-plugins') using project(':notary-plugins')
         }
     }
 }

@@ -7,7 +7,6 @@ bootstrap:
 
 logging:
   format: "text"
-  level: "info"
 
 kafka:
   bootstrapServers: prereqs-kafka:9092

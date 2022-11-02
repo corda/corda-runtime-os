@@ -1,0 +1,12 @@
+package net.corda.ledger.utxo.flow.impl.transaction
+
+class UtxoTransactionMetaData {
+    enum class TransactionSubtype {
+        NOTARY_CHANGE,
+        GENERAL
+    }
+    companion object {
+        const val LEDGER_VERSION = 1
+    }
+}
+
