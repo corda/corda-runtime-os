@@ -157,7 +157,7 @@
     "/certificates/{usage}/cluster" : {
       "put" : {
         "tags" : [ "Certificates API" ],
-        "description" : "This method imports a certificate chain for a specified tenant.",
+        "description" : "This method imports a certificate chain for a cluster.",
         "operationId" : "put_certificates__usage__cluster",
         "parameters" : [ {
           "name" : "usage",
