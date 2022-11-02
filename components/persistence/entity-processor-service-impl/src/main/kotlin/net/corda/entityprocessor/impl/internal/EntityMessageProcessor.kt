@@ -12,8 +12,6 @@ import net.corda.data.persistence.FindWithNamedQuery
 import net.corda.data.persistence.MergeEntities
 import net.corda.data.persistence.PersistEntities
 import net.corda.flow.external.events.responses.factory.ExternalEventResponseFactory
-import net.corda.logging.mdc.ExternalEventMDCFields.MDC_EXTERNAL_EVENT_ID
-import net.corda.logging.mdc.withMDC
 import net.corda.messaging.api.processor.DurableProcessor
 import net.corda.messaging.api.records.Record
 import net.corda.orm.utils.transaction
@@ -22,6 +20,7 @@ import net.corda.persistence.common.ResponseFactory
 import net.corda.persistence.common.getEntityManagerFactory
 import net.corda.persistence.common.getSerializationService
 import net.corda.sandboxgroupcontext.SandboxGroupContext
+import net.corda.utilities.withMDC
 import net.corda.v5.base.exceptions.CordaRuntimeException
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.base.util.debug
@@ -48,6 +47,7 @@ class EntityMessageProcessor(
 ) : DurableProcessor<String, EntityRequest> {
     private companion object {
         val log = contextLogger()
+        const val MDC_EXTERNAL_EVENT_ID = "external_event_id"
     }
 
     private val responseFactory = ResponseFactory(externalEventResponseFactory, log)
