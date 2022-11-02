@@ -7,12 +7,12 @@ import net.corda.v5.base.exceptions.CordaRuntimeException
  * Exception thrown when validation using a membership schema fails.
  */
 class MembershipSchemaValidationException(
-    val msg: String,
+    msg: String,
     cause: Throwable?,
-    private val schema: MembershipSchema,
-    private val errors: List<String>
+    schema: MembershipSchema,
+    errors: List<String>
 ) : CordaRuntimeException(msg, cause) {
-    fun getErrorSummary(): String = errors.joinToString(
+    override val message: String = errors.joinToString(
         prefix = "$msg. Failed to validate against schema \"${schema.schemaName}\" due to the following error(s): [",
         postfix = "]",
         separator = ",${System.lineSeparator()}"
