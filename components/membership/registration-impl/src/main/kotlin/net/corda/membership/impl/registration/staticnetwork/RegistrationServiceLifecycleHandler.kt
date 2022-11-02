@@ -22,7 +22,7 @@ import net.corda.messaging.api.publisher.config.PublisherConfig
 import net.corda.messaging.api.records.Record
 import net.corda.messaging.api.subscription.Subscription
 import net.corda.messaging.api.subscription.config.SubscriptionConfig
-import net.corda.schema.Schemas.Membership.Companion.GROUP_PARAMETERS_TOPIC
+import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_STATIC_NETWORK_TOPIC
 import net.corda.schema.configuration.ConfigKeys.BOOT_CONFIG
 import net.corda.schema.configuration.ConfigKeys.MESSAGING_CONFIG
 
@@ -45,7 +45,11 @@ class RegistrationServiceLifecycleHandler(
 
     private val configurationReadService = staticMemberRegistrationService.configurationReadService
 
-    private val processor = Processor(staticMemberRegistrationService.groupParametersCache)
+    private val platformInfoProvider = staticMemberRegistrationService.platformInfoProvider
+
+    private val keyEncodingService = staticMemberRegistrationService.keyEncodingService
+
+    private var _groupParametersCache: GroupParametersCache? = null
 
     private var _publisher: Publisher? = null
 
@@ -56,6 +60,9 @@ class RegistrationServiceLifecycleHandler(
      */
     val publisher: Publisher
         get() = _publisher ?: throw IllegalArgumentException("Publisher is not initialized.")
+
+    val groupParametersCache: GroupParametersCache
+        get() = _groupParametersCache ?: throw IllegalArgumentException("GroupParametersCache is not initialized.")
 
     override fun processEvent(event: LifecycleEvent, coordinator: LifecycleCoordinator) {
         when(event) {
@@ -123,11 +130,12 @@ class RegistrationServiceLifecycleHandler(
             event.config.getConfig(MESSAGING_CONFIG)
         )
         _publisher?.start()
+        _groupParametersCache = GroupParametersCache(platformInfoProvider, publisher, keyEncodingService)
 
         subscription?.close()
         subscription = subscriptionFactory.createCompactedSubscription(
-            SubscriptionConfig(CONSUMER_GROUP, GROUP_PARAMETERS_TOPIC),
-            processor,
+            SubscriptionConfig(CONSUMER_GROUP, MEMBERSHIP_STATIC_NETWORK_TOPIC),
+            Processor(groupParametersCache),
             event.config.getConfig(MESSAGING_CONFIG)
         ).also {
             it.start()

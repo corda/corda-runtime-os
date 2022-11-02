@@ -2,6 +2,7 @@ package net.corda.membership.impl.registration.staticnetwork.cache
 
 import net.corda.data.KeyValuePair
 import net.corda.data.KeyValuePairList
+import net.corda.data.membership.staticgroup.StaticGroupDefinition
 import net.corda.libs.platform.PlatformInfoProvider
 import net.corda.membership.lib.EPOCH_KEY
 import net.corda.membership.lib.MODIFIED_TIME_KEY
@@ -15,7 +16,7 @@ import net.corda.membership.lib.updateExistingNotaryService
 import net.corda.membership.registration.MembershipRegistrationException
 import net.corda.messaging.api.publisher.Publisher
 import net.corda.messaging.api.records.Record
-import net.corda.schema.Schemas.Membership.Companion.GROUP_PARAMETERS_TOPIC
+import net.corda.schema.Schemas.Membership.Companion.MEMBERSHIP_STATIC_NETWORK_TOPIC
 import net.corda.utilities.time.UTCClock
 import net.corda.v5.base.util.contextLogger
 import net.corda.v5.cipher.suite.KeyEncodingService
@@ -39,10 +40,7 @@ class GroupParametersCache(
 
 
     fun set(groupId: String, groupParameters: KeyValuePairList) {
-        cache.compute(groupId) { _, _ ->
-            cache[groupId] = groupParameters
-            groupParameters
-        }
+        cache[groupId] = groupParameters
     }
 
     fun getOrCreateGroupParameters(holdingIdentity: HoldingIdentity): KeyValuePairList =
@@ -90,9 +88,9 @@ class GroupParametersCache(
         publisher.publish(
             listOf(
                 Record(
-                    GROUP_PARAMETERS_TOPIC,
+                    MEMBERSHIP_STATIC_NETWORK_TOPIC,
                     groupId,
-                    this // TODO publish new persistent group params; PGP(GPO("Static", groupId), this))
+                    StaticGroupDefinition(groupId, this)
                 )
             )
         ).forEach { it.get() }

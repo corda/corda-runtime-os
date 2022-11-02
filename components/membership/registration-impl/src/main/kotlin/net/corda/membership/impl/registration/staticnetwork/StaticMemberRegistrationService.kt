@@ -21,7 +21,6 @@ import net.corda.membership.impl.registration.MemberRole
 import net.corda.membership.impl.registration.MemberRole.Companion.toMemberInfo
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_PROTOCOL
 import net.corda.membership.impl.registration.staticnetwork.StaticMemberTemplateExtension.Companion.ENDPOINT_URL
-import net.corda.membership.impl.registration.staticnetwork.cache.GroupParametersCache
 import net.corda.membership.lib.EndpointInfoFactory
 import net.corda.membership.lib.GroupParametersFactory
 import net.corda.membership.lib.MemberInfoExtension.Companion.GROUP_ID
@@ -88,7 +87,7 @@ class StaticMemberRegistrationService @Activate constructor(
     @Reference(service = SubscriptionFactory::class)
     internal val subscriptionFactory: SubscriptionFactory,
     @Reference(service = KeyEncodingService::class)
-    private val keyEncodingService: KeyEncodingService,
+    internal val keyEncodingService: KeyEncodingService,
     @Reference(service = CryptoOpsClient::class)
     private val cryptoOpsClient: CryptoOpsClient,
     @Reference(service = ConfigurationReadService::class)
@@ -108,7 +107,7 @@ class StaticMemberRegistrationService @Activate constructor(
     @Reference(service = EndpointInfoFactory::class)
     private val endpointInfoFactory: EndpointInfoFactory,
     @Reference(service = PlatformInfoProvider::class)
-    private val platformInfoProvider: PlatformInfoProvider,
+    internal val platformInfoProvider: PlatformInfoProvider,
     @Reference(service = GroupParametersFactory::class)
     private val groupParametersFactory: GroupParametersFactory,
     @Reference(service = VirtualNodeInfoReadService::class)
@@ -127,8 +126,6 @@ class StaticMemberRegistrationService @Activate constructor(
 
     // Handler for lifecycle events
     private val lifecycleHandler = RegistrationServiceLifecycleHandler(this)
-
-    internal val groupParametersCache = GroupParametersCache(platformInfoProvider, lifecycleHandler.publisher, keyEncodingService)
 
     // Component lifecycle coordinator
     private val coordinator = coordinatorFactory.createCoordinator(
@@ -215,9 +212,10 @@ class StaticMemberRegistrationService @Activate constructor(
     }
 
     private fun persistGroupParameters(memberInfo: MemberInfo, staticMemberList: List<StaticMember>) {
-        val groupParametersList = groupParametersCache.getOrCreateGroupParameters(memberInfo.holdingIdentity).run {
+        val cache = lifecycleHandler.groupParametersCache
+        val groupParametersList = cache.getOrCreateGroupParameters(memberInfo.holdingIdentity).run {
             memberInfo.notaryDetails?.let {
-                groupParametersCache.addNotary(memberInfo)
+                cache.addNotary(memberInfo)
             } ?: this
         }
         val groupParameters = groupParametersFactory.create(groupParametersList)

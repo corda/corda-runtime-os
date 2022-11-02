@@ -80,6 +80,7 @@ import net.corda.v5.crypto.PublicKeyHash
 import net.corda.v5.crypto.RSA_CODE_NAME
 import net.corda.v5.crypto.SignatureSpec
 import net.corda.v5.crypto.calculateHash
+import net.corda.v5.membership.GroupParameters
 import net.corda.virtualnode.HoldingIdentity
 import net.corda.virtualnode.read.VirtualNodeInfoReadService
 import org.assertj.core.api.Assertions.assertThat
@@ -251,7 +252,10 @@ class StaticMemberRegistrationServiceTest {
     private val virtualNodeInfoReadService: VirtualNodeInfoReadService = mock {
         on { get(eq(alice)) } doReturn virtualNodeInfo
     }
-    private val groupParametersFactory: GroupParametersFactory = mock()
+    private val mockGroupParameters: GroupParameters = mock()
+    private val groupParametersFactory: GroupParametersFactory = mock {
+        on { create(any()) } doReturn mockGroupParameters
+    }
 
     private val registrationService = StaticMemberRegistrationService(
         groupPolicyProvider,
@@ -356,6 +360,26 @@ class StaticMemberRegistrationServiceTest {
             registrationService.register(registrationId, alice, mockContext)
 
             assertThat(status.firstValue.status).isEqualTo(RegistrationStatus.APPROVED)
+        }
+
+        @Test
+        fun `registration persists group parameters for registering member`() {
+            val knownIdentity = HoldingIdentity(aliceName, "test-group")
+            val status = argumentCaptor<GroupParameters>()
+            whenever(
+                persistenceClient.persistGroupParameters(
+                    any(),
+                    status.capture()
+                )
+            ).doReturn(MembershipPersistenceResult.Success(1))
+            whenever(groupPolicyProvider.getGroupPolicy(knownIdentity)).thenReturn(groupPolicyWithStaticNetwork)
+            whenever(virtualNodeInfoReadService.get(knownIdentity)).thenReturn(buildTestVirtualNodeInfo(knownIdentity))
+            setUpPublisher()
+            registrationService.start()
+
+            registrationService.register(registrationId, knownIdentity, mockContext)
+
+            assertThat(status.firstValue).isEqualTo(mockGroupParameters)
         }
     }
 
@@ -603,6 +627,8 @@ class StaticMemberRegistrationServiceTest {
             assertThat(notaryDetails)
                 .isNull()
         }
+
+        // TODO (WIP) add test case to check notary case for group params persistence
     }
 
     @Nested

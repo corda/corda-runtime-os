@@ -38,6 +38,7 @@ import org.mockito.kotlin.verify
 
 class RegistrationServiceLifecycleHandlerTest {
     private val componentHandle: RegistrationHandle = mock()
+    private val subRegistrationHandle: RegistrationHandle = mock()
     private val configHandle: Resource = mock()
 
     private val groupPolicyProvider: GroupPolicyProvider = mock()
@@ -52,7 +53,9 @@ class RegistrationServiceLifecycleHandlerTest {
         on { createPublisher(any(), any()) } doReturn publisher
     }
 
-    private val mockSubscription: CompactedSubscription<String, KeyValuePairList> = mock()
+    private val mockSubscription: CompactedSubscription<String, KeyValuePairList> = mock {
+        on { subscriptionName } doReturn mock()
+    }
 
     private val subscriptionFactory: SubscriptionFactory = mock {
         on { createCompactedSubscription(any(), any<CompactedProcessor<String, KeyValuePairList>>(), any()) } doReturn mockSubscription
@@ -60,6 +63,7 @@ class RegistrationServiceLifecycleHandlerTest {
 
     private val coordinator: LifecycleCoordinator = mock {
         on { followStatusChangesByName(any()) } doReturn componentHandle
+        on { followStatusChangesByName(setOf(mockSubscription.subscriptionName)) } doReturn subRegistrationHandle
     }
 
     private val coordinatorFactory: LifecycleCoordinatorFactory = mock {
@@ -88,6 +92,7 @@ class RegistrationServiceLifecycleHandlerTest {
         membershipSchemaValidatorFactory,
         mock(),
         platformInfoProvider,
+        mock(),
         virtualNodeInfoReadService
     )
 
@@ -190,12 +195,16 @@ class RegistrationServiceLifecycleHandlerTest {
     }
 
     @Test
-    fun `After receiving the messaging configuration the publisher is initialized`() {
+    fun `After receiving the messaging configuration the publisher and group parameters cache are initialized`() {
         registrationServiceLifecycleHandler.processEvent(
             ConfigChangedEvent(setOf(BOOT_CONFIG, MESSAGING_CONFIG), configs),
             coordinator
         )
         assertNotNull(registrationServiceLifecycleHandler.publisher)
+        assertNotNull(registrationServiceLifecycleHandler.groupParametersCache)
         verify(coordinator).updateStatus(LifecycleStatus.UP)
+        verify(coordinator).followStatusChangesByName(
+            setOf(mockSubscription.subscriptionName)
+        )
     }
 }
