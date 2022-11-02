@@ -9,10 +9,10 @@ dependencies {
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
     implementation "net.corda:corda-cipher-suite"
-    implementation "net.corda:corda-ledger-consensual"
+    api "net.corda:corda-ledger-consensual"
 
     implementation project(":libs:ledger:ledger-common-data")
     implementation project(":libs:ledger:ledger-consensual-data")
-    implementation project(":components:ledger:ledger-consensual-flow")
-    api project(":testing:ledger:ledger-common-testkit")
+    api project(":components:ledger:ledger-consensual-flow")
+    implementation project(":testing:ledger:ledger-common-testkit")
 }

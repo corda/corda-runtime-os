@@ -32,7 +32,6 @@ dependencies {
     testImplementation project(":libs:serialization:serialization-kryo")
     testImplementation project(":testing:kryo-serialization-testkit")
     testImplementation project(":testing:layered-property-map-testkit")
-    testImplementation project(':testing:ledger:ledger-common-testkit')
     testImplementation project(':testing:ledger:ledger-common-base-test')
     testImplementation project(":testing:test-serialization")
     testImplementation "org.mockito:mockito-core:$mockitoVersion"

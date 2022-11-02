@@ -1,31 +1,17 @@
 package net.corda.ledger.consensual.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
-import net.corda.ledger.common.test.LedgerTest
-import net.corda.ledger.common.testkit.mockSigningService
 import net.corda.ledger.common.testkit.publicKeyExample
-import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualSignedTransactionFactoryImpl
+import net.corda.ledger.consensual.test.ConsensualLedgerTest
 import net.corda.ledger.consensual.testkit.ConsensualStateClassExample
 import net.corda.ledger.consensual.testkit.consensualStateExample
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.mock
 import kotlin.test.assertIs
 
-internal class ConsensualTransactionBuilderImplTest: LedgerTest() {
-    private val consensualSignedTransactionFactory = ConsensualSignedTransactionFactoryImpl(
-        serializationServiceNullCfg,
-        mockSigningService(),
-        mock(),
-        transactionMetadataFactory,
-        wireTransactionFactory,
-        flowFiberService,
-        jsonMarshallingService
-    )
-    private val consensualTransactionBuilder = ConsensualTransactionBuilderImpl(
-        consensualSignedTransactionFactory)
+internal class ConsensualTransactionBuilderImplTest: ConsensualLedgerTest() {
     @Test
     fun `can build a simple Transaction`() {
         val tx = consensualTransactionBuilder

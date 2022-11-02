@@ -8,10 +8,13 @@ import net.corda.flow.application.services.FlowEngineImpl
 import net.corda.internal.serialization.amqp.helper.TestFlowFiberServiceWithSerialization
 import net.corda.internal.serialization.amqp.helper.TestSerializationService
 import net.corda.ledger.common.data.transaction.factory.WireTransactionFactoryImpl
+import net.corda.ledger.common.data.transaction.serializer.amqp.WireTransactionSerializer
 import net.corda.ledger.common.flow.impl.transaction.factory.TransactionMetadataFactoryImpl
+import net.corda.ledger.common.flow.impl.transaction.serializer.kryo.WireTransactionKryoSerializer
+import net.corda.ledger.common.testkit.getWireTransactionExample
 import net.corda.ledger.common.testkit.mockPlatformInfoProvider
 
-open class LedgerTest {
+abstract class CommonLedgerTest {
     val cipherSchemeMetadata = CipherSchemeMetadataImpl()
     val digestService = DigestServiceImpl(cipherSchemeMetadata, null)
     val merkleTreeProvider = MerkleTreeProviderImpl(digestService)
@@ -24,4 +27,13 @@ open class LedgerTest {
     val serializationServiceNullCfg = TestSerializationService.getTestSerializationService({}, cipherSchemeMetadata)
     val transactionMetadataFactory =
         TransactionMetadataFactoryImpl(flowFiberService, mockPlatformInfoProvider())
+    val wireTransactionKryoSerializer = WireTransactionKryoSerializer(
+        wireTransactionFactory
+    )
+    val wireTransactionAMQPSerializer = WireTransactionSerializer(wireTransactionFactory)
+    val serializationServiceWithWireTx = TestSerializationService.getTestSerializationService({
+        it.register(wireTransactionAMQPSerializer, it)
+    }, cipherSchemeMetadata)
+
+    val wireTransaction = getWireTransactionExample(digestService, merkleTreeProvider, jsonMarshallingService)
 }

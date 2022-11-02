@@ -1,9 +1,7 @@
 package net.corda.ledger.utxo.flow.impl.transaction
 
-import net.corda.ledger.common.test.LedgerTest
-import net.corda.ledger.common.testkit.mockSigningService
 import net.corda.ledger.common.testkit.publicKeyExample
-import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactoryImpl
+import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.UtxoStateClassExample
 import net.corda.ledger.utxo.testkit.getUtxoInvalidStateAndRef
@@ -14,20 +12,9 @@ import net.corda.v5.crypto.SecureHash
 import net.corda.v5.ledger.utxo.ContractState
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.mock
 import kotlin.test.assertIs
 
-internal class UtxoLedgerTransactionImplTest: LedgerTest() {
-    private val utxoSignedTransactionFactory = UtxoSignedTransactionFactoryImpl(
-        serializationServiceNullCfg,
-        mockSigningService(),
-        mock(),
-        transactionMetadataFactory,
-        wireTransactionFactory,
-        flowFiberService,
-        jsonMarshallingService
-    )
-
+internal class UtxoLedgerTransactionImplTest: UtxoLedgerTest() {
     @Test
     fun `ledger transaction contains the same data what it was created with`() {
 

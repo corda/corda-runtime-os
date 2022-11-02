@@ -8,7 +8,7 @@ dependencies {
     compileOnly 'org.osgi:osgi.annotation'
 
     implementation platform("net.corda:corda-api:$cordaApiVersion")
-    implementation "net.corda:corda-ledger-common"
+    api "net.corda:corda-ledger-common"
     implementation "net.corda:corda-cipher-suite"
 
     implementation project(":libs:ledger:ledger-common-data")

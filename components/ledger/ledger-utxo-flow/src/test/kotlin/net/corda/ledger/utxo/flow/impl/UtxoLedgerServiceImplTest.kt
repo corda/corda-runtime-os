@@ -1,9 +1,7 @@
 package net.corda.ledger.utxo.flow.impl
 
-import net.corda.ledger.common.test.LedgerTest
-import net.corda.ledger.common.testkit.mockSigningService
 import net.corda.ledger.common.testkit.publicKeyExample
-import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactoryImpl
+import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.UtxoStateClassExample
 import net.corda.ledger.utxo.testkit.getUtxoInvalidStateAndRef
@@ -16,33 +14,18 @@ import net.corda.v5.ledger.utxo.transaction.UtxoSignedTransaction
 import net.corda.v5.ledger.utxo.transaction.UtxoTransactionBuilder
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.mock
 import kotlin.test.assertIs
 
-class UtxoLedgerServiceImplTest: LedgerTest() {
-
-    private val utxoSignedTransactionFactory = UtxoSignedTransactionFactoryImpl(
-        serializationServiceNullCfg,
-        mockSigningService(),
-        mock(),
-        transactionMetadataFactory,
-        wireTransactionFactory,
-        flowFiberService,
-        jsonMarshallingService
-    )
-
-
+class UtxoLedgerServiceImplTest: UtxoLedgerTest() {
     @Test
     fun `getTransactionBuilder should return a Transaction Builder`() {
-        val service = UtxoLedgerServiceImpl(utxoSignedTransactionFactory)
-        val transactionBuilder = service.getTransactionBuilder()
+        val transactionBuilder = utxoLedgerService.getTransactionBuilder()
         assertIs<UtxoTransactionBuilder>(transactionBuilder)
     }
 
     @Test
     fun `UtxoLedgerServiceImpl's getTransactionBuilder() can build a SignedTransaction`() {
-        val service = UtxoLedgerServiceImpl(utxoSignedTransactionFactory)
-        val transactionBuilder = service.getTransactionBuilder()
+        val transactionBuilder = utxoLedgerService.getTransactionBuilder()
 
         val inputStateAndRef = getUtxoInvalidStateAndRef()
         val referenceStateAndRef = getUtxoInvalidStateAndRef()

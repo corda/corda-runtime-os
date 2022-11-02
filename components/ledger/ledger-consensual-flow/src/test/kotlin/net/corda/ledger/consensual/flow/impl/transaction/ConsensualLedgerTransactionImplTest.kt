@@ -1,9 +1,7 @@
 package net.corda.ledger.consensual.flow.impl.transaction
 
-import net.corda.ledger.common.test.LedgerTest
-import net.corda.ledger.common.testkit.mockSigningService
 import net.corda.ledger.common.testkit.publicKeyExample
-import net.corda.ledger.consensual.flow.impl.transaction.factory.ConsensualSignedTransactionFactoryImpl
+import net.corda.ledger.consensual.test.ConsensualLedgerTest
 import net.corda.ledger.consensual.testkit.ConsensualStateClassExample
 import net.corda.ledger.consensual.testkit.consensualStateExample
 import net.corda.v5.crypto.SecureHash
@@ -11,22 +9,11 @@ import net.corda.v5.ledger.consensual.ConsensualState
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.mock
 import java.time.Instant
 import kotlin.math.abs
 import kotlin.test.assertIs
 
-internal class ConsensualLedgerTransactionImplTest: LedgerTest() {
-    private val consensualSignedTransactionFactory = ConsensualSignedTransactionFactoryImpl(
-        serializationServiceNullCfg,
-        mockSigningService(),
-        mock(),
-        transactionMetadataFactory,
-        wireTransactionFactory,
-        flowFiberService,
-        jsonMarshallingService
-    )
-
+internal class ConsensualLedgerTransactionImplTest: ConsensualLedgerTest() {
     @Test
     fun `ledger transaction contains the same data what it was created with`() {
         val testTimestamp = Instant.now()

@@ -1,10 +1,8 @@
 package net.corda.ledger.utxo.flow.impl.transaction
 
 import net.corda.ledger.common.data.transaction.CordaPackageSummary
-import net.corda.ledger.common.test.LedgerTest
-import net.corda.ledger.common.testkit.mockSigningService
 import net.corda.ledger.common.testkit.publicKeyExample
-import net.corda.ledger.utxo.flow.impl.transaction.factory.UtxoSignedTransactionFactoryImpl
+import net.corda.ledger.utxo.test.UtxoLedgerTest
 import net.corda.ledger.utxo.testkit.UtxoCommandExample
 import net.corda.ledger.utxo.testkit.getUtxoInvalidStateAndRef
 import net.corda.ledger.utxo.testkit.utxoNotaryExample
@@ -13,20 +11,9 @@ import net.corda.ledger.utxo.testkit.utxoTimeWindowExample
 import net.corda.v5.crypto.SecureHash
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
-import org.mockito.kotlin.mock
 import kotlin.test.assertIs
 
-internal class UtxoTransactionBuilderImplTest: LedgerTest() {
-    private val utxoSignedTransactionFactory = UtxoSignedTransactionFactoryImpl(
-        serializationServiceNullCfg,
-        mockSigningService(),
-        mock(),
-        transactionMetadataFactory,
-        wireTransactionFactory,
-        flowFiberService,
-        jsonMarshallingService
-    )
-    private val utxoTransactionBuilder = UtxoTransactionBuilderImpl(utxoSignedTransactionFactory)
+internal class UtxoTransactionBuilderImplTest: UtxoLedgerTest() {
     @Test
     fun `can build a simple Transaction`() {
         val tx = utxoTransactionBuilder
