@@ -8,7 +8,10 @@ import java.time.Duration
 
 /**
  * Cache which is meant to improve performance of the repeated logon requests with Basic Authentication.
+ *
  * To prevent clear text passwords to be stored in memory a fast hashing function (SHA-256) is applied to them.
+ * This is meant to protect against an attack where an adversary obtains a memory dump of the running process
+ * hoping to be able to read passwords cached passwords in the clear.
  */
 internal class RepeatedLogonsCache {
 
@@ -27,6 +30,8 @@ internal class RepeatedLogonsCache {
     )
 
     private fun Pair<String, String>.toCacheValue(): ByteArray {
+        // Using loginName and clearTextPassword password for hashing. Such that even if two users have exactly the same
+        // password, their hashed representation will be different.
         return "$first:$second".toByteArray().sha256Bytes()
     }
 
@@ -40,6 +45,8 @@ internal class RepeatedLogonsCache {
 
     fun verifies(loginName: String, clearTextPassword: String): Boolean {
         val cachedValue = cache.getIfPresent(loginName) ?: return false
+        // We are performing an exact comparison here to make sure that cached hash value is exactly the same
+        // as the value produced from loginName/clearTextPassword pair supplied.
         return (loginName to clearTextPassword).toCacheValue().contentEquals(cachedValue)
     }
 }
