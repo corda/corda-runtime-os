@@ -56,9 +56,14 @@ class PermissionStorageWriterProcessorImpl(
                 }
                 is BulkCreatePermissionsRequest -> {
                     // Create permissions
-                    val permsCreated: List<Permission> = permissionRequest.permissionsToCreate.map { permToCreate: CreatePermissionRequest ->
-                        permissionWriter.createPermission(permToCreate, request.requestUserId, request.virtualNodeId)
-                    }
+                    val permsCreated: List<Permission> =
+                        permissionRequest.permissionsToCreate.map { permToCreate: CreatePermissionRequest ->
+                            permissionWriter.createPermission(
+                                permToCreate,
+                                request.requestUserId,
+                                request.virtualNodeId
+                            )
+                        }
 
                     // Broadcast permissions created
                     permsCreated.map {
