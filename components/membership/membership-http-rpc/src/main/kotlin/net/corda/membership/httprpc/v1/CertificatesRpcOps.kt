@@ -76,7 +76,7 @@ interface CertificatesRpcOps : RpcOps {
     )
 
     /**
-     * The [importCertificateChain] method enables you to import a cluster lever certificate chain. A certificate chain
+     * The [importCertificateChain] method enables you to import a cluster level certificate chain. A certificate chain
      * can be obtained from a certificate authority by submitting a certificate signing request (see [generateCsr]
      * method). This method does not return anything if the import is successful.
      *
